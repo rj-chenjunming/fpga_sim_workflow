@@ -248,7 +248,7 @@ acquire_lock() {
     if mkdir "$LOCKDIR" 2>/dev/null; then
       LOCK_CREATED=1
       # task-15：owner 带 PID + 启动时刻 + run_id + case/seed（陈旧判据可复算）
-      printf 'PID=%s START=%s RUN=%s CASE=%s SEED=%s STAMP=%s\n' \
+      printf 'VER=2 PID=%s START=%s RUN=%s CASE=%s SEED=%s STAMP=%s\n' \
              "$$" "$(date '+%Y-%m-%dT%H:%M:%S%z')" "${RUN_ID:-N/A}" "$CASE" "$SEED" "$STAMP" \
              > "$LOCKDIR/owner" 2>/dev/null
       # task-16：冻结件身份落到锁目录（与 _guard.log 头同源）
@@ -259,6 +259,14 @@ acquire_lock() {
     pid_alive=$(lock_pid_alive)
     age=$(lock_age_sec)
     # 陈旧 = owner 记录的 PID 已不存在（首要判据）；**PID 存活一律判真并发，绝不自动清**
+    # N9-3：owner 无法解析（旧格式/无 PID/VER 不认识）⇒ 一律"未知 ⇒ 不清、rc=3 并打印 owner 原文"
+    local over; over=$(lock_owner_field VER)
+    if [ "$pid_alive" = "unknown" ] || [ -z "$over" ] || [ "$over" != "2" ]; then
+      echo "[FAIL] 互斥量 owner 无法解析/旧格式（VER=${over:-缺}，PID=$(lock_owner_field PID)）⇒ 按**未知**处理：**不清锁**、rc=3（宁可拒绝也不误清活跃锁，N9-3）。" >&2
+      echo "       owner 原文=[$owner]" >&2
+      echo "       人工确认锁已死后再清理：rm -rf $LOCKDIR" >&2
+      return 3
+    fi
     if [ "$pid_alive" = "no" ]; then
       if [ "$IGNORE_STALE_LOCK" = 1 ] || \
          { [ "$BREAK_STALE_LOCK" -gt 0 ] && [ "$age" -ge 0 ] && [ "$age" -ge "$BREAK_STALE_LOCK" ]; }; then

@@ -6,3 +6,4 @@ state/
 .agently/
 __pycache__/
 *.pyc
+spikes/.accept_v1_state.json

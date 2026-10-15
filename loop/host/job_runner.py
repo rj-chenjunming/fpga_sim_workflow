@@ -197,7 +197,7 @@ class JobRunner:
                 rc = -1
             phase: JobPhase = "cancelled" if record.get("cancel_requested") else "done"
             self._persist_finish(job_id, record, rc=rc, phase=phase)
-            return JobStatus(job_id, phase, rc, False, record)
+            return JobStatus(job_id, phase, rc, False, self.record(job_id) or record)
 
         if self._pid_alive(record):
             phase = "cancelling" if record.get("cancel_requested") else "running"
@@ -206,7 +206,7 @@ class JobRunner:
         # 进程已终结且没有 rc：取消请求 ⇒ cancelled；否则**死任务**（不许当成功）。
         phase = "cancelled" if record.get("cancel_requested") else "dead"
         self._persist_finish(job_id, record, rc=None, phase=phase)
-        return JobStatus(job_id, phase, None, False, record)
+        return JobStatus(job_id, phase, None, False, self.record(job_id) or record)
 
     def _persist_finish(self, job_id: str, record: dict[str, Any], *, rc: int | None, phase: str) -> None:
         if record.get("finished_at") is not None and record.get("rc") == rc and record.get("phase") == phase:

@@ -43,6 +43,9 @@ kb/
 ├── baselines/                     # 【不可变】基线归档，只增不改
 │   ├── v0/                        #   七件套 + manifest.json + evidence/
 │   └── v1/ …                      #   N16 晋升产物，parent 指向上一个
+├── adjudication/                  # 【人裁决材料】不是数据、不是判定，是"等人拍板"的决策包（只新增）
+│   ├── I3_dual_count_dispute.md   #   口径一 1687 vs 口径二 UVM_ERROR=0 的裁决请求
+│   └── C_conflicts_triage.md      #   C1—C72 批量裁决分组（解 I4 死锁）
 └── runs/                          # 【每轮一目录】一个变更一个 run_id
     └── RUN-YYYYMMDD-HHMMSS/
         ├── gates.json             #   三道闸门状态（人签名才 human_signed=true）
@@ -64,6 +67,12 @@ kb/
 | `kb/tools/n2_diff.py` / `n5_impact.py` / `gate.py` / `n16_promote.py` | Host 工具 owner |
 | `kb/baselines/**` | `n16_promote.py`（原子晋升）或 Lead 的 v0 建档 |
 | `kb/runs/<run_id>/**` | 该轮 run_id 的 owner（同一 run 内按文件切分，不并发写同一文件） |
+| `kb/adjudication/**` | 分析角色（一次一个文件）；**只写"请求人裁决的材料"，不写裁决结论** |
+
+**`adjudication/` 的定位**：`kb/` 里唯一一类**给人看的非数据产物**。它存在的理由是
+spec 的闸门语义 —— 系统的职责是**备料**，不是替人拍板。所以这两个文件里
+**不得出现**任何形式的"已裁决 / 已确认"措辞，只有「选项 + 后果 + 推荐 + 我需要你回什么」。
+真正改变判定的事实必须落回 `kb/conflicts/*.json`（经人授权）或 `gates.json`（人签名）。
 
 ---
 
@@ -291,3 +300,49 @@ python3 kb/tools/n16_promote.py --run <run_id> --trigger-by "<人名>" --actor-k
 `task-13` 当时上交的裁定 (i)/(ii) 两个选项**都不采纳** —— 物理证据表明这是判据缺陷，不是定义选择。
 
 **确定性**：同一 `--now`（`2026-10-15T15:00:00`）两次运行，`n5_impact.json` sha256 均为 `9ad2458a606fc1e4d46203351f9995fae8ac46d18e379f57e6ec29539cb4e028`（×2）。
+
+---
+
+## 变更登记 · 闸门 schema 进闭环 + N5 删重复实现 + 新增 `adjudication/`
+
+**登记日期**：2026-10-15
+**改动文件**：`kb/schema/gate_state.schema.json`、`kb/tools/kb_lib.py`、
+`kb/tools/n5_impact.py`、`kb/tools/_selftest_gate_schema.py`（新增）、`kb/README.md`（本登记）
+**回归自测**：`kb/tools/_selftest_gate_schema.py`（10/10 PASS）、`kb/tools/_selftest_n5_reachability.py`（9/9 PASS）
+
+### ① F-SCHEMA-01（blocker，verifier 独立复现）：schema 与产物**一词之差**
+`gate_state.schema.json` 要求 `anchor.algo = 'sha256-of-canonical-record-without-anchor'`，
+而 `kb_lib._anchor_value` 实写 `'…state-without-anchor'` ⇒ `check(obj,"gate_state")` 对**当前脚本写的
+每一个** `gates.json` 都失败。归档的 `RUN-20261015-120626/gates.json` 能过，只是因为它恰好是
+**legacy 无 anchor** 版本 —— "能过"来自缺陷未覆盖的路径，不代表兼容。
+
+**修法**：锚算法字面量收敛到 `kb_lib._ANCHOR_ALGO` + `_anchor_record()` **单一定义**，
+schema 的 `const` 与代码同源（`_selftest_gate_schema.py` 第 4 条断言两者相等，漂移即失败）。
+
+### ② F-SCHEMA-02（major）：schema 名字对不上 + **是死文件**
+`check(obj, "gate-state")` 抛 `FileNotFoundError`（落盘是 `gate_state.schema.json`，下划线），
+且全仓**没有任何脚本调用**该 schema ⇒ `anchor`/`history` 的结构约束实际未强制。
+
+**修法**：
+1. `load_schema()` 做**命名归一**：`gate-state` 与 `gate_state` 解析到同一个文件；
+2. **写前校验**：`gate_init()` / `gate_set()` 在 `write_json()` **之前**调用
+   `check(st, "gate_state")` ⇒ 状态坏在盘上之前就被拦下（自测第 7/8 条：把 algo 改错一个词，
+   `gate_set` 抛 `SchemaError` 且**账本一个字节未动**）。
+   *为什么不加在读取侧*：schema 收紧不得让历史归档变得不可读；读侧的完整性由锚复算负责。
+
+### ③ 口径唯一：删掉 N5 的**第二套**宏展开实现
+协作期间 `kb/tools/n5_impact.py` 里同时存在两套同判据实现：已登记的 `macro_called_names()`
+（`` `FORKJN* `` 的**第 2 实参**）+ 另一套把宏实参注入成行内注释 `// TB_MACRO_EXPANDED: …`
+再重跑调用图。两套实现同一条判据即**口径分裂**；且注入的注释会出现在引用的原文行里
+（**证据文本与真实文件不一致**）。
+
+**核实**：`TB/LIBS/CBB-LIB/macros_pkg.sv` 只有 `FORKJN_FOR_BLK(:2447)` 与
+`FORKJN_FOR_BLK_PHASE(:2462)`，两者的 `TF_NAME` **都是第 2 实参**（不存在 `FORKJN(` 宏）。
+删除注入实现后重算，`n5_impact.json` sha256 **逐字节还原**为 `9ad2458a…`、归一化指纹
+`ef5318bbd23c5b67bfbd58d55c02c357f5d5ecf8595226a127d17456fff6765a`（与删前 M1 一致）
+⇒ 那套注入实现是**纯冗余**。
+
+### ④ 新增 `kb/adjudication/`
+本目录唯一一类**给人看的非数据产物**：把"必须由人拍的事"写成可拍板的材料。
+首批两份：`I3_dual_count_dispute.md`（口径一 1687 vs 口径二 0）、`C_conflicts_triage.md`（C1—C72）。
+写权与纪律见 §1 写权表下方的说明：**只写请求，不写裁决结论**。

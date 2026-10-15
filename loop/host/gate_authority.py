@@ -18,6 +18,7 @@ from __future__ import annotations
 import sys
 from functools import lru_cache
 from pathlib import Path
+from typing import Any
 
 from host import paths as P
 
@@ -114,9 +115,82 @@ def human_readable(gate: str, decision: str) -> str:
     }.get(decision, decision)
 
 
+def authority_view(run_id: str) -> dict[str, Any]:
+    """闸门**权威**读模型：`kb_lib.gate_get` + 锚复算 `kb_lib.gate_verify_anchor`。
+
+    为什么必须有这个（实测缺口）：操作台的「闸门历史」原先是**事件流投影** —— 其中
+    `actor` 是 HTTP 请求体里的**自报字符串**，既没有 `human_signed`、也没有 `actor_kind`；
+    而前端 `renderGateHistory` 恰恰在渲染 `json.actor_kind`（于是徽章永远是空的）。
+    也就是说，"这道闸门到底是不是人类签的"这个操作台最该回答的问题，**在界面上无法回答**。
+
+    权威只有一个：`kb/runs/<run_id>/gates.json`（含 `history[]` append-only）+
+    同目录 `gates.sha256` 防篡改锚。本函数**只投影**，不判定、不改写：
+    - 账本缺失 ⇒ `present=false`（界面显示为缺件，不编造 `pending`）；
+    - 锚不一致 ⇒ `anchor_ok=false` + 明说"状态被外部修改"（不抛异常，界面要能显示它）。
+    """
+    kb = _kb_lib()
+    try:
+        st = kb.gate_get(run_id)
+    except FileNotFoundError:
+        return {"present": False, "run_id": run_id, "reason": "gates.json 不存在（闸门账本未初始化）",
+                "gates": {}, "anchor_ok": None}
+    except Exception as exc:  # pragma: no cover - 磁盘损坏时才走
+        return {"present": False, "run_id": run_id, "reason": f"{type(exc).__name__}: {exc}",
+                "gates": {}, "anchor_ok": None}
+
+    try:
+        anchor_ok, anchor_detail = kb.gate_verify_anchor(run_id)
+    except Exception as exc:  # pragma: no cover
+        anchor_ok, anchor_detail = False, f"锚复算失败：{type(exc).__name__}: {exc}"
+
+    gates: dict[str, Any] = {}
+    for gid in gate_ids():
+        item = (st.get("gates") or {}).get(gid) or {}
+        hist = item.get("history") or []
+        gates[gid] = {
+            "decision": item.get("decision"),
+            "status": item.get("status"),
+            "actor": item.get("actor"),
+            "actor_kind": item.get("actor_kind"),
+            "human_signed": item.get("human_signed"),
+            "signed_at": item.get("signed_at"),
+            "note": item.get("note"),
+            "rework_target": item.get("rework_target"),
+            "history_len": len(hist),
+            # 每条历史只投影"谁在何时签了什么"，正文留给 gates.json 本体
+            "history": [
+                {
+                    "at": h.get("at"),
+                    "decision": h.get("decision"),
+                    "actor": h.get("actor"),
+                    "actor_kind": h.get("actor_kind"),
+                    "human_signed": h.get("human_signed"),
+                    "note": h.get("note"),
+                }
+                for h in hist
+            ],
+        }
+
+    return {
+        "present": True,
+        "run_id": st.get("run_id"),
+        "source": str(Path(str(getattr(kb, "run_dir")(run_id))) / "gates.json"),
+        "schema": st.get("schema"),
+        "version": st.get("version"),
+        "updated_at": st.get("updated_at"),
+        "gates": gates,
+        "all_signed": all((gates[g]["status"] == "signed") for g in gates),
+        "human_signed_all": all(bool(gates[g]["human_signed"]) for g in gates),
+        # None = legacy 无锚（未校验）；False = 被外部修改；True = 一致
+        "anchor_ok": anchor_ok,
+        "anchor_detail": anchor_detail,
+    }
+
+
 __all__ = [
     "GateAuthorityUnavailable",
     "actionable_decisions",
+    "authority_view",
     "decisions",
     "gate_ids",
     "gate_kind",

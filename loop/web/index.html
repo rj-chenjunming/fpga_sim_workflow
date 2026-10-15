@@ -237,7 +237,7 @@ input[type=text]:focus,textarea:focus,select:focus{outline:1px solid #2f6fbf;bor
             <label class="fld">actor（必填；actor_kind 必须为 human）
               <input type="text" id="fActor" value="human:" autocomplete="off">
             </label>
-            <label class="fld">reason（必填，原文写入 gate_state）
+            <label class="fld">reason（必填，原文写入权威 gates.json 的 note）
               <textarea id="fReason" rows="3" placeholder="裁决理由（必须可核对）"></textarea>
             </label>
             <div class="btn-row">
@@ -645,6 +645,25 @@ input[type=text]:focus,textarea:focus,select:focus{outline:1px solid #2f6fbf;bor
       h('span', { cls: 'kv' }, [h('span', { cls: 'k', text: 'counts.both_zero' }), boolBadge(counts.both_zero)])
     ]));
     box.appendChild(h('div', { cls: 'tiny muted', text: '判绿判红不由本界面计算：以上均为服务端 run_view 原值。' }));
+    // 失败原因必须显眼：`status=failed` 却看不到为什么，操作台等于只说了半句话。
+    // （实测缺陷：服务端投影原先压根不带 error，N9 死任务 / 补投递失败 / 快照落后于账本
+    //   三条失败路径的原因全被吞掉，界面只剩一个 "failed"。）
+    if (v.status === 'failed' || v.error) {
+      box.appendChild(h('div', { cls: 'sev sev-blocker' }, [
+        h('div', { cls: 'sev-head' }, [
+          h('span', { cls: 'sev-title', text: '运行失败' }),
+          rawBadge(v.status, 'status', 'bg-red')
+        ]),
+        h('div', { cls: 'sev-msg mono', text: fmt(v.error || '服务端未给出 error（按缺件处理，不猜原因）') })
+      ]));
+    }
+    var notes = Object.prototype.toString.call(v.notes) === '[object Array]' ? v.notes : [];
+    for (var i = 0; i < notes.length; i++) {
+      box.appendChild(h('div', { cls: 'sev sev-warning' }, [
+        h('div', { cls: 'sev-head' }, [h('span', { cls: 'sev-title', text: 'note' })]),
+        h('div', { cls: 'sev-msg mono', text: fmt(notes[i]) })
+      ]));
+    }
   }
 
   /* ---------------- 节点时间线 ---------------- */
@@ -1138,9 +1157,21 @@ input[type=text]:focus,textarea:focus,select:focus{outline:1px solid #2f6fbf;bor
       if (res.ok) {
         out.className = 'msg msg-ok';
         out.appendChild(h('div', { text: '✓ 已提交（HTTP ' + res.status + '）：decision=' + state.decision + ' actor=' + actor }));
-        if (res.data && res.data.gate_state !== undefined) {
-          out.appendChild(h('div', { cls: 'tiny muted', text: 'gate_state（服务端返回原值）：' }));
-          out.appendChild(h('pre', { cls: 'json', text: JSON.stringify(res.data.gate_state, null, 2) }));
+        // gate_state 是**权威**闸门态那一条；gate_tool 才是 gate.py 的子进程调用记录。
+        if (res.data && res.data.gate_state) {
+          var g = res.data.gate_state;
+          out.appendChild(h('div', { cls: 'kv' }, [
+            h('span', { cls: 'k', text: '权威 gate_state' }),
+            rawBadge(g.decision, 'decision', 'bg-blue'),
+            boolBadge(g.human_signed, 'human_signed'),
+            rawBadge(g.actor_kind, 'actor_kind', 'bg-gray'),
+            h('span', { cls: 'mono tiny', text: 'history=' + fmt(g.history_len) + ' 条' })
+          ]));
+        }
+        if (res.data && res.data.gates_authority) {
+          out.appendChild(h('div', { cls: 'tiny muted', text: '权威锚：'
+            + (res.data.gates_authority.anchor_ok === true ? '一致' : fmt(res.data.gates_authority.anchor_ok))
+            + '  ——  ' + fmt(res.data.gates_authority.anchor_detail) }));
         }
         out.appendChild(h('pre', { cls: 'json', text: JSON.stringify(res.data, null, 2) }));
         toast('闸门决策已提交：' + gid + ' / ' + state.decision, 'ok');
@@ -1394,24 +1425,82 @@ input[type=text]:focus,textarea:focus,select:focus{outline:1px solid #2f6fbf;bor
     clear(box);
     var v = state.view;
     if (!v) { return; }
+
+    // ① 权威闸门态：kb/tools/gate.py 的 gates.json + gates.sha256 锚。
+    //    事件流里的 actor 是**自报**字符串，回答不了"这道闸门是不是人签的、账本改过没有"。
+    var au = v.gates_authority || null;
+    if (!au || au.present !== true) {
+      box.appendChild(h('div', { cls: 'sev sev-blocker' }, [
+        h('div', { cls: 'sev-head' }, [h('span', { cls: 'sev-title', text: '闸门权威不可读' })]),
+        h('div', { cls: 'sev-msg', text: (au && au.reason) ? au.reason : '服务端未返回 gates_authority' })
+      ]));
+    } else {
+      var anchor = au.anchor_ok;
+      var aCls = anchor === true ? 'sev-info' : (anchor === false ? 'sev-blocker' : 'sev-warning');
+      var aTxt = anchor === true ? '锚一致 —— 权威态未被外部修改'
+               : (anchor === false ? '状态被外部修改 ⇒ 闸门记录不可信' : '无锚（legacy 状态，未校验）');
+      box.appendChild(h('div', { cls: 'sev ' + aCls }, [
+        h('div', { cls: 'sev-head' }, [
+          h('span', { cls: 'sev-title', text: '权威锚 gates.sha256' }),
+          rawBadge(anchor, 'anchor_ok', anchor === true ? 'bg-ok' : (anchor === false ? 'bg-red' : 'bg-gray'))
+        ]),
+        h('div', { cls: 'sev-msg', text: aTxt + (au.anchor_detail ? '  ——  ' + au.anchor_detail : '') })
+      ]));
+      box.appendChild(h('div', { cls: 'tiny muted mono', text: 'all_signed=' + fmt(au.all_signed)
+        + '   human_signed_all=' + fmt(au.human_signed_all)
+        + '   updated_at=' + fmt(au.updated_at) + '   source=' + fmt(au.source) }));
+      var gids = Object.keys(au.gates || {});
+      for (var i = 0; i < gids.length; i++) {
+        var gid = gids[i], g = (au.gates || {})[gid] || {};
+        var signed = g.human_signed === true;
+        box.appendChild(h('div', { cls: 'sev ' + (signed ? 'sev-info' : 'sev-warning') }, [
+          h('div', { cls: 'sev-head' }, [
+            h('span', { cls: 'sev-title mono', text: gid }),
+            rawBadge(g.decision, 'decision', signed ? 'bg-ok' : 'bg-blue'),
+            boolBadge(g.human_signed, 'human_signed'),
+            rawBadge(g.actor_kind, 'actor_kind', 'bg-gray'),
+            rawBadge(g.status, 'status', 'bg-gray')
+          ]),
+          h('div', { cls: 'sev-msg' }, [
+            h('span', { cls: 'mono', text: 'actor=' + fmt(g.actor) }),
+            h('span', { cls: 'muted tiny', text: '   signed_at: ' }),
+            tsCell(g.signed_at),
+            h('span', { cls: 'muted tiny', text: '   history=' + fmt(g.history_len) + ' 条' })
+          ])
+        ]));
+      }
+    }
+
+    // ② 事件流 vs 权威账本的逐门对账：分歧必须外显，**不许静默取其一**。
+    var dv = (au && Object.prototype.toString.call(au.divergences) === '[object Array]') ? au.divergences : [];
+    for (var d = 0; d < dv.length; d++) {
+      var x = dv[d] || {};
+      box.appendChild(h('div', { cls: 'sev sev-blocker' }, [
+        h('div', { cls: 'sev-head' }, [h('span', { cls: 'sev-title mono', text: '对账分歧 · ' + fmt(x.gate) })]),
+        h('div', { cls: 'sev-msg', text: '事件流 ' + fmt(x.event_count) + ' 条 ' + JSON.stringify(x.event_decisions)
+          + ' vs 权威 ' + fmt(x.authority_count) + ' 条 ' + JSON.stringify(x.authority_decisions) + ' ⇒ 以权威为准' })
+      ]));
+    }
+
+    // ③ 事件流记录（**自报**，仅作追溯）。
+    box.appendChild(h('div', { cls: 'tiny muted', text: '以下为事件流记录：actor 由请求方自报，**不是**权威（权威见上）。' }));
     var list = Object.prototype.toString.call(v.gate_history) === '[object Array]' ? v.gate_history : [];
     if (!list.length) {
       box.appendChild(h('div', { cls: 'muted', text: '服务端 gate_history 为空。' }));
       return;
     }
-    for (var i = 0; i < list.length; i++) {
-      var g = list[i] || {};
-      var cls = g.decision === 'confirmed' || g.decision === 'accept' ? 'sev-info' : 'sev-warning';
+    for (var j = 0; j < list.length; j++) {
+      var e = list[j] || {};
+      var cls = e.decision === 'confirmed' || e.decision === 'accept' ? 'sev-info' : 'sev-warning';
       box.appendChild(h('div', { cls: 'sev ' + cls }, [
         h('div', { cls: 'sev-head' }, [
-          h('span', { cls: 'sev-title mono', text: fmt(g.gate) }),
-          rawBadge(g.decision, 'decision', 'bg-blue'),
-          rawBadge(g.actor_kind, 'actor_kind', 'bg-gray')
+          h('span', { cls: 'sev-title mono', text: fmt(e.gate) }),
+          rawBadge(e.decision, 'decision', 'bg-blue')
         ]),
         h('div', { cls: 'sev-msg' }, [
-          h('span', { cls: 'mono', text: 'actor=' + fmt(g.actor) }),
+          h('span', { cls: 'mono', text: 'actor=' + fmt(e.actor) }),
           h('span', { cls: 'muted tiny', text: '   at: ' }),
-          tsCell(g.at)
+          tsCell(e.at)
         ])
       ]));
     }

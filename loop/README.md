@@ -46,7 +46,7 @@ python3.11 -m venv .venv
 跑测试：
 
 ```bash
-cd loop && .venv/bin/python -m pytest -q      # 38 项，约 22 s
+cd loop && .venv/bin/python -m pytest -q      # 68 项，约 32 s
 ```
 
 ---
@@ -75,7 +75,9 @@ loop/
     contracts.py            对外投影 + 六项信任缺口的服务端判定
     api.py                  FastAPI（唯一入口）
   web/index.html            单文件前端（零外链）
-  tests/                    38 项
+  tests/                    68 项
+  spikes/                   `accept_v1.py`（带断言的 v1 终验）+ `accept_v1_run.sh`（单次调用内起停 4 代服务）
+  ACCEPTANCE_V1.md          v1 真实 HTTP 终验报告（116/116，3 次真重启）
   state/                    槽/队列/事件/快照（可删）
 ```
 
@@ -138,6 +140,30 @@ I6（非 human actor）与 I4（冲突未清零时选全量/子集回归）都�
 用户的一次误选就会消耗掉中断并把执行打成 `failed`（实测 `self_resume_limit_reached`），
 **闸门从此不可用**。现在误选得到 403/400，闸门保持待决策。
 
+### 4.5 v1 终验抓出的 7 个缺陷（都已修，见 `ACCEPTANCE_V1.md`）
+
+这份验收的价值主要不在"全绿"，而在它**把只靠读代码看不出的问题逼出来了**。逐条要点：
+
+| id | 一句话 | 关键回归 |
+|---|---|---|
+| F-V1-01 | 拒绝路径**先写权威账本后查中断** ⇒ 双击按钮会在 `gates.json` 留一条**孤儿签名** | 拒绝后 `gates.json` md5 不变 |
+| F-V1-02 | 操作台的「闸门历史」来自**事件流**（actor 是自报、无 `human_signed`），而前端在渲染服务端**从不发送**的 `actor_kind` ⇒ 徽章恒空；"谁签的"答不了 | 投影 `gates_authority` + 逐门对账 `divergences` |
+| F-V1-03 | `POST /api/runs` 的 `now` 被静默丢弃 | `test_start_honors_now` |
+| F-V1-04 | `auto_close=False` 关掉了唯一会置 CLOSED 的机制 ⇒ **`finished` 是死代码**，HALT/N16 后永远 `running`，重启还会反复恢复僵尸 run | `reached_terminal()` + 显式 `async_close` |
+| F-V1-05 | `_persist_finish` 写副本、`poll()` 留原记录 ⇒ **崩溃恢复把死任务当正常完成**投递，run 带 `koutou1=null` 走到 G2 | 相位一律回读 `JobRunner.poll()` |
+| F-V1-06 | 落快照靠"某次 `async_sync` 恰好看到 waiting_gate" ⇒ 盘上只剩上一份 ⇒ 重启**回退到已签闸门** | 0.5 s 快照节拍 + 落后于账本时显式失败 |
+| F-V1-07 | 投影**不带 `error`** ⇒ 失败的 run 在界面上只剩一个 "failed" | 投影补 `error`/`notes`，前端醒目渲染 |
+
+还有一条同类的字段名与内容不符：`decision` 响应的 `gate_state` 原先装的是子进程调用记录
+（`cmd`/`rc`/`stdout_tail`）⇒ 已拆成 `gate_state`（权威态）/ `gate_tool`（调用记录）/ `gates_authority`。
+
+### 4.6 快照与权威账本的关系（**新增的硬纪律**）
+
+快照是"某一刻"的执行影像，`gates.json` 才是权威。恢复时两者可能不一致：崩溃落在两次落盘之间，
+载入的快照会停在**已经签过**的闸门上。此时本层的选择是**显式失败并说明原因**
+（`snapshot_behind_ledger`），**不是**自动重放那个决定 —— 重放等于在没人要求的情况下自动重跑
+一整轮修订 + 仿真（可能是几十分钟的外部作业）。宁可红，也不静默替人推进。
+
 ---
 
 ## 5 当前限制（不得当成已具备）
@@ -151,7 +177,11 @@ I6（非 human actor）与 I4（冲突未清零时选全量/子集回归）都�
 | N16 晋升 | 本层**恒为 `--dry-run`**，绝不写 `kb/baselines/`。 |
 | F-N16-04 | 拒绝后残留 `staged/` 仍在（界面作为告警呈现，未清理）。 |
 | E-2 | **已修**：`run_guarded.sh` 归档腿原只 glob `$ROOT/SIMLIB_RUN/log`，与 `compile-only`/`full` 实际落点 `$EVIDENCE_DIR` 不符 ⇒ 必空；且这两个模式没启动轮询。现候选路径覆盖两处、两分支都轮询、归档件 444 只读、加稳定性判定防半截件堆积、`_guard.log` 不自我归档；N9 真实路径也改为走 `run_guarded.sh --mode full`。归档的演练轮**不回填**（它是冻结见证）。 |
-| 单机单用户 | 无鉴权、无多用户；`actor` 只是自报字符串。 |
+| 单机单用户 | 无鉴权、无多用户；`actor` 只是自报字符串（**权威凭据是账本里的 `human_signed`**）。 |
+| 快照竞态窗口 | 0.5 s 节拍把"重启回退到已签闸门"的概率压到很低，但**未消除**：窗口内被杀 ⇒ 恢复会显式失败（见 §4.6），需人工重开一轮。 |
+| 单槽 `holder_alive` 语义 | 重启后 `slot.holder.owner_pid` 指向**已死的 uvicorn**，于是 `holder_alive=false`，而作业其实还活着（`phase=running`）。本轮实测未见别的 run 借此抢占，但该字段应改判"**作业**是否存活"而不是"**进程**是否存活"，待办。 |
+| I3 判绿 | 口径一 = 1687 ≠ 0 是**既有缺陷**（不是本轮引入）。三选项/推荐/成本见 `kb/adjudication/I3_dual_count_dispute.md`，**需人拍板**；在拍板前 `I3_KOUTOU1_NONZERO` 维持 blocker。 |
+| 冲突清零 | 72 条全 `blocks_release=true` ⇒ 晋升永久阻断。分组、批裁判据、清零路径见 `kb/adjudication/C_conflicts_triage.md`，**需人拍板**。 |
 
 ---
 
@@ -211,7 +241,8 @@ drill 运行目录带 `.loop_drill` 标记，测试据此清理**自己创建的
 
 ## 7 已验证什么
 
-`tests/` 38 项 + 一次真实 HTTP 走查。关键断言：
+`tests/` 68 项 + 一次**真实 HTTP 终验**（`ACCEPTANCE_V1.md`：116/116 断言，4 代服务进程、
+3 次真重启，含"重附着到仍在跑的长任务""跨重启不丢单槽"）。关键断言：
 
 - 口径一与 `grep -c '\*E'` **独立对账一致**；两套口径并列、`both_zero=false` 时**不得判绿**；
 - 观测印记三向一致（印记行 / by-id 计数 / 地址与值）逐项通过；

@@ -14,6 +14,7 @@ from __future__ import annotations
 import asyncio
 import json
 from dataclasses import dataclass, field
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Awaitable, Callable
 
@@ -35,6 +36,15 @@ from .context import RESOURCE_KEY, RunCtx, prepare_run_dir, runtime_resources
 
 #: 返工上限（I7）。N8 与 N16 都校验；本层只负责把回边**图示化**。
 REWORK_LIMIT = 3
+
+#: 图里**再无后继**的节点。走到它们就意味着一轮结束。
+#: 必须显式关闭执行：`create_execution(auto_close=False)` 关掉了框架里**唯一**会把
+#: 生命周期置为 CLOSED 的机制（`_auto_close_monitor`，而它本身对 `is_waiting()` 是安全的，
+#: 停放中的闸门不会被它关掉）⇒ 不显式关，`is_closed()` 永远为假、`status` 永远 `running`：
+#: 界面看板永远显示"进行中"，而 `async_restore_all()` 会在每次重启时把这些僵尸 run
+#: 再恢复一遍（它按 `status in ("waiting_gate","running")` 筛选）。
+#: v1 终验实测：`G3=defer` 走到 HALT 后 `status=running` 永不收敛。
+TERMINAL_NODES = frozenset({"HALT", "N16"})
 
 LOOP_FLOW = TriggerFlow(name="change-impact-loop")
 
@@ -88,6 +98,22 @@ def node_history(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
             "detail": e.get("detail") or {},
         }
     return [latest[n] for n in order]
+
+
+def reached_terminal(events: list[dict[str, Any]]) -> str | None:
+    """最后一个**节点事件**若是终止节点的 `node_finished`，返回该节点名；否则 None。
+
+    只看事件流、不另做一份账；`node_history` 的末项是"最近首次出现的节点"，
+    不能用来判断"当前走到哪"。
+    """
+    last: dict[str, Any] | None = None
+    for e in events:
+        if e.get("kind") in ("node_started", "node_finished", "node_failed"):
+            last = e
+    if last is None or last.get("kind") != "node_finished":
+        return None
+    node = last.get("node")
+    return node if node in TERMINAL_NODES else None
 
 
 def gate_history(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -151,6 +177,7 @@ class RunManager:
         self.ctxs: dict[str, RunCtx] = {}
         self.docs: dict[str, RunDoc] = {}
         self._watch_task: asyncio.Task[Any] | None = None
+        self._snap_task: asyncio.Task[Any] | None = None
         self._delivering: set[str] = set()
         self._load_docs()
 
@@ -212,7 +239,17 @@ class RunManager:
     ) -> str:
         if mode not in ("drill", "real"):
             raise ValueError("mode 必须是 drill 或 real")
-        run_id = P.make_run_id()
+        # `now` 原本只声明不使用：HTTP 传了 `now`、`/api/runs` 也照收，
+        # 但 run_id 与时间戳实际都来自 `LOOP_NOW`/`KB_NOW` 环境变量 ⇒ **静默忽略调用方的身份意图**。
+        # 对交互式使用是实打实的坑：调用方以为定住了 run 身份，实际拿到另一个 run。
+        # 现在显式生效，且优先级高于环境变量（更具体者胜）。
+        dt: datetime | None = None
+        if now:
+            try:
+                dt = datetime.fromisoformat(str(now))
+            except ValueError as exc:
+                raise ValueError(f"now 不是可解析的 ISO 时间：{now!r}") from exc
+        run_id = P.make_run_id(dt)
         if (P.KB_RUNS / run_id / "gates.json").is_file() or (P.KB_RUNS / run_id / "view.json").is_file():
             # run_id 已存在 ⇒ 复用会污染闸门账本与事件流。
             # 实证：同一 LOOP_NOW 二次启动会让 gate_history 出现重复条目、事件 seq 续写。
@@ -238,8 +275,8 @@ class RunManager:
             baseline=baseline or "v0",
             mode=mode,
             scenario=scenario,
-            created_at=P.now_iso(),
-            updated_at=P.now_iso(),
+            created_at=P.now_iso(dt),
+            updated_at=P.now_iso(dt),
         )
         self.docs[run_id] = doc
         progress.append(
@@ -292,6 +329,15 @@ class RunManager:
             elif execution.is_closed():
                 doc.status = "finished"
                 doc.pending_interrupt = None
+            elif reached_terminal(events):
+                # 走到无后继的节点（HALT / N16）且没有待处理中断 ⇒ 本轮结束。
+                # 必须**显式**关执行，否则 `is_closed()` 永远为假（auto_close=False）。
+                doc.status = "finished"
+                doc.pending_interrupt = None
+                try:
+                    await execution.async_close(reason="terminal_node_reached")
+                except Exception as exc:
+                    doc.notes.append(f"关闭执行失败：{type(exc).__name__}: {exc}")
             else:
                 doc.status = "running"
                 doc.pending_interrupt = None
@@ -354,6 +400,25 @@ class RunManager:
                     "闸门保持待决策，可改选 milestone_only / defer。"
                 )
 
+        # **必须先确认本闸门确有待处理中断，再去写权威账本。**
+        # 实测（v1 终验 phase 1）：原顺序是「先 `gate.py sign` 落权威、后查中断」，
+        # 于是当闸门已被决策过（典型触发：操作台上双击按钮 / 两个标签页各点一次）时，
+        # `gates.json` 会追加一条**孤儿签名**（`history` 变长、账本被改），
+        # 而执行侧没有任何动作，用户只看到一个 400 —— 权威与被控对象悄悄分叉。
+        # 与本层既有的「拒绝必须发生在提交前」（§4.4）同一条纪律。
+        pending = execution.get_pending_interrupts() or {}
+        interrupt_id = None
+        for key, item in pending.items():
+            payload = (item or {}).get("payload") or {}
+            if payload.get("gate") == gate or str(key).startswith(gate):
+                interrupt_id = key
+                break
+        if interrupt_id is None:
+            raise KeyError(
+                f"闸门 {gate} 当前没有待处理中断（可能已被决策，或执行未停在该闸门）；"
+                f"未写权威账本。pending={list(pending)}"
+            )
+
         from .chunks.host_steps import run_kb_tool
 
         args = ["sign", gate, "--run", run_id, "--decision", decision, "--actor", actor, "--actor-kind", "human"]
@@ -364,16 +429,6 @@ class RunManager:
             raise PermissionError(
                 f"闸门签署被 kb/tools/gate.py 拒绝（rc={signed['rc']}）：{signed['stderr_tail'][-400:]}"
             )
-
-        pending = execution.get_pending_interrupts() or {}
-        interrupt_id = None
-        for key, item in pending.items():
-            payload = (item or {}).get("payload") or {}
-            if payload.get("gate") == gate or str(key).startswith(gate):
-                interrupt_id = key
-                break
-        if interrupt_id is None:
-            raise KeyError(f"闸门 {gate} 当前没有待处理中断；pending={list(pending)}")
 
         await execution.async_continue_with(
             interrupt_id,
@@ -447,18 +502,67 @@ class RunManager:
         if self._watch_task is None or self._watch_task.done():
             self.runner._stopping = False
             self._watch_task = asyncio.create_task(self._watch_loop())
+        # 快照不能靠"碰巧"：`async_sync()` 只在 start/decide/_deliver 结尾被调用，
+        # 而这三处都可能正好看到执行在跑 ⇒ 该落的快照没人落。
+        # 实测（F-V1-06）：happy drill 从 G1 一路跑到 G2 只用约 1.3 s，两次 `async_sync`
+        # 都看到 `running`，于是**盘上只剩 G1 那一份快照**：重启后 run 回退到一个
+        # **权威账本里已经签过**的闸门（`pending=['G1_diff_confirm:0']`）⇒ 恢复即卡死。
+        # 这里按固定节拍巡检，保证"停在中继上"的执行在 ~0.5 s 内落盘。
+        if self._snap_task is None or self._snap_task.done():
+            self._snap_task = asyncio.create_task(self._snapshot_ticker())
+
+    async def _snapshot_ticker(self) -> None:
+        while not self.runner._stopping:
+            for rid, doc in list(self.docs.items()):
+                if doc.status in ("finished", "failed"):
+                    continue
+                try:
+                    await self.async_sync(rid)
+                except Exception:
+                    pass
+            await asyncio.sleep(0.5)
 
     async def stop_watching(self) -> None:
         self.runner.stop_watching()
-        if self._watch_task is not None:
-            self._watch_task.cancel()
-            try:
-                await self._watch_task
-            except (asyncio.CancelledError, Exception):
-                pass
-            self._watch_task = None
+        for attr in ("_watch_task", "_snap_task"):
+            task = getattr(self, attr)
+            if task is not None:
+                task.cancel()
+                try:
+                    await task
+                except (asyncio.CancelledError, Exception):
+                    pass
+                setattr(self, attr, None)
 
     # ---------------- 重启恢复 ----------------
+
+    def _snapshot_behind_ledger(self, run_id: str, execution: Any) -> str | None:
+        """恢复后与**权威账本**对账：若停在"账本已签"的闸门上，快照就是落后的 ⇒ 显式失败。
+
+        实测（F-V1-06）：崩溃若落在两次落盘之间，载入的快照会回退到上一个闸门，而该闸门在
+        `gates.json` 里**已经签过** ⇒ run 永远停在那里（既不能重签，也不会自己往前走）。
+
+        **这里刻意不自动重放该决定**：重放 = 自动重跑一轮修订 + 仿真（可能是几十分钟的外部
+        作业），而且是在人没要求的情况下。按本层一贯口径 —— 宁可显式失败，也不静默替人推进。
+        """
+        try:
+            auth = GA.authority_view(run_id)
+        except Exception:
+            return None
+        if auth.get("present") is not True:
+            return None
+        for key, item in (execution.get_pending_interrupts() or {}).items():
+            gate = ((item or {}).get("payload") or {}).get("gate")
+            if not gate:
+                continue
+            info = (auth.get("gates") or {}).get(gate) or {}
+            if info.get("status") == "signed" and info.get("decision") not in (None, "pending"):
+                return (
+                    f"快照落后于权威账本：快照停在闸门 {gate}（中断 {key}），但 gates.json 里该闸门"
+                    f"已是 {info.get('decision')!r}（actor={info.get('actor')!r}）。照快照继续会重复"
+                    "签署/重复跑一轮 ⇒ 按失败处理；请人工确认后重开一轮。"
+                )
+        return None
 
     async def async_restore_all(self) -> dict[str, Any]:
         """崩溃重启后：重新判定作业命运 + 从快照恢复执行。
@@ -502,9 +606,22 @@ class RunManager:
                 continue
             self.executions[run_id] = execution
             self.ctxs[run_id] = ctx
-            restored.append(run_id)
             ctx.event("warning", node="restore", status="restored",
                       detail={"snapshot": str(snap), "undelivered_jobs": len(buckets.get("undelivered", []))})
+            # 快照落后于权威账本（崩溃落在两次落盘之间）⇒ fail closed，绝不静默重跑一轮
+            behind = self._snapshot_behind_ledger(run_id, execution)
+            if behind:
+                ctx.event("warning", node="restore", status="snapshot_behind_ledger",
+                          detail={"reason": behind, "snapshot": str(snap)})
+                doc = self.docs.get(run_id)
+                if doc is not None:
+                    doc.error = behind
+                    doc.status = "failed"
+                    doc.pending_interrupt = None
+                    self._persist(run_id)
+                failed.append({"run_id": run_id, "reason": behind})
+                continue
+            restored.append(run_id)
 
         # **补投递必须在 start_watching() 之前**：否则看护任务会与补投递**并发投同一个作业**，
         # 第二个 resume 会被框架拒绝（实测 `resume_dispatch_failed … changed phase`）。
@@ -518,6 +635,15 @@ class RunManager:
                     )
                 except Exception as exc:
                     failed.append({"run_id": str(run_id), "reason": f"补投递失败：{exc}"})
+                    # **补投递失败必须让 run 失败**，不能只记进报告的 failed[]：
+                    # 否则 doc.status 仍停在 `waiting_gate`（"在等你决策"）而执行其实已经崩了
+                    # —— 正是 README §4.3 要防的"把崩溃伪装成在等人工"。
+                    doc = self.docs.get(run_id)
+                    if doc is not None:
+                        doc.error = f"补投递失败：{type(exc).__name__}: {exc}"
+                        doc.status = "failed"
+                        doc.pending_interrupt = None
+                        self._persist(run_id)
 
         self.start_watching()
         return {
@@ -578,6 +704,29 @@ class RunManager:
         ev = evidence_view(log)
         return ev if ev.get("present") else None
 
+    def _status_of(self, doc: RunDoc, execution: Any, events: list[dict[str, Any]]) -> str:
+        """投影时**再判一次**状态，不盲信落盘的 `doc.status`。
+
+        为什么：`decide()` 里 `async_continue_with()` 返回后紧接着的 `async_sync()` 有可能
+        跑在恢复段真正走完之前；若只信 `doc.status`，HALT/N16 这类终态就会**卡在 running**
+        且再没有任何东西会来纠正它。这里用事件流兜底：最后一个节点事件是终止节点的
+        `node_finished`、且当前没有待处理中断 ⇒ 就是 `finished`。
+        """
+        if doc.error:
+            return "failed"
+        if doc.status in ("waiting_gate", "finished"):
+            return doc.status
+        if execution is None:
+            return doc.status
+        try:
+            if execution.is_waiting():
+                return "waiting_gate"
+            if execution.is_closed() or reached_terminal(events):
+                return "finished"
+        except Exception:
+            return doc.status
+        return doc.status
+
     def run_view(self, run_id: str) -> dict[str, Any]:
         doc = self.docs.get(run_id)
         if doc is None:
@@ -593,6 +742,7 @@ class RunManager:
             except Exception:
                 pending = None
         payload = doc.as_dict()
+        payload["status"] = self._status_of(doc, execution, events)
         payload["pending_interrupt"] = pending or doc.pending_interrupt
         payload["node_history"] = node_history(events)
         payload["gate_history"] = gate_history(events)

@@ -453,6 +453,10 @@ def reachability_analysis(case_path):
     if text is None:
         return {"ok": False, "encoding": None, "entry": None, "tasks": {},
                 "reason": "用例源不可读（缺失/二进制）：%s" % K.relpath(case_path)}
+    # 说明：**不再**往源码文本里注入展开标记。曾有第二套实现（把 `` `FORKJN* `` 实参
+    # 按已知 task 名追加成 `TASK();` 注释再重跑调用图）—— 两套实现同一条判据即口径分裂，
+    # 且注入的注释会出现在引用的原文行里（证据文本与真实文件不一致）。
+    # 现在只有一条判据：`macro_called_names()`（见下）。
     tasks = parse_tasks(text)
     if not tasks:
         return {"ok": False, "encoding": enc, "entry": None, "tasks": {},

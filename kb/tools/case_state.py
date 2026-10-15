@@ -157,7 +157,19 @@ def cmd_set(args):
     entry["updated_at"] = K.now_iso()
 
     if args.rework_cycles is not None:
+        # task-20 / I7：与 n16_promote.precheck_cases 同口径（负值拒 / >limit 拒 / ==limit 允许）
+        lim = args.rework_limit
+        if lim is None:
+            lim = (st.get("rework_cycles") or {}).get("limit", 3)
+        if args.rework_cycles < 0:
+            sys.stderr.write("[FAIL] --rework-cycles 不能为负（%s）=> 台账**未写盘**\n" % args.rework_cycles)
+            return RC_REJECT
+        if args.rework_cycles > lim:
+            sys.stderr.write("[FAIL] --rework-cycles %s > limit %s（I7）=> 返工超上限，必须升级 N13 人工裁决（spec §8）=> 台账**未写盘**\n" % (args.rework_cycles, lim))
+            return RC_REJECT
         st.setdefault("rework_cycles", {})["n6_n8_cycles"] = args.rework_cycles
+        if args.rework_limit is not None:
+            st["rework_cycles"]["limit"] = args.rework_limit
 
     # ---- I3 可执行化：'已验证通过' 的合取门槛
     if args.state == PASS_STATE:
@@ -284,6 +296,8 @@ def main(argv=None):
     s.add_argument("--note", default=None)
     s.add_argument("--updated-by", default=None)
     s.add_argument("--rework-cycles", type=int, default=None, help="N6↔N8 循环次数（I7）")
+    s.add_argument("--rework-limit", type=int, default=None,
+                    help="I7 返工上限（默认取台账 rework_cycles.limit，缺省 3；不新增漂移常量）")
     s.set_defaults(func=cmd_set)
 
     sh = sub.add_parser("show", parents=[common], help="显示台账与各态计数")

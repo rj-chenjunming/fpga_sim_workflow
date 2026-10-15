@@ -154,10 +154,24 @@ async def n9_park(data: Any) -> dict[str, Any]:
         )
         return {"status": "waiting", "job_id": job_id}
 
-    # 恢复分支：结局由 resume 载荷给出，但**取数一律回读日志**。
+    # 恢复分支：结局由 resume 载荷给出，但**相位一律回读权威**（rc 文件 + 进程存活），
+    # 数字一律回读日志 —— 这正是 README §4.3 的口径："恢复后以日志为权威重新取数，
+    # 不信任 resume 载荷"。
+    # 实测（F-V1-05）：崩溃重启的补投递曾带着**陈旧相位**恢复本 chunk
+    # （`JobRunner._persist_finish` 把副本写盘、`poll()` 却把原记录放进 `JobStatus.record`，
+    # 于是那记录的 `phase` 还停在 "running"）⇒ 死任务被当"正常完成"投递，
+    # run 带着 `koutou1=null` 一路走到 G2 人工闸门。所以这里**不看载荷说了什么**，直接问 JobRunner。
+    payload = (getattr(data.resume, "value", None) or {}) if getattr(data, "resume", None) else {}
     try:
-        payload = (getattr(data.resume, "value", None) or {}) if getattr(data, "resume", None) else {}
-        phase = payload.get("phase")
+        try:
+            phase = ctx.runner.poll(job_id).phase
+        except Exception:
+            phase = payload.get("phase")
+        if payload.get("phase") and phase != payload.get("phase"):
+            ctx.event("warning", node="N9", status="phase_disagreement",
+                      detail={"job_id": job_id, "payload_phase": payload.get("phase"),
+                              "authority_phase": phase,
+                              "rule": "以权威（rc 文件 + 进程存活）为准，载荷只作提示"})
         if phase == "dead":
             ctx.event("dead_job", node="N9", status="dead", detail=payload)
             raise RuntimeError(
@@ -166,6 +180,12 @@ async def n9_park(data: Any) -> dict[str, Any]:
         if phase == "cancelled":
             ctx.event("warning", node="N9", status="cancelled", detail=payload)
             raise RuntimeError(f"作业 {job_id} 被取消 ⇒ 本轮无法满足 I3，按失败处理，不得继续。")
+        if phase not in ("done",):
+            # 还在跑 / 相位未知 ⇒ **不许**当完成。宁可失败，也不要把不确定伪装成数据。
+            raise RuntimeError(
+                f"作业 {job_id} 的相位是 {phase!r}（既非 done 也非 dead/cancelled）⇒ "
+                "不得按完成处理；按失败终止本轮。"
+            )
 
         ev = ctx.evidence()
         counts = ev.get("counts") or {}

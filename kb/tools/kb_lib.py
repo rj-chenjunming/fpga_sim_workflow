@@ -233,11 +233,27 @@ _TYPES = {
 
 
 def load_schema(name):
-    """name 可以是 'manifest' / 'index' / 'conflicts'，或 kb/ 下的相对路径。"""
-    cand = kb_path("schema", name if name.endswith(".json") else name + ".schema.json")
-    if not os.path.exists(cand):
-        cand = kb_path(name) if not os.path.isabs(name) else name
-    return read_json(cand)
+    """name 可以是 'manifest' / 'index' / 'conflicts'，或 kb/ 下的相对路径。
+
+    **命名归一（F-SCHEMA-02）**：`gate-state` 与 `gate_state` 视为同一个 schema。
+    实测踩过：任务书写的是 `check(obj,"gate-state")`，而落盘的 schema 文件是
+    `kb/schema/gate_state.schema.json` ⇒ 抛出来的是 `FileNotFoundError`（像个环境问题），
+    而不是"校验不通过"（真正的结论）。名字不该决定能不能校验。
+    """
+    if not name.endswith(".json"):
+        name = name + ".schema.json"
+    cand = kb_path("schema", name)
+    if os.path.exists(cand):
+        return read_json(cand)
+    alt = name.replace("-", "_")
+    if alt != name and os.path.exists(kb_path("schema", alt)):
+        return read_json(kb_path("schema", alt))
+    # 兼容原行为：允许 name 是 kb/ 下的相对路径
+    if os.path.exists(kb_path(name)):
+        return read_json(kb_path(name))
+    raise FileNotFoundError(
+        "找不到 schema %r（试过 kb/schema/%s、kb/schema/%s、kb/%s）"
+        % (name, name, alt, name))
 
 
 def validate(obj, schema, where="$", _root=None):
@@ -422,6 +438,8 @@ def gate_init(run_id, manifest_from, manifest_to):
             "human_signed": False, "signed_at": None, "note": None,
             "rework_target": None, "artifacts": [],
         }
+    st[_ANCHOR_KEY] = _anchor_record(st)
+    check(st, "gate_state")          # 与 gate_set 同一处强制（F-SCHEMA-02）
     write_json(os.path.join(run_dir(run_id, True), "gates.json"), st)
     gate_write_anchor(run_id)
     return gate_get(run_id)
@@ -485,6 +503,12 @@ def gate_set(run_id, gate_id, decision, actor, actor_kind, note=None,
     if artifacts:
         g["artifacts"] = list(artifacts)
     st["updated_at"] = now_iso()
+    # **写盘前**让 schema 进闭环（F-SCHEMA-02）：此前 `gate_state.schema.json` 是个
+    # **死文件** —— 没有任何脚本调用它，于是它要抓的那种错（契约常量与实际产物不符）
+    # 反而不会有任何人发现（F-SCHEMA-01 就是这么漏过去的）。
+    # 位置必须在写完锚之后：被漏掉的那个词正好在 `anchor.algo` 里。
+    st[_ANCHOR_KEY] = _anchor_record(st)
+    check(st, "gate_state")
     write_json(path, st)
     gate_write_anchor(run_id)
     return gate_get(run_id)
@@ -495,6 +519,10 @@ class GateTamperError(Exception):
 
 
 _ANCHOR_KEY = "anchor"
+#: 锚算法标识。**单一定义**（F-SCHEMA-01 的教训）：此前 `gate_write_anchor` 写字面量、
+#: schema 也写了一份 `const`，两处只差 record/state 一词 ⇒ schema 对**当前脚本写的每一个**
+#: gates.json 都失败。现在字面量只在这里出现，写前校验与落盘共用同一个记录构造。
+_ANCHOR_ALGO = "sha256-of-canonical-state-without-anchor"
 
 
 def _anchor_value(st):
@@ -503,13 +531,16 @@ def _anchor_value(st):
     return sha256_text(canon_json(tmp))
 
 
+def _anchor_record(st):
+    """锚记录（写前校验与落盘共用，避免两处常量漂移）。"""
+    return {"algo": _ANCHOR_ALGO, "value": _anchor_value(st), "file": "gates.sha256"}
+
+
 def gate_write_anchor(run_id):
     """重算并落 `gates.sha256`（同目录）与 `state["anchor"]`（F-GATE-03）。"""
     path = os.path.join(run_dir(run_id), "gates.json")
     st = read_json(path)
-    st[_ANCHOR_KEY] = {"algo": "sha256-of-canonical-state-without-anchor",
-                       "value": _anchor_value(st)}
-    st[_ANCHOR_KEY]["file"] = "gates.sha256"
+    st[_ANCHOR_KEY] = _anchor_record(st)
     write_json(path, st)
     ap = os.path.join(run_dir(run_id), "gates.sha256")
     write_text(ap, st[_ANCHOR_KEY]["value"] + "  gates.json\n")

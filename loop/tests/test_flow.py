@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 from pathlib import Path
 from typing import Any, Callable
 
@@ -127,6 +128,141 @@ async def test_execution_parks_while_long_job_runs_and_survives_restart() -> Non
         await m.stop_watching()
 
 
+async def test_crash_recovery_delivers_dead_job_as_dead_not_done() -> None:
+    """F-V1-05：崩溃重启的**补投递**必须带权威相位，不得把死任务当"正常完成"。
+
+    实测缺陷链：`JobRunner._persist_finish` 把更新后的**副本**写盘、`poll()` 却把
+    **原记录**放进 `JobStatus.record` ⇒ 该记录的 `phase` 还停在 "running"；
+    `async_restore_all()` 的补投递据此恢复 `n9_park`，于是死任务被当完成投递，
+    run 带着 `koutou1=null` 一路走到 **G2 人工闸门**（而不是失败）。
+
+    复现手法：让作业真的死掉（SIGKILL 进程组、不落 rc），再把盘上记录改回
+    "crash 前"的样子（phase=running / delivered=false / finished_at=None），
+    然后用**新的 RunManager** 走一遍崩溃恢复。
+    """
+    import os
+    import signal
+
+    from host import paths as P  # noqa: F401  (保持与本文件其它测试一致的导入风格)
+
+    m = RunManager()
+    rid = await m.start(baseline="v0", mode="drill", scenario="cancel")
+    try:
+        await _drive_to_interrupt(m, rid, "G1_diff_confirm")
+        await m.decide(run_id=rid, gate="G1_diff_confirm", decision="confirmed", actor=HUMAN)
+        view = await _drive_to_interrupt(m, rid, "JOB:", timeout=25.0)
+        job_id = view["job"]["job_id"]
+
+        rec = m.runner.record(job_id)
+        assert rec is not None
+        try:
+            os.killpg(os.getpgid(int(rec["pid"])), signal.SIGKILL)
+        except (ProcessLookupError, PermissionError):
+            pass
+        rc_path = Path(rec["rc_path"])
+        if rc_path.exists():
+            rc_path.unlink()
+
+        # 等 poll 把它判死（同时验证 poll 返回的 record 相位是权威的）
+        ok = await wait_until(lambda: m.runner.poll(job_id).phase == "dead", timeout=15.0)
+        status = m.runner.poll(job_id)
+        assert ok, f"作业未被判死：{status}"
+        assert status.record["phase"] == "dead", (
+            "F-V1-05 根因回归：poll() 返回的 record['phase'] 必须是刚判定的相位，"
+            f"实际 {status.record['phase']!r}"
+        )
+
+        # 伪造"崩溃现场"：记录仍停在 running / 未投递 / 无 finished_at
+        stale = dict(rec)
+        stale.update({"phase": "running", "delivered": False, "finished_at": None, "rc": None})
+        m.runner.record_path(job_id).write_text(json.dumps(stale, ensure_ascii=False, indent=2), encoding="utf-8")
+
+        await m.stop_watching()
+        m2 = RunManager()
+        report = await m2.async_restore_all()
+        assert rid in report["restored"], f"恢复失败：{report}"
+
+        done = await wait_until(lambda: m2.docs[rid].error is not None, timeout=25.0)
+        assert done, f"死任务未被判失败，run 停在：{m2.run_view(rid)['status']}"
+        assert "死任务" in (m2.docs[rid].error or ""), m2.docs[rid].error
+        after = m2.run_view(rid)
+        assert after["status"] == "failed", after["status"]
+        kinds = [e["kind"] for e in m2._progress(rid).read()]
+        assert "dead_job" in kinds, kinds
+        await m2.stop_watching()
+    finally:
+        await m.stop_watching()
+
+
+async def test_park_snapshot_is_written_without_opportunistic_sync() -> None:
+    """F-V1-06a：停在长任务上必须**必然**落快照，不能靠"某次 `async_sync` 恰好看到"。
+
+    实测缺陷：happy drill 从 G1 跑到 G2 只用约 1.3 s，两次 `async_sync` 都看到 `running`
+    ⇒ 盘上只剩最早那份（停在 G1）快照，重启后回退到一个**账本已签**的闸门。
+    """
+    m = RunManager()
+    rid = await m.start(baseline="v0", mode="drill", scenario="cancel")
+    try:
+        await _drive_to_interrupt(m, rid, "G1_diff_confirm")
+        await m.decide(run_id=rid, gate="G1_diff_confirm", decision="confirmed", actor=HUMAN)
+        view = await _drive_to_interrupt(m, rid, "JOB:", timeout=25.0)
+
+        snap = m._snapshot_path(rid)
+        ok = await wait_until(lambda: snap.is_file() and "JOB:" in snap.read_text(encoding="utf-8"),
+                              timeout=25.0)
+        blob = snap.read_text(encoding="utf-8") if snap.is_file() else ""
+        assert ok, "停在长任务上的快照没有被落盘（快照不能再靠碰运气）"
+        assert view["job"]["job_id"] in blob, "快照里必须含该作业的中断"
+    finally:
+        await m.stop_watching()
+
+
+async def test_restore_refuses_when_snapshot_lags_the_ledger() -> None:
+    """F-V1-06b：快照落后于权威账本时必须**显式失败**，既不许卡死也不许静默重跑一轮。
+
+    复现：把快照替换成"停在 G1、而 G1 已在账本里签过"的那一份。
+    期望：恢复后 run 立刻 `failed` 并说明原因（而不是停在 G1 等人、也不是自动重跑一轮
+    修订 + 仿真 —— 那是人没要求的副作用）。
+    """
+    from host import gate_authority as GA
+
+    m = RunManager()
+    rid = await m.start(baseline="v0", mode="drill")
+    try:
+        await _drive_to_interrupt(m, rid, "G1_diff_confirm")
+        snap = m._snapshot_path(rid)
+        ok = await wait_until(lambda: snap.is_file(), timeout=10.0)
+        assert ok, "G1 处应有快照"
+        behind = Path(str(snap) + ".behind")
+        behind.write_bytes(snap.read_bytes())          # 停在 G1 的那一份
+
+        await m.decide(run_id=rid, gate="G1_diff_confirm", decision="confirmed", actor=HUMAN)
+        await _drive_to_interrupt(m, rid, "G2_report_accept", timeout=25.0)
+        assert GA.authority_view(rid)["gates"]["G1_diff_confirm"]["human_signed"] is True
+
+        # 把快照"倒回"到 G1 —— 模拟崩溃落在两次落盘之间
+        await m.stop_watching()
+        snap.write_bytes(behind.read_bytes())
+        behind.unlink()
+
+        m2 = RunManager()
+        report = await m2.async_restore_all()
+        reasons = " | ".join(str(f.get("reason")) for f in report["failed"])
+        assert any("快照落后于权威账本" in r for r in [reasons]), report
+        view = m2.run_view(rid)
+        assert view["status"] == "failed", (view["status"], view.get("error"))
+        assert "快照落后于权威账本" in (view.get("error") or ""), (
+            view.get("error"), m2.docs[rid].error, m2.docs[rid].status,
+            [n["node"] for n in view["node_history"]])
+        kinds = [(e["kind"], e.get("status")) for e in m2._progress(rid).read()]
+        assert ("warning", "snapshot_behind_ledger") in kinds, "对账结论必须留事件（不得静默）"
+        # 关键：不得自动重放 ⇒ G2 仍未被签，且没有多跑一轮的痕迹
+        assert GA.authority_view(rid)["gates"]["G2_report_accept"]["human_signed"] is False
+        await m2.stop_watching()
+    finally:
+        await m.stop_watching()
+
+
 async def test_dead_job_never_counts_as_success() -> None:
     """A5：死任务（进程没了且无 rc）必须走失败分支，不得当成功。"""
     m = RunManager()
@@ -199,8 +335,63 @@ async def test_full_drill_loop_to_n16_refusal() -> None:
         gates = {g["gate"]: g["decision"] for g in m.run_view(rid)["gate_history"]}
         assert gates == {"G1_diff_confirm": "confirmed", "G2_report_accept": "accept",
                          "G3_regression_decision": "milestone_only"}
+
+        # F-V1-04：走到 N16（无后继节点）之后必须**收敛为 finished**。
+        # 原实现 `create_execution(auto_close=False)` 关掉了框架里唯一会把生命周期置为
+        # CLOSED 的机制 ⇒ `is_closed()` 恒假、`status` 永远 `running`，而
+        # `async_restore_all()` 会在每次重启时把这些僵尸 run 再恢复一遍。
+        done = await wait_until(lambda: m.run_view(rid)["status"] == "finished", timeout=15.0)
+        assert done, f"N16 之后未收敛：status={m.run_view(rid)['status']}"
     finally:
         await m.stop_watching()
+
+
+async def test_g3_defer_halts_and_run_converges_to_finished() -> None:
+    """F-V1-04：`defer` 是 I4 允许的合法选项 ⇒ 走 HALT，也必须**收敛为 finished**。
+
+    实测缺陷：`G3=defer` 后 node_history 到 HALT，但 status 永远 `running`
+    —— 界面看板永远显示"进行中"，且重启会被反复恢复。
+    """
+    from workflows.main_flow import reached_terminal
+
+    m = RunManager()
+    rid = await m.start(baseline="v0", mode="drill")
+    try:
+        await _drive_to_interrupt(m, rid, "G1_diff_confirm")
+        await m.decide(run_id=rid, gate="G1_diff_confirm", decision="confirmed", actor=HUMAN, reason="x")
+        await _drive_to_interrupt(m, rid, "G2_report_accept", timeout=25.0)
+        await m.decide(run_id=rid, gate="G2_report_accept", decision="accept", actor=HUMAN, reason="x")
+        await _drive_to_interrupt(m, rid, "G3_regression_decision", timeout=20.0)
+        await m.decide(run_id=rid, gate="G3_regression_decision", decision="defer", actor=HUMAN,
+                       reason="冲突未清零，本轮不发版")
+
+        ok = await wait_until(lambda: m.run_view(rid)["status"] == "finished", timeout=15.0)
+        view = m.run_view(rid)
+        assert ok, f"defer/HALT 之后未收敛：status={view['status']}"
+        nodes = [n["node"] for n in view["node_history"]]
+        assert "HALT" in nodes, nodes
+        assert "N16" not in nodes, "defer 不得走到 N16（不发版）"
+        # 事件流层面也要能判出终止节点
+        for_reached = reached_terminal(m._progress(rid).read())
+        assert for_reached == "HALT", for_reached
+        # 终止后不得再被当成"等一下会继续"的活运行
+        assert view["can"]["promote"] is False
+    finally:
+        await m.stop_watching()
+
+
+async def test_terminal_detection_helper() -> None:
+    """`reached_terminal`：只看**最后一个节点事件**，且必须是终止节点的 node_finished。"""
+    from workflows.main_flow import reached_terminal
+
+    ev = lambda k, n, s="ok": {"kind": k, "node": n, "status": s}  # noqa: E731
+    assert reached_terminal([ev("node_started", "N0"), ev("node_finished", "HALT", "halted")]) == "HALT"
+    assert reached_terminal([ev("node_started", "N16"), ev("node_finished", "N16")]) == "N16"
+    # 还没结束（最后一个节点事件是 started）
+    assert reached_terminal([ev("node_finished", "N16"), ev("node_started", "N99")]) is None
+    # 非终止节点
+    assert reached_terminal([ev("node_finished", "N12")]) is None
+    assert reached_terminal([]) is None
 
 
 async def test_gates_are_recorded_once_each() -> None:

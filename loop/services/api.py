@@ -139,8 +139,23 @@ async def submit_decision(
         )
     except (ValueError, KeyError) as exc:
         raise HTTPException(status_code=400, detail={"error": str(exc)}) from exc
-    return JSONResponse(content={"ok": True, "decision": result["decision"], "gate": result["gate"],
-                                "gate_state": json.loads(json.dumps(result["sign"], default=str))})
+
+    # 字段名必须与内容相符（v1 终验发现）：原 `gate_state` 实际装的是 `gate.py` 的
+    # **子进程调用记录**（cmd/rc/stdout_tail）—— 读 `gate_state.human_signed` 只会得到 undefined，
+    # 界面因此在签署后**看不出**闸门是不是人签的。现在拆成两个字段：
+    #   · `gate_tool`  —— 原始调用记录（审计用，保留）
+    #   · `gate_state` —— **权威**闸门态（kb/tools/gate.py 的 gates.json 那一条）
+    from host import gate_authority as GA
+
+    auth = GA.authority_view(run_id)
+    return JSONResponse(content={
+        "ok": True,
+        "decision": result["decision"],
+        "gate": result["gate"],
+        "gate_state": (auth.get("gates") or {}).get(gate_id),
+        "gates_authority": auth,
+        "gate_tool": json.loads(json.dumps(result["sign"], default=str)),
+    })
 
 
 # ---------------------------------------------------------------- jobs

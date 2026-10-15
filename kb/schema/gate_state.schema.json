@@ -18,7 +18,7 @@
       "additionalProperties": false,
       "required": ["algo", "value"],
       "properties": {
-        "algo": { "const": "sha256-of-canonical-record-without-anchor" },
+        "algo": { "const": "sha256-of-canonical-state-without-anchor" },
         "value": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
         "file": { "type": "string" }
       }

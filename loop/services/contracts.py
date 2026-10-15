@@ -326,6 +326,48 @@ def _conflict_summary(kb: KbSources) -> dict[str, Any]:
     }
 
 
+def _gates_authority(run_doc: dict[str, Any]) -> dict[str, Any]:
+    """闸门**权威**态 + 与事件流投影的逐门对账（F-V1-02）。
+
+    为什么必须有：`gate_history` 是**事件流**投影 —— 里面的 `actor` 是 HTTP 请求体里的
+    **自报字符串**，没有 `human_signed`、也没有 `actor_kind`；而前端 `renderGateHistory`
+    恰恰在渲染 `json.actor_kind`，于是那个徽章**永远是空的**。
+    操作台最该回答的问题 ——「这道闸门到底是不是人类签的、账本有没有被改过」——
+    只有权威（`kb/tools/gate.py` 的 gates.json + gates.sha256）答得了。
+    """
+    from host import gate_authority as GA
+
+    run_id = run_doc.get("run_id")
+    if not run_id:
+        return {"present": False, "reason": "无 run_id", "gates": {}, "anchor_ok": None, "divergences": []}
+    try:
+        auth = GA.authority_view(run_id)
+    except GA.GateAuthorityUnavailable as exc:
+        # 权威不可读 ⇒ fail closed：明说不可读，绝不退回一份猜测的闸门态
+        return {"present": False, "reason": f"闸门权威不可读：{exc}",
+                "gates": {}, "anchor_ok": None, "divergences": []}
+
+    # 事件流（自报）vs 权威（账本）：分歧必须显式呈现，**不得静默取其一**
+    history = run_doc.get("gate_history") or []
+    divergences: list[dict[str, Any]] = []
+    for gid, item in (auth.get("gates") or {}).items():
+        evs = [e for e in history if e.get("gate") == gid]
+        ev_decisions = [e.get("decision") for e in evs]
+        au_decisions = [h.get("decision") for h in (item.get("history") or [])]
+        if len(ev_decisions) != len(au_decisions) or ev_decisions != au_decisions:
+            divergences.append({
+                "gate": gid,
+                "event_count": len(ev_decisions),
+                "authority_count": len(au_decisions),
+                "event_decisions": ev_decisions,
+                "authority_decisions": au_decisions,
+                "note": "事件流与权威账本不一致 ⇒ 以权威为准，并把该分歧登记为缺陷来源。",
+            })
+
+    auth["divergences"] = divergences
+    return auth
+
+
 def run_view(
     *,
     run_doc: dict[str, Any],
@@ -347,12 +389,19 @@ def run_view(
         "run_dir": str(run_dir) if run_dir else None,
         "baseline": run_doc.get("baseline"),
         "status": run_doc.get("status", "unknown"),
+        # 失败原因必须投影出来：`status=failed` 却没有 `error`，操作台就只能显示"失败了"
+        # 而说不出为什么（实测：N9 死任务 / 补投递失败 / 快照落后于账本 三条路径全都被吞掉）。
+        "error": run_doc.get("error"),
+        "notes": run_doc.get("notes") or [],
         "current_node": run_doc.get("current_node"),
         "mode": run_doc.get("mode", "unknown"),
         "created_at": run_doc.get("created_at"),
         "updated_at": run_doc.get("updated_at"),
         "node_history": run_doc.get("node_history", []),
+        # 事件流记录（自报）：保留原样，供对账与追溯；**它不是权威**。
         "gate_history": run_doc.get("gate_history", []),
+        # 权威闸门态（gates.json + gates.sha256 锚）：界面据此回答"谁签的、改没改过"。
+        "gates_authority": _gates_authority(run_doc),
         "pending_interrupt": run_doc.get("pending_interrupt"),
         "counts": counts,
         "evidence": evidence,

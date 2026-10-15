@@ -660,7 +660,11 @@ class RunManager:
         records = [r for r in self.runner.all_records() if r.get("run_id") == run_id]
         if not records:
             return None
-        record = records[-1]
+        # 取**开始时刻最新**的那个作业，不能取 `records[-1]`：`all_records()` 是按
+        # `JOB-<hex>` 文件名字典序排的，与时间顺序无关（hex 大小随机）。
+        # 实测（verifier F-V1-06-FLAKY）：一个 run 有两次作业记录时（返工回边会重跑 N9），
+        # 看板可能显示**上一个**作业，而执行其实停在新的那个上 ⇒ 界面与执行对不上。
+        record = max(records, key=lambda r: r.get("started_at") or 0.0)
         job_id = str(record["job_id"])
         try:
             status = self.runner.poll(job_id)

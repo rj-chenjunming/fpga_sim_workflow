@@ -82,7 +82,11 @@ async def create_run(payload: dict[str, Any] = Body(default={})) -> dict[str, An
         raise HTTPException(status_code=409, detail={"error": str(exc)}) from exc
     except ValueError as exc:
         raise HTTPException(status_code=400, detail={"error": str(exc)}) from exc
-    return {"run_id": run_id, "mode": mode, "scenario": scenario}
+    # 回 `created_at`（verifier F-V1-03-NOTE）：调用方拿到的 run 身份应当自洽，
+    # 不必再发一次 GET 才能确认"这个 run 是什么时候建的"。
+    doc = manager.docs.get(run_id)
+    return {"run_id": run_id, "mode": mode, "scenario": scenario,
+            "created_at": getattr(doc, "created_at", None)}
 
 
 @app.get("/api/runs/{run_id}")

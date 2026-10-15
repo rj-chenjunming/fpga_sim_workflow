@@ -205,14 +205,22 @@ async def test_park_snapshot_is_written_without_opportunistic_sync() -> None:
     try:
         await _drive_to_interrupt(m, rid, "G1_diff_confirm")
         await m.decide(run_id=rid, gate="G1_diff_confirm", decision="confirmed", actor=HUMAN)
-        view = await _drive_to_interrupt(m, rid, "JOB:", timeout=25.0)
+        parked = await _drive_to_interrupt(m, rid, "JOB:", timeout=25.0)
+
+        # 断言对齐**当前停放的那个中断**，而不是看板上的 `view["job"]`：
+        # 二者曾不一致 —— `_job_view` 取 `records[-1]`，那是按 `JOB-<hex>` 文件名字典序，
+        # 与时间顺序无关。verifier 报的 F-V1-06-FLAKY 就是这么来的（快照里有 JOB:，
+        # 但那是**另一个** id）。根因已修（改取 started_at 最新的作业），这里同时固定住它。
+        parked_job = ((parked.get("pending_interrupt") or {}).get("payload") or {}).get("job_id")
+        assert parked_job, parked
+        assert parked["job"]["job_id"] == parked_job, (parked["job"], parked_job)
 
         snap = m._snapshot_path(rid)
-        ok = await wait_until(lambda: snap.is_file() and "JOB:" in snap.read_text(encoding="utf-8"),
+        ok = await wait_until(lambda: snap.is_file() and parked_job in snap.read_text(encoding="utf-8"),
                               timeout=25.0)
         blob = snap.read_text(encoding="utf-8") if snap.is_file() else ""
         assert ok, "停在长任务上的快照没有被落盘（快照不能再靠碰运气）"
-        assert view["job"]["job_id"] in blob, "快照里必须含该作业的中断"
+        assert "JOB:" in blob, "快照里必须含该作业的中断"
     finally:
         await m.stop_watching()
 

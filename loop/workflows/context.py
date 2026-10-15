@@ -1,0 +1,180 @@
+"""一次运行的上下文（host 依赖经 runtime_resources 注入）。
+
+为什么必须走 runtime_resources 而不是闭包：
+执行快照**不序列化** live 对象（客户端、回调、信号量、锁），
+`async_load(..., runtime_resources=...)` 要求**重新注入**。
+闭包捕获会让恢复后的执行拿不到这些依赖（`agently-triggerflow/references/recovery.md`）。
+"""
+
+from __future__ import annotations
+
+import shutil
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any
+
+from host.admission import Admission
+from host.evidence import evidence_view
+from host.job_runner import JobRunner
+from host.progress import ProgressLog
+from host import paths as P
+from services.contracts import KbSources
+
+RESOURCE_KEY = "loop_ctx"
+
+#: drill 夹具：归档演练轮。选它的原因——一个目录同时覆盖
+#: 双计数分歧（1687 vs 0）、死任务、印记 1/1/1、闸门拒绝、篡改检测、staging 残留，
+#: 而真实全跑单用例 ≈19 min、修订后可达 22.8 h，不能作为交互开发循环。
+FIXTURE_RUN = P.KB_RUNS / "RUN-20261015-120626"
+
+#: 夹具里的全跑证据（含 UVM Report Summary 与 1687 条 `*E`）。
+FIXTURE_EVIDENCE_LOG = FIXTURE_RUN / "evidence" / "20261015-125305_tc_pcie_rw_02_1_run.log"
+
+DRILL_FILES = (
+    "n1_manifest_new.json",
+    "n2_diff.json",
+    "n2_diff.md",
+    "n3_digest.md",
+    "n5_impact.json",
+    "n5_impact.md",
+    "N6_author_note.md",
+    "check_C.md",
+    "reconcile.md",
+    "n12_report.md",
+    "case_states.json",
+)
+#: 注意：**刻意不复制 `gates.json`**。夹具里的 gates.json 是演练签署
+#: （`human_signed=false`），复制进来会让「闸门已签」凭空成立。
+#: 新运行的闸门态必须由 `kb/tools/gate.py init` 从空开始建。
+
+
+@dataclass
+class RunCtx:
+    """一次运行的 host 侧依赖与身份。"""
+
+    run_id: str
+    run_dir: Path
+    mode: str
+    scenario: str
+    kb: KbSources
+    progress: ProgressLog
+    admission: Admission | None = None
+    runner: JobRunner | None = None
+    fixture: Path = FIXTURE_RUN
+    pending: dict[str, Any] = field(default_factory=dict)
+    notes: list[str] = field(default_factory=list)
+
+    # ---------- 事件 ----------
+
+    def event(self, kind: str, **kw: Any) -> None:
+        self.progress.append(kind, **kw)
+
+    def node_started(self, node: str) -> None:
+        self.event("node_started", node=node, status="running")
+
+    def node_finished(self, node: str, *, status: str = "ok", detail: dict[str, Any] | None = None,
+                      refs: list[str] | None = None) -> None:
+        self.event("node_finished", node=node, status=status, detail=detail or {}, refs=refs or [])
+
+    def node_failed(self, node: str, *, message: str) -> None:
+        self.event("node_failed", node=node, status="failed", detail={"message": message})
+
+    # ---------- 夹具 ----------
+
+    def fixture_path(self, name: str) -> Path:
+        return self.fixture / name
+
+    def copy_fixture(self, name: str, *, dest_name: str | None = None) -> Path | None:
+        src = self.fixture / name
+        if not src.is_file():
+            return None
+        dest = self.run_dir / (dest_name or name)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src, dest)
+        return dest
+
+    def read_fixture_text(self, name: str) -> str | None:
+        src = self.fixture / name
+        if not src.is_file():
+            return None
+        return src.read_text(encoding="utf-8", errors="replace")
+
+    # ---------- 证据 ----------
+
+    def evidence_log(self) -> Path:
+        """本 run 的**权威**全跑日志。
+
+        加了 `run_guarded.sh` 包装层后，`evidence/` 里除了 `<stamp>_<case>_<seed>_run.log`
+        还会有一份 `_guard.log` —— 后者内部也复述了 `*E` 汇总行，
+        若不排除就会把**包装层日志**当成权威全跑日志（判据会跑到错的文件上）。
+        """
+        evid = self.run_dir / "evidence"
+        missing = evid / "MISSING.log"
+        if not evid.is_dir():
+            return missing
+        candidates = [p for p in sorted(evid.glob("*.log")) if not p.name.endswith("_guard.log")]
+        if not candidates:
+            return missing
+
+        def has_summary(path: Path) -> bool:
+            try:
+                return "UVM Report Summary" in path.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                return False
+
+        # ① 优先"带 UVM 汇总的 run.log"（全跑权威件）
+        for path in candidates:
+            if path.name.endswith("_run.log") and has_summary(path):
+                return path
+        # ② 其次任意带 UVM 汇总的件
+        for path in candidates:
+            if has_summary(path):
+                return path
+        # ③ 再次任意含 `*E` 的件（编译期证据也可能带失败行）
+        for path in candidates:
+            try:
+                if "*E" in path.read_text(encoding="utf-8", errors="replace"):
+                    return path
+            except OSError:
+                continue
+        # ④ 都不像全跑证据：返回第一个（判据会如实判"判据不可判"）
+        return candidates[0]
+
+    def evidence(self) -> dict[str, Any]:
+        return evidence_view(self.evidence_log())
+
+
+def ctx_of(data: Any) -> RunCtx:
+    """从 runtime resources 取回本次运行的上下文。
+
+    `data.require_resource` 在缺失时**fail closed**（不给默认值）——这是刻意的：
+    恢复后忘记重新注入依赖，必须立刻炸，而不是拿一个空上下文继续跑。
+    """
+    ctx = data.require_resource(RESOURCE_KEY)
+    if not isinstance(ctx, RunCtx):
+        raise TypeError(f"{RESOURCE_KEY} 必须是 RunCtx，实际 {type(ctx)!r}")
+    return ctx
+
+
+def runtime_resources(ctx: RunCtx) -> dict[str, Any]:
+    return {RESOURCE_KEY: ctx}
+
+
+def prepare_run_dir(run_id: str, *, mode: str) -> Path:
+    """运行目录 = `kb/runs/<run_id>`。
+
+    **两种模式都用这个根**，原因是硬约束而非偏好：`kb/tools/gate.py` 经
+    `kb_lib.run_dir(run_id)` 唯一口径解析路径（`kb/runs/<run_id>/gates.json`，无环境变量覆盖）。
+    把 drill 放到别处，会让闸门权威文件与运行目录分家。
+
+    drill 与 real 的差别**只在节点的数据来源**（夹具 vs 真跑 kb 工具），不在目录。
+    夹具目录 `kb/runs/RUN-20261015-120626` 始终**只读**。
+    """
+    run_dir = P.KB_RUNS / run_id
+    run_dir.mkdir(parents=True, exist_ok=True)
+    if mode == "drill":
+        # 标记只读来源 + 供测试/清理识别"本层创建的运行目录"，避免误伤归档。
+        (run_dir / ".loop_drill").write_text(
+            f"created_by=loop\ndrill_fixture={FIXTURE_RUN}\n", encoding="utf-8"
+        )
+    return run_dir

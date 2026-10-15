@@ -1,0 +1,334 @@
+# 变更影响闭环 · 编排层规格书（ORCHESTRATION SPEC）
+
+> **状态**：P0 设计契约 v0.1（草案，实现前评审）
+> **上游**：`doc/spec/CHANGE_IMPACT_LOOP_SPEC.md` v0.2（业务与不变量 I1–I8、16 节点 N0–N16、三道人工闸门）。
+> **本件定位**：上游是**业务契约**，本件是它的**机制契约**——把 N0–N16 落到具体 owner
+> （Host 确定性程序 / ModelRequest / TriggerFlow / 人工闸门 / 外部容量），并定死
+> **一次运行的生命周期、长任务停等、单槽准入、重启恢复、进度投影、UI 投影**六件事。
+> **本件仍不是实现**：实现落到 `loop/` 下对应 owner 的代码。
+> **本文语言**：中文正文；代码、路径、标识符、md5、命令原文、日志原文保留原文。
+
+---
+
+## 0. 为什么需要这一层
+
+上游 §12 明确写着「**本件是跨 owner 的设计契约，不是调度器/TriggerFlow 定义/重试引擎实现**」。
+反过来读：上游**故意留下了**「谁来调度、谁来持闸门中断、谁来容错重启」这个空洞。
+
+没有这一层会发生的具体后果（本轮演练已实证，见
+`doc/spec/evidence/loop_rehearsal/REHEARSAL_REPORT.md` 与
+`doc/spec/evidence/loop_rehearsal/verify/V0_verdict.md`）：
+
+| 缺失能力 | 本轮实证到的后果 |
+|---|---|
+| 闸门中断的**权威持有者** | 闸门态写成 JSON 文件 + `anchor`，但无人持中断 ⇒ 「谁在等、等到谁、能否重启」无法回答 |
+| **长任务与执行生命周期**解耦 | 一次全跑实测 `Elapsed 1140.79s`（≈19 min），修订后规模可达 22.8 h；阻塞式 handler 会让执行快照在 `running` 帧上**拒绝 load** |
+| **单槽准入的外部 owner** | 缺陷 N9-3：锁格式变更后陈旧判定读错字段 ⇒ 活动锁被误删 ⇒ 约 10 分钟无互斥 |
+| **进度投影** | 进度只能靠人读日志；`*E` 文本计数 1687 与 UVM 汇总 `UVM_ERROR=0` **两套口径分歧**无法在界面上并列呈现 |
+| **重启语义** | 「挂起的 Python 帧不是恢复契约」（`agently-triggerflow/references/recovery.md`）——进程一断，闭环态归零 |
+
+---
+
+## 1. 机制 owner 账本
+
+> 规则：**每个能力恰好一个 owner**。两个 owner 都能写同一份状态 ⇒ 立即判设计不成立。
+
+| Owner | 承载 | 明确**不**负责 |
+|---|---|---|
+| `loop/workflows/main_flow.py` | 稳定拓扑（N0–N16 的边、扇出、汇合、回边）、一次运行的生命周期、`create_execution(auto_close=False)` | 不写业务判定；不写 Prompt；不做准入 |
+| `loop/workflows/chunks/*.py` | 每个可观测阶段（Host 确定性 or ModelRequest） | 不实现重试循环；不吞异常换默认值 |
+| `loop/prompts/*.yaml` | 模型节点的 `input`/`info`/`instruct`/`output` 契约 | 不持有状态 |
+| **`kb/tools/*.py`（既有，只读）** | **业务权威**：闸门态 + `anchor`、N2 diff、N5 影响、N16 晋升、用例态 | 不知道 TriggerFlow 存在 |
+| `loop/host/admission.py` | **单槽准入 / 队列 / 取消**（外部容量 owner） | 不决定业务是否继续 |
+| `loop/host/job_runner.py` | 长任务提交、看护、重附着、取消送达 | 不写执行状态（只返回 ref，由 chunk 写） |
+| `loop/host/progress.py` | 稳定应用事件投影 | 不作为权威（只投影，不回写） |
+| `loop/services/contracts.py` | 对外投影（闸门材料 / 看板项 / 运行摘要） | 不泄露 raw event、内部 metadata |
+| `loop/services/api.py` | FastAPI 准入与 HTTP 投影（ExecutionExchange 适配器） | **不实现自己状态机** |
+| `loop/web/` | v1 闸门操作台 + 长任务看板（只读投影 + 2 个写动作） | 不编辑 `TESTLIB/` |
+| `RecordStore`（框架） | 执行快照的**物理留存** | 不承担业务持久化 |
+| `TaskWorkspace`（框架） | 运行目录/文件 | 不承担快照语义 |
+
+**反模式（明令禁止）**：
+
+1. **在 UI 旁边再建一个状态机**。「不要在有 TriggerFlow 的项目里加一套并行执行拓扑」——UI 必须挂在
+   TriggerFlow 的 interrupt/resume 账本上。
+2. **把 TriggerFlow 并发当成仿真并发**。`uvs.setup` 是仓库根下全局单文件（`doc/AGENTS.md` §2 卡点 D），
+   所以同工作目录内**最多一个仿真/编译**——这必须是 **host 持有的单槽**，不是 `concurrency=N`。
+3. **闸门态双写**。闸门权威在 `kb/tools/gate.py` 的 gate_state + `anchor` + `history[]`；
+   TriggerFlow 只持**中断**，UI 只做**传输**。三者不得各存一份「已通过」。
+4. **把 raw parser 路径当日志协议暴露给前端**（`agently-triggerflow/references/stream-bridge` 要求
+   翻译为稳定应用事件，且临时项必须与最终校验值对账）。
+
+---
+
+## 2. 不变量 → owner 落点（上游 I1–I8）
+
+| # | 不变式（上游原文摘要） | 机制 owner | 落点 |
+|---|---|---|---|
+| I1 | 差异条目无未决项才可进入修订 | 闸门1 pause chunk + `kb/tools/gate.py` | `gates.py::gate1` 放行前读 gate_state，未决>0 则拒绝 resume |
+| I2 | 受影响用例态 ∈ {未改/已修订待验/已验证通过/已退回}；有「待验」不得称跑通 | N16 前置 + `kb/tools/case_state.py` | N16 读 `case_states.json`，存在「已修订待验」⇒ rc=3 |
+| I3 | 跑通 = 编译 rc=0 ∧ 静态卡点C ∧ 全跑有完整 UVM 汇总 ∧ **两套口径均为 0** ∧ 观测点印记计数三向一致 | 结果对账 chunk | **双计数并列**：口径一（`*E` 文本计数）与口径二（UVM 汇总）分别取、分别存、**永不互相替代** |
+| I4 | 冲突清单未清零不发版 | 闸门2/3 + N16 | N16 读 `kb/conflicts/conflicts.json`，任一 `blocks_release=true` ⇒ 拒绝 |
+| I5 | 每步证据带身份，归档只增不改 | `kb/tools/n1_snapshot.py` + RecordStore | manifest/anchor 冻结，快照留存 |
+| I6 | 三道闸门都必须显式通过，模型不得越过 | 闸门 pause chunk | `actor_kind` 必须为 `human`；模型/演练 actor 在 `require-signed` 下被拒（F-GATE-01 已实现） |
+| I7 | 返工有界 | `main_flow` 显式回边 | N6↔N8 回边计数 `n6_n8_cycles`，超限升级 N13；N16 二次校验（F-I7-01 已实现） |
+| I8 | 收敛后可原子晋升新基线 | `kb/tools/n16_promote.py` | 目标已存在 `manifest.json` ⇒ rc=3 且零副作用（F-N16-01/02 已实现） |
+
+**验收含义**：上表中每一行都必须在测试里有**一条对应断言**，且该断言必须能在**不读源码**的情况下
+从运行产物判定（对齐上游 DoD 的「靠人更小心 ⇒ 判未沉淀」口径）。
+
+---
+
+## 3. 节点账本
+
+| 节点 | owner | 输入契约 | 输出契约 | 生命周期 / 失败 |
+|---|---|---|---|---|
+| N0 选基线 | Host | `--baseline`、`--now`/`KB_NOW` | `run_id`、`run_dir` | 目录非法即拒（F-GATE-04 已实现 `RUN-YYYYMMDD-HHMMSS` 校验） |
+| N1 快照/manifest | Host | 基线目录、`--now` | `manifest.json`（含 `parent` 链） | 失败清理半成品（已实现） |
+| N2 diff | Host | 新旧 manifest | `n2_diff.json` | rc=3 为「有差异」业务码，非错误 |
+| N3 差异摘要 | ModelRequest | `n2_diff.json` | 分组摘要 | 解析失败结束执行，不伪造 |
+| **N4 闸门1** | 人工 | 差异清单 + 冲突快照 | 决策（确认/忽略+理由/转人工） | `pause_for`；未决>0 拒绝放行 |
+| N5 影响分析 | Host | 已确认差异 + 索引 | `n5_impact.json` | rc=3 业务码 |
+| N6 修订/补充 | ModelRequest | 受影响子集 | 沙箱用例 + 作者说明 | 只写沙箱，写权不落 `TESTLIB/` |
+| N7 编译（约 2 s） | Host | 沙箱用例 | rc + 编译日志 | **经单槽准入**，短任务 |
+| N8 检查 | ModelRequest | 沙箱用例 + 卡点C | 通过 / 退回 + 逐条依据 | 退回 ⇒ 显式回边到 N6 |
+| N9 全跑（实测 ≈19 min/用例） | Host | 通过检查的用例 | run 证据（日志/耗时/双计数/印记） | **不阻塞**：提交作业 → `pause_for` 停等 → 完成事件 resume |
+| N10 结果对账 | ModelRequest | N9 证据 | FAIL 三分类 | 分类 2/3 必须进待裁决清单 |
+| N11 评估 | ModelRequest | 对账 + 用例态 | 返工需求 / 认同 | 返工需求 ⇒ 回边到 N6 |
+| N12 报告 | ModelRequest | 全轮证据 | 报告草稿 | 数字一律引用产物，禁手算 |
+| **N13 闸门2** | 人工 | 报告 + 用例态 + 返工计数 | accept / rework | `pause_for`；rework ⇒ 回 N6 且计数+1 |
+| **N14 闸门3** | 人工 | 评估结论 + 冲突态 | full_regression / milestone_only | `pause_for`；冲突未清零不得选 full |
+| N15 分层回归 | TriggerFlow | 用例集 | 每用例证据 | `for_each(concurrency=…)`——**唯一真并行**（`run_tc.py` 5 机 × 2 LIC） |
+| N16 晋升基线 | Host | 轮结果 + 冲突态 + 用例态 | `v(n+1)(parent=v(n))` | 前置不过 ⇒ rc=3 零副作用 |
+
+---
+
+## 4. 边账本
+
+| 来源 | 变换 / 校验 | 消费方 |
+|---|---|---|
+| `n2_diff.json` 条目 | 条目 id 唯一性 + 未决判定 | 闸门1 材料、N3、N5 |
+| 闸门1 决策 | `actor_kind` 校验 + `history[]` 追加 + `anchor` 更新 | N5 输入 |
+| `n5_impact.json` 受影响子集 | 非空校验 | N6 派发 |
+| N6 产出 | 沙箱路径（禁越界写） | N7 → N8 |
+| N8 退回依据 | 逐条依据非空 | 回边计数 `n6_n8_cycles` |
+| `n6_n8_cycles` | `> limit` ⇒ 拒绝 N16（F-I7-01） | N13 升级人工 |
+| N9 证据 | 双计数分别取 + 印记三向一致校验 | N10 对账 |
+| 闸门2 决策 | `actor_kind` + 计数快照 | N11 / 回边 |
+| 闸门3 决策 | 冲突清零校验（选 full 时） | N15 / N16 |
+| N16 前置 | `case_states.json` 无「已修订待验」∧ 冲突无 `blocks_release` ∧ 回边未超限 ∧ 无残留 `manifest.json` | 晋升或 rc=3 |
+
+---
+
+## 5. 三闸门契约（TriggerFlow 中断 + 业务权威分离）
+
+```python
+# 形状（不是最终代码）：显式 pause chunk + 前置校验，人工审批用 when(...) 预定路由
+async def gate1(data):
+    state = read_gate_state("gate1")          # 权威：kb/tools/gate.py
+    if state.pending > 0:
+        raise GatePreconditionFailed(...)      # I1：未决不得进入修订
+    return await data.pause_for(               # durable interrupt
+        kind="gate_decision",
+        payload=build_gate_material("gate1"),  # 只放材料，不放权限
+        resume_to="next",
+    )
+
+main_flow.when(...).to(gate1).to(n5_impact)
+```
+
+契约条款：
+
+1. **中断归属** TriggerFlow（`pause_for` 为 durable graph interrupt）；**决策权威**归
+   `kb/tools/gate.py`（gate_state + `history[]` + `gates.sha256` + `anchor`）。
+2. **恢复只对根执行**：子流程的中断投影到根；调用方持 `root_execution_id` 与
+   `root_interrupt_id`，用 `continue_with(...)` 恢复（`recovery.md`）。
+3. **幂等**：`resume_request_id` 必须稳定；重复提交同一 id 不得产生第二次副作用。
+4. **不可越权**：`actor_kind != human` 在 `require-signed` 下被拒（F-GATE-01，已实现并有对抗测试）；
+   非 human 不得覆盖 human 签名（F-GATE-02）。
+5. **篡改可检出**：`gates.sha256` 与落盘不符 ⇒ rc=3（F-GATE-03）；legacy（无 anchor）只告警。
+6. **闸门材料必须并列双计数**，且**界面上不存在"只凭 UVM 汇总就放行"的交互路径**。
+7. **决策枚举不手抄**，唯一来源是 `kb_lib.GATE_DECISIONS`：
+
+   | 闸门 | 权威枚举 | `pending` |
+   |---|---|---|
+   | `G1_diff_confirm` | `confirmed` / `ignored` / `disputed` / **`pending`** | 状态，非可提交动作 |
+   | `G2_report_accept` | `accept` / `rework` / **`pending`** | 同上 |
+   | `G3_regression_decision` | `full_now` / `subset_only` / `milestone_only` / `defer` / **`pending`** | 同上 |
+
+   实现须从 `kb_lib` 导入并经启动自检比对（`chunks/gates.validate_branches()`）；
+   界面按钮由服务端下发（`run_view.gate_options`），前端不得写死枚举。
+
+8. **拒绝必须发生在提交前**。`pause_for(resume_to="self")` 的 `max_resumes=1`：
+   若 I6/I4 阻断发生在恢复之后，用户的一次误选会消耗中断并把执行打成 `failed`
+   （实测 `self_resume_limit_reached`），**闸门从此不可用**。
+   因此 `RunManager.decide()` 必须先判 actor 与 I4，再签署、再恢复。
+
+9. **终态必须释放单槽**（成功 / 失败 / 取消），且幂等。缺此一步会把「一个 run 失败」
+   放大成「后续全部卡在 `SLOT:` 中断」。
+
+---
+
+## 6. 长任务停等契约（本层最关键的一条）
+
+**约束来源**：`agently-triggerflow/references/recovery.md:75-77`——快照中若存在
+`running` / `cancel_requested` 帧，**load 会 fail-closed**。
+所以：**长 Host 阶段绝不可写成阻塞 handler**，否则重启恢复不成立、单槽锁不可见、进度无流。
+
+**规定形状**（N7 短任务可直接内联；N9/N15 必须走此形状）：
+
+```
+n9_sim chunk                       park chunk                      job_runner 看护
+──────────────                     ──────────                      ─────────────
+1. admission.acquire()  ← 单槽
+2. job = job_runner.submit()
+3. set_state("n9_job", {job_id,   4. pause_for(kind="job_done",    5. 作业结束 →
+   log_path, tc, seed})               payload={job_id}, resume_to=      continue_with(
+4. return {"status":"submitted"}      "next")                          interrupt_id,
+                                                                       {job_id, rc})
+   此时执行处于 interrupt（非 running）⇒ save/load 合法
+```
+
+6. **resume 载荷只作提示，权威在日志**：恢复后的下游 chunk 必须**回读日志**重新取
+   口径一/口径二/印记，**不得信任 resume payload 里的数字**（否则外部可伪造跑通）。
+7. **崩溃重附着**：恢复后 `job_runner.lookup(job_id)` 重新附着到仍在跑的作业；
+   作业已死 ⇒ 记 dead job，走 N9 失败分支（本轮演练已有死任务夹具，须覆盖）。
+8. **释放单槽**：无论成功/失败/取消，释放动作必须在**终态**执行且幂等。
+
+---
+
+## 7. 单槽准入契约
+
+| 项 | 规定 |
+|---|---|
+| 单槽 owner | `loop/host/admission.py`（**不是** TriggerFlow 并发） |
+| 锁文件 | `loop/state/slot.lock`，字段含 `format_version` / `owner_pid` / `job_id` / `tc` / `seed` / `start_ts` |
+| **N9-3 修复** | 陈旧判定**按 `format_version` 决定解析哪些字段**；禁止用新格式去读旧锁（本轮实证：误删活动锁约 10 分钟无互斥） |
+| 队列 | FIFO，落盘 `loop/state/queue.json`；看板显示位次 |
+| ETA | 依据实测吞吐 **≈3.78–3.80 µs sim / 1 s wall（n=2）**；n=2 必须显式标注为低置信 |
+| 取消 | `cancel_requested` 标记 + 送达进程组；取消后必须释放单槽 |
+| 并行例外 | 只有 N15（经 `run_tc.py`，5 机 × 2 LIC）是跨机并行，不受本槽约束 |
+
+**禁用估算**：「笔数 × 单笔墙钟」的估法在本工程**错约 40 倍**（已实证），不得用于 ETA。
+
+---
+
+## 8. 恢复与重启契约
+
+1. `create_execution(auto_close=False)`；`async_save(record_store)` 落 `loop/state/recovery/`。
+2. `RecordStore("./recovery", mode="read_write", snapshot_retention={"keep_last": N})`；
+   执行级覆盖用 `set_snapshot_retention_policy(keep_last=…)`（执行级优先且跨 save/load 存活）。
+3. 终态历史过大时用 `set_snapshot_projection_policy(terminal_value_mode="digest", min_value_bytes=4096)`
+   ——**投影而非删字段**，且它会保留 pending interrupt 与未完成 resume 记录。
+4. **保存前必须 `require_idle=True`**；执行活跃时保存会被推迟。
+5. `load` 前校验：pending/不健康的必需资源**不算 ready**；外部系统（单槽锁、作业）自带
+   ref/lease/fence，恢复时必须**重新验证**后再续跑（`recovery.md`）。
+6. **能力声明边界**：本地 RecordStore 只证明**本机重启**；不得宣称分布式恢复
+   （无真实共享 provider 与运行证据）。
+7. **恢复后行为必须落在**下游 chunk / 显式 resume 事件 / `data.is_resume` 分支里，
+   **不得依赖挂起的 Python 帧**。
+8. **`resume_to` 选错会静默丢结局**：长任务停放必须用 `resume_to="self"`。
+   用 `"next"` 时 `pause_for` 的返回值是**中断描述符**而非恢复载荷，
+   停放 chunk 永远看不到作业结局 ⇒ 死任务被当成继续（实测真 bug）。
+
+---
+
+## 9. 进度流投影契约
+
+- 载体：稳定应用事件 `{seq, ts, run_id, node, kind, status, refs}`。
+- `kind` 白名单：`node_started` / `node_finished` / `job_submitted` / `job_progress` /
+  `gate_pending` / `gate_decided` / `warning` / `dead_job`。
+- **禁止**把 raw parser 路径作为前端协议；日志原文只以 `refs`（路径 + 行号）出现。
+- **临时项对账**：`job_progress` 的计数是临时值，终态必须用最终校验值覆盖并标注
+  `provisional=false`（stream bridge 要求）。
+- 事件流**不是权威**：任何判绿/判红都必须能追到 `kb/` 或 run 目录里的产物。
+
+---
+
+## 10. UI 投影契约（v1 = 闸门操作台 + 长任务看板）
+
+**v1 范围**：单机单用户。**允许的写动作恰好两个**：① 提交闸门决策；② 取消作业。
+**明确不做**：UI 编辑 `TESTLIB/`（写权在 v1–v3 归作者角色 + 沙箱）、UI 直接改基线/冲突清单。
+
+### 10.1 十项信任缺口在界面上的强制呈现
+
+| # | 缺口（实证） | 界面强制行为 |
+|---|---|---|
+| 1 | I3 第 4 条不成立：口径一 = **1687**，口径二 `UVM_ERROR=0`（`REHEARSAL_REPORT.md`） | 两计数**并列同权**显示 + 来源 refs；**无"仅凭 UVM 汇总放行"的路径**；根因指向 `TB/AGENTS/PCIE-Agent/pcie_sequence.sv:598` 走 `uvm_info` 而非 `` `uvm_error `` |
+| 2 | E-2：`evidence/archive/` 为空 → **已修**（见 §10.3） | 「查看原始证据」链接**先探测存在性**；缺失显示为显式缺陷项而非 404。归档腿修好后该阻断项对新 run 自动消失，对归档的演练轮仍如实显示 |
+| 3 | N9-3 锁误清 + F-N16-04（拒绝后残留 `.staging-v1/`，20 项 ≈2.9 MB） | 看板显示锁 owner/`format_version`；残留 staging 作为**待清理告警**呈现 |
+| 4 | 必改用例跨度 17.6 min → 22.8 h（78×） | 显示 ETA（低置信标注）+ 队列位次 + 取消按钮 |
+| 5 | 冲突未清零（C2 `blocks_release=true`，共 72 项 C1–C72） | 闸门3 选 `full_regression` 时**前置阻断**；晋升按钮显示被阻断原因 |
+| 6 | `case_state --rework-cycles` 未做范围校验；I7 仅在 N16 强制 | 看板常驻显示 `rework_count` / limit=3；超限显示升级路径 |
+
+### 10.3 E-2 修复登记（归档腿）
+
+**原始登记**（`REHEARSAL_REPORT.md:146`，major/N11）：
+`evidence/archive/` 为空 ⇒ `run_guarded` 的「先归档再删」腿没有留下只读归档件，
+违反 spec §7.7「归档只增不改；归档件置只读」。
+
+**机制原因（实测定位，两个都在 `kb/tools/run_guarded.sh`）**：
+
+1. `archive_sweep` 只 glob `$ROOT/SIMLIB_RUN/log/<case>_<seed>_*.log`，
+   而 `compile-only`/`full` 模式的全部日志写在 `$EVIDENCE_DIR/<stamp>_<case>_<seed>_*.log`
+   —— **目录与命名都不匹配** ⇒ 这两种模式下 `archive/` 永远为空。
+   实证：`kb/runs/dev-host-tools/GUARD/ev5`（compile-only 轮）证据目录内有
+   `_c_rtl.log`(86236 B)/`_c_tb.log`(28545 B)，而 `archive/` 里只有一个
+   时间戳更早（12:12 vs 证据 12:14）的 16 字节陈旧 `_run.log`。
+2. `compile-only`/`full` 分支**根本没有启动轮询** —— 而它恰恰是最需要归档的两个模式。
+
+**修复**：候选路径补 `$EVIDENCE_DIR` 与 `--sandbox-root` 落点；两个分支都启动
+「跑前 sweep + 运行中 0.5s 轮询」；终态 sweep 连跑两次（稳定判定需要连续两次观测，
+而 `*.guarded`/`*.invalidated` 是收尾才出现的）；归档件 `chmod 444`（spec §7.7）；
+加**稳定性判定**（同一 `(size, mtime)` 连续两次相同才归档），避免把仍在增长的日志
+每 0.5s 复制一份半截件；`_guard.log` **不自我归档**（它是主证据原件，且收尾仍在追加）。
+
+**另一半（闭环侧）**：N9 真实路径原先直接调 `run_uvs_new.sh`，绕过身份头 / 先归档再删 /
+中止自愈 / 串行锁四项 ⇒ 归档必然为空。现改为
+`bash kb/tools/run_guarded.sh --mode full --sandbox-root … --evidence-dir …`。
+
+**验证**（可复跑）：`loop/tests/test_archive_e2.py`
+——用 `uvlan` 桩走真实 `run_guarded.sh --mode compile-only`，断言
+`archive/` 非空且含 `_c_rtl/_c_tb`、全部 444、数量 ≤12、无 `_guard.log`、
+名字无重复 STAMP、scratch 已清理、`uvs.setup` md5 不变、仓库根无残留锁；
+另有闭环侧断言：drill 运行后 `E2_EVIDENCE_ARCHIVE_EMPTY` 消失而
+`I3_KOUTOU1_NONZERO` **仍在**（归档修好不得让判据变绿）。
+
+**刻意不做**：不回填归档演练轮 `kb/runs/RUN-20261015-120626/evidence/archive/`。
+那一轮是 verifier 的**冻结见证**（`frozen_before.md5` 4642 / `frozen_after.md5` 4644），
+补文件会使见证失效。E-2 在该轮作为**历史缺陷**保留，新 run 才展示修复后行为。
+
+### 10.2 界面不得成为权威
+
+- 闸门"通过"以 `kb/tools/gate.py` 的 gate_state + `anchor` 为准；UI 只提交、只显示。
+- 判绿条件由 `contracts.py` 在**服务端**计算；前端不参与判定（防前端伪造）。
+
+---
+
+## 11. P0 验收判据（可判定）
+
+夹具：归档运行目录 `kb/runs/RUN-20261015-120626/**`（含双计数分歧、死任务、印记 1/1/1、
+闸门拒绝、篡改检测、staging 残留）——**原因**：真实全跑单用例 ≈19 min，修订后可达 22.8 h，
+不能作为交互开发的循环。夹具必须标注 `DRILL FIXTURE`。
+
+- [ ] A1 图可跑：`N0→N4` 停在闸门1，pending interrupt 可被程序读到（非轮询日志推断）
+- [ ] A2 闸门材料并列双计数，且两者值与夹具产物**逐字一致**（命令复制，禁手算）
+- [ ] A3 未决条目 >0 时 resume 被拒（I1），拒绝原因可在界面读到
+- [ ] A4 `N9` 形状正确：执行在作业期间处于 interrupt 而非 `running`，`save()` 成功且 `load()` 不 fail-closed
+- [ ] A5 崩溃重附着：杀掉进程后 load，重新附着到在跑作业；作业已死则记 dead job
+- [ ] A6 单槽：并发两次 N9 申请，第二个排队而非并行；锁 owner 与 `format_version` 可见
+- [ ] A7 闸门2/3 的 `actor_kind` 门禁：`rehearsal`/模型 actor 在 `require-signed` 下被拒（对抗用例）
+- [ ] A8 N16 在**真实** `kb/baselines/` 上拒绝（rc=3）且**零副作用**；v0 五锚点与 12 文件不变
+- [ ] A9 进度流只出现白名单 `kind`，无 raw parser 路径
+- [ ] A10 全程不修改 `RTL/`、`TB/`、`PKG/`、`TESTLIB/`、`kb/baselines/`（冻结见证：`MODIFIED=0 / DELETED=0`）
+
+---
+
+## 12. 边界（本层明确不做）
+
+1. 不改 `doc/spec/CHANGE_IMPACT_LOOP_SPEC.md`（上游业务契约）、`doc/AGENTS.md`（组织层权威）。
+2. 不改 `kb/tools/*.py` 的**语义**；编排层只调用。（如需修 bug，走 `kb/` 自己的变更流程并留证。）
+3. 不改 `RTL/`、`TB/`、`PKG/`、`TESTLIB/`、`doc/skills/`、`doc/tools/`、`doc/_notes/`、`doc/reference/`。
+4. 不引入 `TaskDAG`/动态生成图：稳定拓扑写在源码里；未验证的运行时计划数据**不得**编译成临时 TriggerFlow 定义。
+5. 不宣称分布式恢复、不宣称多用户并发。
+6. v1 不做前端编辑用例、不做自动发版决策。

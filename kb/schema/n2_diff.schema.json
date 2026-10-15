@@ -1,0 +1,99 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "kb/run/n2_diff —— N2 原始差异清单（Host 确定性，spec §2 N2 / §5 边 N2→N3）",
+  "description": "三条路径：① 自研代码快照逐文件 md5 ② 全量文件清单 md5（只比 scope 交集）③ 文档条目集（按 regmap entry_id 条目级 diff，必须定位到 offset）。每条 diff 必须带证据（行号/指纹），因为下游 N3 的行号只能来自这里。",
+  "type": "object",
+  "required": ["schema", "version", "run_id", "generated_at", "from", "to", "routes", "has_change", "diffs"],
+  "properties": {
+    "schema": { "const": "kb/run/n2_diff" },
+    "version": { "const": 1 },
+    "run_id": { "type": "string", "pattern": "^RUN-[0-9]{8}-[0-9]{6}$" },
+    "generated_at": { "type": "string" },
+    "generator": { "type": "string" },
+    "from": {
+      "type": "object",
+      "required": ["baseline", "manifest_sha256"],
+      "properties": {
+        "baseline": { "type": "string" },
+        "manifest_path": { "type": "string" },
+        "manifest_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "to": {
+      "type": "object",
+      "required": ["manifest_sha256"],
+      "properties": {
+        "baseline": { "type": ["string", "null"] },
+        "manifest_path": { "type": "string" },
+        "manifest_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "routes": {
+      "type": "object",
+      "required": ["rtl_files", "allfiles", "doc_entries"],
+      "description": "每路的统计与 scope；allfiles 必须显式给 scope 交集与 scope 差异（两版 scope 不同不得静默当无差异）",
+      "additionalProperties": true,
+      "properties": {
+        "rtl_files": { "$ref": "#/definitions/routeStat" },
+        "allfiles": { "$ref": "#/definitions/routeStat" },
+        "doc_entries": { "$ref": "#/definitions/routeStat" }
+      }
+    },
+    "has_change": { "type": "boolean" },
+    "no_change_statement": {
+      "type": ["string", "null"],
+      "description": "has_change=false 时必须给出明确的『无变化』结论文本（spec §4 N2 行）"
+    },
+    "scope_notes": { "type": "array", "items": { "type": "string" } },
+    "diffs": { "type": "array", "items": { "$ref": "#/definitions/diffEntry" } }
+  },
+  "definitions": {
+    "routeStat": {
+      "type": "object",
+      "required": ["entries_from", "entries_to", "changed", "added", "removed"],
+      "additionalProperties": true,
+      "properties": {
+        "entries_from": { "type": "integer", "minimum": 0 },
+        "entries_to": { "type": "integer", "minimum": 0 },
+        "changed": { "type": "integer", "minimum": 0 },
+        "added": { "type": "integer", "minimum": 0 },
+        "removed": { "type": "integer", "minimum": 0 },
+        "scope": { "type": "array", "items": { "type": "string" } },
+        "scope_intersection": { "type": "array", "items": { "type": "string" } },
+        "only_in_from": { "type": "array", "items": { "type": "string" } },
+        "only_in_to": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "diffEntry": {
+      "type": "object",
+      "required": ["kind", "id", "change", "evidence"],
+      "additionalProperties": true,
+      "properties": {
+        "kind": { "enum": ["rtl_file", "allfile", "doc_entry"] },
+        "id": {
+          "type": "string",
+          "description": "rtl_file/allfile 用仓库相对路径；doc_entry 用 regmap entry_id（0xXXXX#0xYYYY）"
+        },
+        "change": { "enum": ["modified", "added", "removed"] },
+        "before": { "type": ["string", "null"] },
+        "after": { "type": ["string", "null"] },
+        "evidence": {
+          "type": "string",
+          "description": "**必填**：给 N3 的行号/指纹依据（例 'RTL/…/sys_reg.v:539' 或 'sha256 前 12 位'）"
+        },
+        "lines": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 1 },
+          "description": "本改动触及的行号（新文件侧）"
+        },
+        "offsets": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "本改动从 hunk 文本抽出的 offset/entry_id，供 N5 做交集；抽不出必须留空并给 unresolved 说明"
+        },
+        "unresolved": { "type": ["string", "null"] },
+        "diff_hunk": { "type": ["string", "null"] }
+      }
+    }
+  }
+}

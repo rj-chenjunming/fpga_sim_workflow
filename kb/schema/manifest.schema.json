@@ -1,0 +1,117 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "kb manifest（一行一版，含 parent 链）",
+  "description": "spec §7.1。版本真相的唯一载体，取代已漂移的 BIN/commit_id.log。三个锚（交付包 sha256 / 自研清单整体 sha256 / 文档条目集指纹）互相交叉验证，且每版用 parent 链回上一版。",
+  "type": "object",
+  "required": [
+    "schema", "version", "baseline", "parent", "created_at", "created_by",
+    "package_sha256", "rtl_snapshot", "allfiles_manifest", "doc_fingerprint",
+    "cases_freeze", "conflicts_snapshot", "commit", "evidence_index"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "kb/manifest" },
+    "version": { "const": 1 },
+    "baseline": {
+      "type": "string",
+      "pattern": "^v[0-9]+$",
+      "description": "基线号 v0/v1/…；晋升时由 n16_promote.py 递增"
+    },
+    "parent": {
+      "type": ["string", "null"],
+      "description": "上一版基线号；v0 为 null。链必须可回放：parent 必须指向已存在的 kb/baselines/<parent>/manifest.json",
+      "pattern": "^v[0-9]+$"
+    },
+    "created_at": { "type": "string", "pattern": "^20[0-9]{2}-[0-9]{2}-[0-9]{2}T" },
+    "created_by": {
+      "type": "string",
+      "description": "谁/哪一轮建的（人触发或 host 脚本）；N16 必须是「人触发 + Host 原子执行」"
+    },
+    "trigger": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "description": "N16 晋升触发留痕；v0 为 null（初始基线非晋升而来）",
+      "properties": {
+        "by": { "type": "string" },
+        "actor_kind": { "enum": ["human", "rehearsal", "host", "model"] },
+        "human_signed": { "type": "boolean" },
+        "run_id": { "type": "string" },
+        "source_gate": { "const": "G2_report_accept" }
+      },
+      "required": ["by", "actor_kind", "human_signed", "run_id"]
+    },
+    "package_sha256": {
+      "type": "string",
+      "description": "交付包（tar/zip）sha256；本次无交付包 ⇒ 固定写 'N/A(<原因>)'，不得编造"
+    },
+    "rtl_snapshot": { "$ref": "#/definitions/artifactMd5" },
+    "allfiles_manifest": { "$ref": "#/definitions/artifactSha" },
+    "doc_fingerprint": { "$ref": "#/definitions/docFp" },
+    "cases_freeze": { "$ref": "#/definitions/artifactSha" },
+    "conflicts_snapshot": { "$ref": "#/definitions/artifactSha" },
+    "commit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repo", "ref", "parseable"],
+      "properties": {
+        "repo": { "type": "string" },
+        "ref": { "type": "string" },
+        "parseable": {
+          "type": "boolean",
+          "description": "false 时 ref 写原文 + 'N/A'，禁止当成可用锚（commit_id.log 的 RTL 条目即此类）"
+        },
+        "branch": { "type": ["string", "null"] }
+      }
+    },
+    "evidence_index": {
+      "type": "string",
+      "description": "证据包指针（相对仓库根的路径）"
+    },
+    "notes": { "type": "array", "items": { "type": "string" } }
+  },
+  "definitions": {
+    "artifactMd5": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "manifest_sha256", "entries"],
+      "properties": {
+        "path": { "type": "string" },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "manifest_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "逐文件 md5 清单文件本身的 sha256（清单整体指纹）"
+        },
+        "entries": { "type": "integer", "minimum": 0 },
+        "scope": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "artifactSha": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "entries"],
+      "properties": {
+        "path": { "type": "string" },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "entries": { "type": "integer", "minimum": 0 },
+        "scope": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "docFp": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "algo", "value", "entries"],
+      "properties": {
+        "path": { "type": "string" },
+        "algo": { "const": "sha256-of-normalized-canonical-lines" },
+        "value": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "entries": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "规范化条目行数（表头/分隔行已剔除）"
+        },
+        "source_doc": { "type": "string" }
+      }
+    }
+  }
+}

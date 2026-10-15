@@ -1,0 +1,234 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "kb index schemas（段索引 / 寄存器条目 / 用例访问站点 / 段↔RTL 映射 / 用例元信息）",
+  "description": "spec §3 决策 5/7：知识库第一键 = 地址段，第二键 = RTL 文件；载体 = 机器可读索引 + 生成脚本。本文件用 oneOf 给 5 类索引各一个定义。",
+  "oneOf": [
+    { "$ref": "#/definitions/segmentsFile" },
+    { "$ref": "#/definitions/regmapFile" },
+    { "$ref": "#/definitions/caseAccessFile" },
+    { "$ref": "#/definitions/segmentRtlFile" },
+    { "$ref": "#/definitions/casesFile" }
+  ],
+  "definitions": {
+    "segmentsFile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "version", "segments"],
+      "properties": {
+        "schema": { "const": "kb/index/segments" },
+        "version": { "const": 1 },
+        "generated_at": { "type": "string" },
+        "note": { "type": "string" },
+        "segments": { "type": "array", "items": { "$ref": "#/definitions/segment" } }
+      }
+    },
+    "segment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "seg_id", "name", "base", "ends", "stride", "controllers",
+        "doc_registered", "coverage", "rtl_evidence", "cases_static"
+      ],
+      "properties": {
+        "seg_id": { "type": "string", "pattern": "^0x[0-9a-f]{4,5}$" },
+        "name": { "type": "string" },
+        "base": { "type": "string", "pattern": "^0x[0-9a-f]{4,5}$" },
+        "ends": {
+          "type": "string",
+          "description": "段最高可命中地址（含）；用于段级粗筛，宁多勿漏"
+        },
+        "stride": { "type": ["string", "null"] },
+        "controllers": { "type": ["integer", "null"] },
+        "doc_registered": {
+          "type": "boolean",
+          "description": "false = 文档未登记（0x8000/0x10000 这类）"
+        },
+        "coverage": {
+          "enum": ["full", "partial", "marked-only", "missing"],
+          "description": "spec §10.3：首版 8 段 full/partial；0x10000/0x8000 只打标记 ⇒ marked-only/missing"
+        },
+        "rtl_evidence": { "type": "array", "items": { "type": "string" } },
+        "doc_lines": { "type": "array", "items": { "type": "string" } },
+        "tb_macro": { "type": ["string", "null"] },
+        "cases_static": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "可静态解析的定向访问站点数（B1），由 n1_case_scan.py 填，禁手算"
+        },
+        "note": { "type": "string" }
+      }
+    },
+    "regmapFile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "version", "source_doc", "entries"],
+      "properties": {
+        "schema": { "const": "kb/index/regmap" },
+        "version": { "const": 1 },
+        "generated_at": { "type": "string" },
+        "source_doc": { "type": "string" },
+        "entries": { "type": "array", "items": { "$ref": "#/definitions/regEntry" } }
+      }
+    },
+    "regEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "entry_id", "segment", "offset_global", "name", "rw", "reset",
+        "bytes", "bitdef_present", "sources", "conflict_ids"
+      ],
+      "properties": {
+        "entry_id": {
+          "type": "string",
+          "pattern": "^0x[0-9a-f]{4}#(0x[0-9a-f]{1,5}|NA)$",
+          "description": "稳定主键 segment#offset_global；段未登记/无 offset 时用 NA"
+        },
+        "segment": { "type": "string" },
+        "offset_global": { "type": "string", "pattern": "^(0x[0-9a-f]{1,5}|NA)$" },
+        "name": { "type": "string" },
+        "rw": { "type": "string" },
+        "reset": { "type": "string" },
+        "bytes": { "type": ["integer", "null"] },
+        "bitdef_present": { "type": "boolean" },
+        "sources": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["kind", "line"],
+            "properties": {
+              "kind": { "enum": ["summary", "bitdef"] },
+              "line": { "type": "integer", "minimum": 1 }
+            }
+          }
+        },
+        "conflict_ids": { "type": "array", "items": { "type": "string", "pattern": "^C[0-9]+$" } },
+        "access_channel": { "type": ["string", "null"] },
+        "raw_line": { "type": "string" }
+      }
+    },
+    "caseAccessFile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "version", "buckets", "sites"],
+      "properties": {
+        "schema": { "const": "kb/index/case_access" },
+        "version": { "const": 1 },
+        "generated_at": { "type": "string" },
+        "buckets": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["B1", "B2", "B3", "total"],
+          "description": "口径与 doc/_notes/09_iface_doc_vs_case.md §B.0 完全一致；B1 定向 / B2 大范围扫描 / B3 未能归类（不猜）",
+          "properties": {
+            "B1": { "type": "integer", "minimum": 0 },
+            "B2": { "type": "integer", "minimum": 0 },
+            "B3": { "type": "integer", "minimum": 0 },
+            "total": { "type": "integer", "minimum": 0 },
+            "B1_unique_addrs": { "type": "integer", "minimum": 0 },
+            "B1_in_doc": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "sites": { "type": "array", "items": { "$ref": "#/definitions/caseSite" } }
+      }
+    },
+    "caseSite": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["case", "file", "line", "callee", "addr_expr", "bucket"],
+      "properties": {
+        "case": { "type": "string" },
+        "file": { "type": "string" },
+        "line": { "type": "integer", "minimum": 1 },
+        "callee": { "type": "string" },
+        "addr_expr": { "type": "string" },
+        "addr": {
+          "type": ["string", "null"],
+          "description": "解析成功的全局地址 '0x....'（B1）；B2 为 null 但给 range；B3 一律 null"
+        },
+        "range": {
+          "type": ["array", "null"],
+          "items": { "type": "string" },
+          "description": "B2 的 [lo, hi] 字符串（十进制或 0x 均可，写生成器实际输出的原样）"
+        },
+        "bucket": { "enum": ["B1", "B2", "B3"] },
+        "segment": { "type": ["string", "null"] },
+        "in_doc": { "type": ["boolean", "null"] },
+        "align_ok": { "type": ["boolean", "null"] },
+        "unresolved_reason": { "type": ["string", "null"] }
+      }
+    },
+    "segmentRtlFile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "version", "mappings"],
+      "properties": {
+        "schema": { "const": "kb/index/segment_rtl" },
+        "version": { "const": 1 },
+        "generated_at": { "type": "string" },
+        "mappings": { "type": "array", "items": { "$ref": "#/definitions/segmentRtl" } }
+      }
+    },
+    "segmentRtl": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["segment", "rtl_files"],
+      "properties": {
+        "segment": { "type": "string" },
+        "rtl_files": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "lines", "level", "verified"],
+            "properties": {
+              "path": { "type": "string" },
+              "lines": { "type": "string" },
+              "level": {
+                "enum": ["top-level-decode", "module-level"],
+                "description": "一级译码只按 bit[31:8] 兜底（09 §A.0），真正的段命中在模块级"
+              },
+              "verified": {
+                "type": "boolean",
+                "description": "true = 本轮的 grep 复验过该 file:line 原文确实含该基址常量"
+              },
+              "evidence_text": { "type": "string" }
+            }
+          }
+        },
+        "tb_macro": { "type": ["string", "null"] },
+        "note": { "type": "string" }
+      }
+    },
+    "casesFile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "version", "frozen_dir", "cases"],
+      "properties": {
+        "schema": { "const": "kb/index/cases" },
+        "version": { "const": 1 },
+        "generated_at": { "type": "string" },
+        "frozen_dir": { "type": "string" },
+        "cases": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["case", "file", "md5", "bytes", "lines"],
+            "properties": {
+              "case": { "type": "string" },
+              "file": { "type": "string" },
+              "md5": { "type": "string", "pattern": "^[0-9a-f]{32}$" },
+              "bytes": { "type": "integer", "minimum": 0 },
+              "lines": { "type": "integer", "minimum": 0 },
+              "access_sites": { "type": "integer", "minimum": 0 },
+              "B1_sites": { "type": "integer", "minimum": 0 },
+              "segments_hit": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        }
+      }
+    }
+  }
+}

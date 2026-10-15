@@ -1,0 +1,84 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "kb/run/gates.json —— 三道人工闸门状态（spec I6 / §8.1）",
+  "description": "G1_diff_confirm / G2_report_accept / G3_regression_decision。**human_signed 只在 actor_kind=human 时为真**；模型与演练一律 false。task-19 起新增 append-only 的 history[] 与防篡改锚 gates.sha256（同目录），见 F-GATE-02/03。",
+  "type": "object",
+  "required": ["schema", "version", "run_id", "created_at", "manifest_from", "manifest_to", "gates"],
+  "properties": {
+    "schema": { "const": "kb/gate-state" },
+    "version": { "const": 1 },
+    "run_id": { "type": "string", "pattern": "^RUN-[0-9]{8}-[0-9]{6}$" },
+    "created_at": { "type": "string" },
+    "updated_at": { "type": "string" },
+    "manifest_from": { "type": ["string", "null"] },
+    "manifest_to": { "type": ["string", "null"] },
+    "anchor": {
+      "type": ["object", "null"],
+      "description": "F-GATE-03：防篡改锚；task-19 起必填。同目录另写 gates.sha256，读取时复算",
+      "additionalProperties": false,
+      "required": ["algo", "value"],
+      "properties": {
+        "algo": { "const": "sha256-of-canonical-record-without-anchor" },
+        "value": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "file": { "type": "string" }
+      }
+    },
+    "gates": {
+      "type": "object",
+      "required": ["G1_diff_confirm", "G2_report_accept", "G3_regression_decision"],
+      "additionalProperties": false,
+      "properties": {
+        "G1_diff_confirm": { "$ref": "#/definitions/gate" },
+        "G2_report_accept": { "$ref": "#/definitions/gate" },
+        "G3_regression_decision": { "$ref": "#/definitions/gate" }
+      }
+    }
+  },
+  "definitions": {
+    "gate": {
+      "type": "object",
+      "required": ["gate_id", "kind", "status", "decision", "actor", "actor_kind",
+                   "human_signed", "signed_at", "note", "rework_target", "artifacts"],
+      "additionalProperties": true,
+      "properties": {
+        "gate_id": { "enum": ["G1_diff_confirm", "G2_report_accept", "G3_regression_decision"] },
+        "kind": { "enum": ["diff_confirm", "report_accept", "regression_decision"] },
+        "status": { "enum": ["pending", "signed", "rejected"] },
+        "decision": { "type": "string" },
+        "actor": { "type": ["string", "null"] },
+        "actor_kind": { "enum": [null, "human", "model", "rehearsal", "host"] },
+        "human_signed": {
+          "type": "boolean",
+          "description": "**只有 actor_kind=human 时才可为 true**（I6）；README 红线 6"
+        },
+        "signed_at": { "type": ["string", "null"] },
+        "note": { "type": ["string", "null"] },
+        "rework_target": { "enum": [null, "N4", "N6"] },
+        "artifacts": { "type": "array", "items": { "type": "string" } },
+        "history": {
+          "type": "array",
+          "description": "F-GATE-02：append-only 变更史；task-19 起必填。旧签署记录不得因再次签署而消失",
+          "items": {
+            "type": "object",
+            "required": ["at", "decision", "actor", "actor_kind", "human_signed"],
+            "additionalProperties": true,
+            "properties": {
+              "at": { "type": "string" },
+              "decision": { "type": "string" },
+              "actor": { "type": ["string", "null"] },
+              "actor_kind": { "enum": [null, "human", "model", "rehearsal", "host"] },
+              "human_signed": { "type": "boolean" },
+              "note": { "type": ["string", "null"] },
+              "prev": { "type": ["object", "null"] }
+            }
+          }
+        },
+        "record_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "F-GATE-03：单条闸门记录的可复算锚（可选形态之一）"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,106 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "kb/run/n5_impact —— N5 两级影响分析（Host 确定性，spec §2 N5 / §10.3）",
+  "description": "段级粗筛（宁多勿漏）→ diff 触及的 offset/位域 ∩ 用例实际访问的 offset/位域 → 【必改】/【待查】。索引缺失必须标『索引缺口』并 rc!=0，不许静默给空清单。",
+  "type": "object",
+  "required": ["schema", "version", "run_id", "generated_at", "gate_precondition",
+               "segments_covered", "must_change", "to_check", "index_gaps", "index_complete"],
+  "properties": {
+    "schema": { "const": "kb/run/n5_impact" },
+    "version": { "const": 1 },
+    "run_id": { "type": "string", "pattern": "^RUN-[0-9]{8}-[0-9]{6}$" },
+    "generated_at": { "type": "string" },
+    "generator": { "type": "string" },
+    "n2_diff_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "gate_precondition": {
+      "type": "object",
+      "required": ["gate", "signed", "decision", "actor_kind", "enforced"],
+      "description": "spec I1：存在未决条目不得进入修订阶段；N5 必须强制 G1 已签且 confirmed",
+      "properties": {
+        "gate": { "const": "G1_diff_confirm" },
+        "signed": { "type": "boolean" },
+        "decision": { "type": "string" },
+        "actor_kind": { "enum": ["human", "rehearsal", "host", "model"] },
+        "human_signed": { "type": "boolean" },
+        "enforced": { "type": "boolean" },
+        "note": { "type": "string" }
+      }
+    },
+    "segments_covered": {
+      "type": "array",
+      "minItems": 8,
+      "items": { "type": "string", "pattern": "^0x[0-9a-f]{4,5}$" },
+      "description": "首版必须覆盖 8 个已登记段（0x0000/0x0100/0x0600/0x0800/0x0A00/0x0D00/0x2000/0x4000）；脚本必须自检条数 ≥ 8"
+    },
+    "marked_only_segments": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "只打标记不建映射的段（0x8000 / 0x10000）"
+    },
+    "must_change": { "type": "array", "items": { "$ref": "#/definitions/impact" } },
+    "to_check": { "type": "array", "items": { "$ref": "#/definitions/impact" } },
+    "index_gaps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kind", "detail", "action"],
+        "properties": {
+          "kind": { "enum": ["segment", "rtl_file", "offset", "bitfield", "marked-only-segment"] },
+          "detail": { "type": "string" },
+          "action": { "type": "string", "description": "必须是可执行去向（转人工/补索引），不许空" }
+        }
+      }
+    },
+    "index_complete": {
+      "type": "boolean",
+      "description": "false ⇒ 脚本 rc!=0（索引缺口不得静默通过）"
+    },
+    "exit_code": { "type": "integer" },
+    "notes": { "type": "array", "items": { "type": "string" } }
+  },
+  "definitions": {
+    "impact": {
+      "type": "object",
+      "required": ["case", "segment", "basis", "evidence_chain"],
+      "additionalProperties": true,
+      "properties": {
+        "case": { "type": "string" },
+        "file": { "type": "string" },
+        "segment": { "type": "string" },
+        "offset": { "type": ["string", "null"] },
+        "entry_id": { "type": ["string", "null"] },
+        "accessed_at": {
+          "type": "array",
+          "description": "用例的实际访问站点（B1 定向优先；B2 大范围扫描必须标注）",
+          "items": {
+            "type": "object",
+            "required": ["line", "addr"],
+            "properties": {
+              "file": { "type": "string" },
+              "line": { "type": "integer", "minimum": 1 },
+              "addr": { "type": "string" },
+              "bucket": { "enum": ["B1", "B2"] },
+              "callee": { "type": "string" }
+            }
+          }
+        },
+        "rtl_files": { "type": "array", "items": { "type": "string" } },
+        "basis": {
+          "type": "string",
+          "description": "依据链原文：段 → RTL 文件 → 用例（spec §5 边 N5→N6 校验列）"
+        },
+        "why": { "type": "string", "description": "为何判【必改】或【待查】（宁多勿漏的推理）" },
+        "evidence_chain": {
+          "type": "object",
+          "required": ["diff_entry", "segment_evidence", "case_site"],
+          "description": "三段依据，缺一不算可判定",
+          "properties": {
+            "diff_entry": { "type": "string" },
+            "segment_evidence": { "type": "string" },
+            "case_site": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

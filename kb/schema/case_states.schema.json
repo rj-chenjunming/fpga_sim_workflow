@@ -1,0 +1,65 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "kb/run/case_states —— 用例态台账（spec I2 的机器可读载体）",
+  "description": "I2：每个受影响用例态 ∈ {未改 / 已修订待验 / 已验证通过 / 已退回}；**存在「待验」不得称跑通**。N16 晋升的前置检查读本文件。由 N6~N10 的责任方（author/runner/checker）更新，**不许由模型自我认证为『已验证通过』而没有卡点C/D证据**。",
+  "type": "object",
+  "required": ["schema", "version", "run_id", "updated_at", "cases"],
+  "properties": {
+    "schema": { "const": "kb/run/case_states" },
+    "version": { "const": 1 },
+    "run_id": { "type": "string", "pattern": "^RUN-[0-9]{8}-[0-9]{6}$" },
+    "updated_at": { "type": "string" },
+    "writer": { "type": "string", "description": "最近一次写者（角色名/脚本名）" },
+    "cases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["case", "state"],
+        "properties": {
+          "case": { "type": "string" },
+          "state": {
+            "enum": ["未改", "已修订待验", "已验证通过", "已退回"],
+            "description": "spec I2 的四个态，字面量固定（中文），不得自造"
+          },
+          "file": { "type": "string" },
+          "md5_before": { "type": ["string", "null"] },
+          "md5_after": { "type": ["string", "null"] },
+          "sandbox_path": { "type": ["string", "null"] },
+          "compile_rc": { "type": ["integer", "null"], "description": "卡点 B 结果" },
+          "static_check": { "enum": [null, "pass", "reject", "pending"] },
+          "run_md5": { "type": ["string", "null"], "description": "实际被全跑的对象 md5（四方同值用）" },
+          "two_counts": {
+            "type": ["object", "null"],
+            "description": "两套口径；缺一不算跑通",
+            "properties": {
+              "script_egrep": { "type": "integer", "minimum": 0 },
+              "uvm_error": { "type": "integer", "minimum": 0 },
+              "uvm_summary_present": { "type": "boolean" }
+            }
+          },
+          "observation_marks": {
+            "type": ["object", "null"],
+            "description": "预期观测点印记三向一致（I3 第五个合取项）",
+            "properties": {
+              "expected": { "type": "integer", "minimum": 0 },
+              "observed": { "type": "integer", "minimum": 0 },
+              "consistent": { "type": "boolean" }
+            }
+          },
+          "evidence": { "type": ["string", "null"], "description": "证据路径 + md5（可解析）" },
+          "note": { "type": ["string", "null"] },
+          "updated_by": { "type": ["string", "null"] },
+          "updated_at": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "rework_cycles": {
+      "type": "object",
+      "description": "I7 返工有界：N6↔N8 循环次数，>3 必须升级 N13 人工裁决",
+      "properties": {
+        "n6_n8_cycles": { "type": "integer", "minimum": 0 },
+        "limit": { "type": "integer", "minimum": 1 }
+      }
+    }
+  }
+}

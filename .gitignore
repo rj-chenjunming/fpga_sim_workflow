@@ -1,0 +1,18 @@
+# ── 编排层运行时与虚拟环境（可重建，不入库）
+loop/.venv/
+loop/state/
+loop/.logs/
+loop/.pytest_cache/
+loop/.agently/
+
+# ── Python 字节码
+__pycache__/
+*.pyc
+
+# ── 运行产物与归档夹具：体量大、且可由流程重跑生成
+#    字节不入库，但**身份**入库 ⇒ 见 kb/FIXTURE_IDENTITY.md（含 md5 与复现命令）
+kb/runs/
+
+# ── 验证沙箱（verifier 自测的可重跑 scratch，约 157 MB）
+#    与 kb/runs/ 同一原则：产物不入库，结论（V*.md / frozen_*.md5）入库
+doc/spec/evidence/loop_rehearsal/verify/sandbox/

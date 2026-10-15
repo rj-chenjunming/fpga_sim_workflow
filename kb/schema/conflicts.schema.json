@@ -1,0 +1,125 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "kb conflicts schemas（文档内部矛盾 C1—C72 / 访问路径限制 / 待确认 D1—D20）",
+  "description": "spec §1 I4 + §6：冲突与待裁决清单是一等公民，断言以文档位定义表为准，清单未清零不发版。数据源 = doc/_notes/06_iface_doc_regmap.md §A/§B/§D（72+20+20 条）。",
+  "oneOf": [
+    { "$ref": "#/definitions/conflictsFile" },
+    { "$ref": "#/definitions/restrictionsFile" },
+    { "$ref": "#/definitions/pendingFile" }
+  ],
+  "definitions": {
+    "status": {
+      "enum": ["open", "confirmed", "ignored", "ruled", "fixed"],
+      "description": "由人裁决推进；模型只能写 'open' 或提出建议，不能自封 confirmed/ruled"
+    },
+    "conflictsFile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "version", "source_note", "expected_total", "conflicts"],
+      "properties": {
+        "schema": { "const": "kb/conflicts/conflicts" },
+        "version": { "const": 1 },
+        "generated_at": { "type": "string" },
+        "source_note": { "type": "string" },
+        "expected_total": {
+          "type": "integer",
+          "description": "抽取预期条数（06 号笔记声明 72，编号 C1—C72 连续无缺号）；生成脚本必须自检实际条数 == 此值"
+        },
+        "conflicts": { "type": "array", "items": { "$ref": "#/definitions/conflict" } }
+      }
+    },
+    "conflict": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "segment", "category", "doc_line", "summary", "evidence", "status"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^C[0-9]{1,2}$" },
+        "segment": {
+          "type": "string",
+          "description": "所属段基址；跨章节/元信息类矛盾写 'ALL'"
+        },
+        "category": {
+          "type": "string",
+          "description": "06 §B 表里的类型列原文（如 OFFSET / RW / RESET / NUM / SIZE / NAME / FORMAT …）"
+        },
+        "doc_line": { "type": "string", "description": "文档原文行号，如 'L1676' 或 'L389/L397'" },
+        "summary": { "type": "string" },
+        "evidence": { "type": "string" },
+        "status": { "$ref": "#/definitions/status" },
+        "resolution": { "type": ["string", "null"] },
+        "resolution_actor": { "type": ["string", "null"] },
+        "resolution_kind": { "enum": [null, "human", "rehearsal", "host", "model"] },
+        "linked_entries": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "受影响的 regmap entry_id（0xXXXX#0xYYYY）"
+        },
+        "blocks_release": {
+          "type": "boolean",
+          "description": "true ⇒ 未清零不发版（spec I4）"
+        }
+      }
+    },
+    "restrictionsFile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "version", "source_note", "restrictions"],
+      "properties": {
+        "schema": { "const": "kb/conflicts/access_restrictions" },
+        "version": { "const": 1 },
+        "generated_at": { "type": "string" },
+        "source_note": { "type": "string" },
+        "expected_total": { "type": "integer" },
+        "restrictions": { "type": "array", "items": { "$ref": "#/definitions/restriction" } }
+      }
+    },
+    "restriction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "scope", "address", "channels", "doc_line", "raw"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^(R[0-9]{1,2}|A[0-9]+)$" },
+        "scope": { "enum": ["register", "segment", "block", "implicit"] },
+        "address": { "type": "string", "description": "全局地址或段基址；隐式语义写 'NA'" },
+        "channels": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "enum": ["CPU", "CPU-PCIE", "CPU-I2C", "BMC", "BMC-I2C", "CPLD", "NONE"] }
+        },
+        "doc_line": { "type": "string" },
+        "raw": { "type": "string" },
+        "note": { "type": "string" }
+      }
+    },
+    "pendingFile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "version", "source_note", "items"],
+      "properties": {
+        "schema": { "const": "kb/conflicts/pending" },
+        "version": { "const": 1 },
+        "generated_at": { "type": "string" },
+        "source_note": { "type": "string" },
+        "expected_total": { "type": "integer" },
+        "items": { "type": "array", "items": { "$ref": "#/definitions/pending" } }
+      }
+    },
+    "pending": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "doc_line", "question", "status", "owner"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^D[0-9]{1,2}$" },
+        "kind": { "type": "string" },
+        "doc_line": { "type": "string" },
+        "question": { "type": "string" },
+        "status": { "$ref": "#/definitions/status" },
+        "owner": {
+          "enum": ["doc-owner", "rtl-owner", "user", "unassigned"],
+          "description": "去向：转文档方 / 转设计者 / 转用户 / 未指定（spec §5 禁止无去向）"
+        },
+        "impact": { "type": "string" }
+      }
+    }
+  }
+}

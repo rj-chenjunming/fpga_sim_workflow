@@ -1,0 +1,44 @@
+# A6 审计窗口身份清单（由命令输出落盘；数字禁手算）
+# 生成时刻: 2026-10-14 16:35:37 +0800   宿主: s24
+# 说明: 本文件自身的 md5 不在内（自指）。任何被记录文件的后续改动都会使本行失效 → 必须重取。
+#
+## A6 我的产物
+c20fe4628a451f808e4c8ad0a51f8b1d  doc/agents/_demo/accept/guard/A6_guard.md
+   35816 B  465 lines
+#
+## 输入（审计窗口终点值）
+198b8cf343dc5d45e8188add03a1547c  doc/agents/_demo/accept/ACCEPTANCE_PLAN.md
+4e5ac033f8c7ac671f1be82bd37ca702  doc/agents/_demo/accept/TESTLIB_baseline_md5.txt
+8ad474be7928496487517a8666691d78  doc/agents/_demo/accept/TESTLIB_sandbox/tc_dom_polling_trig_chk_01.sv
+c087031ae0b571b2c96e749152acadbe  doc/agents/_demo/accept/evidence/A2b_compile_evidence_v2.md
+4045540e4c3b79b7553f38d95ec7d9f5  doc/agents/_demo/accept/evidence/A2c_compile_evidence_v3.md
+a09a9a8c7f02d1241d231172f756a12c  doc/agents/_demo/accept/evidence/A2_compile_evidence.md
+cda582b9ca2c6f883733ba6c7bb72889  doc/agents/_demo/accept/evidence/A2d_compile_evidence_v4.md
+5d3d497733ae7a091e2b3b913ca8f9c1  doc/agents/_demo/accept/evidence/A2e_compile_evidence_v5.md
+8ea66f2d2e53d40aa1bef16af693d09b  doc/agents/_demo/accept/evidence/A2f_compile_evidence_v6.md
+16ed82802ab2286a2d70370994770c2d  doc/agents/_demo/accept/evidence/A4_run_evidence.md
+1978742b0fde97b1c3f6830a1b3c8335  doc/agents/_demo/accept/review/A3b_review_v2.md
+130b4ae082de57baed8c4de2ef60d359  doc/agents/_demo/accept/review/A3c_review_v3.md
+7caa011b79caafb629e5a62ca41e5c99  doc/agents/_demo/accept/review/A3d_review_v4.md
+e6f77fd7b5209ae519b24463237e4642  doc/agents/_demo/accept/review/A3e_review_v5.md
+2a5343fbb6ab9324a9ccad19700b4bea  doc/agents/_demo/accept/review/A3f_review_v6.md
+999445d1a6fe7cbbd19ff5c1a4388707  doc/agents/_demo/accept/review/A3_review.md
+f06e58ac82679cf86788725d8172d378  doc/agents/_demo/accept/review/A5_reconcile.md
+bc9cd56d4b361f4a5be028d8d24cfc56  doc/_run_artifacts/tc_dom_polling_trig_chk_01_v1.sv
+e24aded26476aed9426576da361c0fa2  doc/_run_artifacts/tc_dom_polling_trig_chk_01_v2.sv
+235d20a5f2cc7b4911201c8939a14b81  doc/_run_artifacts/tc_dom_polling_trig_chk_01_v3.sv
+33cc907f7f03a930185ecfadaaadd7e0  doc/_run_artifacts/tc_dom_polling_trig_chk_01_v4.sv
+14ed595ad25601a1efc277aa6fe7bb89  doc/_run_artifacts/tc_dom_polling_trig_chk_01_v5.sv
+8ad474be7928496487517a8666691d78  doc/_run_artifacts/tc_dom_polling_trig_chk_01_v6.sv
+396a3d2b13bcb0c60c403e33c6aa64d9  SIMLIB_RUN/log/tc_dom_polling_trig_chk_01_1_run.log
+871d77668bc4c8f5f7c025cd9f962a3a  SIMLIB_RUN/log/a4c_run_stdout.log
+def5410ff890c855a5e541c44f01bc7f  SIMLIB_RUN/log/archive_a4_attempt1_run.log
+7c46f7431afafa26d8ca1606524b39a6  SIMLIB_RUN/log/archive_a4_attempt2_run.log
+#
+## 冻结件与只读区
+a80f7b6ca48a7961a107bbe871af761d  uvs.setup
+a80f7b6ca48a7961a107bbe871af761d  doc/_run_artifacts/uvs.setup.orig
+LOG_files=78
+TESTLIB_files=162
+TESTLIB_kouA=4c0942ac419f67c6fdb391dd2083f0b3
+git_total=49 git_M=18

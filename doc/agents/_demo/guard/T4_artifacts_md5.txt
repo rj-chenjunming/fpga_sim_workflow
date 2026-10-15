@@ -1,0 +1,12 @@
+# T4 guard 产物 md5 清单（由命令输出直接落盘；数字禁手算）
+# 生成时刻: 2026-10-13 18:23:33 +0800  宿主: s24
+# 注: 本文件自身的 md5 不在内（自指）。任何被记录文件的后续改动都会使本行失效 → 必须重取。
+b758fcce8f4d0cbe7d66aecbd916a0ec  doc/agents/_demo/guard/T4_guard.md
+84ebb05dd9776e5243579d7a77489d8b  doc/agents/_demo/guard/T4_baseline.md
+0af5b50cd9325ae7f9ab9c3c30e1cab2  doc/agents/_demo/guard/T4_baseline_LOG_md5.txt
+e229293e1e08ef25f8b6347f269cac3f  doc/agents/_demo/guard/T4_blueprint_uvs_setup.txt
+# 字节/行数:
+41816 B  560 lines  doc/agents/_demo/guard/T4_guard.md
+25529 B  473 lines  doc/agents/_demo/guard/T4_baseline.md
+8497 B  82 lines  doc/agents/_demo/guard/T4_baseline_LOG_md5.txt
+1074 B  20 lines  doc/agents/_demo/guard/T4_blueprint_uvs_setup.txt

@@ -1,0 +1,20 @@
+DEFAULT: ./work
+rtl:     ./SIMLIB_RUN/${tc}_${seed}/rtl
+tb:      ./SIMLIB_RUN/${tc}_${seed}/tb
+
+usim: ./PKG/pango_uvs_lib/pango_sim_libraries/uvs/usim
+pciegen2: ./PKG/pango_uvs_lib/pango_sim_libraries/uvs/pciegen2
+vsim: ./PKG/pango_uvs_lib/pango_sim_libraries/uvs/vsim
+ipal_e2: ./PKG/pango_uvs_lib/pango_sim_libraries/uvs/ipal_e2
+ipal_e5: ./PKG/pango_uvs_lib/pango_sim_libraries/uvs/ipal_e5
+hsstlp_lane: ./PKG/pango_uvs_lib/pango_sim_libraries/uvs/hsstlp_lane
+hsstlp_pll: ./PKG/pango_uvs_lib/pango_sim_libraries/uvs/hsstlp_pll
+oserdes_e2: ./PKG/pango_uvs_lib/pango_sim_libraries/uvs/oserdes_e2
+iserdes_e2: ./PKG/pango_uvs_lib/pango_sim_libraries/uvs/iserdes_e2
+ddrs: ./PKG/pango_uvs_lib/pango_sim_libraries/uvs/ddrs
+ppm: ./PKG/pango_uvs_lib/pango_sim_libraries/uvs/ppm
+ddc_e2: ./PKG/pango_uvs_lib/pango_sim_libraries/uvs/ddc_e2
+dll_e2: ./PKG/pango_uvs_lib/pango_sim_libraries/uvs/dll_e2
+adc_e2: ./PKG/pango_uvs_lib/pango_sim_libraries/uvs/adc_e2
+ddrs_dft: ./PKG/pango_uvs_lib/pango_sim_libraries/uvs/ddrs_dft
+iolhr_dft: ./PKG/pango_uvs_lib/pango_sim_libraries/uvs/iolhr_dft

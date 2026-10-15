@@ -1,0 +1,322 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""gate.py —— 三道人工闸门的持久化状态机（spec I6 / §1 / §8）
+
+闸门（`kb_lib.GATE_IDS`）
+    G1_diff_confirm          N4  差异确认   confirmed / ignored / disputed / pending
+    G2_report_accept         N13 评估       accept / rework / pending
+    G3_regression_decision   N14 回归决策   full_now / subset_only / milestone_only / defer / pending
+
+铁律（本脚本存在的唯一理由）
+    `human_signed=true` **只在** `--actor-kind human` **且** 给了 `--actor <人名>` 时为真，
+    由 `kb_lib.gate_set` 强制（脚本绕不过去）。model / rehearsal / host 一律 false。
+
+    因此本 CLI 默认**拒绝**非人类的签署动作（rc=3）：
+        $ python3 kb/tools/gate.py sign G1_diff_confirm --run R --decision confirmed \
+              --actor-kind model --actor gpt
+        [FAIL] actor_kind=model 不得签署 ...
+        rc=3，且 gates.json 的 human_signed 保持 false。
+
+    演练（README §4 决策 K3）需要写 actor_kind=rehearsal 时，必须**显式**给
+    `--allow-nonhuman`：此时写盘成功但 `human_signed` 仍为 false，`require-signed`
+    默认仍然拒绝（要放行演练链需再加 `--allow-rehearsal`）。这是刻意的两道锁。
+
+子命令
+    init            --run <run_id> [--from-manifest P] [--to-manifest P]
+    show            --run <run_id> [--gate GATE_ID]
+    sign  <GATE_ID> --run <run_id> --decision D [--actor NAME] [--actor-kind KIND]
+                    [--note TEXT] [--rework-target N4|N6] [--artifact PATH]...
+                    [--allow-nonhuman]
+    require-signed  --run <run_id> [--gate GATE_ID] [--expect DECISION]
+                    [--allow-rehearsal]
+
+退出码
+    0 = 通过        2 = 用法错误（argparse）      3 = 状态/铁律不满足（拒绝）
+    4 = 状态文件损坏（JSON 不合法 / run 不存在）
+
+用法示例（README §5 口径）
+    python3 kb/tools/gate.py init --run RUN-20261015-120000 \
+            --from-manifest kb/baselines/v0/manifest.json \
+            --to-manifest   kb/runs/RUN-20261015-120000/n1_manifest_new.json
+    python3 kb/tools/gate.py sign G1_diff_confirm --run RUN-20261015-120000 \
+            --decision confirmed --actor "张三" --actor-kind human --note "范围认可"
+    python3 kb/tools/gate.py require-signed --run RUN-20261015-120000 --gate G1_diff_confirm
+"""
+
+import argparse
+import json
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import kb_lib as K  # noqa: E402
+
+RC_OK = 0
+RC_REJECT = 3
+RC_BROKEN = 4
+
+# 每道闸门「已签」时默认要求的决策（require-signed 不显式给 --expect 时生效）
+DEFAULT_EXPECT = {
+    "G1_diff_confirm": "confirmed",
+    "G2_report_accept": "accept",
+    "G3_regression_decision": None,   # 已决策即可：full_now/subset_only/milestone_only/defer
+}
+REWORK_TARGETS = ("N4", "N6")   # spec §8：N13 返工只可回指 N4（范围判错）或 N6（用例改错）
+ACTOR_KINDS = ("human", "model", "rehearsal", "host")
+
+
+# ---------------------------------------------------------------- 状态文件
+
+def gates_path(run_id):
+    """闸门状态文件 = `kb/runs/<run_id>/gates.json`（走 kb_lib.run_dir，唯一口径）。
+
+    演练/自测要把状态留在自己的写权目录内时，把 `--run` 给成**相对 run 键**
+    （例：`--run dev-host-tools/RUN-20261015-120000`）——不要新造路径口径。
+    """
+    return os.path.join(K.run_dir(run_id), "gates.json")
+
+
+def load_state(run_id):
+    p = gates_path(run_id)
+    if not os.path.exists(p):
+        sys.stderr.write("[FAIL] 闸门状态不存在：%s\n"
+                         "      ⇒ 先跑 gate.py init --run %s（未初始化不得静默当'未签'）\n"
+                         % (K.relpath(p), run_id))
+        raise SystemExit(RC_REJECT)
+    try:
+        st = K.read_json(p)
+    except ValueError as e:
+        sys.stderr.write("[FAIL] 闸门状态不是合法 JSON：%s（%s）\n" % (K.relpath(p), e))
+        raise SystemExit(RC_BROKEN)
+    if st.get("run_id") != run_id:
+        sys.stderr.write("[FAIL] gates.json 的 run_id=%r 与 --run %r 不一致（身份错位）\n"
+                         % (st.get("run_id"), run_id))
+        raise SystemExit(RC_BROKEN)
+    for g in K.GATE_IDS:
+        if g not in st.get("gates", {}):
+            sys.stderr.write("[FAIL] gates.json 缺闸门 %s（状态不完整）\n" % g)
+            raise SystemExit(RC_BROKEN)
+    return st
+
+
+def dump(obj):
+    sys.stdout.write(json.dumps(obj, sort_keys=True, ensure_ascii=False, indent=2) + "\n")
+
+
+def bullet(st, gate_id):
+    g = st["gates"][gate_id]
+    return ("%s: decision=%-14s status=%-7s actor=%-10s actor_kind=%-9s human_signed=%s"
+            % (gate_id, g["decision"], g["status"], str(g["actor"]), str(g["actor_kind"]),
+               g["human_signed"]))
+
+
+# ---------------------------------------------------------------- 子命令
+
+def cmd_init(args):
+    p = gates_path(args.run)
+    default = p
+    for q in (p,):
+        if os.path.exists(q):
+            sys.stderr.write("[FAIL] 闸门状态已存在：%s\n"
+                             "      ⇒ 闸门只增不改（README §6 红线 4）：一个 run 一套状态，"
+                             "不覆盖已有签署\n" % K.relpath(q))
+            return RC_REJECT
+    to_default = os.path.join(K.run_dir(args.run), "n1_manifest_new.json")
+    # kb_lib.gate_init 是唯一口径：状态落 kb/runs/<run_id>/gates.json
+      # （演练请把 --run 给成相对 run 键，如 dev-host-tools/RUN-...）
+    st = K.gate_init(args.run,
+                     args.from_manifest or "N/A",
+                     args.to_manifest or K.relpath(to_default))
+    print("[kb] 闸门状态已建立：%s" % K.relpath(p))
+    print("[kb] run_id=%s" % args.run)
+    print("[kb] manifest_from=%s" % st["manifest_from"])
+    print("[kb] manifest_to  =%s" % st["manifest_to"])
+    for g in K.GATE_IDS:
+        print("[kb]   " + bullet(st, g))
+    print("[kb] human_signed 只在 --actor-kind human 且给 --actor 时为真（I6）")
+    return RC_OK
+
+
+def cmd_show(args):
+    st = load_state(args.run)
+    ids = [args.gate] if args.gate else list(K.GATE_IDS)
+    if args.gate and args.gate not in K.GATE_IDS:
+        sys.stderr.write("[FAIL] 未知闸门 %r（合法：%s）\n" % (args.gate, ", ".join(K.GATE_IDS)))
+        return RC_REJECT
+    print("[kb] run_id=%s（%s）" % (st["run_id"], K.relpath(gates_path(args.run))))
+    for g in ids:
+        print("[kb] " + bullet(st, g))
+    summ = K.gate_summary(args.run)
+    print("[kb] all_signed=%s human_signed_all=%s"
+          % (summ["all_signed"], summ["human_signed_all"]))
+    if args.json:
+        dump({"state": st, "summary": summ})
+    return RC_OK
+
+
+def cmd_sign(args):
+    if args.gate not in K.GATE_IDS:
+        sys.stderr.write("[FAIL] 未知闸门 %r（合法：%s）\n" % (args.gate, ", ".join(K.GATE_IDS)))
+        return RC_REJECT
+    if args.decision not in K.GATE_DECISIONS[args.gate]:
+        sys.stderr.write("[FAIL] 闸门 %s 的决策 %r 非法（合法：%s）\n"
+                         % (args.gate, args.decision,
+                            ", ".join(K.GATE_DECISIONS[args.gate])))
+        return RC_REJECT
+    if args.actor_kind == "human" and not args.actor:
+        sys.stderr.write("[FAIL] --actor-kind human 必须给 --actor <人名>（谁签的必须留痕）\n")
+        return RC_REJECT
+    if args.actor_kind != "human" and not args.allow_nonhuman:
+        sys.stderr.write(
+            "[FAIL] actor_kind=%s 不得签署 %s —— 模型/脚本不得替人盖章（I6）。\n"
+            "       gates.json 未改动，human_signed 保持 false。\n"
+            "       演练（README §4 K3）确实需要写入 actor_kind=rehearsal 时，"
+            "请显式加 --allow-nonhuman（写盘后 human_signed 仍为 false，"
+            "require-signed 默认仍拒绝）。\n" % (args.actor_kind, args.gate))
+        return RC_REJECT
+    if args.rework_target and args.rework_target not in REWORK_TARGETS:
+        sys.stderr.write("[FAIL] --rework-target 只允许 %s（spec §8 返工回指），得到 %r\n"
+                         % ("/".join(REWORK_TARGETS), args.rework_target))
+        return RC_REJECT
+    if args.rework_target and args.decision != "rework" and args.gate == "G2_report_accept":
+        sys.stderr.write("[WARN] --rework-target 通常只在 G2=rework 时有意义（本次 decision=%s）\n"
+                         % args.decision)
+
+    load_state(args.run)   # 不存在/损坏 ⇒ 提前拒绝，不新建状态
+    K.gate_set(args.run, args.gate, args.decision, args.actor, args.actor_kind,
+               note=args.note, artifacts=args.artifact, rework_target=args.rework_target)
+    st = K.gate_get(args.run)
+    # history 追加（F-GATE-02）：append-only，旧签署永不被抹掉
+    prev = {k: cur.get(k) for k in ("decision", "actor", "actor_kind", "human_signed", "note")}
+    gg = st["gates"][args.gate]
+    gg.setdefault("history", []).append({
+        "at": K.now_iso(), "decision": args.decision,
+        "actor": args.actor, "actor_kind": args.actor_kind,
+        "human_signed": args.actor_kind == "human", "note": args.note, "prev": prev})
+    K.write_json(gates_path(args.run), st)
+    write_anchor(args.run)
+    g = st["gates"][args.gate]
+    print("[kb] 已写入 %s" % K.relpath(gates_path(args.run)))
+    print("[kb] " + bullet(st, args.gate))
+    if g["human_signed"]:
+        print("[kb] human_signed=true（actor_kind=human，actor=%s）" % g["actor"])
+    else:
+        print("[kb] human_signed=false（actor_kind=%s ⇒ 非人工签署，不得当 Gate 通过）"
+              % g["actor_kind"])
+    if args.note:
+        print("[kb] note=%s" % args.note)
+    if args.rework_target:
+        print("[kb] rework_target=%s" % args.rework_target)
+    if args.artifact:
+        print("[kb] artifacts=%s" % ", ".join(args.artifact))
+    return RC_OK
+
+
+def cmd_require_signed(args):
+    st = load_state(args.run)
+    ids = [args.gate] if args.gate else list(K.GATE_IDS)
+    failures = []
+    result = {}
+    for gid in ids:
+        if gid not in K.GATE_IDS:
+            sys.stderr.write("[FAIL] 未知闸门 %r\n" % gid)
+            return RC_REJECT
+        g = st["gates"][gid]
+        expect = args.expect if args.expect else DEFAULT_EXPECT[gid]
+        checks = []
+        if g["status"] != "signed" or g["decision"] == "pending":
+            checks.append("未签署（status=%s decision=%s）" % (g["status"], g["decision"]))
+        if expect is not None and g["decision"] != expect:
+            checks.append("决策不是要求的 %r（实际 %r）" % (expect, g["decision"]))
+        if not g["human_signed"] and not args.allow_rehearsal:
+            checks.append("human_signed=false（actor_kind=%s）⇒ 非人工签署，"
+                          "演练链请显式加 --allow-rehearsal" % g["actor_kind"])
+        result[gid] = {"decision": g["decision"], "actor": g["actor"],
+                       "actor_kind": g["actor_kind"], "human_signed": g["human_signed"],
+                       "expected": expect, "ok": not checks, "failures": checks}
+        for c in checks:
+            failures.append("%s: %s" % (gid, c))
+    ok = not failures
+    out = {"run_id": args.run, "gate": args.gate or "ALL", "ok": ok,
+           "allow_rehearsal": bool(args.allow_rehearsal), "gates": result,
+           "failures": failures}
+    dump(out)
+    if not ok:
+        sys.stderr.write("[FAIL] 闸门未满足，禁止进入下一步：\n  - %s\n" % "\n  - ".join(failures))
+        return RC_REJECT
+    print("[kb] 闸门已满足：%s" % ", ".join(ids))
+    return RC_OK
+
+
+# ---------------------------------------------------------------- CLI
+
+def build_parser():
+    ap = argparse.ArgumentParser(
+        description="三道人工闸门状态机（G1/G2/G3；human_signed 只在 --actor-kind human 时为真）",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="退出码：0 通过 / 2 用法 / 3 状态或铁律不满足（拒绝） / 4 状态文件损坏")
+    sub = ap.add_subparsers(dest="cmd", required=True)
+
+    common = argparse.ArgumentParser(add_help=False)
+    common.add_argument("--now", default=None,
+                        help="注入时刻（ISO8601；等价环境变量 KB_NOW），写入 signed_at/created_at；"
+                             "时间字段是唯一被允许的非确定性（README §3.1.1）")
+
+    i = sub.add_parser("init", parents=[common],
+                       help="为某个 run_id 建立空闸门状态（已存在则拒绝，不覆盖签署）")
+    i.add_argument("--run", required=True, help="run_id，落地 kb/runs/<run_id>/gates.json")
+    i.add_argument("--from-manifest", default=None, help="上一版 manifest（默认写 N/A）")
+    i.add_argument("--to-manifest", default=None,
+                   help="本版 manifest 草案（默认 kb/runs/<run_id>/n1_manifest_new.json）")
+    i.set_defaults(func=cmd_init)
+
+    s = sub.add_parser("show", parents=[common], help="显示闸门状态与摘要")
+    s.add_argument("--run", required=True)
+    s.add_argument("--gate", default=None, help="只看一道闸门")
+    s.add_argument("--json", action="store_true", help="额外输出完整 JSON（gates.json + summary）")
+    s.set_defaults(func=cmd_show)
+
+    g = sub.add_parser("sign", parents=[common],
+                       help="写入一道闸门的决策（非人类 actor_kind 默认被拒）")
+    g.add_argument("gate", choices=list(K.GATE_IDS), help="闸门 id")
+    g.add_argument("--run", required=True)
+    g.add_argument("--decision", required=True,
+                   help="决策枚举见 kb_lib.GATE_DECISIONS（按闸门而定）")
+    g.add_argument("--actor", default=None, help="签署人/主体名；actor-kind=human 时必填")
+    g.add_argument("--actor-kind", default="model", choices=list(ACTOR_KINDS))
+    g.add_argument("--note", default=None, help="意见/理由（ignored 必须给理由）")
+    g.add_argument("--rework-target", default=None,
+                   help="返工回指目标，只允许 N4（范围判错）或 N6（用例改错）")
+    g.add_argument("--artifact", action="append", default=None,
+                   help="本条签署依据的产物路径，可重复")
+    g.add_argument("--allow-nonhuman", action="store_true",
+                   help="演练/机制验证时显式放行非人类写入（human_signed 仍为 false）")
+    g.set_defaults(func=cmd_sign)
+
+    r = sub.add_parser("require-signed", parents=[common],
+                       help="校验闸门已签（G1 未经人类 confirmed ⇒ rc=3，用于进入 N5 前的卡点）")
+    r.add_argument("--run", required=True)
+    r.add_argument("--gate", default=None, choices=list(K.GATE_IDS),
+                   help="默认校验全部闸门")
+    r.add_argument("--expect", default=None,
+                   help="要求的决策值（默认按闸门：G1=confirmed、G2=accept、G3=任意已决策）")
+    r.add_argument("--allow-rehearsal", action="store_true",
+                   help="演练链：允许 human_signed=false（默认拒绝）")
+    r.set_defaults(func=cmd_require_signed)
+    return ap
+
+
+def main():
+    ap = build_parser()
+    args = ap.parse_args()
+    now = getattr(args, "now", None)
+    if now:
+        K.set_now(now)   # README §3.1.1：时间字段的唯一注入入口
+    if args.cmd == "sign" and args.decision not in K.GATE_DECISIONS[args.gate]:
+        ap.error("--decision %r 对闸门 %s 非法（合法：%s）"
+                 % (args.decision, args.gate, ", ".join(K.GATE_DECISIONS[args.gate])))
+    return args.func(args)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

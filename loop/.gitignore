@@ -1,0 +1,8 @@
+# 虚拟环境与运行时状态（可重建，不入库）
+.venv/
+state/
+.logs/
+.pytest_cache/
+.agently/
+__pycache__/
+*.pyc

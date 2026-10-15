@@ -1,0 +1,187 @@
+# TESTLIB/ 跑前内容基线（Lead 取，2026-10-14 11:27:46）
+# 口径：sort 后的 'md5  size  path'，共 162 个 .sv
+# md5(本清单) 由 §末尾 记录
+3bd99cee657694277a9182552275e3ab  9748  tc_bmc_i2c_01.sv
+e1e48e36b534094bc4246351a17e5b25  9954  tc_bmc_i2c_02.sv
+ab8132db1bf51c0f0782451d5047c777  15470  tc_bmc_i2c_03.sv
+72dd785717ff8af0073fc74d91475035  24985  tc_bmc_i2c_04_dfx.sv
+18cec96f9544a0a202f4436c7ffa1677  15446  tc_bmc_i2c_test.sv
+44a4e689d98a97a1e4863dc0ad8943f2  10902  tc_bmc_spi_01.sv
+ee5ae828a28a9fb1ba2fc35c8cdc028b  11253  tc_bmc_spi_01_test_2.sv
+d230732dd72f7b5b5e155330870a2de8  11143  tc_bmc_spi_01_test.sv
+99b47fff0b3c6d713e59dc01174c8ac9  10873  tc_bmc_spi_01_tst0.sv
+aa40e3c5af269db48eb4fc27c05beace  9753  tc_bmc_spi_02.sv
+77ea7436139da6e5512f666a88e0c51c  17214  tc_bmc_spi_03.sv
+bd6ae8bf3743a581e7c5a570669144da  18708  tc_bmc_spi_04_dfx.sv
+4c277e36e3013689f60d6b57940e06a4  15939  tc_bmc_spi_rtc_smoke.sv
+48a8d74a2247a0415bda3beeb486b798  10642  tc_cpu_i2c_01.sv
+cfabd0b23083488ad7003c3cb76c409f  9822  tc_cpu_i2c_01_test.sv
+7ded3ebf80ad7973110c32af2314662b  10183  tc_cpu_i2c_02_2.sv
+fe238118fffd6fe0575e42720813634d  10844  tc_cpu_i2c_02.sv
+74ea6e5d6ead2408753a727ab2055f40  21282  tc_cpu_i2c_03.sv
+1a0381c83adc9f39b65b302f143881f5  19340  tc_cpu_i2c_04_dfx.sv
+0f40b68488555eff4424e1db8dcfb87e  7295  tc_cpu_i2c_06_bram_inject.sv
+5c91f35e757d40e19c70d5ae315897fd  7675  tc_dom_cov_01_2.sv
+7f5b19a08d8e39dd5f25b55df1adc0ae  12681  tc_dom_cov_01.sv
+4cdea607ea8b654646eb21aa57ba88c8  25237  tc_dom_cov_02.sv
+59a868f6fdcd0b767ae7c95110fe26c5  23782  tc_dom_cov_03.sv
+d3c170d13393d7f7e2be75c4aa75a0c0  24700  tc_dom_cov_06.sv
+721fff2b99df9d045f5544387c974b38  24711  tc_dom_cov_08.sv
+b5ea2feee1681727eaef08fbcbb3fbf9  24873  tc_dom_cov_09.sv
+4814165059c8d29ef1ff93a9728815d4  24954  tc_dom_cov_10_2.sv
+c4a527b5493a653e153c940b7c62f052  24883  tc_dom_cov_10.sv
+3c9f1bef55111d3b4fdf3e328b8f332b  18168  tc_dom_polling_01_2.sv
+38467976363be49ecb358ce15384d9e7  18168  tc_dom_polling_01.sv
+daa7f7be022f28542e0b6dbe0d854207  19833  tc_dom_polling_02.sv
+c90298f517248bd414e52b77259c9b6e  21279  tc_dom_polling_03_2.sv
+7bbdf58f2a95fb3a88b81b277fc8c678  21279  tc_dom_polling_03_3.sv
+c4bc9e915095a223328c1985c7438c99  21315  tc_dom_polling_03_4.sv
+582212c9c1d992792fa50f0e8615554c  21173  tc_dom_polling_03_5.sv
+a38b488755527e8902642202d42186c8  21360  tc_dom_polling_03_6.sv
+d54c1fc7222967035598494153413287  20717  tc_dom_polling_03.sv
+1514ddd0e121a7c2184c334fb0b7d8e8  21156  tc_dom_polling_04.sv
+deb83b6a39ae1951f7711222a0dbe7c7  21392  tc_dom_polling_05.sv
+67a5fa6a6ce6d6859c91403d82fb3b50  20033  tc_dom_polling_06_2.sv
+654025c838da3c6936a282d37ccde644  21324  tc_dom_polling_06_3.sv
+b70d3d9d09879450bf99fd9e05c8783f  21401  tc_dom_polling_06.sv
+d2ffdcaf49e538fc2a6e95a426187b37  19964  tc_dom_polling_new_01_sts.sv
+117245515c64aea9f33ec286a91c0959  9890  tc_dom_polling_new_01.sv
+b3ffd47832bb0452fbf5dc3272cf7413  9810  tc_dom_polling_new_02.sv
+bbef6d8f6a606a2524a02519b89de514  10012  tc_dom_polling_new_03_2.sv
+ba57d186dec87620965cc1f25b2034dc  21246  tc_dom_polling_new_03_2_yuan.sv
+fc0e9827bfa2721e7286052d323ca68f  10001  tc_dom_polling_new_03.sv
+ab615bfc4c47a03c71c991a897dd0e49  20758  tc_dom_polling_new_03yuan.sv
+99fc53e108d4ba5f01b47ffba71539bf  12310  tc_dom_polling_new_04_1bf.sv
+fdab81312dd287302d9d68f7214458a1  11264  tc_dom_polling_new_04_1.sv
+b232954c28647dc52912ef531ebe717e  12289  tc_dom_polling_new_04_2.sv
+473dc3b895477c1b55efe7f60cbf230f  11128  tc_dom_polling_new_04_4.sv
+88509fed58dab3859fd6ed3e4d528f44  22493  tc_dom_polling_new_04_bf.sv
+2abf0b455eac9d7c48964573c4648a3d  11928  tc_dom_polling_new_04.sv
+d2261541ca902f1f82cd65cfbb04d304  22341  tc_dom_polling_new_04yuan.sv
+2fdc94e22c294198d1eab0ec79749df1  11263  tc_dom_polling_new_05.sv
+d0801bf7ec3585cac15ba525fe51a4e3  24302  tc_dom_polling_new_06_2.sv
+9bf8c199087a19f6e043048b1e35db69  11835  tc_dom_polling_new_06.sv
+570726a8170a77de65f456b4b0d75e41  20102  tc_dom_polling_new_07_2.sv
+5e445783bc200c3fa7e7d8c7da5a7ab8  10311  tc_dom_polling_new_07.sv
+5e0409ee2fd119dff53beca613dee88f  10474  tc_dom_polling_new_08.sv
+6a79240e636ecb317f1b9c164b709497  11850  tc_dom_polling_new_09.sv
+58556fe4147c1b8993be9ccbb4470693  21062  tc_dom_polling_new_10_yuan.sv
+32a1c25b31c17f33110bd34bffd0e84b  17368  tc_dom_reg_01.sv
+afd1a26b8da66832b2cba095ebf6833d  10644  tc_dom_rtc_01.sv
+a6b7363a7004d2d86056871c7bd504a2  16719  tc_dom_rtc_01_test.sv
+73e0cb8be86224a640bb63ecf98cabcd  17141  tc_dom_rtc_01_tst.sv
+c2062ed7c4a56b25fa94ea494b9a2808  10628  tc_dom_rtc_02.sv
+7bffc061a954edf0490c74c788e33e37  10650  tc_dom_rtc_03.sv
+4b93ee6fda6249f31bb8d4680bb81212  10634  tc_dom_rtc_04.sv
+af2b16dd471c144e5f33226ba596fa48  10761  tc_dom_rtc_05.sv
+59ff8a15b546c328637874acdd36ac95  11082  tc_dom_rtc_06.sv
+67f4253075b047fa119e2ce4381dcdde  11167  tc_dom_rtc_06_tst.sv
+b5016be2159ef1b7107565d0ad24fee8  11723  tc_dom_rtc_07.sv
+90f7301cd694bd90da0665ab72f7300f  13055  tc_dom_rtc_08.sv
+f3d0106ec67c45d6cea73396f327ef28  23866  tc_dom_rtc_08_yuan.sv
+d1d1b42d1d081fa67e8c3ee8262ce3aa  11366  tc_dom_rtc_09.sv
+ea156b21364d893cc910d635be1e06ed  25607  tc_dom_rtc_stretch_test.sv
+3ff55a7fe158b72853270cff5c0354bb  16030  tc_other_01_cpld_rs.sv
+10bcec53320d089adeba33d4d224888c  16097  tc_other_02_ver_led.sv
+eab350bb81d14bb9987bd6691a26df54  20130  tc_pcie_rw_02.sv
+e79a6d9a082055c5a83b53d35101876c  17318  tc_pcie_rw_03_dfx.sv
+be31929da682244d7eadbd830d296ffb  12357  tc_pcie_rw_04_seu.sv
+0b6a58cfd1daa304a05e1730bfa47755  8913  tc_pcie_rw_05_fpga_rst.sv
+0993afcc29ca5cbc475f558dca661840  6728  tc_pcie_rw_06_bram_inject.sv
+75f95660d375ac2abd0595efa04b2c63  6882  tc_pcie_rw_smoke.sv
+c604a6c48afa8e85579115e1049a7293  5525  tc_pcie_rw.sv
+68f3e85cecbc6037f2b5572d7d0a0d29  7783  tc_qsfp_01.sv
+ab31275a0a01db62b7901c73fd25108a  6326  tc_qsfp_02.sv
+dc31436792448f07efac3d9fb152a667  8938  tc_qsfp_03.sv
+186dab947b512565b958b5af8af08458  8869  tc_qsfp_03_test.sv
+fd9484ec8b61cad0d837e49fccbd3029  6525  tc_qsfp_04.sv
+8061e1bab1a1eb24606b5dc56de7f60d  8602  tc_qsfp_rst_01.sv
+21f1ebf9135c8ee8034e3cc6ec776cff  6802  tc_qsfp_rst_02.sv
+415fa246dde0407c3a5cdd002e2b602a  10230  tc_regs_test.sv
+30b2101a897ab24d3504ffcb5e84e515  10727  tc_rtc_01_1m.sv
+c7ebecb4c5541d726c8427a4ff9f1b23  19063  tc_rtc_01_2.sv
+fe1887dbaa6d2262e886f16535816c57  19093  tc_rtc_01_3.sv
+9fb0ac4a3722891d53c6c6866325aa4b  10728  tc_rtc_01_400k.sv
+4d91dd8af6dab509de742c37077e4456  19240  tc_rtc_01_sts.sv
+8d31eeea9c7eb1f05360546eeba9227e  10703  tc_rtc_01.sv
+9591d40e6166bf61f61c20b0e2fe04de  19218  tc_rtc_01_test01.sv
+07499ce375081b24d7c6efc7adf52965  19060  tc_rtc_01_test.sv
+e651b194b5ace8178efcebfe1a42abe7  19573  tc_rtc_01_tst.sv
+11ce5e16f22eb53b0a600d34ef97b706  19506  tc_rtc_02_stretch_test.sv
+78a66680b0da1d333f6996fcff642bf3  10636  tc_rtc_02.sv
+57aca087b096ab25a00f1fde4248c17d  19012  tc_rtc_02_yuan.sv
+34f83ec38d052c4a8e031320a1057f14  10641  tc_rtc_03.sv
+5d2344e7654761a5baf885e7700e16ca  10758  tc_rtc_04.sv
+d0649ceebadf6ce32c768ee1230c314f  7783  tc_rtc_05.sv
+519c82a972509d397946bdfdb12e1de8  12055  tc_rtc_06_2.sv
+89ab58504d23d35bee3c2b7a48f57612  24518  tc_rtc_06_2_yuan.sv
+49b7e9fdac86c686811bc4621035293d  24835  tc_rtc_06_2yuan.sv
+e09413f0b60f43aaf2c9068ce09ccdd2  11951  tc_rtc_06.sv
+e74038546049b21f1d7dc9ceadc4ea2c  12302  tc_rtc_07.sv
+8a3fe747094bc0ea9f56310400cdd7c1  24773  tc_rtc_07yuan.sv
+2643c3bae143c408fa7d332c78af356f  13338  tc_rtc_08.sv
+3b844cdfa91dbc580551e12b00236022  24737  tc_rtc_08yuan.sv
+68d15227d5b9854c17404456216cb4d7  26317  tc_rtc_09_2.sv
+1596750e920ec8cb729a8b58c6de307d  13441  tc_rtc_09.sv
+479b00d34777d748b413701b27bed4ea  25452  tc_rtc_09_yuan.sv
+6f4fa3d7b82f3dc2bae69de92dd89060  11476  tc_rtc_10.sv
+8f0b6bef8f5b2c8fd97f4a1fea9c04fe  10758  tc_uart_01_1test.sv
+f783cea3707ef384041680375ecee7ae  8405  tc_uart_01_2.sv
+0aeac28c5926d9c63cdd94d62ce9c786  8601  tc_uart_01_3.sv
+a74d487b4c1a5362bb1aad67a68582e0  8669  tc_uart_01_4.sv
+d546aa16c3c42f35fc2cdc5de6af8064  8710  tc_uart_01_5.sv
+9a1d5d48dd41d6bd4ae9b677e7c65b89  11361  tc_uart_01_int1bf.sv
+244ae203c3645ad78de6ac27bde35f0a  11230  tc_uart_01_int1.sv
+66aec80e94523f8cdbd40f7af25168d5  11716  tc_uart_01_int2.sv
+0067ee902c7ee6941256289db32781a2  11207  tc_uart_01_int.sv
+eac690535083c956e184264e29d04ae8  10704  tc_uart_01_sts1.sv
+bef2a20364452d829ff6ad55f1adb3cc  10704  tc_uart_01_sts.sv
+f657942b5c47ea3b14e27e55f02a5e37  9899  tc_uart_01.sv
+b6933c7d2b3b32efcc18e0b45b535a5d  9582  tc_uart_01_test01.sv
+bddbfd6354ef9efdf6583534c4788471  12021  tc_uart_02.sv
+6585be98aeeea25a12e48d71f42aa595  10657  tc_uart_03.sv
+450c12d4a452d0c9f205e8bd253a2faf  13362  tc_uart_04_2.sv
+ff551cf55162c465957cc312d340b56a  11408  tc_uart_04.sv
+1aed2453d530b19cf7f905dfcb7fa2d5  12732  tc_uart_05_2.sv
+292c60821037be9a9d5e62c5caa970c9  12232  tc_uart_05.sv
+90ae465413651180d55c8b5730fea9e3  12741  tc_uart_06_2.sv
+d21a5c8346369dc8d25974967dca78ef  12290  tc_uart_06.sv
+6960aac72fb2c2939277c6cd33d14d59  13370  tc_uart_07_2.sv
+70f7ad9ec10828463329850221ae9528  12308  tc_uart_07.sv
+2364b2b2c22f27777bfa1662485ecd9b  13958  tc_uart_08_cov.sv
+54f7b1bc5e41bb3227ab63adf28292d9  10389  tc_uart_cts.sv
+288c30020b93689ec804ce820ab4034e  10632  tc_uart_cts_test.sv
+a88c1155a5f8367555d2cb69543090ef  11260  tc_uart_cts_tst.sv
+cd8c9a51b72d721ecfe8cf5d3ce76a08  12673  tc_uart_rst_01_2.sv
+bc4405373d6596ee2bf077ea0e75f8fb  10919  tc_uart_rst_01.sv
+77476df75579effa07f8ab450bd7b01b  9327  tc_uart_rts.sv
+33493623a793be444e2298d930fa7c92  16189  tc_upt_spi_01.sv
+c378b1e5915d9c8c51b42236d0f0e6c0  15584  tc_upt_spi_02.sv
+6a3ee875fb80dc37687d7ec2f60f4d35  15624  tc_upt_spi_03.sv
+bef35e578987395667ebd57de3b88872  15612  tc_upt_spi_04.sv
+ab08f1ab3be6d90cfd6ce305b9df50cf  16966  tc_upt_spi_05_2.sv
+ab08f1ab3be6d90cfd6ce305b9df50cf  16966  tc_upt_spi_05.sv
+f82ecd075ef8342f3213dfd806d9adf2  17172  tc_upt_spi_06_cov.sv
+487fe78c94badc450fc8330a28d3435f  22363  tc_upt_spi_rst01.sv
+#
+# 「内容行」自身的 md5（= 50b7669715d3e49d5b82db517939f935）：校验方式 `grep -v "^#" TESTLIB_baseline_md5.txt | md5sum`
+# 行数：内容 162 行 == .sv 文件数 162
+#
+# ============================================================================
+# 订正（2026-10-13/14，由 simenv-runner 在 A2 指出，Lead 复核采纳）
+#   上面第 3 行的 `50b76697…` 是【本清单自身内容行】的 md5，**不是** `TESTLIB/` 的
+#   内容 md5。runner 正确地指出它"无法独立复验"——因为我把口径写漏了。
+#   ⇒ 以下给出 **两种可独立复验** 的 `TESTLIB/` 整体口径，任选其一。
+#
+# 口径 A（推荐，一行，最不易写错）：
+#   md5sum TESTLIB/*.sv | LC_ALL=C sort | md5sum
+#   基线值 = 4c0942ac419f67c6fdb391dd2083f0b3
+#
+# 口径 B（与本清单逐行可比对）：
+#   find TESTLIB -maxdepth 1 -name '*.sv' -printf '%f\n' | LC_ALL=C sort \
+#     | while read f; do printf "%s  %s  %s\n" \
+#         "$(md5sum TESTLIB/$f | cut -d' ' -f1)" "$(wc -c < TESTLIB/$f)" "$f"; done
+#   → 应与本文件第 4 行起的 162 行**逐行完全一致**（已用 diff 验过：一致 ✅）
+#
+# 口径 C（仅本清单自校验）：grep -v '^#' <本文件> | md5sum = 50b7669715d3e49d5b82db517939f935
+# ============================================================================

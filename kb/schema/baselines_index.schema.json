@@ -1,0 +1,50 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "kb/baselines/INDEX.json —— 基线索引（归档 md5 记到基线目录之外，README 红线 4 / spec §7.7）",
+  "description": "只追加新基线键，**绝不重写既有键**（碰撞即 rc!=0）。基线目录内的件置只读，其 md5/sha256 记在这里，防止『归档件被改而无人知道』。",
+  "type": "object",
+  "required": ["schema", "version", "updated_at", "baselines"],
+  "properties": {
+    "schema": { "const": "kb/baselines-index" },
+    "version": { "const": 1 },
+    "updated_at": { "type": "string" },
+    "note": { "type": "string" },
+    "baselines": {
+      "type": "object",
+      "description": "键 = 基线号 v0/v1/…；已存在的键不得被改写",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["parent", "manifest_sha256", "files"],
+        "properties": {
+          "parent": { "type": ["string", "null"] },
+          "run_id": { "type": ["string", "null"] },
+          "promoted_at": { "type": ["string", "null"] },
+          "created_at": { "type": ["string", "null"] },
+          "trigger_by": { "type": ["string", "null"] },
+          "actor_kind": { "enum": [null, "human", "host", "rehearsal", "model"] },
+          "human_signed": { "type": "boolean" },
+          "manifest_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "files": {
+            "type": "object",
+            "description": "rel path → {md5, sha256, bytes}",
+            "additionalProperties": {
+              "type": "object",
+              "required": ["md5", "bytes"],
+              "properties": {
+                "md5": { "type": "string", "pattern": "^[0-9a-f]{32}$" },
+                "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+                "bytes": { "type": "integer", "minimum": 0 },
+                "mode": { "type": "string" }
+              }
+            }
+          },
+          "seven_piece_set": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "七件套清单核对（新 manifest / 新 RTL 快照 / 新文档指纹 / 新用例 md5 / 冲突清单态 / 冻结变更结果 / 证据包指针）"
+          }
+        }
+      }
+    }
+  }
+}

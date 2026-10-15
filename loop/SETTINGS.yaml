@@ -1,0 +1,22 @@
+# 编排层非机密配置。
+#
+# **本文件不放任何密钥**：密钥在运行时解析（`$LOOP_LLM_API_KEY` → 宿主 DSH 凭据库
+# `~/.dsh/.credentials.yaml` 的 `refs.<apiKeyEnv>`），见 `host/model_provider.py`。
+#
+# 留空即**回退到宿主 `~/.dsh/settings.yaml` 已声明的 provider** ——
+# 在仓库里再抄一份内部端点，早晚会和宿主配置漂移。
+loop:
+  llm:
+    # 留空 = 用宿主声明的 api family（本机为 openai-responses）。
+    # 可选值：openai-responses | chat（= chat/completions）
+    family: ""
+    base_url: ""
+    model: ""
+    # 密钥环境变量名；宿主凭据库里同名 ref 就是它的值
+    api_key_env: PUBLIC_API_KEY
+    # 本网关的模型是推理模型：token 会被 reasoning 吃光，给不足则 content 为空（实测 max_tokens=32 ⇒ 空）
+    max_tokens: 8000
+    timeout_s: 180
+    # 留空 = 取 shell 的 HTTPS_PROXY/HTTP_PROXY。
+    # **必须显式设**：插件写死 trust_env=False，环境代理不会被 httpx 读取（实测会 DNS 失败）
+    proxy: ""

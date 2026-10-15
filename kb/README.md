@@ -247,3 +247,47 @@ python3 kb/tools/n16_promote.py --run <run_id> --trigger-by "<人名>" --actor-k
 | 日期 | 版本 | 改了什么 | 为什么改 | 证据 |
 |---|---|---|---|---|
 | 2026-10-15 | 1 | 建档：目录布局 + 三类 schema + 口径（指纹/段/三桶/条目）+ 偏离 K1~K3 | `CHECKPOINT-20261015-1123.md` §9 第 3 条 | `kb/schema/*.json`、`kb/tools/kb_lib.py` 自检输出 |
+
+---
+
+## 变更登记 · N5 可达性接入宏展开（N5-M1 / N5-M4 修复）
+
+**登记日期**：2026-10-15
+**改动文件**：`kb/tools/n5_impact.py`（新增 `macro_called_names()` 与宏调用点接入调用图）
+**回归自测**：`kb/tools/_selftest_n5_reachability.py`（9/9 PASS，可独立复跑）
+
+### 缺陷
+`REHEARSAL_REPORT.md:136` / `:147`：
+> N5 静态可达性判据**假阴性**：`tc_pcie_rw_02` 被判 `unreachable`，但 **N9 实测印记真的出现**
+> ⇒ 根因是判据**没展开 `FORKJN_FOR_BLK` 宏**。
+
+**决定性证据**：N9 真机全跑产出了印记 `[N6_FPGA_DATE_PCIE] OK 0x0000+0x04 fpga_date = 0x20260708`
+（`kb/runs/RUN-20261015-120626/evidence/20261015-125305_tc_pcie_rw_02_1_run.log:252`，sim 141.913 µs）
+⇒ 该用例**物理上可达**。判据说它不可达 ⇒ **判据错**，不是用例不可达。
+
+### 根因
+`PCIE_REG_RW` / `I2C_SLV_RW` 这类 task 在用例里是以宏**第 2 实参**的形式被调用的：
+`` `FORKJN_FOR_BLK(<FOR_END_NUM>, <TF_NAME>, …) ``（宏定义：`TB/LIBS/CBB-LIB/macros_pkg.sv:2447`，
+变体 `FORKJN_FOR_BLK_PHASE` 在 `:2462`）。原调用图只用 `name(` 正则 ⇒ 看不见这类调用点 ⇒ 调用图不完整。
+
+### 修法
+1. `macro_called_names()`：识别 `` `FORKJN\w*\s*\(\s*[^,()]*,\s*([A-Za-z_]\w*) `` 的第 2 实参为调用点；
+   **先剔除 `` `define `` 定义行**（那是宏定义不是调用）；`[^,()]*` 允许跨行与缩进。
+2. 宏调用点与普通 `name(` 调用点在 BFS 中**同等对待**。
+3. 新增 `called_via_macro`：按**链**判定（可达路径上是否用到过宏调用点）。
+   只查 site 所在 task 自身会漏掉"宏那一跳在上一层"——本工程实例：
+   `m_run_phase --(宏)--> PCIE_REG_RW --(普通)--> sys_reg_test`。
+
+### 口径结论的变化（`--now 2026-10-15T15:00:00`，阈值 1800 s）
+| | 改前 | 改后 |
+|---|---|---|
+| `must_change`（必改） | 0 | **1** |
+| `must_change_unreachable` | 2 | **1** |
+| `must_change_over_budget` | 3 | 3 |
+| `tc_pcie_rw_02` | `unreachable` | **`live` / `via_macro=True` / feasible=yes（17.6 min）** |
+| `tc_bmc_i2c_04_dfx` | `unreachable` | **仍 `unreachable`**（`called_somewhere=False`，文件内确实无调用点） |
+
+**没有放宽口径**：判据仍是"以 `m_run_phase` 为根的调用链可达性"，只是把宏形式的调用点补齐了。
+`task-13` 当时上交的裁定 (i)/(ii) 两个选项**都不采纳** —— 物理证据表明这是判据缺陷，不是定义选择。
+
+**确定性**：同一 `--now`（`2026-10-15T15:00:00`）两次运行，`n5_impact.json` sha256 均为 `9ad2458a606fc1e4d46203351f9995fae8ac46d18e379f57e6ec29539cb4e028`（×2）。

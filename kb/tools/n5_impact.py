@@ -421,6 +421,28 @@ def parse_tasks(text):
     return out
 
 
+#: 宏形式的任务调用：`` `FORKJN_FOR_BLK(<N>, <TF_NAME>, …) `` / `` `FORKJN_FOR_BLK_PHASE(<N>, <TF_NAME>, <PHASE>, …) ``
+#: 定义在 `TB/LIBS/CBB-LIB/macros_pkg.sv:2447` / `:2462`（**只读**）。
+#: **为什么必须有这一条**：`PCIE_REG_RW` / `I2C_SLV_RW` 这类 task 在用例里是以宏**第 2 实参**的形式被调用的，
+#: 普通 `name(` 正则看不见 ⇒ 调用图不完整 ⇒ 把**物理上可达**的用例判成 `unreachable`。
+#: 实证（N5-M1，`REHEARSAL_REPORT.md:136`）：`tc_pcie_rw_02` 被判 unreachable，
+#: 而 N9 真机全跑产出了印记 `[N6_FPGA_DATE_PCIE] OK 0x0000+0x04`（sim 141.913 µs）⇒ 判据错，不是用例不可达。
+#: `\w*` 覆盖 `FORKJN_*` 的其它变体；`[^,()]*` 允许第 1 实参与缩进、含换行。
+MACRO_TASK_CALL_RE = re.compile(r"`FORKJN\w*\s*\(\s*[^,()]*,\s*([A-Za-z_]\w*)")
+#: `` `define `` 那一行是宏**定义**，不是调用点，必须先剔除。
+MACRO_DEFINE_LINE_RE = re.compile(r"^\s*`define\b")
+
+
+def macro_called_names(body_text):
+    """从一段源码里取出**经宏调用的 task 名**集合（确定性）。
+
+    先剔除 `` `define `` 定义行，再整体扫描 —— 这样跨行的宏调用也能识别。
+    """
+    cleaned = "\n".join(ln for ln in body_text.splitlines()
+                        if not MACRO_DEFINE_LINE_RE.match(ln))
+    return set(MACRO_TASK_CALL_RE.findall(cleaned))
+
+
 def reachability_analysis(case_path):
     """静态调用图可达性（确定性）：以 m_run_phase 等入口 task 为根做 BFS。
 
@@ -448,22 +470,40 @@ def reachability_analysis(case_path):
                           % ("/".join(ROOT_TASK_CANDIDATES), K.relpath(case_path))}
     seen, stack = set(), [entry]
     call_re = {n: re.compile(r"(?<![A-Za-z0-9_])" + re.escape(n) + r"\s*\(") for n in bodies}
+    body_texts = {name: "\n".join(bl) for name, bl in bodies.items()}
+    macro_calls = {name: macro_called_names(t) for name, t in body_texts.items()}
+
+    def _calls(caller, target):
+        """`caller` 是否调用 `target`：普通 `name(` **或**宏形式的第 2 实参。"""
+        return bool(call_re[target].search(body_texts[caller])) or target in macro_calls[caller]
+
+    # 链式记录：某 task 的可达路径上**是否用到过宏调用点**。
+    # 只看 task 自身的调用点会漏掉"宏那一跳在上一层"的情形 ——
+    # 本工程实例：m_run_phase --(宏)--> PCIE_REG_RW --(普通)--> sys_reg_test，
+    # 站点在 sys_reg_test 里，宏线索在上一层；只查自身会显示 False，字段名不副实。
+    via_macro_chain = {entry: False}
     while stack:
         cur = stack.pop()
         if cur in seen:
             continue
         seen.add(cur)
-        for name, pat in call_re.items():
-            if name in seen or name == cur:
+        for name in bodies:
+            if name == cur:
                 continue
-            if any(pat.search(b) for b in bodies.get(cur, [])):
+            plain = bool(call_re[name].search(body_texts[cur]))
+            macro = name in macro_calls[cur]
+            if not (plain or macro):
+                continue
+            via_macro_chain[name] = (via_macro_chain.get(name, False)
+                                     or via_macro_chain.get(cur, False) or macro)
+            if name not in seen:
                 stack.append(name)
     info = {}
     for name, st, en in tasks:
-        called = any(call_re[name].search(b) for on, bl in bodies.items() if on != name
-                     for b in bl)
+        called = any(_calls(on, name) for on in bodies if on != name)
         info.setdefault(name, {"start": st, "end": en, "reachable": name in seen,
-                               "called_somewhere": bool(called)})
+                               "called_somewhere": bool(called),
+                               "called_via_macro": bool(via_macro_chain.get(name, False))})
     return {"ok": True, "encoding": enc, "entry": entry, "tasks": info, "reason": "ok"}
 
 
@@ -479,12 +519,15 @@ def site_reachability(site, analysis):
     for name, t in sorted(analysis["tasks"].items()):
         if t["start"] <= ln <= t["end"]:
             if t["reachable"]:
-                return "live", "站点在 task %s(:%d-%d) 内，该 task 从入口 %s 可达" % (
-                    name, t["start"], t["end"], analysis["entry"]), True
+                return "live", "站点在 task %s(:%d-%d) 内，该 task 从入口 %s 可达%s" % (
+                    name, t["start"], t["end"], analysis["entry"],
+                    "（经宏调用点 `` `FORKJN_FOR_BLK`` 形式的第 2 实参链）"
+                    if t.get("called_via_macro") else ""), True
             return "unreachable", ("站点在 task %s(:%d-%d) 内，该 task 从入口 %s 不可达"
-                                   "（called_somewhere=%s：%s）"
+                                   "（called_somewhere=%s%s：%s）"
                                    % (name, t["start"], t["end"], analysis["entry"],
                                       t.get("called_somewhere"),
+                                      "，含宏调用点" if t.get("called_via_macro") else "",
                                       "有调用点但调用者本身不可达" if t.get("called_somewhere")
                                       else "文件内完全无调用点")), t.get("called_somewhere")
     return "static-only", "站点不在任何 task 范围内（文件级/initial 块）：line=%s" % ln, None
@@ -587,6 +630,17 @@ def sim_cost_for(case, repo_root, rate):
     return rec
 
 
+def _called_via_macro(site, analysis):
+    """站点所在 task 是否经**宏调用点**被调用（N5-M1 修复的直接可见证据）。"""
+    if not analysis or not analysis.get("ok"):
+        return None
+    ln = (site or {}).get("line") or 0
+    for name, t in sorted(analysis["tasks"].items()):
+        if t["start"] <= ln <= t["end"]:
+            return bool(t.get("called_via_macro"))
+    return None
+
+
 def annotate_entries(entries, site_of, max_wall):
     """给 must_change/to_check 条目加 reachability / sim_cost / feasible；返回新增字段统计。"""
     stats = {"live": 0, "static-only": 0, "unreachable": 0, "feasible_yes": 0,
@@ -597,6 +651,8 @@ def annotate_entries(entries, site_of, max_wall):
         e["reachability"] = r
         e["reachability_basis"] = basis
         e["reachability_called_somewhere"] = called_somewhere
+        # 该 task 是否**只**靠宏调用点才可达 —— 便于人复核"为什么这条不是 unreachable"
+        e["reachability_called_via_macro"] = _called_via_macro(site, (site or {}).get("_analysis"))
         stats[r] = stats.get(r, 0) + 1
         sc = (site or {}).get("_sim_cost")
         e["sim_cost"] = sc

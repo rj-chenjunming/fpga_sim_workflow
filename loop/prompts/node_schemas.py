@@ -104,6 +104,21 @@ class N12Output(BaseModel):
     open_items: list[str] = Field(description="未闭环项与冲突")
 
 
+# ---------------------------------------------------------------- N10（仅分类，数字由 Host 抽）
+
+
+class N10Item(BaseModel):
+    bucket_id: str = Field(description="必须逐字引用 input.buckets 里的 bucket_id")
+    classification: Literal["既有缺陷", "本轮引入", "待裁决"] = Field(description="该桶的归类")
+    basis: str = Field(description="依据；不得空泛。判「本轮引入」必须说明它落在哪个修订点上")
+
+
+class N10Output(BaseModel):
+    items: list[N10Item] = Field(description="input.buckets 里**每个** bucket_id 恰好一条")
+    summary: str = Field(description="一两句中文总结：这批失败的性质")
+    unclassified: list[str] = Field(description="无法归类的 bucket_id；没有则空列表")
+
+
 #: 节点 → 输出模型（`_validate` 的 kind 用同一批键）
 SCHEMAS: dict[str, type[BaseModel]] = {
     "n3": N3Output,
@@ -111,6 +126,7 @@ SCHEMAS: dict[str, type[BaseModel]] = {
     "n8": N8Output,
     "n11": N11Output,
     "n12": N12Output,
+    "n10": N10Output,
 }
 
 __all__ = [
@@ -120,4 +136,5 @@ __all__ = [
     "N8Output", "N8Finding",
     "N11Output", "N11ReworkRequest",
     "N12Output", "N12Section",
+    "N10Output", "N10Item",
 ]

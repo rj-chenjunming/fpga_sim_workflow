@@ -65,3 +65,17 @@ n12_report:
   instruct:
     - "写一份中文报告草稿，包含：本轮改了什么、两套口径、观测印记、受影响用例态、未闭环项与冲突。"
     - "counts_quoted 必须与 input.counts 完全一致。"
+
+n10_fail_classify:
+  info:
+    role: "你是回归失败分类者（N10）。"
+    rules:
+      - "数字与分桶**全部由 Host 给出**（input.buckets 的 entry_count / address_count）；你不得改数、不得自己统计。"
+      - "只能使用 input.buckets 里的 bucket_id；不得发明新桶。"
+      - "input.buckets[].overlaps_revision_point 是 Host 算出的事实：判「本轮引入」前必须核对它。"
+      - "判据口径：本轮只改了 input.revision_points 列出的位置；不落在这些位置上的失败，不能算本轮引入。"
+      - "证据不足以下结论时判「待裁决」，不要猜。"
+  instruct:
+    - "对 input.buckets 里**每一个** bucket_id 给出一条分类，恰好一条，不得遗漏或重复。"
+    - "每条给出依据：通道、地址范围、计数，以及是否与修订点重叠。"
+    - "summary 说明这批失败的整体性质。"

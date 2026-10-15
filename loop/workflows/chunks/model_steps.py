@@ -1,4 +1,4 @@
-"""模型语义节点：N3 / N6 / N8 / N11 / N12。
+"""模型语义节点：N3 / N6 / N8 / N10 / N11 / N12。
 
 **真 ModelRequest**（经 `host.model_provider` 接入宿主已声明的 provider）。
 分工严格遵循技能 `agently-request`：
@@ -10,8 +10,11 @@
 降级：provider 不可用时（无凭据 / `LOOP_LLM_MODE=standin`）退回**显式标注**的
 确定性替身（`standin=True`），绝不假装有模型输出。离线测试即走此路径。
 
-**N10 不在这里**：结果对账的数字抽取是 Host 确定性的（`host/evidence.py`），
-口径判定不能交给模型。
+**N10 的分工是"Host 抽数、模型分类"**：口径一/口径二的抽取、逐地址分解、
+分桶、修订点交集全部是 Host 确定性的（`host/evidence.py`）；
+模型只对**桶**判 {既有缺陷 / 本轮引入 / 待裁决} 并给依据。
+Host 校验覆盖性/枚举/依据，并**交叉核对**"本轮引入"是否真落在修订点上
+（不重叠的断言一律记为冲突、不采信）。逐地址发给模型不可行：实测 1622 个不同地址。
 """
 
 from __future__ import annotations
@@ -129,7 +132,7 @@ async def _ask(
 # ---------------------------------------------------------------- Host 侧校验
 
 #: 已实现确定性校验的输出种类（= prompt_key 的前缀）
-_KNOWN_KINDS = frozenset({"n3", "n6", "n8", "n11", "n12"})
+_KNOWN_KINDS = frozenset({"n3", "n6", "n8", "n10", "n11", "n12"})
 
 
 def _as_list(value: Any) -> list[Any]:
@@ -220,6 +223,59 @@ def _validate(kind: str, payload: dict[str, Any], *, offered: dict[str, Any]) ->
         if verdict == "rework" and not must_fix:
             problems.append("verdict=rework 但 must_fix 为空（退回必须给必须修复项）")
         accepted.update({"verdict": verdict, "findings": findings, "must_fix": must_fix})
+
+    elif kind == "n10":
+        buckets = offered.get("buckets") or []
+        by_id = {str(b["bucket_id"]): b for b in buckets}
+        items = [i for i in _as_list(data.get("items")) if isinstance(i, dict)]
+        seen: list[str] = []
+        conflicts: list[dict[str, Any]] = []
+        accepted_items: list[dict[str, Any]] = []
+        allowed = ("既有缺陷", "本轮引入", "待裁决")
+        for item in items:
+            bid = str(item.get("bucket_id") or "")
+            if bid not in by_id:
+                problems.append(f"items.bucket_id 不在提供的桶里：{bid!r}")
+                continue
+            if bid in seen:
+                problems.append(f"bucket_id 重复出现：{bid!r}（每个桶恰好一条）")
+                continue
+            seen.append(bid)
+            cls = str(item.get("classification") or "")
+            basis = str(item.get("basis") or "").strip()
+            if cls not in allowed:
+                problems.append(f"{bid} 的 classification 非法：{cls!r}（允许 {allowed}）")
+            if not basis:
+                problems.append(f"{bid} 缺 basis（空泛分类视为无效）")
+            # Host 交叉核对：判「本轮引入」必须落在修订点上（事实由 Host 算，不由模型断言）
+            if cls == "本轮引入" and not by_id[bid].get("overlaps_revision_point"):
+                conflicts.append({"bucket_id": bid, "claimed": cls,
+                                  "host_fact": "该桶无地址落在 input.revision_points 上",
+                                  "sample_addresses": by_id[bid].get("sample_addresses", [])})
+            accepted_items.append({"bucket_id": bid, "classification": cls, "basis": basis,
+                                   "entry_count": by_id[bid].get("entry_count"),
+                                   "address_count": by_id[bid].get("address_count"),
+                                   "overlaps_revision_point": by_id[bid].get("overlaps_revision_point")})
+        missing = [b for b in by_id if b not in seen]
+        if missing:
+            problems.append(f"有 {len(missing)} 个桶未被分类：{missing[:6]}")
+        if conflicts:
+            problems.append(
+                f"{len(conflicts)} 个桶被判「本轮引入」但 Host 事实显示不落在任何修订点上（不得采信）"
+            )
+        # 聚合：Host 按桶回填条目数（模型从不逐地址说话）
+        tally: dict[str, int] = {}
+        for it in accepted_items:
+            tally[it["classification"]] = tally.get(it["classification"], 0) + int(it["entry_count"] or 0)
+        accepted.update({
+            "items": accepted_items,
+            "summary": str(data.get("summary") or ""),
+            "unclassified": [str(x) for x in _as_list(data.get("unclassified"))],
+            "conflicts": conflicts,
+            "entries_by_classification": tally,
+            "buckets_expected": len(by_id),
+            "buckets_classified": len(seen),
+        })
 
     elif kind == "n11":
         assessment = str(data.get("assessment") or "").strip().lower()
@@ -490,20 +546,61 @@ async def n10_reconcile(data: Any) -> dict[str, Any]:
     ctx.node_started("N10")
     ev = ctx.evidence()
     reconcile_text = ctx.read_fixture_text("reconcile.md") or ""
+    # 口径一的**逐地址分解与分桶**由 Host 做（计数/算术不能交给模型）
+    from host.evidence import fail_buckets
+
+    log_path = ctx.evidence_log()
+    log_text = log_path.read_text(encoding="utf-8", errors="replace") if log_path.is_file() else ""
+    diffs: list[dict[str, Any]] = []
+    try:
+        import json as _json
+
+        diffs = (_json.loads((ctx.run_dir / "n2_diff.json").read_text(encoding="utf-8")).get("diffs") or [])
+    except Exception:  # noqa: BLE001
+        diffs = []
+    fb = fail_buckets(log_text, diffs)
+
     out = {
         "evidence": ev,
         "counts": ev.get("counts"),
         "verdict": ev.get("verdict"),
         "extraction_owner": "host:host/evidence.py（确定性；不经模型）",
-        "fail_classification": {
-            "standin": True,
-            "provider": "none",
-            "note": "FAIL 三分类本轮仍由确定性替身给出；见 README §5 限制。",
+        "both_zero": (ev.get("counts") or {}).get("both_zero"),
+        "fail_buckets": {
+            "bucket_count": fb["bucket_count"],
+            "merged_note": fb["merged_note"],
+            "coverage": fb["coverage"],
+            "revision_points": fb["revision_points"],
+            "any_bucket_overlaps_revision_point": any(b["overlaps_revision_point"] for b in fb["buckets"]),
+            "extraction_owner": fb["extraction_owner"],
+        },
+    }
+
+    # 语义分类交给模型；无 provider 时退回确定性替身（显式标注）
+    classify_input = {
+        "run_id": ctx.run_id,
+        "revision_points": fb["revision_points"],
+        "buckets": [
+            {"bucket_id": b["bucket_id"], "channel": b["channel"], "range": b["range"],
+             "entry_count": b["entry_count"], "address_count": b["address_count"],
+             "sample_addresses": b["sample_addresses"],
+             "overlaps_revision_point": b["overlaps_revision_point"]}
+            for b in fb["buckets"]
+        ],
+        "counts": ev.get("counts"),
+        "rule": "数字与分桶由 Host 给出，不得改写；判「本轮引入」必须落在 revision_points 上。",
+    }
+    cls_out = await run_model_node(ctx, "N10", prompt_key="n10_fail_classify",
+                                   input_data=classify_input, offered={"buckets": fb["buckets"]})
+    if cls_out["mode"] == "standin":
+        cls_out["data"] = {
+            "standin": True, "provider": "none",
+            "reason": f"未接入模型（{MP.resolve().reason}）；FAIL 三分类为确定性替身。",
             "excerpt": reconcile_text[:600],
             "classes": ["既有缺陷", "本轮引入", "待裁决"],
-        },
-        "both_zero": (ev.get("counts") or {}).get("both_zero"),
-    }
+            "note": "分桶与计数仍是 Host 确定性的（见 fail_buckets）。",
+        }
+    out["fail_classification"] = cls_out
     await data.async_set_state("n10_reconcile", out)
     ctx.node_finished("N10", status="pass" if out["both_zero"] else "fail",
                       detail={"both_zero": out["both_zero"]}, refs=[ev.get("path", "")])

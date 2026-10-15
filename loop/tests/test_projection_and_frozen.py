@@ -351,3 +351,99 @@ def test_host_validation_accepts_conforming_output() -> None:
                    offered={"diff_ids": {"E1"}, "segments": {"0x0000"}})
     assert r3["ok"] is True, r3["problems"]
     assert r3["accepted"]["groups"][0]["diff_ids"] == ["E1"]
+
+
+# --------------------------------------------------------------- N10 分桶与分类校验
+
+def test_fail_buckets_lose_nothing() -> None:
+    """分桶必须**零丢失**：地址数与条目数都要对得上，且逐项报出合并量。"""
+    import json
+    from host.evidence import fail_address_table, fail_buckets
+
+    log = P.KB_RUNS / "RUN-20261015-120626" / "evidence" / "20261015-125305_tc_pcie_rw_02_1_run.log"
+    if not log.is_file():
+        pytest.skip("夹具不存在")
+    text = log.read_text(encoding="utf-8", errors="replace")
+    n2 = json.loads((P.KB_RUNS / "RUN-20261015-120626" / "n2_diff.json").read_text(encoding="utf-8"))
+    table = fail_address_table(text)
+    fb = fail_buckets(text, n2.get("diffs", []))
+
+    assert table["unmatched_lines"] == 0, "有含 *E 但不含 @ADDR[...] 的行必须显式报告"
+    assert table["matched_entries"] == table["total_entries"]
+    cov = fb["coverage"]
+    assert cov["addresses_in_buckets"] == cov["distinct_addresses"], cov
+    assert cov["entries_in_buckets"] == cov["total_entries"], cov
+    assert fb["bucket_count"] <= 24
+    assert fb["merged_note"] is not None  # 发生过合并就必须报告
+
+
+def test_fail_buckets_revision_overlap_is_host_computed() -> None:
+    """是否落在修订点上由 **Host** 算，不采信任何模型断言。"""
+    import json
+    from host.evidence import fail_buckets
+
+    log = P.KB_RUNS / "RUN-20261015-120626" / "evidence" / "20261015-125305_tc_pcie_rw_02_1_run.log"
+    if not log.is_file():
+        pytest.skip("夹具不存在")
+    text = log.read_text(encoding="utf-8", errors="replace")
+    n2 = json.loads((P.KB_RUNS / "RUN-20261015-120626" / "n2_diff.json").read_text(encoding="utf-8"))
+    fb = fail_buckets(text, n2.get("diffs", []))
+    # 夹具里修订点是 0x0000+0x4，失败地址从 0x84 起 ⇒ 不应有桶重叠
+    assert fb["revision_points"], "修订点不应为空"
+    assert fb["any_bucket_overlaps_revision_point"] is False
+    assert all(b["overlaps_revision_point"] is False for b in fb["buckets"])
+
+
+def test_n10_validator_catches_model_overreach() -> None:
+    """N10 校验：覆盖性、枚举、依据、以及「本轮引入」的 Host 事实交叉核对。"""
+    from workflows.chunks.model_steps import _validate
+
+    buckets = [
+        {"bucket_id": "B1", "channel": "RD", "range": "0x8000-0x80ff",
+         "entry_count": 64, "address_count": 64, "sample_addresses": ["0x8000"],
+         "overlaps_revision_point": False},
+        {"bucket_id": "B2", "channel": "WR", "range": "0x0000-0x00ff",
+         "entry_count": 4, "address_count": 2, "sample_addresses": ["0x0004"],
+         "overlaps_revision_point": True},
+    ]
+
+    # ① 模型把不重叠的桶判成本轮引入 ⇒ 必须报冲突且不采信
+    r = _validate("n10", {"data": {"items": [
+        {"bucket_id": "B1", "classification": "本轮引入", "basis": "看起来像"},
+        {"bucket_id": "B2", "classification": "本轮引入", "basis": "落在 0x0000+0x4"},
+    ], "summary": "s", "unclassified": []}}, offered={"buckets": buckets})
+    assert r["ok"] is False
+    assert r["accepted"]["conflicts"] and r["accepted"]["conflicts"][0]["bucket_id"] == "B1"
+    assert any("不得采信" in p for p in r["problems"])
+    # Host 仍按桶的 entry_count 聚合（模型不逐地址说话）
+    assert r["accepted"]["entries_by_classification"]["本轮引入"] == 68
+
+    # ② 漏桶 / 重复 / 非法枚举 / 空依据
+    r = _validate("n10", {"data": {"items": [
+        {"bucket_id": "B1", "classification": "既有缺陷", "basis": "x"},
+        {"bucket_id": "B1", "classification": "既有缺陷", "basis": "x"},
+        {"bucket_id": "B9", "classification": "既有缺陷", "basis": "x"},
+    ], "summary": "s", "unclassified": []}}, offered={"buckets": buckets})
+    codes = " ".join(r["problems"])
+    assert "不在提供的桶里" in codes and "重复出现" in codes and "未被分类" in codes
+
+    r = _validate("n10", {"data": {"items": [
+        {"bucket_id": "B1", "classification": "可能就是吧", "basis": ""},
+        {"bucket_id": "B2", "classification": "既有缺陷", "basis": "ok"},
+    ], "summary": "s", "unclassified": []}}, offered={"buckets": buckets})
+    assert r["ok"] is False
+    assert any("classification 非法" in p for p in r["problems"])
+    assert any("缺 basis" in p for p in r["problems"])
+
+
+def test_n10_validator_accepts_conforming_classification() -> None:
+    from workflows.chunks.model_steps import _validate
+
+    buckets = [{"bucket_id": "B1", "entry_count": 64, "address_count": 64,
+                "sample_addresses": ["0x8000"], "overlaps_revision_point": False}]
+    r = _validate("n10", {"data": {"items": [
+        {"bucket_id": "B1", "classification": "既有缺陷", "basis": "通道 RD，修订点不在该范围"}
+    ], "summary": "全部既有", "unclassified": []}}, offered={"buckets": buckets})
+    assert r["ok"] is True, r["problems"]
+    assert r["accepted"]["entries_by_classification"] == {"既有缺陷": 64}
+    assert r["accepted"]["buckets_classified"] == 1

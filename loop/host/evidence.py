@@ -238,3 +238,160 @@ def _verdict(counts: Counts, text: str) -> dict[str, Any]:
         "criterion": "PASS ⟺ 两套口径皆 0 ∧ UVM Report Summary 出现",
         "must_not": "口径二为 0 不足以判绿：口径一非 0 时**不得**判跑通。",
     }
+
+
+#: 口径一的逐地址分解：`UVM_INFO ... [PCIE_REG_RD@3DW] *E @ADDR[0x84] -> DATA[0x0] != EXP[0xffffffff]`
+_FAIL_ADDR_RE = re.compile(r"\*E\s+@ADDR\[(0x[0-9a-fA-F]+)\]")
+
+
+def fail_address_table(text: str) -> dict[str, Any]:
+    """把口径一（`*E`）分解到**逐地址**，全部由 Host 确定性抽取。
+
+    为什么这一步不能交给模型：这是**计数与算术**（红线 3 / 红线 10），
+    也是"本轮引入 vs 既有缺陷"判定的**事实底座**。模型只负责在上层做语义分类。
+
+    返回 `{addresses: [{address, count, sample_ref, sample}], total_entries,
+    matched_entries, unmatched_lines, distinct_addresses}`。
+    其中 `unmatched_lines` 是含 `*E` 但不含 `@ADDR[...]` 的行数 ——
+    非零就必须显式报告，不能静默当成 0。
+    """
+    counts: dict[str, int] = {}
+    samples: dict[str, tuple[int, str]] = {}
+    fail_lines = 0
+    matched = 0
+    for i, line in enumerate(_lines(text)):
+        if "*E" not in line:
+            continue
+        fail_lines += 1
+        m = _FAIL_ADDR_RE.search(line)
+        if not m:
+            continue
+        matched += 1
+        addr = m.group(1).lower()
+        counts[addr] = counts.get(addr, 0) + 1
+        samples.setdefault(addr, (i + 1, line.strip()[:200]))
+
+    addresses = [
+        {
+            "address": addr,
+            "count": counts[addr],
+            "sample_line": samples[addr][0],
+            "sample_ref": f"line {samples[addr][0]}",
+            "sample": samples[addr][1],
+        }
+        for addr in sorted(counts, key=lambda a: int(a, 16))
+    ]
+    return {
+        "addresses": addresses,
+        "total_entries": fail_lines,
+        "matched_entries": matched,
+        "unmatched_lines": fail_lines - matched,
+        "distinct_addresses": len(addresses),
+        "extraction_owner": "host:host/evidence.py（确定性；不经模型）",
+    }
+
+
+def normalize_address(token: str) -> int | None:
+    """把 `0x84` / `0x0000+0x04` / `0x84` 统一成段内偏移整数，用于与修订点比对。"""
+    value = str(token).strip().lower()
+    if "+" in value:
+        value = value.split("+", 1)[1]
+    if value.startswith("0x"):
+        try:
+            return int(value, 16)
+        except ValueError:
+            return None
+    return None
+
+
+def revision_points(diffs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """本轮修订点（取自 N2 差异条目），Host 确定性。
+
+    用于交叉核对模型的分类：判为「本轮引入」的地址**必须**落在某个修订点上，
+    否则 Host 必须标记冲突（模型不能凭空说"这是这轮引入的"）。
+    """
+    out: list[dict[str, Any]] = []
+    for d in diffs:
+        seg = str(d.get("segment") or "")
+        offset = str(d.get("offset") or "")
+        entry_id = str(d.get("entry_id") or d.get("id") or "")
+        norm = normalize_address(offset)
+        if norm is None:
+            continue
+        out.append({"entry_id": entry_id, "segment": seg, "offset": offset,
+                    "offset_int": norm, "display": f"{seg}+{offset}" if seg and "+" not in offset else offset})
+    return out
+
+
+#: 分桶上限：超过则把尾部合并进 `其他`，并**显式报告**合并了多少（不静默丢信息）。
+MAX_FAIL_BUCKETS = 24
+
+
+def fail_buckets(text: str, diffs: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+    """把逐地址失败**分桶**，供模型做有界语义分类。
+
+    分工（技能 `agently-request`：模型给"有界任务相关事实 + 一个 host 签发的 key"，
+    身份在 Host 侧重构）：
+    - **Host**：抽地址、计数、按 `通道 + 段内高字节` 分桶、算是否落在本轮修订点上；
+    - **模型**：只对每个桶判 {既有缺陷 / 本轮引入 / 待裁决} 并给依据；
+    - **Host**：校验覆盖性与枚举，并把分类**回填到该桶的全部地址**（模型从不逐地址说话）。
+
+    逐地址整体发给模型是不可行的（实测 1622 个不同地址）。
+    """
+    table = fail_address_table(text)
+    channel_re = re.compile(r"\[([A-Z][A-Z0-9_@]*)\]")
+    revs = revision_points(diffs or [])
+    rev_set = {r["offset_int"] for r in revs}
+
+    buckets: dict[str, dict[str, Any]] = {}
+    for item in table["addresses"]:
+        addr_int = normalize_address(item["address"]) or 0
+        m = channel_re.search(item["sample"])
+        channel = m.group(1) if m else "(unknown)"
+        key = f"{channel}|0x{addr_int >> 8:02x}xx"
+        b = buckets.setdefault(key, {
+            "bucket_id": key, "channel": channel,
+            "range": f"0x{addr_int >> 8:02x}00-0x{addr_int >> 8:02x}ff",
+            "addresses": [], "entry_count": 0,
+        })
+        b["addresses"].append(item["address"])
+        b["entry_count"] += item["count"]
+
+    ordered = sorted(buckets.values(), key=lambda b: -b["entry_count"])
+    merged_note = None
+    if len(ordered) > MAX_FAIL_BUCKETS:
+        head, tail = ordered[: MAX_FAIL_BUCKETS - 1], ordered[MAX_FAIL_BUCKETS - 1 :]
+        merged = {
+            "bucket_id": "(merged)", "channel": "(mixed)",
+            "range": f"其余 {len(tail)} 个桶", "addresses": [],
+            "entry_count": sum(b["entry_count"] for b in tail),
+        }
+        for b in tail:
+            merged["addresses"].extend(b["addresses"])
+        merged_note = {"merged_buckets": len(tail), "merged_entries": merged["entry_count"]}
+        ordered = head + [merged]
+
+    for b in ordered:
+        overlaps = [a for a in b["addresses"] if (normalize_address(a) or -1) in rev_set]
+        b["address_count"] = len(b["addresses"])
+        b["overlaps_revision_point"] = bool(overlaps)
+        b["overlapping_addresses"] = overlaps[:5]
+        b["sample_addresses"] = b["addresses"][:6]
+        del b["addresses"]
+
+    return {
+        "buckets": ordered,
+        "bucket_count": len(ordered),
+        "merged_note": merged_note,
+        "revision_points": revs,
+        # Host 算出的总事实：本轮失败里**有没有**任何地址落在修订点上。
+        # 这是"本轮引入 vs 既有缺陷"的确定性底座，模型不得改写。
+        "any_bucket_overlaps_revision_point": any(b["overlaps_revision_point"] for b in ordered),
+        "coverage": {
+            "distinct_addresses": table["distinct_addresses"],
+            "addresses_in_buckets": sum(b["address_count"] for b in ordered),
+            "entries_in_buckets": sum(b["entry_count"] for b in ordered),
+            "total_entries": table["total_entries"],
+        },
+        "extraction_owner": "host:host/evidence.py（分桶与修订点交集均为确定性）",
+    }

@@ -145,7 +145,7 @@ I6（非 human actor）与 I4（冲突未清零时选全量/子集回归）都�
 | 项 | 现状 |
 |---|---|
 | 模型节点 | **已接真 ModelRequest**：N3/N6/N8/N11/N12 走宿主已声明的 provider（`openai-responses`，`origin-deepseek-v4-1-flash`），5/5 实测 live 且 Host 校验零问题。凭据不可用时自动退回**显式标注**的确定性替身（`standin=True`），离线测试即走此路径。 |
-| N10 对账 | 数字抽取是 Host 确定性的（`host/evidence.py`，**不经模型**）；FAIL 三分类仍是确定性替身。 |
+| N10 对账 | **数字与分桶归 Host**（`host/evidence.py`，确定性、零丢失：夹具上 1622/1622 地址、1687/1687 条目），**三分类归模型**（24 个桶逐桶判定）。Host 校验覆盖性/枚举/依据，并交叉核对「本轮引入」是否真落在修订点上（不重叠的断言记为冲突且不采信）。夹具实测：模型把 24/24 桶判为既有缺陷 ⇒ 1687 条目，Host 冲突 0。 |
 | real 模式 | N9 已改为经 `kb/tools/run_guarded.sh --mode full`（身份头 + 归档 + 自愈 + 串行锁），但**未在真机跑过一次完整全跑**（单用例 ≈19 min，修订后可达 22.8 h）；归档腿本身已用 `uvlan` 桩在真实代码路径上验证。 |
 | N15 回归 | drill 下不真跑；`for_each(concurrency=1)` 已就位，跨机 `run_tc.py` 未接。 |
 | N16 晋升 | 本层**恒为 `--dry-run`**，绝不写 `kb/baselines/`。 |
@@ -188,8 +188,9 @@ I6（非 human actor）与 I4（冲突未清零时选全量/子集回归）都�
 ```bash
 cd loop
 .venv/bin/python spikes/probe_provider.py        # 端点连通 + 最小请求
-LOOP_LLM_MODE=live .venv/bin/python spikes/verify_live_nodes.py   # 5 个模型节点逐个 live
-.venv/bin/python -m pytest -q                    # 51 项，离线（替身）
+LOOP_LLM_MODE=live .venv/bin/python spikes/verify_live_nodes.py   # 5 个语义节点逐个 live
+LOOP_LLM_MODE=live .venv/bin/python spikes/verify_live_n10.py     # N10 分桶分类 live（Host 抽数+模型分类）
+.venv/bin/python -m pytest -q                    # 55 项，离线（替身）
 ```
 
 ## 6 drill 夹具

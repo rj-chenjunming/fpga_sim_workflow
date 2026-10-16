@@ -16,3 +16,8 @@ kb/runs/
 # ── 验证沙箱（verifier 自测的可重跑 scratch，约 157 MB）
 #    与 kb/runs/ 同一原则：产物不入库，结论（V*.md / frozen_*.md5）入库
 doc/spec/evidence/loop_rehearsal/verify/sandbox/
+
+# ---- 拆仓后新增：软件管理的每环境数据（体积大、属运行产物，不入库）----
+workspaces/*/
+!workspaces/.gitkeep
+!workspaces/README.md

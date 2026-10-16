@@ -1,0 +1,24 @@
+# 环境插件注册表 —— 软件独立成产品，环境是被它管理的「插件」。
+#
+# 一个「环境」= 一个被分析/被守卫的仓库：冻结的 RTL/TB/PKG/TESTLIB + 它自带的 doc/ 与 uvs.setup。
+# 软件不假设环境的路径，只从本表（或 --env-root / $LOOP_ENV_ROOT）取。
+version: 1
+
+# 默认环境（命令行不给 --env 时用它）
+default: simenv-tcs9620-64ch
+
+environments:
+  simenv-tcs9620-64ch:
+    path: /home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES
+    description: TCS9620 64CH FPGA 仿真环境（Pango Logos2 / UNIVISTA UVS / UVM 1.2）
+    # 冻结资产（只读，任何工具不得写入）
+    frozen: [RTL, TB, PKG, TESTLIB]
+    # 环境必须提供的插件面（相对 path）
+    provides:
+      sim_setup: uvs.setup                                  # 全局单文件 ⇒ 单槽的物理依据
+      run_local: doc/tools/run_local.sh                     # 冻结的真机驱动（只包装、不修改）
+      sim_setup_orig: doc/_run_artifacts/uvs.setup.orig      # 中止自愈的还原源
+      sim_workdir: SIMLIB_RUN                               # 运行产物落点
+      env_agents: doc/AGENTS.md                              # 环境的红线与规范
+    # 该环境的**数据**落点（软件管理，见 workspaces/README.md）
+    workspace: workspaces/simenv-tcs9620-64ch

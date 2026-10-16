@@ -140,6 +140,27 @@ resume 载荷的相位**，一律回读 `JobRunner.poll()`（rc 文件 + 进程�
 **回归**：`test_decision_response_gate_state_is_authority_not_process_record`（同名一类的字段名与
 内容不符问题）以及 phase 5 的实机输出（现在能看到 `error=投递失败：RuntimeError: 死任务 …`）。
 
+### F-V1-06c（major）快照停在**已终结作业**中断上 ⇒ run 永久卡在 JOB
+F-V1-06 的竞态换了位置后暴露：补投递发生在快照落盘**之后**，于是盘上快照仍停在 `JOB:` 中断，
+而作业记录已是 `delivered=True` ⇒ **没有任何补投递会再来**，run 永远停在 JOB、永不收敛。
+（实测：在独立工作区复跑本终验时第 2 代就是这样。）
+**修法**：恢复时 `_stale_job_interrupts()` 按 `JobRunner.poll()` 的**权威相位**识别"停在已终结作业上"，
+强制重投递该结局 —— **只读取已跑完作业的结局，不重跑外部作业**。投递路径仍只有一条：
+不另起分支，因为两条路径各带一套错误处理必然分裂（实测把死任务路径弄坏过一次）。
+**反证（真跑）**：把 `_stale_job_interrupts` 换成返回 `[]` ⇒ 回归测试立刻失败并报
+「仍卡在 JOB 中断：status=waiting_gate」。
+
+### F-V1-08（blocker，只在恢复路径触发）重投递复用旧 `resume_request_id` 被**静默拒绝**
+`resume_request_id` 是 TriggerFlow 的**去重键**。第 1 代已用 `JOB-x:done:0` 投递过一次；
+恢复时沿用同一 id，框架判为重复投递且**只打日志、不抛错**：
+```
+ERROR [triggerflow.resume_dispatch_failed] resume request 'JOB-…:done:0' for interrupt 'JOB:JOB-…' changed phase.
+```
+而 `async_continue_with` 正常返回 ⇒ 我们照常 `mark_delivered` ⇒ run 永久卡住。
+**修法**：① 强制重投递一律换**新的** id（`…:restore:<本次进程实例>:<n>`）；
+② **核验执行体** —— 投递后若该中断仍在等待，抛错且**不标记已投递**，把静默空操作变成显式失败。
+这是"不信返回值、查执行体"纪律的又一次直接命中。
+
 ### 顺带修掉的字段名与内容不符（`gate_state` 装的是子进程记录）
 `POST …/gates/{gate}/decision` 的响应字段 `gate_state` 实际装的是 `gate.py` 的子进程调用记录
 （`cmd`/`rc`/`stdout_tail`）⇒ 读 `gate_state.human_signed` 只会得到 `undefined`，界面在签署后
@@ -150,6 +171,7 @@ resume 载荷的相位**，一律回读 `JobRunner.poll()`（rc 文件 + 进程�
 | 项 | 现状 |
 |---|---|
 | `mode="real"` 全跑 | 仍未在真机跑过完整一轮（单用例 ≈19 min，修订后可达 22.8 h）。drill 全链路已全绿。|
+| 拆仓后的数据位置 | 本轮只在**软件迁出、数据暂留旧位置**的模式下复验（`LOOP_WORKSPACE=<旧环境仓>/kb`）；把数据搬进 `workspaces/` 属第 4 步，未做。|
 | I3 口径分歧 | 口径一 = 1687 ≠ 0 是**既有缺陷**，判绿路径未通。三选项与推荐见 `kb/adjudication/I3_dual_count_dispute.md`（**需人拍板**）。|
 | C1—C72 | 72 条全 `blocks_release=true` ⇒ 晋升永久阻断。分组与清零路径见 `kb/adjudication/C_conflicts_triage.md`（**需人拍板** + 缺 human-only 裁决工具）。|
 | 快照落后于账本 | 现在会**显式失败**并说明原因，但不会自动恢复；修复路径（更频繁落盘）只降低了发生率，未消除竞态窗口。|

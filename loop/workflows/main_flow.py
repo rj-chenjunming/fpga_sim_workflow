@@ -13,6 +13,8 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
+import time
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -179,6 +181,12 @@ class RunManager:
         self._watch_task: asyncio.Task[Any] | None = None
         self._snap_task: asyncio.Task[Any] | None = None
         self._delivering: set[str] = set()
+        #: 本次进程实例的唯一标识 —— 恢复时的**重投递必须换新的 `resume_request_id`**：
+        #: 那是 TriggerFlow 的去重键，沿用旧 id 会被判"重复投递"而**静默拒绝**（实测：
+        #: `resume_dispatch_failed ... changed phase`，而 `async_continue_with` 并不抛错），
+        #: 于是 run 永久停在 JOB 中断上。
+        self._boot_id = "P%dT%d" % (os.getpid(), int(time.time()))
+        self._redeliver_n = 0
         self._load_docs()
 
     # ---------------- 投影持久化 ----------------
@@ -481,13 +489,27 @@ class RunManager:
         if interrupt_id is None:
             self._delivering.discard(str(job_id))
             return
-        request_id = f"{job_id}:{status.get('phase')}:{status.get('rc')}"
+        base_req = f"{job_id}:{status.get('phase')}:{status.get('rc')}"
+        if force:
+            # 必须换新 id：旧 id 已被上一代进程消费掉，复用会被去重逻辑拒绝
+            self._redeliver_n += 1
+            request_id = f"{base_req}:restore:{self._boot_id}:{self._redeliver_n}"
+        else:
+            request_id = base_req
         await execution.async_continue_with(
             interrupt_id,
             {"job_id": job_id, "phase": status.get("phase"), "rc": status.get("rc")},
             resume_request_id=request_id,
             actor="host:job_runner",
         )
+        # **核验执行体**：`async_continue_with` 在被拒时只打日志、不抛错（实测），
+        # 若只看返回值就会把"没投成"当成功并 mark_delivered ⇒ run 永久卡住。
+        if interrupt_id in (execution.get_pending_interrupts() or {}):
+            self._delivering.discard(str(job_id))
+            raise RuntimeError(
+                "投递未生效：中断 %s 仍在等待（resume 被拒或未被消费）⇒ 不标记已投递"
+                % interrupt_id
+            )
         self.runner.mark_delivered(job_id, resume_request_id=request_id)
         self._delivering.discard(str(job_id))
         await self.async_sync(run_id)

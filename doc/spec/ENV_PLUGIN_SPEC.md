@@ -78,7 +78,21 @@
 
 ## 5 分步计划（每步一个提交，每步独立可验）
 
-### 第 3 步（**让新仓能跑**，不搬数据）
+### 第 3 步（**让新仓能跑**，不搬数据）—— ✅ **已完成**（见本仓 git log）
+
+**完成证据**（全部在**新布局**下、数据仍留在旧位置跑出来的）：
+- `LOOP_ENV_ROOT=<旧环境仓> LOOP_WORKSPACE=<旧环境仓>/kb` 下：`loop` 单测 **69/69**；
+  `loop/spikes/accept_v1_run.sh` **rc=0、六相 116 断言**；`_selftest_gate_schema` **10/10**、
+  `_selftest_n5_reachability` **9/9**。
+- **向后兼容**（旧布局回落）实测：`TOOL_ROOT` 下有 `TESTLIB/` 时 `ENV_ROOT=TOOL_ROOT`、
+  `WORKSPACE_ROOT=TOOL_ROOT/kb`，三个取值逐项与拆仓前一致。
+- **fail closed** 实测：无 `$LOOP_ENV_ROOT`、注册表无可用条目、且非旧布局 ⇒ 报错并列出缺什么。
+- 顺带修掉两个**只在恢复路径触发**的真缺陷：**F-V1-06c**（快照停在已终结作业上 ⇒ 永久卡在 JOB）
+  与 **F-V1-08**（重投递复用旧 `resume_request_id` 被静默拒绝）。详见 `loop/ACCEPTANCE_V1.md` §3。
+
+**仍未做**：第 4 步（把数据搬进 `workspaces/`）与第 5 步（双仓独立复验）。
+
+#### 第 3 步原始计划（供对照）
 改动：
 1. `kb/tools/kb_lib.py`：按 §1 实现三个根与解析器；`env_path(*p)` 新增；
    **`root_path(*p)` 保留为 `env_path` 的别名**（现有调用语义都是在找环境文件，不改语义）；

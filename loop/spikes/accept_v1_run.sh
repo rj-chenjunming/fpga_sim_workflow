@@ -30,9 +30,14 @@ mkdir -p "$LOG"
 
 clean_state () {
   rm -rf state spikes/.accept_v1_state.json
-  for d in ../kb/runs/RUN-*; do
-    [ -f "$d/.loop_drill" ] && rm -rf "$d"
-  done
+  # run 目录在**工作区数据根**下（拆仓后不一定是 ../kb/runs）⇒ 由 paths 解析，不写死相对路径
+  local runs
+  runs=$(.venv/bin/python -c "import sys; sys.path.insert(0,'.'); from host import paths as P; print(P.KB_RUNS)" 2>/dev/null)
+  if [ -n "$runs" ]; then
+    for d in "$runs"/RUN-*; do
+      [ -f "$d/.loop_drill" ] && rm -rf "$d"
+    done
+  fi
   return 0
 }
 

@@ -160,6 +160,19 @@ def relpath(path):
     return ap
 
 
+#: 工作区数据根下应当存在的东西
+WORKSPACE_PARTS = ("index", "conflicts", "baselines", "runs")
+
+
+def check_workspace():
+    """自检工作区数据根是否有内容，返回缺失项列表（空 = 齐全）。
+
+    必须外显：工作区指错地方时，症状是"索引缺口 / 冲突清单缺失"这类**难懂的**失败，
+    看起来像数据坏了，其实只是路径没指对（实测：注册表默认值指向空目录时就是这个表现）。
+    """
+    return [name for name in WORKSPACE_PARTS if not os.path.isdir(kb_path(name))]
+
+
 def check_env():
     """自检插件面是否齐全。返回缺失项列表（空 = 齐全）。**不猜、不兜底。**"""
     reg = _load_registry()

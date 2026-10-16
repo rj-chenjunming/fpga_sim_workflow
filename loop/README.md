@@ -26,15 +26,16 @@
 
 ## 2 快速开始
 
-> **运行前提（拆仓后）**：本层是**独立软件**，环境是**插件**。跑之前要让软件知道
-> "分析哪个环境、数据放哪"：
+> **运行前提（拆仓后）**：本层是**独立软件**，环境是**插件**。环境与数据位置登记在
+> `environments.json` 里 ⇒ **直接 `./run.sh` 即可**，零配置。
+> 需要临时指到别处时用环境变量覆盖（优先级高于注册表）：
 > ```bash
-> export LOOP_ENV_ROOT=<环境仓路径>   # 被守卫的 RTL/TB/PKG/TESTLIB + doc + uvs.setup
-> export LOOP_WORKSPACE=<数据根路径>   # 该环境的 index/conflicts/baselines/runs
-> # 或写进 environments.json（推荐长期使用）
+> export LOOP_ENV_ROOT=<环境仓路径>    # 被守卫的 RTL/TB/PKG/TESTLIB + doc + uvs.setup
+> export LOOP_WORKSPACE=<数据根路径>    # 该环境的 index/conflicts/baselines/runs
 > ```
-> 软件根（TOOL_ROOT）自锚定；环境根缺失时**fail closed 并说明缺什么**，绝不猜路径。
-> 三个根的解析规则与插件契约见 `doc/spec/ENV_PLUGIN_SPEC.md`。
+> 软件根（TOOL_ROOT）自锚定、不需要配置；任一必需项缺失时**fail closed 并说明缺什么**，
+> 绝不猜路径。三个根的解析规则与插件契约见 `doc/spec/ENV_PLUGIN_SPEC.md`。
+> `/api/health` 会外显 `plugin_missing`（环境缺件）与 `workspace_missing`（数据找不到）。
 
 ```bash
 cd loop

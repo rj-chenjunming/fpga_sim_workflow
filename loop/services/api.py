@@ -60,6 +60,8 @@ def health() -> dict[str, Any]:
         "env_id": P.ENV_ID,
         "workspace_root": str(P.WORKSPACE_ROOT),
         "plugin_missing": P.missing_plugin_parts(),
+        # 工作区数据是否找得到（指错地方时症状是"索引缺口"，必须在健康检查里说清）
+        "workspace_missing": P.missing_workspace_parts(),
         "agently": md.version("agently"),
         "python": sys.version.split()[0],
         # 模型 provider 状态（**不含密钥**）：界面据此显示"模型节点是 live 还是替身"

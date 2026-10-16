@@ -19,7 +19,8 @@
         "sim_workdir": "SIMLIB_RUN",
         "env_agents": "doc/AGENTS.md"
       },
-      "workspace": "workspaces/simenv-tcs9620-64ch"
+      "workspace": "/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/kb"
     }
-  }
+  },
+  "_note_workspace": "workspace 指向该环境数据的**实际**位置。本环境的数据仍在环境仓的 kb/ 下（未搬）——理由见 doc/spec/ENV_PLUGIN_SPEC.md §7：baselines 与 runs 是不可再生的审计证据，搬动只增加\"路径迁移\"成本、不增加能力；而把同一环境的数据劈成两半更糟。将来若要收拢数据，改这一行即可（并同步跑第 5 步的双仓复验）。"
 }

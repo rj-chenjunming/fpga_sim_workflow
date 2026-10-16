@@ -49,10 +49,26 @@ TOOL_ROOT=$(cd "$SCRIPT_DIR/../.." && pwd)
 # 环境（插件）根：拆仓后软件不在环境仓内，必须由 LOOP_ENV_ROOT 给出。
 # 向后兼容：若软件仍在环境仓内（拆仓前布局，TOOL_ROOT 下有 TESTLIB/），回落为 TOOL_ROOT。
 ROOT="${LOOP_ENV_ROOT:-}"
-if [ -z "$ROOT" ] && [ -d "$TOOL_ROOT/TESTLIB" ]; then ROOT="$TOOL_ROOT"; fi
+if [ -z "$ROOT" ] && [ -d "$TOOL_ROOT/TESTLIB" ]; then
+  # 向后兼容：软件仍在环境仓内（拆仓前布局）
+  ROOT="$TOOL_ROOT"
+fi
+if [ -z "$ROOT" ]; then
+  # 与其它脚本**同一个**解析器（kb_lib）：口径只有一份，包装脚本不许自己再定一套。
+  # 读的是软件仓根的 environments.json（不依赖任何环境变量）。
+  ROOT="$("${PYTHON:-python3}" -c \
+    "import sys; sys.path.insert(0, \"$TOOL_ROOT/kb/tools\"); sys.dont_write_bytecode = True; \
+     import kb_lib; print(kb_lib.ENV_ROOT)" 2>/dev/null)"
+fi
+if [ -n "${LOOP_ENV_ROOT:-}" ] && [ ! -d "$LOOP_ENV_ROOT" ]; then
+  # 区分"没给"与"给了但指错" —— 两者的处置完全不同，错误信息必须说清
+  echo "[guard] [FAIL] \$LOOP_ENV_ROOT=$LOOP_ENV_ROOT 不是一个目录" >&2
+  exit 2
+fi
 if [ -z "$ROOT" ] || [ ! -d "$ROOT" ]; then
-  echo "[guard] [FAIL] 无法确定环境根 ENV_ROOT：请设 LOOP_ENV_ROOT" >&2
-  echo "               （见 doc/spec/ENV_PLUGIN_SPEC.md §1；或补全 environments.json）" >&2
+  echo "[guard] [FAIL] 无法确定环境根 ENV_ROOT：既没有 \$LOOP_ENV_ROOT，" >&2
+  echo "               $TOOL_ROOT/environments.json 里也没有可用条目" >&2
+  echo "               （见 doc/spec/ENV_PLUGIN_SPEC.md §1）" >&2
   exit 2
 fi
 cd "$ROOT" || exit 2

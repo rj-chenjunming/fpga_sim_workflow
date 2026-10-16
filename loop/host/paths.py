@@ -70,6 +70,11 @@ KB_CONFLICTS: Path = WORKSPACE_ROOT / "conflicts"
 def missing_plugin_parts() -> list[str]:
     """环境插件面缺什么（空 = 齐全）。**不猜、不兜底**，由 /api/health 外显。"""
     return list(_KB.check_env())
+
+
+def missing_workspace_parts() -> list[str]:
+    """工作区数据根缺什么（空 = 齐全）。外显，避免"索引缺口"式的难懂失败。"""
+    return list(_KB.check_workspace())
 STATE_DIR: Path = LOOP_DIR / "state"
 JOBS_DIR: Path = STATE_DIR / "jobs"
 RECOVERY_DIR: Path = STATE_DIR / "recovery"

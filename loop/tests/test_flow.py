@@ -225,6 +225,50 @@ async def test_park_snapshot_is_written_without_opportunistic_sync() -> None:
         await m.stop_watching()
 
 
+async def test_restore_redelivers_terminal_job_when_snapshot_is_stale() -> None:
+    """F-V1-06c：快照停在**已终结且已投递**的作业中断上 ⇒ 必须按权威重投递结局，不得永久卡住。
+
+    实测（拆仓后终验第 2 代）：补投递发生在快照落盘之后，盘上快照仍停在 `JOB:` 中断，
+    而作业记录已是 `delivered=True` ⇒ 没有任何补投递会再来，run 永久卡在 JOB。
+    重投递只读取已跑完作业的结局，**不重跑外部作业**。
+    """
+    m = RunManager()
+    rid = await m.start(baseline="v0", mode="drill", scenario="cancel")
+    try:
+        await _drive_to_interrupt(m, rid, "G1_diff_confirm")
+        await m.decide(run_id=rid, gate="G1_diff_confirm", decision="confirmed", actor=HUMAN)
+        parked = await _drive_to_interrupt(m, rid, "JOB:", timeout=25.0)
+        job_id = ((parked.get("pending_interrupt") or {}).get("payload") or {}).get("job_id")
+        assert job_id, parked
+        snap = m._snapshot_path(rid)
+        ok = await wait_until(lambda: snap.is_file() and job_id in snap.read_text(encoding="utf-8"),
+                              timeout=25.0)
+        assert ok, "停在 JOB 上的快照未落盘"
+
+        # 伪造"投递已发生、快照还停在 JOB"：作业落 rc（poll 判 done）+ 记录标 delivered=True
+        rec = m.runner.record(job_id)
+        Path(rec["rc_path"]).write_text("0", encoding="utf-8")
+        forged = dict(rec)
+        forged.update({"phase": "done", "rc": 0, "delivered": True})
+        m.runner.record_path(job_id).write_text(json.dumps(forged, ensure_ascii=False, indent=2),
+                                                encoding="utf-8")
+
+        await m.stop_watching()
+        m2 = RunManager()
+        report = await m2.async_restore_all()
+        assert rid in report["restored"], report
+        moved = await wait_until(
+            lambda: not (((m2.run_view(rid).get("pending_interrupt") or {}).get("id") or "").startswith("JOB:")),
+            timeout=20.0)
+        view = m2.run_view(rid)
+        assert moved, f"仍卡在 JOB 中断：status={view['status']} pending={view.get('pending_interrupt')}"
+        kinds = [(e["kind"], e.get("status")) for e in m2._progress(rid).read()]
+        assert ("warning", "stale_snapshot_redeliver") in kinds, "重投递必须留显式事件（不得静默）"
+        await m2.stop_watching()
+    finally:
+        await m.stop_watching()
+
+
 async def test_restore_refuses_when_snapshot_lags_the_ledger() -> None:
     """F-V1-06b：快照落后于权威账本时必须**显式失败**，既不许卡死也不许静默重跑一轮。
 

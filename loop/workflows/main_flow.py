@@ -450,19 +450,26 @@ class RunManager:
 
     # ---------------- 完成投递桥 ----------------
 
-    async def _deliver(self, status: dict[str, Any]) -> None:
+    async def _deliver(self, status: dict[str, Any], *, force: bool = False) -> None:
+        """把作业结局投递给停在 `JOB:` 中断上的执行。
+
+        `force=True` 时跳过"已投递"守卫 —— 只给**恢复陈旧快照**用：那时作业早已跑完并投递过，
+        但盘上的快照还停在 JOB 中断（落盘发生在投递之前），若不强制重投递，run 会**永久卡住**
+        （没有任何补投递会再来）。重投递只是读取已跑完作业的结局，**不重跑外部作业**。
+        """
         record = status.get("record") or {}
         run_id = record.get("run_id")
         job_id = status.get("job_id")
         execution = self.executions.get(run_id)
         if execution is None:
             return
-        # 幂等 + 防并发：同一作业只投递一次（看护任务与补投递可能同时看到它）
-        if record.get("delivered") or job_id in self._delivering:
-            return
-        latest = self.runner.record(str(job_id)) or {}
-        if latest.get("delivered"):
-            return
+        if not force:
+            # 幂等 + 防并发：同一作业只投递一次（看护任务与补投递可能同时看到它）
+            if record.get("delivered") or job_id in self._delivering:
+                return
+            latest = self.runner.record(str(job_id)) or {}
+            if latest.get("delivered"):
+                return
         self._delivering.add(str(job_id))
         pending = execution.get_pending_interrupts() or {}
         interrupt_id = None
@@ -536,6 +543,25 @@ class RunManager:
 
     # ---------------- 重启恢复 ----------------
 
+    def _stale_job_interrupts(self, execution: Any) -> list[tuple[str, str, str]]:
+        """停在**已终结**作业的中断上 ⇒ 快照陈旧（落盘发生在投递之后又被回退）。
+
+        返回 `[(interrupt_id, job_id, phase)]`。作业相位一律回读 `JobRunner.poll()`
+        （rc 文件 + 进程存活 = 权威），不看快照里记了什么。
+        """
+        out: list[tuple[str, str, str]] = []
+        for key, item in (execution.get_pending_interrupts() or {}).items():
+            job_id = ((item or {}).get("payload") or {}).get("job_id")
+            if not job_id:
+                continue
+            try:
+                phase = self.runner.poll(str(job_id)).phase
+            except Exception:
+                continue
+            if phase in ("done", "dead", "cancelled"):
+                out.append((str(key), str(job_id), str(phase)))
+        return out
+
     def _snapshot_behind_ledger(self, run_id: str, execution: Any) -> str | None:
         """恢复后与**权威账本**对账：若停在"账本已签"的闸门上，快照就是落后的 ⇒ 显式失败。
 
@@ -573,6 +599,8 @@ class RunManager:
         buckets = self.runner.reattach()
         restored: list[str] = []
         failed: list[dict[str, str]] = []
+        #: 停在陈旧快照上的作业：job_id -> 权威相位（需要**强制**重投递）
+        stale_jobs: dict[str, str] = {}
 
         for run_id, doc in list(self.docs.items()):
             if doc.status not in ("waiting_gate", "running"):
@@ -608,7 +636,19 @@ class RunManager:
             self.ctxs[run_id] = ctx
             ctx.event("warning", node="restore", status="restored",
                       detail={"snapshot": str(snap), "undelivered_jobs": len(buckets.get("undelivered", []))})
-            # 快照落后于权威账本（崩溃落在两次落盘之间）⇒ fail closed，绝不静默重跑一轮
+            # 陈旧快照之一：停在**已终结作业**的中断上 ⇒ 记下来，稍后与正常补投递**走同一条路径**
+            # 强制重投递（不重跑外部作业，只读取已存在的结局）。
+            # 刻意不在这里自行投递：两条投递路径各带一套错误处理，就必然出现
+            # "一条把异常吞掉、另一条设 doc.error" 的分裂（实测把死任务路径弄坏过一次）。
+            for _key, jid, jphase in self._stale_job_interrupts(execution):
+                stale_jobs[jid] = jphase
+                ctx.event("warning", node="restore", status="stale_snapshot_redeliver",
+                          detail={"job_id": jid, "phase": jphase,
+                                  "rule": "快照停在已终结作业上 ⇒ 按 JobRunner.poll() 重投递其结局；"
+                                          "外部作业不重跑，只读取已存在的结局"})
+
+            # 陈旧快照之二：停在**账本已签**的闸门上（崩溃落在两次落盘之间）⇒ fail closed，
+            # 绝不静默重跑一轮（那会重跑修订 + 仿真，可能是几十分钟的外部作业）。
             behind = self._snapshot_behind_ledger(run_id, execution)
             if behind:
                 ctx.event("warning", node="restore", status="snapshot_behind_ledger",
@@ -625,13 +665,24 @@ class RunManager:
 
         # **补投递必须在 start_watching() 之前**：否则看护任务会与补投递**并发投同一个作业**，
         # 第二个 resume 会被框架拒绝（实测 `resume_dispatch_failed … changed phase`）。
-        for record in buckets.get("undelivered", []):
+        to_deliver: list[dict[str, Any]] = list(buckets.get("undelivered", []))
+        _seen = {str(r.get("job_id")) for r in to_deliver}
+        for jid, jphase in stale_jobs.items():
+            if jid in _seen:
+                continue
+            rec = self.runner.record(jid) or {}
+            rec = dict(rec)
+            rec["phase"] = jphase
+            to_deliver.append(rec)
+
+        for record in to_deliver:
             run_id = record.get("run_id")
             if run_id in self.executions:
                 try:
                     await self._deliver(
                         {"job_id": record.get("job_id"), "phase": record.get("phase"),
-                         "rc": record.get("rc"), "record": record}
+                         "rc": record.get("rc"), "record": record},
+                        force=str(record.get("job_id")) in stale_jobs,
                     )
                 except Exception as exc:
                     failed.append({"run_id": str(run_id), "reason": f"补投递失败：{exc}"})

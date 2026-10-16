@@ -19,7 +19,7 @@ async def main():
     # 直接用归档夹具当输入（它同时有 n2_diff.json 与全跑证据）
     run_dir = P.KB_RUNS / "RUN-20261015-120626"
     ctx = RunCtx(run_id="RUN-20261015-120626", run_dir=run_dir, mode="drill", scenario="happy",
-                 kb=KbSources.from_repo(P.REPO_ROOT),
+                 kb=KbSources.from_workspace(P.WORKSPACE_ROOT),
                  progress=ProgressLog(P.EVENTS_DIR, "N10-live-probe"))
     d = FakeData(ctx)
     out = await MS.n10_reconcile(d)

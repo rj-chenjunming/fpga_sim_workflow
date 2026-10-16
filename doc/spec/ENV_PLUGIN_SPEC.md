@@ -17,13 +17,16 @@
 | 根 | 含义 | 谁提供 | 典型值 |
 |---|---|---|---|
 | `TOOL_ROOT` | **软件仓根**（含 `kb/tools/kb_lib.py`） | 自锚定，不需要配置 | `/home/work/chenjunming/change-impact-loop` |
-| `ENV_ROOT` | **被守卫的环境仓根**（插件） | `environments.yaml` / `$LOOP_ENV_ROOT` / `--env-root` | `…/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES` |
-| `WORKSPACE_ROOT` | **该环境的数据根**（软件管理） | `environments.yaml` 的 `workspace` / `$LOOP_WORKSPACE` | `<TOOL_ROOT>/workspaces/simenv-tcs9620-64ch` |
+| `ENV_ROOT` | **被守卫的环境仓根**（插件） | `environments.json` / `$LOOP_ENV_ROOT` / `--env-root` | `…/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES` |
+| `WORKSPACE_ROOT` | **该环境的数据根**（软件管理） | `environments.json` 的 `workspace` / `$LOOP_WORKSPACE` | `<TOOL_ROOT>/workspaces/simenv-tcs9620-64ch` |
+
+> **注册表为什么是 JSON 而不是 YAML**：`kb/tools/**` 必须**只用 stdlib**（项目既有约束：环境里没有 `pyyaml`），
+> 自己写一个 YAML 子集解析器会把「解析错 ⇒ 环境根解错」这种静默故障引进来。JSON 是 stdlib 且无歧义。
 
 **解析优先级（单一实现，不许两套）**：
 1. 命令行 `--env-root` / `--workspace`（最具体）
 2. 环境变量 `$LOOP_ENV_ROOT` / `$LOOP_WORKSPACE`
-3. `environments.yaml`（选定 env id 的 `path` / `workspace`）
+3. `environments.json`（选定 env id 的 `path` / `workspace`）
 4. **向后兼容回落**：若 `TOOL_ROOT` 自身含 `TESTLIB/`，则 `ENV_ROOT = TOOL_ROOT`、
    `WORKSPACE_ROOT = TOOL_ROOT/kb` —— 这正是拆仓前的布局，行为必须逐字节不变。
 5. 以上都不成立 ⇒ **fail closed**：报错并列出缺什么，**不猜路径、不用默认值兜底**。
@@ -32,7 +35,7 @@
 
 ```
 <TOOL_ROOT>/                         # 软件（本仓）
-├── environments.yaml                # 环境插件注册表
+├── environments.json                # 环境插件注册表
 ├── kb/
 │   ├── README.md                    # 契约（口径/写权/红线）
 │   ├── tools/**                     # Host 确定性程序（不上模型）

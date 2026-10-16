@@ -92,7 +92,7 @@ def baseline_digests(root, exclude=()):
 
 
 def resolve(path):
-    return path if os.path.isabs(path) else K.root_path(path)
+    return path if os.path.isabs(path) else K.data_path(path)
 
 
 def force_rmtree(p):

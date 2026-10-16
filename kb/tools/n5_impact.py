@@ -1155,7 +1155,7 @@ def main(argv=None):
     ap.add_argument("--gates", default=None, help="闸门状态（默认 kb/runs/<run_id>/gates.json）")
     ap.add_argument("--segment-rtl", default=None, help="默认 kb/index/segment_rtl.json")
     ap.add_argument("--case-access", default=None, help="默认 kb/index/case_access.json")
-    ap.add_argument("--divergence-ref", default="kb/runs/dev-case-kb/divergence_sites.csv",
+    ap.add_argument("--divergence-ref", default=K.data_path("kb/runs/dev-case-kb/divergence_sites.csv"),
                     help="T3 重推值与 09 笔记的差异清单（写进 index_provenance.divergence_ref）")
     ap.add_argument("--regmap", default=None,
                     help="文档条目索引（默认 kb/index/regmap.json）；可选，用于把 ① 路 offset 接到"
@@ -1349,7 +1349,7 @@ def main(argv=None):
                              "doc/_notes/09_iface_doc_vs_case.md 的数字（1928/66/2561/4555）"
                              "仅为参照（kb/README.md §3.3 已按 T3 重推值改）"),
                "divergence_ref": args.divergence_ref,
-               "divergence_ref_present": os.path.exists(K.root_path(args.divergence_ref)),
+               "divergence_ref_present": os.path.exists(K.data_path(args.divergence_ref)),
                "b3_compensation": {"total": b3_total, "listed": b3_listed,
                                    "to_check_entries": b3_entries,
                                    "fallback_added": len(b3_fallback),

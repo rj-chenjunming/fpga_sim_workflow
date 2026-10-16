@@ -15,10 +15,11 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import kb_lib as K  # noqa: E402
 from n5_impact import macro_called_names, reachability_analysis  # noqa: E402
 
-ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
-FIXTURE = os.path.join(ROOT, "kb", "runs", "RUN-20261015-120626", "sandbox", "TESTLIB")
+# 夹具是「本环境的工作区数据」⇒ 走 kb_path（拆仓前它恰好就是 <env>/kb/runs/...）
+FIXTURE = K.kb_path("runs", "RUN-20261015-120626", "sandbox", "TESTLIB")
 
 RESULTS = []
 
@@ -61,7 +62,7 @@ else:
           chk2.get("reachable") is False and chk2.get("called_somewhere") is False, str(chk2))
 
 # ---- 3 源不可读 ⇒ static-only（不猜 live）----
-missing = reachability_analysis(os.path.join(ROOT, "kb", "tools", "__no_such_case__.sv"))
+missing = reachability_analysis(K.tool_path("tools", "__no_such_case__.sv"))
 check("9 源不可读 ⇒ ok=False（调用方须标 static-only，不许猜 live）",
       missing.get("ok") is False and "不可读" in missing.get("reason", ""), missing.get("reason", "")[:60])
 

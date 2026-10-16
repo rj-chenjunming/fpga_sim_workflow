@@ -36,13 +36,18 @@ class KbSources:
     _cache: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
-    def from_repo(cls, repo_root: Path) -> "KbSources":
-        kb = Path(repo_root) / "kb"
+    def from_workspace(cls, workspace_root: Path) -> "KbSources":
+        """指向**该环境的工作区数据根**（拆仓前它恰好是 `<env>/kb/`）。
+
+        不能再用 `repo_root/"kb"`：拆仓后环境仓里没有 kb/ 数据了，
+        数据在软件侧 `workspaces/<env-id>/` 下（`environments.json` 的 `workspace`）。
+        """
+        base = Path(workspace_root)
         return cls(
-            root=kb,
-            conflicts=kb / "conflicts" / "conflicts.json",
-            pending=kb / "conflicts" / "pending.json",
-            baselines=kb / "baselines",
+            root=base,
+            conflicts=base / "conflicts" / "conflicts.json",
+            pending=base / "conflicts" / "pending.json",
+            baselines=base / "baselines",
         )
 
     def load_conflicts(self) -> dict[str, Any]:

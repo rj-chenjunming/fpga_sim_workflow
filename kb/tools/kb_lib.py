@@ -33,28 +33,147 @@ from datetime import datetime
 # ---------------------------------------------------------------- 路径
 
 _THIS = os.path.abspath(__file__)
-# kb/tools/kb_lib.py -> kb/tools -> kb -> <repo root>
-KB_DIR = os.path.dirname(os.path.dirname(_THIS))
-ROOT = os.path.dirname(KB_DIR)
+# kb/tools/kb_lib.py -> kb/tools -> kb -> <软件仓根>
+KB_DIR = os.path.dirname(os.path.dirname(_THIS))      # <TOOL_ROOT>/kb（**软件**资产：tools/schema/README）
+TOOL_ROOT = os.path.dirname(KB_DIR)                   # 软件仓根（自锚定，不需要配置）
+
+#: 环境插件注册表。**必须 JSON**：kb/tools 只用 stdlib（环境里没有 pyyaml），
+#: 自写 YAML 子集解析器会把"解析错 ⇒ 环境根解错"这种静默故障引进来。
+ENV_REGISTRY = os.path.join(TOOL_ROOT, "environments.json")
 
 
-def kb_path(*parts):
-    """kb/ 下的绝对路径；`kb_path('index','segments.json')`"""
+def _load_registry():
+    if not os.path.isfile(ENV_REGISTRY):
+        return {}
+    try:
+        with open(ENV_REGISTRY, "r", encoding="utf-8") as f:
+            doc = json.load(f)
+    except Exception as exc:
+        raise RuntimeError("环境注册表不可解析：%s（%s: %s）"
+                           % (ENV_REGISTRY, type(exc).__name__, exc))
+    if not isinstance(doc, dict):
+        raise RuntimeError("环境注册表顶层必须是对象：%s" % ENV_REGISTRY)
+    return doc
+
+
+def _env_id(reg):
+    return os.environ.get("LOOP_ENV") or reg.get("default")
+
+
+def _resolve_env_root():
+    """**环境（插件）根**。优先级：$LOOP_ENV_ROOT → 注册表 → 旧布局回落 → fail closed。"""
+    explicit = os.environ.get("LOOP_ENV_ROOT")
+    if explicit:
+        return os.path.abspath(os.path.expanduser(explicit))
+    reg = _load_registry()
+    eid = _env_id(reg)
+    entry = ((reg.get("environments") or {}).get(eid) or {}) if eid else {}
+    if entry.get("path"):
+        return os.path.abspath(os.path.expanduser(str(entry["path"])))
+    if os.path.isdir(os.path.join(TOOL_ROOT, "TESTLIB")):
+        # 向后兼容：拆仓前软件就在环境仓内，行为必须逐字节不变
+        return TOOL_ROOT
+    raise RuntimeError(
+        "无法确定环境根（ENV_ROOT）：没有 $LOOP_ENV_ROOT，%s 里也没有可用条目，"
+        "且 %s 下没有 TESTLIB/（说明不是拆仓前的旧布局）。"
+        "请设 LOOP_ENV_ROOT 或补全注册表 —— 见 doc/spec/ENV_PLUGIN_SPEC.md §1"
+        % (ENV_REGISTRY, TOOL_ROOT))
+
+
+ENV_ROOT = _resolve_env_root()
+ENV_ID = _env_id(_load_registry()) or os.path.basename(ENV_ROOT.rstrip(os.sep))
+
+
+def _resolve_workspace_root():
+    """**该环境的数据根**。优先级：$LOOP_WORKSPACE → 注册表 workspace → 旧布局回落 → 默认。"""
+    explicit = os.environ.get("LOOP_WORKSPACE")
+    if explicit:
+        return os.path.abspath(os.path.expanduser(explicit))
+    reg = _load_registry()
+    entry = ((reg.get("environments") or {}).get(ENV_ID) or {})
+    if entry.get("workspace"):
+        p = os.path.expanduser(str(entry["workspace"]))
+        return p if os.path.isabs(p) else os.path.join(TOOL_ROOT, p)
+    if ENV_ROOT == TOOL_ROOT:
+        return os.path.join(TOOL_ROOT, "kb")     # 旧布局：数据就在 kb/ 下
+    return os.path.join(TOOL_ROOT, "workspaces", ENV_ID)
+
+
+WORKSPACE_ROOT = _resolve_workspace_root()
+
+#: 向后兼容别名（拆仓前 `ROOT` == 环境仓根，所有旧调用语义都是"环境"）
+ROOT = ENV_ROOT
+
+
+def tool_path(*parts):
+    """**软件**资产路径（schema 等）：`tool_path('schema','manifest.schema.json')`"""
     return os.path.join(KB_DIR, *parts)
 
 
+def env_path(*parts):
+    """**环境**（插件）路径：`env_path('RTL')`"""
+    return os.path.join(ENV_ROOT, *parts)
+
+
 def root_path(*parts):
-    return os.path.join(ROOT, *parts)
+    """旧名兼容：语义 = `env_path`（拆仓前的全部调用都是在找环境文件）。"""
+    return env_path(*parts)
+
+
+def kb_path(*parts):
+    """**工作区数据**路径：`kb_path('index','segments.json')`
+
+    拆仓前指向软件仓内的 kb/；现在指向 WORKSPACE_ROOT（每环境数据，见 workspaces/README.md）。
+    旧布局下 WORKSPACE_ROOT == ENV_ROOT/kb ⇒ 行为逐字节不变。
+    """
+    return os.path.join(WORKSPACE_ROOT, *parts)
+
+
+def data_path(rel):
+    """把历史里记录的「以 kb/ 开头的相对路径」解析到工作区数据根。
+
+    manifest / 命令行默认值里大量出现 `kb/baselines/v0/rtl_snapshot.tar` 这类字符串；
+    不能直接丢给 kb_path（会变成 <ws>/kb/...），要先剥掉 `kb/` 前缀。
+    """
+    s = str(rel).replace(os.sep, "/")
+    if os.path.isabs(s):
+        return s
+    if s.startswith("kb/"):
+        s = s[3:]
+    return kb_path(*[x for x in s.split("/") if x])
 
 
 def relpath(path):
-    """转成相对仓库根的 POSIX 相对路径（跨机器稳定，用于写进证据）。"""
+    """转成稳定的 POSIX 相对路径（写进证据）。
+
+    先试环境根、再试工作区根 —— 旧布局下工作区根是环境根的子目录，
+    因此 `kb/runs/...` 仍渲染成 `kb/runs/...`，**证据字符串与既有指纹不变**。
+    """
     ap = os.path.abspath(path)
-    try:
-        r = os.path.relpath(ap, ROOT)
-    except ValueError:
-        return ap
-    return r.replace(os.sep, "/")
+    for base in (ENV_ROOT, WORKSPACE_ROOT):
+        try:
+            r = os.path.relpath(ap, base)
+        except ValueError:
+            continue
+        if not r.startswith(".."):
+            return r.replace(os.sep, "/")
+    return ap
+
+
+def check_env():
+    """自检插件面是否齐全。返回缺失项列表（空 = 齐全）。**不猜、不兜底。**"""
+    reg = _load_registry()
+    entry = ((reg.get("environments") or {}).get(ENV_ID) or {})
+    provides = entry.get("provides") or {}
+    missing = []
+    for name in (entry.get("frozen") or ["RTL", "TB", "PKG", "TESTLIB"]):
+        if not os.path.isdir(env_path(name)):
+            missing.append(str(name) + "/")
+    for key in ("sim_setup",):
+        rel = provides.get(key, "uvs.setup")
+        if not os.path.exists(env_path(rel)):
+            missing.append(rel)
+    return missing
 
 
 # ---------------------------------------------------------------- 指纹
@@ -242,15 +361,15 @@ def load_schema(name):
     """
     if not name.endswith(".json"):
         name = name + ".schema.json"
-    cand = kb_path("schema", name)
+    cand = tool_path("schema", name)
     if os.path.exists(cand):
         return read_json(cand)
     alt = name.replace("-", "_")
-    if alt != name and os.path.exists(kb_path("schema", alt)):
-        return read_json(kb_path("schema", alt))
+    if alt != name and os.path.exists(tool_path("schema", alt)):
+        return read_json(tool_path("schema", alt))
     # 兼容原行为：允许 name 是 kb/ 下的相对路径
-    if os.path.exists(kb_path(name)):
-        return read_json(kb_path(name))
+    if os.path.exists(tool_path(name)):
+        return read_json(tool_path(name))
     raise FileNotFoundError(
         "找不到 schema %r（试过 kb/schema/%s、kb/schema/%s、kb/%s）"
         % (name, name, alt, name))

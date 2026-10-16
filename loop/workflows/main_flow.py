@@ -170,7 +170,7 @@ class RunManager:
     def __init__(self, *, repo_root: Path | None = None):
         P.ensure_state_dirs()
         self.repo_root = Path(repo_root or P.REPO_ROOT)
-        self.kb = KbSources.from_repo(self.repo_root)
+        self.kb = KbSources.from_workspace(P.WORKSPACE_ROOT)
         self.admission = Admission(P.STATE_DIR)
         self.runner = JobRunner(P.JOBS_DIR, self.admission)
         self.executions: dict[str, Any] = {}

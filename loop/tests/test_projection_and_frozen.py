@@ -43,7 +43,7 @@ def test_run_view_events_are_whitelisted_only(tmp_path: Path) -> None:
 
 def test_conflicts_are_uncleared_and_block_release() -> None:
     """I4：冲突清单未清零 ⇒ 阻断发版/晋升。数字由实际文件数出来。"""
-    kb = KbSources.from_repo(P.REPO_ROOT)
+    kb = KbSources.from_workspace(P.WORKSPACE_ROOT)
     summary = kb.load_conflicts()
     items = summary["items"]
     assert len(items) > 0
@@ -58,7 +58,7 @@ def test_conflicts_are_uncleared_and_block_release() -> None:
 
 def test_koutou2_zero_alone_does_not_green_light() -> None:
     """核心红线：口径二为 0 而口径一非 0 时，必须仍是 blocker。"""
-    kb = KbSources.from_repo(P.REPO_ROOT)
+    kb = KbSources.from_workspace(P.WORKSPACE_ROOT)
     counts = {
         "koutou1": {"value": 1687, "zero": False, "refs": ["line 359: ..."]},
         "koutou2": {"value": {"UVM_ERROR": 0, "UVM_FATAL": 0}, "zero": True, "refs": []},
@@ -71,7 +71,7 @@ def test_koutou2_zero_alone_does_not_green_light() -> None:
 
 
 def test_capacity_notice_is_info_not_blocker() -> None:
-    kb = KbSources.from_repo(P.REPO_ROOT)
+    kb = KbSources.from_workspace(P.WORKSPACE_ROOT)
     job = {"job_id": "JOB-1", "phase": "running", "eta_human": "5.0 min", "log_path": "x.log"}
     blockers = compute_blockers(run_dir=None, counts=None, kb=kb, slot_status=None, job=job)
     cap = [b for b in blockers if b["code"] == "CAPACITY_LONG_TASK"]

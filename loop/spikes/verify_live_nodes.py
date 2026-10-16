@@ -27,7 +27,7 @@ async def main():
                      key=lambda p: p.stat().st_mtime)[-1]
     print("复用运行目录:", run_dir.name, "（含 drill 拷入的全跑日志）")
     ctx = RunCtx(run_id=run_dir.name, run_dir=run_dir, mode="drill", scenario="happy",
-                 kb=KbSources.from_repo(P.REPO_ROOT), progress=ProgressLog(P.EVENTS_DIR, run_dir.name+"-nodes"))
+                 kb=KbSources.from_workspace(P.WORKSPACE_ROOT), progress=ProgressLog(P.EVENTS_DIR, run_dir.name+"-nodes"))
     n2 = json.loads((run_dir/"n2_diff.json").read_text()) if (run_dir/"n2_diff.json").is_file() else {"diffs":[]}
     n5 = json.loads((run_dir/"n5_impact.json").read_text()) if (run_dir/"n5_impact.json").is_file() else {}
     d = FakeData(ctx, {"n2_diff": {"diff_count": len(n2.get("diffs", []))},

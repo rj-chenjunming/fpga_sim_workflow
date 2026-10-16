@@ -45,7 +45,16 @@ umask 022
 
 ORIG_ARGS=("$@")
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-ROOT=$(cd "$SCRIPT_DIR/../.." && pwd)
+TOOL_ROOT=$(cd "$SCRIPT_DIR/../.." && pwd)
+# 环境（插件）根：拆仓后软件不在环境仓内，必须由 LOOP_ENV_ROOT 给出。
+# 向后兼容：若软件仍在环境仓内（拆仓前布局，TOOL_ROOT 下有 TESTLIB/），回落为 TOOL_ROOT。
+ROOT="${LOOP_ENV_ROOT:-}"
+if [ -z "$ROOT" ] && [ -d "$TOOL_ROOT/TESTLIB" ]; then ROOT="$TOOL_ROOT"; fi
+if [ -z "$ROOT" ] || [ ! -d "$ROOT" ]; then
+  echo "[guard] [FAIL] 无法确定环境根 ENV_ROOT：请设 LOOP_ENV_ROOT" >&2
+  echo "               （见 doc/spec/ENV_PLUGIN_SPEC.md §1；或补全 environments.json）" >&2
+  exit 2
+fi
 cd "$ROOT" || exit 2
 
 FIXTURE="$ROOT/doc/_run_artifacts/uvs.setup.orig"

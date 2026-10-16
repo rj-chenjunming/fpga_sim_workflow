@@ -209,7 +209,7 @@ def collect_cases(out_dir, case_dir):
 
 def collect_conflicts(out_dir, conflicts_dir):
     """⑤ 冲突清单快照（含 open 计数）。"""
-    abs_dir = K.root_path(conflicts_dir) if not os.path.isabs(conflicts_dir) else conflicts_dir
+    abs_dir = K.data_path(conflicts_dir)
     src = os.path.join(abs_dir, "conflicts.json")
     if not os.path.exists(src):
         K.die("冲突清单不存在：%s（I4 说它是一等公民，不允许缺）" % src)
@@ -327,7 +327,7 @@ def main():
     parent.add_argument("--doc-src", default=None, help="文档路径（默认仓库内接口文档）")
     parent.add_argument("--regmap", default=None, help="regmap.json（默认 kb/index/regmap.json）")
     parent.add_argument("--case-dir", default=DEFAULT_CASE_DIR, help="用例目录（默认 TESTLIB）")
-    parent.add_argument("--conflicts-dir", default="kb/conflicts", help="冲突清单目录")
+    parent.add_argument("--conflicts-dir", default=kb_lib.kb_path("conflicts"), help="冲突清单目录（默认工作区数据根下 conflicts/）")
     parent.add_argument("--allfiles-scope", action="append", default=None,
                         help="全量清单 scope，可重复；可用 'SRC=DEST_REL' 形式")
     parent.add_argument("--package-sha256", default=None, help="交付包 sha256（没有就留空，写 N/A+原因）")

@@ -1,0 +1,25 @@
+{
+  "_comment": "环境插件注册表：软件独立成产品，环境是被它管理的插件。kb/tools 只用 stdlib（无 pyyaml），故用 JSON。",
+  "version": 1,
+  "default": "simenv-tcs9620-64ch",
+  "environments": {
+    "simenv-tcs9620-64ch": {
+      "path": "/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES",
+      "description": "TCS9620 64CH FPGA 仿真环境（Pango Logos2 / UNIVISTA UVS / UVM 1.2）",
+      "frozen": [
+        "RTL",
+        "TB",
+        "PKG",
+        "TESTLIB"
+      ],
+      "provides": {
+        "sim_setup": "uvs.setup",
+        "run_local": "doc/tools/run_local.sh",
+        "sim_setup_orig": "doc/_run_artifacts/uvs.setup.orig",
+        "sim_workdir": "SIMLIB_RUN",
+        "env_agents": "doc/AGENTS.md"
+      },
+      "workspace": "workspaces/simenv-tcs9620-64ch"
+    }
+  }
+}

@@ -178,7 +178,7 @@ def test_evidence_log_prefers_run_log_over_guard_log(tmp_path: Path) -> None:
         run_dir=tmp_path,
         mode="drill",
         scenario="happy",
-        kb=KbSources.from_repo(P.REPO_ROOT),
+        kb=KbSources.from_workspace(P.WORKSPACE_ROOT),
         progress=None,  # type: ignore[arg-type]
     )
     assert ctx.evidence_log().name.endswith("_run.log")

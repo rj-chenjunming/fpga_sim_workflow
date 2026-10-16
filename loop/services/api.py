@@ -54,6 +54,12 @@ def health() -> dict[str, Any]:
     return {
         "ok": True,
         "repo_root": str(P.REPO_ROOT),
+        # 拆仓后的三根与插件自检（界面/验收据此判断"环境是否挂上"）
+        "tool_root": str(P.TOOL_ROOT),
+        "env_root": str(P.ENV_ROOT),
+        "env_id": P.ENV_ID,
+        "workspace_root": str(P.WORKSPACE_ROOT),
+        "plugin_missing": P.missing_plugin_parts(),
         "agently": md.version("agently"),
         "python": sys.version.split()[0],
         # 模型 provider 状态（**不含密钥**）：界面据此显示"模型节点是 live 还是替身"
@@ -174,6 +180,25 @@ def cancel_job(run_id: str, job_id: str) -> dict[str, Any]:
 _PATHISH = (".log", ".md", ".json", ".sv", ".csv", ".txt", ".v")
 
 
+def _resolve_ref_candidates(raw: str) -> list[Path]:
+    """相对引用的解析基准。
+
+    拆仓后**数据在工作区根、冻结资产在环境根**，写死一个基准必然有一半找不到；
+    因此按「工作区 → 环境」依次探，且兼容历史里 `kb/runs/...` 这种写法
+    （剥掉 `kb/` 前缀后按工作区解析）。
+    """
+    base = Path(raw)
+    if base.is_absolute():
+        return [base]
+    out: list[Path] = []
+    parts = base.parts
+    if parts and parts[0] == "kb":
+        out.append(P.WORKSPACE_ROOT.joinpath(*parts[1:]))
+    out.append(P.WORKSPACE_ROOT / raw)
+    out.append(P.ENV_ROOT / raw)
+    return out
+
+
 @app.get("/api/runs/{run_id}/evidence/exists")
 def evidence_exists(run_id: str, ref: str = Query(...)) -> dict[str, Any]:
     """E-2 修复的界面侧一半：**先探测存在性**，缺失显示为显式缺陷而非 404。"""
@@ -183,22 +208,22 @@ def evidence_exists(run_id: str, ref: str = Query(...)) -> dict[str, Any]:
         head, _, tail = raw.rpartition(":")
         if tail.isdigit() and head.endswith(".sv"):
             return {"exists": None, "path": raw, "note": "源码行引用，不按文件路径探测"}
-    candidate = Path(raw)
-    if not candidate.is_absolute():
-        candidate = P.REPO_ROOT / raw
-    if candidate.is_file():
-        return {"exists": True, "path": str(candidate), "bytes": candidate.stat().st_size}
-    # 目录型引用（如 evidence/archive/）也要能判空
-    if candidate.is_dir():
-        entries = [p.name for p in candidate.iterdir()]
-        return {
-            "exists": bool(entries),
-            "path": str(candidate),
-            "is_dir": True,
-            "entries": len(entries),
-            "note": "目录为空 ⇒ 按 E-2 显示为证据缺失" if not entries else None,
-        }
-    return {"exists": False, "path": str(candidate), "note": "证据缺失（E-2）"}
+    candidates = _resolve_ref_candidates(raw)
+    for candidate in candidates:
+        if candidate.is_file():
+            return {"exists": True, "path": str(candidate), "bytes": candidate.stat().st_size}
+        # 目录型引用（如 evidence/archive/）也要能判空
+        if candidate.is_dir():
+            entries = [p.name for p in candidate.iterdir()]
+            return {
+                "exists": bool(entries),
+                "path": str(candidate),
+                "is_dir": True,
+                "entries": len(entries),
+                "note": "目录为空 ⇒ 按 E-2 显示为证据缺失" if not entries else None,
+            }
+    return {"exists": False, "path": str(candidates[-1]),
+            "tried": [str(c) for c in candidates], "note": "证据缺失（E-2）"}
 
 
 # ---------------------------------------------------------------- 静态前端

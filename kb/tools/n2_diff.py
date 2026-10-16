@@ -123,19 +123,19 @@ def resolve_rtl_md5(manifest, explicit):
     if explicit:
         return explicit
     tar_rel = manifest["rtl_snapshot"]["path"]
-    return os.path.join(os.path.dirname(K.root_path(tar_rel)), "rtl_files.md5")
+    return os.path.join(os.path.dirname(K.data_path(tar_rel)), "rtl_files.md5")
 
 
 def resolve_allfiles(manifest, explicit):
     if explicit:
         return explicit
-    return K.root_path(manifest["allfiles_manifest"]["path"])
+    return K.data_path(manifest["allfiles_manifest"]["path"])
 
 
 def resolve_tar(manifest, explicit):
     if explicit:
         return explicit
-    return K.root_path(manifest["rtl_snapshot"]["path"])
+    return K.data_path(manifest["rtl_snapshot"]["path"])
 
 
 ENTRY_FALLBACK_TAG = "回退"

@@ -28,10 +28,9 @@ sys.dont_write_bytecode = True          # kb/tools 是冻结目录：不许写 _
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import kb_lib as K  # noqa: E402
 
-ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
-ARCHIVE = os.path.join(ROOT, "kb", "runs", "RUN-20261015-120626", "gates.json")
+ARCHIVE = K.kb_path("runs", "RUN-20261015-120626", "gates.json")
 TMP_RUN = "RUN-19990101-000000"
-TMP_DIR = os.path.join(ROOT, "kb", "runs", TMP_RUN)
+TMP_DIR = K.kb_path("runs", TMP_RUN)
 
 RESULTS = []
 

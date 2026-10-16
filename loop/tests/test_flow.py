@@ -225,6 +225,30 @@ async def test_park_snapshot_is_written_without_opportunistic_sync() -> None:
         await m.stop_watching()
 
 
+def test_clean_park_rejects_half_dispatched_interrupt() -> None:
+    """F-V1-06d：快照只许拍**干净停车** —— 已派发完（resume_count >= max）的中断不许落盘。
+
+    实测：0.2/0.5s 节拍会拍到"已派发但接管未开始"的半截快照（`status='waiting'` 而
+    `resume_count` 已等于 `max_resumes`）。这种快照 load 得进来，但恢复时既不能重投递
+    （`is not waiting`）也不会自己往下走 ⇒ 只能失败。宁可不落盘。
+    """
+    class _Ex:
+        def __init__(self, interrupts):
+            self._i = interrupts
+
+        def get_pending_interrupts(self):
+            return self._i
+
+    clean = _Ex({"JOB:J": {"status": "waiting", "resume_count": 0, "max_resumes": 1}})
+    half = _Ex({"JOB:J": {"status": "waiting", "resume_count": 1, "max_resumes": 1}})
+    done = _Ex({"G1:0": {"status": "resumed", "resume_count": 1, "max_resumes": 1}})
+    assert RunManager._is_clean_park(clean) is True
+    assert RunManager._is_clean_park(half) is False
+    # 已结束（非 waiting）的中断不参与判定
+    assert RunManager._is_clean_park(done) is True
+    assert RunManager._is_clean_park(_Ex({})) is True
+
+
 async def test_restore_redelivers_terminal_job_when_snapshot_is_stale() -> None:
     """F-V1-06c：快照停在**已终结且已投递**的作业中断上 ⇒ 必须按权威重投递结局，不得永久卡住。
 

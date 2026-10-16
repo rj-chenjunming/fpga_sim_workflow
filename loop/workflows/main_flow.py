@@ -352,11 +352,13 @@ class RunManager:
         doc.updated_at = P.now_iso()
 
         # 停在中断上时落一次快照：此刻执行非 running，save 合法且可 load。
+        # **且必须是干净停车**（见 `_is_clean_park`）：半截快照会毒化下一次恢复。
         if execution is not None and doc.status == "waiting_gate":
-            try:
-                execution.save(self._snapshot_path(run_id), require_idle=True)
-            except Exception as exc:
-                doc.notes.append(f"snapshot 失败：{type(exc).__name__}: {exc}")
+            if self._is_clean_park(execution):
+                try:
+                    execution.save(self._snapshot_path(run_id), require_idle=True)
+                except Exception as exc:
+                    doc.notes.append(f"snapshot 失败：{type(exc).__name__}: {exc}")
 
         self._persist(run_id)
 
@@ -549,7 +551,8 @@ class RunManager:
                     await self.async_sync(rid)
                 except Exception:
                     pass
-            await asyncio.sleep(0.5)
+            # 0.2s：窗口越小，"停机落在两次落盘之间"的概率越低（但**不消除**，见 §4.6）
+            await asyncio.sleep(0.2)
 
     async def stop_watching(self) -> None:
         self.runner.stop_watching()
@@ -565,6 +568,25 @@ class RunManager:
 
     # ---------------- 重启恢复 ----------------
 
+    @staticmethod
+    def _is_clean_park(execution: Any) -> bool:
+        """快照只许拍**干净的停车**：所有 waiting 中断都还没被派发（`resume_count < max`）。
+
+        实测踩过：0.5s 节拍会拍到"已派发但接管尚未开始"的半截快照 ——
+        中断 `status='waiting'` 而 `resume_count` 已等于 `max_resumes`。
+        这种快照 load 得进来，但恢复时既不能重投递（"is not waiting"），
+        也不会自己往下走 ⇒ 只能失败。**宁可不落盘，也不落一张半截快照**
+        （保留上一张干净快照，由下游的"陈旧快照"两条规则去处置）。
+        """
+        for item in (execution.get_pending_interrupts() or {}).values():
+            it = item or {}
+            if it.get("status") not in (None, "waiting"):
+                continue
+            mx, cnt = it.get("max_resumes"), it.get("resume_count") or 0
+            if mx is not None and cnt >= mx:
+                return False
+        return True
+
     def _stale_job_interrupts(self, execution: Any) -> list[tuple[str, str, str]]:
         """停在**已终结**作业的中断上 ⇒ 快照陈旧（落盘发生在投递之后又被回退）。
 
@@ -573,7 +595,12 @@ class RunManager:
         """
         out: list[tuple[str, str, str]] = []
         for key, item in (execution.get_pending_interrupts() or {}).items():
-            job_id = ((item or {}).get("payload") or {}).get("job_id")
+            it = item or {}
+            # 半截中断（已派发完）不可恢复 ⇒ 不算"陈旧作业"，免得强制投递必然失败
+            mx, cnt = it.get("max_resumes"), it.get("resume_count") or 0
+            if mx is not None and cnt >= mx:
+                continue
+            job_id = (it.get("payload") or {}).get("job_id")
             if not job_id:
                 continue
             try:

@@ -35,6 +35,10 @@
 > ```
 > 软件根（TOOL_ROOT）自锚定、不需要配置；任一必需项缺失时**fail closed 并说明缺什么**，
 > 绝不猜路径。三个根的解析规则与插件契约见 `doc/spec/ENV_PLUGIN_SPEC.md`。
+>
+> **快照纪律**：只允许落**干净停车**的快照 —— 已派发完（`resume_count >= max_resumes`）的中断
+> 一律不落盘（`_is_clean_park`）。半截快照 load 得进来，但恢复时必然失败
+> （`interrupt ... is not waiting`）。见 §4.6。
 > `/api/health` 会外显 `plugin_missing`（环境缺件）与 `workspace_missing`（数据找不到）。
 
 ```bash
@@ -57,7 +61,7 @@ python3.11 -m venv .venv
 跑测试：
 
 ```bash
-cd loop && .venv/bin/python -m pytest -q      # 69 项，约 34 s
+cd loop && .venv/bin/python -m pytest -q      # 70 项，约 33 s
 ```
 
 ---
@@ -86,7 +90,7 @@ loop/
     contracts.py            对外投影 + 六项信任缺口的服务端判定
     api.py                  FastAPI（唯一入口）
   web/index.html            单文件前端（零外链）
-  tests/                    69 项
+  tests/                    70 项
   spikes/                   `accept_v1.py`（带断言的 v1 终验）+ `accept_v1_run.sh`（单次调用内起停 4 代服务）
   ACCEPTANCE_V1.md          v1 真实 HTTP 终验报告（116/116，3 次真重启）
   state/                    槽/队列/事件/快照（可删）
@@ -252,7 +256,7 @@ drill 运行目录带 `.loop_drill` 标记，测试据此清理**自己创建的
 
 ## 7 已验证什么
 
-`tests/` 69 项 + 一次**真实 HTTP 终验**（`ACCEPTANCE_V1.md`：116/116 断言，4 代服务进程、
+`tests/` 70 项 + 一次**真实 HTTP 终验**（117 断言）（`ACCEPTANCE_V1.md`：116/116 断言，4 代服务进程、
 3 次真重启，含"重附着到仍在跑的长任务""跨重启不丢单槽"）。关键断言：
 
 - 口径一与 `grep -c '\*E'` **独立对账一致**；两套口径并列、`both_zero=false` 时**不得判绿**；

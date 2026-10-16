@@ -71,6 +71,43 @@ def digest_tree(root: Path) -> str:
     return h.hexdigest()
 
 
+
+def wait_clean_snapshot(path: Path, interrupt_id: str | None, *, seconds: float = 20.0) -> bool:
+    """等快照落盘，且其中该中断是**可恢复**的（`resume_count < max_resumes`）。
+
+    半截快照（已派发完）会被 `_is_clean_park` 拒绝落盘，所以这里等到的必然是干净停车。
+    """
+    if not interrupt_id:
+        return False
+    deadline = time.time() + seconds
+    while time.time() < deadline:
+        try:
+            doc = json.loads(path.read_text(encoding="utf-8"))
+        except (FileNotFoundError, json.JSONDecodeError):
+            time.sleep(0.2)
+            continue
+        found = None
+
+        def walk(o):
+            nonlocal found
+            if isinstance(o, dict):
+                for k, val in o.items():
+                    if k == "interrupts" and isinstance(val, dict) and interrupt_id in val:
+                        found = val[interrupt_id]
+                    walk(val)
+            elif isinstance(o, list):
+                for x in o:
+                    walk(x)
+
+        walk(doc)
+        if found is not None:
+            mx, cnt = found.get("max_resumes"), found.get("resume_count") or 0
+            if mx is None or cnt < mx:
+                return True
+        time.sleep(0.2)
+    return False
+
+
 def save_state(**kv: Any) -> None:
     cur = json.loads(STATE.read_text()) if STATE.is_file() else {}
     cur.update(kv)
@@ -242,6 +279,15 @@ def phase1(c: httpx.Client) -> None:
     ev_now = c.get(f"/api/runs/{run_id}/events", params={"since_seq": 0}).json()["events"]
     kinds = [e["kind"] for e in ev_now]
     ck("A33 事件流记了 job_submitted", "job_submitted" in kinds, kinds)
+
+    # 停机前必须确认"当前停放已落盘、且是一张**可恢复的干净快照**"。
+    # 否则第 2 代恢复的是上一张快照，测到的就不是"重附着到在跑作业"而是"回退到上一个停车点"
+    # —— 那是另一个场景（F-V1-06b 有单测覆盖），不该在这里碰运气。
+    parked_id = (v.get("pending_interrupt") or {}).get("id")
+    snap_path = P.LOOP_DIR / "state" / "recovery" / f"{run_id}.json"
+    ok = wait_clean_snapshot(snap_path, parked_id, seconds=25.0)
+    ck("A51 当前停放已落盘且是可恢复的干净快照", ok,
+       {"path": str(snap_path), "interrupt": parked_id})
     # 停放（执行在作业期间是 interrupt，而不是 running）由 phase 4 的 cancel 场景确定性断言：
     # 那个作业 `sleep 120`，一定能观察到；happy 的 drill 作业瞬间完成，观察窗口太窄。
 

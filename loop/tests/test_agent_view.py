@@ -85,3 +85,14 @@ def test_last_action_recorded(tmp_path: Path) -> None:
     agent = _by_role(build_agents(events, run_dir=tmp_path, now=3))["reporter"]
     assert agent["last_action"].startswith("node_finished")
     assert agent["status"] == "done"
+
+
+def test_summary_prefers_conclusion_line(tmp_path: Path) -> None:
+    (tmp_path / "check_C.md").write_text(
+        "# N8 静态复核\n\n- **复核人**：checker\n- **卡点 C 结论（一句话）**：**5 通过 / 0 退回**\n",
+        encoding="utf-8",
+    )
+    events = [_ev(1, 10, "N8", "node_started", "running"),
+              _ev(2, 20, "N8", "node_finished", "ok")]
+    agent = _by_role(build_agents(events, run_dir=tmp_path, now=21))["checker"]
+    assert "5 通过 / 0 退回" in agent["summary"]

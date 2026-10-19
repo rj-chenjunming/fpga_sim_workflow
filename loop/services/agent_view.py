@@ -137,21 +137,50 @@ def _elapsed(state: _NodeState | None, status: str, now: float | None) -> int | 
     return max(0, int(end - state.started_ts))
 
 
+def _clean(text: str) -> str:
+    return text.replace("**", "").replace("`", "").strip().strip("：:").strip()
+
+
+def _after_colon(line: str) -> str | None:
+    for sep in ("：", ": "):
+        if sep in line:
+            tail = _clean(line.split(sep, 1)[1])
+            if tail:
+                return tail[:120]
+    return None
+
+
 def _first_line(path: Path) -> str | None:
-    """取第一行**正文**（跳过空行与 Markdown 标题），截断 120 字符。"""
+    """取一行**结论**：优先含「结论」的行，其次第一段正文（跳过标题/引用/元数据）。"""
     try:
         lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
     except OSError:
         return None
+    # 1) 结论行（docs 的约定：结论通常写在「结论（一句话）：…」里）
+    for line in lines:
+        stripped = line.strip().lstrip("-*> ").strip()
+        if "结论" in stripped:
+            tail = _after_colon(stripped)
+            if tail:
+                return tail
+    # 2) 第一段正文：跳过标题、引用、列表元数据、表格、代码围栏、分隔线
     for line in lines:
         stripped = line.strip()
-        if not stripped or stripped.startswith("#"):
+        if not stripped or stripped.startswith(("#", ">", "|", "```", "---", "===")):
             continue
-        return stripped[:120]
+        if stripped.startswith("- "):
+            tail = _after_colon(stripped)
+            if tail and len(tail) >= 8:
+                return tail
+            continue
+        cleaned = _clean(stripped)
+        if len(cleaned) >= 8:
+            return cleaned[:120]
+    # 3) 兜底：第一行非空文本
     for line in lines:
-        stripped = line.strip()
-        if stripped:
-            return stripped.lstrip("#").strip()[:120]
+        cleaned = _clean(line.strip().lstrip("#>* "))
+        if cleaned:
+            return cleaned[:120]
     return None
 
 

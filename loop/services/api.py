@@ -124,9 +124,17 @@ async def create_run(payload: dict[str, Any] = Body(default={})) -> dict[str, An
     baseline = payload.get("baseline") or "v0"
     mode = payload.get("mode") or "drill"
     scenario = payload.get("scenario") or "happy"
+    project = payload.get("project") or str(P.ENV_ROOT)
+    # 三根在进程启动时解析；跨环境切换必须重启，不能静默换根（Web UI Spec §6.4）。
+    if Path(project).resolve() != Path(P.ENV_ROOT).resolve():
+        raise HTTPException(status_code=400, detail={
+            "error": "project 必须等于当前进程 ENV_ROOT；跨环境需以该环境重启服务。",
+            "current_env_root": str(P.ENV_ROOT),
+        })
     manager = _manager()
     try:
-        run_id = await manager.start(baseline=baseline, mode=mode, scenario=scenario, now=payload.get("now"))
+        run_id = await manager.start(baseline=baseline, mode=mode, scenario=scenario,
+                                     now=payload.get("now"), project=str(project))
     except FileExistsError as exc:
         raise HTTPException(status_code=409, detail={"error": str(exc)}) from exc
     except ValueError as exc:
@@ -135,7 +143,7 @@ async def create_run(payload: dict[str, Any] = Body(default={})) -> dict[str, An
     # 不必再发一次 GET 才能确认"这个 run 是什么时候建的"。
     doc = manager.docs.get(run_id)
     return {"run_id": run_id, "mode": mode, "scenario": scenario,
-            "created_at": getattr(doc, "created_at", None)}
+            "project": str(project), "created_at": getattr(doc, "created_at", None)}
 
 
 @app.get("/api/runs/{run_id}")

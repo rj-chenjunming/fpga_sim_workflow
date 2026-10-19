@@ -139,6 +139,7 @@ class RunDoc:
     baseline: str | None
     mode: str
     scenario: str
+    project: str | None = None
     status: str = "running"
     created_at: str = ""
     updated_at: str = ""
@@ -151,6 +152,7 @@ class RunDoc:
             "run_id": self.run_id,
             "run_dir": self.run_dir,
             "baseline": self.baseline,
+            "project": self.project,
             "mode": self.mode,
             "scenario": self.scenario,
             "status": self.status,
@@ -244,6 +246,7 @@ class RunManager:
         mode: str = "drill",
         scenario: str = "happy",
         now: str | None = None,
+        project: str | None = None,
     ) -> str:
         if mode not in ("drill", "real"):
             raise ValueError("mode 必须是 drill 或 real")
@@ -281,6 +284,7 @@ class RunManager:
             run_id=run_id,
             run_dir=str(run_dir),
             baseline=baseline or "v0",
+            project=project or str(P.ENV_ROOT),
             mode=mode,
             scenario=scenario,
             created_at=P.now_iso(dt),
@@ -289,7 +293,8 @@ class RunManager:
         self.docs[run_id] = doc
         progress.append(
             "run_started",
-            detail={"baseline": doc.baseline, "mode": mode, "scenario": scenario, "drill_fixture": str(ctx.fixture)},
+            detail={"baseline": doc.baseline, "project": doc.project, "mode": mode,
+                    "scenario": scenario, "drill_fixture": str(ctx.fixture)},
         )
 
         execution = LOOP_FLOW.create_execution(

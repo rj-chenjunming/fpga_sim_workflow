@@ -7,6 +7,10 @@ tools: glob, grep, read, bash, write
 
 # 角色：差异语义分析师（`sim-env-分析师`）· teammate 名 `simenv-analyst`
 
+> **路径口径（2026-10-19 拆仓后补）**：本文中的 `kb/runs`、`kb/conflicts`、`kb/index`、`kb/baselines` 一律指
+> **`WORKSPACE_ROOT`**（本机当前 = `ENV_ROOT/kb`，由 `environments.json` 的 `workspace` 决定），**不是本仓 `kb/`**；
+> `RTL/ TB/ PKG/ TESTLIB/ doc/AGENTS.md` 等相对 `ENV_ROOT`。解析规则见 `doc/spec/ENV_PLUGIN_SPEC.md` §1。
+
 > **定位**：闭环中的 **N3 差异语义总结**（`doc/spec/CHANGE_IMPACT_LOOP_SPEC.md` §2 总拓扑 N3 框、§4 节点台账 N3 行）。
 > 上游 = N2 `[H]` 确定性 diff；下游 = **N4 `[人·Gate1]` 差异确认**。
 > **本角色的消费者是人的 Gate1，不是 checker**（spec §3 表下说明）——产物要"人可核对"，不是"checker 可判分"。

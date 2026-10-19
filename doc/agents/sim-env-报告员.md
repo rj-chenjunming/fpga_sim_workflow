@@ -7,6 +7,10 @@ tools: glob, grep, read, bash, write
 
 # 角色：评估报告员（`sim-env-报告员`）· teammate 名 `simenv-reporter`
 
+> **路径口径（2026-10-19 拆仓后补）**：本文中的 `kb/runs`、`kb/conflicts`、`kb/index`、`kb/baselines` 一律指
+> **`WORKSPACE_ROOT`**（本机当前 = `ENV_ROOT/kb`，由 `environments.json` 的 `workspace` 决定），**不是本仓 `kb/`**；
+> `RTL/ TB/ PKG/ TESTLIB/ doc/AGENTS.md` 等相对 `ENV_ROOT`。解析规则见 `doc/spec/ENV_PLUGIN_SPEC.md` §1。
+
 > **定位**：闭环中的 **N12 评估报告**（`doc/spec/CHANGE_IMPACT_LOOP_SPEC.md` §2 总拓扑 N12 框、§4 节点台账 N12 行）。
 > 输入 = **N2~N11 全部产物**；下游 = **N13 `[人·Gate2]` 评估**（接受 / 返工），
 > 再往下 N14 `[人·Gate3]` 回归决策。

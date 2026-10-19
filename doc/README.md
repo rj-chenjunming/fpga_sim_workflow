@@ -1,0 +1,52 @@
+# `doc/` —— 文档索引
+
+> **一句话**：本目录放**契约、角色、证据、历史与审计**五类文档；**代码与运行数据都不在这里**。
+>
+> **数据根不在本仓**：`kb/index|conflicts|baselines|runs`、`adjudication/` 等属于 **`WORKSPACE_ROOT`**，
+> 本机当前 = `ENV_ROOT/kb`（`ENV_ROOT` 由 [`environments.json`](../environments.json) 决定），
+> 本仓 `kb/` 只有 `tools/`、`schema/`、`README.md`。解析规则见
+> [`spec/ENV_PLUGIN_SPEC.md`](spec/ENV_PLUGIN_SPEC.md) §1。
+>
+> **数字唯一来源**：[`STATUS.md`](STATUS.md)（Lead 维护）。本目录其它文档**不各自抄一份数字**，
+> 历史文档里的数字按上下文标注为历史值。
+
+---
+
+## 1 目录导航
+
+| 目录/文件 | 是什么 | 入口 / 主要文件 |
+|---|---|---|
+| [`spec/`](spec/) | 三份契约：业务篇 / 编排篇 / 环境插件篇 | 见 §2 |
+| [`agents/`](agents/) | 6 个角色定义 + 1 份开工提示词 | [`agents/README.md`](agents/README.md) |
+| [`evidence/`](evidence/) | 验收报告与演练证据（**内容冻结、只增不改**） | [`evidence/README.md`](evidence/README.md) |
+| [`history/`](history/) | 拆仓前的历史快照（**不是现状**） | [`history/README.md`](history/README.md) |
+| `audit/` | 2026-10-19 审计：总报告 + 各审计员附录（**只登记不修复**） | [`audit/README.md`](audit/README.md)、[`audit/AUDIT-20261019-spec-conformance.md`](audit/AUDIT-20261019-spec-conformance.md)、`audit/parts/*.md`（附录） |
+| [`STATUS.md`](STATUS.md) | 唯一数字源：HEAD、单测/断言数、四道门状态、外部数据根 | 由 Lead 维护 |
+
+> 逐级入口：[`../README.md`](../README.md)（项目导航）→ [`../AGENTS.md`](../AGENTS.md)（流程 / 写权 / 红线）
+> → 本文件 → 各子目录 README。
+
+## 2 `spec/` 三份契约
+
+| 文件 | 管什么 |
+|---|---|
+| [`spec/CHANGE_IMPACT_LOOP_SPEC.md`](spec/CHANGE_IMPACT_LOOP_SPEC.md) | 业务与不变量 I1–I8、16 节点 N0–N16、三道人工闸门（Gate1/2/3） |
+| [`spec/LOOP_ORCHESTRATION_SPEC.md`](spec/LOOP_ORCHESTRATION_SPEC.md) | 编排层机制契约：owner 账本、生命周期、长任务停等、单槽准入、重启恢复、进度/UI 投影 |
+| [`spec/ENV_PLUGIN_SPEC.md`](spec/ENV_PLUGIN_SPEC.md) | 三根（`TOOL_ROOT`/`ENV_ROOT`/`WORKSPACE_ROOT`）解析、环境插件契约、拆仓分步与「数据不搬」决定 |
+
+## 3 阅读顺序（新接手）
+
+1. [`../README.md`](../README.md) §2「三个根」+ [`../AGENTS.md`](../AGENTS.md)（组织与纪律）。
+2. `spec/` 三篇按 业务 → 编排 → 环境插件 的顺序读。
+3. 找角色/写权：[`agents/README.md`](agents/README.md)。
+4. 现状数字：[`STATUS.md`](STATUS.md)；历史背景：[`history/README.md`](history/README.md)。
+5. 已知偏差：[`audit/`](audit/)（总报告 + 附录；**审计发现不等于已修复**）。
+
+## 4 文档纪律
+
+- 新增文档先归类：spec / agents / evidence / history / audit，**不在根目录堆日期文件**（`AGENTS.md` §6）。
+- `evidence/` 与 `history/` **只增不改**；移动文件必须留下 MIGRATION 或「已过期」横幅（`AGENTS.md` 红线 12）。
+- 引用冻结件必须带 md5；判「未改动」按**内容 md5**，不按 mtime。
+- 本仓 `doc/` ≠ 环境仓 `doc/`：`doc/AGENTS.md`、`doc/skills/`、`doc/_notes/`、`doc/tools/`、
+  `doc/spec/evidence/` 等仍在 **`ENV_ROOT`**；本目录文档里出现这些路径时，均**相对 `ENV_ROOT`**，不是本仓。
+  （唯一例外是本文与各 README 里显式写成 `doc/...` 的本仓页面。）

@@ -168,7 +168,7 @@ def test_gate_divergence_is_reported_not_hidden(client: TestClient) -> None:
     rid = _new_run(client)
     _wait_interrupt(client, rid, "G1")
     r = client.post(f"/api/runs/{rid}/gates/G1_diff_confirm/decision",
-                    json={"decision": "confirmed", "actor": HUMAN})
+                    json={"decision": "confirmed", "actor": HUMAN, "reason": "逐条核对差异"})
     assert r.status_code == 200, r.text
     view = client.get(f"/api/runs/{rid}").json()
     real_history = view["gate_history"]

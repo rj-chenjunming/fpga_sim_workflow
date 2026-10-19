@@ -327,7 +327,10 @@ def main():
     parent.add_argument("--doc-src", default=None, help="文档路径（默认仓库内接口文档）")
     parent.add_argument("--regmap", default=None, help="regmap.json（默认 kb/index/regmap.json）")
     parent.add_argument("--case-dir", default=DEFAULT_CASE_DIR, help="用例目录（默认 TESTLIB）")
-    parent.add_argument("--conflicts-dir", default=kb_lib.kb_path("conflicts"), help="冲突清单目录（默认工作区数据根下 conflicts/）")
+    # F-01：本文件只 `import kb_lib as K`，裸名 `kb_lib` 在 argparse 默认值求值时会
+    # NameError（实测：任何 build/stage 都在解析参数阶段即崩，连 --help 都过不去）。
+    # 口径统一走 K.kb_path（工作区数据根），与 collect_conflicts 的 K.data_path 同源。
+    parent.add_argument("--conflicts-dir", default=K.kb_path("conflicts"), help="冲突清单目录（默认工作区数据根下 conflicts/）")
     parent.add_argument("--allfiles-scope", action="append", default=None,
                         help="全量清单 scope，可重复；可用 'SRC=DEST_REL' 形式")
     parent.add_argument("--package-sha256", default=None, help="交付包 sha256（没有就留空，写 N/A+原因）")

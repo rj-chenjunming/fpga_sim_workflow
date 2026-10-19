@@ -153,9 +153,15 @@ def phase1(c: httpx.Client) -> None:
     show("llm", h.get("llm"))
 
     html = c.get("/").text
+    # UI v1：页面拆成 index.html + 同源 app.js（零外链）。枚举消费方在 app.js，
+    # 因此 A7 必须同时看两个同源静态件，而不是只扫 index.html 的内联脚本。
+    app_js = c.get("/app.js").text if c.get("/app.js").status_code == 200 else ""
     ck("A5 前端可达", len(html) > 10000, len(html))
     ck("A6 前端零外链", "http://" not in html and "https://" not in html)
-    ck("A7 前端渲染服务端下发的闸门枚举（不自造）", "gate_options" in html or "gateOptions" in html)
+    ck("A7 前端渲染服务端下发的闸门枚举（不自造）",
+       "gate_options" in html or "gateOptions" in html
+       or "gate_options" in app_js or "gateOptions" in app_js,
+       {"html": len(html), "app_js": len(app_js)})
 
     # 基准摘要：N16 全程不得有副作用 ⇒ 先取一次
     base_digest = digest_tree(P.KB_BASELINES)
@@ -497,7 +503,9 @@ def _wait_parked(c: httpx.Client, run_id: str, job_id: str, *, seconds: float = 
     while time.time() < deadline:
         last = c.get(f"/api/runs/{run_id}").json()
         pending_payload = (last.get("pending_interrupt") or {}).get("payload") or {}
-        if (last.get("status") == "waiting_gate"
+        # I18：后端已把「等闸门 / 等作业 / 等单槽」区分成 waiting_gate / waiting_job /
+        # waiting_slot。长任务停放必须是 waiting_job（旧断言只看 waiting_gate，是 I18 修复前口径）。
+        if (last.get("status") in ("waiting_job", "waiting_gate")
                 and (last.get("slot") or {}).get("locked") is True
                 and pending_payload.get("job_id") == job_id):
             return last
@@ -523,8 +531,8 @@ def phase4(c: httpx.Client) -> None:
     parked = _wait_parked(c, run_id, job_id)
     show("停放态", {"status": parked.get("status"), "slot": parked.get("slot"),
                     "pending_payload": (parked.get("pending_interrupt") or {}).get("payload")})
-    ck("D0 作业运行期执行处于**停放**（不是 running 到不可快照）",
-       parked.get("status") == "waiting_gate", parked.get("status"))
+    ck("D0 作业运行期执行处于**停放**（waiting_job，不是 running 到不可快照）",
+       parked.get("status") == "waiting_job", parked.get("status"))
     ck("D0b 单槽被该作业持有（uvs.setup 是全局单文件 ⇒ 单槽）",
        (parked.get("slot") or {}).get("locked") is True, parked.get("slot"))
     ck("D0c 停放的中断带 job_id（可被看护/补投递认领）",
@@ -559,8 +567,8 @@ def phase4b(c: httpx.Client) -> None:
        {"job": job.get("job_id"), "phase": job.get("phase")})
     ck("D3 跨重启单槽**没有丢**（活动锁不得被重启误清）",
        (v.get("slot") or {}).get("locked") is True, v.get("slot"))
-    ck("D4 重启后仍处于停放（可以再恢复，不会 fail-closed）",
-       v.get("status") == "waiting_gate", v.get("status"))
+    ck("D4 重启后仍处于停放（waiting_job：可以再恢复，不会 fail-closed）",
+       v.get("status") == "waiting_job", v.get("status"))
 
     r = c.post(f"/api/runs/{run_id}/jobs/{job_id}/cancel")
     show("cancel 响应", r.json())

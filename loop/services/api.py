@@ -10,6 +10,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import sys
 from contextlib import asynccontextmanager
@@ -146,6 +147,32 @@ async def create_run(payload: dict[str, Any] = Body(default={})) -> dict[str, An
             "project": str(project), "created_at": getattr(doc, "created_at", None)}
 
 
+@app.post("/api/runs/{run_id}/promote")
+async def promote_run(run_id: str, payload: dict[str, Any] = Body(default={})) -> dict[str, Any]:
+    """人触发 N16 真实晋升（I8）。
+
+    只做边界三件事：验人（必须以 human 开头且与 G3 签署者一致）、验 G3 权威记录、
+    把动作交给 `services/promote.py`（它再调 `kb/tools/n16_promote.py --promote`）。
+    **不伪造闸门、不写 baselines、不依赖执行是否已 close。**
+    """
+    from services import promote as promote_svc
+
+    actor = payload.get("actor")
+    reason = payload.get("reason")
+    try:
+        return await asyncio.to_thread(
+            promote_svc.promote, run_id, actor,
+            str(reason) if reason else None, payload.get("now"),
+        )
+    except promote_svc.PromoteError as exc:
+        raise HTTPException(status_code=403, detail={
+            "error": str(exc),
+            "note": "被拒 = 人/闸门/前置不满足；拒绝发生在任何写盘之前（账本无孤儿签名）。",
+        }) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail={"error": str(exc)}) from exc
+
+
 @app.get("/api/runs/{run_id}")
 def get_run(run_id: str) -> dict[str, Any]:
     manager = _manager()
@@ -176,6 +203,11 @@ async def submit_decision(
     decision = payload.get("decision")
     actor = payload.get("actor")
     reason = payload.get("reason")
+    entry_decisions = payload.get("entry_decisions")
+    if entry_decisions is not None and not isinstance(entry_decisions, dict):
+        raise HTTPException(status_code=400, detail={
+            "error": "entry_decisions 必须是 {entry_id: {decision, reason}} 的对象（I1 逐条处置）。"
+        })
     if not actor:
         raise HTTPException(
             status_code=400,
@@ -185,6 +217,7 @@ async def submit_decision(
         result = await manager.decide(
             run_id=run_id, gate=gate_id, decision=str(decision), actor=str(actor),
             reason=str(reason) if reason else None,
+            entry_decisions=entry_decisions,
         )
     except PermissionError as exc:
         view = manager.run_view(run_id)
@@ -216,6 +249,8 @@ async def submit_decision(
         "gate_state": (auth.get("gates") or {}).get(gate_id),
         "gates_authority": auth,
         "gate_tool": json.loads(json.dumps(result["sign"], default=str)),
+        "entries": result.get("entries") or {},
+        "warnings": result.get("warnings") or [],
     })
 
 

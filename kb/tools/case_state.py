@@ -15,6 +15,16 @@ I3：`跑通` 的可执行化 —— `set --state 已验证通过` 必须**同�
     init  --run <run_id> [--writer NAME] [--force]
     set   --run <run_id> --case <tc> --state <四态之一> [卡点B/C/D 证据字段…] [--now ISO]
     show  --run <run_id> [--case <tc>] [--json]
+    check --run <run_id> [--json] [--for-promotion]
+
+    `check` 是**唯一**的台账判定实现（N16 晋升前置检查 import 本模块的
+    `check_ledger()`，禁止第二套同判据实现）：
+      * 非法态字面量 / schema 不符；
+      * 存在「已修订待验」⇒ I2 不得称跑通；
+      * `--for-promotion` 时存在「待验」⇒ 不得晋升；
+      * I7：`n6_n8_cycles >= limit` ⇒ 已到上限，必须升级 N13 人工裁决，
+        `--for-promotion` 时不得晋升（边界统一 `>=`，不再用 `>`）。
+    退出码：0 通过 / 3 规则不满足 / 4 台账损坏。
 
 卡点字段（按需）
     --compile-rc N           卡点B 的 rc（只编译）
@@ -45,7 +55,66 @@ RC_BROKEN = 4
 
 SCHEMA_NAME = "case_states"
 STATES = ("未改", "已修订待验", "已验证通过", "已退回")
+PENDING_STATE = "已修订待验"
 PASS_STATE = "已验证通过"
+
+
+def over_rework_limit(cycles, limit):
+    """I7 边界：**统一 `>=`**（spec §8；审计 C5 —— 旧 n16 用 `>` 导致 cycles==limit 仍可晋升）。
+
+    `cycles`/`limit` 任一为 None ⇒ 无法判定，返回 False（调用方须显式报告缺字段，
+    不得把"缺字段"当成"未超限"静默放行；缺字段由 check_ledger 单独报）。
+    """
+    if cycles is None or limit is None:
+        return False
+    return int(cycles) >= int(limit)
+
+
+def check_ledger(st, for_promotion=False):
+    """台账判定**唯一实现**（`check` 子命令与 n16_promote 共用）。
+
+    返回 (problems, info)：problems 非空 = 规则不满足；info 是机器可读摘要。
+    不读盘、不写盘 —— 调用方负责加载与 rc 语义。
+    """
+    problems = []
+    cases = st.get("cases") or []
+    counts = {}
+    for c in cases:
+        counts[c.get("state")] = counts.get(c.get("state"), 0) + 1
+    bad_states = sorted(set(str(c.get("state")) for c in cases
+                            if c.get("state") not in STATES))
+    if bad_states:
+        problems.append("用例态含非法字面量 %r（只允许 %s）"
+                        % (bad_states, "/".join(STATES)))
+    pending = sorted(str(c.get("case")) for c in cases
+                     if c.get("state") == PENDING_STATE)
+    if pending:
+        problems.append("存在「%s」用例（I2）：%s" % (PENDING_STATE, ", ".join(pending)))
+    rc = st.get("rework_cycles") or {}
+    cycles, limit = rc.get("n6_n8_cycles"), rc.get("limit")
+    if cycles is None or limit is None:
+        problems.append("缺 rework_cycles.n6_n8_cycles/limit ⇒ I7 无法判定"
+                        "（按不得晋升处理）")
+    over = over_rework_limit(cycles, limit)
+    if over:
+        problems.append("返工循环 n6_n8_cycles=%s >= limit=%s（I7）⇒ 已到上限，"
+                        "必须升级 N13 人工裁决" % (cycles, limit))
+    g2 = rc.get("g2_rework_cycles")
+    info = {
+        "run_id": st.get("run_id"),
+        "cases": len(cases),
+        "counts": {s: counts.get(s, 0) for s in STATES},
+        "pending": pending,
+        "invalid_states": bad_states,
+        "rework_cycles": {"n6_n8_cycles": cycles, "limit": limit,
+                          "g2_rework_cycles": g2,
+                          "over_limit": bool(over)},
+        "for_promotion": bool(for_promotion),
+        "problems": problems,
+        "ok": not problems,
+    }
+    return problems, info
+
 
 
 def state_path(run_id, override=None):
@@ -87,6 +156,20 @@ def find_case(st, case):
 def cmd_init(args):
     p = state_path(args.run, args.state_file)
     if os.path.exists(p) and not args.force:
+        # 身份错位要**显式报出来**：drill 把夹具轮的 case_states.json 复制进新 run 目录时，
+        # 旧台账的 run_id 与本轮不同；如果这里只说"已存在"，上层会以为 rc=3 合法而继续，
+        # 直到 set 才炸成 rc=4（错误现场离根因很远）。先判身份，再判"已存在"。
+        try:
+            existing = K.read_json(p)
+        except ValueError:
+            existing = None
+        if isinstance(existing, dict) and existing.get("run_id") not in (None, args.run):
+            sys.stderr.write(
+                "[FAIL] 已有台账 run_id=%r 与 --run=%r 不一致（身份错位）：%s\n"
+                "      ⇒ 该文件不是本轮的台账（常见：drill 夹具把上一轮 case_states.json 复制进来）。\n"
+                "        确认后可用 --force 重建，或让调用方不要把历史台账复制进新 run 目录。\n"
+                % (existing.get("run_id"), args.run, K.relpath(p)))
+            return RC_BROKEN
         sys.stderr.write("[FAIL] 用例态台账已存在：%s\n"
                          "      ⇒ 台账只增不改；要清空重来请显式 --force\n" % K.relpath(p))
         return RC_REJECT
@@ -157,7 +240,10 @@ def cmd_set(args):
     entry["updated_at"] = K.now_iso()
 
     if args.rework_cycles is not None:
-        # task-20 / I7：与 n16_promote.precheck_cases 同口径（负值拒 / >limit 拒 / ==limit 允许）
+        # task-20 / I7：**判断边界统一 `>=`**。写台账时允许记录 cycles==limit
+        # （那是"已到上限、必须升级 N13 人工裁决"的状态，不记录反而丢了升级依据）；
+        # 但**不得**写超过上限的值（超限写入会把预算偷偷放宽）。是否"超限不得继续/晋升"
+        # 由 check_ledger / n16 用 `>=` 判定（唯一判据）。
         lim = args.rework_limit
         if lim is None:
             lim = (st.get("rework_cycles") or {}).get("limit", 3)
@@ -167,6 +253,9 @@ def cmd_set(args):
         if args.rework_cycles > lim:
             sys.stderr.write("[FAIL] --rework-cycles %s > limit %s（I7）=> 返工超上限，必须升级 N13 人工裁决（spec §8）=> 台账**未写盘**\n" % (args.rework_cycles, lim))
             return RC_REJECT
+        if args.rework_cycles == lim:
+            print("[kb] 注意：n6_n8_cycles == limit（%s）⇒ I7 已到上限，"
+                  "必须升级 N13 人工裁决；check/N16 按 `>= limit` 拒绝晋升" % lim)
         st.setdefault("rework_cycles", {})["n6_n8_cycles"] = args.rework_cycles
         if args.rework_limit is not None:
             st["rework_cycles"]["limit"] = args.rework_limit
@@ -251,6 +340,48 @@ def cmd_show(args):
     return RC_OK if pend == 0 else RC_OK   # show 不因待验失败；N16 才拒绝
 
 
+def cmd_check(args):
+    """台账判定（N16 前置检查的稳定机器出口；与 check_ledger 同一实现）。"""
+    p = state_path(args.run, args.state_file)
+    st = load_state(p, args.run)
+    if st is None:
+        info = {"path": K.relpath(p), "run_id": args.run, "ok": False,
+                "problems": ["用例态台账不存在：%s（先 case_state.py init --run %s）"
+                             % (K.relpath(p), args.run)]}
+        if args.json:
+            sys.stdout.write(K.canon_json(info))
+        else:
+            sys.stderr.write("[FAIL] %s\n" % info["problems"][0])
+        return RC_REJECT
+    errs = K.validate(st, K.load_schema(SCHEMA_NAME))
+    if errs:
+        info = {"path": K.relpath(p), "run_id": args.run, "ok": False,
+                "problems": ["case_states.json 不合 schema：%s" % " | ".join(errs[:8])]}
+        if args.json:
+            sys.stdout.write(K.canon_json(info))
+        else:
+            sys.stderr.write("[FAIL] %s\n" % info["problems"][0])
+        return RC_BROKEN
+    problems, info = check_ledger(st, for_promotion=args.for_promotion)
+    info["path"] = K.relpath(p)
+    if args.json:
+        sys.stdout.write(K.canon_json(info))
+    else:
+        print("[kb] %s（run_id=%s）" % (K.relpath(p), st.get("run_id")))
+        for s in STATES:
+            print("[kb]   态「%s」= %d" % (s, info["counts"].get(s, 0)))
+        print("[kb] 返工循环 n6_n8_cycles=%s limit=%s over_limit=%s"
+              % (info["rework_cycles"]["n6_n8_cycles"],
+                 info["rework_cycles"]["limit"],
+                 info["rework_cycles"]["over_limit"]))
+        if problems:
+            for msg in problems:
+                sys.stderr.write("[FAIL] %s\n" % msg)
+        else:
+            print("[kb] 台账检查通过（无待验；返工未到上限）")
+    return RC_OK if not problems else RC_REJECT
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(
         description="用例态台账（I2 四态 + I3 跑通门槛可执行化；N16 晋升前置检查读本文件）",
@@ -305,6 +436,14 @@ def main(argv=None):
     sh.add_argument("--case", default=None)
     sh.add_argument("--json", action="store_true")
     sh.set_defaults(func=cmd_show)
+
+    ck = sub.add_parser("check", parents=[common],
+                        help="台账判定（N16 前置检查稳定出口；待验/返工>=limit 均 rc=3）")
+    ck.add_argument("--run", required=True)
+    ck.add_argument("--json", action="store_true", help="只输出一行机器可读 JSON")
+    ck.add_argument("--for-promotion", action="store_true",
+                    help="按 N16 晋升前置检查口径（I2 待验 / I7 >=limit 均拒绝）")
+    ck.set_defaults(func=cmd_check)
 
     args = ap.parse_args(argv)
     now = args.now or getattr(args, "now_sub", None)

@@ -154,7 +154,11 @@ def entry_candidates(manifest, manifest_path, side, explicit):
         out.append((explicit, "显式 --%s-entries" % side))
     dfp = ((manifest.get("doc_fingerprint") or {}).get("path") or "")
     if dfp:
-        out.append((os.path.join(os.path.dirname(K.root_path(dfp)), "doc_entries.jsonl"),
+        # F-02：manifest 里的路径是**工作区数据相对路径**（如 `baselines/v0/doc_entries.txt`，
+        # 旧记录里常带 `kb/` 前缀）。旧代码用 K.root_path（= ENV_ROOT）解析，于是
+        # WORKSPACE 在 ENV_ROOT 之外时主口径必然错位、静默落到回退链。
+        # 唯一正确口径 = K.data_path（剥 `kb/` 前缀后落 WORKSPACE_ROOT）。
+        out.append((os.path.join(os.path.dirname(K.data_path(dfp)), "doc_entries.jsonl"),
                     "manifest.doc_fingerprint.path 同目录（主口径）"))
     out.append((os.path.join(md, "bundle", "doc_entries.jsonl"),
                 "%s %s/bundle/doc_entries.jsonl" % (ENTRY_FALLBACK_TAG, side)))

@@ -44,7 +44,7 @@
 | `loop/host/progress.py` | 稳定应用事件投影 | 不作为权威（只投影，不回写） |
 | `loop/services/contracts.py` | 对外投影（闸门材料 / 看板项 / 运行摘要） | 不泄露 raw event、内部 metadata |
 | `loop/services/api.py` | FastAPI 准入与 HTTP 投影（ExecutionExchange 适配器） | **不实现自己状态机** |
-| `loop/web/` | v1 闸门操作台 + 长任务看板（只读投影 + 2 个写动作） | 不编辑 `TESTLIB/` |
+| `loop/web/` | v1 闸门操作台 + 长任务看板（只读投影 + 4 个写动作，见 §10.0） | 不编辑 `TESTLIB/` |
 | `RecordStore`（框架） | 执行快照的**物理留存** | 不承担业务持久化 |
 | `TaskWorkspace`（框架） | 运行目录/文件 | 不承担快照语义 |
 
@@ -89,17 +89,17 @@
 | N3 差异摘要 | ModelRequest | `n2_diff.json` | 分组摘要 | 解析失败结束执行，不伪造 |
 | **N4 闸门1** | 人工 | 差异清单 + 冲突快照 | 决策（确认/忽略+理由/转人工） | `pause_for`；未决>0 拒绝放行 |
 | N5 影响分析 | Host | 已确认差异 + 索引 | `n5_impact.json` | rc=3 业务码 |
-| N6 修订/补充 | ModelRequest | 受影响子集 | 沙箱用例 + 作者说明 | 只写沙箱，写权不落 `TESTLIB/` |
-| N7 编译（约 2 s） | Host | 沙箱用例 | rc + 编译日志 | **经单槽准入**，短任务 |
-| N8 检查 | ModelRequest | 沙箱用例 + 卡点C | 通过 / 退回 + 逐条依据 | 退回 ⇒ 显式回边到 N6 |
-| N9 全跑（实测 ≈19 min/用例） | Host | 通过检查的用例 | run 证据（日志/耗时/双计数/印记） | **不阻塞**：提交作业 → `pause_for` 停等 → 完成事件 resume |
-| N10 结果对账 | ModelRequest | N9 证据 | FAIL 三分类 | 分类 2/3 必须进待裁决清单 |
-| N11 评估 | ModelRequest | 对账 + 用例态 | 返工需求 / 认同 | 返工需求 ⇒ 回边到 N6 |
+| N6 修订/补充 | ModelRequest + Host | 受影响子集 + 逐条目标（case/file/md5/excerpt 带行号 + `revision_points` + `doc_bitdef`） | 修订 `edits[{line,old,new,basis}]` + 作者说明；Host `n6_apply` 写入 `<run>/sandbox/TESTLIB/` 并冻结 `md5_after` | 模型只出精确编辑；缺依据/非唯一 old 行/行号不符 ⇒ fail closed（不猜）；写权不落 `TESTLIB/` |
+| N7 编译（约 2 s） | Host | 沙箱用例 | rc + 编译日志 | `run_guarded.sh --mode compile-only`（身份头/先归档再删/串行锁）经单槽准入；short lease，异常也 release |
+| N8 检查 | ModelRequest | 沙箱用例 + 卡点C | 通过 / 退回 + 逐条依据；`static_check` 写台账 | 复核必须读代码/日志（`plan_only` 已删）；证据不足或校验失败 ⇒ node_failed（debug/rehearsal 不再自动当 PASS）；退回 ⇒ 显式回边到 N6 |
+| N9 全跑（实测 ≈19 min/用例） | Host | `n6_applied` 目标集（不是硬编码单例） | 单作业覆盖全部目标用例的 run 证据（日志/耗时/双计数/印记/identity 四方同值） | **不阻塞**：提交**一个**串行作业（`run_guarded.sh --mode full`）→ `pause_for` 停等 → 完成事件 resume；目标/沙箱/md5 缺失或证据目录缺失 ⇒ fail closed |
+| N10 结果对账 | ModelRequest + Host | N9 证据（`aggregate_evidence`） | FAIL 三分类；`reconcile.md` 落盘；分类 2/3 经 `n10_pending.py` 进 `pending.json` 的 `n10_items` | drill/real 都落 run_dir；待裁决只经单一写者追加，D1—D20 与 `expected_total` 不变 |
+| N11 评估 | ModelRequest + Host | 对账 + 用例态 + 证据身份（run_id/case/md5/seed 四方同值） | `chain=intact|broken` + 返工需求 | **Host 事实优先**：身份不一致或模型声称 intact 与 Host 证据矛盾 ⇒ 强制 `broken`；`>= limit` ⇒ `N11_ESCALATE` 升级闸门2；返工 ⇒ 显式回边到 N6 |
 | N12 报告 | ModelRequest | 全轮证据 | 报告草稿 | 数字一律引用产物，禁手算 |
 | **N13 闸门2** | 人工 | 报告 + 用例态 + 返工计数 | accept / rework | `pause_for`；rework ⇒ 回 N6 且计数+1 |
-| **N14 闸门3** | 人工 | 评估结论 + 冲突态 | full_regression / milestone_only | `pause_for`；冲突未清零不得选 full |
-| N15 分层回归 | TriggerFlow | 用例集 | 每用例证据 | `for_each(concurrency=…)`——**唯一真并行**（`run_tc.py` 5 机 × 2 LIC） |
-| N16 晋升基线 | Host | 轮结果 + 冲突态 + 用例态 | `v(n+1)(parent=v(n))` | 前置不过 ⇒ rc=3 零副作用 |
+| **N14 闸门3** | 人工 | 评估结论 + 冲突态 + I7 计数 | 权威枚举 `full_now / subset_only / milestone_only / defer` | `pause_for`；I4：冲突未清零时 `full_now`/`subset_only` 在**提交前**被拒；`defer` ⇒ 显式 HALT（不晋升） |
+| N15 分层回归 | Host | G3 决策 + 用例集 | 每用例证据（最终态，非 provisional） | 先 `n15_select` 选目标集，再 `n15_run` 提交**一个**串行作业经单槽；drill 为显式 no-op；不再 `for_each`/`n15_case` 假进度 |
+| N16 晋升基线 | **人触发 + Host** | 轮结果 + 冲突态 + 用例态 + G3 签署记录 | `v(n+1)(parent=v(n))`；`promote_result.json` | 图内节点默认 dry-run；真实晋升必须 `--promote` 且 `--trigger-by/--actor-kind` 与 G3 逐字一致（human），I4 无条件、I2 待验阻断、I7 `>=limit` 拒绝；前置不过 ⇒ rc=3 零副作用 |
 
 ---
 
@@ -111,12 +111,12 @@
 | 闸门1 决策 | `actor_kind` 校验 + `history[]` 追加 + `anchor` 更新 | N5 输入 |
 | `n5_impact.json` 受影响子集 | 非空校验 | N6 派发 |
 | N6 产出 | 沙箱路径（禁越界写） | N7 → N8 |
-| N8 退回依据 | 逐条依据非空 | 回边计数 `n6_n8_cycles` |
-| `n6_n8_cycles` | `> limit` ⇒ 拒绝 N16（F-I7-01） | N13 升级人工 |
-| N9 证据 | 双计数分别取 + 印记三向一致校验 | N10 对账 |
+| N8 退回依据 | 逐条依据非空 + 代码级复核（`plan_only` 已删） | 回边计数 `n6_n8_cycles` |
+| `n6_n8_cycles` | **`>= limit`** ⇒ 拒绝 N16 并升级 N13 人工裁决（I7） | N13 升级人工 |
+| N9 证据 | 双计数分别取 + 印记三向一致校验 + identity 四方同值（run_id/case/md5/seed） | N10 对账 / N11 守护 |
 | 闸门2 决策 | `actor_kind` + 计数快照 | N11 / 回边 |
-| 闸门3 决策 | 冲突清零校验（选 full 时） | N15 / N16 |
-| N16 前置 | `case_states.json` 无「已修订待验」∧ 冲突无 `blocks_release` ∧ 回边未超限 ∧ 无残留 `manifest.json` | 晋升或 rc=3 |
+| 闸门3 决策 | 冲突清零校验（选 `full_now`/`subset_only` 时，提交前） | N15 / N16 |
+| N16 前置 | `case_states.json` 无「已修订待验」（本轮）∧ 冲突无 `blocks_release` ∧ 两类回边均 `>= limit` 拒绝 ∧ 身份与 G3 逐字一致 ∧ 无残留 `manifest.json` | 晋升或 rc=3 |
 
 ---
 
@@ -247,8 +247,17 @@ n9_sim chunk                       park chunk                      job_runner �
 
 ## 10. UI 投影契约（v1 = 闸门操作台 + 长任务看板）
 
-**v1 范围**：单机单用户。**允许的写动作恰好两个**：① 提交闸门决策；② 取消作业。
+**v1 范围**：单机单用户。**允许的写动作恰好四个**（全部经服务端校验，前端只传输）：
+
+| # | 动作 | 端点 | 权威校验（拒绝发生在任何写盘之前） |
+|---|---|---|---|
+| ① | 提交闸门决策 | `POST /api/runs/{run_id}/gates/{gate_id}/decision` | actor 必须以 `human` 开头（I6）；枚举 ∈ `kb_lib.GATE_DECISIONS`；I4/I1/I2 前置；拒绝不消耗中断、不写账本 |
+| ② | 取消作业 | `POST /api/runs/{run_id}/jobs/{job_id}/cancel` | 作业存在且未终态；送达后由 `JobRunner` 记权威相位 |
+| ③ | 新建运行 | `POST /api/runs` | `project` 必须等于进程 `ENV_ROOT`（跨环境须重启）；`mode ∈ {drill, real}`；`scenario` 见 `SCENARIOS`；run_id 必须唯一 |
+| ④ | 人触发晋升（N16/I8） | `POST /api/runs/{run_id}/promote` | actor 必须以 `human` 开头且**与 G3 签署者逐字一致**；G3 已签、`human_signed=true`、决策 ∈ {full_now, subset_only, milestone_only}；再交 `kb/tools/n16_promote.py --promote`（I4/I7/七件套/parent 链由工具复核）；每次尝试落 `<run_dir>/promote_result.json`，已成功过拒绝重复晋升 |
+
 **明确不做**：UI 编辑 `TESTLIB/`（写权在 v1–v3 归作者角色 + 沙箱）、UI 直接改基线/冲突清单。
+晋升的**真实写盘**只由 `n16_promote.py` 原子完成；API 层不写 `baselines/`、不伪造闸门。
 
 ### 10.1 十项信任缺口在界面上的强制呈现
 

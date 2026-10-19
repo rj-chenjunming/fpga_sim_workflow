@@ -5,9 +5,17 @@
 流程
     0 前置检查（任一不过 ⇒ rc=3，不写任何东西）
         · G1 = signed+confirmed ∧ G2 = signed+accept ∧ G3 已决策（≠pending）
-        · `kb/runs/<run_id>/case_states.json` **存在**且**无「已修订待验」**（spec I2）
-        · 触发者必须是人：`--trigger-by <人名> --actor-kind human`
-          （演练需显式 `--allow-nonhuman`，写盘后 `human_signed` 仍为 false）
+        · **身份（I20/C9）**：`--trigger-by` / `--actor-kind` 必须与 `gates.json` 里
+          G3 签署记录的 `actor` / `actor_kind` **逐字一致**；缺失/不一致 ⇒ rc=3。
+          工具不再硬编码 human，也不自封身份 —— 调用方（loop 的 N16 chunk）从 G3 记录取。
+        · **I4 无条件**：冲突清单里任何 `blocks_release=true` 且未清零（status ∈
+          {confirmed,ignored,ruled,fixed} 之外，如 open）的项 ⇒ rc=3。
+          不再由 G3=milestone/defer 分流绕过（审计 A18）。
+        · `kb/runs/<run_id>/case_states.json` **存在**且**无「已修订待验」**（spec I2）；
+          台账判定复用 `case_state.check_ledger()`（**唯一判据实现**，不抄第二套）；
+          I7 边界统一 `n6_n8_cycles >= limit` ⇒ 不得晋升（审计 C5）。
+        · **真实写入开关**：默认 dry-run；只有显式 `--promote` 才落盘，
+          且此时 `--actor-kind` 必须是 `human`（spec I8：人触发、Host 执行）。
         · draft manifest 过 `kb_lib.check(..., "manifest")`，且 `parent` 基线已存在（链可回放）
         · **bundle 完整性复验**：七件套每一件的 sha256/指纹与 draft manifest 声明逐一对齐
           （对不上 ⇒ rc=4，绝不把半成品固化成"真相"）
@@ -36,18 +44,26 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import kb_lib as K  # noqa: E402
+import case_state as CS  # noqa: E402  （I2/I7 台账判定唯一实现）
 
 RC_OK = 0
 RC_USAGE = 2
 RC_PRECHECK = 3
 RC_ARCHIVE = 4
 
+#: 冲突"已清零"的状态（人裁决过 = 不再阻断发布）。其余（open 等）一律阻断。
+CONFLICT_CLEARED = ("confirmed", "ignored", "ruled", "fixed")
+#: 可晋升的 G3 决策（LOOP_ORCHESTRATION_SPEC §10 表 ④，与 API 晋升入口同口径）。
+#: `defer` = 本轮不发版 ⇒ 不得晋升；`pending` 已在上面的"未签署"分支拒绝。
+G3_PROMOTABLE = ("full_now", "subset_only", "milestone_only")
+
 SEVEN_PIECES = ("新 manifest(parent=v_n)", "新 RTL 快照", "新文档指纹", "新用例 md5 清单",                "冲突清单态", "冻结变更结果", "证据包指针")
 REQUIRED_DRAFT_KEYS = ("schema", "version", "baseline", "parent", "created_at", "created_by",
                        "package_sha256", "rtl_snapshot", "allfiles_manifest", "doc_fingerprint",
                        "cases_freeze", "conflicts_snapshot", "commit", "evidence_index")
-PENDING_STATE = "已修订待验"
-VALID_STATES = ("未改", "已修订待验", "已验证通过", "已退回")
+#: 台账字面量**只从 case_state 取**（不许第二套枚举，审计 C5 / README 红线 8）
+PENDING_STATE = CS.PENDING_STATE
+VALID_STATES = CS.STATES
 # F-N16-02（task-18）：晋升目标目录允许出现的顶层条目。仅当目标目录**不含 manifest.json**
 # 且顶层条目 ⊆ 本集合时，才认定为「本工具的半截残留」并允许清理；否则拒绝且一字节不动。
 ALLOWED_TARGET_ENTRIES = (
@@ -137,34 +153,96 @@ def precheck_gates(p):
             continue
         if expect and g.get("decision") != expect:
             problems.append("%s 决策不是 %s（实际 %s）" % (gid, expect, g.get("decision")))
+            continue
+        if gid == "G3_regression_decision" and g.get("decision") not in G3_PROMOTABLE:
+            # defer / pending 是"本轮不发版"的语义 ⇒ 不得晋升（LOOP §10 表 ④ 同口径）
+            problems.append("G3 决策=%r 不是可晋升决策（只允许 %r）"
+                            % (g.get("decision"), list(G3_PROMOTABLE)))
     if problems:
         return st, "闸门前置检查未过：" + "；".join(problems)
     return st, None
 
 
+def precheck_identity(gates, trigger_by, actor_kind):
+    """I20/C9：晋升身份必须**来自 G3 签署记录**，工具不硬编码 human、不自封身份。
+
+    返回 (why or None, g3)。调用方传的 --trigger-by/--actor-kind 是"从 G3 记录读出来的值"，
+    本函数做**逐字一致性校验**：G3 记录缺失/与传入不一致 ⇒ fail closed。
+    """
+    g3 = (gates.get("gates") or {}).get("G3_regression_decision")
+    if not isinstance(g3, dict):
+        return "G3 签署记录缺失 ⇒ 无法确定晋升身份（I20）", None
+    if not g3.get("actor"):
+        return "G3 签署记录缺 actor ⇒ 无法确定晋升触发者（I20 fail closed）", g3
+    if g3.get("actor") != trigger_by:
+        return ("--trigger-by=%r 与 G3 签署记录 actor=%r 不一致（身份必须取自 G3，C9）"
+                % (trigger_by, g3.get("actor"))), g3
+    if g3.get("actor_kind") != actor_kind:
+        return ("--actor-kind=%r 与 G3 签署记录 actor_kind=%r 不一致（身份必须取自 G3，C9）"
+                % (actor_kind, g3.get("actor_kind"))), g3
+    if bool(g3.get("human_signed")) != (actor_kind == "human"):
+        return ("G3 human_signed=%r 与 actor_kind=%r 不自洽（I6）"
+                % (g3.get("human_signed"), actor_kind)), g3
+    return None, g3
+
+
+def conflicts_path_for(run_dir, explicit):
+    """I4 校验对象：显式 > 本轮 bundle 的冻结快照 > 工作区现态。
+
+    优先用 **本轮 bundle 快照**：晋升的是"这一轮冻结的冲突态"，不是工作区后来被改过的现态。
+    """
+    cands = []
+    if explicit:
+        cands.append(resolve(explicit))
+    cands.append(os.path.join(run_dir, "bundle", "conflicts", "conflicts.json"))
+    cands.append(K.kb_path("conflicts", "conflicts.json"))
+    for p in cands:
+        if os.path.isfile(p):
+            return p
+    return None
+
+
+def precheck_conflicts(path):
+    """I4 **无条件**校验（审计 A18）：blocks_release 未清零 ⇒ 不得晋升。
+
+    不再由 loop 的 G3 选项（full_now/subset_only/milestone/defer）分流：
+    里程碑/延期路径同样不得把未清零冲突固化进新基线。
+    """
+    if path is None:
+        return None, "I4：冲突清单不存在（找不到本轮快照或工作区 conflicts/conflicts.json）⇒ 按未清零处理"
+    try:
+        doc = K.read_json(path)
+    except ValueError as exc:
+        return None, "I4：冲突清单不是合法 JSON（%s）：%s" % (exc, K.relpath(path))
+    items = doc.get("conflicts")
+    if not isinstance(items, list):
+        return None, "I4：冲突清单缺 conflicts[] 数组：%s" % K.relpath(path)
+    blocking = [c for c in items
+                if isinstance(c, dict) and c.get("blocks_release")
+                and c.get("status") not in CONFLICT_CLEARED]
+    if blocking:
+        ids = ", ".join(str(c.get("id")) for c in blocking[:12])
+        return doc, ("I4：冲突未清零（%d/%d 项 blocks_release 且 status 不在 %r）⇒ 不得晋升：%s"
+                     % (len(blocking), len(items), CONFLICT_CLEARED, ids))
+    return doc, None
+
+
 def precheck_cases(run_dir, explicit):
+    """I2/I7 前置检查：**复用 case_state.check_ledger**（唯一判据实现）。"""
     p = explicit or os.path.join(run_dir, "case_states.json")
     if not os.path.exists(p):
         return None, ("用例态台账不存在：%s\n      ⇒ 先 kb/tools/case_state.py init --run <id> "
                       "并由 N6~N10 责任方写入（I2：缺台账不得晋升）" % K.relpath(p))
-    st = K.read_json(p)
+    try:
+        st = K.read_json(p)
+    except ValueError as exc:
+        return None, "用例态台账不是合法 JSON（%s）：%s" % (exc, K.relpath(p))
     errs = K.validate(st, K.load_schema("case_states"))
     if errs:
         return st, "用例态台账不合 case_states.schema.json：%s" % " | ".join(errs[:6])
-    bad_states = sorted(set(str(c.get("state")) for c in st.get("cases", [])
-                            if c.get("state") not in VALID_STATES))
-    if bad_states:
-        return st, "用例态含非法字面量 %r（只允许 %s）" % (bad_states, "/".join(VALID_STATES))
-    pending = sorted(c.get("case") for c in st.get("cases", [])
-                     if c.get("state") == PENDING_STATE)
-    if pending:
-        return st, ("存在「%s」用例 ⇒ 不得晋升（I2）：%s" % (PENDING_STATE, ", ".join(pending)))
-    # I7 断言（spec §8 / I7）：N6↔N8 返工循环超上限 ⇒ 必须升级 N13 人工裁决，不得晋升
-    rc = st.get("rework_cycles") or {}
-    cycles, limit = rc.get("n6_n8_cycles"), rc.get("limit")
-    if cycles is not None and limit is not None and cycles > limit:
-        return st, ("返工循环 n6_n8_cycles=%s > limit=%s（I7）⇒ 超限必须升级 N13 人工裁决，"
-                    "本轮不得晋升" % (cycles, limit))
+    problems, _info = CS.check_ledger(st, for_promotion=True)
+    if problems:
+        return st, "台账前置检查未过（I2/I7）：" + "；".join(problems)
     return st, None
 
 
@@ -290,16 +368,26 @@ def main(argv=None):
     ap.add_argument("--n2", default=None, help="N2 差异清单覆盖（默认 kb/runs/<run>/n2_diff.json）")
     ap.add_argument("--n5", default=None, help="N5 影响清单覆盖（默认 kb/runs/<run>/n5_impact.json）")
     ap.add_argument("--evidence-dir", default=None, help="证据目录（默认 kb/runs/<run>/evidence）")
-    ap.add_argument("--trigger-by", required=True, help="触发晋升的人名（人触发是硬前置）")
-    ap.add_argument("--actor-kind", default="human", choices=["human", "rehearsal", "host", "model"])
+    ap.add_argument("--trigger-by", required=True,
+                    help="触发晋升的人名；**必须逐字等于 gates.json 的 G3.actor**（C9/身份取自 G3）")
+    ap.add_argument("--actor-kind", required=True, choices=["human", "rehearsal", "host", "model"],
+                    help="**必须逐字等于 gates.json 的 G3.actor_kind**；真实晋升只允许 human")
     ap.add_argument("--allow-nonhuman", action="store_true",
-                    help="演练放行非人类触发（human_signed 仍为 false，manifest.trigger 如实记录）")
-    ap.add_argument("--dry-run", action="store_true", help="只做前置检查与完整性复验，不写盘")
+                    help="兼容旧参数：仅对 dry-run 有意义（非人类只能预演，human_signed 恒 false）")
+    ap.add_argument("--promote", action="store_true",
+                    help="**显式真实晋升开关**：缺省 = dry-run（只做前置检查与完整性复验，不写盘）")
+    ap.add_argument("--dry-run", action="store_true",
+                    help="显式 dry-run（与 --promote 互斥；缺省即 dry-run）")
+    ap.add_argument("--conflicts", default=None,
+                    help="I4 冲突清单覆盖（默认本轮 bundle/conflicts/conflicts.json > 工作区 conflicts/conflicts.json）")
     ap.add_argument("--now", default=None,
                     help="注入时间字段 created_at/promoted_at/updated_at（等价 KB_NOW，README §3.1.1）")
     args = ap.parse_args(argv)
     if args.now:
         K.set_now(args.now)
+    if args.promote and args.dry_run:
+        ap.error("--promote 与 --dry-run 互斥（默认就是 dry-run）")
+    do_promote = bool(args.promote)
 
     run_dir = K.run_dir(args.run)
     draft_path = args.draft or os.path.join(run_dir, "n1_manifest_new.json")
@@ -316,16 +404,27 @@ def main(argv=None):
           % (args.run, args.trigger_by, args.actor_kind, K.relpath(root)))
 
     # ---------- 0 前置检查
-    if args.actor_kind != "human" and not args.allow_nonhuman:
-        return fail("非人类触发（--actor-kind %s）不得晋升（spec I8：晋升由人点、Host 执行）；"
-                    "演练请显式 --allow-nonhuman" % args.actor_kind, RC_PRECHECK)
     if not args.trigger_by.strip():
         return fail("--trigger-by 不能为空（谁点的必须留痕）", RC_PRECHECK)
 
     gates, why = precheck_gates(gates_path)
     if why:
         return fail(why, RC_PRECHECK)
+    why, g3 = precheck_identity(gates, args.trigger_by, args.actor_kind)
+    if why:
+        return fail(why, RC_PRECHECK)
+    # 真实写入：人触发是硬前置（I8）。dry-run 允许 rehearsal 预演，但不落盘。
+    if do_promote and args.actor_kind != "human":
+        return fail("真实晋升必须 --actor-kind human（G3 actor_kind=%r，spec I8：人触发、Host 执行）"
+                    % args.actor_kind, RC_PRECHECK)
+
     cases, why = precheck_cases(run_dir, args.case_states)
+    if why:
+        return fail(why, RC_PRECHECK)
+
+    # I4 **无条件**（审计 A18）：不再看 G3 决策是 full_now / subset_only / milestone_only / defer
+    cpath = conflicts_path_for(run_dir, args.conflicts)
+    _cdoc, why = precheck_conflicts(cpath)
     if why:
         return fail(why, RC_PRECHECK)
 
@@ -376,13 +475,16 @@ def main(argv=None):
     old_digest = baseline_digests(root, exclude=(target,))
     before_old = old_digest
     human_signed = (args.actor_kind == "human")
-    print("[kb] 前置检查通过：G1=confirmed G2=accept G3=%s；用例态待验=0；bundle 七件套指纹对齐"
-          % gates["gates"]["G3_regression_decision"]["decision"])
-    print("[kb] 目标基线：%s（parent=%s）；既有基线件数=%d" % (target, parent, len(before_old)))
+    print("[kb] 前置检查通过：G1=confirmed G2=accept G3=%s；身份=G3(%s/%s)；"
+          "用例态待验=0 且返工未到上限；I4 冲突已清零；bundle 七件套指纹对齐"
+          % (gates["gates"]["G3_regression_decision"]["decision"],
+             g3.get("actor"), g3.get("actor_kind")))
+    print("[kb] 目标基线：%s（parent=%s）；既有基线件数=%d；模式=%s"
+          % (target, parent, len(before_old), "PROMOTE(真实写入)" if do_promote else "dry-run"))
 
-    if args.dry_run:
-        print("[kb] --dry-run：不写盘。计划写入 %s，随后 os.replace → %s，再 chmod 444 并追加 %s"
-              % (K.relpath(staging), K.relpath(final_dir), K.relpath(idx_path)))
+    if not do_promote:
+        print("[kb] dry-run（默认；未给 --promote）：不写盘。计划写入 %s，随后 os.replace → %s，"
+              "再 chmod 444 并追加 %s" % (K.relpath(staging), K.relpath(final_dir), K.relpath(idx_path)))
         return RC_OK
 
     # ---------- 1 写 staging

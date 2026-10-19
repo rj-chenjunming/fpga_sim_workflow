@@ -137,7 +137,8 @@ async def test_drill_run_produces_readonly_archive_and_clears_e2() -> None:
             import asyncio
 
             await asyncio.sleep(0.1)
-        await m.decide(run_id=rid, gate="G1_diff_confirm", decision="confirmed", actor="human:e2")
+        await m.decide(run_id=rid, gate="G1_diff_confirm", decision="confirmed", actor="human:e2",
+                       reason="已逐条核对差异")
         import asyncio
 
         for _ in range(150):

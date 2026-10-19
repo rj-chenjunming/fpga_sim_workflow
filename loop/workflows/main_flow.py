@@ -24,20 +24,43 @@ from agently import TriggerFlow
 
 from host import gate_authority as GA
 from host import paths as P
-from host.admission import Admission
+from host.admission import Admission, run_id_of_slot_job_id, slot_job_id
 from host.job_runner import JobRunner
 from host.progress import ProgressLog
 from services import contracts
 from services.contracts import KbSources
 
-from .chunks.gates import BRANCH_DRIFT, GATE_DECISIONS, GATE_IDS, gate1, gate2, gate3, halt
-from .chunks.host_steps import n0_baseline, n1_manifest, n2_diff, n5_impact, n7_compile, n16_promote
-from .chunks.long_jobs import n9_park, n9_submit, n15_case, n15_select
+from .chunks import gates as gate_chunks
+from .chunks.gates import (
+    BRANCH_DRIFT,
+    GATE_DECISIONS,
+    GATE_IDS,
+    gate1,
+    gate2,
+    gate3,
+    halt,
+)
+from .chunks.host_steps import (
+    n0_baseline,
+    n1_manifest,
+    n2_diff,
+    n5_impact,
+    n6_apply,
+    n7_compile,
+    n16_promote,
+)
+from .chunks.long_jobs import n9_park, n9_submit, n15_run, n15_select
 from .chunks.model_steps import n10_reconcile, n11_review, n12_report, n3_digest, n6_author, n8_check
 from .context import RESOURCE_KEY, RunCtx, prepare_run_dir, runtime_resources
 
+# I17：**启动自检**。权威枚举与本层事件表漂移时立即炸，不带漂移启动。
+gate_chunks.assert_topology_matches_authority()
+
 #: 返工上限（I7）。N8 与 N16 都校验；本层只负责把回边**图示化**。
 REWORK_LIMIT = 3
+
+#: 单槽租约的节点前缀（`<节点>-<run_id>`，口径见 `host.admission.slot_job_id`）。
+SLOT_NODES = ("N9", "N15", "N7")
 
 #: 图里**再无后继**的节点。走到它们就意味着一轮结束。
 #: 必须显式关闭执行：`create_execution(auto_close=False)` 关掉了框架里**唯一**会把
@@ -58,25 +81,31 @@ LOOP_FLOW = TriggerFlow(name="change-impact-loop")
     .to(gate1)
 )
 
-LOOP_FLOW.when("G1_CONFIRMED").to(n5_impact).to(n6_author).to(n7_compile).to(n8_check)
+LOOP_FLOW.when("G1_CONFIRMED").to(n5_impact).to(n6_author).to(n6_apply).to(n7_compile).to(n8_check)
 # 有疑义 / 忽略 ⇒ 不进入修订阶段，闭环显式终止（不假装收敛）
 LOOP_FLOW.when("G1_IGNORED").to(halt)
 LOOP_FLOW.when("G1_DISPUTED").to(halt)
 
-# 显式回边：N8 退回 ⇒ 回 N6（返工计数由 N6 自增，上限由 N8/N16 校验）
+# 显式回边：N8 退回 ⇒ 回 N6（返工计数只读 case_state 台账，上限由 N8/N16 校验）
 LOOP_FLOW.when("N8_REWORK").to(n6_author)
-LOOP_FLOW.when("N8_ESCALATE").to(halt)
-LOOP_FLOW.when("N8_PASS").to(n9_submit).to(n9_park).to(n10_reconcile).to(n11_review).to(n12_report).to(gate2)
+# I7/A22：N8 超限不再直接终止，改指 N13 人工裁决（能力级闸门，载荷带升级原因）
+LOOP_FLOW.when("N8_ESCALATE").to(gate2)
+LOOP_FLOW.when("N8_PASS").to(n9_submit).to(n9_park).to(n10_reconcile).to(n11_review)
+
+# N11 = 证据守护（A10）：成链 → N12；不成链 → 显式回边 N6（不得无条件落到 N12）
+LOOP_FLOW.when("N11_INTACT").to(n12_report).to(gate2)
+LOOP_FLOW.when("N11_REWORK").to(n6_author)
+# I7/A22：N11 证据守护返工超限 ⇒ 升级 N13 人工裁决（不再直接失败/死循环）
+LOOP_FLOW.when("N11_ESCALATE").to(gate2)
 
 LOOP_FLOW.when("G2_REWORK").to(n6_author)
 LOOP_FLOW.when("G2_ACCEPT").to(gate3)
 
-# N15 的扇出由 for_each 承载。**并发上限=1**：uvs.setup 是仓库根下全局单文件，
-# 同工作目录禁止并发（真正的并行只跨机，经 run_tc.py）。
-# 四个 G3 决策分支都存在（枚举取自权威，见 chunks/gates.BRANCH_EVENTS 与 BRANCH_DRIFT 自检）。
-LOOP_FLOW.when("G3_FULL_NOW").to(n15_select).for_each(concurrency=1).to(n15_case).end_for_each().to(n16_promote)
-LOOP_FLOW.when("G3_SUBSET_ONLY").to(n15_select).for_each(concurrency=1).to(n15_case).end_for_each().to(n16_promote)
-LOOP_FLOW.when("G3_MILESTONE").to(n15_select).for_each(concurrency=1).to(n15_case).end_for_each().to(n16_promote)
+# N15：单作业串行（`n15_run`），不再用 for_each —— 并发上限=1 的约束内化到单作业里，
+# 拓扑上因此没有扇出/汇合。四个 G3 决策分支都存在（枚举取自权威，见 BRANCH_DRIFT 自检）。
+LOOP_FLOW.when("G3_FULL_NOW").to(n15_select).to(n15_run).to(n16_promote)
+LOOP_FLOW.when("G3_SUBSET_ONLY").to(n15_select).to(n15_run).to(n16_promote)
+LOOP_FLOW.when("G3_MILESTONE").to(n15_select).to(n15_run).to(n16_promote)
 LOOP_FLOW.when("G3_DEFER").to(halt)
 
 
@@ -177,6 +206,13 @@ class RunManager:
         self.kb = KbSources.from_workspace(P.WORKSPACE_ROOT)
         self.admission = Admission(P.STATE_DIR)
         self.runner = JobRunner(P.JOBS_DIR, self.admission)
+        # 单槽的三处外部依赖由本类注册（admission 不反向 import 编排层）：
+        #  - 作业相位探针（B5：锁判活看作业，不看 uvicorn 进程）
+        #  - 队首存活校验（I5：死条目不得拿到锁）
+        #  - 队列唤醒器（C2：release 交接后**真的**把队首执行唤醒）
+        self.admission.set_job_probe(self.runner.phase_of)
+        self.admission.set_queue_validator(self._slot_queue_head_alive)
+        self.admission.set_resumer(self._on_slot_handoff)
         self.executions: dict[str, Any] = {}
         self.ctxs: dict[str, RunCtx] = {}
         self.docs: dict[str, RunDoc] = {}
@@ -237,6 +273,170 @@ class RunManager:
     def _progress(self, run_id: str) -> ProgressLog:
         return ProgressLog(P.EVENTS_DIR, run_id)
 
+    # ---------------- 单槽（C2/B5/I5） ----------------
+
+    @staticmethod
+    def _slot_job_ids_for(run_id: str) -> list[str]:
+        return [slot_job_id(node, run_id) for node in SLOT_NODES]
+
+    def _slot_queue_head_alive(self, entry: dict[str, Any]) -> bool:
+        """I5：队首必须仍活着**且仍停在 SLOT 中断上**，否则是幽灵条目。
+
+        队列是状态；死 run 留在队里会让后续 release 把锁交给一个再也不会有人的执行
+        （然后整条队列饿死）。这里只做只读判定，不再写状态。
+        """
+        run_id = run_id_of_slot_job_id(str(entry.get("job_id") or ""))
+        if not run_id:
+            return False
+        doc = self.docs.get(run_id)
+        if doc is None or doc.status in ("failed", "finished"):
+            return False
+        execution = self.executions.get(run_id)
+        if execution is None:
+            # 本进程还没恢复它 ⇒ 不能把锁交给它（恢复时会重新申请/排队）。
+            return False
+        try:
+            pending = execution.get_pending_interrupts() or {}
+        except Exception:
+            return False
+        return any(str(key).startswith("SLOT:") for key in pending)
+
+    def _on_slot_handoff(self, handoff: dict[str, Any]) -> bool:
+        """C2：release 把槽交接给队首后，必须**真的唤醒**队首执行（否则永久停放）。
+
+        由 `Admission.release()` 在交接成功后同步回调。本进程内能找到执行且有 SLOT 中断
+        就排一个唤醒任务；找不到（别的进程持有/尚未恢复）返回 False，让 admission
+        把锁收回继续下一个队首 —— 绝不允许"锁给了但没人会跑"。
+        """
+        run_id = run_id_of_slot_job_id(str(handoff.get("job_id") or ""))
+        if not run_id:
+            return False
+        execution = self.executions.get(run_id)
+        if execution is None:
+            return False
+        try:
+            pending = execution.get_pending_interrupts() or {}
+        except Exception:
+            return False
+        slot_keys = [str(k) for k in pending if str(k).startswith("SLOT:")]
+        if not slot_keys:
+            # 没有 SLOT 中断：它已经不在等槽（可能已自行恢复并持有锁）。
+            return True
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:  # pragma: no cover - 非事件循环上下文
+            return False
+        loop.create_task(self._resume_slot(run_id, slot_keys[0], handoff))
+        return True
+
+    async def _resume_slot(self, run_id: str, interrupt_id: str, handoff: dict[str, Any]) -> None:
+        """把「槽给你了」投递给队首的 SLOT 中断（`resume_to="self"` 会重入 N9 提交段）。"""
+        execution = self.executions.get(run_id)
+        if execution is None:
+            return
+        self._redeliver_n += 1
+        request_id = f"{run_id}:slot:{self._boot_id}:{self._redeliver_n}"
+        try:
+            await execution.async_continue_with(
+                interrupt_id,
+                {"slot": "granted", "job_id": handoff.get("job_id"),
+                 "tc": handoff.get("tc"), "seed": handoff.get("seed")},
+                resume_request_id=request_id,
+                actor="host:admission",
+            )
+        except Exception as exc:
+            await self._fail_run(
+                run_id,
+                f"单槽交接后唤醒失败（中断 {interrupt_id}）：{type(exc).__name__}: {exc}",
+            )
+            return
+        if interrupt_id in (execution.get_pending_interrupts() or {}):
+            await self._fail_run(
+                run_id,
+                f"单槽交接后唤醒未生效：中断 {interrupt_id} 仍在等待（resume 被拒）。",
+            )
+            return
+        try:
+            await self.async_sync(run_id)
+        except Exception:  # pragma: no cover - 投影失败不得掀翻唤醒任务
+            pass
+
+    # ---------------- 失败收敛（I1/I2/I3） ----------------
+
+    def _wait_status(self, pending: dict[str, Any]) -> str:
+        """I18：按中断**类型**区分在等什么（不再把 JOB/SLOT 都投影成"等你决策"）。"""
+        if not pending:
+            return "waiting_gate"
+        item = next(iter(pending.values())) or {}
+        kind = str(item.get("type") or "")
+        interrupt_id = str(item.get("id") or "")
+        if kind == "gate_decision" or interrupt_id.startswith("G"):
+            return "waiting_gate"
+        if kind == "job_done" or interrupt_id.startswith("JOB:"):
+            return "waiting_job"
+        if kind == "slot_wait" or interrupt_id.startswith("SLOT:"):
+            return "waiting_slot"
+        return "waiting_interrupt"
+
+    async def _close_execution(self, run_id: str, *, reason: str) -> Any:
+        """显式关闭执行并记录 `close_result`（I3：失败/终态都必须关，不能挂着）。"""
+        execution = self.executions.get(run_id)
+        doc = self.docs.get(run_id)
+        if execution is None or doc is None:
+            return None
+        try:
+            if execution.is_closed():
+                return None
+            result = await execution.async_close(reason=reason, pending_interrupts="cancel")
+        except Exception as exc:
+            doc.notes.append(f"关闭执行失败（{reason}）：{type(exc).__name__}: {exc}")
+            return None
+        doc.notes.append(f"执行已关闭：reason={reason} close_result={type(result).__name__}")
+        return result
+
+    async def _fail_run(self, run_id: str, message: str, *, reason: str = "run_failed") -> None:
+        """**失败必须显式收敛**：`failed` + `error` + 清 pending + 释放单槽 + close。
+
+        旧实现的失败分支只 `doc.error=...`，执行永不 close、单槽可能永久占住，
+        使"一个 run 失败"放大成"后续全部卡在 SLOT/JOB 中断"。
+        """
+        doc = self.docs.get(run_id)
+        if doc is None:
+            return
+        if doc.error is None or doc.status != "failed":
+            doc.error = str(message)
+            doc.status = "failed"
+        doc.pending_interrupt = None
+        # 先摘队列（否则 release 可能把槽"交回"给刚失败的自己），再释放槽（幂等）。
+        for slot_id in self._slot_job_ids_for(run_id):
+            try:
+                self.admission.cancel_pending(slot_id)
+            except Exception:  # pragma: no cover
+                pass
+            try:
+                self.admission.release(job_id=slot_id, handoff=True)
+            except Exception:  # pragma: no cover
+                pass
+        ctx = self.ctxs.get(run_id)
+        if ctx is not None:
+            ctx.event(
+                "warning", node="lifecycle", status="failed",
+                detail={"message": str(message),
+                        "rule": "失败必须显式收敛：status=failed + error + 清 pending + 关闭执行；"
+                                "不得把崩溃伪装成'在等人工'"},
+            )
+        self._persist(run_id)
+        await self._close_execution(run_id, reason=reason)
+
+    def _last_node_failure(self, events: list[dict[str, Any]]) -> str | None:
+        for event in reversed(events):
+            if event.get("kind") == "node_failed":
+                detail = event.get("detail") or {}
+                node = event.get("node")
+                msg = detail.get("message") or event.get("status")
+                return f"{node}: {msg}" if node else str(msg)
+        return None
+
     # ---------------- 启动 ----------------
 
     async def start(
@@ -267,6 +467,22 @@ class RunManager:
             raise FileExistsError(
                 f"运行目录 {run_id} 已存在；run_id 必须唯一（检查 LOOP_NOW/KB_NOW 是否被固定）。"
             )
+        # 运行目录已被清理、但事件流/恢复快照还留着同名件 ⇒ 新 run 的事件流会混进上一轮的
+        # gate_decided（"闸门被签过"的假象，实测：两个测试同秒拿到同一 run_id）。
+        # 这两者是**投影件**（不是权威），把它隔离到 `.stale-<ts>` 保留追溯，新 run 从干净的
+        # 事件流/快照开始；隔离失败则 fail closed（绝不覆盖）。
+        quarantined: list[str] = []
+        for stale in (P.EVENTS_DIR / f"{run_id}.jsonl", P.RECOVERY_DIR / f"{run_id}.json"):
+            if not stale.is_file():
+                continue
+            target = stale.with_name(f"{stale.name}.stale-{int(time.time() * 1000)}")
+            try:
+                os.replace(stale, target)
+            except OSError as exc:
+                raise FileExistsError(
+                    f"run 身份 {run_id} 的残留投影 {stale} 无法隔离（{exc}）⇒ 拒绝复用该身份。"
+                ) from exc
+            quarantined.append(str(target))
         run_dir = prepare_run_dir(run_id, mode=mode)
         progress = self._progress(run_id)
         ctx = RunCtx(
@@ -290,6 +506,11 @@ class RunManager:
             created_at=P.now_iso(dt),
             updated_at=P.now_iso(dt),
         )
+        if quarantined:
+            doc.notes.append(
+                "隔离了同 run 身份的残留投影件（运行目录已不存在，事件流/快照不得续写）："
+                + "；".join(quarantined)
+            )
         self.docs[run_id] = doc
         progress.append(
             "run_started",
@@ -311,9 +532,9 @@ class RunManager:
                 {"baseline": doc.baseline, "mode": mode, "scenario": scenario, "rework_limit": REWORK_LIMIT}
             )
         except Exception as exc:  # 单节点失败不得掀翻服务
-            doc.error = f"{type(exc).__name__}: {exc}"
-            doc.status = "failed"
-            progress.append("node_failed", node="unknown", status="failed", detail={"message": doc.error})
+            # I3：start 异常同样必须**显式收敛并关闭执行**，不能留下永不收敛的 execute。
+            await self._fail_run(run_id, f"{type(exc).__name__}: {exc}")
+            return run_id
         await self.async_sync(run_id)
         return run_id
 
@@ -330,16 +551,32 @@ class RunManager:
                 waiting = execution.is_waiting()
             except Exception:
                 waiting = False
+            # I2：框架自己的状态是**权威之一**。只判 is_waiting/is_closed 时，
+            # 框架把执行置 FAILED 的三者皆假 ⇒ run 永远 running、ticker 永久巡检、
+            # 重启还会当 running 再恢复一遍（僵尸 run）。
+            try:
+                exec_status = execution.get_status()
+            except Exception:
+                exec_status = None
             if doc.error:
                 # 失败优先于等待：执行失败后 is_waiting() 可能仍为真，
                 # 若把 failed 显示成 waiting_gate，就等于把崩溃伪装成"在等人工"。
                 doc.status = "failed"
                 doc.pending_interrupt = None
+                await self._close_execution(run_id, reason="run_failed")
+            elif exec_status == "failed":
+                detail = self._last_node_failure(events)
+                await self._fail_run(run_id, f"执行被框架置为 failed：{detail or '见事件流/日志'}")
+                return doc.as_dict()
+            elif exec_status == "cancelled":
+                await self._fail_run(run_id, "执行被取消 ⇒ 本轮终止（不得当作完成）。")
+                return doc.as_dict()
             elif waiting:
-                doc.status = "waiting_gate"
-                pending = execution.get_pending_interrupts()
+                pending = execution.get_pending_interrupts() or {}
                 doc.pending_interrupt = next(iter(pending.values())) if pending else None
-            elif execution.is_closed():
+                # I18：区分在等闸门/等作业/等单槽，界面不再一律显示"等你决策"。
+                doc.status = self._wait_status(pending)
+            elif execution.is_closed() or exec_status == "completed":
                 doc.status = "finished"
                 doc.pending_interrupt = None
             elif reached_terminal(events):
@@ -347,10 +584,7 @@ class RunManager:
                 # 必须**显式**关执行，否则 `is_closed()` 永远为假（auto_close=False）。
                 doc.status = "finished"
                 doc.pending_interrupt = None
-                try:
-                    await execution.async_close(reason="terminal_node_reached")
-                except Exception as exc:
-                    doc.notes.append(f"关闭执行失败：{type(exc).__name__}: {exc}")
+                await self._close_execution(run_id, reason="terminal_node_reached")
             else:
                 doc.status = "running"
                 doc.pending_interrupt = None
@@ -358,12 +592,15 @@ class RunManager:
 
         # 停在中断上时落一次快照：此刻执行非 running，save 合法且可 load。
         # **且必须是干净停车**（见 `_is_clean_park`）：半截快照会毒化下一次恢复。
-        if execution is not None and doc.status == "waiting_gate":
+        # 闸门/作业/单槽三种停放都要落盘（I18 拆分后不能只认 waiting_gate）。
+        if execution is not None and str(doc.status).startswith("waiting"):
             if self._is_clean_park(execution):
                 try:
                     execution.save(self._snapshot_path(run_id), require_idle=True)
                 except Exception as exc:
-                    doc.notes.append(f"snapshot 失败：{type(exc).__name__}: {exc}")
+                    state = f"snapshot 失败：{type(exc).__name__}: {exc}"
+                    if state not in doc.notes:
+                        doc.notes.append(state)
 
         self._persist(run_id)
 
@@ -386,7 +623,18 @@ class RunManager:
         actor: str,
         reason: str | None = None,
         resume_request_id: str | None = None,
+        entry_decisions: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
+        """提交一次闸门决策。
+
+        顺序（spec §5.8 「拒绝必须发生在提交前」）：
+        ① 静态校验（闸门/枚举/可提交/actor）；② 业务前置（I1/I2/A2/I4）；
+        ③ 确认**本门确有待处理中断**；④ 才签权威账本；⑤ 恢复执行。
+
+        ④ 之后若恢复失败（chunk 抛错 / resume 被拒），必须**显式 failed + error + 关闭执行**
+        （B4）：旧实现无 try/except ⇒ 中断已被消费、账本留孤儿签名、run 停在
+        `waiting_gate` 但没有任何中断，既不能重签也不能续跑。
+        """
         if gate not in GA.gate_ids():
             raise ValueError(f"未知闸门 {gate!r}；权威闸门 = {list(GA.gate_ids())}")
         if not GA.is_valid_decision(gate, decision):
@@ -403,24 +651,30 @@ class RunManager:
         execution = self.executions.get(run_id)
         if execution is None:
             raise KeyError(f"运行 {run_id} 不在本进程内（需先恢复）")
+        doc = self.docs[run_id]
+        run_dir = Path(doc.run_dir)
 
-        # **提交前**硬前置：这一点很关键。若把 I4 阻断放到恢复之后，
-        # 用户的一次误选就会消耗掉中断（`max_resumes=1`）并把执行打成 failed
-        # —— 闸门从此不可用。实测踩过：`self_resume_limit_reached`。
-        if gate == "G3_regression_decision" and decision in ("full_now", "subset_only"):
-            blocking = [c for c in self.kb.load_conflicts().get("items", []) if c.get("blocks_release")]
-            if blocking:
-                raise PermissionError(
-                    f"I4：冲突未清零（{len(blocking)} 项 blocks_release）⇒ 不得选 {decision}；"
-                    "闸门保持待决策，可改选 milestone_only / defer。"
-                )
+        # ② **提交前**业务前置（I1/I2/A2/I4 的唯一实现，与 `gates._resumed` 共用）：
+        # 若放到恢复之后，用户的一次误选就会消耗掉中断（`max_resumes=1`）并把执行打成
+        # failed —— 闸门从此不可用（实测踩过 `self_resume_limit_reached`）。
+        try:
+            pre = gate_chunks.precheck_decision(
+                gate=gate,
+                decision=decision,
+                run_dir=run_dir,
+                mode=doc.mode,
+                reason=reason,
+                kb=self.kb,
+                entry_decisions=entry_decisions,
+            )
+        except gate_chunks.GatePreconditionFailed:
+            raise
 
-        # **必须先确认本闸门确有待处理中断，再去写权威账本。**
+        # ③ **必须先确认本闸门确有待处理中断，再去写权威账本。**
         # 实测（v1 终验 phase 1）：原顺序是「先 `gate.py sign` 落权威、后查中断」，
         # 于是当闸门已被决策过（典型触发：操作台上双击按钮 / 两个标签页各点一次）时，
         # `gates.json` 会追加一条**孤儿签名**（`history` 变长、账本被改），
         # 而执行侧没有任何动作，用户只看到一个 400 —— 权威与被控对象悄悄分叉。
-        # 与本层既有的「拒绝必须发生在提交前」（§4.4）同一条纪律。
         pending = execution.get_pending_interrupts() or {}
         interrupt_id = None
         for key, item in pending.items():
@@ -436,23 +690,68 @@ class RunManager:
 
         from .chunks.host_steps import run_kb_tool
 
-        args = ["sign", gate, "--run", run_id, "--decision", decision, "--actor", actor, "--actor-kind", "human"]
+        # ④ 签署：绑定**本轮证据指纹**（A17），让闸门决策可回指本轮产物。
+        args = ["sign", gate, "--run", run_id, "--decision", decision,
+                "--actor", actor, "--actor-kind", "human"]
         if reason:
             args += ["--note", reason]
+        for artifact in gate_chunks.gate_artifacts(run_dir, gate):
+            args += ["--artifact", artifact]
         signed = run_kb_tool("gate.py", args)
         if signed["rc"] != 0:
             raise PermissionError(
                 f"闸门签署被 kb/tools/gate.py 拒绝（rc={signed['rc']}）：{signed['stderr_tail'][-400:]}"
             )
 
-        await execution.async_continue_with(
-            interrupt_id,
-            {"decision": decision, "actor": actor, "reason": reason},
-            resume_request_id=resume_request_id or f"{run_id}:{gate}:{decision}",
-            actor=actor,
-        )
+        # ⑤ 恢复：**失败必须显式收敛**（B4/C8）。恢复载荷里的逐条处置同时投递，
+        # 让 `gates._resumed` 的纵深防御读到与本层 precheck 相同的输入。
+        payload = {
+            "decision": decision,
+            "actor": actor,
+            "reason": reason,
+            "entry_decisions": pre.get("entries") or {},
+        }
+        request_id = resume_request_id or f"{run_id}:{interrupt_id}"
+        try:
+            await execution.async_continue_with(
+                interrupt_id, payload, resume_request_id=request_id, actor=actor
+            )
+        except Exception as exc:
+            await self._fail_run(
+                run_id,
+                f"闸门 {gate} 已签署但恢复失败（决策 {decision}）：{type(exc).__name__}: {exc}；"
+                "run 已显式 failed 并关闭执行（账本里的本次签名视为未生效，需人工确认后重开一轮）。",
+                reason="gate_resume_failed",
+            )
+            raise RuntimeError(
+                f"闸门 {gate} 已签署但恢复失败（run 已置 failed）：{type(exc).__name__}: {exc}"
+            ) from exc
+
+        # 框架被拒时 `async_continue_with` 只打日志、不抛错 ⇒ 必须复核中断是否真被消费。
+        if interrupt_id in (execution.get_pending_interrupts() or {}):
+            await self._fail_run(
+                run_id,
+                f"闸门 {gate} 恢复未生效：中断 {interrupt_id} 仍在等待（resume 被去重或拒绝）；"
+                "已签决策未生效，run 已显式 failed。",
+                reason="gate_resume_not_effective",
+            )
+            raise RuntimeError(
+                f"闸门 {gate} 恢复未生效：中断 {interrupt_id} 仍在等待；run 已置 failed"
+            )
+
         await self.async_sync(run_id)
-        return {"ok": True, "gate": gate, "decision": decision, "sign": signed}
+        doc = self.docs[run_id]
+        if doc.status == "failed":
+            # 闸门**已签署**，失败发生在恢复后的执行里（典型：drill 死任务在 continue 的
+            # 同一次调用内就被判死，n9_park 因此失败）。此时 HTTP 不能报 500：客户端会
+            # 误以为「没签成功」而重试，但中断已被消费 ⇒ 只能拿到 409，权威/被控对象分叉。
+            # 正确做法：200 + `execution_failed=true` + 真实 error，让操作台把 run 显示为 failed。
+            return {"ok": True, "gate": gate, "decision": decision, "sign": signed,
+                    "entries": pre.get("entries") or {}, "warnings": pre.get("warnings") or [],
+                    "execution_failed": True, "status": doc.status, "error": doc.error}
+        return {"ok": True, "gate": gate, "decision": decision, "sign": signed,
+                "entries": pre.get("entries") or {}, "warnings": pre.get("warnings") or [],
+                "status": doc.status}
 
     # ---------------- 作业取消 ----------------
 
@@ -494,7 +793,15 @@ class RunManager:
                 interrupt_id = key
                 break
         if interrupt_id is None:
+            # M12：找不到匹配中断不能静默 return —— 说明执行不在等这个作业，
+            # 必须留下显式告警（否则"投递丢了"这件事在事件流里完全不可见）。
             self._delivering.discard(str(job_id))
+            ctx = self.ctxs.get(run_id)
+            if ctx is not None:
+                ctx.event("warning", node="lifecycle", status="deliver_no_interrupt",
+                          detail={"job_id": job_id, "phase": status.get("phase"),
+                                  "pending": sorted(str(k) for k in pending),
+                                  "rule": "作业已终结但执行并未停在它的 JOB 中断上 ⇒ 显式告警，不静默"})
             return
         base_req = f"{job_id}:{status.get('phase')}:{status.get('rc')}"
         if force:
@@ -529,8 +836,13 @@ class RunManager:
                 record = status.get("record") or {}
                 run_id = record.get("run_id")
                 if run_id and run_id in self.docs:
-                    self.docs[run_id].error = f"投递失败：{type(exc).__name__}: {exc}"
-                    self._persist(run_id)
+                    # 投递失败 = 本轮无法收敛：必须 failed+error+关闭执行，
+                    # 不能只写 error 却继续显示"在等作业"（把崩溃伪装成等待）。
+                    await self._fail_run(
+                        run_id,
+                        f"投递失败：{type(exc).__name__}: {exc}",
+                        reason="deliver_failed",
+                    )
 
         await self.runner.watch(on_finished=on_finished, interval=0.5)
 
@@ -645,10 +957,12 @@ class RunManager:
         return None
 
     async def async_restore_all(self) -> dict[str, Any]:
-        """崩溃重启后：重新判定作业命运 + 从快照恢复执行。
+        """崩溃重启后：重新判定作业命运 + 从快照恢复执行 + **复验外部租约**。
 
         - 快照里若有 `running` 帧，`load` 会 fail-closed（恢复前必须已停放）；
-        - `undelivered` 的作业会被补投递（幂等靠 `resume_request_id`）。
+        - `undelivered` 的作业会被补投递（幂等靠 `resume_request_id`）；
+        - 单槽/作业是**外部系统**，spec §8.5 要求恢复时重新验证 lease/fence 后才算 ready
+          （B5：旧实现从不复核本 run 是否仍持锁）。
         """
         buckets = self.runner.reattach()
         restored: list[str] = []
@@ -657,10 +971,15 @@ class RunManager:
         stale_jobs: dict[str, str] = {}
 
         for run_id, doc in list(self.docs.items()):
-            if doc.status not in ("waiting_gate", "running"):
+            if doc.status not in ("waiting_gate", "waiting_job", "waiting_slot", "running"):
                 continue
             snap = self._snapshot_path(run_id)
             if not snap.is_file():
+                # I1：无快照 ⇒ **显式失败**（旧实现只 append 进报告，doc 永远停在
+                # "在等你决策"/running ⇒ 僵尸 run 会被每次重启反复恢复）。
+                await self._fail_run(run_id, f"恢复失败：无快照（{snap}）⇒ 无法续跑；"
+                                            "已显式 failed，请人工确认后重开一轮。",
+                                      reason="restore_no_snapshot")
                 failed.append({"run_id": run_id, "reason": "无快照"})
                 continue
             run_dir = Path(doc.run_dir)
@@ -684,6 +1003,12 @@ class RunManager:
                     runtime_resources={**runtime_resources(ctx), "repo_root": str(self.repo_root)},
                 )
             except Exception as exc:
+                # I1：load 异常 ⇒ 显式 failed + error + 清 pending + close。
+                await self._fail_run(
+                    run_id,
+                    f"恢复失败：async_load 异常 {type(exc).__name__}: {exc}（快照 {snap}）",
+                    reason="restore_load_failed",
+                )
                 failed.append({"run_id": run_id, "reason": f"{type(exc).__name__}: {exc}"})
                 continue
             self.executions[run_id] = execution
@@ -707,13 +1032,15 @@ class RunManager:
             if behind:
                 ctx.event("warning", node="restore", status="snapshot_behind_ledger",
                           detail={"reason": behind, "snapshot": str(snap)})
-                doc = self.docs.get(run_id)
-                if doc is not None:
-                    doc.error = behind
-                    doc.status = "failed"
-                    doc.pending_interrupt = None
-                    self._persist(run_id)
+                await self._fail_run(run_id, behind, reason="snapshot_behind_ledger")
                 failed.append({"run_id": run_id, "reason": behind})
+                continue
+
+            # 外部租约复验（B5 / spec §8.5）：停在 JOB/SLOT 上的 run 必须仍持有单槽，
+            # 否则单槽互斥已被破坏（两个仿真并发踩 uvs.setup），fail closed。
+            lease_ok = await self._restore_slot_lease(run_id, execution)
+            if not lease_ok:
+                failed.append({"run_id": run_id, "reason": "单槽租约复验失败"})
                 continue
             restored.append(run_id)
 
@@ -741,14 +1068,13 @@ class RunManager:
                 except Exception as exc:
                     failed.append({"run_id": str(run_id), "reason": f"补投递失败：{exc}"})
                     # **补投递失败必须让 run 失败**，不能只记进报告的 failed[]：
-                    # 否则 doc.status 仍停在 `waiting_gate`（"在等你决策"）而执行其实已经崩了
+                    # 否则 doc.status 仍停在 `waiting_job`（"在等作业"）而执行其实已经崩了
                     # —— 正是 README §4.3 要防的"把崩溃伪装成在等人工"。
-                    doc = self.docs.get(run_id)
-                    if doc is not None:
-                        doc.error = f"补投递失败：{type(exc).__name__}: {exc}"
-                        doc.status = "failed"
-                        doc.pending_interrupt = None
-                        self._persist(run_id)
+                    await self._fail_run(
+                        run_id,
+                        f"补投递失败：{type(exc).__name__}: {exc}",
+                        reason="redeliver_failed",
+                    )
 
         self.start_watching()
         return {
@@ -757,6 +1083,107 @@ class RunManager:
             "jobs": {k: len(v) for k, v in buckets.items()},
             "job_buckets": {k: [r.get("job_id") for r in v] for k, v in buckets.items()},
         }
+
+    async def _restore_slot_lease(self, run_id: str, execution: Any) -> bool:
+        """恢复时**重新验证外部租约**（B5 / spec §8.5）：单槽 + 作业身份。
+
+        - 停在 `JOB:` 上：作业必须仍在跑，且单槽必须归本 run；锁丢失 ⇒ 按作业记录**重建**租约；
+          锁被别人持有 ⇒ 单槽互斥已被破坏，显式失败（绝不并发踩 `uvs.setup`）。
+        - 停在 `SLOT:` 上：本 run 在等槽 ⇒ 锁空则重建并唤醒；已给本 run 但没醒则补唤醒；
+          别人持有则确保自己在队列里。
+        """
+        try:
+            pending = execution.get_pending_interrupts() or {}
+        except Exception:  # pragma: no cover
+            return True
+        slot_id = slot_job_id("N9", run_id)
+
+        for key, item in pending.items():
+            if not str(key).startswith("JOB:"):
+                continue
+            payload = (item or {}).get("payload") or {}
+            job_id = payload.get("job_id")
+            if not job_id:
+                continue
+            rec = self.runner.record(str(job_id)) or {}
+            phase = self.runner.phase_of(str(job_id))
+            if phase not in ("running", "cancelling"):
+                # 已终结（或未知）⇒ 让补投递路径按权威相位处置，不在这里抢租约。
+                return True
+            holder = self.admission.holder() or {}
+            holder_job = holder.get("job_id")
+            if holder_job not in (None, slot_id):
+                await self._fail_run(
+                    run_id,
+                    f"恢复租约复验失败：N9 作业 {job_id} 仍在跑（phase={phase}），"
+                    f"但单槽被 {holder_job!r} 持有 ⇒ 单槽互斥已被破坏，拒绝并发仿真。",
+                    reason="lease_conflict",
+                )
+                return False
+            if holder_job is None:
+                result = self.admission.acquire(
+                    job_id=slot_id,
+                    tc=payload.get("tc") or rec.get("tc"),
+                    seed=payload.get("seed") or rec.get("seed"),
+                    job_pid=int(rec["pid"]) if rec.get("pid") else None,
+                    job_pid_start=rec.get("pid_start"),
+                    note="restore_lease",
+                )
+                if result.granted:
+                    self.admission.bind_job(
+                        slot_job_id=slot_id, job_id=str(job_id),
+                        job_pid=int(rec["pid"]) if rec.get("pid") else 0,
+                        job_pid_start=rec.get("pid_start"),
+                        job_record_id=str(job_id),
+                    )
+                ctx = self.ctxs.get(run_id)
+                if ctx is not None:
+                    ctx.event("admission_granted", node="N9", status="restore_lease",
+                              detail={"job_id": slot_id, "state": result.state,
+                                      "reason": result.reason})
+                if not result.granted:
+                    await self._fail_run(
+                        run_id,
+                        f"恢复租约复验失败：作业 {job_id} 仍在跑，但无法重建单槽租约"
+                        f"（{result.state}: {result.reason}）",
+                        reason="lease_rebuild_failed",
+                    )
+                    return False
+            elif rec.get("pid"):
+                # 锁还在但作业身份可能未绑定（v1 旧锁）⇒ 补绑，让判活走作业 pid/相位。
+                self.admission.bind_job(
+                    slot_job_id=slot_id, job_id=str(job_id),
+                    job_pid=int(rec["pid"]), job_pid_start=rec.get("pid_start"),
+                    job_record_id=str(job_id),
+                )
+            return True
+
+        for key, item in pending.items():
+            if not str(key).startswith("SLOT:"):
+                continue
+            payload = (item or {}).get("payload") or {}
+            holder = self.admission.holder() or {}
+            holder_job = holder.get("job_id")
+            if holder_job == slot_id:
+                # 锁已交给我们但执行没醒（进程恰好死在交接触发点）⇒ 补唤醒。
+                self._on_slot_handoff({"job_id": slot_id, "tc": None, "seed": None})
+                return True
+            result = self.admission.acquire(
+                job_id=slot_id,
+                tc=payload.get("tc"),
+                seed=payload.get("seed"),
+                note="restore_queue",
+            )
+            ctx = self.ctxs.get(run_id)
+            if ctx is not None:
+                ctx.event("admission_queued", node="N9", status="restore",
+                          detail={"state": result.state, "position": result.position,
+                                  "reason": result.reason})
+            if result.granted:
+                self._on_slot_handoff({"job_id": slot_id, "tc": payload.get("tc"),
+                                       "seed": payload.get("seed")})
+            return True
+        return True
 
     # ---------------- 对外视图 ----------------
 
@@ -820,17 +1247,26 @@ class RunManager:
         跑在恢复段真正走完之前；若只信 `doc.status`，HALT/N16 这类终态就会**卡在 running**
         且再没有任何东西会来纠正它。这里用事件流兜底：最后一个节点事件是终止节点的
         `node_finished`、且当前没有待处理中断 ⇒ 就是 `finished`。
+
+        C13/I2：`doc.error` 与**框架状态**优先于 `doc.status`（失败不得被投影成等待）。
+        I18：等待态按中断类型区分（闸门/作业/单槽）。
         """
         if doc.error:
             return "failed"
-        if doc.status in ("waiting_gate", "finished"):
-            return doc.status
         if execution is None:
             return doc.status
         try:
+            exec_status = execution.get_status()
+        except Exception:
+            exec_status = None
+        if exec_status == "failed":
+            return "failed"
+        if exec_status in ("cancelled",):
+            return "failed"
+        try:
             if execution.is_waiting():
-                return "waiting_gate"
-            if execution.is_closed() or reached_terminal(events):
+                return self._wait_status(execution.get_pending_interrupts() or {})
+            if execution.is_closed() or exec_status == "completed" or reached_terminal(events):
                 return "finished"
         except Exception:
             return doc.status

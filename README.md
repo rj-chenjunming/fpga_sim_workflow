@@ -4,7 +4,7 @@
 >
 > **本仓是软件仓**（独立产品），环境是**插件**：软件可以指向任意符合插件契约的环境仓，本仓不存放被守卫的 `RTL/ TB/ PKG/ TESTLIB/`。
 >
-> **当前状态**：`drill` 链路可运行；`real` 链路尚未闭合。代码级偏差已登记在 [`doc/audit/AUDIT-20261019-spec-conformance.md`](doc/audit/AUDIT-20261019-spec-conformance.md)，**本轮只审计不修复**。数字与门状态见 [`doc/STATUS.md`](doc/STATUS.md)。
+> **当前状态**：`drill` 链路可运行；`doc/audit/AUDIT-20261019-spec-conformance.md` §3 的 22 条阻断级缺陷已按「先判后签 / 作业级单槽 / 沙箱用例 / 目标集驱动 N9 / 真实 N15 / 证据守护 N11」修复并补回归（[`doc/STATUS.md`](doc/STATUS.md) §5）。real 模式的**真机完整全跑**仍需在环境上执行一次。
 
 ---
 

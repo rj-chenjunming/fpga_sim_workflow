@@ -46,6 +46,14 @@ def clean_drill_runs():
     yield
     for path in _drill_dirs() - before:
         shutil.rmtree(path, ignore_errors=True)
+        # **事件流/快照也要清**：`RunManager.start()` 现在把"同名事件流/快照存在"也算身份占用
+        # （防止新 run 的事件流混进上一轮的 gate_decided）。只删运行目录会留下这层残留，
+        # 让同一秒内的下一个测试被判身份冲突。清的是本层自己创建的 drill run 的投影件。
+        for extra in (P.EVENTS_DIR / f"{path.name}.jsonl", P.RECOVERY_DIR / f"{path.name}.json"):
+            try:
+                extra.unlink()
+            except FileNotFoundError:
+                pass
     main_flow.MANAGER = None
 
 

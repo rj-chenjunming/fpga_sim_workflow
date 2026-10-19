@@ -118,7 +118,8 @@ def test_frozen_witness_before_after_drill_run() -> None:
                 if ex.is_waiting():
                     break
                 await asyncio.sleep(0.1)
-            await m.decide(run_id=rid, gate="G1_diff_confirm", decision="confirmed", actor="human:witness")
+            await m.decide(run_id=rid, gate="G1_diff_confirm", decision="confirmed", actor="human:witness",
+                       reason="已逐条核对差异")
             for _ in range(150):
                 view = m.run_view(rid)
                 if ((view.get("pending_interrupt") or {}).get("id") or "").startswith("G2"):
@@ -288,7 +289,7 @@ def test_host_validation_actually_fires() -> None:
     r = _validate(
         "n12",
         {"data": {"title": "t", "counts_quoted": {"koutou1": 999, "koutou2": {"UVM_ERROR": 0}},
-                  "verdict_statement": "未跑通"}},
+                  "claimed_verdict": "not_passed"}},
         offered={"counts": {"koutou1": {"value": 1687}, "koutou2": {"value": {"UVM_ERROR": 0}}},
                  "verdict": {"passed": False}},
     )
@@ -296,13 +297,13 @@ def test_host_validation_actually_fires() -> None:
     assert any("权威值不一致" in p for p in r["problems"]), r["problems"]
     assert r["accepted"]["counts_match_authority"] is False
 
-    # N12：判据未通过却宣称跑通
+    # N12：结构化结论与 Host 权威判决不一致（旧的「跑通」子串判据已删除）
     r = _validate(
         "n12",
-        {"data": {"title": "t", "counts_quoted": {"koutou1": 1687}, "verdict_statement": "本轮已跑通"}},
+        {"data": {"title": "t", "counts_quoted": {"koutou1": 1687}, "claimed_verdict": "passed"}},
         offered={"counts": {"koutou1": {"value": 1687}}, "verdict": {"passed": False}},
     )
-    assert r["ok"] is False and any("宣称跑通" in p for p in r["problems"]), r["problems"]
+    assert r["ok"] is False and any("claimed_verdict" in p for p in r["problems"]), r["problems"]
 
     # N8：verdict=rework 但 must_fix 为空 / fail 缺依据
     r = _validate("n8", {"data": {"verdict": "rework", "findings": [{"result": "fail", "basis": ""}],
@@ -314,13 +315,14 @@ def test_host_validation_actually_fires() -> None:
     # N8：非法 verdict
     assert _validate("n8", {"data": {"verdict": "maybe"}}, offered={})["ok"] is False
 
-    # N11：口径一非 0 却判 satisfied
-    r = _validate("n11", {"data": {"assessment": "satisfied"}},
+    # N11：guardian 判 broken 却未给返工请求（业务 N11 = 证据守护）
+    r = _validate("n11", {"data": {"chain": "broken", "rework_requests": []}},
                   offered={"counts": {"koutou1": {"value": 1687, "zero": False}}})
-    assert r["ok"] is False and any("口径一非 0" in p for p in r["problems"])
+    assert r["ok"] is False and any("rework_requests" in p for p in r["problems"])
 
-    # N6：plan 里出现未提供的用例
-    r = _validate("n6", {"data": {"plan": [{"case": "tc_not_offered", "change_intent": "x"}]}},
+    # N6：revisions 里出现未提供的用例（模型只出结构化 edits）
+    r = _validate("n6", {"data": {"revisions": [{"case": "tc_not_offered",
+                                                "edits": [{"line": 1, "old": "a", "new": "b", "basis": "x"}]}]}},
                   offered={"cases": {"tc_a"}})
     assert r["ok"] is False and any("不在目标用例中" in p for p in r["problems"])
 
@@ -338,7 +340,7 @@ def test_host_validation_accepts_conforming_output() -> None:
     r = _validate(
         "n12",
         {"data": {"title": "报告", "counts_quoted": {"koutou1": 1687, "koutou2": {"UVM_ERROR": 0}},
-                  "verdict_statement": "判据未通过：口径一 = 1687 ≠ 0", "sections": [{"heading": "h"}]}},
+                  "claimed_verdict": "not_passed", "sections": [{"heading": "h"}]}},
         offered={"counts": {"koutou1": {"value": 1687}, "koutou2": {"value": {"UVM_ERROR": 0}}},
                  "verdict": {"passed": False}},
     )

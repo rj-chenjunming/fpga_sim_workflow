@@ -1,7 +1,7 @@
 # 项目状态（唯一数字源）
 
 > **本文件是数字的唯一权威**。其它文档引用这里，不各自抄一份。
-> **本次采样**：2026-10-19T15:29+0800；采样命令与输出见各节（数字一律复制，不手算）。
+> **本次采样**：2026-10-19T18:02+0800（修复轮终验，四道门全绿）；采样命令与输出见各节（数字一律复制，不手算）。
 > **不声称合规**：审计发现但未修复的阻断项在 §5 保持可见。
 
 ---
@@ -10,37 +10,43 @@
 
 | 项 | 值 | 来源 |
 |---|---|---|
-| 本仓 HEAD（采样时） | `dc7c69e`；整理后 HEAD 见 `git log --oneline -5`（本次共 4 个提交） | `git rev-parse --short HEAD` |
-| 提交数（采样时） | 13 | `git rev-list --count HEAD` |
+| 本仓 HEAD（采样时） | `b4a2443`（修复前基线，tag `pre-fix-20261019`）；修复提交见 `git log --oneline -3` | `git rev-parse --short HEAD` |
+| 提交数（采样时） | 14（含基线提交） | `git rev-list --count HEAD` |
 | Python | 3.11.7 | `loop/.venv/bin/python -V` |
 | Agently | 4.1.4.8 | `pip show agently` |
 | 环境仓（ENV_ROOT） | `/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES` | `environments.json` |
 | 数据根（WORKSPACE_ROOT） | `ENV_ROOT/kb`（1.1G） | `du -sh`；决定见 `doc/spec/ENV_PLUGIN_SPEC.md` §7 |
 
-## 2 质量门（本次整理后实测）
+## 2 质量门（修复后终验，2026-10-19）
 
 | 门 | 命令 | 结果 | 说明 |
 |---|---|---|---|
-| 单测收集 | `cd loop && .venv/bin/python -m pytest --collect-only -q` | **94 tests collected** | 含 UI 配置面/投影/契约/冒烟 |
-| 单测执行 | `LOOP_WORKSPACE=<可写副本> .venv/bin/python -m pytest -q` | **92 passed / 3 failed** | 3 条失败均为环境/布局限制，见 §3 |
-| kb 自测 · gate schema | `LOOP_WORKSPACE=<可写副本> loop/.venv/bin/python kb/tools/_selftest_gate_schema.py` | **10/10** | 需要可写数据根；默认数据根在只读沙箱内会失败 |
-| kb 自测 · n5 可达性 | `loop/.venv/bin/python kb/tools/_selftest_n5_reachability.py` | **9/9** | 只读，无需写数据根 |
-| 端到端终验 | `cd loop && bash spikes/accept_v1_run.sh` | **未复跑**（历史记录 117 断言） | 需写 `ENV_ROOT/SIMLIB_RUN` 与 `uvs.setup`；本会话沙箱对 ENV_ROOT 只读 |
-| Web 冒烟 | `.venv/bin/python -m pytest tests/test_web_smoke.py -q` | **3/3** | 页面/静态资源/零外链/legacy 可用 |
-| 文档链接扫描 | `python3 doc/audit/check_doc_links.py` | **checked=713 / missing=0** | 三根解析 + 行号后缀剥离；历史件（evidence/history）计入 historical=834 |
+| 单测收集 | `cd loop && LOOP_LLM_MODE=standin .venv/bin/python -m pytest --collect-only -q` | **197 tests collected** | 含修复回归（real 链路 / 生命周期 / kb 工具 / 晋升 API） |
+| 单测执行 | `cd loop && flock /tmp/cic_loop_pytest.lock env LOOP_LLM_MODE=standin .venv/bin/python -m pytest -q` | **197 passed, 0 failed**（72.34s） | 基线红 `test_view_projects_authority_not_just_events` 已修（身份复用 + 事件流残留） |
+| kb 自测 · gate schema | `loop/.venv/bin/python kb/tools/_selftest_gate_schema.py` | **10/10** | 需可写数据根 |
+| kb 自测 · n5 可达性 | `loop/.venv/bin/python kb/tools/_selftest_n5_reachability.py` | **9/9** | 只读 |
+| kb 自测 · n1 快照（F-01） | `loop/.venv/bin/python kb/tools/_selftest_n1_snapshot.py` | **7/7** | 新增；build/stage 不再 NameError |
+| kb 自测 · case_state | `loop/.venv/bin/python kb/tools/_selftest_case_state.py` | **16/16** | 新增；含 check/I7 边界 |
+| kb 自测 · n10 待裁决 | `loop/.venv/bin/python kb/tools/_selftest_n10_pending.py` | **13/13** | 新增；D1–D20 零改动 |
+| 端到端终验 | `cd loop && LOOP_PORT=8098 bash spikes/accept_v1_run.sh` | **rc=0；117/117 断言**（相计数 50/27/18/8/8/6） | 4 代服务进程、3 次真重启；输出在 `loop/.logs/accept/`（本地、不入库） |
+| 文档链接扫描 | `python3 doc/audit/check_doc_links.py` | **checked=772 / missing=0**（skipped=9323, historical=834） | 三根解析 + 行号后缀剥离 |
+
+> **real 模式说明**：本轮端到端是 `drill`（夹具）。real 链路的 N1/N6/N7/N8/N9/N11/N15 已按契约实现并有单测，
+> 但**真机完整全跑**（≈19 min/用例，修订后可达 22.8 h）仍需在环境上执行一次；N3/N10/N12 在 real+standin 下
+> 按设计 fail closed（真实端到端需 live provider）。
 
 ### 终验历史记录（不是本次实测）
 
-`doc/evidence/ACCEPTANCE_V1.md`：**117/117** 断言，4 代服务进程、3 次真重启；相计数 **50/27/18/8/8/6**。
-原始输出在 `loop/.logs/accept/`（本地、不入库）。
+`doc/evidence/ACCEPTANCE_V1.md`：**117/117** 断言（同一脚本、同一断言集）。本轮修复后复跑仍 117/117。
 
-## 3 已知环境限制（本次整理采样时）
+## 3 已知环境限制
 
-1. **ENV_ROOT 在本会话只读**（DSH 文件沙箱 workspace-write）：依赖写 `ENV_ROOT/SIMLIB_RUN`、`uvs.setup` 的测试无法复跑。
-2. **`tests/test_projection_and_frozen.py::test_frozen_witness_before_after_drill_run`** 假设 `WORKSPACE_ROOT` 位于 `ENV_ROOT` 之内（`path.relative_to(P.REPO_ROOT)`）；当工作区指向外部目录时该断言不成立 ⇒ 已登记为布局耦合缺陷（审计报告）。
-3. **`tests/test_archive_e2.py`** 需要可写 `ENV_ROOT`（`run_guarded.sh` 落 `SIMLIB_RUN`）。
-4. 上述 3 条即 §2 的 3 failed；**不是业务代码回归**。
-5. **已知 flaky**：`test_crash_recovery_delivers_dead_job_as_dead_not_done` 在整套执行中偶发失败、单测通过（审计 F-V1-06-FLAKY），与本轮 UI 改动无关。
+1. **端到端必须独占 `loop/state`**：`accept_v1_run.sh` 与并发 pytest 共用 `loop/state/slot.lock` / 作业记录；
+   并发会让 phase4 的「单槽被本作业持有」被其它测试伪造的锁污染。门禁顺序：先 pytest，再端到端。
+2. **`tests/test_projection_and_frozen.py::test_frozen_witness_before_after_drill_run`** 仍假设
+   `WORKSPACE_ROOT` 位于 `ENV_ROOT` 之内；工作区指向外部目录时该断言不成立（布局耦合，非本轮范围）。
+3. **real 模式无 live provider 时**：N3/N10/N12 按 fail closed 处理（不再读夹具冒充）；真机端到端需配置模型提供方。
+4. `n15_run` 在 drill 下是显式 no-op（不假装回归）；真实回归须 real 模式 + 单槽串行作业。
 
 ## 4 数据与归档
 
@@ -50,12 +56,21 @@
 | `loop/state/` | 可删的运行时状态 |
 | `doc/evidence/` | 验收报告 + 演练证据（内容冻结，只增不改） |
 
-## 5 审计结论（2026-10-19，只登记不修复）
+## 5 审计结论与修复状态（2026-10-19）
 
 - 报告：`doc/audit/AUDIT-20261019-spec-conformance.md`；附录：`doc/audit/parts/`。
 - 三路审计原始发现：规格↔实现 **49** 条、Agently 运行时 **44** 条、文档结构 **77** 条（含本轮已执行项）。
-- **阻断级**（去重后 22 条）：real 链路 N1/N6/N7/N9/N15 断裂；N8 模型失败默认 `pass`；单槽队列无唤醒；闸门「先签后恢复」失败楔死；槽按进程而非作业判活；N6 不产出沙箱导致 N9 测未修订用例。
-- **结论**：本轮只做结构与文档整理；上述代码缺陷**未修复**，不得据此声称系统合规。
+- **阻断级**（去重后 22 条）**已全部修复**：real 链路 N1/N6/N7/N9/N15 断裂；N8 模型失败默认 `pass`；
+  单槽队列无唤醒；闸门「先签后恢复」失败楔死；槽按进程而非作业判活；N6 不产出沙箱导致 N9 测未修订用例；
+  **外加实测 F-01（`n1_snapshot.py` 裸名 `kb_lib` NameError）与 F-02（`n2_diff.py` 主口径按 ENV_ROOT 解析）**。
+- 同一轮还修了：I8 人触发真实晋升入口（`POST /api/runs/{id}/promote` + `services/promote.py`）、
+  I18 waiting_gate/job/slot 区分、B2 写动作登记（spec §10.0 四个写动作）、证据聚合取最新轮/身份四方同值、
+  N10 待裁决单一写者（[n10_pending.py](../kb/tools/n10_pending.py) + schema 加法扩展 `n10_items`）。
+- 验收证据：`doc/evidence/FIX_ACCEPTANCE_20261019.md`（四道门命令与输出逐字复制）。
+- **仍未修复（非阻断）**：审计报告 §4「重要/次要」中与本轮范围无关的条目仍保持可见；
+  真机 real 全跑、72 条冲突清零、I3 双口径裁决仍需人工/环境执行。
+
+
 
 ## 5.1 本次整理做了什么（2026-10-19）
 

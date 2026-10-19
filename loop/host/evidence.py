@@ -1,9 +1,21 @@
-"""证据抽取：两套口径与观测印记。
+"""证据抽取：两套口径、观测印记、多用例聚合。
 
-规格依据：`doc/spec/LOOP_ORCHESTRATION_SPEC.md` §2 的 I3。
+规格依据：`doc/spec/CHANGE_IMPACT_LOOP_SPEC.md` I3 / §7，`doc/spec/LOOP_ORCHESTRATION_SPEC.md` §2 I3。
 
 **红线**：这里的每个数字都必须由**文件内容数出来**，不得由任何地方手算或写死
 （`doc/AGENTS.md` §5 红线 10）。抽取器自带对夹具的自证断言。
+
+**I3 的"跑通"判据（`_verdict`）**：
+    完整 UVM 汇总 ∧ 口径一 == 0 ∧ 口径二 UVM_ERROR/UVM_FATAL == 0
+    ∧ **预期观测点印记三向一致**（印记行出现 + by-id 计数 + 地址/值与期望一致）。
+
+**期望印记从哪来（审计 A4）**：
+    不再硬编码在 host 代码里。权威来源 = **该 run 冻结的文档条目快照**
+    （`<run>/bundle/doc_entries.jsonl`，其次 `<run>/doc_entries.jsonl`）；
+    marker 里的寄存器名（如 `N6_FPGA_DATE_PCIE` → `fpga_date`）匹配条目名，
+    期望地址 = 段基址 + 块内偏移，期望值 = 文档位定义表 Reset（规范化十六进制）。
+    无 run 上下文时退化为"跨 run 快照唯一命中"；再不行才用当前工作区索引，
+    且 provenance 会写进返回结构（`expected.source`），不静默。
 
 两套口径在真实日志里**本来就可以不一致**：本工程实测到
 `*E` 文本 1687 条而 UVM 汇总 `UVM_ERROR = 0 / UVM_FATAL = 0`，
@@ -13,10 +25,11 @@
 
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 
 #: 口径二的汇总项。注意真实日志用 `UVM_ERROR :    0`（冒号后有空格对齐）。
 _SEVERITY_RE = re.compile(r"^UVM_(INFO|WARNING|ERROR|FATAL)\s*:\s*(\d+)\s*$")
@@ -28,11 +41,17 @@ _IMPRINT_RE = re.compile(
     r"^UVM_INFO\s+(?P<file>\S+)\((?P<line>\d+)\)\s+@\s+(?P<sim_time>.+?)\s+"
     r"\[(?P<marker>[^\]]+)\]\s*(?P<text>.*)$"
 )
+#: N6 观测点印记载荷：`OK 0x0000+0x04 fpga_date = 0x20260708`
+_MARK_ADDR_RE = re.compile(r"(?P<addr>0x[0-9a-fA-F]{4,5}\+0x[0-9a-fA-F]{1,5})")
+_MARK_VALUE_RE = re.compile(r"=\s*(?P<value>0x[0-9a-fA-F]+)")
+#: run_guarded 证据文件名：`<stamp>_<case>_<seed>_run.log[.guarded]`
+_RUN_LOG_RE = re.compile(
+    r"^(?P<stamp>\d{8}-\d{6})_(?P<case>.+)_(?P<seed>\d+)_run\.log(?P<guarded>\.guarded)?$"
+)
+#: N6 观测点 marker（只对这类 marker 做"期望必须可解析"的 fail-closed 判定）
+_N6_MARKER_RE = re.compile(r"(?:^|_)N6_", re.I)
 
-#: 已知的期望印记（地址 → 期望值）。权威是接口文档位定义表，不是 RTL。
-EXPECTED_IMPRINTS: dict[str, dict[str, str]] = {
-    "N6_FPGA_DATE_PCIE": {"address": "0x0000+0x04", "value": "0x20260708"},
-}
+EXPECTED_MARKERS_PREFIX = "N6_"
 
 
 @dataclass
@@ -43,6 +62,7 @@ class Counts:
     koutou2: dict[str, int]
     koutou1_refs: list[str] = field(default_factory=list)
     koutou2_refs: list[str] = field(default_factory=list)
+    source_count: int = 1
 
     @property
     def koutou1_zero(self) -> bool:
@@ -73,6 +93,8 @@ class Counts:
                 "refs": self.koutou2_refs,
             },
             "both_zero": self.both_zero,
+            # 单一来源：本次判据的两套口径都取自**同一份权威 run.log**（不是两份日志各取一套）。
+            "single_source": self.source_count == 1,
             "note": "两套口径分别取、分别存，不得互相替代（doc/AGENTS.md 红线 3 / spec I3）。",
         }
 
@@ -147,12 +169,261 @@ def find_imprints(text: str, marker_filter: str | None = None) -> list[dict[str,
     return out
 
 
-def imprint_consistency(text: str, marker: str) -> dict[str, Any]:
+# ---------------------------------------------------------------- 期望印记（来自文档条目/索引）
+
+
+def _read_jsonl_entries(path: Path) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return rows
+    for line in text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            obj = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(obj, dict) and obj.get("entry_id"):
+            rows.append(obj)
+    return rows
+
+
+def _read_txt_entries(path: Path) -> list[dict[str, Any]]:
+    """`doc_entries.txt`：`entry_id|name|rw|reset|bytes|bitdef|sources|raw_line`。"""
+    rows: list[dict[str, Any]] = []
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return rows
+    for line in text.splitlines():
+        parts = line.split("|")
+        if len(parts) < 4 or not parts[0].startswith("0x"):
+            continue
+        row = {"entry_id": parts[0], "name": parts[1], "rw": parts[2],
+               "reset": parts[3]}
+        # 条目主键 `0x0000#0x0004` = segment#offset_global，拆出来才能算期望地址
+        if "#" in parts[0]:
+            seg, off = parts[0].split("#", 1)
+            row["segment"] = seg
+            row["offset_global"] = off
+        rows.append(row)
+    return rows
+
+
+def load_doc_entries(path: Path) -> list[dict[str, Any]]:
+    p = Path(path)
+    if p.suffix == ".jsonl":
+        return _read_jsonl_entries(p)
+    if p.suffix == ".json":
+        try:
+            obj = json.loads(p.read_text(encoding="utf-8", errors="replace"))
+        except (OSError, ValueError):
+            return []
+        rows = obj.get("entries") if isinstance(obj, dict) else obj
+        return [r for r in (rows or []) if isinstance(r, dict) and r.get("entry_id")]
+    return _read_txt_entries(p)
+
+
+def _workspace_root() -> Path | None:
+    """工作区数据根（唯一来源 = `host.paths` ← `kb_lib`；本模块不自己解析环境变量）。"""
+    try:
+        from host import paths as _paths  # 延迟 import，避免 host 包初始化顺序耦合
+
+        return Path(_paths.KB_DIR)
+    except Exception:
+        return None
+
+
+def _run_entry_indexes(run_dir: Path) -> list[Path]:
+    out: list[Path] = []
+    for rel in ("bundle/doc_entries.jsonl", "doc_entries.jsonl",
+                "bundle/doc_entries.txt", "doc_entries.txt"):
+        p = Path(run_dir) / rel
+        if p.is_file():
+            out.append(p)
+    return out
+
+
+def _scan_run_entry_indexes(limit: int = 500) -> list[Path]:
+    """跨 run 收集文档条目快照（**只在没有 run 上下文时**用作唯一命中推断）。"""
+    ws = _workspace_root()
+    if ws is None:
+        return []
+    runs = ws / "runs"
+    if not runs.is_dir():
+        return []
+    out: list[Path] = []
+    dirs = sorted((d for d in runs.iterdir() if d.is_dir()), reverse=True)[:limit]
+    for d in dirs:
+        out.extend(_run_entry_indexes(d))
+    return out
+
+
+def _norm_name(value: Any) -> str:
+    return re.sub(r"[^a-z0-9]+", "_", str(value).lower()).strip("_")
+
+
+def _match_entry(marker: str, entries: list[dict[str, Any]]) -> dict[str, Any] | None:
+    """marker 里的寄存器名 → 文档条目（最长条目名优先；如 `fpga_date` 胜过 `date`）。"""
+    mnorm = _norm_name(marker)
+    best, best_len = None, 0
+    for e in entries:
+        name = _norm_name(e.get("name"))
+        if len(name) < 4 or name not in mnorm:
+            continue
+        if len(name) > best_len:
+            best, best_len = e, len(name)
+    return best
+
+
+def parse_int_token(token: Any) -> int | None:
+    """`0x2026_0708` / `2026_0708` / `0x0` / `0` → int；含未知位（`7a64_xx01`）⇒ None。"""
+    if token is None or isinstance(token, bool):
+        return None
+    if isinstance(token, int):
+        return token
+    s = str(token).strip().lower().replace("_", "")
+    if not s:
+        return None
+    if s.startswith("0x"):
+        s = s[2:]
+    if not re.fullmatch(r"[0-9a-f]+", s):
+        return None
+    try:
+        return int(s, 16)
+    except ValueError:
+        return None
+
+
+def _expected_from_entry(entry: dict[str, Any], source: Path) -> dict[str, Any]:
+    seg_raw = str(entry.get("segment") or "").strip()
+    off_raw = str(entry.get("offset_global") or entry.get("offset") or "").strip()
+    seg = parse_int_token(seg_raw)
+    off = parse_int_token(off_raw)
+    address = None
+    if seg is not None and off is not None:
+        block_off = off - seg
+        if block_off < 0:
+            block_off = off
+        address = "%s+0x%02x" % (seg_raw.lower(), block_off)
+    value = parse_int_token(entry.get("reset"))
+    out = {
+        "marker_entry": entry.get("entry_id"),
+        "entry_name": entry.get("name"),
+        "address": address,
+        "value": ("0x%08x" % value) if value is not None else None,
+        "source": str(source),
+    }
+    if value is None and entry.get("reset") is not None:
+        out["value_note"] = ("文档 Reset 含未知位（%r），无法作为精确期望值"
+                             % entry.get("reset"))
+    return out
+
+
+def _resolve_from_indexes(marker: str, indexes: list[Path]) -> tuple[dict[str, Any] | None, list]:
+    entries: list[tuple[dict[str, Any], Path]] = []
+    for p in indexes:
+        for e in load_doc_entries(p):
+            entries.append((e, p))
+    hit = _match_entry(marker, [e for e, _ in entries])
+    if hit is None:
+        return None, []
+    sources = [p for e, p in entries if e is hit]
+    return _expected_from_entry(hit, sources[0] if sources else Path("<unknown>")), sources
+
+
+def resolve_expected_imprint(marker: str, run_dir: Path | str | None = None,
+                             index_paths: list[Path] | None = None) -> dict[str, Any]:
+    """解析一个 marker 的期望 `{address, value}`（**不硬编码**，审计 A4）。
+
+    优先级：
+      1. 显式 `index_paths`（调用方给的文档条目/索引）
+      2. **run 级冻结快照**：`<run>/bundle/doc_entries.jsonl` → `<run>/doc_entries.jsonl`
+      3. 跨 run 快照**唯一命中**（给没有 run 上下文的直接调用用；多个不同值 ⇒ 只报地址）
+      4. 当前工作区索引 `index/regmap.json`（provenance 写 `current-index`，不静默）
+    解析不到 ⇒ `{}`（调用方必须显式报告"期望不可解析"，不得当成 0/通过）。
+    """
+    if index_paths:
+        exp, _ = _resolve_from_indexes(marker, index_paths)
+        if exp is not None:
+            exp["resolved_by"] = "explicit-index"
+            return exp
+    if run_dir is not None:
+        exp, _ = _resolve_from_indexes(marker, _run_entry_indexes(Path(run_dir)))
+        if exp is not None:
+            exp["resolved_by"] = "run-snapshot"
+            return exp
+
+    # 跨 run 快照唯一命中（无 run 上下文时）
+    seen: dict[tuple, dict[str, Any]] = {}
+    for p in _scan_run_entry_indexes():
+        exp, _ = _resolve_from_indexes(marker, [p])
+        if exp is not None:
+            key = (exp.get("address"), exp.get("value"))
+            seen.setdefault(key, exp)
+    if len(seen) == 1:
+        exp = dict(next(iter(seen.values())))
+        exp["resolved_by"] = "unique-across-run-snapshots"
+        return exp
+    if len(seen) > 1:
+        addrs = {k[0] for k in seen}
+        return {
+            "address": next(iter(addrs)) if len(addrs) == 1 else None,
+            "value": None,
+            "resolved_by": "ambiguous-across-run-snapshots",
+            "value_note": "跨 run 文档快照命中 %d 种不同的期望值，拒绝猜" % len(seen),
+        }
+
+    ws = _workspace_root()
+    if ws is not None:
+        for rel in ("index/regmap.json", "index/regmap.csv"):
+            p = ws / rel
+            if not p.is_file():
+                continue
+            if rel.endswith(".csv"):
+                break  # CSV 不是条目索引口径（P0 只认 regmap.json）
+            exp, _ = _resolve_from_indexes(marker, [p])
+            if exp is not None:
+                exp["resolved_by"] = "current-index"
+                return exp
+    return {}
+
+
+def _addr_equal(observed: Any, expected: Any) -> bool | None:
+    if observed is None or expected is None:
+        return None
+    a = normalize_address(str(observed))
+    b = normalize_address(str(expected))
+    if a is None or b is None:
+        return None
+    return a == b
+
+
+def _value_equal(observed: Any, expected: Any) -> bool | None:
+    if observed is None or expected is None:
+        return None
+    a = parse_int_token(observed)
+    b = parse_int_token(expected)
+    if a is None or b is None:
+        return None
+    return a == b
+
+
+def imprint_consistency(text: str, marker: str,
+                        expected: dict[str, Any] | None = None,
+                        run_dir: Path | str | None = None) -> dict[str, Any]:
     """观测印记的**三向一致**校验（spec I3 最后一项）。
 
-    三向 = ① 日志里出现该印记行；② 汇总 by-id 段计数 ≥1；③ 印记的地址/值与期望一致。
+    三向 = ① 日志里出现该印记行；② 汇总 by-id 段计数 ≥1 且与印记行数一致；
+            ③ 印记的地址/值与期望一致。
+    期望来源见 `resolve_expected_imprint()`（文档条目/索引；不再硬编码）。
+    期望缺失时对应 check 为 None（未知，不算通过也不算失败），由 `_verdict` 显式失败。
     """
-    expected = EXPECTED_IMPRINTS.get(marker, {})
+    if expected is None:
+        expected = resolve_expected_imprint(marker, run_dir=run_dir)
     imprints = find_imprints(text, marker)
     ids = parse_report_ids(text)
     id_count = ids.get(marker, 0)
@@ -160,22 +431,21 @@ def imprint_consistency(text: str, marker: str) -> dict[str, Any]:
     observed_addr = None
     observed_value = None
     for imp in imprints:
-        text_body = imp["text"]
-        parts = text_body.split()
-        for token in parts:
-            if re.fullmatch(r"0x[0-9a-fA-F]{4}\+0x[0-9a-fA-F]{2}", token):
-                observed_addr = token
-            if token.startswith("="):
-                continue
-        m = re.search(r"=\s*(0x[0-9a-fA-F]+)", text_body)
+        body = imp["text"]
+        m = _MARK_ADDR_RE.search(body)
         if m:
-            observed_value = m.group(1)
+            observed_addr = m.group("addr")
+        m = _MARK_VALUE_RE.search(body)
+        if m:
+            observed_value = m.group("value")
 
-    checks = {
+    checks: dict[str, bool | None] = {
         "imprint_present": len(imprints) > 0,
         "id_count_present": id_count >= 1,
-        "address_matches_expected": observed_addr == expected.get("address") if expected else None,
-        "value_matches_expected": observed_value == expected.get("value") if expected else None,
+        # "计数三向一致"：印记行数 == by-id 汇总计数（by-id 缺失时未知）
+        "count_matches_id_count": (len(imprints) == id_count) if id_count else None,
+        "address_matches_expected": _addr_equal(observed_addr, expected.get("address")),
+        "value_matches_expected": _value_equal(observed_value, expected.get("value")),
     }
     verified = [k for k, v in checks.items() if v is True]
     failed = [k for k, v in checks.items() if v is False]
@@ -186,6 +456,7 @@ def imprint_consistency(text: str, marker: str) -> dict[str, Any]:
             "address": observed_addr,
             "value": observed_value,
             "id_count": id_count,
+            "imprint_count": len(imprints),
         },
         "expected": expected,
         "checks": checks,
@@ -196,7 +467,43 @@ def imprint_consistency(text: str, marker: str) -> dict[str, Any]:
     }
 
 
-def evidence_view(log_path: Path) -> dict[str, Any]:
+# ---------------------------------------------------------------- 单日志视图（保持既有 API）
+
+
+def _find_run_dir(log_path: Path) -> Path | None:
+    """从证据件路径回推 run 目录（找含 run 级产物的祖先目录）。"""
+    p = Path(log_path).resolve()
+    for parent in [p.parent] + list(p.parents):
+        for marker in ("gates.json", "case_states.json", "n1_manifest_new.json",
+                       "n2_diff.json", "n5_impact.json"):
+            if (parent / marker).is_file():
+                return parent
+    return None
+
+
+def _auto_markers(text: str) -> list[str]:
+    """自动纳入判据的 marker：日志里出现的 N6 观测点印记（其余 UVM_INFO id 是噪声）。"""
+    markers = []
+    for imp in find_imprints(text):
+        if _N6_MARKER_RE.search(imp["marker"]) and imp["marker"] not in markers:
+            markers.append(imp["marker"])
+    return markers
+
+
+def _evaluate_imprints(text: str, run_dir: Path | None,
+                       expected_imprints: Mapping[str, Mapping[str, Any]] | None) -> dict[str, Any]:
+    if expected_imprints is not None:
+        markers = list(expected_imprints)
+        exp_map = {m: dict(v) for m, v in expected_imprints.items()}
+    else:
+        markers = _auto_markers(text)
+        exp_map = {m: resolve_expected_imprint(m, run_dir=run_dir) for m in markers}
+    return {m: imprint_consistency(text, m, expected=exp_map.get(m), run_dir=run_dir)
+            for m in markers}
+
+
+def evidence_view(log_path: Path | str,
+                  expected_imprints: Mapping[str, Mapping[str, Any]] | None = None) -> dict[str, Any]:
     """一个日志文件的完整证据视图。数字全部来自文件内容。"""
     path = Path(log_path)
     if not path.is_file():
@@ -209,21 +516,23 @@ def evidence_view(log_path: Path) -> dict[str, Any]:
     k1, k1_refs = count_koutou1(text)
     k2, k2_refs = parse_koutou2(text)
     counts = Counts(koutou1=k1, koutou2=k2, koutou1_refs=k1_refs, koutou2_refs=k2_refs)
+    run_dir = _find_run_dir(path)
+    imprints = _evaluate_imprints(text, run_dir, expected_imprints)
     return {
         "path": str(path),
         "present": True,
         "bytes": path.stat().st_size,
         "counts": counts.as_dict(),
-        "imprints": {
-            marker: imprint_consistency(text, marker) for marker in EXPECTED_IMPRINTS
-        },
+        "imprints": imprints,
         "has_report_summary": "UVM Report Summary" in text,
-        "verdict": _verdict(counts, text),
+        "verdict": _verdict(counts, text, imprints),
+        "run_dir": str(run_dir) if run_dir else None,
     }
 
 
-def _verdict(counts: Counts, text: str) -> dict[str, Any]:
-    """判据：PASS ⟺ 两套口径皆 0 ∧ 出现 UVM Report Summary（对齐 spec I3）。"""
+def _verdict(counts: Counts, text: str,
+             imprints: Mapping[str, Mapping[str, Any]] | None = None) -> dict[str, Any]:
+    """判据：PASS ⟺ 两套口径皆 0 ∧ UVM 汇总出现 ∧ 印记三向一致（对齐 spec I3）。"""
     reasons: list[str] = []
     if "UVM Report Summary" not in text:
         reasons.append("缺少 UVM Report Summary（全跑证据不完整）")
@@ -231,13 +540,355 @@ def _verdict(counts: Counts, text: str) -> dict[str, Any]:
         reasons.append(f"口径一 = {counts.koutou1} ≠ 0")
     if not counts.koutou2_zero:
         reasons.append(f"口径二 UVM_ERROR={counts.koutou2.get('UVM_ERROR')} / UVM_FATAL={counts.koutou2.get('UVM_FATAL')}")
+    imprints = imprints if imprints is not None else {}
+    if not imprints:
+        reasons.append("无预期观测点印记（I3：预期观测点必须留下通过印记）")
+    for marker, res in imprints.items():
+        exp = res.get("expected") or {}
+        if not exp.get("address") or not exp.get("value"):
+            reasons.append(f"印记 {marker} 的期望地址/值不可从文档条目/索引解析 "
+                           f"⇒ 不得判跑通（{exp.get('value_note') or exp.get('resolved_by') or '无来源'}）")
+            continue
+        if not res.get("consistent"):
+            failed = [k for k, v in (res.get("checks") or {}).items() if v is False]
+            reasons.append(f"印记 {marker} 三向不一致：{failed}")
     passed = not reasons
     return {
         "passed": passed,
         "reasons": reasons,
-        "criterion": "PASS ⟺ 两套口径皆 0 ∧ UVM Report Summary 出现",
-        "must_not": "口径二为 0 不足以判绿：口径一非 0 时**不得**判跑通。",
+        "criterion": "PASS ⟺ 两套口径皆 0 ∧ UVM Report Summary 出现 ∧ 期望观测点印记三向一致",
+        "must_not": "口径二为 0 不足以判绿：口径一非 0 或印记不一致时**不得**判跑通。",
     }
+
+
+# ---------------------------------------------------------------- 多用例聚合（N9/N15/N10/N11/N12）
+
+
+def _parse_log_name(path: Path) -> dict[str, Any]:
+    """`<stamp>_<case>_<seed>_run.log[.guarded]` → {stamp, case, seed, guarded}。"""
+    m = _RUN_LOG_RE.match(path.name)
+    if not m:
+        return {"stamp": None, "case": path.stem, "seed": None, "guarded": False}
+    return {"stamp": m.group("stamp"), "case": m.group("case"),
+            "seed": m.group("seed"), "guarded": bool(m.group("guarded"))}
+
+
+def _strip_guard_header(text: str) -> str:
+    """`.guarded` = guard 头 + 原 run.log；计数前剥掉头（避免头里的命令原文污染口径）。"""
+    marker = "==================== 原 run.log 起 ===================="
+    if marker in text:
+        return text.split(marker, 1)[1]
+    return text
+
+
+def _parse_guard_identity(path: Path) -> dict[str, Any] | None:
+    """从 `_guard.log`（或 `.guarded`）身份头解析身份字段。解析不出 ⇒ None。"""
+    p = Path(path)
+    if not p.is_file():
+        return None
+    try:
+        text = p.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+    out: dict[str, Any] = {}
+    pat = re.compile(r"^\s*(case_name|case_file|case md5|seed|run_id|mode)\s*:\s*(.*?)\s*$",
+                     re.M)
+    for m in pat.finditer(text):
+        key = m.group(1).replace(" ", "_")
+        out[key] = m.group(2)
+    if not out.get("case_md5") and not out.get("case") and not out.get("run_id"):
+        return None
+    # 只认头里的 md5（32 位十六进制）；缺失/非法 ⇒ 身份不成立
+    md5 = str(out.get("case_md5") or "").strip().lower()
+    if not re.fullmatch(r"[0-9a-f]{32}", md5):
+        out["case_md5"] = None
+    else:
+        out["case_md5"] = md5
+    return out
+
+
+def _find_guard_log(log_path: Path) -> Path | None:
+    """同目录同 `<stamp>_<case>_<seed>_guard.log`（先精确，再按 case 唯一匹配）。"""
+    log_path = Path(log_path)
+    info = _parse_log_name(log_path)
+    ev = log_path.parent
+    if not ev.is_dir():
+        return None
+    if info["stamp"] and info["case"] and info["seed"]:
+        exact = ev / ("%s_%s_%s_guard.log" % (info["stamp"], info["case"], info["seed"]))
+        if exact.is_file():
+            return exact
+        exact2 = ev / ("%s_%s_%s_run.log.guarded" % (info["stamp"], info["case"], info["seed"]))
+        if exact2.is_file():
+            return exact2
+    cands = [p for p in sorted(ev.glob("*_guard.log"))
+             if info["case"] and ("_%s_" % info["case"]) in p.name]
+    return cands[0] if len(cands) == 1 else None
+
+
+def _guard_md5(log_path: Path) -> str | None:
+    """该日志对应 `_guard.log` 身份头里的 case md5（解析不出 ⇒ None）。"""
+    guard = _find_guard_log(Path(log_path))
+    ident = _parse_guard_identity(guard) if guard else None
+    return (ident or {}).get("case_md5")
+
+
+def _select_latest_log(cands: list[Path], *, expected_md5_case: str | None = None,
+                       seed: str | None = None) -> tuple[Path, dict[str, Any]]:
+    """同一 (case, seed) 的多个候选里选**最新一轮**的 run.log（返工回边的正确轮次）。
+
+    选择顺序（每一步都写进 `chosen.reason`，可审计）：
+      1. 若给了 `expected_md5`（审的 md5）：先按 guard 身份头的 case md5 过滤；
+         命中则只在这些候选里选（**身份优先于时间**：md5 对上才是同一对象）；
+         一个都不命中 ⇒ 如实降级到最新并在 reason 里注明（后续 identity 校验会报断裂）。
+      2. 若给了 `seed`：优先同 seed 候选。
+      3. 取 `<stamp>` 最新者；同一 stamp 内优先非 `.guarded`（run.log 原件）。
+    `(plain or cands)[0]` 是**最旧**的（sorted 升序），会把上一轮证据当本轮 —— 这正是本条要修的。
+    """
+    infos = {p: _parse_log_name(p) for p in cands}
+    pool = list(cands)
+    reasons: list[str] = []
+    if expected_md5_case:
+        matched = [p for p in pool if _guard_md5(p) == expected_md5_case]
+        if matched:
+            reasons.append("按 expected_md5=%s 命中 %d/%d" % (expected_md5_case, len(matched), len(pool)))
+            pool = matched
+        else:
+            reasons.append("expected_md5=%s 无候选命中，降级取最新" % expected_md5_case)
+    if seed is not None:
+        same = [p for p in pool if str(infos[p]["seed"] or "") == str(seed)]
+        if same:
+            reasons.append("seed=%s 命中 %d/%d" % (seed, len(same), len(pool)))
+            pool = same
+    stamp_of = lambda p: infos[p]["stamp"] or ""  # noqa: E731
+    latest_stamp = max(stamp_of(p) for p in pool)
+    top = [p for p in pool if stamp_of(p) == latest_stamp]
+    plain = [p for p in top if not infos[p]["guarded"]]
+    chosen = sorted(plain or top)[-1]
+    reasons.insert(0, "取最新 stamp=%r（同 (case,seed) 候选 %d 个%s）"
+                   % (latest_stamp, len(cands), "，同 stamp 优先 run.log 原件" if plain else ""))
+    return chosen, {
+        "path": str(chosen),
+        "stamp": infos[chosen]["stamp"],
+        "seed": infos[chosen]["seed"],
+        "reason": "；".join(reasons),
+        "candidates": [str(p) for p in sorted(cands)],
+    }
+
+
+def _case_item(log_path: Path, case: str, seed: str | None,
+               expected_imprints: Mapping[str, Mapping[str, Any]] | None,
+               expected_md5: Mapping[str, str] | None,
+               run_id: str | None,
+               chosen: Mapping[str, Any] | None = None) -> dict[str, Any]:
+    """单个用例的证据项。缺日志/身份头解析不出 ⇒ present=False + defect。"""
+    path = Path(log_path)
+    item: dict[str, Any] = {
+        "path": str(path),
+        "present": False,
+        "log_present": path.is_file(),
+        "defect": None,
+        "counts": None,
+        "imprints": {},
+        "verdict": None,
+        "identity": None,
+        "has_report_summary": False,
+        "chosen": dict(chosen) if chosen else {
+            "path": str(path),
+            "reason": "调用方按 case→log 映射直接提供（未做多候选选择）",
+            "candidates": [str(path)],
+        },
+    }
+    if not path.is_file():
+        item["defect"] = "E-2：证据文件缺失 ⇒ 不得展示为可用证据"
+        return item
+    text = path.read_text(encoding="utf-8", errors="replace")
+    if path.name.endswith(".guarded"):
+        text = _strip_guard_header(text)
+
+    run_dir = _find_run_dir(path)
+    imprints = _evaluate_imprints(text, run_dir, expected_imprints)
+    k1, k1_refs = count_koutou1(text)
+    k2, k2_refs = parse_koutou2(text)
+    counts = Counts(koutou1=k1, koutou2=k2, koutou1_refs=k1_refs,
+                    koutou2_refs=k2_refs, source_count=1)
+    item["counts"] = counts.as_dict()
+    item["imprints"] = imprints
+    item["has_report_summary"] = "UVM Report Summary" in text
+    item["verdict"] = _verdict(counts, text, imprints)
+
+    guard = _find_guard_log(path)
+    ident = _parse_guard_identity(guard) if guard else None
+    identity = {
+        "run_id": (ident or {}).get("run_id"),
+        "case": (ident or {}).get("case_name") or (ident or {}).get("case"),
+        "case_md5": (ident or {}).get("case_md5"),
+        "seed": (ident or {}).get("seed"),
+        "case_file": (ident or {}).get("case_file"),
+        "mode": (ident or {}).get("mode"),
+        "source": str(guard) if guard else None,
+    }
+    problems = []
+    if ident is None:
+        problems.append("E-ID：身份头不可解析（找不到/读不出 _guard.log）")
+    else:
+        if identity["case"] and identity["case"] != case:
+            problems.append("case 身份错位：日志文件名=%r 身份头=%r" % (case, identity["case"]))
+        if seed is not None and identity["seed"] and str(identity["seed"]) != str(seed):
+            problems.append("seed 身份错位：文件名=%r 身份头=%r" % (seed, identity["seed"]))
+        if not identity["case_md5"]:
+            problems.append("E-ID：身份头缺合法 case md5")
+        if run_id and identity["run_id"] and identity["run_id"] != run_id:
+            problems.append("run_id 身份错位：期望=%r 身份头=%r" % (run_id, identity["run_id"]))
+        exp = (expected_md5 or {}).get(case)
+        if exp and identity["case_md5"] != exp:
+            problems.append("case md5 四方同值断裂：身份头=%r 期望(审的 md5)=%r"
+                            % (identity["case_md5"], exp))
+    item["identity"] = identity
+    item["identity_problems"] = problems
+    if problems:
+        item["defect"] = "；".join(problems)
+        # WS-R 契约：身份头解析不出/不一致 ⇒ 不得当作可用证据
+        if ident is None:
+            item["present"] = False
+        else:
+            item["present"] = True
+    else:
+        item["present"] = True
+    item["verdict"] = dict(item["verdict"])
+    if item["defect"]:
+        item["verdict"]["passed"] = False
+        item["verdict"]["reasons"] = list(item["verdict"]["reasons"]) + [item["defect"]]
+    return item
+
+
+def aggregate_evidence(logs: Mapping[str, Path], *, seed: str | None = None,
+                       expected_md5: Mapping[str, str] | None = None,
+                       expected_imprints: Mapping[str, Mapping[str, Any]] | None = None,
+                       run_id: str | None = None,
+                       chosen: Mapping[str, Mapping[str, Any]] | None = None
+                       ) -> dict[str, Any]:
+    """多用例证据聚合（N9/N15 一次作业串行跑多个用例）。
+
+    入参：`case → <stamp>_<case>_<seed>_run.log` 路径映射（调用方不必解析 guard 格式）。
+          `chosen`（可选）：`extract_run` 传入的"多候选如何选出该路径"的审计记录，
+          会原样放进 `per_case[case].chosen`；直接传日志映射时给出 caller-supplied 记录。
+    出参：`per_case` / `totals` / `verdict` / `identity` / `imprint_consistent` / `aggregate`。
+    判据 = 各用例判据的**合取**；任一用例 present=False / verdict=False ⇒ 总 verdict=False。
+    """
+    per_case: dict[str, Any] = {}
+    for case in sorted(logs):
+        log_path = Path(logs[case])
+        per_case[case] = _case_item(log_path, case, seed, expected_imprints,
+                                    expected_md5, run_id,
+                                    chosen=(chosen or {}).get(case))
+
+    present = [c for c, it in per_case.items() if it["present"]]
+    passed = [c for c, it in per_case.items() if (it.get("verdict") or {}).get("passed")]
+    failed = [c for c in per_case if c not in passed]
+    totals = {"cases": len(per_case), "present": len(present),
+              "passed": len(passed), "failed": len(failed)}
+
+    reasons: list[str] = []
+    for case, it in per_case.items():
+        if not it["present"]:
+            reasons.append("%s：present=false（%s）" % (case, it.get("defect")))
+        elif not (it.get("verdict") or {}).get("passed"):
+            reasons.append("%s：判据未通过（%s）"
+                           % (case, "；".join((it.get("verdict") or {}).get("reasons") or [])))
+    verdict = {
+        "passed": not reasons,
+        "reasons": reasons,
+        "criterion": "聚合判据 = 各用例 I3 判据的合取（含印记三向一致）",
+    }
+
+    mismatches: list[str] = []
+    seen_run_ids: set[str] = set()
+    for case, it in per_case.items():
+        for p in it.get("identity_problems") or []:
+            mismatches.append("%s：%s" % (case, p))
+        rid = (it.get("identity") or {}).get("run_id")
+        if rid:
+            seen_run_ids.add(str(rid))
+    if len(seen_run_ids) > 1:
+        mismatches.append("跨用例 run_id 不一致：%s" % sorted(seen_run_ids))
+    identity = {"consistent": not mismatches, "mismatches": mismatches}
+
+    imprints_known = [it for it in per_case.values() if it.get("imprints")]
+    imprint_consistent = bool(imprints_known) and all(
+        all(r.get("consistent") for r in it["imprints"].values())
+        and all((r.get("expected") or {}).get("address") and (r.get("expected") or {}).get("value")
+                for r in it["imprints"].values())
+        for it in imprints_known
+    )
+
+    k1_sum = sum(((it.get("counts") or {}).get("koutou1") or {}).get("value") or 0
+                 for it in per_case.values())
+    aggregate = {
+        "totals": dict(totals),
+        "counts": {
+            "koutou1_sum": k1_sum,
+            "koutou2": {k: sum((((it.get("counts") or {}).get("koutou2") or {})
+                                .get("value") or {}).get(k) or 0
+                              for it in per_case.values())
+                        for k in ("UVM_INFO", "UVM_WARNING", "UVM_ERROR", "UVM_FATAL")},
+        },
+    }
+    return {
+        "per_case": per_case,
+        "totals": totals,
+        "verdict": verdict,
+        "identity": identity,
+        "imprint_consistent": imprint_consistent,
+        "aggregate": aggregate,
+        "chosen": {c: it.get("chosen") for c, it in per_case.items()},
+    }
+
+
+def extract_run(run_dir: Path | str, *, cases: list[str] | None = None,
+                seed: str | None = None,
+                expected_md5: Mapping[str, str] | None = None,
+                expected_imprints: Mapping[str, Mapping[str, Any]] | None = None
+                ) -> dict[str, Any]:
+    """扫一个 run 目录的 evidence/ 并聚合（N9/N15 的入口）。
+
+    只认 `<stamp>_<case>_<seed>_run.log`（含 `.guarded`），**跳过 `archive/`
+    与 `_guard.log`**（归档是只读副本，重复计入会伪造"多份证据"）。
+
+    **同一 case 多候选 = 返工回边留下的多轮日志**（N8_REWORK/N11_REWORK→N6→N9）。
+    选择规则见 `_select_latest_log()`：expected_md5 命中优先 → seed 优先 → **最新 stamp**；
+    每例的选择过程写进 `per_case[case].chosen`（选中路径 + 原因 + 全部候选），
+    顶层 `chosen` 是同一映射的汇总。旧实现 `(plain or cands)[0]` 取的是**最旧**日志。
+    """
+    run = Path(run_dir)
+    evid = run / "evidence"
+    if not evid.is_dir():
+        out = aggregate_evidence({}, seed=seed, expected_md5=expected_md5,
+                                 expected_imprints=expected_imprints)
+        out["run_dir"] = str(run)
+        out["chosen"] = {}
+        return out
+    by_case: dict[str, list[Path]] = {}
+    for p in sorted(evid.glob("*_run.log*")):
+        if not p.is_file():
+            continue
+        info = _parse_log_name(p)
+        if cases and info["case"] not in cases:
+            continue
+        by_case.setdefault(info["case"], []).append(p)
+
+    logs: dict[str, Path] = {}
+    chosen: dict[str, dict[str, Any]] = {}
+    for case, cands in sorted(by_case.items()):
+        path, how = _select_latest_log(cands, expected_md5_case=(expected_md5 or {}).get(case),
+                                       seed=seed)
+        logs[case] = path
+        chosen[case] = how
+    out = aggregate_evidence(logs, seed=seed, expected_md5=expected_md5,
+                             expected_imprints=expected_imprints, chosen=chosen)
+    out["run_dir"] = str(run)
+    out["sources"] = {case: [str(p) for p in cands] for case, cands in sorted(by_case.items())}
+    return out
 
 
 #: 口径一的逐地址分解：`UVM_INFO ... [PCIE_REG_RD@3DW] *E @ADDR[0x84] -> DATA[0x0] != EXP[0xffffffff]`

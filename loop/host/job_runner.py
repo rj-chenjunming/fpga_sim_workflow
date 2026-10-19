@@ -30,7 +30,13 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Awaitable, Callable
 
-from .admission import Admission, TERMINAL_PROC_STATES, _proc_start_time, proc_state_start
+from .admission import (
+    Admission,
+    TERMINAL_PROC_STATES,
+    _proc_start_time,
+    proc_state_start,
+    slot_job_id,
+)
 
 JOB_FORMAT_VERSION = 1
 
@@ -152,6 +158,16 @@ class JobRunner:
         self.record_path(job_id).write_text(
             json.dumps(record.as_dict(), ensure_ascii=False, indent=2), encoding="utf-8"
         )
+        # B5：把**作业身份**写进单槽租约（此刻起判活看作业，不看 uvicorn 进程）。
+        # 只绑自己的锁：`Admission.bind_job()` 在锁不属于本槽时会审计拒绝。
+        if self.admission is not None:
+            self.admission.bind_job(
+                slot_job_id=slot_job_id(node, run_id),
+                job_id=job_id,
+                job_pid=proc.pid,
+                job_pid_start=record.pid_start,
+                job_record_id=job_id,
+            )
         return record
 
     # ---------- 查询 ----------
@@ -160,6 +176,24 @@ class JobRunner:
         try:
             return json.loads(self.record_path(job_id).read_text(encoding="utf-8"))
         except (FileNotFoundError, json.JSONDecodeError):
+            return None
+
+    def lookup(self, job_id: str) -> dict[str, Any] | None:
+        """契约 §6.7 的重附着入口：按 job_id 取作业记录（不存在返回 None）。
+
+        与 `reattach()`/`poll()` 同一份数据源，只是接口形状与 spec 对齐。
+        """
+        return self.record(job_id)
+
+    def phase_of(self, job_id: str) -> str | None:
+        """作业权威相位（`done/dead/cancelled/running/cancelling`）；未知作业返回 None。
+
+        单槽租约的判活探针用它（B5）。**不抛异常**：探针在 `Admission.status()`
+        这种只读投影里被调用，未知作业必须表现为"无相位"而不是把看板打崩。
+        """
+        try:
+            return self.poll(job_id).phase
+        except (KeyError, OSError, ValueError):
             return None
 
     def all_records(self) -> list[dict[str, Any]]:

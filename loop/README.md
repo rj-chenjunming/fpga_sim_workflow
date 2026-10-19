@@ -1,6 +1,6 @@
 # `loop/` — 变更影响闭环的编排层与操作界面
 
-> **状态**：P0 可运行（drill 夹具全链路已验证；real 模式未在真机全跑）
+> **状态**：P0 可运行（drill 夹具全链路已验证；审计阻断项已修复并补回归；real 模式**真机完整全跑**仍需在环境上执行，见 §6）
 > **上游契约**：`doc/spec/CHANGE_IMPACT_LOOP_SPEC.md`（业务与不变量 I1–I8）
 > **本层契约**：`doc/spec/LOOP_ORCHESTRATION_SPEC.md`（owner / 生命周期 / 长任务 / 准入 / 恢复 / 投影）
 
@@ -293,6 +293,7 @@ drill 运行目录带 `.loop_drill` 标记，测试据此清理**自己创建的
 - 不判绿/判红（一切 `passed` / `can` / `blockers` 由服务端算）。
 - 不编辑 `TESTLIB/`（v1 写权仍在作者角色 + 沙箱）。
 - 不改基线、不改冲突清单。
-- 只有两个**业务**写动作：**提交闸门决策**、**取消作业**。
-  > 实现另暴露 `POST /api/runs`（建运行目录 + `gate.py init`）—— spec §10 只列两个写动作，
-  > 属“代码有、spec 未登记”项（审计 B2，见 `doc/audit/parts/spec-conformance.md`）。
+- **四个**写动作（已登记在 `doc/spec/LOOP_ORCHESTRATION_SPEC.md` §10.0，均经服务端校验）：
+  **提交闸门决策**、**取消作业**、**新建运行**、**人触发晋升（N16/I8）**。
+  > 晋升入口只允许 human actor 且必须与 G3 签署者逐字一致；真实写盘由
+  > `kb/tools/n16_promote.py --promote` 原子完成（API 不写 `baselines/`、不伪造闸门）。

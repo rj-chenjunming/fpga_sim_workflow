@@ -74,6 +74,8 @@
   var STATUS_LABEL = {
     running: "执行中",
     waiting_gate: "等待人工",
+    waiting_job: "等待作业",
+    waiting_slot: "排队等单槽",
     finished: "已结束",
     failed: "失败"
   };
@@ -343,7 +345,7 @@
 
   function statusKind(s) {
     if (s === "running") return "run";
-    if (s === "waiting_gate") return "wait";
+    if (s === "waiting_gate" || s === "waiting_job" || s === "waiting_slot") return "wait";
     if (s === "finished") return "done";
     if (s === "failed") return "fail";
     return "run";
@@ -351,7 +353,7 @@
 
   function dotClass(s) {
     if (s === "running") return "";
-    if (s === "waiting_gate") return "warn";
+    if (s === "waiting_gate" || s === "waiting_job" || s === "waiting_slot") return "warn";
     if (s === "failed") return "bad";
     return "idle";
   }
@@ -920,10 +922,16 @@
     }
     var pill = h("span", "status-pill " + statusKind(v.status));
     if (v.status === "running") pill.appendChild(h("span", "spinner"));
-    if (v.status === "waiting_gate") pill.appendChild(h("span", "pulse"));
+    if (v.status === "waiting_gate" || v.status === "waiting_job" || v.status === "waiting_slot") {
+      pill.appendChild(h("span", "pulse"));
+    }
     pill.appendChild(document.createTextNode(" " + statusLabel(v.status) + (v.current_node ? " · " + v.current_node : "")));
     if (v.status === "waiting_gate") {
-      pill.title = "v1 后端不细分 waiting_job / waiting_slot；这里可能是作业或单槽等待（审计 I18）。";
+      pill.title = "执行停在人工闸门（durable interrupt）：可安全重启，闸门态权威在 gates.json。";
+    } else if (v.status === "waiting_job") {
+      pill.title = "执行停在外部长任务（JOB 中断）：作业在跑，图已停放，可安全重启后重新附着。";
+    } else if (v.status === "waiting_slot") {
+      pill.title = "执行停在单槽排队（SLOT 中断）：队首释放后会被唤醒（审计 C2/B2 已修）。";
     }
     host.appendChild(pill);
     host.appendChild(h("span", "chip", v.mode || "—"));

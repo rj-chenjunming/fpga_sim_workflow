@@ -97,7 +97,8 @@ async def test_execution_parks_while_long_job_runs_and_survives_restart() -> Non
     rid = await m.start(baseline="v0", mode="drill", scenario="cancel")
     try:
         await _drive_to_interrupt(m, rid, "G1_diff_confirm")
-        await m.decide(run_id=rid, gate="G1_diff_confirm", decision="confirmed", actor=HUMAN)
+        await m.decide(run_id=rid, gate="G1_diff_confirm", decision="confirmed", actor=HUMAN,
+                       reason="已逐条核对 2 条差异")
         view = await _drive_to_interrupt(m, rid, "JOB:", timeout=25.0)
 
         execution = m.executions[rid]
@@ -112,7 +113,7 @@ async def test_execution_parks_while_long_job_runs_and_survives_restart() -> Non
         report = await m2.async_restore_all()
         assert rid in report["restored"], f"恢复失败：{report}"
         restored_view = m2.run_view(rid)
-        assert restored_view["status"] == "waiting_gate"
+        assert restored_view["status"] == "waiting_job", "I18：停在 JOB 上应投影为 waiting_job（不是 waiting_gate）"
         assert _interrupt_id(restored_view).startswith("JOB:")
         assert restored_view["job"]["job_id"] == view["job"]["job_id"], "恢复后必须附着到同一作业"
 
@@ -149,7 +150,8 @@ async def test_crash_recovery_delivers_dead_job_as_dead_not_done() -> None:
     rid = await m.start(baseline="v0", mode="drill", scenario="cancel")
     try:
         await _drive_to_interrupt(m, rid, "G1_diff_confirm")
-        await m.decide(run_id=rid, gate="G1_diff_confirm", decision="confirmed", actor=HUMAN)
+        await m.decide(run_id=rid, gate="G1_diff_confirm", decision="confirmed", actor=HUMAN,
+                       reason="已逐条核对 2 条差异")
         view = await _drive_to_interrupt(m, rid, "JOB:", timeout=25.0)
         job_id = view["job"]["job_id"]
 
@@ -178,6 +180,13 @@ async def test_crash_recovery_delivers_dead_job_as_dead_not_done() -> None:
         m.runner.record_path(job_id).write_text(json.dumps(stale, ensure_ascii=False, indent=2), encoding="utf-8")
 
         await m.stop_watching()
+        # 崩溃发生在**投递之前** ⇒ 盘上的 view.json 还是停放态。
+        # 修复后（I1/I3）看护任务一旦发现死任务会立刻把 run 置 failed 并落盘；
+        # 那本身是正确行为，但会跳过本用例要测的"补投递"路径，所以这里把崩溃现场
+        # 的投影也回滚到投递前（与上面伪造作业记录的意图一致）。
+        m.docs[rid].status = "waiting_job"
+        m.docs[rid].error = None
+        m._persist(rid)
         m2 = RunManager()
         report = await m2.async_restore_all()
         assert rid in report["restored"], f"恢复失败：{report}"
@@ -204,7 +213,8 @@ async def test_park_snapshot_is_written_without_opportunistic_sync() -> None:
     rid = await m.start(baseline="v0", mode="drill", scenario="cancel")
     try:
         await _drive_to_interrupt(m, rid, "G1_diff_confirm")
-        await m.decide(run_id=rid, gate="G1_diff_confirm", decision="confirmed", actor=HUMAN)
+        await m.decide(run_id=rid, gate="G1_diff_confirm", decision="confirmed", actor=HUMAN,
+                       reason="已逐条核对 2 条差异")
         parked = await _drive_to_interrupt(m, rid, "JOB:", timeout=25.0)
 
         # 断言对齐**当前停放的那个中断**，而不是看板上的 `view["job"]`：
@@ -260,7 +270,8 @@ async def test_restore_redelivers_terminal_job_when_snapshot_is_stale() -> None:
     rid = await m.start(baseline="v0", mode="drill", scenario="cancel")
     try:
         await _drive_to_interrupt(m, rid, "G1_diff_confirm")
-        await m.decide(run_id=rid, gate="G1_diff_confirm", decision="confirmed", actor=HUMAN)
+        await m.decide(run_id=rid, gate="G1_diff_confirm", decision="confirmed", actor=HUMAN,
+                       reason="已逐条核对 2 条差异")
         parked = await _drive_to_interrupt(m, rid, "JOB:", timeout=25.0)
         job_id = ((parked.get("pending_interrupt") or {}).get("payload") or {}).get("job_id")
         assert job_id, parked
@@ -312,7 +323,8 @@ async def test_restore_refuses_when_snapshot_lags_the_ledger() -> None:
         behind = Path(str(snap) + ".behind")
         behind.write_bytes(snap.read_bytes())          # 停在 G1 的那一份
 
-        await m.decide(run_id=rid, gate="G1_diff_confirm", decision="confirmed", actor=HUMAN)
+        await m.decide(run_id=rid, gate="G1_diff_confirm", decision="confirmed", actor=HUMAN,
+                       reason="已逐条核对 2 条差异")
         await _drive_to_interrupt(m, rid, "G2_report_accept", timeout=25.0)
         assert GA.authority_view(rid)["gates"]["G1_diff_confirm"]["human_signed"] is True
 
@@ -345,7 +357,8 @@ async def test_dead_job_never_counts_as_success() -> None:
     rid = await m.start(baseline="v0", mode="drill", scenario="dead_job")
     try:
         await _drive_to_interrupt(m, rid, "G1_diff_confirm")
-        await m.decide(run_id=rid, gate="G1_diff_confirm", decision="confirmed", actor=HUMAN)
+        await m.decide(run_id=rid, gate="G1_diff_confirm", decision="confirmed", actor=HUMAN,
+                       reason="已逐条核对 2 条差异")
         await wait_until(lambda: m.docs[rid].error is not None, timeout=25.0)
         doc = m.docs[rid]
         assert doc.error is not None, "死任务应导致失败，而不是静默通过"
@@ -476,7 +489,8 @@ async def test_gates_are_recorded_once_each() -> None:
     rid = await m.start(baseline="v0", mode="drill")
     try:
         await _drive_to_interrupt(m, rid, "G1_diff_confirm")
-        await m.decide(run_id=rid, gate="G1_diff_confirm", decision="confirmed", actor=HUMAN)
+        await m.decide(run_id=rid, gate="G1_diff_confirm", decision="confirmed", actor=HUMAN,
+                       reason="已逐条核对 2 条差异")
         await _drive_to_interrupt(m, rid, "G2_report_accept", timeout=25.0)
         history = m.run_view(rid)["gate_history"]
         assert [g["gate"] for g in history].count("G1_diff_confirm") == 1, history
@@ -532,7 +546,8 @@ async def test_slot_is_released_after_successful_job() -> None:
     rid = await m.start(baseline="v0", mode="drill")
     try:
         await _drive_to_interrupt(m, rid, "G1_diff_confirm")
-        await m.decide(run_id=rid, gate="G1_diff_confirm", decision="confirmed", actor=HUMAN)
+        await m.decide(run_id=rid, gate="G1_diff_confirm", decision="confirmed", actor=HUMAN,
+                       reason="已逐条核对 2 条差异")
         await _drive_to_interrupt(m, rid, "G2_report_accept", timeout=25.0)
         assert Admission(P.STATE_DIR).holder() is None, "作业结束后单槽仍被占用"
         assert Admission(P.STATE_DIR).queue() == []
@@ -552,7 +567,8 @@ async def test_slot_is_released_on_dead_job_failure() -> None:
     rid = await m.start(baseline="v0", mode="drill", scenario="dead_job")
     try:
         await _drive_to_interrupt(m, rid, "G1_diff_confirm")
-        await m.decide(run_id=rid, gate="G1_diff_confirm", decision="confirmed", actor=HUMAN)
+        await m.decide(run_id=rid, gate="G1_diff_confirm", decision="confirmed", actor=HUMAN,
+                       reason="已逐条核对 2 条差异")
         await wait_until(lambda: m.docs[rid].error is not None, timeout=25.0)
         assert m.docs[rid].error is not None
         assert Admission(P.STATE_DIR).holder() is None, "死任务失败后单槽未释放"

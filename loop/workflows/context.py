@@ -41,8 +41,11 @@ DRILL_FILES = (
     "check_C.md",
     "reconcile.md",
     "n12_report.md",
-    "case_states.json",
 )
+#: 注意：**刻意不复制 `case_states.json`**。用例态台账是 **per-run** 文件
+#: （`case_states.json` 的 `run_id` 必须等于本 run）：把归档轮的台账种进新 run
+#: 会被 `kb/tools/case_state.py` 判为身份错位（rc=4），也会伪造"本轮用例态"。
+#: 本轮台账由 N6/N8/N10 的 Host 步骤用 `case_state.py init/set` 现建。
 #: 注意：**刻意不复制 `gates.json`**。夹具里的 gates.json 是演练签署
 #: （`human_signed=false`），复制进来会让「闸门已签」凭空成立。
 #: 新运行的闸门态必须由 `kb/tools/gate.py init` 从空开始建。

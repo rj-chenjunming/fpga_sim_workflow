@@ -15,6 +15,7 @@
 | 路径 | 是什么 | 关键数字 / 说明 |
 |---|---|---|
 | [`ACCEPTANCE_V1.md`](ACCEPTANCE_V1.md) | v1 真实 HTTP 终验报告（闸门操作台 + 长任务看板） | **117/117 断言**（相 50/27/18/8/8/6）= 四代服务进程、3 次真重启、零配置连跑两轮 `rc=0`；含 F-V1-01…07 + F-V1-06c/08 共 9 条缺陷与修法 |
+| [`FIX_ACCEPTANCE_20261019.md`](FIX_ACCEPTANCE_20261019.md) | 审计阻断级 22 条 + F-01/F-02 修复轮的门禁证据 | 四道门全绿：pytest **197 passed**、kb 自测 10/9/7/16/13、端到端 **117/117 rc=0**、文档链接 missing=0；含审计项→修复落点→回归测试映射 |
 | [`demo/`](demo/) | 团队演练（**只编译、不仿真**）冻结证据，共 32 件 | `accept/`（验收演练）、`evidence/`（编译/运行前证据）、`review/`（检查）、`guard/`（守护）、`TESTLIB_sandbox/`（沙箱用例）；入口 [`demo/README.md`](demo/README.md) |
 | [`demo/MIGRATION.md`](demo/MIGRATION.md) | 迁移记录：doc/agents/_demo/ → `doc/evidence/demo/` | 目录级 + 关键件级 old→new 映射、内容 md5 未变声明、内部历史路径字符串说明 |
 
@@ -27,8 +28,9 @@ cd loop && bash spikes/accept_v1_run.sh
 
 - 原始输出落 `loop/.logs/accept/{driver.log,server.out,phase*.txt}`，**不入库**（根 `.gitignore` 已忽略 `loop/.logs/`）。
 - 终验会写 `ENV_ROOT/SIMLIB_RUN` 与 `uvs.setup` 自愈；**需要可写的 `ENV_ROOT`**。
-  本次整理所在 DSH 会话把 `ENV_ROOT` 挂为只读，故本会话无法复跑；这是运行环境限制，不是代码缺陷
-  （现状见 [`doc/STATUS.md`](../STATUS.md)）。
+  2026-10-19 修复轮的 DSH 会话已具备可写 `ENV_ROOT`，端到端已实测 **117/117、rc=0**
+  （证据见 [`FIX_ACCEPTANCE_20261019.md`](FIX_ACCEPTANCE_20261019.md)；状态见 [`doc/STATUS.md`](../STATUS.md)）。
+- **并发纪律**：端到端与 pytest 不得同时跑（共用 `loop/state` 单槽锁）；先 pytest 后 e2e。
 - 演练证据是**历史冻结件**，不可重跑回填；如需新一轮演练，另建新目录并在文件头标注时间。
 
 ## 3 迁移与引用

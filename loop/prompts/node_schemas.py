@@ -40,15 +40,27 @@ class N3Output(BaseModel):
 # ---------------------------------------------------------------- N6
 
 
-class N6PlanItem(BaseModel):
-    case: str = Field(description="目标用例名，必须取自 input.targets")
-    change_intent: str = Field(description="改什么、为什么")
-    basis_offsets: list[str] = Field(description="依据的偏移，形如 <段基址>+<块内偏移>")
-    risk: str = Field(description="该修订的风险或不确定性")
+class N6Edit(BaseModel):
+    """一条**可机械施加**的文本修订。
+
+    `old` 必须在目标文件里唯一命中（Host 逐条校验，命中 0 次或多次即失败，不猜）；
+    `line` 是 input.targets[].excerpt 中给出的行号（1-based），仅用于溯源与 N8 复核。
+    """
+
+    line: int = Field(description="源文件中 1-based 行号（取自 input.targets[].excerpt）")
+    old: str = Field(description="必须逐字复制的原文片段；Host 要求它在文件里唯一命中")
+    new: str = Field(description="替换后的片段；只做最小改动")
+    basis: str = Field(description="依据：差异条目 id / 文档位定义 / 偏移 / 卡点A 检索结论")
+
+
+class N6Revision(BaseModel):
+    case: str = Field(description="目标用例名，必须取自 input.targets[].case")
+    edits: list[N6Edit] = Field(description="该用例的全部修订；至少一条，Host 会逐条施加")
+    rationale: str = Field(description="这批修订为什么能满足新 RTL/文档；引用 input 中的具体事实")
 
 
 class N6Output(BaseModel):
-    plan: list[N6PlanItem] = Field(description="每个目标用例一条修订方案")
+    revisions: list[N6Revision] = Field(description="每个目标用例恰好一条")
     rework_resolution: list[str] = Field(description="上一轮每条退回意见如何处理；无返工则空列表")
     notes: list[str] = Field(description="其他限制或不确定性")
 
@@ -78,9 +90,11 @@ class N11ReworkRequest(BaseModel):
 
 
 class N11Output(BaseModel):
-    assessment: Literal["satisfied", "needs_rework"] = Field(description="评估结论（只是给闸门的建议）")
-    reasons: list[str] = Field(description="判定理由，逐条引用 input 里的具体事实")
-    rework_requests: list[N11ReworkRequest] = Field(description="返工请求；satisfied 时为空列表")
+    chain: Literal["intact", "broken"] = Field(
+        description="证据链结论：身份四方同值且证据可解析=intact；任一不一致/不可解析=broken"
+    )
+    reasons: list[str] = Field(description="逐条引用 input.identity / input.evidence / input.case_states 的事实")
+    rework_requests: list[N11ReworkRequest] = Field(description="不成链时的返工请求；intact 时为空列表")
     caveats: list[str] = Field(description="不确定性与未闭环项")
 
 
@@ -100,7 +114,9 @@ class N12Output(BaseModel):
         default_factory=dict,
         description="逐字引用的两套口径；键为 koutou1 / koutou2。**Host 会与权威值逐值比对**",
     )
-    verdict_statement: str = Field(description="判据结论原文，必须与 input.verdict 一致")
+    claimed_verdict: Literal["passed", "not_passed", "undetermined"] = Field(
+        description="结构化结论：必须与 Host 提供的 input.verdict.passed 一致；不得用文字模糊"
+    )
     open_items: list[str] = Field(description="未闭环项与冲突")
 
 
@@ -132,7 +148,7 @@ SCHEMAS: dict[str, type[BaseModel]] = {
 __all__ = [
     "SCHEMAS",
     "N3Output", "N3Group",
-    "N6Output", "N6PlanItem",
+    "N6Output", "N6Revision", "N6Edit",
     "N8Output", "N8Finding",
     "N11Output", "N11ReworkRequest",
     "N12Output", "N12Section",

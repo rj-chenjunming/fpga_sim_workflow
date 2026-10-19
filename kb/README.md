@@ -38,9 +38,10 @@
     ├── n1_snapshot.py             #   N0/N1：自研代码 tar + 全量清单 md5 + manifest
     ├── n2_diff.py                 #   N2：纯确定性差异对比（三路）
     ├── n5_impact.py               #   N5：段粗筛 → offset/位域交集 → 必改/待查
-    ├── case_state.py              #   用例态台账（I2；N6~N10 责任方写入）
+    ├── case_state.py              #   用例态台账（I2；init/set/show/check；N16 前置唯一判据）
     ├── gate.py                    #   三道人工闸门的持久化状态机（I6）
-    ├── n16_promote.py             #   N16：人触发 + Host 原子晋升（七件套）
+    ├── n16_promote.py             #   N16：人触发 + Host 原子晋升（默认 dry-run，--promote 才写盘；I4/I2/I7 前置）
+    ├── n10_pending.py             #   N10 待裁决单一写者（只 append pending.json 的 n10_items）
     └── run_guarded.sh             #   卡点B/D 的安全包装（不改冻结的 run_local.sh）
 
 <WORKSPACE_ROOT>/                   # 数据根（由 environments.json / $LOOP_WORKSPACE 解析）
@@ -104,11 +105,18 @@ spec 的闸门语义 —— 系统的职责是**备料**，不是替人拍板。
 | N3 差异总结 | Model:analyst | `doc/agents/sim-env-分析师.md`（编排层 `model_steps.py` 调用） | `<WORKSPACE_ROOT>/runs/<id>/n3_digest.md` |
 | N4 差异确认 | **人·Gate1** | `gate.py sign G1_diff_confirm --actor <人>` | `<WORKSPACE_ROOT>/runs/<id>/gates.json` |
 | N5 影响分析 | Host | `n5_impact.py` | `<WORKSPACE_ROOT>/runs/<id>/n5_impact.json` + `.md` |
-| N6~N11 | 四角色 team | `doc/agents/sim-env-*.md` + `run_guarded.sh` | `<WORKSPACE_ROOT>/runs/<id>/evidence/` |
+| N6~N11 | 四角色 team | `doc/agents/sim-env-*.md` + `<run>/sandbox/TESTLIB/`（N6 落盘）+ `run_guarded.sh`（N7 编译/N9 全跑） | `<WORKSPACE_ROOT>/runs/<id>/{sandbox,evidence}/` |
 | N12 评估报告 | Model:reporter | `doc/agents/sim-env-报告员.md` | `<WORKSPACE_ROOT>/runs/<id>/n12_report.md` |
 | N13 评估 | **人·Gate2** | `gate.py sign G2_report_accept` | `<WORKSPACE_ROOT>/runs/<id>/gates.json` |
 | N14 回归决策 | **人·Gate3** | `gate.py sign G3_regression_decision` | `<WORKSPACE_ROOT>/runs/<id>/gates.json` |
-| N16 晋升新基线 | **人触发 + Host** | `n16_promote.py --trigger-by <人>` | `<WORKSPACE_ROOT>/baselines/vN+1/` |
+| N16 晋升新基线 | **人触发 + Host** | `n16_promote.py --trigger-by <人> --actor-kind human [--promote]`（缺省 dry-run；身份须与 G3 记录逐字一致；I4 无条件） | `<WORKSPACE_ROOT>/baselines/vN+1/` |
+
+
+> **2026-10-19 修复后状态**：`n1_snapshot.py stage` 支持 `<run>/staged/` 完整镜像（不完整 fail closed）；
+> `case_state.py` 的 `check --for-promotion` 是 N16 前置的**唯一**判据实现；N10 待裁决只经
+> `n10_pending.py` 写入 `pending.json` 的顶层 `n10_items`（D1–D20 与 `expected_total` 不变）；
+> 证据聚合由 `loop/host/evidence.py::aggregate_evidence/extract_run` 提供（多用例、身份四方同值、
+> 取最新 stamp）。
 
 ---
 

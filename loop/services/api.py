@@ -71,6 +71,47 @@ def health() -> dict[str, Any]:
     }
 
 
+# ---------------------------------------------------------------- 配置面（只读）
+
+@app.get("/api/baselines")
+def baselines_api() -> dict[str, Any]:
+    """列出数据根下的基线版本（只读；供配置视图选择）。"""
+    from services import config_api
+
+    return config_api.list_baselines(P.WORKSPACE_ROOT)
+
+
+@app.get("/api/env/check")
+def env_check_api(path: str = Query(...)) -> dict[str, Any]:
+    """只读校验候选环境仓根；不创建、不修改任何文件。"""
+    from services import config_api
+
+    registry = config_api.load_registry(P.TOOL_ROOT / "environments.json")
+    try:
+        return config_api.check_env(path, registry=registry, current_env_root=P.ENV_ROOT)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail={"error": str(exc)}) from exc
+
+
+@app.get("/api/fs/dirs")
+def fs_dirs_api(path: str = Query(...)) -> dict[str, Any]:
+    """列出一层目录；allowlist 见 config_api.allowed_roots（realpath 越界 ⇒ 403）。"""
+    from services import config_api
+
+    registry = config_api.load_registry(P.TOOL_ROOT / "environments.json")
+    roots = config_api.allowed_roots(
+        registry,
+        P.WORKSPACE_ROOT,
+        settings_path=P.TOOL_ROOT / "loop" / "SETTINGS.yaml",
+    )
+    try:
+        return config_api.list_dirs(path, allowed_roots=roots, registry=registry)
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail={"error": str(exc)}) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail={"error": str(exc)}) from exc
+
+
 # ---------------------------------------------------------------- runs
 
 @app.get("/api/runs")

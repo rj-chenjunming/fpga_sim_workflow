@@ -72,6 +72,7 @@ cd loop && rm -rf state spikes/.accept_v1_state.json && bash spikes/accept_v1_ru
 3. 一次运行怎么活、怎么停、怎么恢复 → `doc/spec/LOOP_ORCHESTRATION_SPEC.md`。
 4. 软件与环境怎么解耦、数据放哪 → `doc/spec/ENV_PLUGIN_SPEC.md`。
 5. 哪里和 spec 不一致 → `doc/audit/AUDIT-20261019-spec-conformance.md`。
+6. 界面/交互怎么改 → `doc/spec/WEB_UI_SPEC.md`（设计样张 `loop/web/mockup.html`）。
 
 ---
 

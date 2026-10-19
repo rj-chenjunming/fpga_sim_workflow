@@ -27,13 +27,14 @@
 > 逐级入口：[`../README.md`](../README.md)（项目导航）→ [`../AGENTS.md`](../AGENTS.md)（流程 / 写权 / 红线）
 > → 本文件 → 各子目录 README。
 
-## 2 `spec/` 三份契约
+## 2 `spec/` 四份契约
 
 | 文件 | 管什么 |
 |---|---|
 | [`spec/CHANGE_IMPACT_LOOP_SPEC.md`](spec/CHANGE_IMPACT_LOOP_SPEC.md) | 业务与不变量 I1–I8、16 节点 N0–N16、三道人工闸门（Gate1/2/3） |
 | [`spec/LOOP_ORCHESTRATION_SPEC.md`](spec/LOOP_ORCHESTRATION_SPEC.md) | 编排层机制契约：owner 账本、生命周期、长任务停等、单槽准入、重启恢复、进度/UI 投影 |
 | [`spec/ENV_PLUGIN_SPEC.md`](spec/ENV_PLUGIN_SPEC.md) | 三根（`TOOL_ROOT`/`ENV_ROOT`/`WORKSPACE_ROOT`）解析、环境插件契约、拆仓分步与「数据不搬」决定 |
+| [`spec/WEB_UI_SPEC.md`](spec/WEB_UI_SPEC.md) | v1 运营台：两区信息架构、配置/运行/闸门三视图、目录选择、agent 状态投影、新增 API 契约与验收判据 |
 
 ## 3 阅读顺序（新接手）
 

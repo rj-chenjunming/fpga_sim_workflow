@@ -9,15 +9,12 @@ loop/.agently/
 __pycache__/
 *.pyc
 
-# ── 运行产物与归档夹具：体量大、且可由流程重跑生成
-#    字节不入库，但**身份**入库 ⇒ 见 kb/FIXTURE_IDENTITY.md（含 md5 与复现命令）
-kb/runs/
+# ── 运行时快照（spike 的一次性产物，不是源码）
+loop/spikes/snap.json
 
-# ── 验证沙箱（verifier 自测的可重跑 scratch，约 157 MB）
-#    与 kb/runs/ 同一原则：产物不入库，结论（V*.md / frozen_*.md5）入库
-doc/spec/evidence/loop_rehearsal/verify/sandbox/
-
-# ---- 拆仓后新增：软件管理的每环境数据（体积大、属运行产物，不入库）----
+# ---- 软件管理的每环境数据（体积大、属运行产物，不入库）----
+# 当前 default 环境的数据仍在 ENV_ROOT/kb（见 environments.json）；
+# 若将来把数据迁入 workspaces/<env-id>/，本规则保证它不入库。
 workspaces/*/
 !workspaces/.gitkeep
 !workspaces/README.md

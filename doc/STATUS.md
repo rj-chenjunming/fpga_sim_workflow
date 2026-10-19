@@ -10,8 +10,8 @@
 
 | 项 | 值 | 来源 |
 |---|---|---|
-| 本仓 HEAD | `dc7c69e` | `git rev-parse --short HEAD` |
-| 提交数 | 13 | `git rev-list --count HEAD` |
+| 本仓 HEAD（采样时） | `dc7c69e`；整理后 HEAD 见 `git log --oneline -5`（本次共 4 个提交） | `git rev-parse --short HEAD` |
+| 提交数（采样时） | 13 | `git rev-list --count HEAD` |
 | Python | 3.11.7 | `loop/.venv/bin/python -V` |
 | Agently | 4.1.4.8 | `pip show agently` |
 | 环境仓（ENV_ROOT） | `/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES` | `environments.json` |

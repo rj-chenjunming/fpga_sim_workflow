@@ -1,10 +1,14 @@
 # FPGA 变更影响闭环 AI 工具 · 规格书（SPEC）
 
-> **状态**：新设计 v0.2（草案，待评审）
+> **状态**：v0.2 · 业务契约（N0–N16 已落地；未落地项见 `doc/audit/AUDIT-20261019-spec-conformance.md`）
 > **v0.2 变更**：① 首版范围由「最小闭环只建 DOM 段」改为「**首版覆盖全部 8 个已登记段**」；
 > ② 新增 **N16 晋升新基线**：用户完成一轮后可把整个成果保存为一个新基线，下一轮 diff 以它为「上一版」。
 > **本文语言**：中文正文；代码、标识符、寄存器名、md5、命令原文保留原文。
-> **基线项目**：`TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES`（当前仓库即第一基线）。
+> **基线项目**：`TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES`（第一基线；本仓是软件仓，不存放该环境资产）。
+> **仓与基线的关系**：本仓是**软件仓**（`loop/` 编排 + `kb/` Host 工具/schema + `doc/` 契约）；
+> 第一基线项目的冻结资产（`RTL/ TB/ PKG/ TESTLIB/`、`uvs.setup`）在**环境根 `ENV_ROOT`**，
+> 其运行数据根 `WORKSPACE_ROOT` 当前指向 `ENV_ROOT/kb`（数据不搬的决定见
+> `doc/spec/ENV_PLUGIN_SPEC.md` §7）。三根定义见该文件 §1。
 > **复用资产**：`doc/AGENTS.md`（四角色 team）、`doc/agents/sim-env-*.md`（角色定义）、卡点 A~E、
 > `doc/tools/compile_only.sh` / `run_local.sh` / `extract_sys_reg.py`、本轮验收产出的证据链规范。
 > **上游产品决策**：来自此前 grill-me 的 16 项决定（基线=交付包+自建快照、文档=条目集指纹、
@@ -264,24 +268,33 @@
 
 ## 10. 分阶段交付（首版即覆盖全部 8 段）
 
+> **完成度口径（2026-10-19，HEAD dc7c69e）**：`loop` 单测 70 项；drill 端到端 N0→N16
+> 与三道闸门已验证（117 断言）。**real 模式端到端未跑通**；未落地项逐条见
+> `doc/audit/AUDIT-20261019-spec-conformance.md`。
+
 **第一阶段（首版，覆盖全部 8 段）**：
-1. 建 `kb/`（被 git 跟踪）：索引 schema + manifest 结构（**含 parent 链**）+ 冲突清单结构 + 基线归档目录。
-2. 落 N2 确定性脚本：自研代码 md5/diff、文档条目指纹 diff（8 段通用）。
-3. 落 N5 影响分析脚本：段粗筛→offset交集，**8 个已登记段全覆盖**
+1. ✅ **已完成**：建 `kb/`（被 git 跟踪）：索引 schema + manifest 结构（**含 parent 链**）+ 冲突清单结构 + 基线归档目录。
+   说明：本仓 `kb/` = `README.md` + `schema/` + `tools/`；数据目录现位于 `<WORKSPACE_ROOT>`（当前 `ENV_ROOT/kb`）。
+2. ✅ **已完成**：落 N2 确定性脚本：自研代码 md5/diff、文档条目指纹 diff（8 段通用）。
+3. ✅ **已完成**：落 N5 影响分析脚本：段粗筛→offset交集，**8 个已登记段全覆盖**
    （`0x0000/0x0100/0x0600/0x0800/0x0A00/0x0D00/0x2000/0x4000`；
    缺失段 `0x10000`/`0x8000` 按「三方皆缺/仅 RTL 有」标记，不建映射）。
-4. 新增 `simenv-analyst` / `simenv-reporter` 两个角色定义文件。
-5. 端到端演练一次「模拟变更 → N2~N16（跳过真实全量回归，用受影响子集）」，验证整条链、三道闸门与基线晋升。
-6. 补齐 `run_local.sh` 自愈 + 运行日志头落 case md5；接入 `run_tc.py` 全量回归。
+4. ✅ **已完成**：新增 `simenv-analyst` / `simenv-reporter` 两个角色定义文件。
+5. ⚠️ **部分完成**：drill 下完成「模拟变更 → N2~N16（跳过真实全量回归，用受影响子集）」并验证整条链、
+   三道闸门与 N16 拒绝路径；**real 全跑与 N16 真实晋升未完成**（N16 恒 `--dry-run`，见审计 A12）。
+6. ⚠️ **部分完成**：`run_guarded.sh` 已补自愈 + 运行日志头落 case md5（不改冻结的 `run_local.sh`）；
+   `run_tc.py` 全量回归**未接入**（审计 A15）。
 
-**第二阶段**：多基线支持（本项目为基线一，未来其它项目作为基线二）。
+**第二阶段**：⏳ **未开始** —— 多基线支持（本项目为基线一，未来其它项目作为基线二）。
 
 ---
 
 ## 11. 未决 / 待确认项（不阻塞 spec 评审，但阻塞上线）
 
 1. **`en_1hz` 周期待 RTL 方确认**：它决定 DOM 段 12ms 观测窗够不够；确认前 DOM 用例「通过」不可外推为「任意相位都通过」。
-2. **`doc/` 与 `kb/` 纳入 git 的授权**：知识库与 spec 要纳管，需有人执行 `git add`。
+2. ✅ **已解决**：`doc/` 与 `kb/` 纳入 git 的授权 —— 本仓已纳管（HEAD `dc7c69e`，13 commits；
+   `kb/` 跟踪 `README.md` + `schema/` + `tools/`，`doc/` 全量跟踪）。运行数据（`<WORKSPACE_ROOT>/{index,conflicts,baselines,runs,adjudication}`）
+   按设计不入 git，见 `workspaces/README.md`。
 3. **首版演练的「模拟变更」来源**：无真实变更时，人为改一个 RTL 文件 + 一条文档条目来演练。
 4. **回归机器清单**：`run_tc.py` 的 `s18/s19/s20/s21/s23` 是否长期可用需确认。
 5. **交付包归档责任**：KB 只存自研子集 tar（≈4MB/版）+ 全量清单；完整包（271MB）由交付方保留——需双方确认这个约定。

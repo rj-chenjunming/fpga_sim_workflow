@@ -3,8 +3,9 @@
 > **定位**：软件是独立产品，环境是插件。软件可以被指向**任意**符合本规格的环境仓；
 > 一个环境在软件侧的全部状态（索引/冲突/基线/运行记录）由软件自己管理。
 >
-> **现状**：本仓已从环境仓分离（历史按 5 个提交重放，内容逐字节一致），但**根解析拆分尚未实现**
-> ⇒ 见 §5「分步计划」。在那之前本仓**还不能独立运行**。
+> **现状**：本仓已从环境仓分离（历史按 5 个提交重放，内容逐字节一致）；**第 3 步（三根解析 + 新仓可跑）已完成**，
+> 见 §5。数据**不搬**：当前 `workspace` 指向数据实际位置（`ENV_ROOT/kb`），决定与理由见 §7。
+> 本仓因此可独立运行；第 4/5 步的状态见 §5。
 
 ---
 
@@ -17,21 +18,27 @@
 | 根 | 含义 | 谁提供 | 典型值 |
 |---|---|---|---|
 | `TOOL_ROOT` | **软件仓根**（含 `kb/tools/kb_lib.py`） | 自锚定，不需要配置 | `/home/work/chenjunming/change-impact-loop` |
-| `ENV_ROOT` | **被守卫的环境仓根**（插件） | `environments.json` / `$LOOP_ENV_ROOT` / `--env-root` | `…/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES` |
-| `WORKSPACE_ROOT` | **该环境的数据根**（软件管理） | `environments.json` 的 `workspace` / `$LOOP_WORKSPACE` | `<TOOL_ROOT>/workspaces/simenv-tcs9620-64ch` |
+| `ENV_ROOT` | **被守卫的环境仓根**（插件） | `environments.json` / `$LOOP_ENV_ROOT`（`--env-root` **未实现**，见下） | `…/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES` |
+| `WORKSPACE_ROOT` | **该环境的数据根**（软件管理） | `environments.json` 的 `workspace` / `$LOOP_WORKSPACE`（`--workspace` **未实现**） | 目标：`<TOOL_ROOT>/workspaces/simenv-tcs9620-64ch`；**当前 = `<ENV_ROOT>/kb`**（§7 决定暂不搬） |
 
 > **注册表为什么是 JSON 而不是 YAML**：`kb/tools/**` 必须**只用 stdlib**（项目既有约束：环境里没有 `pyyaml`），
 > 自己写一个 YAML 子集解析器会把「解析错 ⇒ 环境根解错」这种静默故障引进来。JSON 是 stdlib 且无歧义。
 
-**解析优先级（单一实现，不许两套）**：
-1. 命令行 `--env-root` / `--workspace`（最具体）
-2. 环境变量 `$LOOP_ENV_ROOT` / `$LOOP_WORKSPACE`
+**解析优先级（单一实现 `kb/tools/kb_lib.py::_resolve_env_root` / `_resolve_workspace_root`，不许两套）**：
+1. ~~命令行 `--env-root` / `--workspace`~~ —— **未实现项**：本仓所有入口（`loop`、`kb/tools/*`）都只读环境变量与注册表；
+   该条承诺**待补实现或删除**（审计登记：`doc/audit/parts/spec-conformance.md` A19 附近同族的路径/入口缺口）。
+2. 环境变量 `$LOOP_ENV_ROOT` / `$LOOP_WORKSPACE`（最具体）
 3. `environments.json`（选定 env id 的 `path` / `workspace`）
 4. **向后兼容回落**：若 `TOOL_ROOT` 自身含 `TESTLIB/`，则 `ENV_ROOT = TOOL_ROOT`、
    `WORKSPACE_ROOT = TOOL_ROOT/kb` —— 这正是拆仓前的布局，行为必须逐字节不变。
 5. 以上都不成立 ⇒ **fail closed**：报错并列出缺什么，**不猜路径、不用默认值兜底**。
 
-## 2 目标目录布局
+## 2 目标目录布局（与当前实际对照）
+
+> **当前实际（2026-10-19，`environments.json`）**：`WORKSPACE_ROOT = <ENV_ROOT>/kb` ——
+> `index/conflicts/baselines/runs/adjudication` 仍落在环境仓的 `kb/` 下（该目录同时保留拆仓前的
+> schema/tools 副本）；本仓 `workspaces/` 目前只有 `README.md` + `.gitkeep`。
+> 下列上半部分是**目标布局**；数据迁移（第 4 步）已决定**暂不执行**，理由见 §7。
 
 ```
 <TOOL_ROOT>/                         # 软件（本仓）
@@ -41,12 +48,17 @@
 │   ├── tools/**                     # Host 确定性程序（不上模型）
 │   └── schema/**                    # JSON Schema 契约
 ├── loop/**                          # 编排层 + 界面 + 测试 + 验收装置
-├── doc/spec/*.md, doc/agents/**      # 规格与角色定义
-└── workspaces/<env-id>/**           # 软件管理的每环境数据（见 workspaces/README.md）
+├── doc/                             # 规格 / 角色 / 证据 / 历史
+│   ├── spec/*.md                    #   契约
+│   ├── agents/**                    #   角色定义
+│   ├── evidence/**                  #   验收与演练证据（只增不改）
+│   └── history/**                   #   历史快照（只增不改）
+└── workspaces/<env-id>/**           # 【目标】软件管理的每环境数据（当前为空；见上）
 
 <ENV_ROOT>/                          # 环境（插件，只读）
 ├── RTL/ TB/ PKG/ TESTLIB/           # 冻结资产
 ├── doc/                             # 环境自带文档与工具（AGENTS.md / tools/ / skills/ / _notes/ / reference/）
+├── kb/                              # 【当前数据根】WORKSPACE_ROOT 指向这里（§7：数据不搬）
 ├── uvs.setup                        # 全局单文件 ⇒ 单槽的物理依据
 └── SIMLIB_RUN/                      # 运行产物落点（环境侧运行时状态）
 ```
@@ -67,12 +79,20 @@
 
 ## 4 测试基线（拆仓必须保持）
 
+> 数字源：`doc/STATUS.md`（唯一数字源）；单测收集数见
+> `loop/.venv/bin/python -m pytest --collect-only -q` = 70；终验六相见
+> `loop/.logs/accept/FINAL_r1.txt`（50/27/18/8/8/6 = 117）与 `doc/evidence/ACCEPTANCE_V1.md`。
+> **本会话沙箱把 `ENV_ROOT` 挂为只读**：依赖写 `ENV_ROOT` 的 `accept_v1_run.sh` /
+> `test_archive_e2.py` 无法在本会话复跑；此时单测执行是 **67 passed / 3 failed**，
+> 3 条失败均为布局/环境限制（`doc/STATUS.md` §2/§3 有逐条说明），**不是业务代码回归**。
+> 本表给的是**质量门期望**（正常运行环境应为 70/70）。
+
 | 门 | 期望 |
 |---|---|
 | `kb/tools/_selftest_gate_schema.py` | 10/10 |
 | `kb/tools/_selftest_n5_reachability.py` | 9/9 |
-| `loop` 单测 | 68/68 |
-| `loop/spikes/accept_v1_run.sh` | rc=0、六相 116 断言 |
+| `loop` 单测 | **70/70** |
+| `loop/spikes/accept_v1_run.sh` | rc=0、六相 **117 断言**（50/27/18/8/8/6） |
 | **向后兼容**（不设任何环境变量，在旧布局下跑） | 上述四条**全部不变** |
 | 冻结件复验 | 内容 md5 前后逐行一致（**不按 mtime**） |
 
@@ -81,16 +101,18 @@
 ### 第 3 步（**让新仓能跑**，不搬数据）—— ✅ **已完成**（见本仓 git log）
 
 **完成证据**（全部在**新布局**下、数据仍留在旧位置跑出来的）：
-- `LOOP_ENV_ROOT=<旧环境仓> LOOP_WORKSPACE=<旧环境仓>/kb` 下：`loop` 单测 **69/69**；
-  `loop/spikes/accept_v1_run.sh` **rc=0、六相 116 断言**；`_selftest_gate_schema` **10/10**、
+- `LOOP_ENV_ROOT=<旧环境仓> LOOP_WORKSPACE=<旧环境仓>/kb` 下：`loop` 单测 **当时 69/69**
+  （当前基线 **70/70**，见 §4）；`loop/spikes/accept_v1_run.sh` **rc=0、六相 116 断言**
+  （当前基线 **117**：50/27/18/8/8/6，见 §4）；`_selftest_gate_schema` **10/10**、
   `_selftest_n5_reachability` **9/9**。
 - **向后兼容**（旧布局回落）实测：`TOOL_ROOT` 下有 `TESTLIB/` 时 `ENV_ROOT=TOOL_ROOT`、
   `WORKSPACE_ROOT=TOOL_ROOT/kb`，三个取值逐项与拆仓前一致。
 - **fail closed** 实测：无 `$LOOP_ENV_ROOT`、注册表无可用条目、且非旧布局 ⇒ 报错并列出缺什么。
 - 顺带修掉两个**只在恢复路径触发**的真缺陷：**F-V1-06c**（快照停在已终结作业上 ⇒ 永久卡在 JOB）
-  与 **F-V1-08**（重投递复用旧 `resume_request_id` 被静默拒绝）。详见 `loop/ACCEPTANCE_V1.md` §3。
+  与 **F-V1-08**（重投递复用旧 `resume_request_id` 被静默拒绝）。详见
+  **`doc/evidence/ACCEPTANCE_V1.md` §3**（该报告已从 `loop/ACCEPTANCE_V1.md` 迁入 `doc/evidence/`）。
 
-**仍未做**：第 4 步（把数据搬进 `workspaces/`）与第 5 步（双仓独立复验）。
+**仍未做**：第 4 步（把数据搬进 `workspaces/`）——**已决定暂不执行**（§7）；第 5 步（双仓独立复验）——**待做**。
 
 #### 第 3 步原始计划（供对照）
 改动：
@@ -109,7 +131,7 @@
 **验收**：用 `LOOP_ENV_ROOT=<旧环境仓> LOOP_WORKSPACE=<旧环境仓>/kb` 在新仓跑满 §4 六条门
 —— 此时**一行数据都不用搬**（旧数据根恰好就是旧 `kb/`）。
 
-### 第 4 步（数据迁到工作区）
+### 第 4 步（数据迁到工作区）—— ⏸ **暂不执行**（决定与理由见 §7）
 把该环境的数据复制（**不是移动**）到 `workspaces/simenv-tcs9620-64ch/`：
 `kb/{index,conflicts,baselines,runs,adjudication}` + `kb/FIXTURE_IDENTITY.md` + `doc/spec/evidence/**`
 （路径映射：`kb/runs/<id>` → `workspaces/<env>/runs/<id>`）。
@@ -118,7 +140,7 @@
 （路径变了、内容没变 —— 这是"路径迁移"，不是"篡改证据"）。
 **不动**环境仓里的任何一份原有内容（归档只增不改），只新增一份指针说明。
 
-### 第 5 步（双仓复验）
+### 第 5 步（双仓复验）—— ⏳ **待做**
 由**独立验证者**在两个布局下各跑一遍 §4 六条门 + 冻结件复验，重点是**向后兼容**那一行。
 不通过就不算拆仓完成。
 
@@ -139,20 +161,22 @@
 
 - ✅ `[已决定：第 4 步暂不执行]` **数据不搬，`workspace` 指向数据的实际位置**（本环境 = 环境仓的 `kb/`）。
   理由三条：① 功能上不需要 —— `WORKSPACE_ROOT` 可指向任意位置，已在新布局下端到端验证
-  （69/69 + 116/116）；② 要搬的恰好是**不可再生**的部分（`baselines/v0` 基线快照、
+  （决定时 69/69 + 116/116；当前基线 70/70 + 117/117，见 §4）；② 要搬的恰好是**不可再生**的部分（`baselines/v0` 基线快照、
   `runs/RUN-20261015-120626` 真机全跑见证、演练证据），搬动只增加"路径迁移"的审计成本
   （已归档的 `frozen_*.md5` 记的是旧路径）、不增加任何能力；③ 把同一环境的数据**劈成两半**
   （历史在旧仓、新增在新仓）比两种极端都糟。
   **什么时候才值得搬**：环境仓要交出去 / 归档 / 重写历史时；或要同时管多个环境、
   希望数据集中备份时（那时应另建**数据仓**，而不是塞进软件仓）。
-- ⚠️ `[已修]` 注册表的 `workspace` 曾写成软件仓内的 `workspaces/<id>`（当时是空目录），
+- ✅ `[已修]` 注册表的 `workspace` 曾写成软件仓内的 `workspaces/<id>`（当时是空目录），
   零配置运行会去找空目录，症状表现为"索引缺口 / 冲突清单缺失"这类**难懂**的失败。
-  现已指向数据实际位置，并新增 `check_workspace()` / `/api/health.workspace_missing`
-  把"数据找不到"与"数据坏了"区分开。
-- `[风险]` `workspaces/*/runs/**` 与 `baselines/**` 不入 git ⇒ 靠目录 444 只读 + 外部 md5 账本保完整性，
-  需要一条"数据根备份"的作业（当前没有）。
-- `[风险]` 多个环境共享一个软件实例时的并发：单槽是按 `uvs.setup` 路径互斥的，
-  **跨环境**默认可以并行（各自不同的 `uvs.setup`）—— 但当前 `run_guarded.sh` 的锁
-  是否按 `ENV_ROOT` 分区，需要在第 3 步实现时明确并自证。
-- `[待核]` `kb/README.md` 里"本目录只新增、不改已定稿基线资产"的表述需要按新布局重写
-  （`kb/` 现在是纯软件目录，被守卫的对象在 `ENV_ROOT`）。
+  现 `environments.json` 的 `workspace` 指向 `<ENV_ROOT>/kb`，并新增 `check_workspace()` /
+  `/api/health.workspace_missing` 把"数据找不到"与"数据坏了"区分开。
+- `[风险]` `<WORKSPACE_ROOT>/runs/**` 与 `<WORKSPACE_ROOT>/baselines/**` 不入 git
+  ⇒ 靠目录 444 只读 + 外部 md5 账本保完整性，需要一条"数据根备份"的作业（当前没有）。
+- ⚠ `[部分自证]` 多个环境共享一个软件实例时的并发：`run_guarded.sh` 的**包装锁**按 `ENV_ROOT` 分区
+  （`$ROOT/SIMLIB_RUN/.run_guarded.lock` 与 `$ROOT/.compile_only.lock`，`ROOT=ENV_ROOT`）；
+  但**编排层单槽** `loop/host/admission.py` 的 `slot.lock` 落在 `TOOL_ROOT/loop/state/`
+  （`loop/host/paths.py:78,85`），是**软件实例级全局锁** ⇒ 多环境共享一个软件实例时仍串行。
+  该场景未测；若要真正按环境并行，需把 `STATE_DIR` 或槽键按 `ENV_ID` 分区（审计待办）。
+- ✅ `[已修]` `kb/README.md` 已按三根重写：本仓 `kb/` = `README.md` + `schema/` + `tools/`；
+  运行数据写作 `<WORKSPACE_ROOT>/{index,conflicts,baselines,runs,adjudication}`（当前 = `ENV_ROOT/kb/…`）。

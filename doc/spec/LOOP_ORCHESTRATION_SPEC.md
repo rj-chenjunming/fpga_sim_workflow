@@ -1,6 +1,6 @@
 # 变更影响闭环 · 编排层规格书（ORCHESTRATION SPEC）
 
-> **状态**：P0 设计契约 v0.1（草案，实现前评审）
+> **状态**：v0.1 · 已实现（P0）；实现审计见 `doc/audit/AUDIT-20261019-spec-conformance.md`。
 > **上游**：`doc/spec/CHANGE_IMPACT_LOOP_SPEC.md` v0.2（业务与不变量 I1–I8、16 节点 N0–N16、三道人工闸门）。
 > **本件定位**：上游是**业务契约**，本件是它的**机制契约**——把 N0–N16 落到具体 owner
 > （Host 确定性程序 / ModelRequest / TriggerFlow / 人工闸门 / 外部容量），并定死
@@ -68,7 +68,7 @@
 | I1 | 差异条目无未决项才可进入修订 | 闸门1 pause chunk + `kb/tools/gate.py` | `gates.py::gate1` 放行前读 gate_state，未决>0 则拒绝 resume |
 | I2 | 受影响用例态 ∈ {未改/已修订待验/已验证通过/已退回}；有「待验」不得称跑通 | N16 前置 + `kb/tools/case_state.py` | N16 读 `case_states.json`，存在「已修订待验」⇒ rc=3 |
 | I3 | 跑通 = 编译 rc=0 ∧ 静态卡点C ∧ 全跑有完整 UVM 汇总 ∧ **两套口径均为 0** ∧ 观测点印记计数三向一致 | 结果对账 chunk | **双计数并列**：口径一（`*E` 文本计数）与口径二（UVM 汇总）分别取、分别存、**永不互相替代** |
-| I4 | 冲突清单未清零不发版 | 闸门2/3 + N16 | N16 读 `kb/conflicts/conflicts.json`，任一 `blocks_release=true` ⇒ 拒绝 |
+| I4 | 冲突清单未清零不发版 | 闸门2/3 + N16 | N16 读 `<WORKSPACE_ROOT>/conflicts/conflicts.json`，任一 `blocks_release=true` ⇒ 拒绝 |
 | I5 | 每步证据带身份，归档只增不改 | `kb/tools/n1_snapshot.py` + RecordStore | manifest/anchor 冻结，快照留存 |
 | I6 | 三道闸门都必须显式通过，模型不得越过 | 闸门 pause chunk | `actor_kind` 必须为 `human`；模型/演练 actor 在 `require-signed` 下被拒（F-GATE-01 已实现） |
 | I7 | 返工有界 | `main_flow` 显式回边 | N6↔N8 回边计数 `n6_n8_cycles`，超限升级 N13；N16 二次校验（F-I7-01 已实现） |
@@ -307,20 +307,44 @@ n9_sim chunk                       park chunk                      job_runner �
 
 ## 11. P0 验收判据（可判定）
 
-夹具：归档运行目录 `kb/runs/RUN-20261015-120626/**`（含双计数分歧、死任务、印记 1/1/1、
-闸门拒绝、篡改检测、staging 残留）——**原因**：真实全跑单用例 ≈19 min，修订后可达 22.8 h，
-不能作为交互开发的循环。夹具必须标注 `DRILL FIXTURE`。
+夹具：归档运行目录 `<WORKSPACE_ROOT>/runs/RUN-20261015-120626/**`（含双计数分歧、死任务、印记 1/1/1、
+闸门拒绝、篡改检测、staging 残留）。当前 `WORKSPACE_ROOT = <ENV_ROOT>/kb`（`environments.json`）。
+**原因**：真实全跑单用例 ≈19 min，修订后可达 22.8 h，不能作为交互开发的循环。夹具必须标注 `DRILL FIXTURE`。
 
-- [ ] A1 图可跑：`N0→N4` 停在闸门1，pending interrupt 可被程序读到（非轮询日志推断）
-- [ ] A2 闸门材料并列双计数，且两者值与夹具产物**逐字一致**（命令复制，禁手算）
+- [x] A1 图可跑：`N0→N4` 停在闸门1，pending interrupt 可被程序读到（非轮询日志推断）
+      —— `tests/test_flow.py::test_reaches_gate1_with_readable_interrupt`；验收相 1。
+- [x] A2 闸门材料并列双计数，且两者值与夹具产物**逐字一致**（命令复制，禁手算）
+      —— `tests/test_evidence.py::test_dual_counts_diverge_and_both_are_recorded`；验收相 2。
 - [ ] A3 未决条目 >0 时 resume 被拒（I1），拒绝原因可在界面读到
-- [ ] A4 `N9` 形状正确：执行在作业期间处于 interrupt 而非 `running`，`save()` 成功且 `load()` 不 fail-closed
-- [ ] A5 崩溃重附着：杀掉进程后 load，重新附着到在跑作业；作业已死则记 dead job
-- [ ] A6 单槽：并发两次 N9 申请，第二个排队而非并行；锁 owner 与 `format_version` 可见
-- [ ] A7 闸门2/3 的 `actor_kind` 门禁：`rehearsal`/模型 actor 在 `require-signed` 下被拒（对抗用例）
-- [ ] A8 N16 在**真实** `kb/baselines/` 上拒绝（rc=3）且**零副作用**；v0 五锚点与 12 文件不变
-- [ ] A9 进度流只出现白名单 `kind`，无 raw parser 路径
-- [ ] A10 全程不修改 `RTL/`、`TB/`、`PKG/`、`TESTLIB/`、`kb/baselines/`（冻结见证：`MODIFIED=0 / DELETED=0`）
+      —— **P0 未实现**：`gate1` 不读未决条目（审计 A1）；仅校验“已签 + human”。
+- [x] A4 `N9` 形状正确：执行在作业期间处于 interrupt 而非 `running`，`save()` 成功且 `load()` 不 fail-closed
+      —— `tests/test_flow.py::test_execution_parks_while_long_job_runs_and_survives_restart`；验收相 2/4。
+- [x] A5 崩溃重附着：杀掉进程后 load，重新附着到在跑作业；作业已死则记 dead job
+      —— `tests/test_flow.py::test_restore_redelivers_terminal_job_when_snapshot_is_stale` /
+      `test_crash_recovery_delivers_dead_job_as_dead_not_done`；验收相 4b/5。
+- [x] A6 单槽：并发两次 N9 申请，第二个排队而非并行；锁 owner 与 `format_version` 可见
+      —— `tests/test_admission_and_jobs.py::test_slot_is_single_and_second_waits`；
+      验收相 4b（跨重启锁不丢）。**注**：整链的排队唤醒缺口见审计 C2（准入层已排队，执行层无唤醒）。
+- [x] A7 闸门2/3 的 `actor_kind` 门禁：`rehearsal`/模型 actor 在 `require-signed` 下被拒（对抗用例）
+      —— `tests/test_flow.py::test_gate_rejects_non_human_actor`；验收相 1。
+- [x] A8 N16 在**真实** `<WORKSPACE_ROOT>/baselines/` 上拒绝（rc=3）且**零副作用**；v0 五锚点与 12 文件不变
+      —— `tests/test_flow.py::test_n16_on_real_baselines_refuses_with_zero_side_effects`；验收相 3。
+- [x] A9 进度流只出现白名单 `kind`，无 raw parser 路径
+      —— `tests/test_projection_and_frozen.py::test_run_view_events_are_whitelisted_only`；
+      白名单实际比 §9 宽（多 `run_started` / `job_finished` / `admission_*` 等），见审计 B1。
+- [x] A10 全程不修改 `RTL/`、`TB/`、`PKG/`、`TESTLIB/`、`<WORKSPACE_ROOT>/baselines/`（冻结见证：`MODIFIED=0 / DELETED=0`）
+      —— `tests/test_projection_and_frozen.py::test_frozen_witness_before_after_drill_run`；验收相 2/3/5。
+      **注**：该测试假设 `WORKSPACE_ROOT` 位于 `ENV_ROOT` 之内（`path.relative_to(P.REPO_ROOT)`）；
+      工作区指向外部目录时该断言不成立（审计 I7；本会话 `ENV_ROOT` 只读且工作区在外部 ⇒ 未复跑）。
+
+### 11.1 实现审计（2026-10-19）
+
+P0 实现与本文契约的逐条对照见 **`doc/audit/AUDIT-20261019-spec-conformance.md`** 及附录
+`doc/audit/parts/spec-conformance.md`（49 条：阻断 14 / 重要 23 / 轻微 8 / 待核 4）。
+本节勾选状态以该审计为准；`[ ]` 表示 P0 未实现，或与 §9 白名单等条款存在明确偏差。
+数字以 `doc/STATUS.md`（唯一数字源）为准：单测收集 70；
+终验历史记录 117 断言（`loop/.logs/accept/FINAL_r1.txt` 六相 50/27/18/8/8/6）。
+本会话 `ENV_ROOT` 只读 ⇒ `accept_v1_run.sh` 未复跑（环境限制，非代码缺陷）。
 
 ---
 

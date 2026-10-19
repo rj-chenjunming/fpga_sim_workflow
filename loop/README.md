@@ -19,8 +19,8 @@
 
 - 不是第二个状态机。**状态权威 = TriggerFlow 执行 + `kb/tools/gate.py`**；界面只是只读投影 + 传输。
 - 不重新实现业务判定。N2/N5/N16 一律调用既有 `kb/tools/*.py`。
-- 不写冻结资产。`RTL/ TB/ PKG/ TESTLIB/ doc/ kb/baselines kb/index kb/conflicts kb/tools` 全部只读
-  （`host/paths.FROZEN_FOR_WRITE`）。
+- 不写冻结资产。`ENV_ROOT/{RTL,TB,PKG,TESTLIB,doc}`、`<WORKSPACE_ROOT>/{baselines,index,conflicts,runs}`、
+  `kb/{tools,schema}` 全部只读（`host/paths.FROZEN_FOR_WRITE` / 各写者守卫）。
 
 ---
 
@@ -71,30 +71,35 @@ cd loop && .venv/bin/python -m pytest -q      # 70 项，约 33 s
 ```
 loop/
   run.sh                    启动（uvicorn）
-  app.py 相关入口见 services/api.py:main
+  requirements.txt          运行/测试依赖（agently 钉 4.1.4.8）
+  pytest.ini                测试配置
+  SETTINGS.yaml             provider 非机密配置（密钥不落仓库）
   host/                     host 侧 owner（不碰业务判定）
-    paths.py                仓库根锚定（找 kb/tools/kb_lib.py）+ 冻结守卫
+    paths.py                三根锚定（复用 kb_lib 解析器）+ 冻结守卫
     admission.py            单槽准入 / 队列 / 审计（N9-3 修复：锁带 format_version）
     job_runner.py           长任务提交 / 看护 / 重附着 / 取消
     progress.py             稳定应用事件投影（白名单 kind）
     evidence.py             两套口径与观测印记的**抽取器**（数字全由文件数出）
     gate_authority.py       闸门枚举的唯一来源（取自 kb_lib，本层不手抄）
+    model_provider.py       provider 解析/注入（env → SETTINGS.yaml → 宿主 DSH）
   workflows/
     context.py              一次运行的 host 依赖（经 runtime_resources 注入）
     main_flow.py            稳定拓扑 N0–N16 + RunManager（生命周期/恢复/投影）
     chunks/host_steps.py    N0 N1 N2 N5 N7 N16（调 kb 工具）
-    chunks/model_steps.py   N3 N6 N8 N10 N11 N12（**当前为确定性替身**，见 §5）
+    chunks/model_steps.py   N3 N6 N8 N10 N11 N12（真 ModelRequest + Host 校验；见 §5）
     chunks/long_jobs.py     N9 提交+停放 / N15 回归
     chunks/gates.py         三道闸门（pause/resume + 显式分叉）
+  prompts/                  节点 request 契约（loop_nodes.yaml + node_schemas.py）
   services/
     contracts.py            对外投影 + 六项信任缺口的服务端判定
     api.py                  FastAPI（唯一入口）
   web/index.html            单文件前端（零外链）
   tests/                    70 项
   spikes/                   `accept_v1.py`（带断言的 v1 终验）+ `accept_v1_run.sh`（单次调用内起停 4 代服务）
-  ACCEPTANCE_V1.md          v1 真实 HTTP 终验报告（116/116，3 次真重启）
   state/                    槽/队列/事件/快照（可删）
 ```
+
+真实终验报告在 `doc/evidence/ACCEPTANCE_V1.md`（117/117，3 次真重启；已移出本目录）。
 
 ---
 
@@ -155,7 +160,7 @@ I6（非 human actor）与 I4（冲突未清零时选全量/子集回归）都�
 用户的一次误选就会消耗掉中断并把执行打成 `failed`（实测 `self_resume_limit_reached`），
 **闸门从此不可用**。现在误选得到 403/400，闸门保持待决策。
 
-### 4.5 v1 终验抓出的 7 个缺陷（都已修，见 `ACCEPTANCE_V1.md`）
+### 4.5 v1 终验抓出的 9 个缺陷（都已修，见 `doc/evidence/ACCEPTANCE_V1.md`）
 
 这份验收的价值主要不在"全绿"，而在它**把只靠读代码看不出的问题逼出来了**。逐条要点：
 
@@ -167,7 +172,9 @@ I6（非 human actor）与 I4（冲突未清零时选全量/子集回归）都�
 | F-V1-04 | `auto_close=False` 关掉了唯一会置 CLOSED 的机制 ⇒ **`finished` 是死代码**，HALT/N16 后永远 `running`，重启还会反复恢复僵尸 run | `reached_terminal()` + 显式 `async_close` |
 | F-V1-05 | `_persist_finish` 写副本、`poll()` 留原记录 ⇒ **崩溃恢复把死任务当正常完成**投递，run 带 `koutou1=null` 走到 G2 | 相位一律回读 `JobRunner.poll()` |
 | F-V1-06 | 落快照靠"某次 `async_sync` 恰好看到 waiting_gate" ⇒ 盘上只剩上一份 ⇒ 重启**回退到已签闸门** | 0.5 s 快照节拍 + 落后于账本时显式失败 |
+| F-V1-06c | 快照停在**已终结作业**中断上 ⇒ run 永久卡在 `JOB:`（补投递已发生在落盘之前） | `_stale_job_interrupts()` 按 `JobRunner.poll()` 权威相位强制重投递 |
 | F-V1-07 | 投影**不带 `error`** ⇒ 失败的 run 在界面上只剩一个 "failed" | 投影补 `error`/`notes`，前端醒目渲染 |
+| F-V1-08 | 重投递复用旧 `resume_request_id` 被 TriggerFlow **静默拒绝** ⇒ run 永久卡住 | 换新 id + 投递后核验中断已被消费 |
 
 还有一条同类的字段名与内容不符：`decision` 响应的 `gate_state` 原先装的是子进程调用记录
 （`cmd`/`rc`/`stdout_tail`）⇒ 已拆成 `gate_state`（权威态）/ `gate_tool`（调用记录）/ `gates_authority`。
@@ -189,14 +196,14 @@ I6（非 human actor）与 I4（冲突未清零时选全量/子集回归）都�
 | N10 对账 | **数字与分桶归 Host**（`host/evidence.py`，确定性、零丢失：夹具上 1622/1622 地址、1687/1687 条目），**三分类归模型**（24 个桶逐桶判定）。Host 校验覆盖性/枚举/依据，并交叉核对「本轮引入」是否真落在修订点上（不重叠的断言记为冲突且不采信）。夹具实测：模型把 24/24 桶判为既有缺陷 ⇒ 1687 条目，Host 冲突 0。 |
 | real 模式 | N9 已改为经 `kb/tools/run_guarded.sh --mode full`（身份头 + 归档 + 自愈 + 串行锁），但**未在真机跑过一次完整全跑**（单用例 ≈19 min，修订后可达 22.8 h）；归档腿本身已用 `uvlan` 桩在真实代码路径上验证。 |
 | N15 回归 | drill 下不真跑；`for_each(concurrency=1)` 已就位，跨机 `run_tc.py` 未接。 |
-| N16 晋升 | 本层**恒为 `--dry-run`**，绝不写 `kb/baselines/`。 |
+| N16 晋升 | 本层**恒为 `--dry-run`**，绝不写 `<WORKSPACE_ROOT>/baselines/`。 |
 | F-N16-04 | 拒绝后残留 `staged/` 仍在（界面作为告警呈现，未清理）。 |
 | E-2 | **已修**：`run_guarded.sh` 归档腿原只 glob `$ROOT/SIMLIB_RUN/log`，与 `compile-only`/`full` 实际落点 `$EVIDENCE_DIR` 不符 ⇒ 必空；且这两个模式没启动轮询。现候选路径覆盖两处、两分支都轮询、归档件 444 只读、加稳定性判定防半截件堆积、`_guard.log` 不自我归档；N9 真实路径也改为走 `run_guarded.sh --mode full`。归档的演练轮**不回填**（它是冻结见证）。 |
 | 单机单用户 | 无鉴权、无多用户；`actor` 只是自报字符串（**权威凭据是账本里的 `human_signed`**）。 |
 | 快照竞态窗口 | 0.5 s 节拍把"重启回退到已签闸门"的概率压到很低，但**未消除**：窗口内被杀 ⇒ 恢复会显式失败（见 §4.6），需人工重开一轮。 |
-| 单槽 `holder_alive` 语义 | 重启后 `slot.holder.owner_pid` 指向**已死的 uvicorn**，于是 `holder_alive=false`，而作业其实还活着（`phase=running`）。本轮实测未见别的 run 借此抢占，但该字段应改判"**作业**是否存活"而不是"**进程**是否存活"，待办。 |
-| I3 判绿 | 口径一 = 1687 ≠ 0 是**既有缺陷**（不是本轮引入）。三选项/推荐/成本见 `kb/adjudication/I3_dual_count_dispute.md`，**需人拍板**；在拍板前 `I3_KOUTOU1_NONZERO` 维持 blocker。 |
-| 冲突清零 | 72 条全 `blocks_release=true` ⇒ 晋升永久阻断。分组、批裁判据、清零路径见 `kb/adjudication/C_conflicts_triage.md`，**需人拍板**。 |
+| 单槽 `holder_alive` 语义 | 当前由 `host/admission.py::_owner_alive` 按锁里的 `owner_pid` + `/proc` starttime 判**进程**存活；重启后 `owner_pid` 指向已死的 uvicorn，于是 `holder_alive=false`，而作业其实还活着（`phase=running`）。本轮实测未发现别的 run 能借此抢占；该字段应改判“**作业**是否存活”而非“进程是否存活”，**待办**。 |
+| I3 判绿 | 口径一 = 1687 ≠ 0 是**既有缺陷**（不是本轮引入）。三选项/推荐/成本见 `<WORKSPACE_ROOT>/adjudication/I3_dual_count_dispute.md`，**需人拍板**；在拍板前 `I3_KOUTOU1_NONZERO` 维持 blocker。 |
+| 冲突清零 | 72 条全 `blocks_release=true` ⇒ 晋升永久阻断。分组、批裁判据、清零路径见 `<WORKSPACE_ROOT>/adjudication/C_conflicts_triage.md`，**需人拍板**。 |
 
 ---
 
@@ -235,17 +242,18 @@ cd loop
 .venv/bin/python spikes/probe_provider.py        # 端点连通 + 最小请求
 LOOP_LLM_MODE=live .venv/bin/python spikes/verify_live_nodes.py   # 5 个语义节点逐个 live
 LOOP_LLM_MODE=live .venv/bin/python spikes/verify_live_n10.py     # N10 分桶分类 live（Host 抽数+模型分类）
-.venv/bin/python -m pytest -q                    # 55 项，离线（替身）
+.venv/bin/python -m pytest -q                    # 70 项，离线（替身）
 ```
 
 ## 6 drill 夹具
 
-`kb/runs/RUN-20261015-120626/**`（**只读**）。选它是因为一个目录同时覆盖：
+`<WORKSPACE_ROOT>/runs/RUN-20261015-120626/**`（**只读**；当前 `WORKSPACE_ROOT = ENV_ROOT/kb`）。选它是因为一个目录同时覆盖：
 双计数分歧（口径一 1687 / 口径二 `UVM_ERROR=0`）、死任务、印记三向一致、
 闸门拒绝、篡改检测、staging 残留 —— 而真实全跑不能作为交互开发循环。
 
-drill 与 real 的差别**只在节点数据来源**，运行目录两者都是 `kb/runs/<run_id>`
-（硬约束：`kb/tools/gate.py` 经 `kb_lib.run_dir` 唯一口径解析路径，无环境变量可覆盖）。
+drill 与 real 的差别**只在节点数据来源**，运行目录两者都是 `<WORKSPACE_ROOT>/runs/<run_id>`
+（硬约束：`kb/tools/gate.py` 经 `kb_lib.run_dir` 唯一口径解析路径；根由
+`$LOOP_ENV_ROOT` / `$LOOP_WORKSPACE` 或 `environments.json` 注册表决定，见 `doc/spec/ENV_PLUGIN_SPEC.md` §1）。
 
 drill 运行目录带 `.loop_drill` 标记，测试据此清理**自己创建的**目录，绝不触碰归档。
 
@@ -256,7 +264,7 @@ drill 运行目录带 `.loop_drill` 标记，测试据此清理**自己创建的
 
 ## 7 已验证什么
 
-`tests/` 70 项 + 一次**真实 HTTP 终验**（117 断言）（`ACCEPTANCE_V1.md`：116/116 断言，4 代服务进程、
+`tests/` 70 项 + 一次**真实 HTTP 终验**（117 断言）（`doc/evidence/ACCEPTANCE_V1.md`：117/117 断言，4 代服务进程、
 3 次真重启，含"重附着到仍在跑的长任务""跨重启不丢单槽"）。关键断言：
 
 - 口径一与 `grep -c '\*E'` **独立对账一致**；两套口径并列、`both_zero=false` 时**不得判绿**；
@@ -266,8 +274,8 @@ drill 运行目录带 `.loop_drill` 标记，测试据此清理**自己创建的
   **重新附着到同一作业**；
 - 死任务与取消**都走失败**，且都**释放单槽**；
 - 非 human actor、非法枚举、I4 阻断三类拒绝**不消耗中断**，闸门仍可用；
-- N16 在真实 `kb/baselines/` 上 **rc=3 且零副作用**（v0 与目录清单不变）；
-- 冻结见证：完整 drill 运行前后 `TESTLIB/`、`kb/baselines/v0/`、`doc/AGENTS.md`、
+- N16 在真实 `<WORKSPACE_ROOT>/baselines/` 上 **rc=3 且零副作用**（v0 与目录清单不变）；
+- 冻结见证：完整 drill 运行前后 `TESTLIB/`、`<WORKSPACE_ROOT>/baselines/v0/`、`doc/AGENTS.md`、
   `kb/tools/gate.py` 的**内容 md5 清单逐行不变**（不按 mtime 判）。
 
 ## 8 界面不做的事
@@ -275,4 +283,6 @@ drill 运行目录带 `.loop_drill` 标记，测试据此清理**自己创建的
 - 不判绿/判红（一切 `passed` / `can` / `blockers` 由服务端算）。
 - 不编辑 `TESTLIB/`（v1 写权仍在作者角色 + 沙箱）。
 - 不改基线、不改冲突清单。
-- 只有两个写动作：**提交闸门决策**、**取消作业**。
+- 只有两个**业务**写动作：**提交闸门决策**、**取消作业**。
+  > 实现另暴露 `POST /api/runs`（建运行目录 + `gate.py init`）—— spec §10 只列两个写动作，
+  > 属“代码有、spec 未登记”项（审计 B2，见 `doc/audit/parts/spec-conformance.md`）。

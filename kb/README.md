@@ -1,35 +1,49 @@
 # `kb/` —— FPGA 变更影响闭环知识库（Host 确定性侧）
 
 > **权威设计契约**：`doc/spec/CHANGE_IMPACT_LOOP_SPEC.md` v0.2（16 节点 N0~N16、三道人工闸门）。
-> **交接说明**：`CHECKPOINT-20261015-1123.md` §9 第 3 条（建 `kb/`）。
-> **本目录只新增、不改已定稿基线资产**（`RTL/`、`TB/`、`PKG/`、`TESTLIB/`、`doc/spec/`、
-> `doc/AGENTS.md`、`doc/skills/`、`doc/tools/`、`doc/agents/sim-env-*.md`、`doc/_notes/`、`doc/reference/`）。
+> **交接说明**：`CHECKPOINT-20261015-1123.md` §9 第 3 条（建 `kb/`）——该文件是 **ENV_ROOT 历史件**
+> （`<ENV_ROOT>/CHECKPOINT-20261015-1123.md`），不在本仓；这里只作历史引用。
+> **三根**：`TOOL_ROOT`=本仓；`ENV_ROOT`=被守卫的环境仓；`WORKSPACE_ROOT`=该环境的数据根
+> （当前 = `<ENV_ROOT>/kb`；目标 = `workspaces/<env-id>/`）。定义见 `doc/spec/ENV_PLUGIN_SPEC.md` §1。
+> **写权**：本仓 `kb/` 只放契约与 Host 程序；运行数据由 Host 工具写到 `<WORKSPACE_ROOT>`。
+> 环境的 `RTL/ TB/ PKG/ TESTLIB/` 与 `doc/` 只读（见 §6 红线）。
 >
 > 本文件是 `kb/` 内部所有脚本与角色共用的**接口契约**。任何脚本不得私自定义指纹口径、
 > 序列化方式或字段名 —— 口径一旦分裂，"身份可 join"就不成立。
 
 ---
 
-## 1 目录布局（谁生成、谁只读）
+## 1 目录布局（本仓软件目录 vs 数据根）
+
+拆仓后 `kb/` 分成两半：**本仓 `kb/` 只放契约与 Host 程序（git 跟踪）**；
+**运行数据在 `WORKSPACE_ROOT`**（不入 git；当前 = `ENV_ROOT/kb`，目标 = `workspaces/<env-id>/`）。
 
 ```
-kb/
+<TOOL_ROOT>/kb/                     # 本仓（软件；git 跟踪）
 ├── README.md                      # 本文件（契约；Lead 维护）
-├── schema/                        # 【契约】JSON Schema draft-07，可执行校验
+├── schema/                        # 【契约】JSON Schema draft-07，可执行校验（共 8 个）
 │   ├── manifest.schema.json       #   manifest（含 parent 链）
 │   ├── index.schema.json          #   段索引 / 寄存器条目 / 用例访问站点 / 段↔RTL / 用例元信息
-│   └── conflicts.schema.json      #   C1—C72 矛盾 / 访问路径限制 / D1—D20 待确认
-├── tools/                         # 【Host 确定性程序，不上模型】
-│   ├── kb_lib.py                  #   公共库：路径/指纹/原子写/JSON-Schema 子集校验/闸门
-│   ├── n1_doc_entries.py          #   文档条目抽取 → regmap（N2/N5 的文档侧锚）
-│   ├── n1_conflicts.py            #   06 号笔记 → conflicts / restrictions / pending
-│   ├── n1_case_scan.py            #   TESTLIB 静态访问扫描 → case_access / cases
-│   ├── n1_snapshot.py             #   N0/N1：自研代码 tar + 全量清单 md5 + manifest
-│   ├── n2_diff.py                 #   N2：纯确定性差异对比（三路）
-│   ├── n5_impact.py               #   N5：段粗筛 → offset/位域交集 → 必改/待查
-│   ├── gate.py                    #   三道人工闸门的持久化状态机（I6）
-│   ├── n16_promote.py             #   N16：人触发 + Host 原子晋升（七件套）
-│   └── run_guarded.sh             #   卡点B/D 的安全包装（不改冻结的 run_local.sh）
+│   ├── conflicts.schema.json      #   C1—C72 矛盾 / 访问路径限制 / D1—D20 待确认
+│   ├── gate_state.schema.json     #   闸门状态 + anchor（I6 的权威形状）
+│   ├── case_states.schema.json    #   用例态台账（I2）
+│   ├── n2_diff.schema.json        #   N2 原始差异清单
+│   ├── n5_impact.schema.json      #   N5 必改/待查清单
+│   └── baselines_index.schema.json#   基线索引（parent 链）
+└── tools/                         # 【Host 确定性程序，不上模型】
+    ├── kb_lib.py                  #   公共库：三根解析/指纹/原子写/Schema 子集校验/闸门
+    ├── n1_doc_entries.py          #   文档条目抽取 → regmap（N2/N5 的文档侧锚）
+    ├── n1_conflicts.py            #   06 号笔记 → conflicts / restrictions / pending
+    ├── n1_case_scan.py            #   TESTLIB 静态访问扫描 → case_access / cases
+    ├── n1_snapshot.py             #   N0/N1：自研代码 tar + 全量清单 md5 + manifest
+    ├── n2_diff.py                 #   N2：纯确定性差异对比（三路）
+    ├── n5_impact.py               #   N5：段粗筛 → offset/位域交集 → 必改/待查
+    ├── case_state.py              #   用例态台账（I2；N6~N10 责任方写入）
+    ├── gate.py                    #   三道人工闸门的持久化状态机（I6）
+    ├── n16_promote.py             #   N16：人触发 + Host 原子晋升（七件套）
+    └── run_guarded.sh             #   卡点B/D 的安全包装（不改冻结的 run_local.sh）
+
+<WORKSPACE_ROOT>/                   # 数据根（由 environments.json / $LOOP_WORKSPACE 解析）
 ├── index/                         # 【生成物】机器可读索引（第一键=段，第二键=RTL 文件）
 │   ├── segments.json              #   10 条：8 段全覆盖 + 0x8000/0x10000 只打标记
 │   ├── regmap.json / regmap.csv   #   文档寄存器条目（段+offset 去重，双来源标注）
@@ -49,13 +63,17 @@ kb/
 └── runs/                          # 【每轮一目录】一个变更一个 run_id
     └── RUN-YYYYMMDD-HHMMSS/
         ├── gates.json             #   三道闸门状态（人签名才 human_signed=true）
-        ├── n1_manifest_new.json    #   N1 摄取出的新版 manifest 草案
-        ├── n2_diff.json / .md      #   N2 原始差异清单
-        ├── n3_digest.md            #   N3 分析师差异语义摘要（模型产物）
-        ├── n5_impact.json / .md    #   N5 必改/待查清单
-        ├── n12_report.md           #   N12 报告员评估报告（模型产物）
-        └── evidence/               #   编译/运行/复核证据（按 run_id 归档，只增不改）
+        ├── n1_manifest_new.json   #   N1 摄取出的新版 manifest 草案
+        ├── n2_diff.json / .md     #   N2 原始差异清单
+        ├── n3_digest.md           #   N3 分析师差异语义摘要（模型产物）
+        ├── n5_impact.json / .md   #   N5 必改/待查清单
+        ├── n12_report.md          #   N12 报告员评估报告（模型产物）
+        └── evidence/              #   编译/运行/复核证据（按 run_id 归档，只增不改）
 ```
+
+> **当前实际（2026-10-19，`environments.json`）**：`WORKSPACE_ROOT = <ENV_ROOT>/kb`，
+> 因此上面 `<WORKSPACE_ROOT>/…` 实际落在 `ENV_ROOT/kb/…`；本仓 `kb/` 只有 README + schema + tools。
+> 数据不搬的决定见 `doc/spec/ENV_PLUGIN_SPEC.md` §7。
 
 **写权**（与 `doc/AGENTS.md` §3 一致，外加 Host 工具）：
 
@@ -63,16 +81,16 @@ kb/
 |---|---|
 | `kb/schema/`、`kb/README.md` | Lead |
 | `kb/tools/kb_lib.py` | Lead（契约代码，改动必须过评审） |
-| `kb/tools/n1_*.py`、`kb/index/`、`kb/conflicts/` | 对应生成脚本（Host） |
-| `kb/tools/n2_diff.py` / `n5_impact.py` / `gate.py` / `n16_promote.py` | Host 工具 owner |
-| `kb/baselines/**` | `n16_promote.py`（原子晋升）或 Lead 的 v0 建档 |
-| `kb/runs/<run_id>/**` | 该轮 run_id 的 owner（同一 run 内按文件切分，不并发写同一文件） |
-| `kb/adjudication/**` | 分析角色（一次一个文件）；**只写"请求人裁决的材料"，不写裁决结论** |
+| `kb/tools/n1_*.py`、`<WORKSPACE_ROOT>/index/`、`<WORKSPACE_ROOT>/conflicts/` | 对应生成脚本（Host） |
+| `kb/tools/n2_diff.py` / `n5_impact.py` / `gate.py` / `n16_promote.py` / `case_state.py` | Host 工具 owner |
+| `<WORKSPACE_ROOT>/baselines/**` | `n16_promote.py`（原子晋升）或 Lead 的 v0 建档 |
+| `<WORKSPACE_ROOT>/runs/<run_id>/**` | 该轮 run_id 的 owner（同一 run 内按文件切分，不并发写同一文件） |
+| `<WORKSPACE_ROOT>/adjudication/**` | 分析角色（一次一个文件）；**只写"请求人裁决的材料"，不写裁决结论** |
 
-**`adjudication/` 的定位**：`kb/` 里唯一一类**给人看的非数据产物**。它存在的理由是
+**`adjudication/` 的定位**：数据根里唯一一类**给人看的非数据产物**。它存在的理由是
 spec 的闸门语义 —— 系统的职责是**备料**，不是替人拍板。所以这两个文件里
 **不得出现**任何形式的"已裁决 / 已确认"措辞，只有「选项 + 后果 + 推荐 + 我需要你回什么」。
-真正改变判定的事实必须落回 `kb/conflicts/*.json`（经人授权）或 `gates.json`（人签名）。
+真正改变判定的事实必须落回 `<WORKSPACE_ROOT>/conflicts/*.json`（经人授权）或 `gates.json`（人签名）。
 
 ---
 
@@ -80,17 +98,17 @@ spec 的闸门语义 —— 系统的职责是**备料**，不是替人拍板。
 
 | 节点 | 类型 | 实现 | 产物 |
 |---|---|---|---|
-| N0 建基线 | Host | `n1_snapshot.py --baseline v0` | `kb/baselines/v0/manifest.json` |
-| N1 输入摄取 | Host | `n1_snapshot.py --baseline staged --parent vN` | `kb/runs/<id>/n1_manifest_new.json` |
-| N2 差异对比 | Host | `n2_diff.py` | `n2_diff.json` + `.md` |
-| N3 差异总结 | Model:analyst | `doc/agents/sim-env-分析师.md`（人/模型执行） | `n3_digest.md` |
-| N4 差异确认 | **人·Gate1** | `gate.py sign G1_diff_confirm --actor <人>` | `gates.json` |
-| N5 影响分析 | Host | `n5_impact.py` | `n5_impact.json` + `.md` |
-| N6~N11 | 四角色 team | `doc/agents/sim-env-*.md` + `run_guarded.sh` | `evidence/` |
-| N12 评估报告 | Model:reporter | `doc/agents/sim-env-报告员.md` | `n12_report.md` |
-| N13 评估 | **人·Gate2** | `gate.py sign G2_report_accept` | `gates.json` |
-| N14 回归决策 | **人·Gate3** | `gate.py sign G3_regression_decision` | `gates.json` |
-| N16 晋升新基线 | **人触发 + Host** | `n16_promote.py --trigger-by <人>` | `kb/baselines/vN+1/` |
+| N0 建基线 | Host | `n1_snapshot.py build --out-baseline v0` | `<WORKSPACE_ROOT>/baselines/v0/manifest.json` |
+| N1 输入摄取 | Host | `n1_snapshot.py stage --parent vN --run <run_id>` | `<WORKSPACE_ROOT>/runs/<id>/n1_manifest_new.json` |
+| N2 差异对比 | Host | `n2_diff.py` | `<WORKSPACE_ROOT>/runs/<id>/n2_diff.json` + `.md` |
+| N3 差异总结 | Model:analyst | `doc/agents/sim-env-分析师.md`（编排层 `model_steps.py` 调用） | `<WORKSPACE_ROOT>/runs/<id>/n3_digest.md` |
+| N4 差异确认 | **人·Gate1** | `gate.py sign G1_diff_confirm --actor <人>` | `<WORKSPACE_ROOT>/runs/<id>/gates.json` |
+| N5 影响分析 | Host | `n5_impact.py` | `<WORKSPACE_ROOT>/runs/<id>/n5_impact.json` + `.md` |
+| N6~N11 | 四角色 team | `doc/agents/sim-env-*.md` + `run_guarded.sh` | `<WORKSPACE_ROOT>/runs/<id>/evidence/` |
+| N12 评估报告 | Model:reporter | `doc/agents/sim-env-报告员.md` | `<WORKSPACE_ROOT>/runs/<id>/n12_report.md` |
+| N13 评估 | **人·Gate2** | `gate.py sign G2_report_accept` | `<WORKSPACE_ROOT>/runs/<id>/gates.json` |
+| N14 回归决策 | **人·Gate3** | `gate.py sign G3_regression_decision` | `<WORKSPACE_ROOT>/runs/<id>/gates.json` |
+| N16 晋升新基线 | **人触发 + Host** | `n16_promote.py --trigger-by <人>` | `<WORKSPACE_ROOT>/baselines/vN+1/` |
 
 ---
 
@@ -155,7 +173,7 @@ K.sha256_obj_normalized(obj, time_fields=("generated_at",))   # 用于弱判据
 | **B2 大范围扫描** | 只剩一个量程已知的扫描表达式（超枚举上限），范围可确定但未逐点展开 |
 | **B3 未能归类** | 含未知符号（未绑定形参、跨用例实参、变量依赖），**不予猜测** |
 
-**权威数字 = `kb/index/case_access.json` 的 `buckets`（重新推导、可复跑）；09 笔记的数字是参照，不是验收门。**
+**权威数字 = `<WORKSPACE_ROOT>/index/case_access.json` 的 `buckets`（重新推导、可复跑）；09 笔记的数字是参照，不是验收门。**
 
 | 指标 | 09 笔记（参照） | 本轮重新推导（权威） | 差 |
 |---|---|---|---|
@@ -173,7 +191,7 @@ K.sha256_obj_normalized(obj, time_fields=("generated_at",))   # 用于弱判据
 ③ §B.0 的「按**该文件内** for 头推断取值范围」对 `0x040000 / 0x11000` 一族存在「逐循环覆盖」与「文件级合并」两种读解（分别给 60/64，均非 66）；
 ④ §B.2 #18/#20 把 9 处 `DOME_PLRAM_ADDR + n*32'h400` / `32'h10000 + n*32'h400` 站点记到 `tc_bmc_i2c_02`/`tc_bmc_spi_02`/`tc_dom_reg_01`，但其中两个文件根本不含该站点。
 ⇒ 强行"复现"必须**猜** 09 的未写明行为，比"有归因的重新推导"更糟。因此：
-**B1/B2 的差集站点必须逐条列出并可查**（`kb/runs/dev-case-kb/divergence_sites.csv`），
+**B1/B2 的差集站点必须逐条列出并可查**（`<WORKSPACE_ROOT>/runs/dev-case-kb/divergence_sites.csv`），
 差异站点所属桶在 CSV 里标明"09 判 X / 本轮判 Y / 原因"。**N5 影响分析必须用重推数字，并在产物里标注 index provenance。**
 
 > **N5 的「宁多勿漏」补偿规则（针对 B3 差集）**：`B3` 站点虽不可用于"未覆盖"类硬结论，
@@ -196,12 +214,12 @@ K.sha256_obj_normalized(obj, time_fields=("generated_at",))   # 用于弱判据
 > 只计入上述抽取口径统计 —— 所以 `126` 是"8 段 offset 并集"，不是"文档所有表行数"。
 > **口径注 2（冲突关联方向）**：`regEntry.conflict_ids` 由 `n1_doc_entries.py` 留空
 > （它先于冲突抽取运行，不应反向依赖）；冲突 ↔ 条目的关联写在
-> `kb/conflicts/conflicts.json` 的 `linked_entries`（40 条）。
+> `<WORKSPACE_ROOT>/conflicts/conflicts.json` 的 `linked_entries`（40 条）。
 > ⇒ **`conflict_ids` 为空 ≠ 该寄存器无冲突**，判定一律以 `conflicts.json.linked_entries` 为准。
 > **口径注 3（已知笔记自洽性问题，保留实测不迁就）**：06 笔记 §C 的「汇总表总数据行」列
 > 列内之和 = **161**，而该表合计行写 **138**；另 0x2000/0x0800/0x0600 三段该列口径差 1。
 > 这是笔记在**非验收列**上的不自洽，四个硬指标不受影响。证据：
-> `kb/runs/dev-doc-kb/06_vs_doc_diff.md`。
+> `<WORKSPACE_ROOT>/runs/dev-doc-kb/06_vs_doc_diff.md`。
 
 ---
 
@@ -218,37 +236,43 @@ K.sha256_obj_normalized(obj, time_fields=("generated_at",))   # 用于弱判据
 ## 5 用法
 
 ```bash
-# 0) 环境自检（不写任何东西）
+# 0) 环境自检（不写任何东西；三根由 $LOOP_ENV_ROOT/$LOOP_WORKSPACE 或 environments.json 决定）
 python3 kb/tools/kb_lib.py
 
-# 1) 建 v0 基线（N0）：快照 + 三锚 + manifest
-python3 kb/tools/n1_snapshot.py --baseline v0
+# 1) 建 v0 基线（N0）：快照 + 三锚 + manifest → <WORKSPACE_ROOT>/baselines/v0/
+python3 kb/tools/n1_snapshot.py build --out-baseline v0
 
-# 2) 抽取索引（可重复执行，幂等）
+# 2) 抽取索引（可重复执行，幂等）→ <WORKSPACE_ROOT>/index|conflicts/
 python3 kb/tools/n1_doc_entries.py
 python3 kb/tools/n1_conflicts.py
 python3 kb/tools/n1_case_scan.py
-python3 kb/tools/n1_snapshot.py --baseline v0          # 索引建好后重取锚
+python3 kb/tools/n1_snapshot.py build --out-baseline v0          # 索引建好后重取锚
 
 # 3) 一轮变更：摄取 → diff → 人确认 → 影响分析
-python3 kb/tools/n1_snapshot.py --baseline staged --parent v0 --run <run_id>
-python3 kb/tools/n2_diff.py  --from-baseline v0 --to-manifest kb/runs/<run_id>/n1_manifest_new.json
+#    先由交付方把新 RTL/文档放到 <WORKSPACE_ROOT>/runs/<run_id>/staged/（见 n1_snapshot.py 头注释）
+python3 kb/tools/n1_snapshot.py stage --parent v0 --run <run_id>
+python3 kb/tools/n2_diff.py --from-baseline v0 --to-manifest <WORKSPACE_ROOT>/runs/<run_id>/n1_manifest_new.json
 python3 kb/tools/gate.py sign G1_diff_confirm --run <run_id> --decision confirmed --actor "<人名>" --actor-kind human
-python3 kb/tools/n5_impact.py --run <run_id> --from-baseline v0
+python3 kb/tools/n5_impact.py --run <run_id>
 
 # 4) 闸门状态 / 晋升
 python3 kb/tools/gate.py show --run <run_id>
 python3 kb/tools/n16_promote.py --run <run_id> --trigger-by "<人名>" --actor-kind human
 ```
 
+> 以上命令的**数据落点**都是 `<WORKSPACE_ROOT>/…`（当前 = `ENV_ROOT/kb/…`）；
+> 本仓 `kb/` 只放程序/schema，不落运行数据。`n1_snapshot.py stage` 需要 `--parent` 与 `--run`，且要求
+> `<WORKSPACE_ROOT>/runs/<run_id>/staged/` 下已有新输入（这是 N1 的输入契约）。
+
 ---
 
 ## 6 红线（继承 `doc/AGENTS.md` §5，本目录额外加粗）
 
-1. `RTL/`、`PKG/` 严格只读；`TB/`、`TESTLIB/` 只读（162 条冻结）。**`kb/` 自身也不改历史基线**，只新增。
+1. `ENV_ROOT/RTL/`、`ENV_ROOT/PKG/` 严格只读；`ENV_ROOT/TB/`、`ENV_ROOT/TESTLIB/` 只读（162 条冻结）。
+   **`<WORKSPACE_ROOT>/baselines/**` 不改历史基线**，只新增。
 2. 预期值只认文档**位定义表**（铁律 3），绝不迁就 RTL 或"寄存器汇总"表。
 3. 数字一律由命令输出复制，**禁手算**；本文件里出现的数字都是引 `06`/`09` 笔记的实测值。
-4. 归档只增不改：`kb/baselines/**` 一旦写入即置只读（`chmod 444`），md5 记到目录之外。
+4. 归档只增不改：`<WORKSPACE_ROOT>/baselines/**` 一旦写入即置只读（`chmod 444`），md5 记到目录之外。
 5. **N2/N5 必须是确定性脚本**，不许引入模型或随机性；确定性按 **§3.1.1 的两条判据**验证
    （同 `--now` ⇒ 逐字节相同；异 `--now` ⇒ 归一化后相同）。**时间字段是唯一被允许的非确定性**，
    且必须由 `--now` / `KB_NOW` 单一入口注入 —— 不许靠"跑得快、秒级时间戳碰巧相同"蒙过判据（D-2/D-10 类假通过）。
@@ -260,7 +284,12 @@ python3 kb/tools/n16_promote.py --run <run_id> --trigger-by "<人名>" --actor-k
 
 | 日期 | 版本 | 改了什么 | 为什么改 | 证据 |
 |---|---|---|---|---|
-| 2026-10-15 | 1 | 建档：目录布局 + 三类 schema + 口径（指纹/段/三桶/条目）+ 偏离 K1~K3 | `CHECKPOINT-20261015-1123.md` §9 第 3 条 | `kb/schema/*.json`、`kb/tools/kb_lib.py` 自检输出 |
+| 2026-10-15 | 1 | 建档：目录布局 + 三类 schema + 口径（指纹/段/三桶/条目）+ 偏离 K1~K3 | `CHECKPOINT-20261015-1123.md` §9 第 3 条（ENV_ROOT 历史件） | `kb/schema/*.json`、`kb/tools/kb_lib.py` 自检输出 |
+| 2026-10-19 | 2 | 按三根重写 §1（本仓 `kb/`=README+schema+tools；数据在 `<WORKSPACE_ROOT>`）、写权表、节点↔脚本表、用法与红线 1/4；补 `case_state.py`；CHECKPOINT 引用标注为 ENV_ROOT 历史件 | 拆仓后 `kb/` 已分两半，旧表述会让人误以为本仓 `kb/` 有数据 | `doc/spec/ENV_PLUGIN_SPEC.md` §1/§2、`environments.json`、`git ls-files kb` |
+
+> **历史登记里的路径**：下文各「变更登记」中的 `kb/runs/...` 等**运行数据路径**是拆仓前记录；
+> 在当前三根下等价于 `<WORKSPACE_ROOT>/...`（当前 = `ENV_ROOT/kb/...`）。内容/指纹未变，
+> 只是路径口径迁移，不构成证据篡改。
 
 ---
 

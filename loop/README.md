@@ -47,6 +47,11 @@ cd loop
 LOOP_PORT=9000 ./run.sh       # 换端口
 ```
 
+> **远程访问（Windows → 服务器）**：服务只绑 `127.0.0.1`，远程一律走 SSH 隧道；
+> 服务器侧用 `bash loop/remote/serve.sh`（或 `--sandbox` 用可写副本），
+> Windows 侧用 `loop\remote\connect-loop.bat` / `.ps1`。详见
+> [`loop/remote/README.md`](remote/README.md)。
+
 环境已建好（Python 3.11.7 + agently 4.1.4.8）：
 
 ```bash

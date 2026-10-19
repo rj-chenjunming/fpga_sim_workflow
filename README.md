@@ -59,6 +59,8 @@ cd loop && rm -rf state spikes/.accept_v1_state.json && bash spikes/accept_v1_ru
 ```
 
 > **沙箱注意**：本次整理所在的 DSH 会话把 `ENV_ROOT` 挂为只读，因此终验与 `test_archive_e2` 无法在本会话复跑；这是运行环境限制，不是代码缺陷。详见 [`doc/STATUS.md`](doc/STATUS.md)。
+>
+> **从 Windows 远程访问**（服务器起服务 + SSH 隧道，服务只绑 `127.0.0.1`）：见 [`loop/remote/README.md`](loop/remote/README.md)。
 
 ---
 

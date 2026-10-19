@@ -120,7 +120,7 @@ def main() -> int:
 
     for md in sorted(TOOL_ROOT.rglob("*.md")):
         rel = md.relative_to(TOOL_ROOT).as_posix()
-        if rel.startswith((".git/", "loop/.venv/")):
+        if rel.startswith((".git/", "loop/.venv/", "workspaces/")):
             continue
         is_historical = any(rel.startswith(p) for p in HISTORICAL_FILES)
         try:

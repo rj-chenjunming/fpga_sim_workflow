@@ -50,6 +50,41 @@ curl -s http://127.0.0.1:8099/api/health | head -c 120     # 自查
 pkill -f "uvicorn services.api:app"
 ```
 
+> **在 DSH 会话里起的进程活不久**：DeepSeek Harness 的 bash 沙箱是 `--die-with-parent`，
+> 后台任务也会被回收（实测约 1 小时后收到 SIGTERM，退出码 143）。要真正常驻，
+> 请在**服务器自己的登录 shell**（不走 DSH）里执行上面的 `nohup`，或用下面的 systemd 用户服务。
+
+### systemd 用户服务（推荐常驻）
+
+```bash
+mkdir -p ~/.config/systemd/user
+cat > ~/.config/systemd/user/change-impact-loop.service <<'EOF'
+[Unit]
+Description=Change Impact Loop UI (127.0.0.1:8099)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/work/chenjunming/change-impact-loop/loop
+# 用权威数据：删掉下一行的 LOOP_WORKSPACE；沙箱演示才保留
+Environment=LOOP_WORKSPACE=/home/work/chenjunming/change-impact-loop/workspaces/simenv-tcs9620-64ch-sandbox
+ExecStart=/home/work/chenjunming/change-impact-loop/loop/.venv/bin/python -m uvicorn \
+  services.api:app --app-dir . --host 127.0.0.1 --port 8099
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=default.target
+EOF
+systemctl --user daemon-reload
+systemctl --user enable --now change-impact-loop
+systemctl --user status change-impact-loop --no-pager
+# 服务器重启后也自动起（需要 linger）：
+loginctl enable-linger "$USER"
+```
+
+> 安全提醒不变：只绑 `127.0.0.1`，远程一律走 SSH 隧道；不要把 8099 暴露到网络。
+
 ### 方式 0：从 Windows 一条命令远程启动（最接近 DSH Launcher）
 
 如果不想先登录服务器，可以在 **Windows PowerShell** 里让服务器起服务，再建隧道：

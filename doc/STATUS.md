@@ -21,12 +21,13 @@
 
 | 门 | 命令 | 结果 | 说明 |
 |---|---|---|---|
-| 单测收集 | `cd loop && .venv/bin/python -m pytest --collect-only -q` | **70 tests collected** | — |
-| 单测执行 | `LOOP_WORKSPACE=<可写副本> .venv/bin/python -m pytest -q` | **67 passed / 3 failed** | 3 条失败均为环境/布局限制，见 §3 |
+| 单测收集 | `cd loop && .venv/bin/python -m pytest --collect-only -q` | **94 tests collected** | 含 UI 配置面/投影/契约/冒烟 |
+| 单测执行 | `LOOP_WORKSPACE=<可写副本> .venv/bin/python -m pytest -q` | **91 passed / 3 failed** | 3 条失败均为环境/布局限制，见 §3 |
 | kb 自测 · gate schema | `LOOP_WORKSPACE=<可写副本> loop/.venv/bin/python kb/tools/_selftest_gate_schema.py` | **10/10** | 需要可写数据根；默认数据根在只读沙箱内会失败 |
 | kb 自测 · n5 可达性 | `loop/.venv/bin/python kb/tools/_selftest_n5_reachability.py` | **9/9** | 只读，无需写数据根 |
 | 端到端终验 | `cd loop && bash spikes/accept_v1_run.sh` | **未复跑**（历史记录 117 断言） | 需写 `ENV_ROOT/SIMLIB_RUN` 与 `uvs.setup`；本会话沙箱对 ENV_ROOT 只读 |
-| 文档链接扫描 | `python3 doc/audit/check_doc_links.py` | **checked=671 / missing=0** | 三根解析 + 行号后缀剥离；历史件（evidence/history）计入 historical=834 |
+| Web 冒烟 | `.venv/bin/python -m pytest tests/test_web_smoke.py -q` | **3/3** | 页面/静态资源/零外链/legacy 可用 |
+| 文档链接扫描 | `python3 doc/audit/check_doc_links.py` | **checked=713 / missing=0** | 三根解析 + 行号后缀剥离；历史件（evidence/history）计入 historical=834 |
 
 ### 终验历史记录（不是本次实测）
 
@@ -39,6 +40,7 @@
 2. **`tests/test_projection_and_frozen.py::test_frozen_witness_before_after_drill_run`** 假设 `WORKSPACE_ROOT` 位于 `ENV_ROOT` 之内（`path.relative_to(P.REPO_ROOT)`）；当工作区指向外部目录时该断言不成立 ⇒ 已登记为布局耦合缺陷（审计报告）。
 3. **`tests/test_archive_e2.py`** 需要可写 `ENV_ROOT`（`run_guarded.sh` 落 `SIMLIB_RUN`）。
 4. 上述 3 条即 §2 的 3 failed；**不是业务代码回归**。
+5. **已知 flaky**：`test_crash_recovery_delivers_dead_job_as_dead_not_done` 在整套执行中偶发失败、单测通过（审计 F-V1-06-FLAKY），与本轮 UI 改动无关。
 
 ## 4 数据与归档
 
@@ -65,6 +67,7 @@
 | 规格纠偏 | 三份 spec 的状态/完成度/数字/三根路径；`kb/README.md` 按三根重写；`workspaces/README.md` 修 `yaml→json`；`loop/README.md` 统一 117/70/9 |
 | 审计落档 | `doc/audit/`（总报告 + 3 份附录 + `check_doc_links.py`） |
 | 清理 | `.gitignore` 删两条本仓不存在的规则、`snap.json` 移出版本控制、清 `kb/tools/__pycache__` |
+| **UI v1** | 两区运营台：`index.html`+`app.js`+`app.css`；旧界面 `legacy.html`；新增 `/api/baselines`、`/api/env/check`、`/api/fs/dirs`、`run_view.agents/stage_map/project`（见 `doc/spec/WEB_UI_SPEC.md`） |
 
 ## 6 待人工拍板（沿用，未变）
 

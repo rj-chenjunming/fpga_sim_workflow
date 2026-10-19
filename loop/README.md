@@ -11,7 +11,8 @@
 把上游 16 个节点（N0–N16）与三道人工闸门落成**可交互、可重启、可拒绝**的系统：
 
 - **编排**：`agently` TriggerFlow 的稳定拓扑（源码内定义），3 道闸门 = durable graph interrupt；
-- **界面**：FastAPI + 单文件静态页 —— **闸门操作台 + 长任务看板**（v1 范围）；
+- **界面**：FastAPI + 静态页（`index.html`+`app.js`+`app.css`，零外链）—— 两区运营台：
+  配置（基线/项目目录）→ 运行（四段流程 + agent 卡）→ 闸门操作；旧界面存档在 `legacy.html`；
 - **准入**：单槽（`uvs.setup` 是仓库根下全局单文件）+ 队列 + 取消；
 - **恢复**：执行快照 + 记录库，跨进程重启后能重新附着到在跑的作业。
 
@@ -98,8 +99,12 @@ loop/
   services/
     contracts.py            对外投影 + 六项信任缺口的服务端判定
     api.py                  FastAPI（唯一入口）
-  web/index.html            单文件前端（零外链）
-  tests/                    70 项
+  web/index.html            运营台骨架（左栏 + 配置/运行/闸门三视图）
+  web/app.js                数据层/轮询/渲染/目录浏览器/闸门提交（零外链）
+  web/app.css               设计系统（零外链）
+  web/legacy.html           旧界面存档（保留一个迭代）
+  web/mockup.html           v1 设计样张（只读参考）
+  tests/                    94 项（含 UI 契约与冒烟）
   spikes/                   `accept_v1.py`（带断言的 v1 终验）+ `accept_v1_run.sh`（单次调用内起停 4 代服务）
   state/                    槽/队列/事件/快照（可删）
 ```
@@ -269,7 +274,7 @@ drill 运行目录带 `.loop_drill` 标记，测试据此清理**自己创建的
 
 ## 7 已验证什么
 
-`tests/` 70 项 + 一次**真实 HTTP 终验**（117 断言）（`doc/evidence/ACCEPTANCE_V1.md`：117/117 断言，4 代服务进程、
+`tests/` 94 项 + 一次**真实 HTTP 终验**（117 断言）（`doc/evidence/ACCEPTANCE_V1.md`：117/117 断言，4 代服务进程、
 3 次真重启，含"重附着到仍在跑的长任务""跨重启不丢单槽"）。关键断言：
 
 - 口径一与 `grep -c '\*E'` **独立对账一致**；两套口径并列、`both_zero=false` 时**不得判绿**；

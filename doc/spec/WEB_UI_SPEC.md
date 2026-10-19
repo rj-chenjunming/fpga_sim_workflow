@@ -336,3 +336,22 @@
 - 多用户/鉴权/审计日志、移动端。
 - agent 卡的「详细模式」（输入摘要、校验问题、重试次数、输出全文）。
 - N11 证据守护 / N6 沙箱 / real 链路的实现（属代码缺陷修复轮，见审计 §6）。
+
+
+---
+
+## 13 实现状态与差异登记（2026-10-19）
+
+**已实现**：`loop/web/index.html` + `app.js` + `app.css`（两区运营台）、`legacy.html`（旧界面存档）、
+三个只读端点（`/api/baselines`、`/api/env/check`、`/api/fs/dirs`）、`POST /api/runs` 的 `project`、
+`run_view.agents/stage_map/project`；冒烟与契约测试见 `loop/tests/test_web_smoke.py`、
+`test_config_api.py`、`test_agent_view.py`、`test_api_ui_contract.py`。
+
+**与规格的差异（v1 接受，登记而非隐藏）**：
+
+1. **证据「打开」只做存在性探测**：后端没有内容读取端点，点击证据 = `GET …/evidence/exists` + toast（缺失显示 E-2 原文）。
+2. **内部节点显式列出**：`node_history` 里 `N3_request`/`N6_model`/`HALT` 等内部节点不隐藏，列在四段下方的「未纳入四段展示的节点」区；是否在后端投影层吸收属后续迭代。
+3. **agent 摘要**取产物第一行正文（最长 120 字符），不做换行裁剪与富文本。
+4. **状态细分**仍统一为 `waiting_gate`（审计 I18），tooltip 说明可能是作业/单槽等待。
+5. **`app.js` 约 2.4k 行**（单文件、无构建）；后续可在不引入构建步骤的前提下按视图拆分模块。
+6. **N11 证据守护**：卡片如实显示「未实现（审计 A10）」，不伪造工作状态。

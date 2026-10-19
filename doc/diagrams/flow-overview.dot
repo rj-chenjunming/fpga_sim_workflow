@@ -1,0 +1,53 @@
+digraph flow {
+  graph [rankdir=TB, bgcolor="white", fontname="Noto Sans CJK SC", fontsize=12,
+         nodesep=0.32, ranksep=0.38, pad=0.25,
+         label="变更影响闭环 · 一次运行的主流程（N0–N16 + 三道人工闸门）",
+         labelloc=t, fontsize=17];
+  node  [shape=box, style="rounded,filled", fontname="Noto Sans CJK SC", fontsize=11,
+         color="#4a5a6a", fillcolor="#eef3f8", margin="0.14,0.07"];
+  edge  [fontname="Noto Sans CJK SC", fontsize=9, color="#5a6b7b", arrowsize=0.7];
+
+  START [label="开始：新的 RTL 包 + 寄存器文档", fillcolor="#e8f5e9", color="#2e7d32"];
+  N0    [label="N0 选基线 / 建 manifest\n[Host]"];
+  N1    [label="N1 输入摄取 + 完整性校验\n[Host]"];
+  N2    [label="N2 差异对比（纯确定性）\n[Host]"];
+  N3    [label="N3 差异语义总结\n[M · analyst]"];
+  G1    [label="N4 闸门 1 · 差异确认\n[人] confirmed / ignored / disputed",
+         fillcolor="#fff8e1", color="#c28b00"];
+  N5    [label="N5 影响分析（段→offset 交集）\n[Host]"];
+  N6    [label="N6 用例修订 / 补充\n[M · author]"];
+  N7    [label="N7 编译（≈2 s）\n[Host · 单槽]"];
+  N8    [label="N8 静态复核\n[M · checker]"];
+  D8    [shape=diamond, label="复核通过？", fillcolor="#fce4ec", color="#c2185b"];
+  N9    [label="N9 全跑（≈19 min/用例）\n[Host 长任务：提交 → 停放]"];
+  N10   [label="N10 结果对账（双口径）\n[Host 抽数 + M · checker 分类]"];
+  N11   [label="N11 评估 / 证据守护\n[M · guardian]"];
+  N12   [label="N12 评估报告\n[M · reporter]"];
+  G2    [label="N13 闸门 2 · 评估\n[人] accept / rework", fillcolor="#fff8e1", color="#c28b00"];
+  G3    [label="N14 闸门 3 · 回归决策\n[人] full / subset / milestone / defer",
+         fillcolor="#fff8e1", color="#c28b00"];
+  N15   [label="N15 分层回归\n[TriggerFlow for_each · 跨机 run_tc.py]"];
+  N16   [label="N16 晋升新基线\n[人触发 + Host 原子归档]"];
+  END   [label="结束：本轮收敛（可进入下一轮 diff）", fillcolor="#e8f5e9", color="#2e7d32"];
+  HALT  [label="HALT：显式终止并记录原因", fillcolor="#fdecea", color="#b71c1c"];
+
+  START -> N0 -> N1 -> N2 -> N3 -> G1;
+  G1 -> N5 [label="confirmed"];
+  G1 -> HALT [label="ignored / disputed", style=dashed];
+  N5 -> N6 -> N7 -> N8 -> D8;
+  D8 -> N9 [label="pass"];
+  D8 -> N6 [label="rework（有界，≤limit）", style=dashed, constraint=false];
+  D8 -> HALT [label="escalate", style=dashed];
+  N9 -> N10 -> N11 -> N12 -> G2;
+  G2 -> G3 [label="accept"];
+  G2 -> N6 [label="rework（回修订）", style=dashed, constraint=false];
+  G3 -> N15 [label="full / subset / milestone"];
+  G3 -> HALT [label="defer", style=dashed];
+  N15 -> N16 -> END;
+  N2 -> END [label="无差异 → 直接结束（spec 要求；当前实现未消费）",
+             style=dashed, constraint=false, color="#9e9e9e"];
+
+  note [shape=note, fillcolor="#fffde7", color="#c0b26b", fontsize=9,
+        label="图例：蓝=Host 确定性节点；紫=模型节点；黄=人工闸门；绿=收敛；红=显式终止。\n虚线=回边/终止分支。N9 停放期间执行处于 interrupt（可安全快照与重启）。\n实现与契约的偏差（real 链路未闭合等）见 doc/audit/AUDIT-20261019-spec-conformance.md。"];
+  N9 -> note [style=invis];
+}

@@ -1,0 +1,63 @@
+digraph arch {
+  graph [rankdir=TB, bgcolor="white", fontname="Noto Sans CJK SC", fontsize=12,
+         nodesep=0.4, ranksep=0.55, pad=0.3, compound=true,
+         label="软件架构与边界：三个根、owner 分层、数据与证据流",
+         labelloc=t, fontsize=17];
+  node  [shape=box, style="rounded,filled", fontname="Noto Sans CJK SC", fontsize=10,
+         color="#4a5a6a", fillcolor="#eef3f8", margin="0.12,0.06"];
+  edge  [fontname="Noto Sans CJK SC", fontsize=9, color="#5a6b7b", arrowsize=0.7];
+
+  subgraph cluster_user {
+    label="用户（单机单用户）"; fontsize=12; color="#90a4ae"; style="rounded,dashed";
+    U [label="浏览器\n闸门操作台\n长任务看板", fillcolor="#e8f5e9", color="#2e7d32"];
+  }
+
+  subgraph cluster_loop {
+    label="TOOL_ROOT · loop/（软件）"; fontsize=12; color="#1565c0"; style="rounded";
+    WEB [label="web/index.html\n单文件前端（零外链）"];
+    API [label="services/api.py\nFastAPI + 准入"];
+    RM  [label="workflows/main_flow.py\nRunManager + TriggerFlow\n稳定拓扑 N0–N16"];
+    CHUNKS [label="workflows/chunks/*\nHost 步骤 / 模型步骤\n闸门 / 长任务"];
+    OWNERS [label="host/*\nadmission 单槽 · job_runner 看护\nevidence 抽数 · gate_authority 枚举\nprogress 事件投影"];
+  }
+
+  subgraph cluster_kb {
+    label="TOOL_ROOT · kb/（软件）"; fontsize=12; color="#1565c0"; style="rounded";
+    TOOLS [label="tools/*.py\nHost 确定性：diff / 影响 / 闸门\n晋升 / 快照 / 用例态"];
+    SCHEMA [label="schema/*.json（8 个契约）", fillcolor="#f3e5f5", color="#6a1b9a"];
+  }
+
+  subgraph cluster_ext {
+    label="外部 provider"; fontsize=12; color="#6d4c41"; style="rounded,dashed";
+    LLM [label="LLM provider\nOpenAI 兼容网关\n（N3/N6/N8/N10/N11/N12）",
+         fillcolor="#ede7f6", color="#4527a0"];
+  }
+
+  subgraph cluster_env {
+    label="ENV_ROOT（插件仓 · 只读）"; fontsize=12; color="#c62828"; style="rounded,dashed";
+    ENVF [label="RTL / TB / PKG / TESTLIB\nuvs.setup（单槽依据）", fillcolor="#ffebee", color="#c62828"];
+  }
+
+  subgraph cluster_ws {
+    label="WORKSPACE_ROOT（数据根 · 当前 = ENV_ROOT/kb）"; fontsize=12; color="#ef6c00"; style="rounded,dashed";
+    DATA [label="index / conflicts / baselines\nruns（gates.json + evidence）", fillcolor="#fff3e0", color="#ef6c00"];
+  }
+
+  U -> WEB [label="HTTP + 轮询/流"];
+  WEB -> API [label="JSON"];
+  API -> RM [label="启动 / 闸门决策 / 取消"];
+  RM -> CHUNKS [label="chunk 调用"];
+  CHUNKS -> OWNERS [label="host 能力"];
+  CHUNKS -> TOOLS [label="subprocess 调 kb 工具\n（N0/N1/N2/N5/N7/N16）"];
+  CHUNKS -> LLM [label="ModelRequest"];
+  TOOLS -> ENVF [label="只读校验", style=dashed];
+  OWNERS -> ENVF [label="单槽 / uvs.setup 自愈\n（仅这两处写）", style=dashed];
+  OWNERS -> DATA [label="作业/闸门/快照"];
+  TOOLS -> DATA [label="读写业务权威"];
+  RM -> DATA [label="执行快照（recovery/）", style=dashed];
+  API -> U [label="只读投影", style=dashed];
+
+  note [shape=note, fillcolor="#fffde7", color="#c0b26b", fontsize=9,
+        label="权威边界（单一 owner）：\n• 状态权威 = TriggerFlow 执行 + kb/tools/gate.py（UI 只投影）\n• 业务判定 = kb/tools/*（编排层只调用）\n• 闸门中断 = TriggerFlow；签字权威 = gates.json + anchor\n• 软件除 SIMLIB_RUN/ 与 uvs.setup 外不写 ENV_ROOT"];
+  DATA -> note [style=invis];
+}

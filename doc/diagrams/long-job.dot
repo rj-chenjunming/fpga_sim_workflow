@@ -1,0 +1,52 @@
+digraph lifecycle {
+  graph [rankdir=TB, bgcolor="white", fontname="Noto Sans CJK SC", fontsize=12,
+         nodesep=0.35, ranksep=0.5, pad=0.3,
+         label="长任务（N9 全跑）生命周期：先停放、再恢复；权威在日志、不在 resume payload",
+         labelloc=t, fontsize=16];
+  node  [shape=box, style="rounded,filled", fontname="Noto Sans CJK SC", fontsize=10,
+         color="#4a5a6a", fillcolor="#eef3f8", margin="0.12,0.06"];
+  edge  [fontname="Noto Sans CJK SC", fontsize=9, color="#5a6b7b", arrowsize=0.7];
+
+  subgraph cluster_normal {
+    label="正常路径"; fontsize=12; color="#1565c0"; style="rounded";
+    START [label="N9 提交"];
+    A1 [label="① 申请单槽\nadmission.acquire"];
+    A2 [label="② 提交作业\njob_runner.submit"];
+    A3 [label="③ 写执行状态\nstate = n9_job"];
+    A4 [label="④ pause_for(resume_to=self)\n执行 = interrupt（可安全快照）",
+        fillcolor="#fff8e1", color="#c28b00"];
+    DONE [shape=diamond, label="作业结束？", fillcolor="#fce4ec", color="#c2185b"];
+    CONT [label="⑤ continue_with(中断 id, {rc})"];
+    PARK [label="⑥ n9_park 回读日志\n重取口径一/口径二/印记"];
+    N10 [label="N10 对账"];
+  }
+
+  subgraph cluster_recover {
+    label="崩溃 / 重启恢复"; fontsize=12; color="#6a1b9a"; style="rounded,dashed";
+    R [label="进程被杀 / 重启"];
+    LOAD [label="async_load(快照)\n恢复执行"];
+    REATTACH [label="job_runner 重新附着\nlookup / reattach(job_id)"];
+    ALIVE [shape=diamond, label="作业仍活着？", fillcolor="#fce4ec", color="#c2185b"];
+    WAIT [label="继续停放 / 等待事件"];
+    DEAD [label="记 dead_job\n走失败分支（绝不判成功）", fillcolor="#fdecea", color="#b71c1c"];
+  }
+
+  REL [label="终态：释放单槽（幂等）", fillcolor="#e8f5e9", color="#2e7d32"];
+  FAIL [label="失败：显式 failed + error\n并关闭执行", fillcolor="#fdecea", color="#b71c1c"];
+
+  START -> A1 -> A2 -> A3 -> A4 -> DONE;
+  A2 -> FAIL [label="提交异常（finally 释放槽）", style=dashed];
+  DONE -> CONT [label="完成事件"];
+  CONT -> PARK -> N10 -> REL;
+  R -> LOAD [style=dashed];
+  LOAD -> REATTACH [style=dashed];
+  REATTACH -> ALIVE;
+  ALIVE -> WAIT [label="是"];
+  ALIVE -> DEAD [label="否"];
+  WAIT -> DONE [style=dashed];
+  DEAD -> FAIL;
+
+  note [shape=note, fillcolor="#fffde7", color="#c0b26b", fontsize=9,
+        label="两条硬纪律（实证得来）：\n1. 长任务绝不写成阻塞 handler —— 否则快照含 running 帧，load 会 fail-closed。\n2. resume 载荷只作提示：下游必须回读日志重新取数，不得信任 payload 里的数字。"];
+  N10 -> note [style=invis];
+}

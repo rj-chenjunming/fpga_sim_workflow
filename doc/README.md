@@ -16,6 +16,7 @@
 
 | 目录/文件 | 是什么 | 入口 / 主要文件 |
 |---|---|---|
+| [`OVERVIEW.md`](OVERVIEW.md) | **项目总览 + 三张流程图**（架构边界 / 主流程 / 长任务生命周期） | 先读这个 |
 | [`spec/`](spec/) | 三份契约：业务篇 / 编排篇 / 环境插件篇 | 见 §2 |
 | [`agents/`](agents/) | 6 个角色定义 + 1 份开工提示词 | [`agents/README.md`](agents/README.md) |
 | [`evidence/`](evidence/) | 验收报告与演练证据（**内容冻结、只增不改**） | [`evidence/README.md`](evidence/README.md) |

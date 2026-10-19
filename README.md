@@ -64,6 +64,7 @@ cd loop && rm -rf state spikes/.accept_v1_state.json && bash spikes/accept_v1_ru
 
 ## 4 文档怎么读
 
+0. 想看「是什么、怎么转」和流程图 → [`doc/OVERVIEW.md`](doc/OVERVIEW.md)。
 1. 先读本文件 §2（三个根）与 [`AGENTS.md`](AGENTS.md)（流程/写权/红线）。
 2. 业务要改什么、为什么 → `doc/spec/CHANGE_IMPACT_LOOP_SPEC.md`。
 3. 一次运行怎么活、怎么停、怎么恢复 → `doc/spec/LOOP_ORCHESTRATION_SPEC.md`。

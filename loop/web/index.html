@@ -3,1798 +3,278 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>闭环变更影响 · 闸门操作台</title>
-<style>
-*,*::before,*::after{box-sizing:border-box}
-html,body{margin:0;padding:0}
-body{
-  background:#0e1116;color:#d8dee8;
-  font-family:"Source Han Sans SC","Noto Sans CJK SC","Microsoft YaHei",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-  font-size:13.5px;line-height:1.5;
-}
-.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"DejaVu Sans Mono","Courier New",monospace}
-.hidden{display:none !important}
-.muted{color:#8b96a5}
-.tiny{font-size:11.5px}
-.derived{color:#7c8798;font-size:11px}
-h1,h2,h3,h4{margin:0}
-button{font-family:inherit;font-size:inherit}
-
-/* ---------- 顶部固定区 ---------- */
-header{position:sticky;top:0;z-index:40;background:#0b0f15;border-bottom:1px solid #232c3a;box-shadow:0 2px 10px rgba(0,0,0,.45)}
-.topbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:8px 14px}
-.topbar h1{font-size:15px;font-weight:600;letter-spacing:.4px}
-.topbar .sep{flex:1}
-.conn{margin:0;padding:6px 14px;background:#3a0f12;color:#ffb3b6;border-top:1px solid #6b1f24}
-.authority{padding:6px 14px;background:#101822;border-top:1px solid #232c3a;display:flex;gap:8px;align-items:flex-start}
-.authority .tag{flex:0 0 auto;color:#ffd666;font-weight:600}
-.authority .txt{flex:1;white-space:pre-wrap;word-break:break-word;color:#c9d4e2;font-size:12.5px}
-
-/* ---------- 布局 ---------- */
-main{padding:12px 14px 40px}
-.layout{display:grid;grid-template-columns:minmax(300px,360px) minmax(0,1fr);gap:14px;align-items:start}
-@media (max-width:1080px){.layout{grid-template-columns:1fr}}
-.col{display:flex;flex-direction:column;gap:14px;min-width:0}
-
-.panel{background:#141a23;border:1px solid #232c3a;border-radius:8px;padding:10px 12px}
-.panel > h2{font-size:13.5px;font-weight:600;color:#9fd0ff;border-bottom:1px solid #232c3a;padding-bottom:6px;margin-bottom:8px;display:flex;flex-wrap:wrap;gap:8px;align-items:baseline}
-.panel > h2 .sub{font-weight:400;color:#8b96a5;font-size:11.5px}
-
-/* ---------- 徽标 ---------- */
-.badge{display:inline-block;padding:1px 7px;border-radius:10px;font-size:11.5px;border:1px solid #354052;background:#1b222d;color:#c6d0dd;white-space:nowrap}
-.bg-ok{background:rgba(82,196,26,.18);border-color:#3f7a20;color:#b7eb8f}
-.bg-red{background:rgba(255,77,79,.18);border-color:#8c2f30;color:#ffa39e}
-.bg-orange{background:rgba(250,140,22,.18);border-color:#8c5210;color:#ffc069}
-.bg-yellow{background:rgba(250,219,20,.16);border-color:#8a7a10;color:#fff1a8}
-.bg-blue{background:rgba(77,155,255,.16);border-color:#2a5c9a;color:#a8ccff}
-.bg-gray{background:#1b222d;border-color:#354052;color:#9aa6b5}
-.bg-purple{background:rgba(160,110,255,.18);border-color:#5b3a9a;color:#d3bbff}
-
-/* ---------- 状态条 ---------- */
-.status-strip{display:flex;flex-wrap:wrap;gap:6px 16px;background:#141a23;border:1px solid #232c3a;border-radius:8px;padding:8px 12px;margin-bottom:14px}
-.kv{display:inline-flex;gap:6px;align-items:baseline;margin-right:14px}
-.kv .k{color:#8b96a5}
-.kv .v{color:#e6edf7;word-break:break-all}
-.kv-block{display:flex;gap:8px;align-items:baseline;padding:1px 0}
-.kv-block .k{color:#8b96a5;flex:0 0 auto;min-width:120px}
-.kv-block .v{color:#e6edf7;word-break:break-all;flex:1}
-
-/* ---------- 时间线 ---------- */
-.tl{position:relative;margin:2px 0 0}
-.tl-item{position:relative;padding:4px 6px 4px 22px;border-left:2px solid #2b3543;margin-left:5px;border-radius:0 5px 5px 0}
-.tl-item:last-child{border-left-color:transparent}
-.tl-item .dot{position:absolute;left:-7px;top:9px;width:12px;height:12px;border-radius:50%;background:#39424f;border:2px solid #141a23}
-.tl-item.ok .dot{background:#52c41a}
-.tl-item.running .dot{background:#4d9bff;box-shadow:0 0 0 3px rgba(77,155,255,.25)}
-.tl-item.failed .dot{background:#ff4d4f}
-.tl-item.current{background:rgba(77,155,255,.10);outline:1px solid #2f5f9e}
-.tl-line1{display:flex;flex-wrap:wrap;gap:6px;align-items:baseline}
-.tl-nid{font-weight:600;color:#e6edf7;min-width:28px}
-.tl-name{color:#b9c4d2}
-.tl-detail{margin-top:2px}
-
-/* ---------- 双计数 ---------- */
-.counts-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:stretch}
-@media (max-width:760px){.counts-grid{grid-template-columns:1fr}}
-.ccard{background:#111823;border:1px solid #2b3543;border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:6px;min-width:0}
-.ccard.ccard-red{border-color:#8c2f30;background:rgba(255,77,79,.07)}
-.ccard-head{display:flex;flex-direction:column;gap:2px;border-bottom:1px dashed #2b3543;padding-bottom:5px}
-.ccard-key{color:#ffd666;font-size:11.5px}
-.ccard-label{color:#e6edf7;font-weight:600;word-break:break-word}
-.ccard-value .kv-block .k{min-width:88px}
-.warn-banner{background:rgba(255,77,79,.14);border:1px solid #a3312f;border-left:5px solid #ff4d4f;border-radius:6px;padding:8px 10px;margin:8px 0}
-.warn-banner .wb-title{color:#ff7875;font-weight:700;font-size:14px}
-.warn-banner .wb-body{margin-top:4px;color:#ffd0cf;white-space:pre-wrap;word-break:break-word}
-
-/* ---------- blockers ---------- */
-.sev{border-left:4px solid #39424f;background:#111823;border-radius:6px;padding:6px 9px;margin:7px 0}
-.sev-blocker{border-left-color:#ff4d4f;background:rgba(255,77,79,.08)}
-.sev-defect{border-left-color:#fa8c16;background:rgba(250,140,22,.08)}
-.sev-warning{border-left-color:#fadb14;background:rgba(250,219,20,.07)}
-.sev-info{border-left-color:#4d9bff;background:rgba(77,155,255,.07)}
-.sev-unknown{border-left-color:#a06eff;background:rgba(160,110,255,.07)}
-.sev-head{display:flex;flex-wrap:wrap;gap:8px;align-items:baseline}
-.sev-title{font-weight:600;color:#e6edf7}
-.sev-msg{margin-top:3px;color:#c2ccd9;white-space:pre-wrap;word-break:break-word}
-.refs{margin-top:5px;display:flex;flex-wrap:wrap;gap:5px}
-.ref{font-size:11.5px;background:#0d131b;border:1px solid #2b3543;border-radius:4px;padding:1px 5px;color:#9fb0c4;max-width:100%;word-break:break-all}
-button.ref{cursor:pointer;color:#9fd0ff;border-color:#31597f}
-button.ref:hover{background:#16222f}
-.ref-ok-link{display:inline-block;font-size:11.5px;background:#0d131b;border:1px solid #3f7a20;border-radius:4px;padding:1px 5px;color:#b7eb8f;cursor:pointer;word-break:break-all;text-align:left}
-.ref-missing{font-size:11.5px;border:1px dashed #8c2f30;border-radius:4px;padding:1px 5px;color:#ffa39e;background:rgba(255,77,79,.08)}
-.ref-pending{font-size:11.5px;color:#8b96a5}
-.chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
-.chip{font-size:11px;background:#1b222d;border:1px solid #354052;border-radius:10px;padding:0 7px;color:#c6d0dd}
-
-/* ---------- 表格 / 行 ---------- */
-.rows{display:flex;flex-direction:column;gap:2px}
-.grp{margin:8px 0}
-.grp > h3{font-size:12.5px;color:#9fd0ff;margin-bottom:4px;font-weight:600}
-pre.json{background:#0d131b;border:1px solid #232c3a;border-radius:5px;padding:6px;margin:5px 0 0;max-height:220px;overflow:auto;font-size:11.5px;color:#a9b6c6;white-space:pre-wrap;word-break:break-word}
-pre.logtail{background:#080c11;border:1px solid #232c3a;border-radius:5px;padding:6px;margin:5px 0 0;height:210px;overflow:auto;font-size:11.5px;color:#c8d3e0;white-space:pre;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"DejaVu Sans Mono","Courier New",monospace}
-details{margin-top:4px}
-details > summary{cursor:pointer;color:#8b96a5;font-size:11.5px}
-.ev{display:flex;flex-wrap:wrap;gap:7px;align-items:baseline;padding:3px 4px;border-bottom:1px solid #1c2431}
-.ev:last-child{border-bottom:none}
-.ev .seq{color:#8b96a5;min-width:52px;font-size:11.5px}
-.ev .kind{color:#ffd666;min-width:132px}
-.ev-wrap{flex-direction:column;align-items:stretch}
-.ev-line{display:flex;flex-wrap:wrap;gap:7px;align-items:baseline;width:100%}
-.ev-list{max-height:420px;overflow:auto;border:1px solid #232c3a;border-radius:6px;background:#111823;padding:2px 4px}
-.chain{display:flex;flex-direction:column;gap:3px}
-.chain-item{background:#111823;border:1px solid #232c3a;border-radius:6px;padding:4px 7px}
-.chain-arrow{color:#5a6675;text-align:center;font-size:11px}
-.queue-item{background:#111823;border:1px solid #232c3a;border-radius:5px;padding:3px 7px;margin-top:4px;display:flex;gap:8px;flex-wrap:wrap}
-
-/* ---------- 表单 / 按钮 ---------- */
-.btn{background:#1e2733;border:1px solid #3a4557;color:#d8dee8;border-radius:6px;padding:4px 11px;cursor:pointer}
-.btn:hover:not(:disabled){background:#27323f}
-.btn:disabled{opacity:.45;cursor:not-allowed}
-.btn-primary{background:#1f4d8a;border-color:#2f6fbf;color:#e8f2ff}
-.btn-primary:hover:not(:disabled){background:#255ba3}
-.btn-danger{background:#7a2224;border-color:#a3312f;color:#ffe2e1}
-.btn-danger:hover:not(:disabled){background:#952a2c}
-.btn-row{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}
-.dec-btn.sel{outline:2px solid #66aaff}
-label.fld{display:flex;flex-direction:column;gap:3px;margin:6px 0;color:#9aa6b5;font-size:12px}
-input[type=text],textarea,select{background:#0d131b;border:1px solid #354052;border-radius:5px;color:#e6edf7;padding:4px 8px;font-family:inherit;font-size:13px;width:100%}
-textarea{resize:vertical}
-input[type=text]:focus,textarea:focus,select:focus{outline:1px solid #2f6fbf;border-color:#2f6fbf}
-.setup-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px 14px;align-items:end}
-.note{font-size:11.5px;color:#ffd666;background:rgba(250,219,20,.08);border:1px solid #6b5f10;border-radius:5px;padding:4px 7px}
-.msg{margin-top:6px;white-space:pre-wrap;word-break:break-word}
-.msg-ok{color:#b7eb8f}
-.msg-err{color:#ffa39e}
-.msg-warn{color:#ffd666}
-.mand{margin-top:8px;border-top:1px dashed #2b3543;padding-top:7px}
-.legend{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px}
-
-/* ---------- toast / modal ---------- */
-#toast{position:fixed;right:16px;bottom:16px;z-index:90;display:flex;flex-direction:column;gap:6px;max-width:420px}
-.toast-item{background:#1b2430;border:1px solid #3a4557;border-left:4px solid #4d9bff;border-radius:6px;padding:6px 10px;color:#dbe4ef;box-shadow:0 4px 14px rgba(0,0,0,.5);white-space:pre-wrap;word-break:break-word}
-.toast-item.err{border-left-color:#ff4d4f}
-.toast-item.ok{border-left-color:#52c41a}
-.modal{position:fixed;inset:0;z-index:100;background:rgba(4,7,11,.72);display:flex;align-items:center;justify-content:center;padding:20px}
-.modal-box{background:#141a23;border:1px solid #3a4557;border-radius:9px;padding:14px 16px;max-width:520px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.6)}
-.modal-box h3{font-size:14px;color:#ffd666;margin-bottom:8px}
-</style>
+<title>变更影响闭环 · 运营台 v1</title>
+<link rel="stylesheet" href="app.css">
 </head>
 <body>
+<div id="app">
 
-<header>
-  <div class="topbar">
-    <h1>闭环变更影响 · 闸门操作台</h1>
-    <span id="hdrHealth" class="muted tiny">正在读取 api/health …</span>
-    <span class="sep"></span>
-    <span id="hdrRun" class="badge bg-gray">run: （未选择）</span>
-    <span id="hdrPoll" class="muted tiny">轮询 1500ms</span>
-  </div>
-  <div id="conn" class="conn hidden"></div>
-  <div class="authority">
-    <span class="tag">服务端权威 · server_authority</span>
-    <span id="authorityText" class="txt mono">（加载中…）</span>
-  </div>
-</header>
+  <header>
+    <div class="brand"><span class="mark"></span> 变更影响闭环 <span class="muted tiny">· 运营台</span></div>
+    <span class="pill" id="hdrEnv"><span class="dot idle" id="hdrDot"></span><span id="hdrEnvText">环境未就绪</span></span>
+    <span class="pill mono tiny" id="hdrAddr">—</span>
+    <span class="pill tiny" id="hdrHealth">健康检查中…</span>
+    <div class="spacer"></div>
+    <span class="ver-flag">v1 · 真实数据</span>
+    <a class="btn btn-ghost btn-sm" id="lnkLegacy" href="legacy.html">旧界面</a>
+  </header>
 
-<main>
-  <details id="setupPanel" class="panel" open>
-    <summary>启动运行 / 打开既有运行（写操作：POST api/runs）</summary>
-    <div class="setup-grid" style="margin-top:8px">
-      <label class="fld">baseline（默认 v0）
-        <input type="text" id="fBaseline" value="v0" list="baselineList" autocomplete="off">
-      </label>
-      <datalist id="baselineList"></datalist>
-      <label class="fld">mode
-        <select id="fMode">
-          <option value="drill">drill（演练）</option>
-          <option value="real">real（真实，真实全跑单用例约 19 分钟）</option>
-        </select>
-      </label>
-      <label class="fld">now（可选，服务端时钟注入；留空则发送 null）
-        <input type="text" id="fNow" placeholder="留空 → null" autocomplete="off">
-      </label>
-      <div>
-        <button id="btnCreate" class="btn btn-primary">提交新运行 POST api/runs</button>
+  <div class="shell">
+
+    <!-- ================= 左栏：入口 + 运行列表 + 根信息 ================= -->
+    <aside id="sidebar">
+      <div class="rail-top">
+        <button class="btn btn-primary btn-block" id="btnNew">＋ 新建运行</button>
       </div>
-    </div>
-    <div class="note" style="margin-top:8px">mode = real：真实全跑单用例约 19 分钟（服务端真实执行，不是演练）。</div>
-    <div class="setup-grid" style="margin-top:10px">
-      <label class="fld">打开既有运行（GET api/runs）
-        <select id="fRunSelect"></select>
-      </label>
-      <div class="btn-row">
-        <button id="btnOpen" class="btn">打开</button>
-        <button id="btnReload" class="btn">立即刷新</button>
+      <div class="rail-label">运行记录</div>
+      <div class="run-list" id="runList"></div>
+      <div class="rail-foot">
+        <div class="mono" id="railToolRoot" title="">TOOL_ROOT · —</div>
+        <div class="mono" id="railWorkspaceRoot" title="">数据根 · —</div>
+        <div id="railModel">模型：—</div>
       </div>
-    </div>
-    <div id="setupMsg" class="msg"></div>
-  </details>
+    </aside>
 
-  <section id="runArea" class="hidden">
-    <div id="statusStrip" class="status-strip"></div>
-    <div class="layout">
-      <div class="col">
-        <section class="panel">
-          <h2>闭环节点进度 <span class="sub">N0 → N16（node_history 原值标注）</span></h2>
-          <div id="timeline" class="tl"></div>
-          <div id="timelineExtra" style="margin-top:8px"></div>
-        </section>
-        <section class="panel">
-          <h2>返工 / 冲突 / 基线链 <span class="sub">服务端原值</span></h2>
-          <div id="metaBody" class="rows"></div>
-        </section>
-        <section class="panel">
-          <h2>闸门历史 <span class="sub">gate_history</span></h2>
-          <div id="gateHistoryBody" class="rows"></div>
-        </section>
+    <!-- ================= 右区：三视图 ================= -->
+    <main>
+      <div class="page-head">
+        <div>
+          <h1 id="pageTitle">新建运行</h1>
+          <div class="muted tiny" id="pageSub">选择基线版本与项目目录 → 校验 → 确认启动</div>
+        </div>
+        <div class="spacer"></div>
+        <div class="seg" id="viewSeg" role="tablist" aria-label="视图切换">
+          <button id="segSetup" data-view="setup" class="on">① 配置</button>
+          <button id="segRun" data-view="run">② 执行</button>
+          <button id="segGate" data-view="gate">③ 闸门</button>
+        </div>
       </div>
 
-      <div class="col">
-        <section class="panel" id="gatePanel">
-          <h2>闸门操作台 <span class="sub">写操作：POST …/gates/{gate_id}/decision</span></h2>
-          <div id="gateBody"></div>
-          <div id="gateForm" class="mand">
-            <label class="fld">actor（必填；actor_kind 必须为 human）
-              <input type="text" id="fActor" value="human:" autocomplete="off">
-            </label>
-            <label class="fld">reason（必填，原文写入权威 gates.json 的 note）
-              <textarea id="fReason" rows="3" placeholder="裁决理由（必须可核对）"></textarea>
-            </label>
-            <div class="btn-row">
-              <span>已选决策：</span><span id="fChosen" class="badge bg-gray">未选择</span>
-              <span id="fHint" class="muted tiny"></span>
+      <div id="banners"></div>
+
+      <!-- ============ 视图 1：配置 ============ -->
+      <section id="viewSetup">
+        <div class="card">
+          <div class="card-head">
+            <h2>运行配置</h2>
+            <span class="sub">三个必选项；校验通过且与当前进程环境一致才允许启动</span>
+          </div>
+          <div class="card-body">
+
+            <div id="setupAlerts"></div>
+
+            <!-- 01 基线 -->
+            <div class="step-card">
+              <div class="step-no">1</div>
+              <div class="step-main">
+                <div class="step-title">选择基线版本 <span class="chip" id="setupBaselineChip">GET /api/baselines</span></div>
+                <div class="field-row">
+                  <div class="grow">
+                    <select class="input mono" id="setupBaseline" aria-label="基线版本"></select>
+                  </div>
+                  <button class="btn" id="btnBaselineBrowse">浏览…</button>
+                  <button class="btn" id="btnRefreshBaselines">刷新</button>
+                </div>
+                <div class="field-meta" id="setupBaselineMeta"><span class="muted">加载中…</span></div>
+                <div id="pickerHostBaseline"></div>
+              </div>
             </div>
-            <div id="fButtons" class="btn-row"></div>
-            <button id="btnSubmit" class="btn btn-primary" disabled>提交闸门决策</button>
-            <div id="gateResult" class="msg"></div>
+
+            <!-- 02 项目目录 -->
+            <div class="step-card">
+              <div class="step-no">2</div>
+              <div class="step-main">
+                <div class="step-title">选择要修订的项目目录 <span class="chip">ENV_ROOT（环境仓根）</span></div>
+                <div class="field-row">
+                  <input class="input mono grow" id="setupProject" readonly placeholder="尚未选择项目目录" aria-label="项目目录">
+                  <button class="btn" id="btnProjectBrowse">浏览…</button>
+                  <button class="btn" id="setupCheck">校验</button>
+                </div>
+                <div class="field-meta" id="setupProjectMeta"><span class="muted">未校验</span></div>
+                <div class="chips">
+                  <span class="chip">冻结面：RTL / TB / PKG / TESTLIB</span>
+                  <span class="chip warn">单槽：同环境禁止并发</span>
+                  <span class="chip">校验只读：不创建目录、不写文件</span>
+                </div>
+                <div id="pickerHostProject"></div>
+              </div>
+            </div>
+
+            <!-- 03 选项 -->
+            <div class="step-card">
+              <div class="step-no">3</div>
+              <div class="step-main">
+                <div class="step-title">运行选项</div>
+                <div class="field-row field-wrap">
+                  <label class="field-label" for="setupMode">模式</label>
+                  <select class="input" id="setupMode">
+                    <option value="drill">drill · 用冻结夹具（推荐先跑）</option>
+                    <option value="real">real · 真机编译/全跑</option>
+                  </select>
+                  <label class="field-label" for="setupScenario">场景</label>
+                  <select class="input" id="setupScenario">
+                    <option value="happy">happy</option>
+                    <option value="dead_job">dead_job（死任务夹具）</option>
+                    <option value="cancel">cancel（取消夹具）</option>
+                  </select>
+                </div>
+                <div class="alert warn hidden" id="realWarn">real 链路尚未闭合（N1/N6/N7/N9/N15）；允许启动，但结果不得当作真机结论。</div>
+                <details class="adv">
+                  <summary>高级（时间注入）</summary>
+                  <div class="field-row" style="margin-top:8px">
+                    <input class="input mono grow" id="setupNow" placeholder="now（留空 = 服务器时间；ISO 格式）" aria-label="时间注入">
+                  </div>
+                  <div class="foot-note">时间字段是唯一允许的非确定性；注入后整轮运行使用该时间。</div>
+                </details>
+              </div>
+            </div>
           </div>
-        </section>
 
-        <section class="panel">
-          <h2>双口径计数 <span class="sub">并列同权 · 服务端原值，不做任何换算</span></h2>
-          <div id="countsBody"></div>
-        </section>
-
-        <section class="panel">
-          <h2>判据与可裁决性 <span class="sub">verdict / can（服务端权威）</span></h2>
-          <div id="verdictBody" class="rows"></div>
-          <div class="note" style="margin-top:6px">本界面不计算判绿判红：只渲染服务端 `verdict.passed` / `can.judge_pass` / `counts.*.zero` 原值。</div>
-        </section>
-
-        <section class="panel">
-          <h2>观测印记三向一致 <span class="sub">imprints：observed vs expected</span></h2>
-          <div id="imprintBody" class="rows"></div>
-        </section>
-
-        <section class="panel">
-          <h2>阻断项 blockers <span class="sub">按 severity 分区</span></h2>
-          <div id="blockerBody"></div>
-        </section>
-
-        <section class="panel">
-          <h2>长任务看板 <span class="sub">job</span></h2>
-          <div id="jobBody" class="rows"></div>
-          <div id="jobLogWrap" class="grp hidden">
-            <h3>log_tail（尾行原样，等宽滚动区）</h3>
-            <pre id="logTailPre" class="logtail"></pre>
+          <div class="confirm-bar">
+            <div class="summary">
+              <span>基线 <b id="sumBaseline">—</b></span>
+              <span>环境 <b id="sumEnv">—</b></span>
+              <span>模式 <b id="sumMode">drill</b></span>
+            </div>
+            <div class="spacer"></div>
+            <span class="muted tiny" id="btnStartHint">需先通过校验</span>
+            <button class="btn btn-primary" id="btnStart" disabled>确认并启动</button>
           </div>
-        </section>
+        </div>
 
-        <section class="panel">
-          <h2>单槽面板 <span class="sub">slot</span></h2>
-          <div id="slotBody" class="rows"></div>
-        </section>
+        <div class="grid2">
+          <div class="card">
+            <div class="card-head"><h2>本环境插件面</h2><span class="sub">GET /api/health</span></div>
+            <div class="card-body" id="healthBody"><span class="muted">加载中…</span></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h2>操作边界</h2><span class="sub">界面只做投影与传输</span></div>
+            <div class="card-body">
+              <div class="kv"><span>读</span><b class="mono tiny">/api/health · /api/runs · /api/runs/{id}</b></div>
+              <div class="kv"><span>读</span><b class="mono tiny">/api/baselines · /api/env/check · /api/fs/dirs</b></div>
+              <div class="kv"><span>写</span><b class="mono tiny">POST /api/runs（唯一建运行入口）</b></div>
+              <div class="kv"><span>写</span><b class="mono tiny">POST …/gates/{gate}/decision（唯一业务写动作）</b></div>
+              <div class="foot-note">界面不判绿、不判红、不手抄闸门枚举；决策选项一律由服务端下发。</div>
+            </div>
+          </div>
+        </div>
+      </section>
 
-        <section class="panel">
-          <h2>事件流 <span class="sub">events（GET …/events?since_seq=N）</span></h2>
-          <div id="eventsBody"></div>
-          <div id="evList" class="ev-list"></div>
-        </section>
+      <!-- ============ 视图 2：执行中 ============ -->
+      <section id="viewRun" class="hidden">
+        <div id="runEmpty" class="card empty-card">
+          <div class="empty">
+            <div class="empty-title">尚未选择运行</div>
+            <div class="muted">从左侧运行记录选择一条，或点「＋ 新建运行」开始闭环。</div>
+          </div>
+        </div>
 
-        <section class="panel">
-          <h2>证据概况 <span class="sub">evidence</span></h2>
-          <div id="evidenceBody" class="rows"></div>
-        </section>
+        <div id="runBody" class="hidden">
+          <div class="run-head" id="runHead"></div>
+          <div id="runAlerts"></div>
+
+          <div class="card">
+            <div class="card-head">
+              <h2>流程执行状态</h2>
+              <span class="sub">四段 · 闸门为菱形 · 当前段自动展开</span>
+            </div>
+            <div class="stages" id="stages"></div>
+          </div>
+
+          <div class="grid2 run-grid">
+            <div>
+              <div class="card">
+                <div class="card-head">
+                  <h2>Agent 工作状态</h2>
+                  <span class="sub">5 个模型角色 + Host 确定性侧 · 状态由 node/event 派生</span>
+                </div>
+                <div class="card-body">
+                  <div class="agents" id="agents"></div>
+                  <div class="host-row" id="hostRow"></div>
+                  <div class="foot-note">以上卡片均为投影，非权威；判据以服务端 blockers / gates.json 为准。</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="side">
+              <div class="card gate-card hidden" id="gateCard">
+                <div class="card-head"><h2 id="gateCardTitle">闸门</h2><span class="sub" id="gateCardSub"></span></div>
+                <div class="card-body" id="gateCardBody"></div>
+              </div>
+
+              <div class="card">
+                <div class="card-head"><h2>双口径计数</h2><span class="sub">并列同权 · 不换算</span></div>
+                <div class="card-body" id="countsBody"></div>
+              </div>
+
+              <div class="card">
+                <div class="card-head"><h2>阻断项</h2><span class="sub">按 severity 分区 · 前端不过滤</span></div>
+                <div class="card-body" id="blockersBody"></div>
+              </div>
+
+              <div class="card">
+                <div class="card-head"><h2>长任务</h2><span class="sub">job 状态与日志尾部</span></div>
+                <div class="card-body" id="jobBody"></div>
+              </div>
+
+              <details class="card events" id="eventsCard">
+                <summary id="eventsSummary">事件流（折叠 · seq 递增 · 只读）</summary>
+                <div class="ev-list" id="eventList"></div>
+              </details>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ 视图 3：闸门等待 ============ -->
+      <section id="viewGate" class="hidden">
+        <div class="run-head" id="gateHead"></div>
+        <div id="gateAlerts"></div>
+
+        <div class="card">
+          <div class="card-head"><h2>流程执行状态</h2><span class="sub">闸门节点高亮 · 当前段自动展开</span></div>
+          <div class="stages" id="stagesGate"></div>
+        </div>
+
+        <div class="grid2 run-grid">
+          <div class="card">
+            <div class="card-head"><h2>闸门材料</h2><span class="sub">服务端下发 · 前端不参与判定</span></div>
+            <div class="card-body" id="gateMaterial"></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h2>闸门操作</h2><span class="sub">写动作：POST …/gates/{gate_id}/decision</span></div>
+            <div class="card-body" id="gatePanel"></div>
+          </div>
+        </div>
+      </section>
+
+      <div class="foot-note">
+        界面定位：只读投影 + 两个写动作（建运行、闸门决策）的传输层。闸门态权威在
+        <span class="mono">gates.json + gates.sha256</span>；本页不持有任何「已通过」状态。
       </div>
-    </div>
-  </section>
-</main>
+    </main>
+  </div>
 
-<div id="toast"></div>
-<div id="modal" class="modal hidden">
-  <div class="modal-box">
-    <h3 id="modalTitle">确认</h3>
-    <div id="modalBody"></div>
-    <div class="btn-row" style="margin-top:12px;justify-content:flex-end">
-      <button id="modalCancel" class="btn">返回</button>
-      <button id="modalOk" class="btn btn-danger">确认</button>
+  <!-- 目录浏览器（基线与项目共用，单实例；打开时移动到对应步骤下方） -->
+  <div class="dirpicker hidden" id="dirPicker">
+    <div class="dp-head">
+      <button class="btn btn-ghost btn-sm" id="btnDirUp">↑ 上级</button>
+      <span class="dp-crumb mono" id="dirCrumb">—</span>
+      <button class="btn btn-ghost btn-sm" id="btnDirClose">收起</button>
+    </div>
+    <div class="dp-roots" id="dirRoots"></div>
+    <div class="dp-list" id="dirList"></div>
+    <div class="dp-foot">
+      <span class="muted tiny" id="dirHint">只列目录；不读文件内容</span>
+      <div class="spacer"></div>
+      <button class="btn btn-primary btn-sm" id="btnDirChoose">选择此目录</button>
     </div>
   </div>
+
 </div>
 
-<script>
-(function () {
-  'use strict';
-
-  /* =========================================================
-     接口调用清单（全部相对路径，无前导 '/'）
-       GET  api/health
-       GET  api/runs
-       GET  api/runs/{run_id}
-       GET  api/runs/{run_id}/events?since_seq=N
-       POST api/runs
-       POST api/runs/{run_id}/gates/{gate_id}/decision
-       POST api/runs/{run_id}/jobs/{job_id}/cancel
-       GET  api/runs/{run_id}/evidence/exists?ref=<path>
-     ========================================================= */
-
-  var POLL_MS = 1500;
-  var RUNLIST_EVERY = 10;          /* 每 N 次轮询刷新一次 run 列表 */
-  var EVENT_BUFFER_MAX = 500;
-
-  var NODES = [
-    ['N0',  '选基线 / 建 manifest'],
-    ['N1',  '输入摄取：新包 + 新文档 → 新版 manifest'],
-    ['N2',  '差异对比（纯确定性 diff）'],
-    ['N3',  '差异语义总结 [analyst]'],
-    ['N4',  '【闸门1】差异确认 G1_diff_confirm'],
-    ['N5',  '影响分析（段级粗筛 ∩ 用例访问）'],
-    ['N6',  '用例修订 / 补充 [author]'],
-    ['N7',  '编译卡点B + 采证'],
-    ['N8',  '静态复核卡点C [checker]'],
-    ['N9',  '全跑卡点D + 两套口径采证'],
-    ['N10', '结果对账（实效性 + 三分类）'],
-    ['N11', '证据守护（身份错位 + 冻结复验）'],
-    ['N12', '评估报告 [reporter]'],
-    ['N13', '【闸门2】评估：接受 / 返工 G2_report_accept'],
-    ['N14', '【闸门3】回归决策 G3_regression_decision'],
-    ['N15', '全量回归'],
-    ['N16', '人触发 → Host 原子晋升新基线']
-  ];
-
-  /* 闸门决策按钮：**一律由服务端下发**（material.decision_options / run_view.gate_options）。
-     前端不再写死枚举 —— 曾写死的 full_regression / escalate_to_human 都是自造值，
-     权威（kb_lib.GATE_DECISIONS）实际是 full_now / subset_only / disputed / defer。
-     这里只保留一份"服务端字段缺失时的原样枚举"兜底，不做任何改值。 */
-  var GATE_DECISIONS_FALLBACK = {
-    G1_diff_confirm: [['confirmed', 'confirmed'], ['ignored', 'ignored'], ['disputed', 'disputed']],
-    G2_report_accept: [['accept', 'accept'], ['rework', 'rework']],
-    G3_regression_decision: [['full_now', 'full_now'], ['subset_only', 'subset_only'],
-                             ['milestone_only', 'milestone_only'], ['defer', 'defer']]
-  };
-
-  /* 取服务端的决策按钮；优先 material.decision_options，其次 run_view.gate_options，
-     最后才用兜底表。任何情况下都只渲染服务端给的值。 */
-  function gateDecisionOptions(gid, material, view) {
-    var opts = null;
-    if (material && Object.prototype.toString.call(material.decision_options) === '[object Array]') {
-      opts = material.decision_options;
-    } else if (view && view.gate_options && view.gate_options[gid]) {
-      opts = view.gate_options[gid];
-    }
-    if (opts && opts.length) {
-      return opts.map(function (o) {
-        if (Object.prototype.toString.call(o) === '[object Array]') return [o[0], o[1]];
-        return [o.value, (o.label || o.value) + ' ' + o.value];
-      });
-    }
-    return GATE_DECISIONS_FALLBACK[gid] || [];
-  }
-
-  var SEV_ORDER = ['blocker', 'defect', 'warning', 'info'];
-  var SEV_LABEL = { blocker: '阻断 blocker', defect: '缺陷 defect', warning: '警告 warning', info: '信息 info' };
-
-  var state = {
-    runId: null,
-    view: null,
-    health: null,
-    runs: [],
-    tickCount: 0,
-    maxSeq: 0,
-    extraEvents: [],
-    lastLogText: null,
-    lastGateId: null,
-    decision: null,
-    refChecks: {},      /* "run|ref" -> {status, data, ref, err} */
-    refQueue: [],
-    refBusy: false,
-    cancelJob: null,
-    booted: false
-  };
-
-  /* ---------------- DOM helpers ---------------- */
-  function q(id) { return document.getElementById(id); }
-  function clear(node) { while (node && node.firstChild) { node.removeChild(node.firstChild); } }
-  function h(tag, opts, kids) {
-    var e = document.createElement(tag), k;
-    if (opts) {
-      if (opts.cls) { e.className = opts.cls; }
-      if (opts.text !== undefined && opts.text !== null) { e.textContent = String(opts.text); }
-      if (opts.title) { e.title = String(opts.title); }
-      if (opts.attrs) { for (k in opts.attrs) { if (Object.prototype.hasOwnProperty.call(opts.attrs, k)) { e.setAttribute(k, String(opts.attrs[k])); } } }
-      if (opts.on) { for (k in opts.on) { if (Object.prototype.hasOwnProperty.call(opts.on, k)) { e.addEventListener(k, opts.on[k]); } } }
-    }
-    if (kids !== undefined && kids !== null) {
-      var arr = Object.prototype.toString.call(kids) === '[object Array]' ? kids : [kids];
-      for (var i = 0; i < arr.length; i++) {
-        var c = arr[i];
-        if (c === null || c === undefined || c === false || c === '') { continue; }
-        e.appendChild((typeof c === 'string' || typeof c === 'number') ? document.createTextNode(String(c)) : c);
-      }
-    }
-    return e;
-  }
-  function fmt(v) {
-    if (v === undefined) { return '（字段缺失）'; }
-    if (v === null) { return 'null'; }
-    if (typeof v === 'boolean') { return v ? 'true' : 'false'; }
-    if (typeof v === 'object') { try { return JSON.stringify(v); } catch (e) { return String(v); } }
-    return String(v);
-  }
-  function asArray(v) { return Object.prototype.toString.call(v) === '[object Array]' ? v : []; }
-  function boolCls(v) { return v === true ? 'bg-ok' : (v === false ? 'bg-red' : 'bg-gray'); }  function boolBadge(v, label) {
-    return h('span', { cls: 'badge ' + boolCls(v), text: (label ? label + ' = ' : '') + fmt(v), title: '服务端原值' });
-  }
-  function rawBadge(v, label, cls, title) {
-    return h('span', { cls: 'badge ' + (cls || 'bg-gray'), text: (label ? label + ' = ' : '') + fmt(v), title: title || '服务端原值' });
-  }
-  function kvRow(k, v) {
-    return h('div', { cls: 'kv-block' }, [h('span', { cls: 'k', text: k }), h('span', { cls: 'v mono', text: fmt(v) })]);
-  }
-  function num(v) { return (v === null || v === undefined || v === '') ? null : Number(v); }
-  function localTime(v) {
-    /* 仅作辅助显示：先显示服务端原值，再附本地时间；不替换原值 */
-    var ms = null;
-    if (typeof v === 'number' && isFinite(v)) { ms = v > 1e12 ? v : v * 1000; }
-    else if (typeof v === 'string' && /^\d+(\.\d+)?$/.test(v)) { var n = Number(v); ms = n > 1e12 ? n : n * 1000; }
-    if (ms === null) { return null; }
-    var d = new Date(ms);
-    if (isNaN(d.getTime())) { return null; }
-    return d.toLocaleString();
-  }
-  function tsCell(v) {
-    var kids = [h('span', { cls: 'mono', text: fmt(v) })];
-    var lt = localTime(v);
-    if (lt) { kids.push(h('span', { cls: 'derived', text: ' 本地:' + lt, title: '辅助显示（非服务端字段）' })); }
-    return h('span', {}, kids);
-  }
-  function jsonBlock(obj, summary) {
-    return h('details', {}, [
-      h('summary', { text: summary || '原始 JSON' }),
-      h('pre', { cls: 'json', text: (function () { try { return JSON.stringify(obj, null, 2); } catch (e) { return String(obj); } })() })
-    ]);
-  }
-  function toast(msg, kind) {
-    var box = q('toast');
-    if (!box) { return; }
-    var item = h('div', { cls: 'toast-item ' + (kind || '') }, [h('div', { text: msg })]);
-    box.appendChild(item);
-    setTimeout(function () { if (item.parentNode) { item.parentNode.removeChild(item); } }, kind === 'err' ? 12000 : 6000);
-  }
-
-  /* ---------------- HTTP ---------------- */
-  function req(method, path, body) {
-    var opts = { method: method, headers: { 'Accept': 'application/json' } };
-    if (body !== undefined && body !== null) {
-      opts.headers['Content-Type'] = 'application/json';
-      opts.body = JSON.stringify(body);
-    }
-    return fetch(path, opts).then(function (res) {
-      return res.text().then(function (txt) {
-        var data = null, parseErr = null;
-        try { data = txt ? JSON.parse(txt) : null; } catch (e) { parseErr = e; }
-        return { ok: res.ok, status: res.status, data: data, text: txt, parseErr: parseErr };
-      });
-    });
-  }
-  var API = {
-    health: function () { return req('GET', 'api/health'); },
-    runs: function () { return req('GET', 'api/runs'); },
-    run: function (id) { return req('GET', 'api/runs/' + encodeURIComponent(id)); },
-    events: function (id, since) { return req('GET', 'api/runs/' + encodeURIComponent(id) + '/events?since_seq=' + encodeURIComponent(since)); },
-    createRun: function (body) { return req('POST', 'api/runs', body); },
-    decision: function (id, gate, body) { return req('POST', 'api/runs/' + encodeURIComponent(id) + '/gates/' + encodeURIComponent(gate) + '/decision', body); },
-    cancel: function (id, job) { return req('POST', 'api/runs/' + encodeURIComponent(id) + '/jobs/' + encodeURIComponent(job) + '/cancel', {}); },
-    evidenceExists: function (id, ref) { return req('GET', 'api/runs/' + encodeURIComponent(id) + '/evidence/exists?ref=' + encodeURIComponent(ref)); }
-  };
-
-  function setConn(msg) {
-    var el = q('conn');
-    if (!el) { return; }
-    if (!msg) { el.classList.add('hidden'); el.textContent = ''; return; }
-    el.classList.remove('hidden');
-    el.textContent = msg;
-  }
-
-  /* ---------------- 证据 refs ---------------- */
-  var PATH_RE = /^[\w.@+\-/]+\.(json|md|markdown|log|txt|sv|svh|v|py|yaml|yml|sh|csv|html?|xml|tcl|cfg|ini|tar|gz|zip)(:\d+)?$/i;
-
-  function refText(r) {
-    if (r === null || r === undefined) { return '（空 ref）'; }
-    if (typeof r === 'string') { return r; }
-    if (typeof r === 'object') {
-      if (typeof r.ref === 'string') { return r.ref; }
-      try { return JSON.stringify(r); } catch (e) { return String(r); }
-    }
-    return String(r);
-  }
-  function isPathRef(txt) {
-    return PATH_RE.test(String(txt).trim());
-  }
-  function refKey(ref) { return state.runId + '|' + ref; }
-
-  function scheduleRefCheck(ref) {
-    var k = refKey(ref);
-    if (state.refChecks[k] || state.refQueue.indexOf(ref) >= 0) { return; }
-    state.refQueue.push(ref);
-    pumpRefQueue();
-  }
-  function pumpRefQueue() {
-    if (state.refBusy || !state.refQueue.length || !state.runId) { return; }
-    var ref = state.refQueue.shift();
-    var k = refKey(ref);
-    if (state.refChecks[k]) { pumpRefQueue(); return; }
-    state.refBusy = true;
-    var runId = state.runId;
-    state.refChecks[k] = { status: 'pending' };
-    API.evidenceExists(runId, ref).then(function (res) {
-      var d = res.data || {};
-      var exists = (d && d.exists === true);
-      if (res.ok && exists === false && /:\d+$/.test(ref)) {
-        /* file:line 形式：按去掉行号后的路径再问一次（仍以服务端返回为准） */
-        var p = ref.replace(/:\d+$/, '');
-        return API.evidenceExists(runId, p).then(function (r2) {
-          var d2 = r2.data || {};
-          state.refChecks[k] = { status: (r2.ok && d2.exists === true) ? 'ok' : 'missing', data: d2, ref: p, queried: p };
-        });
-      }
-      state.refChecks[k] = { status: exists ? 'ok' : 'missing', data: d, ref: ref, queried: ref, http: res.status };
-    })['catch'](function (err) {
-      state.refChecks[k] = { status: 'error', err: String(err && err.message ? err.message : err) };
-    })['then'](function () {
-      state.refBusy = false;
-      if (runId === state.runId) { renderAll(); }
-      pumpRefQueue();
-    });
-  }
-  function refChip(ref) {
-    var txt = refText(ref);
-    var pathLike = isPathRef(txt);
-    if (!pathLike) {
-      return h('span', { cls: 'ref mono', text: txt, title: '非文件路径 ref（不调用 evidence/exists）' });
-    }
-    var k = refKey(txt);
-    var st = state.refChecks[k];
-    if (!st) {
-      scheduleRefCheck(txt);
-      return h('button', {
-        cls: 'ref mono', text: txt + '  ⟳查证', title: 'GET api/runs/' + state.runId + '/evidence/exists?ref=' + txt,
-        on: { click: function () { scheduleRefCheck(txt); } }
-      });
-    }
-    if (st.status === 'pending') {
-      return h('span', {}, [
-        h('span', { cls: 'ref mono', text: txt }),
-        h('span', { cls: 'ref-pending', text: ' 查证中…' })
-      ]);
-    }
-    if (st.status === 'ok') {
-      var shown = st.queried && st.queried !== txt ? txt + '  →  ' + st.queried : txt;
-      return h('a', {
-        cls: 'ref-ok-link mono', text: '存在 ✓ ' + shown, attrs: { role: 'link', tabindex: '0' },
-        title: '服务端 evidence/exists 返回 exists=true：' + JSON.stringify(st.data),
-        on: { click: function () { toast('证据存在：' + shown + '\n服务端返回：' + JSON.stringify(st.data), 'ok'); } }
-      });
-    }
-    if (st.status === 'missing') {
-      return h('span', { cls: 'ref-missing mono', text: txt + '  证据缺失（服务端 exists=false，非 404 页面）', title: JSON.stringify(st.data) });
-    }
-    return h('span', { cls: 'ref-missing mono', text: txt + '  查证失败：' + st.err });
-  }
-  function refsBlock(refs, label) {
-    var arr = asArray(refs);
-    if (!arr.length) { return null; }
-    var chips = [];
-    for (var i = 0; i < arr.length; i++) { chips.push(refChip(arr[i])); }
-    return h('div', {}, [
-      h('div', { cls: 'muted tiny', text: label || 'refs' }),
-      h('div', { cls: 'refs' }, chips)
-    ]);
-  }
-
-  /* ---------------- 顶部 / 状态 ---------------- */
-  function renderHealth() {
-    var el = q('hdrHealth');
-    var d = state.health;
-    if (!d) { el.textContent = 'api/health：不可用'; return; }
-    el.textContent = 'agently ' + fmt(d.agently) + ' · python ' + fmt(d.python) + ' · repo_root=' + fmt(d.repo_root) + ' · ok=' + fmt(d.ok);
-  }
-  function renderAuthority() {
-    var el = q('authorityText');
-    var v = state.view;
-    if (v && v.server_authority !== undefined && v.server_authority !== null) {
-      el.textContent = String(v.server_authority);
-    } else if (v) {
-      el.textContent = '（服务端未返回 server_authority 字段；本界面不是权威，闸门态权威在 kb/tools/gate.py）';
-    } else {
-      el.textContent = '（尚未加载 run_view）';
-    }
-  }
-  function renderStatusStrip() {
-    var box = q('statusStrip');
-    clear(box);
-    var v = state.view;
-    if (!v) { return; }
-    var can = v.can || {};
-    var counts = v.counts || {};
-    box.appendChild(h('div', {}, [
-      h('span', { cls: 'kv' }, [h('span', { cls: 'k', text: 'run_id' }), h('span', { cls: 'v mono', text: fmt(v.run_id) })]),
-      h('span', { cls: 'kv' }, [h('span', { cls: 'k', text: 'status' }), h('span', { cls: 'v mono', text: fmt(v.status) })]),
-      h('span', { cls: 'kv' }, [h('span', { cls: 'k', text: 'current_node' }), h('span', { cls: 'v mono', text: fmt(v.current_node) })]),
-      h('span', { cls: 'kv' }, [h('span', { cls: 'k', text: 'mode' }), h('span', { cls: 'v mono', text: fmt(v.mode) })]),
-      h('span', { cls: 'kv' }, [h('span', { cls: 'k', text: 'baseline' }), h('span', { cls: 'v mono', text: fmt(v.baseline) })]),
-      h('span', { cls: 'kv' }, [h('span', { cls: 'k', text: 'run_dir' }), h('span', { cls: 'v mono', text: fmt(v.run_dir) })])
-    ]));
-    box.appendChild(h('div', {}, [
-      h('span', { cls: 'kv' }, [h('span', { cls: 'k', text: 'created_at' }), tsCell(v.created_at)]),
-      h('span', { cls: 'kv' }, [h('span', { cls: 'k', text: 'updated_at' }), tsCell(v.updated_at)]),
-      h('span', { cls: 'kv' }, [h('span', { cls: 'k', text: 'can.judge_pass' }), boolBadge(can.judge_pass)]),
-      h('span', { cls: 'kv' }, [h('span', { cls: 'k', text: 'can.promote' }), boolBadge(can.promote)]),
-      h('span', { cls: 'kv' }, [h('span', { cls: 'k', text: 'counts.koutou1.zero' }), boolBadge(counts.koutou1 ? counts.koutou1.zero : undefined)]),
-      h('span', { cls: 'kv' }, [h('span', { cls: 'k', text: 'counts.koutou2.zero' }), boolBadge(counts.koutou2 ? counts.koutou2.zero : undefined)]),
-      h('span', { cls: 'kv' }, [h('span', { cls: 'k', text: 'counts.both_zero' }), boolBadge(counts.both_zero)])
-    ]));
-    box.appendChild(h('div', { cls: 'tiny muted', text: '判绿判红不由本界面计算：以上均为服务端 run_view 原值。' }));
-    // 失败原因必须显眼：`status=failed` 却看不到为什么，操作台等于只说了半句话。
-    // （实测缺陷：服务端投影原先压根不带 error，N9 死任务 / 补投递失败 / 快照落后于账本
-    //   三条失败路径的原因全被吞掉，界面只剩一个 "failed"。）
-    if (v.status === 'failed' || v.error) {
-      box.appendChild(h('div', { cls: 'sev sev-blocker' }, [
-        h('div', { cls: 'sev-head' }, [
-          h('span', { cls: 'sev-title', text: '运行失败' }),
-          rawBadge(v.status, 'status', 'bg-red')
-        ]),
-        h('div', { cls: 'sev-msg mono', text: fmt(v.error || '服务端未给出 error（按缺件处理，不猜原因）') })
-      ]));
-    }
-    var notes = Object.prototype.toString.call(v.notes) === '[object Array]' ? v.notes : [];
-    for (var i = 0; i < notes.length; i++) {
-      box.appendChild(h('div', { cls: 'sev sev-warning' }, [
-        h('div', { cls: 'sev-head' }, [h('span', { cls: 'sev-title', text: 'note' })]),
-        h('div', { cls: 'sev-msg mono', text: fmt(notes[i]) })
-      ]));
-    }
-  }
-
-  /* ---------------- 节点时间线 ---------------- */
-  function nodeNumberOf(s) {
-    if (s === null || s === undefined) { return null; }
-    var m = String(s).match(/N(\d{1,2})/);
-    return m ? Number(m[1]) : null;
-  }
-  function renderTimeline() {
-    var box = q('timeline'), extra = q('timelineExtra');
-    clear(box); clear(extra);
-    var v = state.view;
-    if (!v) { return; }
-    var hist = Object.prototype.toString.call(v.node_history) === '[object Array]' ? v.node_history : [];
-    var byNum = {}, unmatched = [];
-    for (var i = 0; i < hist.length; i++) {
-      var e = hist[i] || {};
-      var n = nodeNumberOf(e.node);
-      if (n === null || n < 0 || n > 16) { unmatched.push(e); continue; }
-      byNum[n] = e;   /* 后者覆盖前者：取最后一条 */
-    }
-    var curNum = nodeNumberOf(v.current_node);
-    if (curNum !== null && (curNum < 0 || curNum > 16)) { curNum = null; }  /* 不在 N0..N16 内 → 视为未匹配 */
-    for (var j = 0; j < NODES.length; j++) {
-      var id = NODES[j][0], name = NODES[j][1], n2 = j;
-      var rec = byNum[n2];
-      var st = rec ? rec.status : undefined;
-      var cls = 'tl-item';
-      if (st === 'ok') { cls += ' ok'; }
-      else if (st === 'running') { cls += ' running'; }
-      else if (st === 'failed' || st === 'fail') { cls += ' failed'; }
-      if (curNum !== null && curNum === n2) { cls += ' current'; }
-      var line = [
-        h('span', { cls: 'tl-nid mono', text: id }),
-        h('span', { cls: 'tl-name', text: name })
-      ];
-      if (rec) {
-        var stCls = st === 'ok' ? 'bg-ok' : (st === 'running' ? 'bg-blue' : ((st === 'failed' || st === 'fail') ? 'bg-red' : 'bg-gray'));
-        line.push(rawBadge(st, 'status', stCls));
-      } else {
-        line.push(h('span', { cls: 'badge bg-gray', text: 'node_history 无记录' }));
-      }
-      if (curNum !== null && curNum === n2) { line.push(h('span', { cls: 'badge bg-purple', text: 'current_node' })); }
-      var item = h('div', { cls: cls }, [
-        h('div', { cls: 'tl-line1' }, line)
-      ]);
-      if (rec) {
-        if (rec.at !== undefined) {
-          item.appendChild(h('div', { cls: 'tl-detail tiny' }, [h('span', { cls: 'muted', text: 'at: ' }), tsCell(rec.at)]));
-        }
-        if (rec.detail !== undefined && rec.detail !== null) {
-          item.appendChild(jsonBlock(rec.detail, 'detail'));
-        }
-      }
-      box.appendChild(item);
-    }
-    if (curNum === null && v.current_node !== undefined && v.current_node !== null) {
-      extra.appendChild(h('div', { cls: 'msg msg-warn', text: 'current_node = ' + fmt(v.current_node) + '（未匹配到 N0..N16）' }));
-    }
-    if (unmatched.length) {
-      var wrap = h('div', { cls: 'grp' }, [h('h3', { text: '未归类 node_history 记录（原样显示）' })]);
-      for (var k = 0; k < unmatched.length; k++) {
-        wrap.appendChild(h('div', { cls: 'sev sev-unknown' }, [
-          h('div', { cls: 'sev-head' }, [h('span', { cls: 'sev-title mono', text: fmt(unmatched[k].node) }), rawBadge(unmatched[k].status, 'status')]),
-          unmatched[k].detail !== undefined ? jsonBlock(unmatched[k].detail, 'detail') : null
-        ]));
-      }
-      extra.appendChild(wrap);
-    }
-  }
-
-  /* ---------------- 计数 ---------------- */
-  function countCard(key, c) {
-    c = c || {};
-    var card = h('div', { cls: 'ccard' + (c.zero === false ? ' ccard-red' : '') });
-    card.appendChild(h('div', { cls: 'ccard-head' }, [
-      h('div', { cls: 'ccard-key mono', text: key }),
-      h('div', { cls: 'ccard-label', text: c.label !== undefined ? c.label : '（label 缺失）' })
-    ]));
-    var vbox = h('div', { cls: 'ccard-value' });
-    var val = c.value;
-    if (val !== null && val !== undefined && typeof val === 'object' && Object.prototype.toString.call(val) !== '[object Array]') {
-      var keys = Object.keys(val);
-      if (!keys.length) { vbox.appendChild(kvRow('value', val)); }
-      for (var i = 0; i < keys.length; i++) { vbox.appendChild(kvRow(keys[i], val[keys[i]])); }
-    } else {
-      vbox.appendChild(kvRow('value', val));
-    }
-    card.appendChild(vbox);
-    card.appendChild(h('div', {}, [
-      h('span', { cls: 'muted tiny', text: 'zero（服务端原值）： ' }),
-      boolBadge(c.zero)
-    ]));
-    var rb = refsBlock(c.refs, 'refs');
-    if (rb) { card.appendChild(rb); }
-    return card;
-  }
-  function koutouWarning(counts) {
-    var k1 = counts.koutou1 || {}, k2 = counts.koutou2 || {};
-    if (k2.zero === true && k1.zero === false) { return true; }
-    return false;
-  }
-  function warningBanner(v) {
-    var verdict = v.verdict || {};
-    var counts = v.counts || {};
-    var box = h('div', { cls: 'warn-banner' });
-    box.appendChild(h('div', { cls: 'wb-title', text: '⚠ 口径二为 0 不足以判绿' }));
-    box.appendChild(h('div', { cls: 'wb-body' }, [
-      h('div', { text: '服务端计数：counts.koutou1.zero = ' + fmt((counts.koutou1 || {}).zero) + '，counts.koutou2.zero = ' + fmt((counts.koutou2 || {}).zero) + '（原值）' })
-    ]));
-    box.appendChild(h('div', { cls: 'wb-body' }, [
-      h('div', { cls: 'muted tiny', text: 'verdict.must_not（服务端原文）：' }),
-      h('div', { text: verdict.must_not !== undefined ? fmt(verdict.must_not) : '（服务端未返回 verdict.must_not）' })
-    ]));
-    return box;
-  }
-  function renderCounts() {
-    var box = q('countsBody');
-    clear(box);
-    var v = state.view;
-    if (!v) { return; }
-    var counts = v.counts || {};
-    box.appendChild(h('div', { cls: 'legend' }, [
-      h('span', { cls: 'badge bg-blue', text: '两套口径分别取、分别存，不得互相替代（spec I3 / 红线 3）' })
-    ]));
-    var grid = h('div', { cls: 'counts-grid' });
-    grid.appendChild(countCard('counts.koutou1', counts.koutou1));
-    grid.appendChild(countCard('counts.koutou2', counts.koutou2));
-    box.appendChild(grid);
-    if (koutouWarning(counts)) { box.appendChild(warningBanner(v)); }
-    if (counts.note !== undefined) {
-      box.appendChild(h('div', { cls: 'muted tiny', text: 'counts.note（服务端原文）：' + fmt(counts.note) }));
-    }
-    box.appendChild(jsonBlock(counts, 'counts 原始 JSON'));
-  }
-
-  /* ---------------- verdict / can ---------------- */
-  function renderVerdict() {
-    var box = q('verdictBody');
-    clear(box);
-    var v = state.view;
-    if (!v) { return; }
-    var verdict = v.verdict;
-    var can = v.can || {};
-    if (!verdict) {
-      box.appendChild(h('div', { cls: 'msg msg-warn', text: '服务端未返回 verdict（无全跑证据时判据不可判；本界面不代替服务端判断）。' }));
-    } else {
-      box.appendChild(h('div', {}, [
-        h('span', { cls: 'kv' }, [h('span', { cls: 'k', text: 'verdict.passed' }), boolBadge(verdict.passed)]),
-        h('span', { cls: 'kv' }, [h('span', { cls: 'k', text: 'verdict.criterion' }), h('span', { cls: 'v', text: fmt(verdict.criterion) })])
-      ]));
-      if (verdict.reasons !== undefined && verdict.reasons !== null) {
-        var reasons = Object.prototype.toString.call(verdict.reasons) === '[object Array]' ? verdict.reasons : [verdict.reasons];
-        var rl = h('div', { cls: 'grp' }, [h('h3', { text: 'verdict.reasons（服务端原文）' })]);
-        for (var i = 0; i < reasons.length; i++) {
-          rl.appendChild(h('div', { cls: 'sev sev-' + (verdict.passed === true ? 'info' : 'blocker') }, [
-            h('div', { cls: 'sev-msg', text: fmt(reasons[i]) })
-          ]));
-        }
-        box.appendChild(rl);
-      }
-      box.appendChild(h('div', { cls: 'sev sev-blocker' }, [
-        h('div', { cls: 'sev-head' }, [h('span', { cls: 'sev-title', text: 'verdict.must_not（不得据此判绿的红线，服务端原文）' })]),
-        h('div', { cls: 'sev-msg', text: verdict.must_not !== undefined ? fmt(verdict.must_not) : '（服务端未返回 verdict.must_not）' })
-      ]));
-      box.appendChild(jsonBlock(verdict, 'verdict 原始 JSON'));
-    }
-    box.appendChild(h('div', { cls: 'grp' }, [
-      h('h3', { text: 'can（服务端原值）' }),
-      kvRow('can.judge_pass', can.judge_pass),
-      kvRow('can.promote', can.promote),
-      jsonBlock(can, 'can 原始 JSON')
-    ]));
-  }
-
-  /* ---------------- imprints ---------------- */
-  function renderImprints() {
-    var box = q('imprintBody');
-    clear(box);
-    var v = state.view;
-    if (!v) { return; }
-    var ev = v.evidence || {};
-    var im = ev.imprints;
-    if (!im || typeof im !== 'object' || !Object.keys(im).length) {
-      box.appendChild(h('div', { cls: 'muted', text: '服务端未返回 evidence.imprints（无印记可核对）。' }));
-      return;
-    }
-    var keys = Object.keys(im);
-    for (var i = 0; i < keys.length; i++) {
-      var key = keys[i], it = im[key] || {};
-      var consistentCls = it.consistent === true ? 'bg-ok' : (it.consistent === false ? 'bg-red' : 'bg-gray');
-      var card = h('div', { cls: 'ccard' });
-      card.appendChild(h('div', { cls: 'ccard-head' }, [
-        h('div', { cls: 'ccard-key mono', text: 'imprints.' + key }),
-        h('div', { cls: 'ccard-label', text: it.marker !== undefined ? fmt(it.marker) : '（marker 缺失）' })
-      ]));
-      card.appendChild(h('div', { cls: 'btn-row' }, [
-        rawBadge(it.verified_count, 'verified_count', 'bg-blue'),
-        rawBadge(it.failed_count, 'failed_count', (it.failed_count === 0 ? 'bg-ok' : 'bg-red')),
-        h('span', { cls: 'badge ' + consistentCls, text: 'consistent = ' + fmt(it.consistent), title: '服务端原值' })
-      ]));
-      var o = it.observed || {}, e = it.expected || {};
-      var cmp = h('div', { cls: 'counts-grid' });
-      var ob = h('div', { cls: 'ccard' }, [
-        h('div', { cls: 'ccard-key', text: 'observed（实测）' }),
-        kvRow('address', o.address), kvRow('value', o.value),
-        kvRow('id_count', o.id_count)
-      ]);
-      if (o.imprint && typeof o.imprint === 'object') {
-        ob.appendChild(kvRow('imprint.ref', o.imprint.ref));
-        ob.appendChild(kvRow('imprint.sim_time', o.imprint.sim_time));
-      }
-      var eb = h('div', { cls: 'ccard' }, [
-        h('div', { cls: 'ccard-key', text: 'expected（预期）' }),
-        kvRow('address', e.address), kvRow('value', e.value)
-      ]);
-      cmp.appendChild(ob); cmp.appendChild(eb);
-      card.appendChild(cmp);
-      if (it.checks !== undefined && it.checks !== null) {
-        var cbox = h('div', { cls: 'ccard-value' }, [h('div', { cls: 'muted tiny', text: 'checks（服务端原值）' })]);
-        if (typeof it.checks === 'object' && Object.prototype.toString.call(it.checks) !== '[object Array]') {
-          var cks = Object.keys(it.checks);
-          for (var c = 0; c < cks.length; c++) { cbox.appendChild(kvRow(cks[c], it.checks[cks[c]])); }
-        } else { cbox.appendChild(kvRow('checks', it.checks)); }
-        card.appendChild(cbox);
-      }
-      var rb = refsBlock(it.refs, 'refs');
-      if (rb) { card.appendChild(rb); }
-      box.appendChild(card);
-    }
-  }
-
-  /* ---------------- blockers ---------------- */
-  function blockersBySeverity(list) {
-    var groups = {}, others = [];
-    for (var i = 0; i < list.length; i++) {
-      var b = list[i] || {};
-      var s = typeof b.severity === 'string' ? b.severity : 'unknown';
-      if (SEV_ORDER.indexOf(s) >= 0) { if (!groups[s]) { groups[s] = []; } groups[s].push(b); }
-      else { others.push(b); }
-    }
-    return { groups: groups, others: others };
-  }
-  function blockerItem(b, sev) {
-    var item = h('div', { cls: 'sev sev-' + (SEV_ORDER.indexOf(sev) >= 0 ? sev : 'unknown') });
-    item.appendChild(h('div', { cls: 'sev-head' }, [
-      rawBadge(b.severity, 'severity', 'bg-gray'),
-      h('span', { cls: 'sev-title', text: b.title !== undefined ? fmt(b.title) : '（title 缺失）' }),
-      h('span', { cls: 'badge bg-gray mono', text: b.code !== undefined ? fmt(b.code) : '（code 缺失）' })
-    ]));
-    if (b.message !== undefined) { item.appendChild(h('div', { cls: 'sev-msg', text: fmt(b.message) })); }
-    if (b.items !== undefined && b.items !== null) {
-      var its = Object.prototype.toString.call(b.items) === '[object Array]' ? b.items : [b.items];
-      var chips = [];
-      for (var i = 0; i < its.length; i++) { chips.push(h('span', { cls: 'chip mono', text: fmt(its[i]) })); }
-      item.appendChild(h('div', { cls: 'chips' }, chips));
-    }
-    var rb = refsBlock(b.refs, 'refs');
-    if (rb) { item.appendChild(rb); }
-    return item;
-  }
-  function blockersNode(listIn, titleText) {
-    var list = asArray(listIn);
-    if (!list.length) { return null; }
-    var out = h('div', { cls: 'grp' }, [h('h3', { text: titleText + '（' + list.length + '）' })]);
-    var g = blockersBySeverity(list);
-    for (var i = 0; i < SEV_ORDER.length; i++) {
-      var s = SEV_ORDER[i];
-      if (!g.groups[s]) { continue; }
-      out.appendChild(h('div', { cls: 'muted tiny', text: SEV_LABEL[s] + ' · ' + g.groups[s].length + ' 条' }));
-      for (var j = 0; j < g.groups[s].length; j++) { out.appendChild(blockerItem(g.groups[s][j], s)); }
-    }
-    if (g.others.length) {
-      out.appendChild(h('div', { cls: 'muted tiny', text: '未知 severity · ' + g.others.length + ' 条' }));
-      for (var k = 0; k < g.others.length; k++) { out.appendChild(blockerItem(g.others[k], 'unknown')); }
-    }
-    return out;
-  }
-  function renderBlockers() {
-    var box = q('blockerBody');
-    clear(box);
-    var v = state.view;
-    if (!v) { return; }
-    var list = Object.prototype.toString.call(v.blockers) === '[object Array]' ? v.blockers : [];
-    if (!list.length) {
-      box.appendChild(h('div', { cls: 'muted', text: '服务端 blockers 为空数组。' }));
-      return;
-    }
-    var g = blockersBySeverity(list);
-    box.appendChild(h('div', { cls: 'legend' }, SEV_ORDER.map(function (s) {
-      var n = g.groups[s] ? g.groups[s].length : 0;
-      return h('span', { cls: 'badge ' + (s === 'blocker' ? 'bg-red' : (s === 'defect' ? 'bg-orange' : (s === 'warning' ? 'bg-yellow' : 'bg-blue'))), text: SEV_LABEL[s] + ' : ' + n });
-    })));
-    var node = blockersNode(list, 'blockers');
-    if (node) { box.appendChild(node); }
-    box.appendChild(jsonBlock(list, 'blockers 原始 JSON'));
-  }
-
-  /* ---------------- 闸门操作台 ---------------- */
-  function gateId() {
-    var v = state.view;
-    if (!v) { return null; }
-    var pi = v.pending_interrupt;
-    if (!pi) { return null; }
-    var p = pi.payload || {};
-    if (p.gate) { return String(p.gate); }
-    if (pi.id) { return String(pi.id); }
-    return null;
-  }
-  function gateMaterial() {
-    var v = state.view;
-    if (!v || !v.pending_interrupt) { return null; }
-    var m = v.pending_interrupt.payload;
-    return (m && typeof m === 'object') ? m : null;
-  }
-  function renderGate() {
-    var box = q('gateBody');
-    clear(box);
-    var v = state.view;
-    if (!v) { return; }
-    var can = v.can || {};
-    var pi = v.pending_interrupt;
-    var gid = gateId();
-    var mat = gateMaterial();
-
-    /* 顶部：不可判绿 */
-    if (can.judge_pass === false) {
-      box.appendChild(h('div', { cls: 'warn-banner' }, [
-        h('div', { cls: 'wb-title', text: '⛔ 当前不可判绿' }),
-        h('div', { cls: 'wb-body', text: 'can.judge_pass = ' + fmt(can.judge_pass) + '（服务端原值）。闸门决策不等于判绿；未闭环项与冲突不因签署而消失。' })
-      ]));
-    } else if (can.judge_pass === undefined) {
-      box.appendChild(h('div', { cls: 'note', text: 'can.judge_pass 字段缺失（服务端未返回）。' }));
-    }
-
-    if (!pi) {
-      box.appendChild(h('div', { cls: 'muted', text: '当前无待决闸门（pending_interrupt = ' + fmt(pi) + '）。' }));
-      q('gateForm').classList.add('hidden');
-      renderGateButtons(null);
-      return;
-    }
-    q('gateForm').classList.remove('hidden');
-
-    box.appendChild(h('div', { cls: 'rows' }, [
-      kvRow('pending_interrupt.id', pi.id),
-      kvRow('pending_interrupt.type', pi.type),
-      kvRow('gate_id', gid)
-    ]));
-    box.appendChild(jsonBlock(pi, 'pending_interrupt 原始 JSON'));
-
-    if (mat) {
-      if (mat.invariant_note !== undefined) {
-        box.appendChild(h('div', { cls: 'sev sev-info' }, [
-          h('div', { cls: 'sev-head' }, [h('span', { cls: 'sev-title', text: 'invariant_note（不变式，服务端原文）' })]),
-          h('div', { cls: 'sev-msg', text: fmt(mat.invariant_note) })
-        ]));
-      }
-      if (mat.actor_policy !== undefined) {
-        box.appendChild(h('div', { cls: 'sev sev-warning' }, [
-          h('div', { cls: 'sev-head' }, [h('span', { cls: 'sev-title', text: 'actor_policy（签署策略，服务端原文）' })]),
-          h('div', { cls: 'sev-msg', text: fmt(mat.actor_policy) })
-        ]));
-      }
-
-      /* 材料：双计数 */
-      var mcounts = mat.counts || (state.view ? state.view.counts : null);
-      if (mcounts) {
-        var cwrap = h('div', { cls: 'grp' }, [h('h3', { text: '材料 · 双口径计数（并列同权）' })]);
-        var g2 = h('div', { cls: 'counts-grid' });
-        g2.appendChild(countCard('material.counts.koutou1', mcounts.koutou1));
-        g2.appendChild(countCard('material.counts.koutou2', mcounts.koutou2));
-        cwrap.appendChild(g2);
-        if (koutouWarning(mcounts)) { cwrap.appendChild(warningBanner({ verdict: (state.view && state.view.verdict) || {}, counts: mcounts })); }
-        box.appendChild(cwrap);
-      }
-
-      /* 材料：blockers / hard_block / defects */
-      var mb = blockersNode(mat.blockers, '材料 · blockers');
-      if (mb) { box.appendChild(mb); }
-      var mh = blockersNode(mat.hard_block, '材料 · hard_block（硬阻断）');
-      if (mh) { box.appendChild(mh); }
-      var md = blockersNode(mat.defects, '材料 · defects（缺陷）');
-      if (md) { box.appendChild(md); }
-
-      /* 材料：冲突 / 返工 / 基线 */
-      var mm = h('div', { cls: 'grp' }, [h('h3', { text: '材料 · 冲突摘要 / 返工计数 / 基线链' })]);
-      var conf = mat.conflicts || {};
-      mm.appendChild(kvRow('conflicts.total', conf.total));
-      mm.appendChild(kvRow('conflicts.blocks_release', conf.blocks_release));
-      mm.appendChild(kvRow('conflicts.open', conf.open));
-      var rw = mat.rework || {};
-      mm.appendChild(kvRow('rework.n6_n8_cycles', rw.n6_n8_cycles));
-      mm.appendChild(kvRow('rework.limit', rw.limit));
-      var bls = Object.prototype.toString.call(mat.baselines) === '[object Array]' ? mat.baselines : [];
-      for (var i = 0; i < bls.length; i++) {
-        mm.appendChild(h('div', { cls: 'chain-item mono', text: 'baseline ' + fmt((bls[i] || {}).name) + '  parent=' + fmt((bls[i] || {}).parent) + '  created_at=' + fmt((bls[i] || {}).created_at) }));
-      }
-      if (mat.actor_kind !== undefined) { mm.appendChild(kvRow('actor_kind', mat.actor_kind)); }
-      box.appendChild(mm);
-      box.appendChild(jsonBlock(mat, 'gate_material 原始 JSON'));
-    } else {
-      box.appendChild(h('div', { cls: 'msg msg-warn', text: 'pending_interrupt.payload 为空或缺省；材料不可得，仍可提交决策（以后端为准）。' }));
-    }
-
-    renderGateButtons(gid, mat);
-  }
-  function renderGateButtons(gid, material) {
-    var box = q('fButtons');
-    clear(box);
-    var hint = q('fHint');
-    hint.textContent = '';
-    if (state.lastGateId !== gid) {
-      state.decision = null;
-      state.lastGateId = gid;
-    }
-    if (!gid) {
-      box.appendChild(h('span', { cls: 'muted tiny', text: '无待决闸门：不提供决策按钮。' }));
-      updateSubmitState();
-      return;
-    }
-    var defs = gateDecisionOptions(gid, material, state.view);
-    if (!defs || !defs.length) {
-      box.appendChild(h('span', { cls: 'msg msg-warn tiny', text: '未知闸门 id「' + gid + '」：本界面不提供决策枚举，请以后端合法枚举为准。' }));
-      box.appendChild(jsonBlock(gid, '原始闸门 id'));
-      updateSubmitState();
-      return;
-    }
-    var conf = (state.view && state.view.conflicts) || {};
-    var blockRelease = conf.blocks_release;
-    for (var i = 0; i < defs.length; i++) {
-      (function (val, label) {
-        var disabled = false, why = '';
-        // I4 只对"全量/子集回归"生效；值与权威枚举一致（full_now / subset_only）。
-        if (gid === 'G3_regression_decision' && (val === 'full_now' || val === 'subset_only') &&
-            typeof blockRelease === 'number' && blockRelease > 0) {
-          disabled = true;
-          why = 'conflicts.blocks_release = ' + blockRelease + ' > 0：冲突未清零时「' + val + '」被本界面禁用（I4；仍以后端 4xx 为准）。';
-        }
-        var b = h('button', {
-          cls: 'btn dec-btn' + (state.decision === val ? ' sel' : ''),
-          text: label,
-          title: disabled ? why : ('decision = ' + val),
-          attrs: { 'data-decision': val }
-        });
-        if (disabled) { b.disabled = true; }
-        b.addEventListener('click', function () {
-          state.decision = val;
-          var all = box.querySelectorAll('.dec-btn');
-          for (var m = 0; m < all.length; m++) { all[m].classList.remove('sel'); }
-          b.classList.add('sel');
-          q('fChosen').textContent = val;
-          q('fChosen').className = 'badge bg-blue';
-          updateSubmitState();
-        });
-        box.appendChild(b);
-        if (disabled) { box.appendChild(h('span', { cls: 'msg msg-warn tiny', text: why })); }
-      })(defs[i][0], defs[i][1]);
-    }
-    q('fChosen').textContent = state.decision ? state.decision : '未选择';
-    q('fChosen').className = 'badge ' + (state.decision ? 'bg-blue' : 'bg-gray');
-    updateSubmitState();
-  }
-  function updateSubmitState() {
-    var btn = q('btnSubmit');
-    var gid = gateId();
-    var actor = (q('fActor').value || '').trim();
-    var reason = (q('fReason').value || '').trim();
-    var ok = !!(gid && gateDecisionOptions(gid, null, state.view).length && state.decision && actor && reason);
-    btn.disabled = !ok;
-    btn.textContent = ok
-      ? '提交闸门决策：' + gid + ' / ' + state.decision
-      : '提交闸门决策（需：待决闸门 + 决策 + actor + reason）';
-  }
-  function submitDecision() {
-    var gid = gateId();
-    var actor = (q('fActor').value || '').trim();
-    var reason = (q('fReason').value || '').trim();
-    var out = q('gateResult');
-    out.className = 'msg';
-    out.textContent = '';
-    if (!gid) { out.className = 'msg msg-err'; out.textContent = '无待决闸门，无法提交。'; return; }
-    if (!state.decision) { out.className = 'msg msg-err'; out.textContent = '必须选择决策。'; return; }
-    if (!actor) { out.className = 'msg msg-err'; out.textContent = '必须填写 actor（actor_kind 必须为 human）。'; return; }
-    if (!reason) { out.className = 'msg msg-err'; out.textContent = '必须填写 reason。'; return; }
-    var body = { decision: state.decision, actor: actor, reason: reason };
-    q('btnSubmit').disabled = true;
-    out.className = 'msg';
-    out.textContent = '提交中：POST api/runs/' + state.runId + '/gates/' + gid + '/decision …';
-    API.decision(state.runId, gid, body).then(function (res) {
-      clear(out);
-      if (res.ok) {
-        out.className = 'msg msg-ok';
-        out.appendChild(h('div', { text: '✓ 已提交（HTTP ' + res.status + '）：decision=' + state.decision + ' actor=' + actor }));
-        // gate_state 是**权威**闸门态那一条；gate_tool 才是 gate.py 的子进程调用记录。
-        if (res.data && res.data.gate_state) {
-          var g = res.data.gate_state;
-          out.appendChild(h('div', { cls: 'kv' }, [
-            h('span', { cls: 'k', text: '权威 gate_state' }),
-            rawBadge(g.decision, 'decision', 'bg-blue'),
-            boolBadge(g.human_signed, 'human_signed'),
-            rawBadge(g.actor_kind, 'actor_kind', 'bg-gray'),
-            h('span', { cls: 'mono tiny', text: 'history=' + fmt(g.history_len) + ' 条' })
-          ]));
-        }
-        if (res.data && res.data.gates_authority) {
-          out.appendChild(h('div', { cls: 'tiny muted', text: '权威锚：'
-            + (res.data.gates_authority.anchor_ok === true ? '一致' : fmt(res.data.gates_authority.anchor_ok))
-            + '  ——  ' + fmt(res.data.gates_authority.anchor_detail) }));
-        }
-        out.appendChild(h('pre', { cls: 'json', text: JSON.stringify(res.data, null, 2) }));
-        toast('闸门决策已提交：' + gid + ' / ' + state.decision, 'ok');
-        q('fReason').value = '';
-        loadRun(state.runId, true);
-      } else {
-        out.className = 'msg msg-err';
-        out.appendChild(h('div', { text: '✕ 后端拒绝（HTTP ' + res.status + '）。以后端 detail 为准：' }));
-        var detail = res.data && res.data.detail !== undefined ? res.data.detail : (res.data !== null ? res.data : res.text);
-        if (detail && typeof detail === 'object' && Object.prototype.toString.call(detail) !== '[object Array]') {
-          if (detail.error !== undefined) { out.appendChild(h('div', { cls: 'mono', text: 'error: ' + fmt(detail.error) })); }
-          if (Object.prototype.toString.call(detail.blockers) === '[object Array]') {
-            var db = blockersNode(detail.blockers, 'detail.blockers');
-            if (db) { out.appendChild(db); }
-          } else if (detail.blockers !== undefined) {
-            out.appendChild(h('div', { cls: 'mono', text: 'blockers: ' + fmt(detail.blockers) }));
-          }
-        }
-        out.appendChild(h('pre', { cls: 'json', text: (function () { try { return JSON.stringify(detail, null, 2); } catch (e) { return String(res.text); } })() }));
-        toast('闸门决策被拒绝（HTTP ' + res.status + '）', 'err');
-      }
-      updateSubmitState();
-    })['catch'](function (err) {
-      out.className = 'msg msg-err';
-      out.textContent = '提交失败（网络/服务端错误）：' + String(err && err.message ? err.message : err);
-      updateSubmitState();
-    });
-  }
-
-  /* ---------------- 长任务看板 ---------------- */
-  function renderJob() {
-    var box = q('jobBody');
-    clear(box);
-    var v = state.view;
-    if (!v) { return; }
-    var j = v.job;
-    if (!j) {
-      box.appendChild(h('div', { cls: 'muted', text: '服务端未返回 job（当前无作业）。' }));
-      q('jobLogWrap').classList.add('hidden');
-      return;
-    }
-    box.appendChild(h('div', {}, [
-      h('span', { cls: 'kv' }, [h('span', { cls: 'k', text: 'job_id' }), h('span', { cls: 'v mono', text: fmt(j.job_id) })]),
-      h('span', { cls: 'kv' }, [h('span', { cls: 'k', text: 'node' }), h('span', { cls: 'v mono', text: fmt(j.node) })]),
-      h('span', { cls: 'kv' }, [h('span', { cls: 'k', text: 'tc' }), h('span', { cls: 'v mono', text: fmt(j.tc) })]),
-      h('span', { cls: 'kv' }, [h('span', { cls: 'k', text: 'seed' }), h('span', { cls: 'v mono', text: fmt(j.seed) })])
-    ]));
-    var phaseCls = 'bg-gray';
-    if (j.phase === 'running') { phaseCls = 'bg-blue'; }
-    else if (j.phase === 'done') { phaseCls = 'bg-ok'; }
-    else if (j.phase === 'dead' || j.phase === 'cancelled' || j.phase === 'cancelling') { phaseCls = 'bg-red'; }
-    box.appendChild(h('div', {}, [
-      h('span', { cls: 'kv' }, [h('span', { cls: 'k', text: 'phase' }), rawBadge(j.phase, '', phaseCls)]),
-      h('span', { cls: 'kv' }, [h('span', { cls: 'k', text: 'rc' }), h('span', { cls: 'v mono', text: fmt(j.rc) })])
-    ]));
-    box.appendChild(h('div', { cls: 'ccard-value' }, [
-      kvRow('started_at', j.started_at),
-      kvRow('elapsed_s', j.elapsed_s),
-      kvRow('eta_seconds', j.eta_seconds),
-      kvRow('eta_human', j.eta_human),
-      kvRow('confidence', j.confidence),
-      kvRow('basis', j.basis),
-      kvRow('log_path', j.log_path)
-    ]));
-    if (j.confidence === 'low') {
-      box.appendChild(h('div', { cls: 'sev sev-warning' }, [
-        h('div', { cls: 'sev-head' }, [h('span', { cls: 'sev-title', text: '低置信 ETA（confidence = low）' })]),
-        h('div', { cls: 'sev-msg', text: '服务端 basis 原文：' + fmt(j.basis) + '\n该 ETA 仅供参考，不得作为判据。' })
-      ]));
-    } else if (j.confidence !== undefined) {
-      box.appendChild(h('div', { cls: 'tiny muted', text: 'confidence（服务端原值）= ' + fmt(j.confidence) + '；basis = ' + fmt(j.basis) }));
-    }
-    var rb = refsBlock(j.log_path ? [j.log_path] : [], 'log_path 证据查证');
-    if (rb) { box.appendChild(rb); }
-
-    var wrap = q('jobLogWrap'), pre = q('logTailPre');
-    var lines = Object.prototype.toString.call(j.log_tail) === '[object Array]' ? j.log_tail : (j.log_tail === undefined || j.log_tail === null ? [] : [j.log_tail]);
-    var text = lines.join('\n');
-    if (!lines.length) {
-      wrap.classList.add('hidden');
-    } else {
-      wrap.classList.remove('hidden');
-      if (state.lastLogText !== text) {
-        pre.textContent = text;
-        state.lastLogText = text;
-        pre.scrollTop = pre.scrollHeight;
-      }
-    }
-
-    var cancelBtn = h('button', {
-      cls: 'btn btn-danger', text: '取消作业 POST …/jobs/' + fmt(j.job_id) + '/cancel',
-      title: '调用取消接口（二次确认后提交）'
-    });
-    cancelBtn.addEventListener('click', function () { openCancelModal(j); });
-    box.appendChild(h('div', { cls: 'btn-row' }, [cancelBtn]));
-    box.appendChild(h('div', { cls: 'tiny muted', text: '取消是否生效由服务端裁决；前端不做任何状态推断。' }));
-    box.appendChild(jsonBlock(j, 'job 原始 JSON'));
-  }
-
-  /* ---------------- 单槽 ---------------- */
-  function renderSlot() {
-    var box = q('slotBody');
-    clear(box);
-    var v = state.view;
-    if (!v) { return; }
-    var s = v.slot;
-    if (!s) {
-      box.appendChild(h('div', { cls: 'muted', text: '服务端未返回 slot。' }));
-      return;
-    }
-    box.appendChild(h('div', {}, [
-      h('span', { cls: 'kv' }, [h('span', { cls: 'k', text: 'locked' }), boolBadge(s.locked)]),
-      h('span', { cls: 'kv' }, [h('span', { cls: 'k', text: 'holder_alive' }), boolBadge(s.holder_alive)]),
-      h('span', { cls: 'kv' }, [h('span', { cls: 'k', text: 'holder_alive_known' }), boolBadge(s.holder_alive_known)]),
-      h('span', { cls: 'kv' }, [h('span', { cls: 'k', text: 'queue_depth' }), rawBadge(s.queue_depth, '', 'bg-gray')])
-    ]));
-    var holder = s.holder;
-    if (holder && typeof holder === 'object') {
-      box.appendChild(h('div', { cls: 'ccard' }, [
-        h('div', { cls: 'ccard-key', text: 'slot.holder' }),
-        kvRow('format_version', holder.format_version),
-        kvRow('owner_pid', holder.owner_pid),
-        kvRow('job_id', holder.job_id),
-        kvRow('tc', holder.tc),
-        kvRow('seed', holder.seed),
-        kvRow('acquired_at', holder.acquired_at),
-        kvRow('note', holder.note)
-      ]));
-    } else if (holder !== undefined && holder !== null) {
-      box.appendChild(kvRow('holder', holder));
-    } else {
-      box.appendChild(h('div', { cls: 'muted tiny', text: 'slot.holder = ' + fmt(holder) }));
-    }
-    if (s.holder_alive_known === false) {
-      box.appendChild(h('div', { cls: 'warn-banner' }, [
-        h('div', { cls: 'wb-title', text: '⛔ 锁格式不可判定，已拒绝自动清理' }),
-        h('div', { cls: 'wb-body', text: 'slot.holder_alive_known = false（服务端原值）：单槽锁格式不可判定，不得据此自动清理；需人工核查（N9-3）。' })
-      ]));
-    }
-    var queued = Object.prototype.toString.call(s.queued) === '[object Array]' ? s.queued : [];
-    box.appendChild(h('div', { cls: 'grp' }, [h('h3', { text: '队列（queue_depth = ' + fmt(s.queue_depth) + '，queued.length = ' + queued.length + '）' })]));
-    if (!queued.length) {
-      box.appendChild(h('div', { cls: 'muted tiny', text: '队列为空。' }));
-    }
-    for (var i = 0; i < queued.length; i++) {
-      var it = queued[i] || {};
-      box.appendChild(h('div', { cls: 'queue-item' }, [
-        h('span', { cls: 'badge bg-blue', text: '位次 ' + (i + 1) }),
-        h('span', { cls: 'mono', text: 'job_id=' + fmt(it.job_id) }),
-        h('span', { cls: 'mono', text: 'tc=' + fmt(it.tc) }),
-        h('span', { cls: 'mono', text: 'seed=' + fmt(it.seed) })
-      ]));
-    }
-    box.appendChild(jsonBlock(s, 'slot 原始 JSON'));
-  }
-
-  /* ---------------- 事件流 ---------------- */
-  function allEvents() {
-    var v = state.view || {};
-    var list = Object.prototype.toString.call(v.events) === '[object Array]' ? v.events.slice() : [];
-    for (var i = 0; i < state.extraEvents.length; i++) {
-      var e = state.extraEvents[i], dup = false;
-      for (var j = 0; j < list.length; j++) { if (list[j] && e && list[j].seq === e.seq) { dup = true; break; } }
-      if (!dup) { list.push(e); }
-    }
-    list.sort(function (a, b) { return (num(a && a.seq) || 0) - (num(b && b.seq) || 0); });
-    if (list.length > EVENT_BUFFER_MAX) { list = list.slice(list.length - EVENT_BUFFER_MAX); }
-    return list;
-  }
-  function renderEvents() {
-    var box = q('eventsBody');
-    var list = allEvents();
-    var wrap = q('evList');
-    var keepBottom = (wrap.scrollTop + wrap.clientHeight) >= (wrap.scrollHeight - 16);
-    clear(box);
-    clear(wrap);
-    if (!list.length) {
-      box.appendChild(h('div', { cls: 'muted', text: '服务端 events 为空。' }));
-      wrap.classList.add('hidden');
-      return;
-    }
-    wrap.classList.remove('hidden');
-    for (var i = 0; i < list.length; i++) {
-      var e = list[i] || {};
-      var kids = [
-        h('span', { cls: 'seq mono', text: 'seq ' + fmt(e.seq) }),
-        h('span', { cls: 'kind mono', text: fmt(e.kind) }),
-        h('span', { cls: 'mono', text: 'node=' + fmt(e.node) }),
-        rawBadge(e.status, 'status', e.status === 'ok' ? 'bg-ok' : ((e.status === 'failed' || e.status === 'fail') ? 'bg-red' : (e.status === 'running' ? 'bg-blue' : 'bg-gray'))),
-        h('span', {}, [h('span', { cls: 'muted tiny', text: 'ts: ' }), tsCell(e.ts)])
-      ];
-      if (e.provisional === true) { kids.push(h('span', { cls: 'badge bg-yellow', text: '临时值', title: 'provisional = true（服务端原值）' })); }
-      var sub = [];
-      if (e.refs !== undefined) { var rb = refsBlock(e.refs, 'refs'); if (rb) { sub.push(rb); } }
-      if (e.detail !== undefined && e.detail !== null) { sub.push(jsonBlock(e.detail, 'detail')); }
-      var row;
-      if (sub.length) {
-        row = h('div', { cls: 'ev ev-wrap' }, [h('div', { cls: 'ev-line' }, kids), h('div', { cls: 'ev-line' }, sub)]);
-      } else {
-        row = h('div', { cls: 'ev' }, kids);
-      }
-      wrap.appendChild(row);
-    }
-    if (keepBottom) { wrap.scrollTop = wrap.scrollHeight; }
-  }
-
-  /* ---------------- 返工 / 冲突 / 基线链 / 闸门历史 / 证据 ---------------- */
-  function renderMeta() {
-    var box = q('metaBody');
-    clear(box);
-    var v = state.view;
-    if (!v) { return; }
-    var rw = v.rework || {};
-    box.appendChild(h('div', { cls: 'grp' }, [
-      h('h3', { text: '返工计数 rework' }),
-      kvRow('n6_n8_cycles', rw.n6_n8_cycles),
-      kvRow('limit', rw.limit),
-      kvRow('source', rw.source)
-    ]));
-    var cf = v.conflicts || {};
-    box.appendChild(h('div', { cls: 'grp' }, [
-      h('h3', { text: '冲突 conflicts' }),
-      kvRow('total', cf.total),
-      kvRow('expected_total', cf.expected_total),
-      kvRow('blocks_release', cf.blocks_release),
-      kvRow('open', cf.open),
-      kvRow('consistent', cf.consistent),
-      kvRow('source', cf.source)
-    ]));
-    if (typeof cf.blocks_release === 'number' && cf.blocks_release > 0) {
-      box.appendChild(h('div', { cls: 'sev sev-blocker' }, [
-        h('div', { cls: 'sev-head' }, [h('span', { cls: 'sev-title', text: 'blocks_release = ' + cf.blocks_release + ' > 0：冲突未清零' })]),
-        h('div', { cls: 'sev-msg', text: '闸门 G3 的「全量回归」按钮被禁用（前端约束）；后端仍为最终裁决者。' })
-      ]));
-    }
-    var bls = Object.prototype.toString.call(v.baselines) === '[object Array]' ? v.baselines : [];
-    var g = h('div', { cls: 'grp' }, [h('h3', { text: '基线链（' + bls.length + '）' })]);
-    if (!bls.length) { g.appendChild(h('div', { cls: 'muted tiny', text: '服务端 baselines 为空。' })); }
-    for (var i = 0; i < bls.length; i++) {
-      var b = bls[i] || {};
-      if (i > 0) { g.appendChild(h('div', { cls: 'chain-arrow', text: '↑ parent' })); }
-      g.appendChild(h('div', { cls: 'chain-item' }, [
-        h('div', {}, [h('span', { cls: 'badge bg-purple mono', text: fmt(b.name) }), h('span', { cls: 'muted tiny', text: '  parent=' + fmt(b.parent) + '  created_at=' + fmt(b.created_at) })]),
-        h('div', { cls: 'mono tiny muted', text: 'manifest: ' + fmt(b.manifest) })
-      ]));
-    }
-    box.appendChild(g);
-  }
-  function renderGateHistory() {
-    var box = q('gateHistoryBody');
-    clear(box);
-    var v = state.view;
-    if (!v) { return; }
-
-    // ① 权威闸门态：kb/tools/gate.py 的 gates.json + gates.sha256 锚。
-    //    事件流里的 actor 是**自报**字符串，回答不了"这道闸门是不是人签的、账本改过没有"。
-    var au = v.gates_authority || null;
-    if (!au || au.present !== true) {
-      box.appendChild(h('div', { cls: 'sev sev-blocker' }, [
-        h('div', { cls: 'sev-head' }, [h('span', { cls: 'sev-title', text: '闸门权威不可读' })]),
-        h('div', { cls: 'sev-msg', text: (au && au.reason) ? au.reason : '服务端未返回 gates_authority' })
-      ]));
-    } else {
-      var anchor = au.anchor_ok;
-      var aCls = anchor === true ? 'sev-info' : (anchor === false ? 'sev-blocker' : 'sev-warning');
-      var aTxt = anchor === true ? '锚一致 —— 权威态未被外部修改'
-               : (anchor === false ? '状态被外部修改 ⇒ 闸门记录不可信' : '无锚（legacy 状态，未校验）');
-      box.appendChild(h('div', { cls: 'sev ' + aCls }, [
-        h('div', { cls: 'sev-head' }, [
-          h('span', { cls: 'sev-title', text: '权威锚 gates.sha256' }),
-          rawBadge(anchor, 'anchor_ok', anchor === true ? 'bg-ok' : (anchor === false ? 'bg-red' : 'bg-gray'))
-        ]),
-        h('div', { cls: 'sev-msg', text: aTxt + (au.anchor_detail ? '  ——  ' + au.anchor_detail : '') })
-      ]));
-      box.appendChild(h('div', { cls: 'tiny muted mono', text: 'all_signed=' + fmt(au.all_signed)
-        + '   human_signed_all=' + fmt(au.human_signed_all)
-        + '   updated_at=' + fmt(au.updated_at) + '   source=' + fmt(au.source) }));
-      var gids = Object.keys(au.gates || {});
-      for (var i = 0; i < gids.length; i++) {
-        var gid = gids[i], g = (au.gates || {})[gid] || {};
-        var signed = g.human_signed === true;
-        box.appendChild(h('div', { cls: 'sev ' + (signed ? 'sev-info' : 'sev-warning') }, [
-          h('div', { cls: 'sev-head' }, [
-            h('span', { cls: 'sev-title mono', text: gid }),
-            rawBadge(g.decision, 'decision', signed ? 'bg-ok' : 'bg-blue'),
-            boolBadge(g.human_signed, 'human_signed'),
-            rawBadge(g.actor_kind, 'actor_kind', 'bg-gray'),
-            rawBadge(g.status, 'status', 'bg-gray')
-          ]),
-          h('div', { cls: 'sev-msg' }, [
-            h('span', { cls: 'mono', text: 'actor=' + fmt(g.actor) }),
-            h('span', { cls: 'muted tiny', text: '   signed_at: ' }),
-            tsCell(g.signed_at),
-            h('span', { cls: 'muted tiny', text: '   history=' + fmt(g.history_len) + ' 条' })
-          ])
-        ]));
-      }
-    }
-
-    // ② 事件流 vs 权威账本的逐门对账：分歧必须外显，**不许静默取其一**。
-    var dv = (au && Object.prototype.toString.call(au.divergences) === '[object Array]') ? au.divergences : [];
-    for (var d = 0; d < dv.length; d++) {
-      var x = dv[d] || {};
-      box.appendChild(h('div', { cls: 'sev sev-blocker' }, [
-        h('div', { cls: 'sev-head' }, [h('span', { cls: 'sev-title mono', text: '对账分歧 · ' + fmt(x.gate) })]),
-        h('div', { cls: 'sev-msg', text: '事件流 ' + fmt(x.event_count) + ' 条 ' + JSON.stringify(x.event_decisions)
-          + ' vs 权威 ' + fmt(x.authority_count) + ' 条 ' + JSON.stringify(x.authority_decisions) + ' ⇒ 以权威为准' })
-      ]));
-    }
-
-    // ③ 事件流记录（**自报**，仅作追溯）。
-    box.appendChild(h('div', { cls: 'tiny muted', text: '以下为事件流记录：actor 由请求方自报，**不是**权威（权威见上）。' }));
-    var list = Object.prototype.toString.call(v.gate_history) === '[object Array]' ? v.gate_history : [];
-    if (!list.length) {
-      box.appendChild(h('div', { cls: 'muted', text: '服务端 gate_history 为空。' }));
-      return;
-    }
-    for (var j = 0; j < list.length; j++) {
-      var e = list[j] || {};
-      var cls = e.decision === 'confirmed' || e.decision === 'accept' ? 'sev-info' : 'sev-warning';
-      box.appendChild(h('div', { cls: 'sev ' + cls }, [
-        h('div', { cls: 'sev-head' }, [
-          h('span', { cls: 'sev-title mono', text: fmt(e.gate) }),
-          rawBadge(e.decision, 'decision', 'bg-blue')
-        ]),
-        h('div', { cls: 'sev-msg' }, [
-          h('span', { cls: 'mono', text: 'actor=' + fmt(e.actor) }),
-          h('span', { cls: 'muted tiny', text: '   at: ' }),
-          tsCell(e.at)
-        ])
-      ]));
-    }
-  }
-  function renderEvidence() {
-    var box = q('evidenceBody');
-    clear(box);
-    var v = state.view;
-    if (!v) { return; }
-    var e = v.evidence;
-    if (!e) {
-      box.appendChild(h('div', { cls: 'muted', text: '服务端未返回 evidence。' }));
-      return;
-    }
-    box.appendChild(h('div', {}, [
-      h('span', { cls: 'kv' }, [h('span', { cls: 'k', text: 'present' }), boolBadge(e.present)]),
-      h('span', { cls: 'kv' }, [h('span', { cls: 'k', text: 'has_report_summary' }), boolBadge(e.has_report_summary)]),
-      h('span', { cls: 'kv' }, [h('span', { cls: 'k', text: 'bytes' }), h('span', { cls: 'v mono', text: fmt(e.bytes) })])
-    ]));
-    if (e.vbites !== undefined) {
-      box.appendChild(h('div', { cls: 'tiny muted', text: '（服务端返回了 vbites = ' + fmt(e.vbites) + '，为笔误字段，本界面按 bytes 处理并忽略 vbites）' }));
-    }
-    var rb = refsBlock(e.path ? [e.path] : [], 'evidence.path 查证');
-    if (rb) { box.appendChild(rb); }
-    box.appendChild(jsonBlock(e, 'evidence 原始 JSON（不含 imprints）'));
-  }
-
-  /* ---------------- 模态框 ---------------- */
-  function closeModal() { q('modal').classList.add('hidden'); }
-  function openCancelModal(j) {
-    q('modalTitle').textContent = '取消作业 · 二次确认';
-    var body = q('modalBody');
-    clear(body);
-    body.appendChild(h('div', { text: '即将调用取消接口，服务端是唯一裁决者：' }));
-    body.appendChild(h('pre', { cls: 'json', text: 'POST api/runs/' + state.runId + '/jobs/' + fmt(j.job_id) + '/cancel' }));
-    body.appendChild(h('div', { cls: 'ccard-value' }, [
-      kvRow('job_id', j.job_id), kvRow('tc', j.tc), kvRow('seed', j.seed), kvRow('phase', j.phase), kvRow('elapsed_s', j.elapsed_s)
-    ]));
-    q('modalOk').textContent = '确认取消作业';
-    q('modalOk').className = 'btn btn-danger';
-    state.cancelJob = j;
-    q('modal').classList.remove('hidden');
-  }
-  function doCancel(j) {
-    toast('取消作业中：' + fmt(j.job_id) + ' …', '');
-    API.cancel(state.runId, j.job_id).then(function (res) {
-      if (res.ok) {
-        toast('取消请求已受理（HTTP ' + res.status + '）：' + JSON.stringify(res.data), 'ok');
-      } else {
-        var detail = res.data && res.data.detail !== undefined ? res.data.detail : res.data;
-        toast('取消失败（HTTP ' + res.status + '）：' + (function () { try { return JSON.stringify(detail); } catch (e) { return String(res.text); } })(), 'err');
-      }
-      loadRun(state.runId, true);
-    })['catch'](function (err) {
-      toast('取消请求异常：' + String(err && err.message ? err.message : err), 'err');
-    });
-  }
-
-  /* ---------------- 启动表单 / run 列表 ---------------- */
-  function renderRunList() {
-    var sel = q('fRunSelect');
-    if (!sel) { return; }
-    var cur = state.runId;
-    clear(sel);
-    if (!state.runs.length) {
-      sel.appendChild(h('option', { text: '（无既有 run）', attrs: { value: '' } }));
-      return;
-    }
-    for (var i = 0; i < state.runs.length; i++) {
-      var r = state.runs[i] || {};
-      var id = r.run_id !== undefined ? String(r.run_id) : '';
-      var label = id + (r.status !== undefined ? '  ·  ' + fmt(r.status) : '') + (r.mode !== undefined ? '  ·  ' + fmt(r.mode) : '');
-      var o = h('option', { text: label, attrs: { value: id } });
-      sel.appendChild(o);
-    }
-    if (cur) { sel.value = cur; }
-    var dl = q('baselineList');
-    if (dl) {
-      clear(dl);
-      var v = state.view;
-      var bls = (v && Object.prototype.toString.call(v.baselines) === '[object Array]') ? v.baselines : [];
-      for (var k = 0; k < bls.length; k++) {
-        dl.appendChild(h('option', { attrs: { value: fmt((bls[k] || {}).name) } }));
-      }
-    }
-  }
-  function createRun() {
-    var msg = q('setupMsg');
-    msg.className = 'msg';
-    msg.textContent = '';
-    var baseline = (q('fBaseline').value || '').trim() || 'v0';
-    var mode = q('fMode').value;
-    var nowRaw = (q('fNow').value || '').trim();
-    var now = nowRaw === '' ? null : nowRaw;
-    var body = { baseline: baseline, mode: mode, now: now };
-    q('btnCreate').disabled = true;
-    msg.textContent = '提交中：POST api/runs ' + JSON.stringify(body);
-    API.createRun(body).then(function (res) {
-      q('btnCreate').disabled = false;
-      if (res.ok && res.data && res.data.run_id) {
-        msg.className = 'msg msg-ok';
-        msg.textContent = '✓ 已创建 run：' + res.data.run_id + '\n' + JSON.stringify(res.data);
-        toast('新运行已创建：' + res.data.run_id, 'ok');
-        openRun(String(res.data.run_id));
-      } else {
-        msg.className = 'msg msg-err';
-        msg.textContent = '✕ 创建失败（HTTP ' + res.status + '）：' + (function () { try { return JSON.stringify(res.data); } catch (e) { return String(res.text); } })();
-        toast('创建运行失败（HTTP ' + res.status + '）', 'err');
-      }
-    })['catch'](function (err) {
-      q('btnCreate').disabled = false;
-      msg.className = 'msg msg-err';
-      msg.textContent = '✕ 创建请求异常：' + String(err && err.message ? err.message : err);
-    });
-  }
-
-  /* ---------------- 渲染总入口 ---------------- */
-  function renderAll() {
-    renderAuthority();
-    if (!state.view) { return; }
-    q('runArea').classList.remove('hidden');
-    q('setupPanel').open = false;
-    q('hdrRun').textContent = 'run: ' + fmt(state.view.run_id);
-    q('hdrRun').className = 'badge ' + (state.view.status === 'running' ? 'bg-blue' : (state.view.status === 'finished' ? 'bg-ok' : (state.view.status === 'failed' ? 'bg-red' : 'bg-yellow')));
-    renderStatusStrip();
-    renderTimeline();
-    renderMeta();
-    renderGateHistory();
-    renderGate();
-    renderCounts();
-    renderVerdict();
-    renderImprints();
-    renderBlockers();
-    renderJob();
-    renderSlot();
-    renderEvents();
-    renderEvidence();
-    updateSubmitState();
-  }
-
-  /* ---------------- 轮询 ---------------- */
-  var lastRunListTs = 0;
-  function loadRun(runId, silent) {
-    return API.run(runId).then(function (res) {
-      if (res.ok && res.data && typeof res.data === 'object') {
-        state.view = res.data;
-        setConn(null);
-        if (silent !== true) { renderAll(); } else { renderAll(); }
-        pullEvents(runId);
-      } else if (res.status === 404 || res.status === 400) {
-        state.view = null;
-        q('runArea').classList.add('hidden');
-        q('setupPanel').open = true;
-        setConn('run ' + runId + ' 不可用（HTTP ' + res.status + '）：' + String(res.text).slice(0, 300));
-        if (state.runId === runId) { state.runId = null; }
-        q('hdrRun').textContent = 'run: （未选择）';
-        q('hdrRun').className = 'badge bg-gray';
-        renderAuthority();
-      } else {
-        setConn('GET api/runs/' + runId + ' 返回 HTTP ' + res.status + '：' + String(res.text).slice(0, 300));
-      }
-    })['catch'](function (err) {
-      setConn('无法连接后端 api/runs/' + runId + '：' + String(err && err.message ? err.message : err) + '（仍在每 ' + POLL_MS + 'ms 重试）');
-    });
-  }
-  function pullEvents(runId) {
-    var since = state.maxSeq;
-    API.events(runId, since).then(function (res) {
-      if (!res.ok || !res.data) { return; }
-      var list = Object.prototype.toString.call(res.data.events) === '[object Array]' ? res.data.events : [];
-      for (var i = 0; i < list.length; i++) {
-        var e = list[i] || {};
-        var s = num(e.seq);
-        if (s !== null && s > state.maxSeq) { state.maxSeq = s; }
-        var dup = false;
-        for (var j = 0; j < state.extraEvents.length; j++) { if (state.extraEvents[j] && state.extraEvents[j].seq === e.seq) { dup = true; break; } }
-        if (!dup) { state.extraEvents.push(e); }
-      }
-      if (state.extraEvents.length > EVENT_BUFFER_MAX) { state.extraEvents = state.extraEvents.slice(state.extraEvents.length - EVENT_BUFFER_MAX); }
-      renderEvents();
-    })['catch'](function () { /* 事件增量拉取失败：静默，主视图 events 仍然渲染 */ });
-  }
-  function refreshRunList() {
-    return API.runs().then(function (res) {
-      if (res.ok && res.data) {
-        state.runs = Object.prototype.toString.call(res.data.runs) === '[object Array]' ? res.data.runs : [];
-        setConn(null);
-      } else {
-        setConn('GET api/runs 返回 HTTP ' + res.status + '：' + String(res.text).slice(0, 200));
-      }
-      renderRunList();
-      if (!state.runId && state.runs.length) {
-        var first = state.runs[0] || {};
-        if (first.run_id) { openRun(String(first.run_id)); }
-      }
-    })['catch'](function (err) {
-      setConn('无法连接后端 api/runs：' + String(err && err.message ? err.message : err) + '（仍在每 ' + POLL_MS + 'ms 重试）');
-    });
-  }
-  function openRun(runId) {
-    state.runId = runId;
-    state.view = null;
-    state.maxSeq = 0;
-    state.extraEvents = [];
-    state.lastLogText = null;
-    state.decision = null;
-    state.lastGateId = null;
-    state.refChecks = {};
-    state.refQueue = [];
-    q('hdrRun').textContent = 'run: ' + runId;
-    loadRun(runId);
-  }
-  function tick() {
-    state.tickCount++;
-    if (state.runId) {
-      loadRun(state.runId);
-      if (state.tickCount % RUNLIST_EVERY === 0) { refreshRunList(); }
-    } else {
-      refreshRunList();
-    }
-  }
-
-  /* ---------------- 绑定 ---------------- */
-  function boot() {
-    if (state.booted) { return; }
-    state.booted = true;
-
-    q('btnCreate').addEventListener('click', createRun);
-    q('btnOpen').addEventListener('click', function () {
-      var id = q('fRunSelect').value;
-      if (id) { openRun(id); } else { toast('没有可打开的 run', 'err'); }
-    });
-    q('btnReload').addEventListener('click', function () {
-      refreshRunList();
-      if (state.runId) { loadRun(state.runId); }
-    });
-    q('fActor').addEventListener('input', updateSubmitState);
-    q('fReason').addEventListener('input', updateSubmitState);
-    q('btnSubmit').addEventListener('click', submitDecision);
-    q('modalCancel').addEventListener('click', closeModal);
-    q('modalOk').addEventListener('click', function () {
-      var j = state.cancelJob;
-      closeModal();
-      state.cancelJob = null;
-      if (j && state.runId) { doCancel(j); }
-    });
-    q('modal').addEventListener('click', function (ev) { if (ev.target === q('modal')) { closeModal(); } });
-    document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') { closeModal(); } });
-
-    var hash = String(window.location.hash || '').replace(/^#/, '');
-    var m = hash.match(/run=([^&]+)/);
-    var wanted = m ? decodeURIComponent(m[1]) : null;
-
-    API.health().then(function (res) {
-      if (res.ok && res.data) { state.health = res.data; }
-      renderHealth();
-    })['catch'](function () { renderHealth(); });
-
-    API.runs().then(function (res) {
-      if (res.ok && res.data) {
-        state.runs = Object.prototype.toString.call(res.data.runs) === '[object Array]' ? res.data.runs : [];
-      } else {
-        setConn('GET api/runs 返回 HTTP ' + res.status + '：' + String(res.text).slice(0, 200));
-      }
-      renderRunList();
-      var target = wanted;
-      if (!target && state.runs.length) {
-        var first = state.runs[0] || {};
-        if (first.run_id) { target = String(first.run_id); }
-      }
-      if (target) { openRun(target); }
-      else {
-        q('setupPanel').open = true;
-        q('runArea').classList.add('hidden');
-        q('setupMsg').className = 'msg msg-warn';
-        q('setupMsg').textContent = '未发现任何 run：请在上方提交新运行（baseline 默认 v0；mode = drill / real；real 全跑单用例约 19 分钟）。';
-        renderAuthority();
-      }
-    })['catch'](function (err) {
-      setConn('无法连接后端 api/runs：' + String(err && err.message ? err.message : err));
-      q('setupPanel').open = true;
-      renderRunList();
-      renderAuthority();
-    });
-
-    setInterval(tick, POLL_MS);
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', boot);
-  } else {
-    boot();
-  }
-})();
-</script>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<noscript><div class="banner bad">本界面需要启用 JavaScript。</div></noscript>
+<script src="app.js"></script>
 </body>
 </html>

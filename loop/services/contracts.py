@@ -15,6 +15,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from .agent_view import STAGES, build_agents
+
 #: 实测吞吐：wall ≈ sim_time × activity factor，约 3.78–3.80 µs sim / 1 s wall。
 #: **n=2**，置信低，必须在界面上标注，不得当承诺。
 SIM_US_PER_WALL_S = 3.79
@@ -421,6 +423,16 @@ def run_view(
             ),
         },
         "events": events,
+        # agent 工作状态是**投影**（事件派生），不是权威；字段见 Web UI Spec §4.3。
+        "project": run_doc.get("project"),
+        "agents": build_agents(
+            events,
+            run_dir=run_dir,
+            pending_interrupt=run_doc.get("pending_interrupt"),
+            job=job,
+        ),
+        "stage_map": STAGES,
+        "agents_authority": "projection",
         "gate_options": _gate_options(),
         "rework": kb.load_rework(run_dir),
         "conflicts": _conflict_summary(kb),

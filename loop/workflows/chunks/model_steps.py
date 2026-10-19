@@ -356,7 +356,8 @@ async def run_model_node(
     ctx.event(
         "node_finished", node=f"{node}_request",
         status="ok" if validation["ok"] else "validation_failed",
-        detail={"model": out["provider"], "problems": validation["problems"][:5]},
+        detail={"model": out["provider"], "mode": out["mode"],
+                "problems": validation["problems"][:5]},
     )
     return out
 

@@ -22,7 +22,7 @@
 | 门 | 命令 | 结果 | 说明 |
 |---|---|---|---|
 | 单测收集 | `cd loop && .venv/bin/python -m pytest --collect-only -q` | **94 tests collected** | 含 UI 配置面/投影/契约/冒烟 |
-| 单测执行 | `LOOP_WORKSPACE=<可写副本> .venv/bin/python -m pytest -q` | **91 passed / 3 failed** | 3 条失败均为环境/布局限制，见 §3 |
+| 单测执行 | `LOOP_WORKSPACE=<可写副本> .venv/bin/python -m pytest -q` | **92 passed / 3 failed** | 3 条失败均为环境/布局限制，见 §3 |
 | kb 自测 · gate schema | `LOOP_WORKSPACE=<可写副本> loop/.venv/bin/python kb/tools/_selftest_gate_schema.py` | **10/10** | 需要可写数据根；默认数据根在只读沙箱内会失败 |
 | kb 自测 · n5 可达性 | `loop/.venv/bin/python kb/tools/_selftest_n5_reachability.py` | **9/9** | 只读，无需写数据根 |
 | 端到端终验 | `cd loop && bash spikes/accept_v1_run.sh` | **未复跑**（历史记录 117 断言） | 需写 `ENV_ROOT/SIMLIB_RUN` 与 `uvs.setup`；本会话沙箱对 ENV_ROOT 只读 |

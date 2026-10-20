@@ -31,9 +31,12 @@ n6_author:
       - "revision_points 的 offset 只用于 basis 叙述（写成 `<段基址>+<块内偏移>` 便于人读）；**不得**把用例代码里的地址实参改写成这种形式，地址实参保持原样。"
       - "修订期望值的依据顺序：① input.targets[].rtl_change 的新增/删除行（本轮 RTL 新行为）；② doc_bitdef。两者冲突（RTL 改了、文档未同步）⇒ 以 rtl_change 的新行为修订期望值，并在 basis 明写「RTL 变更 vs 文档未同步」，冲突由 N3/N12 暴露。"
       - "edits 只改**期望读回值/掩码**；写入值与地址实参一律不动；不得引入 `0x...` 这类非 SV 字面量（十六进制写 `'h...`）。"
+      - "判断调用实参角色必须依据 input.targets[].api_semantics（定义源码的 signature+body）：`data_expmask`/`expdata`/`*exp*` 是**期望值/掩码**，`initial_dat` 是初始值，`wdata`/`data` 是写入值；只改期望值/掩码实参。"
+      - "若 api_semantics 为空且无法从 excerpt 判断参数角色 ⇒ 把不确定性写入 notes，不得猜。"
+      - "若 input.targets[].rtl_effect 给出 retained_mask/retained_bits：期望值必须 = 写入值 & retained_mask（例：写 0x1234_5678、mask 0x0000ffff ⇒ 期望 0x00005678）；**不得把掩码应用到相反的一半**。"
       - "Host 会按你的 edits 写沙箱文件并冻结 md5；你不得声称已改文件。"
   instruct:
-    - "对每个目标用例逐条给出 edits：line 取 excerpt 的行号、old 逐字复制、new 给替换文本、basis 给依据（引用 rtl_change 的具体行或 doc_bitdef 的字段）。"
+    - "对每个目标用例逐条给出 edits：line 取 excerpt 的行号、old 逐字复制、new 给替换文本、basis 给依据（引用 rtl_change 的具体行、doc_bitdef 的字段，或 api_semantics 的参数名如 data_expmask）。"
     - "若 input.rework_reasons 非空，说明上一轮被退回的每一条是如何被解决的。"
     - "拿不准时把不确定性写进 notes，不要猜偏移或期望值。"
 n8_check:
@@ -44,6 +47,8 @@ n8_check:
       - "二者冲突（RTL 改了、文档未同步）⇒ 记 finding：basis 写明 doc_out_of_sync 与两边原文；**不得仅因文档未同步判 rework**（冲突由 N12/G2 暴露给人裁决）。"
       - "只有以下情况可判 rework：期望值与 rtl_change 不一致、地址实参被改写、写入值被改、检查被删/放宽、编辑行越界；verdict=rework 必须给**逐条可核**依据（文件:行 或 具体规则），空泛意见无效。"
       - "checklist 只判**本轮 edits 触及的代码行**（input.applied_edits）；既有代码的同类问题（既存裸 wait/固定延时等）只记 notes/defect，**不得**作为 rework 依据。"
+      - "核对期望值参数角色时依据 input.revision_points[].api_semantics（signature/body）：参数角色用错（如把 initial_dat 当期望掩码、或改写入值）即 rework。"
+      - "若 input.revision_points[].rtl_effect 给出 retained_mask：按『期望值 = 写入值 & retained_mask』复算；掩码用反或半反即 rework。"
       - "只依据 input 提供的材料，不得假设未提供的文件内容。"
   instruct:
     - "按 input.checklist 逐项复核 input.sandbox_cases（Host 已施加 edits 的沙箱代码）与 input.revision_points。"

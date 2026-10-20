@@ -1088,7 +1088,26 @@ def _n6_fixture(tmp_path: Path, *, include_snapshot: bool = True):
     env = tmp_path / "env"
     (env / "TESTLIB").mkdir(parents=True)
     case = env / "TESTLIB" / "tc_pcie_rw_02.sv"
-    case.write_text("\n".join(f"// line {i}" for i in range(1, 41)) + "\n", encoding="utf-8")
+    case_lines = [f"// line {i}" for i in range(1, 41)]
+    case_lines[9] = ("        `I2C_MST(pid).reg_field_test(base_addr+'h04  ,32'hffff_ffff, "
+                     "32'h0000_0000, 0);")
+    case.write_text("\n".join(case_lines) + "\n", encoding="utf-8")
+    # 测试台 API 定义（真实环境里在 TB/AGENTS/I2C-Agent/i2c_m.sv）：参数语义由此而来
+    api_dir = env / "TB" / "AGENTS" / "I2C-Agent"
+    api_dir.mkdir(parents=True)
+    (api_dir / "i2c_m.sv").write_text(
+        "  task reg_field_test( bit[31:0] addr, bit[31:0] data_expmask,\n"
+        "                       bit[31:0] initial_dat = '0, bit only_r=0); //rev bit is masked\n"
+        "    bit[31:0] test_data, data_rdexp;\n"
+        "    this.set_rdchk(addr, initial_dat);\n"
+        "    for (int i = 0; i < 5; i++) begin\n"
+        "      data_rdexp = only_r ? initial_dat : test_data & data_expmask;\n"
+        "      this.set_write(addr, test_data);\n"
+        "      this.set_rdchk(addr, data_rdexp);\n"
+        "    end\n"
+        "  endtask\n",
+        encoding="utf-8",
+    )
     (run_dir / "n5_impact.json").write_text(json.dumps({
         "schema": "kb/n5_impact", "version": 1, "run_id": RUN_ID,
         "must_change": [{
@@ -1134,6 +1153,15 @@ def test_n6_doc_bitdef_falls_back_to_run_snapshot_for_rtl_only_diff(tmp_path: Pa
     assert target["doc_bitdef"]["source"] == "run_snapshot:bundle/doc_entries.jsonl"
     assert target["revision_points"][0]["display"] == "0x0d00+0xd04"
     assert target["rtl_change"] and "dcb_wdata[15:0]" in target["rtl_change"][0]["hunk"]
+    apis = target["api_semantics"]
+    assert apis, "N6 必须拿到测试台 API 语义（否则模型只能猜参数角色）"
+    api = next(a for a in apis if a["callee"] == "reg_field_test")
+    assert "data_expmask" in api["signature"] and "initial_dat" in api["signature"]
+    assert "data_expmask" in api["body"], api["body"]
+    assert target["revision_points"][0]["api_semantics"]
+    effect = target["rtl_effect"]
+    assert effect and effect["retained_bits"] == "[15:0]"
+    assert effect["retained_mask"] == "0x0000ffff" and effect["cleared_mask"] == "0xffff0000"
     assert target["excerpt"]["line"] == 10 and "10:" in target["excerpt"]["text"]
 
 

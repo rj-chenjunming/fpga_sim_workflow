@@ -3,8 +3,9 @@
 > **性质**：第一次在**真实环境副本 + real 模式 + 真实 LLM + 真实编译**上跑 `change-impact-loop`
 > 的验收证据（只增不改）。不是 drill 夹具。
 > **结论先行**：**N0→N8 真实跑通**（N2/N5 与预登记答案完全一致；N7 五个用例真实编译 5/5 rc=0；
-> N8 真实模型 pass）。真实 N9 全跑按用户选择的范围，在作业提交后立即取消（run 显式 failed）。
-> 本轮暴露并修复了 4 个软件缺陷（见 §4）。
+> N8 真实模型 pass）。进一步收紧 N6 的**测试台 API 语义 + RTL 截断事实**输入后，
+> N6 五个用例的修订与答案键全部一致（run8）。真实 N9 全跑按用户选择的范围，在作业提交后立即取消（run 显式 failed）。
+> 本轮暴露并修复了 6 个软件缺陷（见 §4）。
 
 - 场景工程（库外）：`/home/work/chenjunming/FPGA_SIM/SCN_RTL_0D04/`
 - 场景环境副本：`SCN_RTL_0D04/env`；数据根：`SCN_RTL_0D04/workspace`（自建 v0）
@@ -38,13 +39,26 @@
 | tc_pcie_rw_smoke | `32'h12345678` → `32'h0000_5678` | `32'h00005678` | 语义等价（少一个 `_`） |
 | tc_rtc_05 | 同上 | `32'h00005678` | 语义等价 |
 | tc_rtc_10 | 同上 | `32'h00005678` | 语义等价 |
-| tc_pcie_rw_02 | `32'hffff_ffff` → `32'h0000_ffff`（data_expmask） | 改为 `32'h0000_0000` → `32'h0000_ffff`（initial_dat） | **不符合** |
-| tc_cpu_i2c_03 | 同上 | 同上 | **不符合** |
+| tc_pcie_rw_02 | `32'hffff_ffff` → `32'h0000_ffff`（data_expmask） | run8：`32'hffff_ffff` → `32'h0000_ffff`（expmask） | 一致 |
+| tc_cpu_i2c_03 | 同上 | run8：同上（expmask） | 一致 |
 
-> **根因**：`reg_field_test(addr, data_expmask, initial_dat='0, only_r=0)` 的第 2 个数据参数是
-> **期望掩码**，第 3 个是初始值；模型把两者弄反。N7 只抓语法（该改动能编译），抓不到语义；
-> 设计上应由 **N9 全跑证据**（0xd04 仍出 `*E`）触发返工——本轮 N9 按范围未跑。
-> 这是本轮留下的**已知质量 finding**，不是静默通过。
+> 说明：首轮（run6）曾把掩码/初始值弄反；收紧输入后（§2b）run8 已全部正确。
+> 该质量风险仍由 N9 全跑证据兜底（本轮 N9 按范围未跑）。
+
+## 2b 收紧 N6 输入后的复跑（RUN-20261020-113000）
+
+§4 的修复让 N6 能启动，但模型仍会把 `reg_field_test(addr, data_expmask, initial_dat, only_r)`
+的**期望掩码**与**初始值**弄反、或把截断掩码用反半。于是给 N6 增加两类 Host 确定性事实：
+
+1. **`api_semantics`**：按调用行附近的 callee 名，在 `ENV_ROOT/TB`、`TESTLIB` 中找
+   `task/function` 定义，把 `signature + body` 交给模型（`body` 里可见
+   `data_rdexp = test_data & data_expmask`）；
+2. **`rtl_effect`**：Host 从 RTL 新增行解析 `{16'h0, dcb_wdata[15:0]}`，给出
+   `retained_bits=[15:0]`、`retained_mask=0x0000ffff`、`cleared_mask=0xffff0000`，
+   并规定“期望值 = 写入值 & retained_mask”。
+
+复跑结果：N6 五条修订**全部**与答案键一致（参数角色与期望值；仅 `32'h00005678` 比
+`32'h0000_5678` 少一个 `_`）；N7 5/5 rc=0；N8 live pass；N9 作业 `JOB-1d87bec668d9` 提交后按范围取消。
 
 ## 3 失败重试轨迹（全部真实运行，未回改期望）
 
@@ -66,6 +80,8 @@
 | 3 | N8 以文档未同步/既有代码问题反复退回 | prompt：`rtl_change` 优先、`doc_out_of_sync` 记 finding 不退回；checklist 只判 `applied_edits` 触及的行（N8 输入新增 `applied_edits`） | 既有 N8 测试（drill/real standin fail-closed） |
 | 4 | `run_guarded.sh` 新环境（无 `SIMLIB_RUN/`）误判锁 | `acquire_lock` 前 `mkdir -p "$ROOT/SIMLIB_RUN"` | `tests/test_fix_kbtools.py::test_run_guarded_fresh_env_without_simlib_run_acquires_lock` |
 | 5 | 验收 A51 在 drill 作业瞬间完成时窗口竞态 | A51 改为校验**当前**停放中断的快照（JOB 已消费则校验下一闸门），不放松“干净可恢复”要求 | 端到端 phase1 A51 |
+| 6 | N6 只知道调用行、不知道测试台 API 的实参角色（`data_expmask` vs `initial_dat`） | targets 增加 `api_semantics`（从 TB/TESTLIB 定义抽 signature+body），prompt 按参数名定位 | `test_n6_doc_bitdef_falls_back_...`（断言 signature/body 含 data_expmask） |
+| 7 | N6 自行推 RTL 截断方向容易反向 | Host 解析 `{N'h0, sig[hi:lo]}` 给 `rtl_effect`（retained_mask/cleared_mask + 计算规则） | 同上（断言 `retained_mask=0x0000ffff`） |
 
 ## 5 复跑
 

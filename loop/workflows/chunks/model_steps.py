@@ -567,6 +567,45 @@ def _doc_bitdef_from_diff(diff: dict[str, Any] | None) -> dict[str, Any] | None:
     return out or None
 
 
+def _doc_bitdef_from_snapshot(ctx: RunCtx, entry_id: str) -> dict[str, Any] | None:
+    """从**本轮文档条目快照**取位定义（`bundle/doc_entries.jsonl`）。
+
+    为什么必须有这条：`_doc_bitdef_from_diff` 只在「N2 的差异条目本身是 doc_entry」时
+    才有 `after` JSON。真实 RTL-only 改动（本仓最常见）里，N2 的差异条目是 **RTL 文件**，
+    `diffs_by_id` 里没有 `0x0d00#0x0d04`，于是 N6 会把「拿不到文档位定义」当失败
+    —— 实测 2026-10-20 real 首跑就死在这里（N5 已正确给出 5 个必须用例）。
+    文档条目快照是 N1 冻结进本轮 bundle 的权威输入（与 baseline doc_fingerprint 同源）。
+    """
+    if not entry_id:
+        return None
+    snapshot = ctx.run_dir / "bundle" / "doc_entries.jsonl"
+    if not snapshot.is_file():
+        return None
+    keep = ("name", "segment", "offset_global", "reset", "rw", "bytes",
+            "bitdef_present", "entry_id")
+    for line in snapshot.read_text(encoding="utf-8", errors="replace").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            rec = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(rec, dict) or str(rec.get("entry_id")) != str(entry_id):
+            continue
+        out = {k: rec.get(k) for k in keep if rec.get(k) is not None}
+        if not out:
+            return None
+        out["source"] = f"run_snapshot:{snapshot.relative_to(ctx.run_dir)}"
+        return out
+    return None
+
+
+def _doc_bitdef_for(ctx: RunCtx, entry_id: str, diff: dict[str, Any] | None) -> dict[str, Any] | None:
+    """位定义取数：diff 里的 doc_entry（drill/文档变更）优先，其次本轮文档条目快照。"""
+    return _doc_bitdef_from_diff(diff) or _doc_bitdef_from_snapshot(ctx, entry_id)
+
+
 def _excerpt(text: str, line: int, *, radius: int = 15) -> dict[str, Any]:
     lines = text.splitlines()
     if line < 1 or line > len(lines):
@@ -613,7 +652,7 @@ def build_n6_targets(ctx: RunCtx, data: Any) -> list[dict[str, Any]]:
             continue
         entry_id = str(item.get("entry_id") or "")
         diff = diffs_by_id.get(entry_id)
-        doc_bitdef = _doc_bitdef_from_diff(diff)
+        doc_bitdef = _doc_bitdef_for(ctx, entry_id, diff)
         segment = str(item.get("segment") or "")
         offset = str(item.get("offset") or "")
         if not doc_bitdef:
@@ -623,12 +662,35 @@ def build_n6_targets(ctx: RunCtx, data: Any) -> list[dict[str, Any]]:
             problems.append(f"{case}: 缺修订点（segment/offset）")
             continue
         display = f"{segment}+{offset}" if "+" not in offset else offset
+        rtl_files = [str(x) for x in (item.get("rtl_files") or [])]
+        rtl_change: list[dict[str, Any]] = []
+        for d in diffs:
+            did = str(d.get("entry_id") or d.get("id") or "")
+            if did in rtl_files and str(d.get("kind") or "") == "rtl_file":
+                rtl_change.append({
+                    "file": did,
+                    "lines": d.get("lines") or [],
+                    "offsets": d.get("offsets") or [],
+                    "hunk": d.get("diff_hunk"),
+                })
+        if not rtl_change:  # N5 未给 rtl_files 时：按 offset 命中取 RTL hunk
+            for d in diffs:
+                if not d.get("diff_hunk"):
+                    continue
+                if offset and offset in [str(o) for o in (d.get("offsets") or [])]:
+                    rtl_change.append({
+                        "file": str(d.get("entry_id") or d.get("id") or ""),
+                        "lines": d.get("lines") or [],
+                        "offsets": d.get("offsets") or [],
+                        "hunk": d.get("diff_hunk"),
+                    })
         point = {
             "entry_id": entry_id or None,
             "segment": segment,
             "offset": offset,
             "display": display,
             "doc_bitdef": doc_bitdef,
+            "rtl_change": rtl_change,
         }
         existing = next((t for t in targets if t["case"] == case), None)
         if existing is not None:
@@ -642,6 +704,7 @@ def build_n6_targets(ctx: RunCtx, data: Any) -> list[dict[str, Any]]:
             "excerpt": excerpt,
             "revision_points": [point],
             "doc_bitdef": doc_bitdef,
+            "rtl_change": rtl_change,
             "why": str(item.get("why") or ""),
         })
     if problems and not lenient:
@@ -814,10 +877,10 @@ async def n6_author(data: Any) -> dict[str, Any]:
 
 
 _CHECKLIST = [
-    "地址必须写成 <段基址>+<块内偏移>，且与接口文档位定义表一致",
-    "预期值以接口文档位定义表为准，不迁就 RTL",
-    "失败必须让日志出现 *E（同时发 `uvm_error）",
-    "禁止裸 wait(...)，每个等待必须有超时兜底",
+    "用例代码的**地址实参保持原样**；revision_points 的 <段基址>+<块内偏移> 只用于对照文档，不得出现在代码里",
+    "期望读回值必须与 input.rtl_change 描述的新行为一致；文档未同步的冲突要如实指出（不得为变绿改写入值/删检查）",
+    "仅当本轮改动涉及失败路径/检查逻辑时才评估「失败必须让日志出现 *E（同时发 `uvm_error）」；只改期望值时本项标 N/A",
+    "禁止裸 wait(...)，每个等待必须有超时兜底（只判本轮新增/改动的等待）",
     "禁止固定延时收尾，结束条件用 wait(test_done)",
     "白盒 uvm_hdl_force 必须成对 release 并检查返回值",
 ]
@@ -851,11 +914,16 @@ async def n8_check(data: Any) -> dict[str, Any]:
     for target in (data.get_state("n6_targets") or {}).get("targets") or []:
         revision_points.extend(target.get("revision_points") or [])
 
+    applied_edits = [
+        {"case": c.get("case"), "file": c.get("file"), "edits": c.get("edits") or []}
+        for c in (n6_applied.get("cases") or []) if isinstance(c, dict)
+    ]
     input_data = {
         "run_id": ctx.run_id,
         "cycle": cycles,
         "sandbox_cases": sandbox_cases,
         "revision_points": revision_points,
+        "applied_edits": applied_edits,
         "checklist": _CHECKLIST,
         "rework_reasons": [str(f) for f in (n8_prev.get("data") or {}).get("must_fix", [])]
         if isinstance(n8_prev.get("data"), dict) else [],

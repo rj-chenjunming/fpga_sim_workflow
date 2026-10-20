@@ -291,9 +291,18 @@ def phase1(c: httpx.Client) -> None:
     # —— 那是另一个场景（F-V1-06b 有单测覆盖），不该在这里碰运气。
     parked_id = (v.get("pending_interrupt") or {}).get("id")
     snap_path = P.LOOP_DIR / "state" / "recovery" / f"{run_id}.json"
-    ok = wait_clean_snapshot(snap_path, parked_id, seconds=25.0)
+    ok = wait_clean_snapshot(snap_path, parked_id, seconds=10.0)
+    current_id = parked_id
+    if not ok:
+        # happy 的 drill 作业瞬间完成并立即投递：`wait_for(job)` 返回时 JOB 中断可能已被
+        # 消费，执行已推进到下一道闸门（G2）。此时「停机前干净停放」应对**当前**中断校验，
+        # 而不是对已经消失的 JOB 中断（否则是观察窗口竞态，不是恢复能力缺陷）。
+        cur = c.get(f"/api/runs/{run_id}").json()
+        current_id = (cur.get("pending_interrupt") or {}).get("id")
+        if current_id and current_id != parked_id:
+            ok = wait_clean_snapshot(snap_path, current_id, seconds=15.0)
     ck("A51 当前停放已落盘且是可恢复的干净快照", ok,
-       {"path": str(snap_path), "interrupt": parked_id})
+       {"path": str(snap_path), "first_interrupt": parked_id, "current_interrupt": current_id})
     # 停放（执行在作业期间是 interrupt，而不是 running）由 phase 4 的 cancel 场景确定性断言：
     # 那个作业 `sleep 120`，一定能观察到；happy 的 drill 作业瞬间完成，观察窗口太窄。
 

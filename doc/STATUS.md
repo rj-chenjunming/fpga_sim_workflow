@@ -21,19 +21,20 @@
 
 | 门 | 命令 | 结果 | 说明 |
 |---|---|---|---|
-| 单测收集 | `cd loop && LOOP_LLM_MODE=standin .venv/bin/python -m pytest --collect-only -q` | **197 tests collected** | 含修复回归（real 链路 / 生命周期 / kb 工具 / 晋升 API） |
-| 单测执行 | `cd loop && flock /tmp/cic_loop_pytest.lock env LOOP_LLM_MODE=standin .venv/bin/python -m pytest -q` | **197 passed, 0 failed**（72.34s） | 基线红 `test_view_projects_authority_not_just_events` 已修（身份复用 + 事件流残留） |
+| 单测收集 | `cd loop && LOOP_LLM_MODE=standin .venv/bin/python -m pytest --collect-only -q` | **200 tests collected** | 含修复回归（real 链路 / 生命周期 / kb 工具 / 晋升 API） |
+| 单测执行 | `cd loop && flock /tmp/cic_loop_pytest.lock env LOOP_LLM_MODE=standin .venv/bin/python -m pytest -q` | **200 passed, 0 failed**（72.21s） | 基线红 `test_view_projects_authority_not_just_events` 已修（身份复用 + 事件流残留） |
 | kb 自测 · gate schema | `loop/.venv/bin/python kb/tools/_selftest_gate_schema.py` | **10/10** | 需可写数据根 |
 | kb 自测 · n5 可达性 | `loop/.venv/bin/python kb/tools/_selftest_n5_reachability.py` | **9/9** | 只读 |
 | kb 自测 · n1 快照（F-01） | `loop/.venv/bin/python kb/tools/_selftest_n1_snapshot.py` | **7/7** | 新增；build/stage 不再 NameError |
 | kb 自测 · case_state | `loop/.venv/bin/python kb/tools/_selftest_case_state.py` | **16/16** | 新增；含 check/I7 边界 |
 | kb 自测 · n10 待裁决 | `loop/.venv/bin/python kb/tools/_selftest_n10_pending.py` | **13/13** | 新增；D1–D20 零改动 |
 | 端到端终验 | `cd loop && LOOP_PORT=8098 bash spikes/accept_v1_run.sh` | **rc=0；117/117 断言**（相计数 50/27/18/8/8/6） | 4 代服务进程、3 次真重启；输出在 `loop/.logs/accept/`（本地、不入库） |
-| 文档链接扫描 | `python3 doc/audit/check_doc_links.py` | **checked=772 / missing=0**（skipped=9323, historical=834） | 三根解析 + 行号后缀剥离 |
+| 文档链接扫描 | `python3 doc/audit/check_doc_links.py` | **checked=777 / missing=0**（skipped=9394, historical=834） | 三根解析 + 行号后缀剥离 |
 
-> **real 模式说明**：本轮端到端是 `drill`（夹具）。real 链路的 N1/N6/N7/N8/N9/N11/N15 已按契约实现并有单测，
-> 但**真机完整全跑**（≈19 min/用例，修订后可达 22.8 h）仍需在环境上执行一次；N3/N10/N12 在 real+standin 下
-> 按设计 fail closed（真实端到端需 live provider）。
+> **real 模式说明**：2026-10-20 已在**真实环境副本**（SCN_RTL_0D04）用 real 模式 + live LLM + 真实编译
+> 跑通 **N0→N8**（N2/N5 与预登记答案一致；N7 5/5 编译 rc=0；N8 live pass）；N9 真实全跑按范围在提交后取消。
+> 第二轮更长的 real 回归（N9 全跑 ≈50 min/用例）仍未执行；证据与已知 finding（N6 两个用例把掩码/初始值弄反，
+> 应由 N9 证据触发返工）见 [`doc/evidence/REAL_RUN_SCN_RTL_0D04_20261020.md`](evidence/REAL_RUN_SCN_RTL_0D04_20261020.md)。
 
 ### 终验历史记录（不是本次实测）
 

@@ -89,9 +89,9 @@
 | N3 差异摘要 | ModelRequest | `n2_diff.json` | 分组摘要 | 解析失败结束执行，不伪造 |
 | **N4 闸门1** | 人工 | 差异清单 + 冲突快照 | 决策（确认/忽略+理由/转人工） | `pause_for`；未决>0 拒绝放行 |
 | N5 影响分析 | Host | 已确认差异 + 索引 | `n5_impact.json` | rc=3 业务码 |
-| N6 修订/补充 | ModelRequest + Host | 受影响子集 + 逐条目标（case/file/md5/excerpt 带行号 + `revision_points` + `doc_bitdef`） | 修订 `edits[{line,old,new,basis}]` + 作者说明；Host `n6_apply` 写入 `<run>/sandbox/TESTLIB/` 并冻结 `md5_after` | 模型只出精确编辑；缺依据/非唯一 old 行/行号不符 ⇒ fail closed（不猜）；写权不落 `TESTLIB/` |
+| N6 修订/补充 | ModelRequest + Host | 受影响子集 + 逐条目标（case/file/md5/excerpt 带行号 + `revision_points` + `doc_bitdef` + **`rtl_change`**：N2 的 RTL 新增/删除行与 offset） | 修订 `edits[{line,old,new,basis}]` + 作者说明；Host `n6_apply` 写入 `<run>/sandbox/TESTLIB/` 并冻结 `md5_after` | 期望值以 `rtl_change` 的新行为为准（`doc_bitdef` 未同步时在 basis 标 `doc_out_of_sync`，冲突交 N12/G2 暴露）；**地址实参/写入值不动**，十六进制用 `'h…`；缺依据/非唯一 old 行/行号不符 ⇒ fail closed；写权不落 `TESTLIB/` |
 | N7 编译（约 2 s） | Host | 沙箱用例 | rc + 编译日志 | `run_guarded.sh --mode compile-only`（身份头/先归档再删/串行锁）经单槽准入；short lease，异常也 release |
-| N8 检查 | ModelRequest | 沙箱用例 + 卡点C | 通过 / 退回 + 逐条依据；`static_check` 写台账 | 复核必须读代码/日志（`plan_only` 已删）；证据不足或校验失败 ⇒ node_failed（debug/rehearsal 不再自动当 PASS）；退回 ⇒ 显式回边到 N6 |
+| N8 检查 | ModelRequest | 沙箱用例 + 卡点C + `applied_edits`（本轮改动行） | 通过 / 退回 + 逐条依据；`static_check` 写台账 | 复核必须读代码/日志（`plan_only` 已删）；**checklist 只判本轮 edits 触及的行**（既有代码问题记 notes/defect，不作退回依据）；`doc_out_of_sync` 记 finding 不单独退回；证据不足/校验失败 ⇒ node_failed；退回 ⇒ 显式回边到 N6 |
 | N9 全跑（实测 ≈19 min/用例） | Host | `n6_applied` 目标集（不是硬编码单例） | 单作业覆盖全部目标用例的 run 证据（日志/耗时/双计数/印记/identity 四方同值） | **不阻塞**：提交**一个**串行作业（`run_guarded.sh --mode full`）→ `pause_for` 停等 → 完成事件 resume；目标/沙箱/md5 缺失或证据目录缺失 ⇒ fail closed |
 | N10 结果对账 | ModelRequest + Host | N9 证据（`aggregate_evidence`） | FAIL 三分类；`reconcile.md` 落盘；分类 2/3 经 `n10_pending.py` 进 `pending.json` 的 `n10_items` | drill/real 都落 run_dir；待裁决只经单一写者追加，D1—D20 与 `expected_total` 不变 |
 | N11 评估 | ModelRequest + Host | 对账 + 用例态 + 证据身份（run_id/case/md5/seed 四方同值） | `chain=intact|broken` + 返工需求 | **Host 事实优先**：身份不一致或模型声称 intact 与 Host 证据矛盾 ⇒ 强制 `broken`；`>= limit` ⇒ `N11_ESCALATE` 升级闸门2；返工 ⇒ 显式回边到 N6 |

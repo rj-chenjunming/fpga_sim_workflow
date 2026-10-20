@@ -1,6 +1,6 @@
 # `loop/` — 变更影响闭环的编排层与操作界面
 
-> **状态**：P0 可运行（drill 夹具全链路已验证；审计阻断项已修复并补回归；real 模式**真机完整全跑**仍需在环境上执行，见 §6）
+> **状态**：P0 可运行（drill 全链 117/117；审计阻断项已修复并补回归；2026-10-20 已在真实环境副本上 **real N0→N8 跑通**——证据见 `doc/evidence/REAL_RUN_SCN_RTL_0D04_20261020.md`；更长的 N9 真实全跑仍未做）
 > **上游契约**：`doc/spec/CHANGE_IMPACT_LOOP_SPEC.md`（业务与不变量 I1–I8）
 > **本层契约**：`doc/spec/LOOP_ORCHESTRATION_SPEC.md`（owner / 生命周期 / 长任务 / 准入 / 恢复 / 投影）
 

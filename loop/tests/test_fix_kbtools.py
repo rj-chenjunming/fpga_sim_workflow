@@ -541,3 +541,36 @@ def test_n10_pending_selftest_passes() -> None:
                        timeout=180)
     assert p.returncode == 0, p.stdout + p.stderr
     assert "FAIL=0" in p.stdout
+
+
+# ---------------------------------------------------------------- run_guarded 新环境锁（2026-10-20 real 实测）
+
+def test_run_guarded_fresh_env_without_simlib_run_acquires_lock(tmp_path: Path):
+    """实测回归：新环境（无 `SIMLIB_RUN/`）下 `mkdir "$LOCKDIR"` 会因父目录缺失失败，
+    旧逻辑误判「owner 无法解析的陈旧锁」⇒ rc=3，real N7 直接死。
+
+    断言只看**锁语义**（不依赖 uvs 是否可用）：不得出现「互斥量 owner」误判；
+    `SIMLIB_RUN/` 被创建；退出后锁目录已清。
+    """
+    env = tmp_path / "env"
+    (env / "sandbox").mkdir(parents=True)
+    (env / "ev").mkdir()
+    case = env / "case.sv"
+    case.write_text("module x; endmodule\n", encoding="utf-8")
+    proc = subprocess.run(
+        [
+            "bash", str(KB_TOOLS / "run_guarded.sh"),
+            "--case-file", str(case), "--case-name", "x", "--seed", "1",
+            "--mode", "compile-only",
+            "--sandbox-root", str(env / "sandbox"),
+            "--evidence-dir", str(env / "ev"),
+            "--run", "RUN-20990101-000000",
+            "--inner", "/bin/true",
+        ],
+        env={**os.environ, "LOOP_ENV_ROOT": str(env),
+             "LOOP_WORKSPACE": str(tmp_path / "ws")},
+        capture_output=True, text=True, timeout=180,
+    )
+    assert "互斥量 owner" not in (proc.stderr + proc.stdout), proc.stderr[-800:]
+    assert (env / "SIMLIB_RUN").is_dir(), "锁的父目录必须被创建"
+    assert not (env / "SIMLIB_RUN" / ".run_guarded.lock").exists(), "退出后锁必须被清"

@@ -269,6 +269,10 @@ lock_age_sec() {   # 互斥量 owner 文件的年龄（秒）；无法判断时�
 
 acquire_lock() {
   local waited=0 age=0 pid_alive="" owner=""
+  # 新环境/首次跑：`SIMLIB_RUN/` 可能尚不存在。`mkdir "$LOCKDIR"` 会因**父目录缺失**失败，
+  # 旧逻辑随即把"没有 owner 文件"误判成"旧格式/未知锁"并 rc=3（实测 2026-10-20 real 首跑：
+  # 场景环境副本不含 SIMLIB_RUN/ ⇒ N7 compile-only 直接死在"互斥量 owner 无法解析"）。
+  mkdir -p "$ROOT/SIMLIB_RUN" 2>/dev/null
   while true; do
     if mkdir "$LOCKDIR" 2>/dev/null; then
       LOCK_CREATED=1

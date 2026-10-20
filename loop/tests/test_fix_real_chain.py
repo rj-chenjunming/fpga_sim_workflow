@@ -1077,3 +1077,68 @@ async def test_drill_n9_second_round_survives_readonly_archive(
         assert arch.stat().st_mode & 0o200 == 0, "归档件必须只读（444）"
     prov = ctx.run_dir / "evidence" / "archive" / "DRILL_FIXTURE_PROVENANCE.txt"
     assert prov.is_file() and prov.stat().st_mode & 0o200 == 0
+
+
+# ================================================================ N6 文档位定义取数（real RTL-only）
+
+def _n6_fixture(tmp_path: Path, *, include_snapshot: bool = True):
+    """真实 RTL-only 改动的 N5/N2 形态：N2 差异条目是 RTL 文件，不是 doc_entry。"""
+    run_dir = tmp_path / "run"
+    (run_dir / "bundle").mkdir(parents=True)
+    env = tmp_path / "env"
+    (env / "TESTLIB").mkdir(parents=True)
+    case = env / "TESTLIB" / "tc_pcie_rw_02.sv"
+    case.write_text("\n".join(f"// line {i}" for i in range(1, 41)) + "\n", encoding="utf-8")
+    (run_dir / "n5_impact.json").write_text(json.dumps({
+        "schema": "kb/n5_impact", "version": 1, "run_id": RUN_ID,
+        "must_change": [{
+            "case": "tc_pcie_rw_02", "file": "TESTLIB/tc_pcie_rw_02.sv", "line": 10,
+            "entry_id": "0x0d00#0x0d04", "segment": "0x0d00", "offset": "0xd04",
+            "why": "offset 直接命中且文档有位定义表",
+        }],
+    }, ensure_ascii=False), encoding="utf-8")
+    (run_dir / "n2_diff.json").write_text(json.dumps({
+        "schema": "kb/n2_diff", "version": 1, "has_change": True,
+        "diffs": [{
+            "id": "RTL/SRC/imports/SRC/pcie_controller/pcie_register.v",
+            "entry_id": "RTL/SRC/imports/SRC/pcie_controller/pcie_register.v",
+            "kind": "rtl_file", "change": "modified", "after": None,
+            "lines": [171, 172], "offsets": ["0xd04"],
+            "diff_hunk": "- assign s_reg_test = ... ? dcb_wdata : reg_test;\n"
+                         "+ // 0x0d04 pcie_test: [31:16] reserved, read as 0\n"
+                         "+ assign s_reg_test = ... ? {16'h0, dcb_wdata[15:0]} : reg_test;",
+        }],
+    }, ensure_ascii=False), encoding="utf-8")
+    if include_snapshot:
+        (run_dir / "bundle" / "doc_entries.jsonl").write_text(json.dumps({
+            "entry_id": "0x0d00#0x0d04", "name": "pcie_test", "segment": "0x0d00",
+            "offset_global": "0x0d04", "reset": "0", "rw": "R/W",
+            "bitdef_present": True, "sources": [{"kind": "bitdef", "line": 1254}],
+        }) + "\n", encoding="utf-8")
+    failed: list[str] = []
+
+    ctx = SimpleNamespace(mode="real", run_dir=run_dir,
+                          node_failed=lambda *a, **k: failed.append(str(k)))
+    data = SimpleNamespace(require_resource=lambda key: str(env) if key == "repo_root" else None)
+    return ctx, data, failed
+
+
+def test_n6_doc_bitdef_falls_back_to_run_snapshot_for_rtl_only_diff(tmp_path: Path):
+    """实测 2026-10-20 real 首跑 N6 死因回归：RTL-only 改动的 diff 条目不是 doc_entry。"""
+    ctx, data, failed = _n6_fixture(tmp_path)
+    targets = model_steps.build_n6_targets(ctx, data)
+    assert failed == []
+    assert len(targets) == 1
+    target = targets[0]
+    assert target["doc_bitdef"]["name"] == "pcie_test"
+    assert target["doc_bitdef"]["source"] == "run_snapshot:bundle/doc_entries.jsonl"
+    assert target["revision_points"][0]["display"] == "0x0d00+0xd04"
+    assert target["rtl_change"] and "dcb_wdata[15:0]" in target["rtl_change"][0]["hunk"]
+    assert target["excerpt"]["line"] == 10 and "10:" in target["excerpt"]["text"]
+
+
+def test_n6_missing_doc_bitdef_still_fails_closed(tmp_path: Path):
+    ctx, data, failed = _n6_fixture(tmp_path, include_snapshot=False)
+    with pytest.raises(RuntimeError, match="拿不到文档位定义"):
+        model_steps.build_n6_targets(ctx, data)
+    assert failed, "real 模式必须 node_failed，不得把缺事实交给模型编"

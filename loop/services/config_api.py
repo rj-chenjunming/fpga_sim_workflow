@@ -16,7 +16,6 @@ import os
 from pathlib import Path
 from typing import Any, Iterable
 
-BASELINE_MANIFEST = "manifest.json"
 FROZEN_DEFAULT: tuple[str, ...] = ("RTL", "TB", "PKG", "TESTLIB")
 WORKSPACE_PARTS: tuple[str, ...] = ("index", "conflicts", "baselines", "runs")
 MARKER_FILES: tuple[str, ...] = ("uvs.setup", "manifest.json")
@@ -59,47 +58,14 @@ def _find_env_entry(registry: dict[str, Any], target: Path) -> tuple[str | None,
 
 
 def list_baselines(workspace_root: Path | str) -> dict[str, Any]:
-    """列出 `<WORKSPACE_ROOT>/baselines/*`（只读；不递归、不跟随符号链接目录）。"""
-    root = _resolve(workspace_root)
-    baselines_dir = root / "baselines"
-    items: list[dict[str, Any]] = []
-    if baselines_dir.is_dir():
-        for child in sorted(baselines_dir.iterdir(), key=lambda p: p.name):
-            if child.is_symlink() or not child.is_dir():
-                continue
-            item: dict[str, Any] = {
-                "id": child.name,
-                "path": str(child),
-                "created_at": None,
-                "parent": None,
-                "cases": None,
-                "rtl_snapshot_bytes": None,
-                "valid": False,
-                "missing": [],
-            }
-            manifest = child / BASELINE_MANIFEST
-            if not manifest.is_file():
-                item["missing"].append(BASELINE_MANIFEST)
-                items.append(item)
-                continue
-            try:
-                doc = json.loads(manifest.read_text(encoding="utf-8"))
-            except (OSError, json.JSONDecodeError) as exc:
-                item["missing"].append(f"{BASELINE_MANIFEST} 解析失败: {type(exc).__name__}")
-                items.append(item)
-                continue
-            snapshot = child / "rtl_snapshot.tar"
-            item.update(
-                {
-                    "created_at": doc.get("created_at"),
-                    "parent": doc.get("parent"),
-                    "cases": (doc.get("cases_freeze") or {}).get("entries"),
-                    "rtl_snapshot_bytes": snapshot.stat().st_size if snapshot.is_file() else None,
-                    "valid": True,
-                }
-            )
-            items.append(item)
-    return {"baselines": items, "workspace_root": str(root)}
+    """列出 `<WORKSPACE_ROOT>/baselines/*`（只读）。
+
+    判据只有一处：`host/baseline.py`（编排规格 §3.1）。本层不重复实现完整性校验——
+    历史缺陷正来自这里「只要 manifest 能解析就 valid=true」。
+    """
+    from host import baseline as baseline_host
+
+    return baseline_host.list_baselines(workspace_root)
 
 
 # ---------------------------------------------------------------- 环境校验

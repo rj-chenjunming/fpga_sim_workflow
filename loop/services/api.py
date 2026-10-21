@@ -175,7 +175,9 @@ def list_runs() -> dict[str, Any]:
 
 @app.post("/api/runs")
 async def create_run(payload: dict[str, Any] = Body(default={})) -> dict[str, Any]:
-    baseline = payload.get("baseline") or "v0"
+    # 缺省语义只在入口解析一次（RunManager.start → host.baseline.normalize）；
+    # API 层不再自带第二份 `or "v0"`，否则两处默认会漂移。
+    baseline = payload.get("baseline")
     mode = payload.get("mode") or "drill"
     scenario = payload.get("scenario") or "happy"
     project = payload.get("project") or str(P.ENV_ROOT)

@@ -186,14 +186,17 @@
   "baselines": [
     {"id": "v0", "created_at": "2026-10-15T12:05:00+0800", "parent": null,
      "cases": 162, "rtl_snapshot_bytes": 2570240, "valid": true,
-     "missing": []}
+     "missing": [], "errors": []}
   ],
   "workspace_root": ".../kb"
 }
 ```
 
-- 来源：`<WORKSPACE_ROOT>/baselines/*/manifest.json`；`valid` = manifest 可解析且七件套齐全。
-- 不允许列出非基线目录。
+- 来源：`<WORKSPACE_ROOT>/baselines/*/manifest.json`；`valid` 的**唯一判据**见编排规格 §3.1（manifest schema +
+  身份一致 + 七件套指纹 + parent 链），实现只有 `loop/host/baseline.py` 一处；本端点复用同一函数。
+- 坏件不抛 500：`valid=false` 并在 `missing`（缺失件）/`errors`（schema·身份·指纹·链）给出原因。
+- 只列**基线号形状**（`^v[0-9]+$`）的条目；符号链接基线**列入但 `valid=false`**，不静默跳过；
+  `.staging-*` 等非基线目录不列。
 
 ### 6.2 `GET /api/env/check?path=<abs>`
 
@@ -243,7 +246,8 @@
 ```
 
 - 校验：`project` 必须等于**当前进程解析的 `ENV_ROOT`**；否则 `400`（理由：三根在进程启动时解析，跨环境需重启；不得静默切换）。
-- `baseline` 必须存在且 `valid`；否则 `400`。
+- `mode=real` 时 `baseline` 必须存在且 `valid`（判据见编排规格 §3.1），准入发生在**建运行目录/写事件/申请单槽之前**，
+  否则 `400` 且零副作用；`mode=drill` 不读基线资产、不做准入，但不得据此声称基线已验证。
 - 返回沿用 `{run_id, mode, scenario, created_at}`，并新增 `project`。
 
 ### 6.5 `GET /api/runs/{run_id}` 扩展

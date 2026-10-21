@@ -50,6 +50,17 @@ def _kblib():
 
 
 _KB = _kblib()
+
+
+def kb_module():
+    """读取 kb 权威模块的**公开入口**（不写字节码）。
+
+    编排层需要 kb 的判据/枚举时统一走这里：既避免各模块自行 `import kb_lib`
+    往冻结目录写 `__pycache__`，也避免出现第二套加载器（红线 8）。
+    """
+    return _KB
+
+
 #: **环境（插件）根**：被守卫的仓库（RTL/TB/PKG/TESTLIB + doc + uvs.setup）
 ENV_ROOT: Path = Path(_KB.ENV_ROOT)
 #: **工作区数据根**：该环境的索引/冲突/基线/运行记录（软件管理）

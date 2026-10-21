@@ -303,7 +303,8 @@ async def test_n1_incomplete_staged_fails_closed_without_calling_tool(
     called: list[Any] = []
     monkeypatch.setattr(host_steps, "run_kb_tool",
                         lambda *a, **k: called.append(a) or {"rc": 0})
-    data = FakeData(resources={"repo_root": env_repo})
+    # 节点层不再兜底 v0（编排规格 §3.1）：身份必须由入口/输入显式给出。
+    data = FakeData(input={"baseline": "v0"}, resources={"repo_root": env_repo})
     with pytest.raises(FileNotFoundError, match="staged 输入不完整"):
         await host_steps.n1_manifest(data)
     assert called == []

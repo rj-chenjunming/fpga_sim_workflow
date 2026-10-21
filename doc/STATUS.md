@@ -259,3 +259,43 @@ F01–F12 延续原编号，新增 F13 首次错误反馈、F14 样式收敛、F
 | 业务单测 / 完整浏览器集 / kb / 完整端到端 | 未运行 | 本轮是成册与只读复核，未改变实现；不复用 §12 为本轮结果 |
 
 性能、进程杀断恢复、真实三库和非默认基线整链影响均未在本轮实测；不声称它们已复现事故、已修复或四道门全绿。既有环境限制和未完成能力继续有效。
+
+## 14 F01 基线准入与全链身份（2026-10-21）
+
+基线提交 `fb83ed0`。规格 [编排规格 §3.1](spec/LOOP_ORCHESTRATION_SPEC.md#31-基线准入与身份f01) 与
+[Web UI §6.1/§9](spec/WEB_UI_SPEC.md)，计划见 [F01 切片计划](plans/2026-10-21-F01-baseline-admission.md)。
+本切片由 Lead 实现并自测，**未指派独立验证者**；数字一律从命令输出复制。
+
+| 验证 | 原始输出（逐字复制） | 说明 |
+|---|---|---|
+| 修改前红灯（临时回退三处接线） | `10 failed, 2 passed in 0.74s` | 空 manifest 对象仍 `valid=true`、数组 manifest 触发 500、N2 仍传 `--from-baseline v0` |
+| 修改后新用例 | `12 passed in 0.60s` | 判据/准入零副作用/身份传递三类可观察行为 |
+| 既有配置契约用例（含按新契约更新的一条） | `19 passed in 0.62s` | `test_list_baselines_reads_manifest` 原先把「只要 manifest 可解析」写死，已改判 `valid=false` + 显式缺件 |
+| 真实基线 v0（本机只读环境根） | `v0 valid= True missing= [] errors= [] cases= 162 rtl_bytes= 2570240` | 新判据在真实七件套上通过，未误伤既有基线 |
+| 全套单测 | `46 failed, 264 passed, 3 skipped, 1 warning in 11.91s` | 46 项与拉取后基线**同因**（`ENV_ROOT` 只读导致 `mkdir` OSError），非本轮回归；通过数 252→264 = 新增 12 项 |
+| 补丁空白检查 | `git diff --check` 退出成功、无输出 | —— |
+
+`real` 模式准入发生在建运行目录/隔离投影/写事件/占槽之前（用例以 spy 固定「未调用 `prepare_run_dir`」）；
+`drill` 不做基线准入（走夹具），行为未变。**未运行**：kb 自测、端到端、真实**非默认基线**整链
+（F01-d 阻塞：缺内网环境与有效非默认基线）。因此**不声称四道门全绿**，也不声称 F01 全部完成。
+
+**独立复核（`f01-verifier`，只读、未改文件）**：结论「不建议按现状合并」，必改 3 项已在同一轮修复。
+
+| 复核发现 | 处理 | 修复后验证 |
+|---|---|---|
+| N1/N2 仍各带 `or "v0"` 兜底，与「任何节点不得再出现硬编码 v0」不符 | 新增 `_selected_baseline()`：`run_meta` → 输入 → **fail closed**；API 层第二份 `or "v0"` 删除 | `tests/test_fix_real_chain.py -k n1`：`16 passed, 23 deselected in 1.16s`；新增 N2 缺身份用例 |
+| 准入用例红态用「返回 None」的 spy，反而落盘 `loop/None/` 与 stale 事件 | spy 改为「被调用即断言失败」；负例增加事件目录零新增断言；残留已清理 | 定向 `22 passed in 0.62s`；仓库无 `loop/None/` 与新增 stale 件 |
+| 规格称 `doc_fingerprint` 核指纹，实现只查存在 | 按 kb 唯一口径 `canon_lines_sha256` 重算（真实 v0 复算一致） | 真实 v0 仍 `valid= True`；篡改用例由绿转红 |
+| 符号链接基线被列表静默跳过（坏件伪装成不存在） | 列表只收 `^v[0-9]+$` 形状；符号链接**列入**但 `valid=false` | 新增用例断言其出现在列表且报「符号链接」 |
+| 绝对路径 artifact 无边界 | 限定在工作区根 / 环境根内，越界计入 `missing` | 代码收敛（边界用例待补） |
+
+复核后全套：`46 failed, 269 passed, 3 skipped, 1 warning in 11.26s`（46 项仍为 `ENV_ROOT` 只读同因；
+通过数 252→269 = 新增 17 项）。定向：`24 passed in 0.64s`；`/api/baselines` 契约用例通过。
+
+复核者二次回归结论：**可合并**（3 项必改均有代码+实测证据关闭，无新增中/高危）。其列出的低项已在本轮
+顺手关闭：`host/baseline.py` docstring 与限根逻辑对齐；补 N1 fail-closed 与绝对路径越界两条用例。
+仍余后续项见下。
+
+**登记为后续（本轮不做）**：①`kb/tools/` 子进程未加 `-B`（既有行为，可向冻结目录写 `__pycache__`）；
+②`services/contracts.py::baseline_chain()` 是第二套 manifest 扫描（进闸门材料，未复用 §3.1 判据）；
+③`/api/baselines` 失败 detail 未带 `missing/errors`。

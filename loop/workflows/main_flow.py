@@ -450,6 +450,14 @@ class RunManager:
     ) -> str:
         if mode not in ("drill", "real"):
             raise ValueError("mode 必须是 drill 或 real")
+        # 基线准入（编排规格 §3.1）：real 必须在**建运行目录 / 隔离残留投影 / 写事件流 /
+        # 申请单槽之前**拒绝；判据只有 host/baseline.py 一处，API 层不重复校验。
+        # drill 走夹具、不读基线资产，因此不做准入，但也不得据此声称基线已验证。
+        from host import baseline as baseline_host
+
+        baseline_id = baseline_host.normalize(baseline)
+        if mode == "real":
+            baseline_host.require(P.KB_DIR, baseline_id)
         # `now` 原本只声明不使用：HTTP 传了 `now`、`/api/runs` 也照收，
         # 但 run_id 与时间戳实际都来自 `LOOP_NOW`/`KB_NOW` 环境变量 ⇒ **静默忽略调用方的身份意图**。
         # 对交互式使用是实打实的坑：调用方以为定住了 run 身份，实际拿到另一个 run。
@@ -499,7 +507,7 @@ class RunManager:
         doc = RunDoc(
             run_id=run_id,
             run_dir=str(run_dir),
-            baseline=baseline or "v0",
+            baseline=baseline_id,
             project=project or str(P.ENV_ROOT),
             mode=mode,
             scenario=scenario,

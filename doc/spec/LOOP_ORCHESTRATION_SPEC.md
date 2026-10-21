@@ -104,6 +104,32 @@
 | N15 分层回归 | Host | G3 决策 + 用例集 | 每用例证据（最终态，非 provisional） | 先 `n15_select` 选目标集，再 `n15_run` 提交**一个**串行作业经单槽；drill 为显式 no-op；不再 `for_each`/`n15_case` 假进度 |
 | N16 晋升基线 | **人触发 + Host** | 轮结果 + 冲突态 + 用例态 + G3 签署记录 | `v(n+1)(parent=v(n))`；`promote_result.json` | 图内节点默认 dry-run；真实晋升必须 `--promote` 且 `--trigger-by/--actor-kind` 与 G3 逐字一致（human），I4 无条件、I2 待验阻断、I7 `>=limit` 拒绝；前置不过 ⇒ rc=3 零副作用 |
 
+### 3.1 基线准入与身份（F01）
+
+**唯一判据**：`<WORKSPACE_ROOT>/baselines/<id>` 同时满足下列 6 条才算 `valid`。判据只有一处实现
+（`loop/host/baseline.py`）：只读列表与运行创建**共用同一函数**，不得各写一份近似规则（红线 8）。
+
+1. `id` 匹配 `^v[0-9]+$`；目录存在且不是符号链接。
+2. `manifest.json` 存在、是 JSON 对象，并通过 `kb/schema/manifest.schema.json`（`kb_lib.validate`，权威不手抄）。
+3. 身份一致：`manifest.baseline == <id>`。
+4. **七件套齐全**：manifest 声明路径可解析且落盘存在，声明指纹与实际内容一致——
+   `rtl_snapshot`（含 `rtl_files.md5` 的 `manifest_sha256`）、`allfiles_manifest`、`doc_fingerprint`、
+   `cases_freeze`、`conflicts_snapshot`、`evidence_index`。清单内路径按环境仓根书写，
+   解析顺序 `<WORKSPACE_ROOT>/<path>` → `<WORKSPACE_ROOT>/../<path>`。
+5. parent 链可回放：`parent` 为 `null`（v0）或指向另一个 `valid` 基线；成环、超深、指向未知版本即拒。
+6. **只读**：准入过程不写任何文件（不落临时件、不写字节码）。
+
+**准入时点**：`real` 模式在**创建运行目录、隔离残留投影、写事件流、申请单槽之前**完成准入；
+不通过 ⇒ `ValueError`（HTTP 400），零副作用。`drill` 不读基线资产（走夹具），不做准入，
+但 `baseline` 仍按原样记录，不能据此声称基线已验证。
+
+**身份贯穿**：选中身份只在入口解析一次（`RunDoc.baseline`）→ N0 写入 `run_meta.baseline`
+→ N1 `--parent` → N2 `--from-baseline` → 运行投影与闸门材料。任何节点不得再出现硬编码 `v0`。
+缺省（`baseline=None`）语义固定为 `v0`；`v0` 不存在或不完整 ⇒ 拒绝，**不猜其他版本**。
+
+**失败语义**：`missing` 列缺失件、`errors` 列结构性违规（schema / 身份 / 指纹 / parent 链），
+二者都不得用空数组冒充成功；列表端点对坏件返回 `valid=false` + 原因，**不抛 500**。
+
 ---
 
 ## 4. 边账本

@@ -26,6 +26,12 @@ def _mk_env(root: Path) -> Path:
 
 
 def test_list_baselines_reads_manifest(tmp_path: Path) -> None:
+    """manifest 字段照读；但「只有 manifest、七件套缺失」**不再算 valid**。
+
+    F01（编排规格 §3.1）：旧实现只要 manifest 能解析就 `valid=true`，
+    会把半成品基线当作可选版本。本用例固定新契约，完整基线的正例见
+    `tests/test_baseline_admission.py::test_valid_baseline_passes_admission`。
+    """
     ws = tmp_path / "kb"
     v0 = ws / "baselines" / "v0"
     v0.mkdir(parents=True)
@@ -35,8 +41,9 @@ def test_list_baselines_reads_manifest(tmp_path: Path) -> None:
     }), encoding="utf-8")
     out = config_api.list_baselines(ws)
     assert out["baselines"][0]["id"] == "v0"
-    assert out["baselines"][0]["valid"] is True
     assert out["baselines"][0]["cases"] == 162
+    assert out["baselines"][0]["valid"] is False
+    assert out["baselines"][0]["missing"], "缺件必须显式列出，不得用空数组冒充齐全"
 
 
 def test_list_baselines_marks_invalid(tmp_path: Path) -> None:

@@ -121,6 +121,23 @@ def _sandbox_lib(ctx: RunCtx) -> Path:
     return ctx.run_dir / "sandbox" / "TESTLIB"
 
 
+def _selected_baseline(data: Any, node: str) -> str:
+    """基线身份的**唯一解析**：`run_meta` → 运行输入 → **fail closed**。
+
+    入口（`RunManager.start`）已把缺省语义定为 `v0` 并写进 `RunDoc`/`run_meta`；
+    节点层不再各自兜底 `v0`（旧实现 N1/N2 各有一份 `or "v0"`，正是身份漂移的来源）。
+    """
+    run_meta = data.get_state("run_meta") or {}
+    value = run_meta.get("baseline")
+    if not value and isinstance(data.input, dict):
+        value = data.input.get("baseline")
+    text = str(value).strip() if value is not None else ""
+    if not text:
+        ctx_of(data).node_failed(node, message=f"{node}：缺基线身份（run_meta/input 均未给出）")
+        raise RuntimeError(f"{node}：缺基线身份，拒绝按默认值继续")
+    return text
+
+
 # ---------------------------------------------------------------- N0
 
 
@@ -242,8 +259,7 @@ async def n1_manifest(data: Any) -> dict[str, Any]:
     target = ctx.run_dir / ARTIFACTS["n1"]
     result: dict[str, Any] = {"artifact": str(target)}
 
-    run_meta = data.get_state("run_meta") or {}
-    baseline = str(run_meta.get("baseline") or (data.input.get("baseline") if isinstance(data.input, dict) else None) or "v0")
+    baseline = _selected_baseline(data, "N1")
 
     if ctx.mode == "drill":
         doc = _load_json(ctx.fixture_path("n1_manifest_new.json"))
@@ -305,9 +321,12 @@ async def n2_diff(data: Any) -> dict[str, Any]:
         result["rc"] = 0
         result["source"] = "drill_fixture"
     else:
+        # 身份单一来源（编排规格 §3.1）：入口解析一次，N0 写 run_meta，N1/N2 消费同一值。
+        # 旧实现这里硬编码 "v0" ⇒ 选 v-next 仍按 v0 做 diff；现在缺身份即 fail closed。
+        from_baseline = _selected_baseline(data, "N2")
         run = run_kb_tool(
             "n2_diff.py",
-            ["--from-baseline", "v0", "--to-manifest", str(ctx.run_dir / ARTIFACTS["n1"]),
+            ["--from-baseline", from_baseline, "--to-manifest", str(ctx.run_dir / ARTIFACTS["n1"]),
              "--run", ctx.run_id, "--out-dir", str(ctx.run_dir)],
         )
         result.update(run)

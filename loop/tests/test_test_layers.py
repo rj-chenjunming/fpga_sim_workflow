@@ -75,7 +75,7 @@ def test_unknown_marker_fails_collection_with_strict_markers(tmp_path: Path):
 def test_software_entry_excludes_env_layer_at_collection():
     """入口默认排除环境层：收集阶段就报 deselected，而不是跑起来再 skip。"""
     proc = subprocess.run(
-        ["bash", "spikes/run_software_checks.sh", "--collect-only", "-q"],
+        ["bash", "spikes/run_software_checks.sh", "--collect-only"],
         cwd=str(LOOP), capture_output=True, text=True, timeout=300,
     )
     assert proc.returncode == 0, proc.stdout + proc.stderr

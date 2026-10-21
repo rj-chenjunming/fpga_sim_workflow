@@ -68,6 +68,16 @@ fi
 echo "[info] 软件层数据根：$SHADOW（baselines → 真实只读基线）" >&2
 echo "[info] 共享 state 由 conftest 注入一次性目录（\$LOOP_STATE_ROOT）" >&2
 
+# 测试分层（F03-b）：默认排除需要可写 ENV_ROOT / 冻结见证的 env_layer 用例。
+# 它们不是 skip：默认根 pytest 仍如实执行并失败；这里只是把「软件层」与「环境层」分开。
+MARK_ARGS=(-m "not env_layer")
+if [[ "${INCLUDE_ENV_LAYER:-0}" == "1" ]]; then
+  MARK_ARGS=()
+  echo "[info] 包含环境层用例（需要可写 ENV_ROOT / 内网冻结见证）" >&2
+else
+  echo "[info] 默认排除环境层用例（-m \"not env_layer\"）；INCLUDE_ENV_LAYER=1 可包含" >&2
+fi
+
 LOOP_WORKSPACE="$SHADOW" \
 LOOP_LLM_MODE="${LOOP_LLM_MODE:-standin}" \
-  "$PY" -m pytest -q "$@"
+  "$PY" -m pytest -q "${MARK_ARGS[@]}" "$@"

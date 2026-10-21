@@ -82,8 +82,13 @@ def guard_run(tmp_path: Path) -> dict:
     }
 
 
+@pytest.mark.env_layer
 def test_guard_compile_only_archives_evidence_readonly(guard_run: dict) -> None:
-    """核心断言：compile-only/full 模式的证据件必须进入 `archive/`，且只读。"""
+    """核心断言：compile-only/full 模式的证据件必须进入 `archive/`，且只读。
+
+    环境层：真实 `run_guarded.sh` 需要在可写 ENV_ROOT 下写 SIMLIB_RUN/归档（本机 ENV_ROOT 只读，
+    见 STATUS 已知环境限制），失败属环境条件而非软件层回归。
+    """
     proc = guard_run["proc"]
     assert proc.returncode == 0, f"guard rc={proc.returncode}\n{proc.stdout[-2000:]}\n{proc.stderr[-1000:]}"
 
@@ -101,8 +106,12 @@ def test_guard_compile_only_archives_evidence_readonly(guard_run: dict) -> None:
         assert mode == 0o444, f"归档件不是只读（{oct(mode)}）：{path.name}"
 
 
+@pytest.mark.env_layer
 def test_guard_archive_is_bounded_and_excludes_guard_log(guard_run: dict) -> None:
-    """归档必须**只增不改且不爆炸**，且不把主证据原件（guard.log）自我归档。"""
+    """归档必须**只增不改且不爆炸**，且不把主证据原件（guard.log）自我归档。
+
+    环境层：与上一条共用 `guard_run`（需可写 ENV_ROOT 的归档腿），本机 ENV_ROOT 只读。
+    """
     archive: Path = guard_run["archive"]
     names = sorted(p.name for p in archive.iterdir())
     assert len(names) <= 12, f"归档件数量异常（半截件堆积？）：{len(names)} -> {names}"

@@ -100,8 +100,13 @@ def _frozen_files() -> list[Path]:
     )
 
 
+@pytest.mark.env_layer
 def test_frozen_witness_before_after_drill_run() -> None:
-    """A10：一次完整 drill 运行不得改动任何冻结件。"""
+    """A10：一次完整 drill 运行不得改动任何冻结件。
+
+    环境层：该用例还要求数据根位于 ENV_ROOT 之内（`relative_to(ENV_ROOT)` 布局）并读可写的
+    冻结见证目录；本机数据根是只读环境挂载（或软件层影子根），布局不成立（见 STATUS 环境限制）。
+    """
     import asyncio
 
     from workflows.main_flow import RunManager

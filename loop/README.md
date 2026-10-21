@@ -1,12 +1,15 @@
 # `loop/` — 变更影响闭环的编排层与操作界面
 
+> **数字口径**：本文件不内嵌单测/断言数量；当前实测以 [`doc/STATUS.md`](../doc/STATUS.md) 为唯一数字源。
+> 下文出现的 `117`/`70`/`94` 等字样是 2026-10-19/20 的**历史采样**，已在原处标注。
+
 > **Agent 工作窗口**：在“运行监控”点击角色卡片或名字进入。可看当前节点的事件、完整输入、提示词快照、输出及 Host 校验；checker 可切换 N8/N10，尝试选择器可查历史。填写 `human:<name>` 后可补充指令并重跑、暂停、恢复或终止当前节点，动作由服务端下发。暂停/重跑会取消本地旧请求并新建尝试，旧响应不进入下游；终止使本轮按失败收敛。关闭窗口不停止执行。当前暂停限服务进程存活期间，重启后历史只读；远端推理取消取决于提供方。契约见 [Agent 工作窗口](../doc/spec/AGENT_WINDOW_SPEC.md)。
 
 > **S0 工作台增量**：默认首页为“环境准备”，契约见 [S0 环境准备](../doc/spec/S0_ENVIRONMENT_SPEC.md)。填写完整基线、新 RTL、版本声明和新副本绝对路径，执行完整派生与内容核验；已有目录不覆盖。允许路径沿用服务端浏览根配置，可通过 `LOOP_BROWSE_ROOTS` 扩展挂载目录（页面可展开查看范围）。准备记录在本软件 `loop/state/s0`，报告和派生 context 位于各记录目录；不覆盖用户 context。S0-b 接口适配、三库驱动、新版执行入口尚未接入，页面持续显示阻断。现有运行与闸门通过左侧工作台导航访问，保持旧契约。
 
 > **全站网页视觉升级**：深墨侧栏、雾白工作区和青绿操作色；环境准备、配置、监控、人工闸门、目录浏览器、Agent 窗口与旧界面共享视觉令牌。仅浏览器网页，无桌面客户端或手机端专项适配。侧栏可用方向键、Home/End 切页，页面提供“跳到工作区”键盘入口。契约见 [Web UI §14](../doc/spec/WEB_UI_SPEC.md#14-全站网页视觉系统2026-10-21)，预览和验证见 [网页重设计证据](../doc/evidence/WEB_REDESIGN_20261021.md)。
 
-> **状态**：P0 可运行（drill 全链 117/117；审计阻断项已修复并补回归；2026-10-20 已在真实环境副本上 **real N0→N8 跑通**——证据见 `doc/evidence/REAL_RUN_SCN_RTL_0D04_20261020.md`；更长的 N9 真实全跑仍未做）
+> **状态**：P0 可运行（drill 全链历史验收 117/117；审计阻断项已修复并补回归；2026-10-20 已在真实环境副本上 **real N0→N8 跑通**——证据见 `doc/evidence/REAL_RUN_SCN_RTL_0D04_20261020.md`；更长的 N9 真实全跑仍未做。以上为历史/能力描述，当前实测数字见 STATUS）。
 > **上游契约**：`doc/spec/CHANGE_IMPACT_LOOP_SPEC.md`（业务与不变量 I1–I8）
 > **本层契约**：`doc/spec/LOOP_ORCHESTRATION_SPEC.md`（owner / 生命周期 / 长任务 / 准入 / 恢复 / 投影）
 
@@ -17,7 +20,8 @@
 把上游 16 个节点（N0–N16）与三道人工闸门落成**可交互、可重启、可拒绝**的系统：
 
 - **编排**：`agently` TriggerFlow 的稳定拓扑（源码内定义），3 道闸门 = durable graph interrupt；
-- **界面**：FastAPI + 静态页（`index.html`+`app.js`+`app.css`，零外链）—— 两区运营台：
+- **界面**：FastAPI + 无框架静态页（`index.html` + 按功能拆分的 `app.js` / `s0.js` / `agent-window.js` /
+  `run-view-state.js` / `capabilities.js` + 共享 CSS 令牌，零外链、无构建步骤）—— 两区运营台：
   配置（基线/项目目录）→ 运行（四段流程 + agent 卡）→ 闸门操作；旧界面存档在 `legacy.html`；
 - **准入**：单槽（`uvs.setup` 是仓库根下全局单文件）+ 队列 + 取消；
 - **恢复**：执行快照 + 记录库，跨进程重启后能重新附着到在跑的作业。
@@ -76,7 +80,7 @@ python3.11 -m venv .venv
 跑测试：
 
 ```bash
-cd loop && .venv/bin/python -m pytest -q      # 70 项，约 33 s
+cd loop && .venv/bin/python -m pytest -q      # 用例数/耗时见 doc/STATUS.md
 ```
 
 运行 UI 特征与异步交互回归（真实 Chromium，API 使用受控响应；不需要环境仓夹具）：
@@ -127,18 +131,22 @@ loop/
     contracts.py            对外投影 + 六项信任缺口的服务端判定
     api.py                  FastAPI（唯一入口）
   web/index.html            运营台骨架（左栏 + 配置/运行/闸门三视图）
-  web/app.js                数据层/轮询/渲染/目录浏览器/闸门提交（零外链）
+  web/app.js                会话协调 owner：数据层/轮询/渲染装配/目录浏览器/闸门提交（零外链）
+  web/s0.js                 环境准备（S0-a）视图
+  web/agent-window.js       Agent 工作窗口（观察 + 请求边界干预）
+  web/run-view-state.js     运行详情展示状态唯一判据（加载/首次失败/陈旧/恢复）
+  web/capabilities.js       能力事实唯一格式化（角色卡与工作窗口共用）
   web/tokens.css            主工作台与旧界面的共享视觉令牌（零外链）
   web/app.css               主工作台组件与页面布局
   web/legacy.html           旧界面存档（保留一个迭代）
   web/legacy.css            旧界面的配套视觉样式
   web/mockup.html           v1 设计样张（只读参考）
-  tests/                    94 项（含 UI 契约与冒烟）
+  tests/                    用例数见 doc/STATUS.md（含 UI 契约与冒烟）
   spikes/                   `accept_v1.py`（带断言的 v1 终验）+ `accept_v1_run.sh`（单次调用内起停 4 代服务）
   state/                    槽/队列/事件/快照（可删）
 ```
 
-真实终验报告在 `doc/evidence/ACCEPTANCE_V1.md`（117/117，3 次真重启；已移出本目录）。
+真实终验报告在 `doc/evidence/ACCEPTANCE_V1.md`（2026-10-19 历史验收 117/117，3 次真重启；已移出本目录；现行见 STATUS）。
 
 ---
 
@@ -281,7 +289,7 @@ cd loop
 .venv/bin/python spikes/probe_provider.py        # 端点连通 + 最小请求
 LOOP_LLM_MODE=live .venv/bin/python spikes/verify_live_nodes.py   # 5 个语义节点逐个 live
 LOOP_LLM_MODE=live .venv/bin/python spikes/verify_live_n10.py     # N10 分桶分类 live（Host 抽数+模型分类）
-.venv/bin/python -m pytest -q                    # 70 项，离线（替身）
+.venv/bin/python -m pytest -q                    # 离线（替身）；数量见 doc/STATUS.md
 ```
 
 ## 6 drill 夹具
@@ -303,7 +311,7 @@ drill 运行目录带 `.loop_drill` 标记，测试据此清理**自己创建的
 
 ## 7 已验证什么
 
-`tests/` 94 项 + 一次**真实 HTTP 终验**（117 断言）（`doc/evidence/ACCEPTANCE_V1.md`：117/117 断言，4 代服务进程、
+`tests/`（数量见 STATUS）+ 一次**真实 HTTP 终验**（2026-10-19 历史采样 117 断言）（`doc/evidence/ACCEPTANCE_V1.md`：117/117 断言，4 代服务进程、
 3 次真重启，含"重附着到仍在跑的长任务""跨重启不丢单槽"）。关键断言：
 
 - 口径一与 `grep -c '\*E'` **独立对账一致**；两套口径并列、`both_zero=false` 时**不得判绿**；

@@ -147,9 +147,9 @@
 
 **完成证据**（全部在**新布局**下、数据仍留在旧位置跑出来的）：
 - `LOOP_ENV_ROOT=<旧环境仓> LOOP_WORKSPACE=<旧环境仓>/kb` 下：`loop` 单测 **当时 69/69**
-  （当前基线 **70/70**，见 §4）；`loop/spikes/accept_v1_run.sh` **rc=0、六相 116 断言**
-  （当前基线 **117**：50/27/18/8/8/6，见 §4）；`_selftest_gate_schema` **10/10**、
-  `_selftest_n5_reachability` **9/9**。
+  （**历史采样**；现行数字见 STATUS）；`loop/spikes/accept_v1_run.sh` **rc=0、六相 116 断言**
+  （**历史采样**；后续验收记录 117 见 STATUS）；`_selftest_gate_schema`、`_selftest_n5_reachability`
+  的当前结果按 STATUS 记录。
 - **向后兼容**（旧布局回落）实测：`TOOL_ROOT` 下有 `TESTLIB/` 时 `ENV_ROOT=TOOL_ROOT`、
   `WORKSPACE_ROOT=TOOL_ROOT/kb`，三个取值逐项与拆仓前一致。
 - **fail closed** 实测：无 `$LOOP_ENV_ROOT`、注册表无可用条目、且非旧布局 ⇒ 报错并列出缺什么。
@@ -206,7 +206,7 @@
 
 - ✅ `[已决定：第 4 步暂不执行]` **数据不搬，`workspace` 指向数据的实际位置**（本环境 = 环境仓的 `kb/`）。
   理由三条：① 功能上不需要 —— `WORKSPACE_ROOT` 可指向任意位置，已在新布局下端到端验证
-  （决定时 69/69 + 116/116；当前基线 70/70 + 117/117，见 §4）；② 要搬的恰好是**不可再生**的部分（`baselines/v0` 基线快照、
+  （决定时 69/69 + 116/116，均为**历史采样**；现行数字见 STATUS）；② 要搬的恰好是**不可再生**的部分（`baselines/v0` 基线快照、
   `runs/RUN-20261015-120626` 真机全跑见证、演练证据），搬动只增加"路径迁移"的审计成本
   （已归档的 `frozen_*.md5` 记的是旧路径）、不增加任何能力；③ 把同一环境的数据**劈成两半**
   （历史在旧仓、新增在新仓）比两种极端都糟。

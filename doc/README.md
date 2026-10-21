@@ -9,6 +9,9 @@
 >
 > **数字唯一来源**：[`STATUS.md`](STATUS.md)（Lead 维护）。本目录其它文档**不各自抄一份数字**，
 > 历史文档里的数字按上下文标注为历史值。
+>
+> **适用版本**：本索引描述**当前**仓库结构与入口；带日期/提交号的章节是历史采样，
+> 现行能力与实测以 STATUS 最新章节为准。
 
 ---
 
@@ -19,17 +22,17 @@
 | [`OVERVIEW.md`](OVERVIEW.md) | **项目总览 + 三张流程图**（架构边界 / 主流程 / 长任务生命周期） | 先读这个 |
 | [`UI_RUNBOOK.md`](UI_RUNBOOK.md) | **人工跑通手册**：起服务、配置一次运行、三道闸门怎么点、终点判读与排障（操作类，非契约） | 要亲手跑一遍时看 |
 | [`spec/`](spec/) | 三份契约：业务篇 / 编排篇 / 环境插件篇 | 见 §2 |
-| [`agents/`](agents/) | 6 个角色定义 + 1 份开工提示词 | [`agents/README.md`](agents/README.md) |
+| [`agents/`](agents/) | 6 个角色定义 + 2 份开工提示词 | [`agents/README.md`](agents/README.md) |
 | [`evidence/`](evidence/) | 验收报告与演练证据（**内容冻结、只增不改**） | [`evidence/README.md`](evidence/README.md) |
 | [`history/`](history/) | 拆仓前的历史快照（**不是现状**） | [`history/README.md`](history/README.md) |
-| `audit/` | 2026-10-19 审计：总报告 + 各审计员附录（**只登记不修复**） | [`audit/README.md`](audit/README.md)、[`audit/AUDIT-20261019-spec-conformance.md`](audit/AUDIT-20261019-spec-conformance.md)、`audit/parts/*.md`（附录） |
+| `audit/` | 审计与独立验证报告（**只登记/只报告，不改被测实现**）：2026-10-19 总报告 + 附录、后续复核与逐切片验证 | [`audit/README.md`](audit/README.md)、[`audit/AUDIT-20261019-spec-conformance.md`](audit/AUDIT-20261019-spec-conformance.md)、`audit/parts/*.md`（附录）、`audit/*-verify-*.md` |
 | [`STATUS.md`](STATUS.md) | 唯一数字源：HEAD、单测/断言数、四道门状态、外部数据根 | 由 Lead 维护 |
 | [`plans/`](plans/) | 按 SpecDD 拆分的实施计划与验收条件 | [优化与重构执行手册](plans/OPTIMIZATION_PLAYBOOK.md) |
 
 > 逐级入口：[`../README.md`](../README.md)（项目导航）→ [`../AGENTS.md`](../AGENTS.md)（流程 / 写权 / 红线）
 > → 本文件 → 各子目录 README。
 
-后续工作统一入口：[网页重设计后复核](audit/AUDIT-20261021-post-ui-roadmap.md) → [优化与重构执行手册](plans/OPTIMIZATION_PLAYBOOK.md)。包含任务顺序、owner、切片、验证命令、回退和领取模板；本轮为准备与成册，尚未实施待办，现状见 STATUS §13。此前 [优化评估](audit/AUDIT-20261021-specdd-followups.md) 与 [原路线](plans/2026-10-21-specdd-followups.md) 保留为来源。
+后续工作统一入口：[网页重设计后复核](audit/AUDIT-20261021-post-ui-roadmap.md) → [优化与重构执行手册](plans/OPTIMIZATION_PLAYBOOK.md)。手册任务已按 F 编号逐切片实施（计划先提交、红灯用例、实现、独立复核、STATUS 记录），进度与实测见 STATUS §14 起；§13 是成册时点，不代表当时已实施。此前 [优化评估](audit/AUDIT-20261021-specdd-followups.md) 与 [原路线](plans/2026-10-21-specdd-followups.md) 保留为来源。
 
 网页视觉升级：[视觉契约](spec/WEB_UI_SPEC.md#14-全站网页视觉系统2026-10-21) → [实施计划](plans/2026-10-21-desktop-redesign.md) → [预览与验证证据](evidence/WEB_REDESIGN_20261021.md)。范围为浏览器中的现有工作台；状态与本轮实测见 STATUS §12。
 

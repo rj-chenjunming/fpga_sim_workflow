@@ -4,7 +4,7 @@
 >
 > **本仓是软件仓**（独立产品），环境是**插件**：软件可以指向任意符合插件契约的环境仓，本仓不存放被守卫的 `RTL/ TB/ PKG/ TESTLIB/`。
 >
-> **当前状态**：`drill` 链路可运行；`doc/audit/AUDIT-20261019-spec-conformance.md` §3 的 22 条阻断级缺陷已按「先判后签 / 作业级单槽 / 沙箱用例 / 目标集驱动 N9 / 真实 N15 / 证据守护 N11」修复并补回归（[`doc/STATUS.md`](doc/STATUS.md) §5）。real 模式的**真机完整全跑**仍需在环境上执行一次。
+> **当前状态**：`drill` 链路可运行；`doc/audit/AUDIT-20261019-spec-conformance.md` §3 的 22 条阻断级缺陷已按「先判后签 / 作业级单槽 / 沙箱用例 / 目标集驱动 N9 / 真实 N15 / 证据守护 N11」修复并补回归（[`doc/STATUS.md`](doc/STATUS.md) §5）。real 模式的**真机完整全跑**仍需在环境上执行一次。后续优化/重构已按 [执行手册](doc/plans/OPTIMIZATION_PLAYBOOK.md) 的 F 编号逐切片实施，进度与实测见 [`doc/STATUS.md`](doc/STATUS.md) §14 起（§13 为成册时点）。
 
 ---
 
@@ -17,10 +17,10 @@
 | `loop/` | 编排层 + HTTP 服务 + 网页工作台 + 测试 + 验收装置（Agently TriggerFlow） | [`loop/README.md`](loop/README.md) |
 | `kb/` | Host 确定性工具（不上模型）+ JSON Schema + 契约 | [`kb/README.md`](kb/README.md) |
 | `doc/spec/` | 三份契约：业务篇 / 编排篇 / 环境插件篇 | [`doc/README.md`](doc/README.md) |
-| `doc/agents/` | 6 个角色定义 + 开工提示词 | [`doc/agents/README.md`](doc/agents/README.md) |
+| `doc/agents/` | 6 个角色定义 + 2 份开工提示词 | [`doc/agents/README.md`](doc/agents/README.md) |
 | `doc/evidence/` | 验收报告与演练证据（只读、内容冻结） | [`doc/evidence/README.md`](doc/evidence/README.md) |
 | `doc/history/` | 拆仓前的历史快照（不是现状） | [`doc/history/README.md`](doc/history/README.md) |
-| `doc/audit/` | 2026-10-19 规格一致性审计（只登记不修复） | [`doc/audit/README.md`](doc/audit/README.md) |
+| `doc/audit/` | 审计与独立验证报告（只登记/只报告，不改被测实现） | [`doc/audit/README.md`](doc/audit/README.md) |
 | `workspaces/` | 每环境数据的**约定**落点（当前 default 环境数据仍在环境仓） | [`workspaces/README.md`](workspaces/README.md) |
 
 ### 它不是
@@ -53,10 +53,10 @@ cd loop && ./run.sh
 cd loop && LOOP_LLM_MODE=standin .venv/bin/python -m pytest -q
 
 # kb 自测（只读环境；写 TMP 运行目录，需要可写 WORKSPACE_ROOT）
-loop/.venv/bin/python kb/tools/_selftest_gate_schema.py        # 期望 10/10
-loop/.venv/bin/python kb/tools/_selftest_n5_reachability.py    # 期望 9/9
+loop/.venv/bin/python kb/tools/_selftest_gate_schema.py        # 需可写 WORKSPACE_ROOT 与历史夹具
+loop/.venv/bin/python kb/tools/_selftest_n5_reachability.py    # 期望与实测见 doc/STATUS.md
 
-# 端到端终验（117 断言；会写 ENV_ROOT/SIMLIB_RUN，需环境仓可写）
+# 端到端终验（会写 ENV_ROOT/SIMLIB_RUN，需环境仓可写；断言数见 doc/STATUS.md）
 cd loop && rm -rf state spikes/.accept_v1_state.json && bash spikes/accept_v1_run.sh
 ```
 
@@ -81,7 +81,7 @@ cd loop && rm -rf state spikes/.accept_v1_state.json && bash spikes/accept_v1_ru
 
 ## 5 红线（摘要，完整版见 `AGENTS.md`）
 
-1. 只新增 `kb/` 与 `doc/` 下文件（软件仓）；环境的 `RTL/ TB/ PKG/ TESTLIB/` 与已定稿基线资产**绝不修改**。
+1. 本软件仓按 [`AGENTS.md`](AGENTS.md) §3 的写权执行（`loop/**`、`kb/tools/**`、`doc/spec/**` 等各有唯一 owner）；环境的 `RTL/ TB/ PKG/ TESTLIB/`、已定稿基线资产与冻结件**绝不修改**。
 2. 数字一律由命令输出复制，禁止手算；唯一数字源是 `doc/STATUS.md`。
 3. 归档只增不改；已冻结运行目录绝不回填。
 4. 闸门枚举权威 = `kb_lib.GATE_DECISIONS`；前端与脚本不许手抄。

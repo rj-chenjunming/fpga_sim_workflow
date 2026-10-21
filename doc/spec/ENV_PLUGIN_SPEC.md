@@ -82,22 +82,42 @@
 
 ## 4 测试基线（拆仓必须保持）
 
-> 数字源：`doc/STATUS.md`（唯一数字源）；单测收集数见
-> `loop/.venv/bin/python -m pytest --collect-only -q` = 70；终验六相见
-> `loop/.logs/accept/FINAL_r1.txt`（50/27/18/8/8/6 = 117）与 `doc/evidence/ACCEPTANCE_V1.md`。
-> **本会话沙箱把 `ENV_ROOT` 挂为只读**：依赖写 `ENV_ROOT` 的 `accept_v1_run.sh` /
-> `test_archive_e2.py` 无法在本会话复跑；此时单测执行是 **67 passed / 3 failed**，
-> 3 条失败均为布局/环境限制（`doc/STATUS.md` §2/§3 有逐条说明），**不是业务代码回归**。
-> 本表给的是**质量门期望**（正常运行环境应为 70/70）。
+> 数字源：`doc/STATUS.md`（唯一数字源）；当前收集/通过数与失败集以 STATUS 最新章节为准，
+> 本节不再抄写历史数字。历史 70/70 与 117 断言见 `doc/evidence/ACCEPTANCE_V1.md`。
 
 | 门 | 期望 |
 |---|---|
-| `kb/tools/_selftest_gate_schema.py` | 10/10 |
-| `kb/tools/_selftest_n5_reachability.py` | 9/9 |
-| `loop` 单测 | **70/70** |
-| `loop/spikes/accept_v1_run.sh` | rc=0、六相 **117 断言**（50/27/18/8/8/6） |
+| `kb/tools/_selftest_gate_schema.py` | 全部断言通过（需可写 `WORKSPACE_ROOT` 与历史夹具） |
+| `kb/tools/_selftest_n5_reachability.py` | 全部断言通过 |
+| `loop` 单测（默认根） | 失败集与 STATUS 记录的**环境层基线相同**；不得新增软件层失败 |
+| `loop` 单测（软件层入口，见 §4.1） | 排除环境层后 **0 failed** |
+| `loop/spikes/accept_v1_run.sh` | rc=0、六相断言完整（需可写 `ENV_ROOT`） |
 | **向后兼容**（不设任何环境变量，在旧布局下跑） | 上述四条**全部不变** |
 | 冻结件复验 | 内容 md5 前后逐行一致（**不按 mtime**） |
+
+### 4.1 测试分层与环境层标记（F03-b）
+
+测试分三层，**层级是执行条件的事实，不是通过/失败的口径**：
+
+| 层 | 需要什么 | 入口 |
+|---|---|---|
+| 纯软件层 | 可写影子数据根 + 一次性 `$LOOP_STATE_ROOT`；**不需要**可写 `ENV_ROOT` | `loop/spikes/run_software_checks.sh`（默认） |
+| 环境层 | 可写 `ENV_ROOT`、UVS/许可证、内网冻结见证 | 默认根 pytest；本机只能如实失败并登记 |
+| 真实链路层 | 上文 + 有效非默认基线 + 单槽 + provider | 内网执行端（本机未运行） |
+
+规则：
+
+1. 需要可写 `ENV_ROOT` 或内网冻结见证的用例必须带 `@pytest.mark.env_layer`，并在测试内**写明原因**
+   （可写 `ENV_ROOT` / 冻结见证 / 布局要求）。当前 3 项：
+   `tests/test_archive_e2.py::test_guard_compile_only_archives_evidence_readonly`、
+   `tests/test_archive_e2.py::test_guard_archive_is_bounded_and_excludes_guard_log`、
+   `tests/test_projection_and_frozen.py::test_frozen_witness_before_after_drill_run`。
+2. `loop/pytest.ini` 注册 `env_layer` 标记并启用 `--strict-markers`：未注册标记必须让 pytest 直接失败，
+   不得静默出现「拼写错误的标记其实没生效」。
+3. `run_software_checks.sh` **默认**以 `-m "not env_layer"` 运行，并在输出中显式打印被排除的用例数；
+   `INCLUDE_ENV_LAYER=1` 可包含环境层（用于有可写 `ENV_ROOT` 的执行端）。
+4. **不得用 `skip` 冒充通过**：默认根仍如实执行并失败这 3 项；标记只用于分层选择，不改变默认根结果。
+5. 软件层入口的结论只覆盖纯软件层；它不能替代 kb 自测、端到端或真实链路验收。
 
 ## 5 分步计划（每步一个提交，每步独立可验）
 

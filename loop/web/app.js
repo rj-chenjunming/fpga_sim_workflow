@@ -355,8 +355,8 @@
     if (!host) return;
     clearEl(host);
     if (!state.connError) return;
-    var text = "连接失败：" + state.connError;
-    if (state.lastOkAt) text += " · 最后成功 " + fmtClock(state.lastOkAt);
+    var text = "轮询连接失败：" + state.connError;
+    if (state.lastOkAt) text += " · 最近一次轮询成功 " + fmtClock(state.lastOkAt);
     host.appendChild(h("div", "banner bad", text));
   }
 
@@ -474,6 +474,13 @@
       requesting: state.viewRequesting,
       lastSuccessAt: state.viewLastOkAt
     });
+  }
+
+  /* 面板占位同样只消费 deriveView()：首次失败时不得再出现「加载中」占位。 */
+  function panelHint() {
+    return deriveView().kind === "first_error"
+      ? "读取失败，暂无数据（可点顶部「重新读取」）"
+      : "运行视图加载中…";
   }
 
   async function fetchRunView() {
@@ -1062,6 +1069,20 @@
     renderLive();
   }
 
+  /* 首次/陈旧失败共用的「重新读取」入口：只发详情 GET，点击即禁用防重复。 */
+  function retryButton() {
+    var d = deriveView();
+    var retry = h("button", "btn btn-sm", d.stale ? "重新读取（数据可能已过期）" : "重新读取");
+    retry.type = "button";
+    retry.disabled = !!state.viewRequesting;
+    retry.addEventListener("click", function () {
+      if (retry.disabled) return;
+      retry.disabled = true;
+      retryView();
+    });
+    return retry;
+  }
+
   function renderRunAlerts(v) {
     var host = $("runAlerts");
     if (!host) return;
@@ -1071,11 +1092,8 @@
       var failBox = h("div", "alert bad");
       failBox.appendChild(document.createTextNode(d.alertText));
       if (d.showRetry) {
-        var retry = h("button", "btn btn-sm", d.stale ? "重新读取（数据可能已过期）" : "重新读取");
-        retry.type = "button";
+        var retry = retryButton();
         retry.id = "runRetry";
-        retry.disabled = !!state.viewRequesting;
-        retry.addEventListener("click", retryView);
         failBox.appendChild(document.createTextNode(" "));
         failBox.appendChild(retry);
       }
@@ -1346,7 +1364,7 @@
     if (!host) return;
     clearEl(host);
     if (!v) {
-      host.appendChild(h("div", "muted tiny", "运行视图加载中…"));
+      host.appendChild(h("div", "muted tiny", panelHint()));
       return;
     }
     var serverAgents = v && Array.isArray(v.agents) ? v.agents : null;
@@ -1599,7 +1617,7 @@
     if (!host) return;
     clearEl(host);
     if (!v) {
-      host.appendChild(h("div", "muted tiny", "运行视图加载中…"));
+      host.appendChild(h("div", "muted tiny", panelHint()));
       return;
     }
     var counts = v && v.counts;
@@ -1639,7 +1657,7 @@
     if (!host) return;
     clearEl(host);
     if (!v) {
-      host.appendChild(h("div", "muted tiny", "运行视图加载中…"));
+      host.appendChild(h("div", "muted tiny", panelHint()));
       return;
     }
     var items = v && Array.isArray(v.blockers) ? v.blockers : [];
@@ -1674,7 +1692,7 @@
     if (!host) return;
     clearEl(host);
     if (!v) {
-      host.appendChild(h("div", "muted tiny", "运行视图加载中…"));
+      host.appendChild(h("div", "muted tiny", panelHint()));
       return;
     }
     var job = v && v.job;
@@ -1703,7 +1721,7 @@
     if (!list) return;
     clearEl(list);
     if (!v) {
-      setText("eventsSummary", "事件流 · 运行视图加载中…");
+      setText("eventsSummary", "事件流 · " + panelHint());
       return;
     }
     var all = ((v && v.events) || []).filter(function (e) { return e && EVENT_WHITELIST[e.kind]; });
@@ -1743,7 +1761,16 @@
       clearEl(alerts);
       if (!state.runId) alerts.appendChild(h("div", "alert info", "尚未选择运行。请先在左侧选择一条运行记录。"));
       var alertInfo = deriveView();
-      if (alertInfo.alertText) alerts.appendChild(h("div", "alert bad", alertInfo.alertText));
+      if (alertInfo.alertText) {
+        var gateFail = h("div", "alert bad", alertInfo.alertText);
+        if (alertInfo.showRetry) {
+          var gateRetry = retryButton();
+          gateRetry.id = "gateRetry";
+          gateFail.appendChild(document.createTextNode(" "));
+          gateFail.appendChild(gateRetry);
+        }
+        alerts.appendChild(gateFail);
+      }
     }
     renderStagesInto($("stagesGate"), v);
     renderGateMaterial(v);
@@ -1760,7 +1787,11 @@
     }
     host.appendChild(h("span", "rid mono", state.runId));
     if (!v) {
-      host.appendChild(h("span", "status-pill run", "加载中…"));
+      var gateD = deriveView();
+      var gatePill = h("span", "status-pill " + (gateD.kind === "first_error" ? "fail" : "run"),
+        gateD.kind === "first_error" ? "读取失败" : "加载中…");
+      if (state.viewError) gatePill.title = "读取运行视图失败：" + state.viewError;
+      host.appendChild(gatePill);
       return;
     }
     var pending = pendingInfo(v);
@@ -1896,7 +1927,7 @@
       return;
     }
     if (!v) {
-      host.appendChild(h("div", "muted tiny", "加载中…"));
+      host.appendChild(h("div", "muted tiny", panelHint()));
       return;
     }
     var pending = pendingInfo(v);
@@ -1995,7 +2026,7 @@
     if (!v) {
       clearEl(host);
       host.removeAttribute("data-gate-key");
-      host.appendChild(h("div", "muted tiny", "加载中…"));
+      host.appendChild(h("div", "muted tiny", panelHint()));
       return;
     }
     var pending = pendingInfo(v);

@@ -64,6 +64,13 @@ def test_first_failure_does_not_claim_previous_success_or_loading():
     assert out["stale"] is False
 
 
+def test_placeholder_idle_does_not_claim_loading():
+    """无数据、无错误、无在途请求 ≠ 加载中（规格 §7.2 的「加载中」要求有在途请求）。"""
+    out = _derive(hasData=False, error=None, requesting=False)
+    assert out["kind"] == "idle"
+    assert out["headStatusText"] == "尚未读取"
+
+
 def test_loaded_state_has_no_alert_and_no_retry():
     out = _derive(hasData=True, error=None, requesting=False, lastSuccessAt=1700000000000)
     assert out["kind"] == "loaded"
@@ -87,6 +94,8 @@ def test_stale_refresh_failure_keeps_data_and_reports_last_success_time():
 
 
 def test_recovery_clears_alert_after_success():
+    stale = _derive(hasData=True, error="timeout", requesting=False, lastSuccessAt=1700000000000)
+    assert stale["kind"] == "stale_error" and stale["alertText"]
     recovered = _derive(hasData=True, error=None, requesting=False, lastSuccessAt=1700000005000)
     assert recovered["kind"] == "loaded"
     assert recovered["alertText"] == ""

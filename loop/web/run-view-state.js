@@ -55,7 +55,8 @@
     else kind = "idle";
 
     var headStatusText = "";
-    if (kind === "loading" || kind === "idle") headStatusText = "加载中…";
+    if (kind === "loading") headStatusText = "加载中…";
+    else if (kind === "idle") headStatusText = "尚未读取";
     else if (kind === "first_error") headStatusText = "读取失败";
 
     var alertText = "";

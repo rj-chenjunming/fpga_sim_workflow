@@ -25,6 +25,11 @@
   - 其余文件默认全文；当全部全文的序列化大小超过 N8 分片预算（`N8_SANDBOX_BUDGET_BYTES`，默认 60000 bytes，约占默认总预算一半，留出 contract/台账余量；按 `AM.encoded` 紧凑序列化计，与预算检查同一实现）时，按**文件名的确定性顺序**把放不下的文件也降级为变更片段。
   - 降级**不得丢文件、不得只发部分行而不标注**；每件必须带 `coverage{mode: full_file|changed_regions, complete, scope, regions}`，请求另带 `coverage_summary{used_bytes, budget_bytes, full_files, region_files}`。
   - 片段模式下模型只对已提供区域负责；不能用“覆盖了变更”冒充全文复核。
+  - `coverage.complete` 语义：`true` 仅表示**该件的全部变更区域都已提供**（`full_file` 表示全文；
+    `changed_regions` 表示所有变更组均已包含，只是省略了无关上下文）。它不是「已做全文复核」的证明；
+    存在未提供的变更组时不得置 `true`。
+  - 沙箱中没有任何 `*.sv` 用例，或 `applied_cases` 非空却找不到对应文件 ⇒ **显式失败**，
+    不得以「复核 0 件」通过。
 - 所有模型请求以完整序列化 input/info/instruct/schema 的 UTF-8 大小检查预算。默认上限 `120000` bytes；超过上限在模型调用前显式失败，记录预算/失败，不裁剪、丢用例或静默抽样。这是应用输入预算，不承诺等于提供方 token 上限。
 - 输入缺失/校验错误继续走既有失败收敛路径；drill 替身保留明确标注，不能被记录为 live 成功。
 

@@ -1,27 +1,30 @@
 #!/usr/bin/env python3
 """文档路径引用检查（只读，零写入）。
 
-用途：扫 Markdown 里反引号包住的路径，判断它能否按「三个根」解析到真实文件，
-把断链在整理后就地暴露出来，而不是等读者点开才发现。
+用途：扫 Markdown 里反引号包住的路径，判断它能否按「路径所有权」解析到真实文件，
+把断链暴露出来，而不是等读者点开才发现。
 
-三个根（与 `doc/spec/ENV_PLUGIN_SPEC.md` §1 同口径）：
-  - TOOL_ROOT      本仓（自锚定：向上找 `kb/tools/kb_lib.py`）
-  - ENV_ROOT       环境仓（`environments.json` 的 `path`，可被 `$LOOP_ENV_ROOT` 覆盖）
-  - WORKSPACE_ROOT 数据根（`environments.json` 的 `workspace`，可被 `$LOOP_WORKSPACE` 覆盖）
+路由（与 `doc/spec/ENV_PLUGIN_SPEC.md` §1/§4.2 同口径，**唯一实现**）：
+  - TOOL_ROOT       本仓（自锚定：向上找 `kb/tools/kb_lib.py`）：工具/Schema/代码/现行文档
+  - WORKSPACE_ROOT  数据根（`environments.json` 的 `workspace`，可被 `$LOOP_WORKSPACE` 覆盖）：kb 数据
+  - ENV_ROOT        环境仓（`environments.json` 的 `path`，可被 `$LOOP_ENV_ROOT` 覆盖）：RTL/TB/… 与环境文档
 
-判定规则：
-  1. 以环境资产前缀开头的路径（RTL/、TB/、doc/AGENTS.md、kb/runs/ …）→ 到 ENV_ROOT/WORKSPACE_ROOT 下找；
-  2. 其余仓库相对路径（loop/、kb/、doc/、workspaces/、README.md …）→ 先到 TOOL_ROOT 找，
-     找不到再回落到 ENV_ROOT（环境仓自带文档如 `doc/skills/…`、`doc/reference/…` 属此类，记为 env-fallback）；
-  3. 行号后缀（`:64-67`）、符号后缀（`::func`）先剥离再判存在；
-  4. 运行时目录（loop/state、loop/.logs、loop/.venv）→ 跳过（可删/不入库）；
-  5. `doc/evidence/demo/`、`doc/history/` 内的历史路径串 → 计入「历史」不判失败
-     （迁移记录见 `doc/evidence/demo/MIGRATION.md`；历史快照见 `doc/history/`）；
-  6. 含 `<` `>` `*` `$` `…` 的模板/变量、URL、锚点 → 跳过；
-  7. `KNOWN_MISSING` 中登记的「文档故意引用、本仓确实不存在」的缺口 → 跳过但保留登记理由。
+判定分类：
+  - `missing`        本仓/数据根路径解析不到 ⇒ 真断链，**退出码 1**；
+  - `env_missing`    环境资产解析不到 ⇒ 单独打印（`[ENV-MISSING]`），可见但不计失败
+                     （本机未挂载内网 ENV_ROOT 资产属环境缺件）；
+  - `known_missing`  `KNOWN_MISSING` 登记的「文档故意引用、本仓确实不存在」缺口 ⇒ 打印原因，不计失败；
+  - `historical`     `doc/history/`、`doc/evidence/demo/` 内的历史路径 ⇒ 只计数，不判失败。
+
+其它规则：
+  1. `loop/` 前缀**不做**环境回落：旧路径必须暴露为 missing，不能被环境仓同名文件掩盖；
+  2. `doc/` 先查 TOOL_ROOT；本仓没有时允许回落到 ENV_ROOT（环境仓自带文档）；
+  3. 行号后缀（`:64-67`）、符号后缀（`::func`）、URL/锚点/模板/变量先剥离或跳过；
+  4. 运行时目录（loop/state、loop/.logs、loop/.venv）与 `/tmp`、`/home/soft` 跳过；
+  5. 判定只看**退出码 + missing**；`checked/skipped` 是诊断值，不写回文档（见 STATUS §19）。
 
 用法：`python3 doc/audit/check_doc_links.py [--verbose]`
-退出码：0 = 无断链；1 = 存在断链。
+退出码：0 = 无本仓/数据根断链；1 = 存在断链。
 """
 from __future__ import annotations
 
@@ -29,35 +32,71 @@ import json
 import os
 import re
 import sys
+from dataclasses import dataclass, field
 from pathlib import Path
 
 TOOL_ROOT = Path(__file__).resolve().parents[2]
-ENV_CANDIDATES = [
+
+#: 环境资产/环境文档：只在 ENV_ROOT 下解析。
+ENV_PREFIXES = [
     "RTL/", "TB/", "PKG/", "TESTLIB/", "SIMLIB_RUN/", "uvs.setup", "uvs.setup.orig",
     "doc/AGENTS.md", "doc/_notes/", "doc/_run_artifacts/", "doc/reference/",
     "doc/skills/", "doc/tools/", "doc/templates/", "doc/spec/evidence/",
-    "kb/runs/", "kb/baselines/", "kb/index/", "kb/conflicts/", "kb/adjudication/",
-    "kb/FIXTURE_IDENTITY.md", "kb/schema/", "kb/tools/",
     "CHECKPOINT-20261015-1123.md",
 ]
-TOOL_PREFIXES = ["loop/", "kb/", "doc/", "workspaces/", "README.md", "AGENTS.md",
-                 "environments.json", ".gitignore"]
+#: 本仓所有物：只在 TOOL_ROOT 下解析（顺序无关，但 `loop/` 明确无环境回落）。
+TOOL_PREFIXES = [
+    "loop/", "workspaces/", "kb/tools/", "kb/schema/", "kb/README.md",
+    "README.md", "AGENTS.md", "environments.json", ".gitignore",
+]
+#: 数据根所有物：只在 WORKSPACE_ROOT 下解析。
+WORKSPACE_PREFIXES = [
+    "kb/runs/", "kb/baselines/", "kb/index/", "kb/conflicts/",
+    "kb/adjudication/", "kb/FIXTURE_IDENTITY.md",
+]
 SKIP_PREFIXES = ["loop/state", "loop/.logs", "loop/.venv", "loop/.pytest_cache",
                  "loop/.agently", "/tmp/", "/home/soft/"]
 HISTORICAL_FILES = ["doc/evidence/demo/", "doc/history/"]
-SKIP_NAMES = {"DEPRECATED", "TBD"}
 INLINE = re.compile(r"`([^`\n]{2,200})`")
-#: 明确「本仓不存在、但文档故意引用其缺失」的路径（审计发现的缺口，不是断链）。
-#: 新增条目前必须说明原因；不要用它掩盖真正的路径写错。
-KNOWN_MISSING = {
+#: 明确「本仓不存在、但文档故意引用其缺失」的路径 ⇒ 原因（必须是环境/计划/迁移说明，不是遮羞布）。
+KNOWN_MISSING: dict[str, str] = {
     "kb/tools/compile_only.sh": "审计发现：real N7 引用的工具不存在（A-A5）",
     "workspaces/simenv-tcs9620-64ch/": "约定目标位置；当前数据仍在 ENV_ROOT/kb（ENV_PLUGIN_SPEC §7）",
-    # S0 契约与运行手册引用的环境资产：本机未挂载内网 ENV_ROOT（TB/ 不存在），
-    # 属环境缺件而非本仓断链；登记以止住「文档引用自身计数」的漂移（F16-b 复核 §③）。
-    "TB/top.sv": "环境资产：内网 ENV_ROOT 的 TB/top.sv，本机未挂载（S0 契约引用）",
+    "loop/ACCEPTANCE_V1.md": "迁移记录中的旧路径；现行文件为 doc/evidence/ACCEPTANCE_V1.md",
 }
 LINE_SUFFIX = re.compile(r":\d+(-\d+)?(,\d+(-\d+)?)*$")
 SYMBOL_SUFFIX = re.compile(r"::.*$")
+
+
+@dataclass(frozen=True)
+class Roots:
+    """三个解析根；测试可用临时目录构造。"""
+
+    tool: Path
+    env: Path | None = None
+    workspace: Path | None = None
+
+
+@dataclass(frozen=True)
+class Finding:
+    doc: str
+    lineno: int
+    token: str
+    reason: str = ""
+
+
+@dataclass
+class Report:
+    checked: int = 0
+    skipped: int = 0
+    historical: int = 0
+    missing: list[Finding] = field(default_factory=list)
+    env_missing: list[Finding] = field(default_factory=list)
+    known_missing: list[Finding] = field(default_factory=list)
+
+    @property
+    def exit_code(self) -> int:
+        return 1 if self.missing else 0
 
 
 def _env_roots() -> tuple[Path | None, Path | None]:
@@ -74,7 +113,13 @@ def _env_roots() -> tuple[Path | None, Path | None]:
     return (Path(env_root) if env_root else None), (Path(workspace) if workspace else None)
 
 
-def _candidate(token: str) -> str | None:
+def default_roots() -> Roots:
+    env_root, workspace = _env_roots()
+    return Roots(tool=TOOL_ROOT, env=env_root, workspace=workspace)
+
+
+def normalize(token: str) -> str | None:
+    """把反引号内容归一成路径候选；非路径/模板/URL 返回 None。"""
     token = token.strip().strip('"\'(),.;:')
     if not token or " " in token:
         return None
@@ -84,45 +129,75 @@ def _candidate(token: str) -> str | None:
         return None
     if "…" in token or "..." in token:
         return None
-    if not any(token == p or token.startswith(p) for p in TOOL_PREFIXES + ENV_CANDIDATES):
+    return SYMBOL_SUFFIX.sub("", LINE_SUFFIX.sub("", token.rstrip(".")))
+
+
+def classify(token: str) -> str | None:
+    """按路径所有权分类：tool / workspace / env / doc / None（非路径或不判定）。
+
+    顺序即优先级：数据根前缀 → 本仓前缀 → 环境资产/环境文档 → doc 回落 → 其它 kb 数据。
+    """
+    clean = normalize(token)
+    if not clean:
         return None
-    if any(token.startswith(p) for p in SKIP_PREFIXES):
+    if clean.startswith(tuple(SKIP_PREFIXES)):
         return None
-    return token
+    if clean.startswith(tuple(WORKSPACE_PREFIXES)):
+        return "workspace"
+    if clean.startswith(tuple(TOOL_PREFIXES)):
+        return "tool"
+    if clean.startswith(tuple(ENV_PREFIXES)):
+        return "env"
+    if clean.startswith("doc/"):
+        # 本仓文档优先；本仓没有时允许回落到 ENV_ROOT（环境仓自带文档）。
+        return "doc"
+    if clean.startswith("kb/"):
+        # 其余 kb 子路径视为数据根所有物（数据根只放 kb 数据）。
+        return "workspace"
+    return None
 
 
-def _resolve(token: str, env_root: Path | None, workspace: Path | None) -> tuple[Path | None, str]:
-    """返回 (路径或 None, 解析到的根标签)。"""
-    clean = SYMBOL_SUFFIX.sub("", LINE_SUFFIX.sub("", token.rstrip(".")))
-    is_env_asset = any(clean == p.rstrip("/") or clean.startswith(p) for p in ENV_CANDIDATES)
-    if is_env_asset:
-        for base, label in ((workspace, "workspace"), (env_root, "env")):
-            if base is None:
-                continue
-            if clean.startswith("kb/") and label == "workspace":
-                rel = clean[len("kb/"):]
-                if (base / rel).exists():
-                    return base / rel, label
-                continue
-            if (base / clean).exists():
-                return base / clean, label
-        return None, "env?"
-    if (TOOL_ROOT / clean).exists():
-        return TOOL_ROOT / clean, "tool"
-    # 反向兼容：环境仓文档（doc/skills、doc/reference …）在本仓不存在，但在 ENV_ROOT 下存在。
-    if env_root is not None and (env_root / clean).exists():
-        return env_root / clean, "env-fallback"
-    return None, "tool?"
+def resolve(token: str, roots: Roots) -> tuple[Path | None, str]:
+    """返回 (路径或 None, 解析根标签)。"""
+    clean = normalize(token)
+    if not clean:
+        return None, "skip"
+    kind = classify(clean)
+    if kind == "tool":
+        path = roots.tool / clean
+        return (path, "tool") if path.exists() else (None, "tool?")
+    if kind == "workspace":
+        if roots.workspace is None:
+            return None, "workspace?"
+        # 数据根本身就是 kb 目录（ENV_PLUGIN_SPEC §1：WORKSPACE_ROOT = <ENV_ROOT>/kb），
+        # 所以 `kb/xxx` 映射为 `<WORKSPACE_ROOT>/xxx`。
+        rel = clean[len("kb/"):] if clean.startswith("kb/") else clean
+        path = roots.workspace / rel
+        if path.exists():
+            return path, "workspace"
+        # 兼容旧布局：TOOL_ROOT 自身就是数据根时的回落在 §1 已声明；这里只查 WORKSPACE_ROOT。
+        return None, "workspace?"
+    if kind == "env":
+        if roots.env is None:
+            return None, "env?"
+        path = roots.env / clean
+        return (path, "env") if path.exists() else (None, "env?")
+    if kind == "doc":
+        local = roots.tool / clean
+        if local.exists():
+            return local, "tool"
+        if roots.env is not None and (roots.env / clean).exists():
+            return roots.env / clean, "env-fallback"
+        return None, "tool?"
+    return None, "skip"
 
 
-def main() -> int:
-    verbose = "--verbose" in sys.argv
-    env_root, workspace = _env_roots()
-    missing: list[tuple[str, int, str]] = []
-    historical = skipped = checked = 0
-
-    for md in sorted(TOOL_ROOT.rglob("*.md")):
-        rel = md.relative_to(TOOL_ROOT).as_posix()
+def scan(roots: Roots, docs_root: Path | None = None) -> Report:
+    """扫 `docs_root`（默认 TOOL_ROOT）下的 Markdown，返回分类结果。"""
+    base = Path(docs_root) if docs_root else roots.tool
+    report = Report()
+    for md in sorted(base.rglob("*.md")):
+        rel = md.relative_to(base).as_posix()
         if rel.startswith((".git/", "loop/.venv/", "workspaces/")):
             continue
         is_historical = any(rel.startswith(p) for p in HISTORICAL_FILES)
@@ -132,29 +207,52 @@ def main() -> int:
             continue
         for lineno, line in enumerate(lines, 1):
             for match in INLINE.finditer(line):
-                token = _candidate(match.group(1))
-                if not token:
-                    skipped += 1
+                raw = match.group(1)
+                token = normalize(raw)
+                if not token or classify(token) is None:
+                    report.skipped += 1
                     continue
                 if is_historical:
-                    historical += 1
+                    report.historical += 1
                     continue
-                checked += 1
-                if any(token.startswith(k) or token == k for k in KNOWN_MISSING):
+                report.checked += 1
+                reason = next((why for key, why in KNOWN_MISSING.items()
+                               if token == key or token.startswith(key)), None)
+                if reason is not None:
+                    report.known_missing.append(Finding(rel, lineno, token, reason))
                     continue
-                found, _where = _resolve(token, env_root, workspace)
-                if found is None:
-                    missing.append((rel, lineno, token))
+                found, where = resolve(token, roots)
+                if found is not None:
+                    continue
+                if where.startswith("env"):
+                    report.env_missing.append(Finding(rel, lineno, token))
+                else:
+                    report.missing.append(Finding(rel, lineno, token))
+    return report
 
-    print(f"TOOL_ROOT = {TOOL_ROOT}")
-    print(f"ENV_ROOT  = {env_root}")
-    print(f"WORKSPACE = {workspace}")
-    print(f"checked={checked} skipped={skipped} historical={historical} missing={len(missing)}")
-    for rel, lineno, token in missing:
-        print(f"[MISSING] {rel}:{lineno}  {token}")
+
+def main() -> int:
+    verbose = "--verbose" in sys.argv
+    roots = default_roots()
+    report = scan(roots)
+
+    print(f"TOOL_ROOT = {roots.tool}")
+    print(f"ENV_ROOT  = {roots.env}")
+    print(f"WORKSPACE = {roots.workspace}")
+    print(f"checked={report.checked} skipped={report.skipped} historical={report.historical} "
+          f"known_missing={len(report.known_missing)} env_missing={len(report.env_missing)} "
+          f"missing={len(report.missing)}")
+    for finding in report.known_missing:
+        print(f"[KNOWN-MISSING] {finding.doc}:{finding.lineno}  {finding.token}  ({finding.reason})")
+    for finding in report.env_missing:
+        print(f"[ENV-MISSING] {finding.doc}:{finding.lineno}  {finding.token}")
         if verbose:
-            print(f"          base tried: TOOL_ROOT / ENV_ROOT / WORKSPACE_ROOT")
-    return 1 if missing else 0
+            print("          base tried: ENV_ROOT（环境资产，本机可能未挂载）")
+    for finding in report.missing:
+        print(f"[MISSING] {finding.doc}:{finding.lineno}  {finding.token}")
+        if verbose:
+            print("          base tried: TOOL_ROOT / WORKSPACE_ROOT")
+    return report.exit_code
 
 
 if __name__ == "__main__":

@@ -17,8 +17,13 @@ MODULE_PATH = Path(__file__).resolve().parents[2] / "doc" / "audit" / "check_doc
 
 
 def _load():
-    spec = importlib.util.spec_from_file_location("check_doc_links_f03c", MODULE_PATH)
+    import sys
+
+    name = "check_doc_links_f03c"
+    spec = importlib.util.spec_from_file_location(name, MODULE_PATH)
     module = importlib.util.module_from_spec(spec)
+    # dataclass 的延迟注解解析要求模块已注册在 sys.modules（importlib 手动加载不会自动注册）。
+    sys.modules[name] = module
     spec.loader.exec_module(module)
     return module
 
@@ -35,8 +40,8 @@ C = _load()
     ("kb/README.md", "tool"),
     ("loop/host/paths.py", "tool"),
     ("loop/web/app.js:1-5", "tool"),
-    ("doc/spec/WEB_UI_SPEC.md", "tool"),
-    ("doc/audit/check_doc_links.py", "tool"),
+    ("doc/spec/WEB_UI_SPEC.md", "doc"),
+    ("doc/audit/check_doc_links.py", "doc"),
     ("workspaces/README.md", "tool"),
     ("README.md", "tool"),
     ("AGENTS.md", "tool"),
@@ -57,7 +62,7 @@ C = _load()
     ("doc/_notes/06.md", "env"),
     ("doc/skills/simenv-test/SKILL.md", "env"),
     ("doc/spec/evidence/loop_rehearsal/R.md", "env"),
-    ("doc/SIM_ENV_TESTLIB_GUIDE.md", "doc_fallback"),
+    ("doc/SIM_ENV_TESTLIB_GUIDE.md", "doc"),
 ])
 def test_classification_is_by_owner_root(token: str, category: str):
     assert C.classify(token) == category
@@ -111,8 +116,8 @@ def test_loop_paths_have_no_env_fallback(roots: C.Roots):
 
 
 def test_workspace_owned_paths_resolve_against_workspace_only(roots: C.Roots):
-    expected = _touch(roots.workspace / "kb/runs/RUN-1/view.json")
-    _touch(roots.env / "kb/runs/RUN-1/view.json")  # 诱饵
+    expected = _touch(roots.workspace / "runs/RUN-1/view.json")
+    _touch(roots.env / "runs/RUN-1/view.json")  # 诱饵
     resolved, where = C.resolve("kb/runs/RUN-1/view.json", roots)
     assert resolved == expected and where == "workspace"
 

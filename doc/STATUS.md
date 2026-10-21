@@ -358,9 +358,11 @@ RuntimeError: 闸门 G1_diff_confirm 已签署但恢复失败（run 已置 faile
 ```
 
 复现：`bash spikes/run_software_checks.sh tests/test_flow.py::test_gates_are_recorded_once_each`。
-原因：本次拉取删除了 N6「20 行/6000 字/3 个定义」上限，`api_semantics` 全文 + `excerpts` 全量后
-输入 130546 bytes 超过 120000 硬预算；`check_budget` 显式失败 ⇒ drill 全链在 G1 后收敛为 failed。
-默认只读根下因更早的 `mkdir` 失败而未暴露。**未修**；方向见计划 §4（去重 / 重定上限 / 分块），
-需要先定契约。该缺陷使**四道门端到端在本机不可判为通过**。
+**构成实测**（探针包裹 `check_budget`）：N6 输入 41 KB（`targets` 36923）；**N8 输入 130546**
+（`sandbox_cases` **120063** + `revision_points` 6453 + contract 2728）——超限在 **N8 全量沙箱文本**，
+不是 N6。`sandbox_cases` 与 N8 prompt「只判本轮 edits 触及的行」「大文件按变更片段」不一致。
+`check_budget` 显式失败 ⇒ drill 全链在 G1 后收敛为 failed；默认只读根下因更早的 `mkdir` 失败而未暴露。
+**未修**；修法：N8 按 touched 行分片 + 显式 `coverage`、消除 N6 `excerpt`/`excerpts` 重复、
+必要时再按 provider 窗口重定预算（先改规格）。该缺陷使**四道门端到端在本机不可判为通过**。
 
 **未完成**：F03-b 的测试分层标记（纯软件/受控插件/真实内网）与剩余失败分类、F03-c 文档解析。

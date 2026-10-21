@@ -54,13 +54,24 @@ RuntimeError: 闸门 G1_diff_confirm 已签署但恢复失败（run 已置 faile
 [AGENT_CONTEXT_SPEC](../spec/AGENT_CONTEXT_SPEC.md) 的 120000 bytes 硬预算，`check_budget` 显式失败，
 整个 drill 链在 G1 后收敛为 failed。默认只读根下该路径从未被走到（更早的 `mkdir` 已失败），因此此前被掩盖。
 
-**与本次拉取的关系**：`5f6cdb2→fb83ed0` 的 N6 改动删除了「20 行/6000 字/3 个定义」上限，改为
-`api_semantics` 全文 + `excerpts` 全量；输入规模上升后与既有 120000 预算冲突。属**行为变化未同步预算契约**。
+**构成实测**（受控探针包裹 `check_budget`，`-s` 关闭捕获）：
 
-**未修**：需要先定契约方向（建议三选一，均须显式覆盖、不许静默截断）：
-1. 全局 API 定义去重（`targets[].api_semantics` → 顶层 `api_index` + 引用），通常可降一个量级；
-2. 预算上限按 provider 上下文窗口重定，并在规格写明依据；
-3. 超预算时分块请求并定义汇合与唯一消费者（成本最高）。
+| 节点 | contract | 主要输入项（bytes） |
+|---|---|---|
+| N6 | 4539 | `targets` 36923（target[0]：`excerpts` 2379 + 兼容字段 `excerpt` 2377 + `revision_points` 1275 + `api_semantics` 918） |
+| **N8** | 2728 | **`sandbox_cases` 120063** + `revision_points` 6453 + `applied_edits` 359 |
+
+⇒ 超限发生在 **N8**（130546），不是 N6。`_sandbox_code()` 把本轮 applied cases 的**整套沙箱文件全文**放进请求，
+与 N8 自己的 prompt 规则「只判本轮 edits 触及的行」和「大文件按源文件 difflib 给变更片段」不一致。
+
+**与本次拉取的关系**：N6 删除「20 行/6000 字/3 个定义」上限后 N6 输入变大（但仍在上限内），
+真正压垮预算的是 N8 的全量沙箱文本；是否属拉取引入需对照 `5f6cdb2` 的 `_sandbox_code`（后续切片核对）。
+
+**修法建议（未实施，须先改规格再改实现）**：
+1. **N8 按 touched 行分片**：`sandbox_cases` 只带 applied edits 触及的文件与行窗口（如 ±40 行），
+   并**显式下发 `coverage`**（`full_file` / `changed_regions` / `regions`、`complete`），与 N8 既有大文件策略对齐；
+2. 消除 N6 `excerpt` 兼容字段与 `excerpts` 的重复下发（约 2.4 KB/目标），同步改提示词对兼容字段的说明；
+3. 若仍超限，再按 provider 上下文窗口重定预算（需在规格写明依据），不许静默截断。
 
 阻塞影响：`test_flow` 11 项、以及所有走到 G1 之后的软件层用例；**四道门端到端在本机不可判为通过**。
 

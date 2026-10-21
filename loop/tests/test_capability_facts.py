@@ -66,8 +66,13 @@ async def test_agent_window_api_returns_same_capabilities(ctx, provider, monkeyp
     monkeypatch.setattr(api, "_manager", lambda: manager)
     client = TestClient(api.app)
     body = client.get(f"/api/runs/{ctx.run_id}/agents/N3").json()
-    assert body["capabilities"] == A.node_capabilities("N3", events)
-    assert body["capabilities"]["dependencies_ready"] is None
+    # 精确期望（不用被测函数计算期望值）
+    assert body["capabilities"] == {
+        "implemented": True,
+        "dependencies_ready": None,
+        "execution": "standin",
+        "verification_scope": None,
+    }
 
 
 def test_there_is_a_single_role_projection():

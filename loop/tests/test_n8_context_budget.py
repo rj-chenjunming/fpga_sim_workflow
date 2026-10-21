@@ -10,6 +10,7 @@ from pathlib import Path
 
 import pytest
 
+from host import agent_memory as AM
 from workflows.chunks import model_steps as MS
 
 
@@ -33,8 +34,8 @@ def _bytes(text: str) -> int:
 
 
 def _entries_bytes(files: list[dict]) -> int:
-    import json as _json
-    return len(_json.dumps(files, ensure_ascii=False).encode("utf-8"))
+    """与真实请求同一序列化实现（check_budget 使用 AM.encoded）。"""
+    return len(AM.encoded(files))
 
 
 def test_sandbox_cases_fit_budget_without_dropping_files(tmp_path: Path) -> None:
@@ -95,3 +96,26 @@ def test_small_input_keeps_full_text(tmp_path: Path) -> None:
     assert files[0]["coverage"]["mode"] == "full_file"
     assert files[0]["excerpt"] == "module demo;\nendmodule\n"
     assert summary["region_files"] == 0
+
+
+def test_budget_boundary_does_not_reject_feasible_plan(tmp_path: Path) -> None:
+    """2n 尾差不得把可行解硬拒：全降级可行时，必须降级而不是抛「预算不足」。"""
+    sandbox, source_root = _write_cases(tmp_path, count=3, lines=40)
+    _, _, unlimited = MS.build_sandbox_cases(
+        sandbox, source_root, [], budget_bytes=10_000_000
+    )
+    budget = unlimited["used_bytes"] - 1  # 比「全部全文」少 1 字节，必然要降级
+    files, names, summary = MS.build_sandbox_cases(
+        sandbox, source_root, [], budget_bytes=budget
+    )
+    assert len(files) == 3 and len(names) == 3
+    assert summary["used_bytes"] <= budget
+    assert summary["region_files"] >= 1
+    assert summary["full_files"] + summary["region_files"] == 3
+
+
+def test_used_bytes_matches_compact_encoding(tmp_path: Path) -> None:
+    sandbox, source_root = _write_cases(tmp_path, count=2, lines=30)
+    files, _, summary = MS.build_sandbox_cases(sandbox, source_root, [], budget_bytes=20000)
+    assert summary["used_bytes"] == len(AM.encoded(files))
+    assert summary["used_bytes"] <= 20000

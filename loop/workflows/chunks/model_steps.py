@@ -1164,7 +1164,10 @@ _CHECKLIST = [
 
 #: 单文件超过该字符数 ⇒ 必须用「源代码差异片段」（既有规则，防单文件过大）。
 N8_FULL_FILE_CHARS = 6_000
-#: N8 沙箱代码分片预算（bytes）：约为 120000 总预算的一半，留出 contract / 台账 / summary 余量（F16）。
+#: N8 片段模式的上下文窗口（前后各 N 行；线性坐标取 after）。
+N8_REGION_CONTEXT_LINES = 6
+#: N8 沙箱代码分片预算（bytes，按 `AM.encoded` 紧凑序列化计）：约为 120000 总预算的一半，
+#: 留出 contract / 台账 / summary 余量（F16）。
 N8_SANDBOX_BUDGET_BYTES = 60_000
 
 
@@ -1203,7 +1206,7 @@ def build_sandbox_cases(
                 before = source.read_text(encoding="utf-8", errors="strict").splitlines()
                 after = text.splitlines()
                 matcher = difflib.SequenceMatcher(a=before, b=after)
-                for group in matcher.get_grouped_opcodes(n=6):
+                for group in matcher.get_grouped_opcodes(n=N8_REGION_CONTEXT_LINES):
                     _, a, _, c, _ = group[0]
                     _, _, b, _, d = group[-1]
                     regions.append({"before": {"start": a + 1, "end": b,
@@ -1290,21 +1293,15 @@ def build_sandbox_cases(
             _entry(item, plan["region_excerpt"], "changed_regions", plan["public_regions"])
             if plan["region_excerpt"] is not None else None
         )
-        plan["full_cost"] = len(json.dumps(plan["full_entry"], ensure_ascii=False).encode("utf-8"))
+        # 数组元素间的 `,` 与首尾括号也占字节：每条摊销 2 字节（最终再用整体序列化复核）。
+        plan["full_cost"] = len(AM.encoded(plan["full_entry"])) + 2
         plan["region_cost"] = (
-            len(json.dumps(plan["region_entry"], ensure_ascii=False).encode("utf-8"))
+            len(AM.encoded(plan["region_entry"])) + 2
             if plan["region_entry"] is not None else None
         )
         # 最小可行成本：强制片段 ⇒ 片段；否则片段可用时按片段估算（为降级留空间）
         plan["min_cost"] = (
             plan["region_cost"] if plan["region_cost"] is not None else plan["full_cost"]
-        )
-
-    total_min = sum(plan["min_cost"] for plan in plans)
-    if total_min > budget:
-        raise RuntimeError(
-            f"N8 上下文预算不足：即使全部降级为变更片段仍需 {total_min} > {budget} bytes"
-            "（不得静默抽样或丢文件）"
         )
 
     used = 0
@@ -1331,12 +1328,24 @@ def build_sandbox_cases(
         else:
             region_files += 1
         out.append(entry)
-    # 以**实际序列化结果**为准（条目间分隔符等），确保 used_bytes 与真实请求一致。
-    used = len(json.dumps(out, ensure_ascii=False).encode("utf-8"))
+    # 以**真实请求使用的紧凑序列化**复核（`AM.encoded` 与 check_budget 同一实现）。
+    used = len(AM.encoded(out))
     if used > budget:
-        raise RuntimeError(
-            f"N8 上下文预算不足：分片后 {used} > {budget} bytes（不得静默抽样）"
-        )
+        # 确定性修复：从后往前把「全文」降级为片段，直到装得下（保证可行解不被 2n 等尾差硬拒）。
+        for index in range(len(out) - 1, -1, -1):
+            if used <= budget:
+                break
+            plan = plans[index]
+            if out[index]["coverage"]["mode"] != "full_file" or plan["region_entry"] is None:
+                continue
+            out[index] = plan["region_entry"]
+            used = len(AM.encoded(out))
+            full_files -= 1
+            region_files += 1
+        if used > budget:
+            raise RuntimeError(
+                f"N8 上下文预算不足：分片后 {used} > {budget} bytes（不得静默抽样）"
+            )
     summary = {
         "budget_bytes": budget,
         "used_bytes": used,

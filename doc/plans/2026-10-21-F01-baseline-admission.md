@@ -6,7 +6,7 @@
 |---|---|
 | 类型 | 缺陷修复（含一处保持行为的判据收敛） |
 | 基线提交 | `fb83ed0` |
-| 唯一 owner | Host 准入与编排 owner（本切片由 Lead 实现，未指派独立验证者） |
+| 唯一 owner | Host 准入与编排 owner（本切片由 Lead 实现；会话内独立复核 `f01-verifier` 两轮，未落独立报告文件） |
 | 规格位置 | [编排规格 §3.1](../spec/LOOP_ORCHESTRATION_SPEC.md#31-基线准入与身份f01)、[Web UI §6.1 / §9](../spec/WEB_UI_SPEC.md) |
 | 允许修改 | `loop/host/baseline.py`（新增）、`loop/host/paths.py`（公开只读入口 `kb_module()`）、`loop/services/config_api.py`、`loop/workflows/main_flow.py`、`loop/workflows/chunks/host_steps.py`、`loop/tests/test_baseline_admission.py`（新增）、上述两份规格、本计划 |
 | 不修改 | 冻结目录 `kb/**`、`doc/evidence/**`、`doc/history/**`、执行拓扑、闸门签署、S0、仿真资产 |

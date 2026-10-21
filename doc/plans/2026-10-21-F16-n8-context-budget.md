@@ -14,9 +14,13 @@
 
 ## 1 问题（已实测）
 
-`_sandbox_code()` 对每个 ≤6000 字符的沙箱用例文件整篇下发；drill 夹具轮共约 30 个文件 ⇒
-`sandbox_cases` 单项 **120063 bytes**，加 `revision_points` 6453 与 contract 2728 = **130546 > 120000**，
-`check_budget` 显式失败 ⇒ drill 全链在 G1 后必挂（STATUS §17 复现）。
+**复核后更正**：drill 夹具轮只有 **5 个**沙箱用例文件，且每个都 >6000 字符（实测 21905–32135 bytes），
+F16 前它们**已经**走 `changed_regions`。`sandbox_cases` 达 **120063 bytes** 的真正原因是：
+① 片段模式下 `changed_regions` 重复携带 after 文本（与 `excerpt` 同内容，去重约 −60 KB）；
+② 15 行上下文窗口偏宽（约 −9 KB）。
+总请求实测 **130546 > 120000**（主要项：sandbox_cases 120063、revision_points 6453、contract 2728；
+逐项相加与 total 因序列化方式不严格相等）。`check_budget` 显式失败 ⇒ drill 全链在 G1 后必挂（STATUS §17）。
+因此预算降级在真实 drill 中**零触发**（`full_files=0`），真正生效的是去重与窗口收窄（窗口 6 行已写入 C1）。
 
 规格 C1 同时要求「小文件保留全文」与「超预算显式失败」，在真实输入规模下**不可同时满足** ⇒ 契约缺陷。
 
@@ -51,6 +55,13 @@
 `N8_SANDBOX_BUDGET_BYTES`（60000）时按文件名顺序降级；`changed_regions` 不再重复下发 after 文本
 （after 只在 `excerpt`），并按**实际序列化大小**计费；片段不可得即 fail closed。
 
-## 5 回退
+## 5 复核后残余（可留后续）
+
+1. `coverage.complete` 语义未定义（当前恒 `true`）——后续在 C1 定义"片段模式是否覆盖全部变更"。
+2. sandbox 目录缺失时返回空列表而非失败（N8 可"复核 0 件"）——既有行为，待独立切片。
+3. 已删死代码 `total_min` 与不可达 `region_entry is None` 分支；后者保留为防御，可后续清理。
+4. 补"整请求 `AM.encoded ≤ 120000`"的端到端断言与字节级确定性断言。
+
+## 6 回退
 
 还原 `build_sandbox_cases` 为全量全文 + 移除 `coverage_summary` 即回到原行为；历史请求记录不回填。

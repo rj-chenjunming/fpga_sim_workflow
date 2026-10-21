@@ -18,7 +18,7 @@
    与正在使用的服务副本互相污染；多副本/CI 无法隔离（[环境规格已知风险](../spec/ENV_PLUGIN_SPEC.md)）。
 2. `run_kb_tool()` 以 `python <kb/tools/xx.py>` 调子进程，未带 `-B` ⇒ 子进程导入 `kb_lib` 会在
    **冻结目录** `kb/tools/__pycache__/` 写字节码（红线：冻结目录只读）。
-3. 实证：本轮早前测试曾留下 `loop/None/view.json` 与 `loop/state/events/*.stale-*`（已清理）。
+3. 实证：本轮早前测试曾留下 loop/None/view.json 与 `loop/state/events/*.stale-*`（已清理）。
 
 ## 2 目标可观察行为
 

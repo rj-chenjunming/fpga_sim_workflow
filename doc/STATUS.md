@@ -264,7 +264,8 @@ F01–F12 延续原编号，新增 F13 首次错误反馈、F14 样式收敛、F
 
 基线提交 `fb83ed0`。规格 [编排规格 §3.1](spec/LOOP_ORCHESTRATION_SPEC.md#31-基线准入与身份f01) 与
 [Web UI §6.1/§9](spec/WEB_UI_SPEC.md)，计划见 [F01 切片计划](plans/2026-10-21-F01-baseline-admission.md)。
-本切片由 Lead 实现并自测，**未指派独立验证者**；数字一律从命令输出复制。
+本切片由 Lead 实现；**会话内独立复核 `f01-verifier`（只读两轮：首轮 3 项必改 → 修复 → 二轮「可合并」）**，
+复核报告未落盘为独立文件（流程偏差见 §19）；数字一律从命令输出复制。
 
 | 验证 | 原始输出（逐字复制） | 说明 |
 |---|---|---|
@@ -284,12 +285,12 @@ F01–F12 延续原编号，新增 F13 首次错误反馈、F14 样式收敛、F
 | 复核发现 | 处理 | 修复后验证 |
 |---|---|---|
 | N1/N2 仍各带 `or "v0"` 兜底，与「任何节点不得再出现硬编码 v0」不符 | 新增 `_selected_baseline()`：`run_meta` → 输入 → **fail closed**；API 层第二份 `or "v0"` 删除 | `tests/test_fix_real_chain.py -k n1`：`16 passed, 23 deselected in 1.16s`；新增 N2 缺身份用例 |
-| 准入用例红态用「返回 None」的 spy，反而落盘 `loop/None/` 与 stale 事件 | spy 改为「被调用即断言失败」；负例增加事件目录零新增断言；残留已清理 | 定向 `22 passed in 0.62s`；仓库无 `loop/None/` 与新增 stale 件 |
+| 准入用例红态用「返回 None」的 spy，反而落盘 loop/None 与 stale 事件 | spy 改为「被调用即断言失败」；负例增加事件目录零新增断言；残留已清理 | 定向 `22 passed in 0.62s`；仓库无 loop/None 与新增 stale 件 |
 | 规格称 `doc_fingerprint` 核指纹，实现只查存在 | 按 kb 唯一口径 `canon_lines_sha256` 重算（真实 v0 复算一致） | 真实 v0 仍 `valid= True`；篡改用例由绿转红 |
 | 符号链接基线被列表静默跳过（坏件伪装成不存在） | 列表只收 `^v[0-9]+$` 形状；符号链接**列入**但 `valid=false` | 新增用例断言其出现在列表且报「符号链接」 |
 | 绝对路径 artifact 无边界 | 限定在工作区根 / 环境根内，越界计入 `missing` | 代码收敛（边界用例待补） |
 
-复核后全套：`46 failed, 269 passed, 3 skipped, 1 warning in 11.26s`（46 项仍为 `ENV_ROOT` 只读同因；
+复核后全套：`46 failed, 269 passed, 3 skipped, 1 warning in 11.26s`（46 项同因但错类不同：44 项 `Errno 30`、2 项 `test_archive_e2` 的 `guard rc=3`/`FileNotFoundError`；均因 `ENV_ROOT` 只读；
 通过数 252→269 = 新增 17 项）。定向：`24 passed in 0.64s`；`/api/baselines` 契约用例通过。
 
 复核者二次回归结论：**可合并**（3 项必改均有代码+实测证据关闭，无新增中/高危）。其列出的低项已在本轮
@@ -303,7 +304,7 @@ F01–F12 延续原编号，新增 F13 首次错误反馈、F14 样式收敛、F
 ## 15 F02 能力说明与实际状态对齐（2026-10-21）
 
 规格 [Web UI §4.3 能力事实](spec/WEB_UI_SPEC.md)、§7 第 6 条、§10-A9；计划见
-[F02 切片计划](plans/2026-10-21-F02-capability-facts.md)。由 Lead 实现并自测，**未指派独立验证者**。
+[F02 切片计划](plans/2026-10-21-F02-capability-facts.md)。由 Lead 实现并自测，独立复核未做（流程偏差见 §19）。
 
 旧结论「N11 证据守护未实现（审计 A10）」在四处已过期（服务端 note/summary、`app.js::deriveNote`、规格、既有用例），
 而 `n11_review` 已有成链判断/返工/身份四方同值实现。本切片改为**服务端下发四维能力事实**，
@@ -324,13 +325,13 @@ UI 只消费、不再从 `idle` 或颜色推断。
 ## 16 F03-a 验证隔离最小切片（2026-10-21）
 
 规格 [环境插件规格 三根表](../doc/spec/ENV_PLUGIN_SPEC.md)（新增 `STATE_ROOT` / `$LOOP_STATE_ROOT`）；
-计划见 [F03-a 切片计划](plans/2026-10-21-F03a-test-isolation.md)。由 Lead 实现并自测，未指派独立验证者。
+计划见 [F03-a 切片计划](plans/2026-10-21-F03a-test-isolation.md)。由 Lead 实现并自测，独立复核未做（流程偏差见 §19）。
 
 | 验证 | 原始输出（逐字复制） | 说明 |
 |---|---|---|
 | 修改前红灯（stash 三处改动） | `3 failed, 1 passed in 0.69s` | `$LOOP_STATE_ROOT` 注入/测试隔离/子进程 `-B` 先红 |
 | 修改后 | `4 passed in 0.62s` | 四项全绿 |
-| 全套单测 | `46 failed, 275 passed, 3 skipped, 1 warning in 11.23s` | 46 项仍为 `ENV_ROOT` 只读同因；通过数 271→275 = 新增 4 项 |
+| 全套单测 | `46 failed, 275 passed, 3 skipped, 1 warning in 11.23s` | 46 项同因（44 `Errno 30` + 2 `test_archive_e2` 同根因不同错类）；通过数 271→275 = 新增 4 项 |
 | 冻结目录字节码 | `find kb/tools -name '*.pyc' -newermt <start>` 无输出 | kb 工具子进程已带 `-B` |
 
 **验证边界**：共享 `loop/state/recovery` 由**沙箱 PID 命名空间外的常驻服务**持续改写（空闲 3 秒内容也会变，
@@ -349,7 +350,7 @@ F03-c 文档解析器根解析，多环境按 `ENV_ID` 分区 state/槽键。
 | 默认根 | `46 failed, 275 passed, 3 skipped in 11.23s` | 46 项全为只读 `OSError` |
 | 影子根首跑（未链夹具） | `44 failed, 271 passed, 9 skipped in 650.84s` | 失败转为 `AssertionError`（N0/N1 缺 drill 夹具） |
 | 链接夹具后 `test_flow.py` | `11 failed`（18 项中） | 链路可执行，暴露 F16 |
-| F16 修复后软件层全套 | `3 failed, 323 passed, 3 skipped in 75.95s` | 剩余 3 项为环境层（需可写 `ENV_ROOT`）；软件层已可重复执行 |
+| F16 修复后软件层全套 | `3 failed, 325 passed, 3 skipped in 83.51s` | 剩余 3 项为环境层（需可写 `ENV_ROOT`）；软件层已可重复执行 |
 
 ### F16 · N6 上下文预算超限（阻断）
 
@@ -360,8 +361,10 @@ RuntimeError: 闸门 G1_diff_confirm 已签署但恢复失败（run 已置 faile
 
 复现：`bash spikes/run_software_checks.sh tests/test_flow.py::test_gates_are_recorded_once_each`。
 **构成实测**（探针包裹 `check_budget`）：N6 输入 41 KB（`targets` 36923）；**N8 输入 130546**
-（`sandbox_cases` **120063** + `revision_points` 6453 + contract 2728）——超限在 **N8 全量沙箱文本**，
-不是 N6。`sandbox_cases` 与 N8 prompt「只判本轮 edits 触及的行」「大文件按变更片段」不一致。
+（主要项 `sandbox_cases` **120063**、`revision_points` 6453、contract 2728，其余为 checklist/rule/applied_edits
+等小额项——逐项相加与 total 因序列化方式不严格相等）。**复核更正**：drill 只有 5 个用例文件且都 >6000 字符，
+F16 前已在用片段；120063 来自片段 **after 文本在 excerpt/changed_regions 重复** + 15 行上下文窗口，
+不是「小文件整篇下发」。超限在 N8，不是 N6。
 `check_budget` 显式失败 ⇒ drill 全链在 G1 后收敛为 failed；默认只读根下因更早的 `mkdir` 失败而未暴露。
 **未修**；修法：N8 按 touched 行分片 + 显式 `coverage`、消除 N6 `excerpt`/`excerpts` 重复、
 必要时再按 provider 窗口重定预算（先改规格）。该缺陷使**四道门端到端在本机不可判为通过**。
@@ -380,11 +383,37 @@ RuntimeError: 闸门 G1_diff_confirm 已签署但恢复失败（run 已置 faile
 | N8 相关既有用例 | `51 passed in 1.29s` | 大文件强制片段规则保持不变 |
 | 软件层单用例（原阻断） | `1 passed` | G1 后不再 budget failed |
 | 软件层 `test_flow.py` | `18 passed in 26.54s` | 修复前同一入口 `11 failed` |
-| 默认根全套 | `46 failed, 280 passed, 3 skipped, 1 warning in 11.13s` | 46 项仍为 `ENV_ROOT` 只读同因；通过数 275→280 |
-| **软件层全套**（`run_software_checks.sh`） | `3 failed, 323 passed, 3 skipped, 1 warning in 75.95s (0:01:15)` | 修复前同一入口 `44 failed, 271 passed, 9 skipped in 650.84s`；剩余 3 项为**环境层**（archive/guard 需可写 `ENV_ROOT`、冻结见证），非软件层缺陷 |
+| 默认根全套 | `46 failed, 282 passed, 3 skipped, 1 warning in 11.29s` | 46 项同因（44 `Errno 30` + 2 `test_archive_e2` 同根因不同错类）；通过数 275→282 = 新增 7 项 |
+| **软件层全套**（`run_software_checks.sh`） | `3 failed, 325 passed, 3 skipped, 1 warning in 83.51s (0:01:23)`（复核整改后；整改前 `323 passed / 75.95s`） | 修复前同一入口 `44 failed, 271 passed, 9 skipped in 650.84s`；剩余 3 项为**环境层**（archive/guard 需可写 `ENV_ROOT`、冻结见证），非软件层缺陷 |
 
 实现：单文件 >6000 字符仍强制 `changed_regions`；其余默认全文；超
 `N8_SANDBOX_BUDGET_BYTES`(60000) 按文件名顺序降级；`changed_regions` 不重复下发 after 文本
 （after 只在 `excerpt`），按实际序列化大小计费；片段不可得即 fail closed（不静默抽样、不丢文件）。
 
-**未运行**：完整软件层全套（后台执行中，见下）、浏览器（缺 Chromium）、kb 自测与端到端（`ENV_ROOT` 只读）。
+**未运行**：浏览器（缺 Chromium）、kb 自测与端到端（`ENV_ROOT` 只读）。
+
+### 18.1 独立复核（f16-verifier，只读）
+
+结论：**建议合并**（无静默失败/丢文件，drill 已恢复）。必修改 3 项已在本轮修复：
+
+| 复核发现 | 修复 | 验证 |
+|---|---|---|
+| 打包按单条求和，漏计数组括号/逗号 2n 字节 ⇒ 预算边界上可硬拒可行解 | 单条计费 +2 字节；结束时用实际序列化复核，并从后往前**确定性降级全文条目**直到装下 | 新增边界用例 `test_budget_boundary_does_not_reject_feasible_plan` |
+| `used_bytes` 用默认 `json.dumps`，与真实 `AM.encoded` 口径不同（高估 209 B），注释不成立 | 改用 `AM.encoded`（与 `check_budget` 同一实现），删除被覆盖的死代码 `total_min` | 新增 `test_used_bytes_matches_compact_encoding` |
+| 诊断与实测不符（drill 5 件全 >6000 字符，"小文件整篇"不成立）；`n=15→6` 无规格依据 | 更正 §17/计划的诊断；片段上下文窗口写入 C1（`N8_REGION_CONTEXT_LINES=6`） | 规格 C1 已同步 |
+
+**勘误**：`6c88c06` 提交信息中「120063 + 9276 = 131046」的加和不准确（131046 是探针实测总输入，
+不是两项相加）；以本节与 §17 的口径为准。
+
+## 19 流程偏差与整改（2026-10-21）
+
+本节记录本轮（`fb83ed0..HEAD`）**已发生**的 SpecDD 偏差，不补造证据、不回填历史。
+
+| 偏差 | 事实 | 严重度 | 整改（后续切片执行） |
+|---|---|---|---|
+| 计划后置 | F01/F02/F03-a/F16 的计划与实测写在实现之后（同会话回填）；只有 F16 的 playbook 登记早于实现 | 中 | 计划必须在实现**前**单独提交（含切片/落点/验证门，不含实测） |
+| 红灯事后制造 | F01/F03-a 先实现，再临时回退/stash 造红并记录；F02/F16 为测试先红 | 中 | 失败用例先提交并贴原始输出，再提交实现；禁止回退造红 |
+| 独立验证未落盘 | F01 两轮、F16 一轮均为会话内只读 agent；仓库无独立报告文件 | 高 | 验证结论必须落 `doc/audit/Fxx-verify-<date>.md` 并记 md5，或明确写「无独立报告」 |
+| 文档门缺证 | 前几个提交未跑 `check_doc_links.py`；本轮补跑：`checked=860 skipped=10688 historical=834 missing=6`，其中 2 条为本文档自身引用已删除的 loop/None（已改文案），其余为环境资产缺件 | 中 | 每个文档变更提交附该门输出；缺件按已知限制登记 |
+| DoD 四道门未全绿 | 单测仅软件层可判（323 passed / 3 环境层 failed）；kb 自测与端到端未运行（`ENV_ROOT` 只读/内网缺件） | 高 | 维持「不声称合规」；内网侧补跑后回填 |
+| 数字口径 | 两处加和错误、46 项失败表述过粗（实为 44 + 2） | 中 | 数字必须来自命令输出；跨字段加和需注明不适用情形 |

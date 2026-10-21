@@ -130,6 +130,25 @@ def test_corrupt_checksum_is_diagnosed_not_consumed(tmp_path: Path) -> None:
         C.read_view(ctx.run_dir, "N3")
 
 
+def test_symlinked_record_is_explicit_failure(tmp_path: Path) -> None:
+    """复核 M1：符号链接必须在读状态前显式失败，不能静默变成 incomplete。"""
+    ctx = make_ctx(tmp_path)
+    attempt = AM.Attempt(ctx, "N3", {"prompt_key": "n3_digest"})
+    attempt.finish("validated", payload={})
+    outside = tmp_path / "outside.json"
+    outside.write_text("{}", encoding="utf-8")
+    request_file = attempt.path / "request.json"
+    request_file.chmod(0o600)
+    request_file.unlink()
+    request_file.symlink_to(outside)
+    with pytest.raises(ValueError, match="符号链接|越界"):
+        AM.record_state(request_file)
+    with pytest.raises(ValueError, match="符号链接|越界"):
+        C.read_view(ctx.run_dir, "N3")
+    with pytest.raises(ValueError, match="符号链接|越界"):
+        AM.verify_attempt(attempt.path)
+
+
 def test_public_seal_api_used_by_control_module() -> None:
     assert hasattr(AM, "seal_record"), "封存写入必须有公开接口"
     source = (LOOP / "host" / "agent_control.py").read_text(encoding="utf-8")

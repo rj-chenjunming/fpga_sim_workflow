@@ -82,6 +82,7 @@ def read_view(root, node, attempt=None):
         _safe(root, folder)
         sequence = int(folder.name.split('-')[1])
         request_file = folder / 'request.json'
+        _safe(root, request_file)  # 符号链接/越界在读取状态前显式失败（F08 复核 M1）
         request_state = AM.record_state(request_file)
         if request_state == 'corrupt':
             # 校验不匹配/JSON 坏 ⇒ 显式失败（不可当成有效记录）；不是「写了一半」。
@@ -92,6 +93,7 @@ def read_view(root, node, attempt=None):
                               'model': None, 'cycle': None})
             continue
         result_file = folder / 'result.json'
+        _safe(root, result_file)
         result_state = AM.record_state(result_file)
         if result_state == 'committed':
             request = _read(root, request_file)

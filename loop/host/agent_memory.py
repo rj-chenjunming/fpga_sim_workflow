@@ -131,9 +131,12 @@ def record_state(path: Path) -> str:
     本函数不修文件、不删除、不回填。
     """
     path = Path(path)
+    digest_path = path.with_suffix(".sha256")
+    # 符号链接是安全信号（F08 复核 M1）：显式失败，不得静默降级成普通状态。
+    if path.is_symlink() or digest_path.is_symlink():
+        raise ValueError("agent record 路径使用符号链接")
     if not path.is_file():
         return "absent"
-    digest_path = path.with_suffix(".sha256")
     if not digest_path.is_file():
         return "incomplete"
     try:
@@ -181,6 +184,9 @@ class Attempt:
 def verify_attempt(path: Path) -> dict:
     out = {}
     for name in ("request", "result"):
+        target = Path(path) / f"{name}.json"
+        if target.is_symlink() or target.with_suffix(".sha256").is_symlink():
+            raise ValueError("agent record 路径使用符号链接")
         try:
             content = (path / f"{name}.json").read_bytes()
             expected = (path / f"{name}.sha256").read_text().strip()

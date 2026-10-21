@@ -28,8 +28,6 @@
 """
 from __future__ import annotations
 
-import json
-import os
 import re
 import sys
 from dataclasses import dataclass, field
@@ -109,15 +107,20 @@ def _load_kb_lib(tool_root: Path):
     口径只有一份（ENV_PLUGIN_SPEC §1）：本检查器**不自己**解析 `environments.json` 或
     环境变量名，避免与 kb_lib 漂移（第二套解析必然漂移：旧布局回落、LOOP_ENV、坏注册表）。
     """
-    tools = str(tool_root / "kb" / "tools")
-    if tools not in sys.path:
-        sys.path.insert(0, tools)
+    tools = Path(tool_root) / "kb" / "tools"
+    if str(tools) not in sys.path:
+        sys.path.insert(0, str(tools))
     previous = sys.dont_write_bytecode
     sys.dont_write_bytecode = True
     try:
         import importlib
 
-        return importlib.import_module("kb_lib")
+        module = importlib.import_module("kb_lib")
+        loaded = Path(getattr(module, "__file__", "")).resolve()
+        if tools.resolve() not in loaded.parents:
+            # 防 sys.modules 缓存里他处同名模块冒充本仓解析器（第二套口径）。
+            raise RuntimeError(f"kb_lib 归属校验失败：{loaded} 不在 {tools} 下")
+        return module
     finally:
         sys.dont_write_bytecode = previous
 

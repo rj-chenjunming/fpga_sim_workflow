@@ -89,7 +89,9 @@ def read_view(root, node, attempt=None):
             raise ValueError(f'agent record checksum mismatch: {request_file.name}')
         if request_state != 'committed':
             # F08：半写请求只报告状态，不进入可消费记录；其它尝试照常可读。
-            summaries.append({'attempt': sequence, 'status': request_state,
+            # 观测矩阵：尝试目录已建但数据未写 ⇒ incomplete（不是 absent）。
+            status = 'incomplete' if request_state == 'absent' else request_state
+            summaries.append({'attempt': sequence, 'status': status,
                               'model': None, 'cycle': None})
             continue
         result_file = folder / 'result.json'

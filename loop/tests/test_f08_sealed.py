@@ -130,6 +130,15 @@ def test_corrupt_checksum_is_diagnosed_not_consumed(tmp_path: Path) -> None:
         C.read_view(ctx.run_dir, "N3")
 
 
+def test_empty_attempt_dir_is_reported_incomplete(tmp_path: Path) -> None:
+    """观测矩阵：建目录后、写数据前被终止 ⇒ 摘要 incomplete（目录存在即是证据）。"""
+    ctx = make_ctx(tmp_path)
+    (ctx.run_dir / "agent_calls" / "N3" / "attempt-000001").mkdir(parents=True)
+    view = C.read_view(ctx.run_dir, "N3")
+    assert view["attempts"][0]["status"] == "incomplete"
+    assert view["selected_attempt"] is None
+
+
 def test_symlinked_record_is_explicit_failure(tmp_path: Path) -> None:
     """复核 M1：符号链接必须在读状态前显式失败，不能静默变成 incomplete。"""
     ctx = make_ctx(tmp_path)

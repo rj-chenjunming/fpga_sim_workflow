@@ -763,8 +763,8 @@ STATUS；`doc/README.md`/`doc/agents/README.md` 索引现状（2 份开工提示
 | F16-c/F02-c | [F16c-F02c-verify-20261022.md](audit/F16c-F02c-verify-20261022.md) | `66f1cb98dbb7facf78816b6ac8ce1cab` | 建议合并（2 项证据口径必改） | `a32b13e` | **未复核** |
 | F15-a | [F15a-verify-20261022.md](audit/F15a-verify-20261022.md) | `89adeb379e2bf1736d7e9551f3094e7d` | 不建议合并（3 项文字必改） | `0328222` | **未复核** |
 | F06 | [F06-verify-20261022.md](audit/F06-verify-20261022.md) | `67d29e2d29810631ce255d94bf4b2a77` | 建议合并（条件：STATUS 数字/回填） | 本节 + §27 | 条件已在 §27 关闭 |
-| F07 | [F07-verify-20261022.md](audit/F07-verify-20261022.md) | `e83ff5888aca23c5ace65733a2b34701` | 有条件建议合并（CPU 口径必改） | `9ebee73` | **未复核** |
-| F08 | [F08-verify-20261022.md](audit/F08-verify-20261022.md) | `974ec8bbf192b9acbad1c435f8b8dbe6` | 首轮不建议合并（符号链接回归） | `500622a` | **未复核** |
+| F07 | [F07-verify-20261022.md](audit/F07-verify-20261022.md) | `5df68f0ee6ee32e0418ae18d4d4ce320` | 建议合并（CPU 口径必改） | `9ebee73` | 是（复核者只读复跑整改后通过） |
+| F08 | [F08-verify-20261022.md](audit/F08-verify-20261022.md) | `99c54df6ba8d74333f63b9ef2df22215` | 建议合并（符号链接回归 M1） | `500622a`、空目录 M2 修正 | 是（M1 复验通过；M2 已按观测矩阵修正） |
 | F10/F11 | [F10F11-verify-20261022.md](audit/F10F11-verify-20261022.md) | `03a788dfc8a646e20da73e5f4bd1a07b` | 首轮不建议合并（预算传参错） | `59f57e7` | **未复核** |
 
 > md5 为**最终全文 md5**（报告自引用限制说明见各报告末节）。本批所有复核者都是只读子代理：
@@ -774,8 +774,8 @@ STATUS；`doc/README.md`/`doc/agents/README.md` 索引现状（2 份开工提示
 
 | 门 | 命令 | 结果 | 判读 |
 |---|---|---|---|
-| 默认根单测 | `cd loop && LOOP_LLM_MODE=standin .venv/bin/python -m pytest -q --tb=no` | `46 failed, 413 passed, 3 skipped, 1 warning in 19.69s` | 46 项为环境层（`ENV_ROOT` 只读 44 项 `Errno 30` + 2 项 archive），失败集与 §14–§32 基线相同；**不是全绿** |
-| 软件层单测 | `cd loop && bash spikes/run_software_checks.sh --tb=no` | `456 passed, 3 skipped, 3 deselected, 1 warning in 81.99s` | 软件层 **0 failed**；3 项环境层被显式排除（非 skip） |
+| 默认根单测 | `cd loop && LOOP_LLM_MODE=standin .venv/bin/python -m pytest -q --tb=no` | `46 failed, 414 passed, 3 skipped, 1 warning in 18.87s` | 46 项为环境层（`ENV_ROOT` 只读 44 项 `Errno 30` + 2 项 archive），失败集与 §14–§32 基线相同；**不是全绿** |
+| 软件层单测 | `cd loop && bash spikes/run_software_checks.sh --tb=no` | `457 passed, 3 skipped, 3 deselected, 1 warning in 80.73s` | 软件层 **0 failed**；3 项环境层被显式排除（非 skip） |
 | 文档门 | `python3 doc/audit/check_doc_links.py` | 退出码 `0`；`missing=0`；`env_missing`/`known_missing` 可见 | 本仓断链为零；环境缺件单列不隐藏 |
 | 端到端 | `cd loop && bash spikes/accept_v1_run.sh` | **未运行** | 缺可写 `ENV_ROOT`/UVS/内网夹具；不得用软件层结果替代 |
 | kb 自测 | `kb/tools/_selftest_*.py` | **未运行** | 同上；不能声称通过 |
@@ -794,4 +794,6 @@ STATUS；`doc/README.md`/`doc/agents/README.md` 索引现状（2 份开工提示
 | 红灯归因错误 | F16-c 红灯中一条能力投影用例失败原因是**测试签名写错**（TypeError），不是能力缺失 | §25 勘误；不计入「能力缺失」证据 |
 | 执行日志时间 | 初版执行日志的时间列曾按会话顺序估算 | 已用 `git log --format=%ad` 的实际提交时间替换 |
 | 临时文档门变红 | 验证者在途写报告时，示例路径曾使文档门短暂 `missing>0` | 各 owner 改写模板写法后恢复 `missing=0`；不记为切片缺陷 |
-| 整改后未再复核 | 9 份报告中有 6 份的整改提交未再次独立复核（见 §34 表） | 逐条登记；不声称「复核通过」 |
+| 整改后未再复核 | 9 份报告中有 4 份的整改提交未再次独立复核（F13 `d272a80`、F03-b `4d1c65b`、F03-c `2805c2b`、F16-c `a32b13e`、F15-a `0328222`、F10/F11 `59f57e7`；见 §34 表） | 逐条登记；不声称「复核通过」 |
+| 红灯用例在实现提交中改写 | F08 红灯 `aaf8974` 对「篡改校验」的期望是「视图标 corrupt」，实现中改为「读取显式失败」并同步改了测试（`792bb48`）——属安全契约取舍，但违反「红灯提交后不再改测试期望」 | §31/§34 记录；后续切片若改期望须单独提交并说明 |
+| 观测矩阵与实现口径 | F08 复核 M2：空 attempt 目录摘要曾标 `absent`（矩阵要求 `incomplete`） | 已在 `read_view` 映射为 `incomplete` 并补用例；`record_state` API 语义仍是 `absent`（诊断 API 与摘要状态分开） |

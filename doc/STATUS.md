@@ -627,7 +627,8 @@ STATUS；`doc/README.md`/`doc/agents/README.md` 索引现状（2 份开工提示
 | 重构前特征基线 | `109 passed, 1 warning in 28.79s` | test_flow + context + control + n8 + capability |
 | 重构后同一命令 | `109 passed, 1 warning in 28.40s` | 行为特征不变 |
 | 分层结构断言 | `4 passed in 0.58s` | 机制不含校验实现/单一 `_validate`/兼容导出 |
-| 默认根 | `46 failed, 386 passed, 3 skipped, 1 warning in 16.39s` | 失败集与基线相同 |
+| 默认根（重构前基线快照） | `46 failed, 386 passed, 3 skipped, 1 warning in 16.39s` | 失败集与基线相同 |
+| 默认根（`50383dc` 干净快照，复核者复算） | `46 failed, 390 passed, 3 skipped` | +4 = 新增结构断言；以该行为准 |
 
 实现：新增 `model_common.py`、`model_request.py`（`validate` 注入）、`n6_facts.py`、`n10_semantics.py`、
 `n11_guard.py`；`model_steps.py` 1470 行（原 2192）保留节点入口与兼容导出。测试仅迁移内部符号补丁落点
@@ -675,9 +676,13 @@ STATUS；`doc/README.md`/`doc/agents/README.md` 索引现状（2 份开工提示
 
 | 样本 | attempts | events | 记录字节 | 响应体字节 | median | p95 | CPU/读 | tracemalloc 峰值 |
 |---|---|---|---|---|---|---|---|---|
-| small | 1 | 10 | 1485 | 3470 | 3.795 ms | 3.835 ms | 7.867 ms | 30056 B |
-| medium | 10 | 100 | 204852 | 39116 | 28.757 ms | 28.888 ms | 36.875 ms | 447298 B |
-| large | 50 | 1000 | 10024332 | 383917 | 184.149 ms | 188.555 ms | 228.291 ms | 13142464 B |
+| small | 1 | 10 | 1485 | 3494 | 4.130 ms | 4.182 ms | 4.162 ms | 33813 B |
+| medium | 10 | 100 | 204852 | 59148 | 31.804 ms | 31.888 ms | 31.604 ms | 475887 B |
+| large | 50 | 1000 | 10024332 | 583949 | 240.868 ms | 242.764 ms | 240.489 ms | 12379317 B |
+
+> 口径说明：本表是**加入 F10 的 `previous_input` 之后**在当前 HEAD 上的复跑（响应体因此比 F07 提交时点大：
+> 提交时点三档为 `3470 / 39116 / 383917`）。CPU/读已按复核必改改为**测量循环内的 `process_time` 增量/repeat**
+> （不含样本构造）；修复前三档列值（7.867/36.875/228.291）是进程累计口径，作废。
 
 **决策**：三档均未达规格触发阈值（p95 > 500 ms 或响应体 > 1 MB）⇒ **不引入**缓存/分页/摘要列表。
 **未测量**：控制回执延迟（需活跃 model 会话与真实 provider，本机不可运行）；真实 token 上限。

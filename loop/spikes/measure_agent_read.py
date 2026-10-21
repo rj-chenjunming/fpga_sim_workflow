@@ -74,11 +74,15 @@ def measure(run: Path, progress_path: Path, repeat: int) -> dict:
     view: dict = {}
     tracemalloc.start()
     baseline = tracemalloc.get_traced_memory()[0]
+    # CPU 用**本次测量循环的增量**，不是进程累计（复核必改 1：
+    # 累计值含样本构造与前面档位，会出现 CPU > wall 的自相矛盾）。
+    cpu_started = time.process_time()
     for _ in range(repeat):
         started = time.perf_counter()
         view = C.read_view(run, NODE)
         view = {**view, "events": _api_events(progress_path)}
         latencies.append((time.perf_counter() - started) * 1000.0)
+    cpu_ms = (time.process_time() - cpu_started) * 1000.0 / max(1, repeat)
     peak = tracemalloc.get_traced_memory()[1] - baseline
     tracemalloc.stop()
     response_bytes = len(json.dumps(view, ensure_ascii=False).encode("utf-8"))
@@ -96,7 +100,7 @@ def measure(run: Path, progress_path: Path, repeat: int) -> dict:
         "latency_ms_min": round(ordered[0], 3),
         "latency_ms_median": round(statistics.median(ordered), 3),
         "latency_ms_p95": round(p95, 3),
-        "cpu_ms_per_read": round(time.process_time() * 1000.0 / max(1, repeat), 3),
+        "cpu_ms_per_read": round(cpu_ms, 3),
         "tracemalloc_peak_bytes": peak,
     }
 
@@ -119,7 +123,8 @@ def main() -> int:
         print("\n# 测量口径")
         print("- read_view：单次读取当前最新 attempt 的完整视图（含全部 attempts 摘要、控制记录与"
               "与 API 同口径过滤后的事件列表）。")
-        print("- latency：wall clock，重复 %d 次；cpu_ms_per_read 用 process_time/repeat。" % args.repeat)
+        print("- latency：wall clock，重复 %d 次；cpu_ms_per_read 用测量循环内的"
+              " process_time 增量/repeat（不含样本构造）。" % args.repeat)
         print("- tracemalloc_peak_bytes：measure 段内的净峰值（不含样本构造）。")
         print("- 控制回执延迟未测：需要活跃 model 会话与真实 provider（本机不可运行）。")
         print(f"- 临时样本目录：{work}")

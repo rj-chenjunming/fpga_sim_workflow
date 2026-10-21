@@ -32,7 +32,7 @@ def _n8_events() -> list[dict]:
 
 def test_node_capabilities_equal_role_card_projection(tmp_path):
     events = _n8_events()
-    cards = A.build_agents(tmp_path, events)
+    cards = A.build_agents(events, run_dir=tmp_path)
     card = next(c for c in cards if "N8" in c["nodes"])
     caps = A.node_capabilities("N8", events)
     assert caps == card["capabilities"]

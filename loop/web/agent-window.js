@@ -48,6 +48,8 @@ window.AgentWindow = (function () {
     if (live) sessionSeen = live.session_id;
     data = view;
     $("awIdentity").textContent = target.runId + " / " + target.node + (live ? " / " + live.session_id : " / 历史记录");
+    var capsText = window.Capabilities ? window.Capabilities.line(view.capabilities) : "";
+    $("awCapabilities").textContent = capsText || "能力事实未知（非模型角色节点或服务端未投影）";
     var status = live ? {working: "运行中", paused: "已暂停", interrupting: "干预处理中", starting: "正在启动"}[live.state] || live.state : "只读 · 无活跃请求";
     $("awStatus").textContent = status;
     $("awStatus").className = "chip " + (live && live.state === "working" ? "primary" : "");
@@ -115,6 +117,7 @@ window.AgentWindow = (function () {
     $("awStatus").textContent = "加载中";
     $("awAttempt").value = "";
     $("awModel").textContent = "读取中…";
+    $("awCapabilities").textContent = "能力事实读取中…";
     $("awResultStatus").textContent = "读取中…";
     $("awIdentity").textContent = target.runId + " / " + target.node;
     ["awInput", "awPrompt", "awOutput"].forEach(function (id) { $(id).textContent = "读取中…"; });

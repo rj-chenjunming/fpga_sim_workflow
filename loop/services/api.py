@@ -279,8 +279,12 @@ async def agent_window(run_id: str, node: str, attempt: int | None = Query(defau
     root = _agent_root(run_id, node)
     try:
         view = control.read_view(root, node, attempt=attempt)
-        view['events'] = [event for event in _manager()._progress(run_id).read()
+        events = _manager()._progress(run_id).read()
+        view['events'] = [event for event in events
                           if event.get('node') == node or str(event.get('node', '')).startswith(node + '_')]
+        # F02-c：窗口与角色卡消费同一来源的能力事实（未知维度保持 None，不在此另算）。
+        from services import agent_view
+        view['capabilities'] = agent_view.node_capabilities(node, events)
         return view
     except KeyError as exc:
         raise HTTPException(404, detail={'error': str(exc)}) from exc

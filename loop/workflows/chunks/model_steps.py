@@ -1278,9 +1278,13 @@ def build_sandbox_cases(
         )
     total_min = sum(plan["min_cost"] for plan in plans)
     if total_min > budget:
+        # F16-c：消息必须能定位到具体文件（文件名 + 最小可行成本），只给总数无法排查。
+        detail = ", ".join(
+            f"{plan['item']['path'].name}({plan['min_cost']})" for plan in plans
+        )
         raise RuntimeError(
             f"N8 上下文预算不足：即使全部降级为变更片段仍需 {total_min} > {budget} bytes"
-            "（不得静默抽样或丢文件）"
+            f"（{detail}；不得静默抽样或丢文件）"
         )
     # 预构造两种条目并按**实际序列化大小**计费；选择只由预算与确定性顺序决定。
     def _entry(item: dict[str, Any], excerpt: str, mode: str,
@@ -1360,8 +1364,9 @@ def build_sandbox_cases(
             full_files -= 1
             region_files += 1
         if used > budget:
+            detail = ", ".join(f"{plan['item']['path'].name}" for plan in plans)
             raise RuntimeError(
-                f"N8 上下文预算不足：分片后 {used} > {budget} bytes（不得静默抽样）"
+                f"N8 上下文预算不足：分片后 {used} > {budget} bytes（{detail}；不得静默抽样）"
             )
     summary = {
         "budget_bytes": budget,

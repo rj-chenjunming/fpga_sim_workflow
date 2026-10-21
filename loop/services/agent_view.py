@@ -151,6 +151,20 @@ def _capabilities(role: dict[str, Any], state: _NodeState | None, status: str) -
     }
 
 
+def node_capabilities(node: str, events: list[dict[str, Any]]) -> dict[str, Any] | None:
+    """单节点能力事实：**复用** `_capabilities` 与 `_collect`，供 Agent 窗口消费同一来源。
+
+    返回 `None` 表示该节点不是模型角色卡节点（Host 确定性步骤），不伪造能力结论。
+    这里只做投影，不读 provider/UVS/夹具探针，未知维度保持 `None`。
+    """
+    role = next((item for item in AGENT_ROLES if node in item["nodes"]), None)
+    if role is None:
+        return None
+    state = _collect(events).get(node)
+    status = _status(node, state, None, None)
+    return _capabilities(role, state, status)
+
+
 def _elapsed(state: _NodeState | None, status: str, now: float | None) -> int | None:
     if state is None or state.started_ts is None:
         return None

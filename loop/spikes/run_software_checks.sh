@@ -76,6 +76,15 @@ if [[ "${INCLUDE_ENV_LAYER:-0}" == "1" ]]; then
   echo "[info] 包含环境层用例（需要可写 ENV_ROOT / 内网冻结见证）" >&2
 else
   echo "[info] 默认排除环境层用例（-m \"not env_layer\"）；INCLUDE_ENV_LAYER=1 可包含" >&2
+  # 打印被排除的用例清单（只收集不执行；规格 §4.1：排除项必须可见）。
+  ENV_LAYER_LIST="$("$PY" -m pytest --collect-only -q -m env_layer 2>/dev/null | grep '::' || true)"
+  if [[ -n "$ENV_LAYER_LIST" ]]; then
+    echo "[info] 被排除的环境层用例（$(printf '%s\n' "$ENV_LAYER_LIST" | wc -l | tr -d ' ') 项）：" >&2
+    printf '%s\n' "$ENV_LAYER_LIST" | sed 's/^/  - /' >&2
+  fi
+  if [[ " $* " == *" -m "* ]]; then
+    echo "[warn] 检测到用户 -m 参数：它会覆盖默认的 env_layer 排除（后面的 -m 生效）" >&2
+  fi
 fi
 
 LOOP_WORKSPACE="$SHADOW" \

@@ -79,4 +79,5 @@ def test_software_entry_excludes_env_layer_at_collection():
         cwd=str(LOOP), capture_output=True, text=True, timeout=300,
     )
     assert proc.returncode == 0, proc.stdout + proc.stderr
-    assert "deselected" in proc.stdout, proc.stdout + proc.stderr
+    # 精确断言被排除数，避免过滤范围被无意放大后仍然绿（复核建议 3.1）。
+    assert "3 deselected" in proc.stdout, proc.stdout + proc.stderr

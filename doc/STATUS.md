@@ -421,17 +421,30 @@ F16 前已在用片段；120063 来自片段 **after 文本在 excerpt/changed_r
 ## 20 F16-b coverage 语义与空沙盒闭锁（2026-10-21）
 
 规格 [C1](spec/AGENT_CONTEXT_SPEC.md)、计划 [F16-b](plans/2026-10-21-F16b-coverage-and-empty-sandbox.md)。
-按 §19 整改执行：**计划+规格先提交**（`2701b38`）→ **红灯用例提交**（`ef8b7b1`）→ 实现在本节对应提交。
+按 §19 整改执行：**计划+规格先提交**（`2701b38`）→ **红灯用例提交**（`ef8b7b1`、`b55c982`）→ 实现提交（`1da772f` 等）→ 独立复核报告（`2c08420`）。
 
 | 验证 | 原始输出（逐字复制） | 说明 |
 |---|---|---|
-| 失败用例先红 | `3 failed, 9 passed in 0.78s`（`DID NOT RAISE RuntimeError` ×3） | 缺目录 / 空目录 / applied 非空无文件 |
-| 实现后定向 | `65 passed, 32 deselected in 1.93s` | N8/上下文相关（含新增 5 项） |
-| 默认根全套 | `46 failed, 287 passed, 3 skipped, 1 warning in 13.09s` | 46 项同因（44 `Errno 30` + 2 归档）；通过数 282→287 |
-| 软件层全套 | `3 failed, 330 passed, 3 skipped, 1 warning in 81.95s (0:01:21)` | 同上 3 项环境层；闭锁不误伤 5 个夹具用例 |
-| 文档门 | `checked=862 skipped=10748 historical=834 missing=4` | 3 条为 `TB/top.sv` 环境缺件；1 条为本计划待生成的独立复核报告（验证者写入后复跑） |
+| 失败用例先红（`ef8b7b1`） | `3 failed, 9 passed in 0.78s`（`DID NOT RAISE RuntimeError` ×3） | 缺目录 / 空目录 / applied 非空无文件；**5 条新增中 3 条真红**，另 2 条为护栏断言（红灯提交即绿） |
+| 补充红灯（`b55c982`，复核必改 1） | `1 failed, 12 passed in 0.71s` | applied 部分缺文件未闭锁 |
+| 实现后定向（文档化命令） | `59 passed in 1.46s` | `test_n8_context_budget.py + test_agent_context_memory.py` |
+| 默认根全套 | `46 failed, 288 passed, 3 skipped, 1 warning in 12.38s` | 46 项同因（44 `Errno 30` + 2 归档）；通过数 282→288 |
+| 软件层全套 | `3 failed, 331 passed, 3 skipped, 1 warning in 78.14s (0:01:18)` | 同上 3 项环境层；闭锁不误伤 5 个夹具用例 |
+| 文档门 | `checked=877 skipped=10879 historical=834 missing=4` | 4 条均为 `TB/top.sv` 环境缺件（含本节引用） |
 
-实现：`build_sandbox_cases` 在无 `*.sv`（含目录缺失）时显式 `RuntimeError`，错误含沙盒路径与
-`applied_cases`，不再以「复核 0 件」继续；`coverage.complete` 语义写入 C1（仅承诺全部变更区域已提供）。
-**未运行**：浏览器、kb 自测、端到端。独立复核：报告由验证者写入
-[doc/audit/F16b-verify-20261021.md](audit/F16b-verify-20261021.md)（Lead 不改该文件）。
+实现：`build_sandbox_cases` 在无 `*.sv`（含目录缺失）时显式 `RuntimeError`，并**逐用例映射**检查
+`applied_cases` 的每个文件都存在；`n8_check` 在闭锁时先 `ctx.node_failed` 再抛；
+`coverage.complete` 语义写入 C1，N8 提示词同步解释（不是全文复核）。
+
+### 20.1 独立复核（f16b-verifier，报告已落盘）
+
+报告 [doc/audit/F16b-verify-20261021.md](audit/F16b-verify-20261021.md)，md5 `22d24be03e3f3e0d96dda651a156e2a0`。
+结论 **建议合并**，2 项必改已在本轮修复：① applied 部分缺文件未闭锁 → 逐用例映射 + 红灯用例 `b55c982`；
+② §20 数字不可复现 → 已用文档化命令重测回填（59 passed / 46-288-3 / 3-331-3 / 877-10879-834-4）。
+残余：错误消息内容尚无断言；`complete` 仍恒 true（语义已写入 C1 与提示词）。
+
+**未运行**：浏览器、kb 自测、端到端。
+
+**§19 整改执行记录（F16-b）**：本轮已按新流程执行——计划+规格先提交（`2701b38`）、红灯用例单独提交
+（`ef8b7b1`、`b55c982`）、实现后提交、验证者报告落盘（`2c08420`）并由 Lead 记录 md5；无回退造红，
+提交顺序与红灯输出均可在 git 与本节核对。

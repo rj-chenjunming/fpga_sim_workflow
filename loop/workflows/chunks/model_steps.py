@@ -1202,6 +1202,13 @@ def build_sandbox_cases(
             f"N8 无可复核的沙箱用例（{applied} 下没有 *.sv；{detail}）"
         )
     by_name = {Path(c.get("sandbox_path") or c.get("file") or "").name: c for c in applied_cases or []}
+    present = {path.name for path in files}
+    missing_cases = sorted(name for name in by_name if name and name not in present)
+    if missing_cases:
+        # 契约要求逐用例可定位（C1 / F16-b）：部分缺失也必须显式失败，不能只判全有/全无。
+        raise RuntimeError(
+            f"N8 沙盒缺少 applied_cases 对应的用例文件：{missing_cases}（沙盒内 {sorted(present)}）"
+        )
 
     prepared: list[dict[str, Any]] = []
     for path in files:
@@ -1386,8 +1393,13 @@ async def n8_check(data: Any) -> dict[str, Any]:
     n8_prev = data.get_state("n8_check") or {}
     n6_applied = data.get_state("n6_applied") or {}
 
-    sandbox_cases, sandbox_names, sandbox_coverage = _sandbox_code(
-        ctx, Path(data.require_resource("repo_root")), n6_applied.get("cases") or [])
+    try:
+        sandbox_cases, sandbox_names, sandbox_coverage = _sandbox_code(
+            ctx, Path(data.require_resource("repo_root")), n6_applied.get("cases") or [])
+    except RuntimeError as exc:
+        # 闭锁必须留下显式 node_failed，避免 run.error 退化成泛化信息（复核残余项）。
+        ctx.node_failed("N8", message=str(exc))
+        raise
     revision_points: list[dict[str, Any]] = []
     for target in (data.get_state("n6_targets") or {}).get("targets") or []:
         revision_points.extend(target.get("revision_points") or [])

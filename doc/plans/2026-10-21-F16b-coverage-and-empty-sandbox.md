@@ -48,11 +48,16 @@
 
 | 验证 | 原始输出 | 说明 |
 |---|---|---|
-| 失败用例先红（提交 `ef8b7b1`） | `3 failed, 9 passed in 0.78s`（`DID NOT RAISE RuntimeError` ×3） | 空目录/缺目录/applied 非空无文件 |
-| 实现后定向 | `65 passed, 32 deselected in 1.93s` | N8/上下文相关（含新增 5 项） |
-| 默认根全套 | `46 failed, 287 passed, 3 skipped, 1 warning in 13.09s` | 46 项同因（44 `Errno 30` + 2 归档）；通过数 282→287 |
-| 软件层全套 | 见 STATUS §20 | 5 个夹具用例仍正常（闭锁不误伤） |
+| 失败用例先红（提交 `ef8b7b1`） | `3 failed, 9 passed in 0.78s`（`DID NOT RAISE RuntimeError` ×3） | 空目录/缺目录/applied 非空无文件；**5 条新增中 3 条为真红**，字节确定性与 complete 自洽两条在红灯提交即绿（护栏断言），不得表述为 5 条全红 |
+| 补充红灯（提交 `b55c982`） | `1 failed, 12 passed in 0.71s` | `applied` 部分缺文件（复核必改 1） |
+| 实现后定向（文档化命令） | `59 passed in 1.46s` | `tests/test_n8_context_budget.py tests/test_agent_context_memory.py` |
+| 默认根全套 | `46 failed, 288 passed, 3 skipped, 1 warning in 12.38s` | 46 项同因（44 `Errno 30` + 2 归档）；通过数 282→288 |
+| 软件层全套 | `3 failed, 331 passed, 3 skipped, 1 warning in 78.14s` | 剩余 3 项环境层；闭锁不误伤 5 个夹具用例 |
+| 文档门 | `checked=877 skipped=10879 historical=834 missing=4` | 4 条均为 `TB/top.sv` 环境缺件（含本节引用） |
 
 ## 7 独立复核
 
-报告：[doc/audit/F16b-verify-20261021.md](../audit/F16b-verify-20261021.md)（仅由验证者写入，Lead 不改）。
+报告：[doc/audit/F16b-verify-20261021.md](../audit/F16b-verify-20261021.md)（md5 `22d24be03e3f3e0d96dda651a156e2a0`，仅由验证者写入）。
+结论：**建议合并**，附 2 项必改——① `applied_cases` 部分缺文件未闭锁（已修：逐用例映射 + 红灯 `b55c982`）；
+② §20 部分数字不可复现（已重测回填本节）；③ 残余：`coverage.complete` 语义已由 prompt 解释，
+但「错误消息内容」尚无断言。

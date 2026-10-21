@@ -62,8 +62,9 @@
   写作者唯一为 Host `agent_memory`，读者不得修改或回填。
 - 公开诊断 `record_state(path)` 只读返回：`absent`（无文件）/ `incomplete`（数据在、校验缺，或 result 缺）/
   `corrupt`（校验不匹配或 JSON 不可解析）/ `committed`（内容与校验一致）。
-- 消费规则：`incomplete`/`corrupt` 的尝试**不得**被当作有效请求/结果消费；读取视图把该尝试标为对应状态，
-  其它 `committed` 尝试照常可读。路径越界、符号链接、身份不匹配仍显式失败。
+- 消费规则：`incomplete` 的尝试**不得**被当作有效请求/结果消费；读取视图把该尝试标为 `incomplete`，
+  其它 `committed` 尝试照常可读。`corrupt`（校验不匹配/JSON 坏）与路径越界、符号链接、身份不匹配一样
+  **显式失败**（安全信号，不得静默降级成普通状态）。
 - 进程终止（含 `SIGKILL`）留下的半写记录由上述状态诊断；恢复只读诊断**不自动重发**模型请求，
   新尝试按序号继续分配、不覆盖已发布记录。
 - 公开封存接口 `seal_record(path, value)`；跨模块不得直接调用私有 `_sealed`。

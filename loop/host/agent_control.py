@@ -14,7 +14,7 @@ NODES = frozenset({'N3', 'N6', 'N8', 'N10', 'N11', 'N12'})
 ACTIONS = {'working': ['steer', 'pause', 'terminate'], 'paused': ['steer', 'resume', 'terminate']}
 CANCEL_TIMEOUT = 5
 _ACTIVE = {}
-_seal = AM._sealed
+_seal = AM.seal_record
 
 
 class ControlConflict(ValueError):
@@ -80,18 +80,40 @@ def read_view(root, node, attempt=None):
     summaries, records = [], {}
     for folder in _attempts(root, node):
         _safe(root, folder)
-        request = _read(root, folder / 'request.json')
+        sequence = int(folder.name.split('-')[1])
+        request_file = folder / 'request.json'
+        request_state = AM.record_state(request_file)
+        if request_state == 'corrupt':
+            # 校验不匹配/JSON 坏 ⇒ 显式失败（不可当成有效记录）；不是「写了一半」。
+            raise ValueError(f'agent record checksum mismatch: {request_file.name}')
+        if request_state != 'committed':
+            # F08：半写请求只报告状态，不进入可消费记录；其它尝试照常可读。
+            summaries.append({'attempt': sequence, 'status': request_state,
+                              'model': None, 'cycle': None})
+            continue
         result_file = folder / 'result.json'
-        result = _read(root, result_file) if result_file.exists() else None
-        expected = {'run_id': Path(root).name, 'node': node, 'attempt': int(folder.name.split('-')[1])}
+        result_state = AM.record_state(result_file)
+        if result_state == 'committed':
+            request = _read(root, request_file)
+            result = _read(root, result_file)
+        elif result_state == 'absent':
+            request = _read(root, request_file)
+            result = None
+        elif result_state == 'corrupt':
+            raise ValueError(f'agent record checksum mismatch: {result_file.name}')
+        else:
+            summaries.append({'attempt': sequence, 'status': result_state,
+                              'model': None, 'cycle': None})
+            continue
+        expected = {'run_id': Path(root).name, 'node': node, 'attempt': sequence}
         if any(request.get(k) != v for k, v in expected.items()) or (
                 result and any(result.get(k) != v for k, v in expected.items())):
             raise ValueError('agent record identity mismatch')
-        sequence = request['attempt']
         summaries.append({'attempt': sequence, 'status': result['status'] if result else 'incomplete',
                           'model': request.get('model'), 'cycle': request.get('cycle')})
         records[sequence] = (request, result)
-    selected = attempt if attempt is not None else (summaries[-1]['attempt'] if summaries else None)
+    selected = attempt if attempt is not None else next(
+        (item['attempt'] for item in reversed(summaries) if item['attempt'] in records), None)
     if selected is not None and selected not in records:
         raise KeyError('调用尝试不存在')
     request, result = records.get(selected, (None, None))

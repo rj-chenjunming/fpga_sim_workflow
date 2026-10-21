@@ -110,10 +110,44 @@ def _write_once(path: Path, content: bytes) -> None:
         os.fchmod(stream.fileno(), 0o400)
 
 
-def _sealed(path: Path, value: Any) -> None:
+def seal_record(path: Path, value: Any) -> None:
+    """公开封存接口：写数据 + 校验和（两次 O_EXCL）。跨模块不得直接调用私有实现。"""
     content = encoded(value)
     _write_once(path, content)
     _write_once(path.with_suffix(".sha256"), hashlib.sha256(content).hexdigest().encode("ascii"))
+
+
+#: 兼容别名（历史调用与测试仍可使用；新代码走 `seal_record`）。
+_sealed = seal_record
+
+
+def record_state(path: Path) -> str:
+    """只读诊断一次记录文件：`absent / incomplete / corrupt / committed`（F08）。
+
+    - `absent`：文件不存在；
+    - `incomplete`：数据在、校验和缺失（进程在两步之间被终止的典型状态）；
+    - `corrupt`：校验和不匹配或 JSON 不可解析；
+    - `committed`：内容与校验和一致且可解析。
+    本函数不修文件、不删除、不回填。
+    """
+    path = Path(path)
+    if not path.is_file():
+        return "absent"
+    digest_path = path.with_suffix(".sha256")
+    if not digest_path.is_file():
+        return "incomplete"
+    try:
+        content = path.read_bytes()
+        expected = digest_path.read_text().strip()
+    except OSError:
+        return "incomplete"
+    if hashlib.sha256(content).hexdigest() != expected:
+        return "corrupt"
+    try:
+        json.loads(content)
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return "corrupt"
+    return "committed"
 
 
 class Attempt:

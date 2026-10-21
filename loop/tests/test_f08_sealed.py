@@ -125,9 +125,9 @@ def test_corrupt_checksum_is_diagnosed_not_consumed(tmp_path: Path) -> None:
     assert AM.record_state(attempt.path / "request.json") == "corrupt"
     with pytest.raises(ValueError, match="checksum|corrupt"):
         AM.verify_attempt(attempt.path)
-    view = C.read_view(ctx.run_dir, "N3")
-    assert view["attempts"][0]["status"] == "corrupt"
-    assert view["request"] is None
+    # 篡改是显式失败（保持既有安全契约），不是被当成有效记录消费
+    with pytest.raises(ValueError, match="checksum"):
+        C.read_view(ctx.run_dir, "N3")
 
 
 def test_public_seal_api_used_by_control_module() -> None:

@@ -53,11 +53,11 @@
 | 实现后定向（文档化命令） | `59 passed in 1.46s` | `tests/test_n8_context_budget.py tests/test_agent_context_memory.py` |
 | 默认根全套 | `46 failed, 288 passed, 3 skipped, 1 warning in 12.38s` | 46 项同因（44 `Errno 30` + 2 归档）；通过数 282→288 |
 | 软件层全套 | `3 failed, 331 passed, 3 skipped, 1 warning in 78.14s` | 剩余 3 项环境层；闭锁不误伤 5 个夹具用例 |
-| 文档门 | `checked=877 skipped=10879 historical=834 missing=4` | 4 条均为 `TB/top.sv` 环境缺件（含本节引用） |
+| 文档门 | `checked=881 skipped=10960 historical=834 missing=0` | 环境缺件 `TB/top.sv` 已登记 `KNOWN_MISSING`；退出码 0 |
 
 ## 7 独立复核
 
-报告：[doc/audit/F16b-verify-20261021.md](../audit/F16b-verify-20261021.md)（md5 `22d24be03e3f3e0d96dda651a156e2a0`，仅由验证者写入）。
-结论：**建议合并**，附 2 项必改——① `applied_cases` 部分缺文件未闭锁（已修：逐用例映射 + 红灯 `b55c982`）；
-② §20 部分数字不可复现（已重测回填本节）；③ 残余：`coverage.complete` 语义已由 prompt 解释，
-但「错误消息内容」尚无断言。
+报告：[doc/audit/F16b-verify-20261021.md](../audit/F16b-verify-20261021.md)（md5 `7994fddc6c32e9ec6c28b2446a446222`，仅由验证者写入）。
+**首轮**：建议合并，2 项必改（partial 闭锁、§20 数字）——已修并重测。
+**回归复核（`258c551`）**：必改全关闭；drill 5 件未误伤；数字一致；文档门以 `KNOWN_MISSING`
+登记环境缺件后 `missing=0`。残余：错误消息内容/模型未被调用无断言；`complete` 仍恒 true。

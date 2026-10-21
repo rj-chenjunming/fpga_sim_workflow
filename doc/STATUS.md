@@ -417,6 +417,7 @@ F16 前已在用片段；120063 来自片段 **after 文本在 excerpt/changed_r
 | 文档门缺证 | 前几个提交未跑 `check_doc_links.py`；本轮补跑：`checked=860 skipped=10688 historical=834 missing=6`，其中 2 条为本文档自身引用已删除的 loop/None（已改文案），其余为环境资产缺件 | 中 | 每个文档变更提交附该门输出；缺件按已知限制登记 |
 | DoD 四道门未全绿 | 单测仅软件层可判（323 passed / 3 环境层 failed）；kb 自测与端到端未运行（`ENV_ROOT` 只读/内网缺件） | 高 | 维持「不声称合规」；内网侧补跑后回填 |
 | 数字口径 | 两处加和错误、46 项失败表述过粗（实为 44 + 2） | 中 | 数字必须来自命令输出；跨字段加和需注明不适用情形 |
+| 文档门自引用漂移 | 记录 missing 数时又把 `TB/top.sv` 写回文档，导致下次扫描 +1（F16-b 复核两次遇到） | 中 | 环境缺件登记 `KNOWN_MISSING`（`doc/audit/check_doc_links.py`）并写明理由；文档门以登记后 `missing=0` 为准 |
 
 ## 20 F16-b coverage 语义与空沙盒闭锁（2026-10-21）
 
@@ -430,7 +431,7 @@ F16 前已在用片段；120063 来自片段 **after 文本在 excerpt/changed_r
 | 实现后定向（文档化命令） | `59 passed in 1.46s` | `test_n8_context_budget.py + test_agent_context_memory.py` |
 | 默认根全套 | `46 failed, 288 passed, 3 skipped, 1 warning in 12.38s` | 46 项同因（44 `Errno 30` + 2 归档）；通过数 282→288 |
 | 软件层全套 | `3 failed, 331 passed, 3 skipped, 1 warning in 78.14s (0:01:18)` | 同上 3 项环境层；闭锁不误伤 5 个夹具用例 |
-| 文档门 | `checked=877 skipped=10879 historical=834 missing=4` | 4 条均为 `TB/top.sv` 环境缺件（含本节引用） |
+| 文档门 | `checked=881 skipped=10960 historical=834 missing=0` | 把环境缺件 `TB/top.sv` 登记进 `KNOWN_MISSING` 后零断链（登记理由见 §20.1；此前 877/10879/834/4 的自引用漂移已消除） |
 
 实现：`build_sandbox_cases` 在无 `*.sv`（含目录缺失）时显式 `RuntimeError`，并**逐用例映射**检查
 `applied_cases` 的每个文件都存在；`n8_check` 在闭锁时先 `ctx.node_failed` 再抛；
@@ -438,10 +439,16 @@ F16 前已在用片段；120063 来自片段 **after 文本在 excerpt/changed_r
 
 ### 20.1 独立复核（f16b-verifier，报告已落盘）
 
-报告 [doc/audit/F16b-verify-20261021.md](audit/F16b-verify-20261021.md)，md5 `22d24be03e3f3e0d96dda651a156e2a0`。
-结论 **建议合并**，2 项必改已在本轮修复：① applied 部分缺文件未闭锁 → 逐用例映射 + 红灯用例 `b55c982`；
-② §20 数字不可复现 → 已用文档化命令重测回填（59 passed / 46-288-3 / 3-331-3 / 877-10879-834-4）。
-残余：错误消息内容尚无断言；`complete` 仍恒 true（语义已写入 C1 与提示词）。
+报告 [doc/audit/F16b-verify-20261021.md](audit/F16b-verify-20261021.md)，md5 `7994fddc6c32e9ec6c28b2446a446222`
+（2026-10-21 回归复核版；初版 `22d24be…` 对应提交 `2c08420`）。
+
+**首轮**：建议合并，2 项必改——① applied 部分缺文件未闭锁（已修：逐用例映射 + 红灯 `b55c982`）；
+② §20 数字不可复现（已用文档化命令重测：59 passed / 46-288-3 / 3-331-3）。
+**回归复核（`258c551`）**：① 闭锁消息含缺失与现有名单，红灯/复绿可复现；② drill 5 件夹具 50746B 未误伤；
+③ 数字一致；④ 文档门自引用漂移已用 `KNOWN_MISSING` 登记 `TB/top.sv`（环境资产，本机未挂载）后止住：
+`checked=881 skipped=10960 historical=834 missing=0`，退出码 0。
+
+残余：错误消息内容与「节点级模型未被调用」尚无自动化断言；`complete` 仍恒 true（语义已写入 C1 与提示词）。
 
 **未运行**：浏览器、kb 自测、端到端。
 

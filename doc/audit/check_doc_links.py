@@ -52,6 +52,9 @@ INLINE = re.compile(r"`([^`\n]{2,200})`")
 KNOWN_MISSING = {
     "kb/tools/compile_only.sh": "审计发现：real N7 引用的工具不存在（A-A5）",
     "workspaces/simenv-tcs9620-64ch/": "约定目标位置；当前数据仍在 ENV_ROOT/kb（ENV_PLUGIN_SPEC §7）",
+    # S0 契约与运行手册引用的环境资产：本机未挂载内网 ENV_ROOT（TB/ 不存在），
+    # 属环境缺件而非本仓断链；登记以止住「文档引用自身计数」的漂移（F16-b 复核 §③）。
+    "TB/top.sv": "环境资产：内网 ENV_ROOT 的 TB/top.sv，本机未挂载（S0 契约引用）",
 }
 LINE_SUFFIX = re.compile(r":\d+(-\d+)?(,\d+(-\d+)?)*$")
 SYMBOL_SUFFIX = re.compile(r"::.*$")

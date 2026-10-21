@@ -775,7 +775,7 @@ STATUS；`doc/README.md`/`doc/agents/README.md` 索引现状（2 份开工提示
 | 门 | 命令 | 结果 | 判读 |
 |---|---|---|---|
 | 默认根单测 | `cd loop && LOOP_LLM_MODE=standin .venv/bin/python -m pytest -q --tb=no` | `46 failed, 413 passed, 3 skipped, 1 warning in 19.69s` | 46 项为环境层（`ENV_ROOT` 只读 44 项 `Errno 30` + 2 项 archive），失败集与 §14–§32 基线相同；**不是全绿** |
-| 软件层单测 | `cd loop && bash spikes/run_software_checks.sh --tb=no` | `454 passed, 3 skipped, 3 deselected, 1 warning in 87.37s` | 软件层 **0 failed**；3 项环境层被显式排除（非 skip） |
+| 软件层单测 | `cd loop && bash spikes/run_software_checks.sh --tb=no` | `456 passed, 3 skipped, 3 deselected, 1 warning in 81.99s` | 软件层 **0 failed**；3 项环境层被显式排除（非 skip） |
 | 文档门 | `python3 doc/audit/check_doc_links.py` | 退出码 `0`；`missing=0`；`env_missing`/`known_missing` 可见 | 本仓断链为零；环境缺件单列不隐藏 |
 | 端到端 | `cd loop && bash spikes/accept_v1_run.sh` | **未运行** | 缺可写 `ENV_ROOT`/UVS/内网夹具；不得用软件层结果替代 |
 | kb 自测 | `kb/tools/_selftest_*.py` | **未运行** | 同上；不能声称通过 |

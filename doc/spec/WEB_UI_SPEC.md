@@ -258,6 +258,9 @@
 - 校验：`project` 必须等于**当前进程解析的 `ENV_ROOT`**；否则 `400`（理由：三根在进程启动时解析，跨环境需重启；不得静默切换）。
 - `mode=real` 时 `baseline` 必须存在且 `valid`（判据见编排规格 §3.1），准入发生在**建运行目录/写事件/申请单槽之前**，
   否则 `400` 且零副作用；`mode=drill` 不读基线资产、不做准入，但不得据此声称基线已验证。
+- 基线无效时 `detail` 必须结构化：`{error, baseline, missing[], errors[]}`（`missing` = 缺失件，
+  `errors` = schema/身份/指纹/parent 链违规）。**UI 必须展示 `missing` 与 `errors`**（不得只显示 `error` 字符串），
+  列表项的 `missing`/`errors` 也在配置视图展示（§6.1）。
 - 返回沿用 `{run_id, mode, scenario, created_at}`，并新增 `project`。
 
 ### 6.5 `GET /api/runs/{run_id}` 扩展

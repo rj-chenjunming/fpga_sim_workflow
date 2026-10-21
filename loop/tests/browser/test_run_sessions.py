@@ -327,10 +327,10 @@ def test_first_detail_failure_does_not_claim_loading_or_previous_success(ui):
     pw.expect(page.locator("#runAlerts")).not_to_contain_text("最近一次成功")
     pw.expect(page.locator("#runAlerts")).not_to_contain_text("上次成功")
     pw.expect(page.locator("#runRetry")).to_be_visible()
-    # 同一屏的其它面板也不得再显示「加载中」（唯一判据）
-    pw.expect(page.locator("#agents")).not_to_contain_text("加载中")
-    pw.expect(page.locator("#countsBody")).not_to_contain_text("加载中")
-    pw.expect(page.locator("#gateHead")).not_to_contain_text("加载中")
+    # 同一屏的其它面板也不得再显示「加载中」（唯一判据，8 处占位全断言）
+    for panel in ("#agents", "#countsBody", "#blockersBody", "#jobBody", "#eventsSummary",
+                  "#gateHead", "#gateMaterial", "#gatePanel"):
+        pw.expect(page.locator(panel)).not_to_contain_text("加载中")
     # 重新读取只重取当前运行详情；恢复后错误横幅消失
     page.locator("#runRetry").click()
     page.wait_for_timeout(80)

@@ -479,7 +479,7 @@
   /* 面板占位同样只消费 deriveView()：首次失败时不得再出现「加载中」占位。 */
   function panelHint() {
     return deriveView().kind === "first_error"
-      ? "读取失败，暂无数据（可点顶部「重新读取」）"
+      ? "读取失败，暂无数据（可点「重新读取」）"
       : "运行视图加载中…";
   }
 
@@ -577,7 +577,8 @@
     state.viewError = null;
     /* F13：新选择不得继承上一运行的成功数据或成功时间。 */
     state.viewLastOkAt = null;
-    state.viewRequesting = false;
+    /* 先置在途标记再渲染：慢请求期间顶栏与面板都只能看到「加载中」，不会出现「尚未读取」。 */
+    state.viewRequesting = true;
     state.stageOverride = "auto";
     resetGateDraft();
     showView("run");
@@ -1789,7 +1790,7 @@
     if (!v) {
       var gateD = deriveView();
       var gatePill = h("span", "status-pill " + (gateD.kind === "first_error" ? "fail" : "run"),
-        gateD.kind === "first_error" ? "读取失败" : "加载中…");
+        gateD.headStatusText);
       if (state.viewError) gatePill.title = "读取运行视图失败：" + state.viewError;
       host.appendChild(gatePill);
       return;

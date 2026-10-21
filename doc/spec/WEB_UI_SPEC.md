@@ -160,6 +160,12 @@
   UI 只消费这些字段，**不得**从 `idle`、颜色或历史审计结论推断能力；未知一律显示「未知」。
   `idle` 只表示「本次尚未开始」，不表示「未实现」。
 
+  **工作窗口一致消费（F02-c）**：Agent 工作窗口对选中节点展示**同一服务端** `capabilities`
+  （`GET /api/runs/{run_id}/agents/{node}` 响应字段，由 `agent_view` 的同一实现投影），
+  格式化与角色卡共用唯一实现（前端 `run-view-state` 之外的 `capabilities` 格式化模块，不各写一套）。
+  未知维度（`null`）显示「未知」；`idle`/`standin` 不得显示成「真实」或「已完成」。
+  旧页面（`legacy.html`）不含角色卡，不新增能力结论，也不得出现过期能力文案。
+
 ### 4.4 右列
 
 1. **闸门卡**（仅 `pending_interrupt.type=gate_decision` 时）：标题（闸门名/轮次）、材料摘要、`gate_options`（服务端下发）、actor 输入（默认 `human:`）、理由、提交按钮（提交中禁用、防双击）。被拒时展示 `detail.blockers` 原文。

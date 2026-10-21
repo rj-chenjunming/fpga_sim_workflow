@@ -44,6 +44,15 @@
 
 删除闭锁判断与规格新增条款即回到原行为；已生成的历史请求不复用、不回填。
 
-## 6 实测
+## 6 实测（数字从命令输出复制）
 
-（实现与验证后回填；见 [STATUS §20](../STATUS.md)。）
+| 验证 | 原始输出 | 说明 |
+|---|---|---|
+| 失败用例先红（提交 `ef8b7b1`） | `3 failed, 9 passed in 0.78s`（`DID NOT RAISE RuntimeError` ×3） | 空目录/缺目录/applied 非空无文件 |
+| 实现后定向 | `65 passed, 32 deselected in 1.93s` | N8/上下文相关（含新增 5 项） |
+| 默认根全套 | `46 failed, 287 passed, 3 skipped, 1 warning in 13.09s` | 46 项同因（44 `Errno 30` + 2 归档）；通过数 282→287 |
+| 软件层全套 | 见 STATUS §20 | 5 个夹具用例仍正常（闭锁不误伤） |
+
+## 7 独立复核
+
+报告：[doc/audit/F16b-verify-20261021.md](../audit/F16b-verify-20261021.md)（仅由验证者写入，Lead 不改）。

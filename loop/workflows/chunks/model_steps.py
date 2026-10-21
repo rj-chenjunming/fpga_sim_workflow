@@ -1191,6 +1191,16 @@ def build_sandbox_cases(
     applied = Path(sandbox_dir)
     source_base = Path(source_root) if source_root is not None else None
     files = sorted(applied.glob("*.sv")) if applied.is_dir() else []
+    if not files:
+        # fail closed（C1 / F16-b）：N6 施加后不应「没有可复核用例」，不得以 0 件通过。
+        expected = [
+            Path(c.get("sandbox_path") or c.get("file") or "?").name
+            for c in applied_cases or [] if isinstance(c, dict)
+        ]
+        detail = f"applied_cases={expected}" if expected else "applied_cases 为空"
+        raise RuntimeError(
+            f"N8 无可复核的沙箱用例（{applied} 下没有 *.sv；{detail}）"
+        )
     by_name = {Path(c.get("sandbox_path") or c.get("file") or "").name: c for c in applied_cases or []}
 
     prepared: list[dict[str, Any]] = []

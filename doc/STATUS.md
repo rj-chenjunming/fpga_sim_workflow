@@ -417,3 +417,21 @@ F16 前已在用片段；120063 来自片段 **after 文本在 excerpt/changed_r
 | 文档门缺证 | 前几个提交未跑 `check_doc_links.py`；本轮补跑：`checked=860 skipped=10688 historical=834 missing=6`，其中 2 条为本文档自身引用已删除的 loop/None（已改文案），其余为环境资产缺件 | 中 | 每个文档变更提交附该门输出；缺件按已知限制登记 |
 | DoD 四道门未全绿 | 单测仅软件层可判（323 passed / 3 环境层 failed）；kb 自测与端到端未运行（`ENV_ROOT` 只读/内网缺件） | 高 | 维持「不声称合规」；内网侧补跑后回填 |
 | 数字口径 | 两处加和错误、46 项失败表述过粗（实为 44 + 2） | 中 | 数字必须来自命令输出；跨字段加和需注明不适用情形 |
+
+## 20 F16-b coverage 语义与空沙盒闭锁（2026-10-21）
+
+规格 [C1](spec/AGENT_CONTEXT_SPEC.md)、计划 [F16-b](plans/2026-10-21-F16b-coverage-and-empty-sandbox.md)。
+按 §19 整改执行：**计划+规格先提交**（`2701b38`）→ **红灯用例提交**（`ef8b7b1`）→ 实现在本节对应提交。
+
+| 验证 | 原始输出（逐字复制） | 说明 |
+|---|---|---|
+| 失败用例先红 | `3 failed, 9 passed in 0.78s`（`DID NOT RAISE RuntimeError` ×3） | 缺目录 / 空目录 / applied 非空无文件 |
+| 实现后定向 | `65 passed, 32 deselected in 1.93s` | N8/上下文相关（含新增 5 项） |
+| 默认根全套 | `46 failed, 287 passed, 3 skipped, 1 warning in 13.09s` | 46 项同因（44 `Errno 30` + 2 归档）；通过数 282→287 |
+| 软件层全套 | `3 failed, 330 passed, 3 skipped, 1 warning in 81.95s (0:01:21)` | 同上 3 项环境层；闭锁不误伤 5 个夹具用例 |
+| 文档门 | `checked=862 skipped=10748 historical=834 missing=4` | 3 条为 `TB/top.sv` 环境缺件；1 条为本计划待生成的独立复核报告（验证者写入后复跑） |
+
+实现：`build_sandbox_cases` 在无 `*.sv`（含目录缺失）时显式 `RuntimeError`，错误含沙盒路径与
+`applied_cases`，不再以「复核 0 件」继续；`coverage.complete` 语义写入 C1（仅承诺全部变更区域已提供）。
+**未运行**：浏览器、kb 自测、端到端。独立复核：报告由验证者写入
+[doc/audit/F16b-verify-20261021.md](audit/F16b-verify-20261021.md)（Lead 不改该文件）。

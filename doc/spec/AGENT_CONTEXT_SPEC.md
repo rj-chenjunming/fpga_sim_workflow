@@ -33,6 +33,19 @@
 - 所有模型请求以完整序列化 input/info/instruct/schema 的 UTF-8 大小检查预算。默认上限 `120000` bytes；超过上限在模型调用前显式失败，记录预算/失败，不裁剪、丢用例或静默抽样。这是应用输入预算，不承诺等于提供方 token 上限。
 - 输入缺失/校验错误继续走既有失败收敛路径；drill 替身保留明确标注，不能被记录为 live 成功。
 
+## 实现结构（F06，2026-10-21）
+
+- **请求机制**（`_request_contract` / `_ask` / 单次 attempt / `run_model_node` 的控制包装）唯一放在
+  `workflows/chunks/model_request.py`；Host 校验 `_validate` 仍是**唯一实现**，由机制层以参数注入，
+  机制层不得复制节点判据。
+- **节点语义**分别放在 `n6_facts.py`（N6 事实构造）、`n10_semantics.py`（N10 分类/对账辅助）、
+  `n11_guard.py`（N11 证据守护辅助）；`model_steps.py` 保留节点入口（N3/N6/N8/N10/N11/N12）
+  与兼容导出，TriggerFlow 拓扑与消费者不变。
+- `request.json` 的 `implementation_sha256` 记录**机制模块**文件指纹；模块拆分导致指纹变化时如实记录，
+  不用它替代语义对照（提示词/Schema/输入字段/产物）。
+- 行为不变量不因拆分改变：每次请求新 agent；预算检查在请求前且不静默截断；
+  取消/重发不消费旧结果；非法输出止于消费者之前。
+
 ## M1 逐次调用记录
 
 - 路径为本 run 的 `agent_calls/<node>/attempt-<sequence>/`。序号通过独占创建目录分配，重启后继续分配；不依赖会被重置的返工计数，不覆盖历史尝试。

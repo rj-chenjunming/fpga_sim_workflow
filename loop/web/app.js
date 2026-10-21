@@ -100,6 +100,9 @@
     detailRequest: 0,
     viewData: null,
     viewError: null,
+    /* F13：当前选择的「上次成功时间」与在途标记；切换运行必须同时清空成功时间。 */
+    viewLastOkAt: null,
+    viewRequesting: false,
     view: "s0",
     baselines: [],
     baselinesLoading: false,
@@ -463,24 +466,38 @@
     }
   }
 
+  /* 当前运行详情请求的展示判据（唯一实现：web/run-view-state.js，Web UI §7.2）。 */
+  function deriveView() {
+    return window.RunViewState.derive({
+      hasData: !!state.viewData,
+      error: state.viewError,
+      requesting: state.viewRequesting,
+      lastSuccessAt: state.viewLastOkAt
+    });
+  }
+
   async function fetchRunView() {
     if (!state.runId) return false;
-    var runId = state.runId;
-    var epoch = state.selectionEpoch;
-    var request = ++state.detailRequest;
+    var token = { runId: state.runId, epoch: state.selectionEpoch, request: ++state.detailRequest };
     function current() {
-      return state.runId === runId && state.selectionEpoch === epoch && state.detailRequest === request;
+      return window.RunViewState.isCurrent(token, {
+        runId: state.runId, epoch: state.selectionEpoch, request: state.detailRequest
+      });
     }
+    state.viewRequesting = true;
     try {
-      var view = await api("/api/runs/" + enc(runId));
+      var view = await api("/api/runs/" + enc(token.runId));
       if (!current()) return false;
       state.viewData = view;
       state.viewError = null;
+      state.viewLastOkAt = Date.now();
       return true;
     } catch (e) {
       if (!current()) return false;
       state.viewError = errText(e);
       throw e;
+    } finally {
+      if (current()) state.viewRequesting = false;
     }
   }
 
@@ -551,6 +568,9 @@
     state.selectionEpoch++;
     state.viewData = null;
     state.viewError = null;
+    /* F13：新选择不得继承上一运行的成功数据或成功时间。 */
+    state.viewLastOkAt = null;
+    state.viewRequesting = false;
     state.stageOverride = "auto";
     resetGateDraft();
     showView("run");
@@ -959,8 +979,10 @@
     clearEl(host);
     host.appendChild(h("span", "rid mono", state.runId));
     if (!v) {
-      host.appendChild(h("span", "status-pill run", "加载中…"));
-      if (state.viewError) host.appendChild(h("span", "chip bad", "读取失败"));
+      var d = deriveView();
+      var pill = h("span", "status-pill " + (d.kind === "first_error" ? "fail" : "run"), d.headStatusText);
+      if (state.viewError) pill.title = "读取运行视图失败：" + state.viewError;
+      host.appendChild(pill);
       return;
     }
     var pill = h("span", "status-pill " + statusKind(v.status));
@@ -1029,12 +1051,35 @@
     }
   }
 
+  /* F13：手动重新读取当前运行详情（只发详情 GET，不重建闸门表单、不清草稿）。 */
+  async function retryView() {
+    if (!state.runId) return;
+    try {
+      await fetchRunView();
+    } catch (e) {
+      /* 错误由 deriveView() 统一展示；这里不吞成成功。 */
+    }
+    renderLive();
+  }
+
   function renderRunAlerts(v) {
     var host = $("runAlerts");
     if (!host) return;
     clearEl(host);
-    if (state.viewError) {
-      host.appendChild(h("div", "alert bad", "读取运行视图失败：" + state.viewError + "（当前显示最近一次成功的数据）"));
+    var d = deriveView();
+    if (d.alertText) {
+      var failBox = h("div", "alert bad");
+      failBox.appendChild(document.createTextNode(d.alertText));
+      if (d.showRetry) {
+        var retry = h("button", "btn btn-sm", d.stale ? "重新读取（数据可能已过期）" : "重新读取");
+        retry.type = "button";
+        retry.id = "runRetry";
+        retry.disabled = !!state.viewRequesting;
+        retry.addEventListener("click", retryView);
+        failBox.appendChild(document.createTextNode(" "));
+        failBox.appendChild(retry);
+      }
+      host.appendChild(failBox);
     }
     if (!v) return;
     if (v.error) {
@@ -1697,7 +1742,8 @@
     if (alerts) {
       clearEl(alerts);
       if (!state.runId) alerts.appendChild(h("div", "alert info", "尚未选择运行。请先在左侧选择一条运行记录。"));
-      if (state.viewError) alerts.appendChild(h("div", "alert bad", "读取运行视图失败：" + state.viewError));
+      var alertInfo = deriveView();
+      if (alertInfo.alertText) alerts.appendChild(h("div", "alert bad", alertInfo.alertText));
     }
     renderStagesInto($("stagesGate"), v);
     renderGateMaterial(v);

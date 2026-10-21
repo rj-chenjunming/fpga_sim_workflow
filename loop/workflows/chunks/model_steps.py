@@ -1162,41 +1162,197 @@ _CHECKLIST = [
 ]
 
 
-def _sandbox_code(ctx: RunCtx, source_root: Path | None = None,
-                  applied_cases: list[dict[str, Any]] | None = None) -> tuple[list[dict[str, Any]], list[str]]:
-    """取 N6 施加后的沙箱代码（N8 的复核对象）与目标用例名。"""
-    applied = (ctx.run_dir / "sandbox" / "TESTLIB")
+#: 单文件超过该字符数 ⇒ 必须用「源代码差异片段」（既有规则，防单文件过大）。
+N8_FULL_FILE_CHARS = 6_000
+#: N8 沙箱代码分片预算（bytes）：约为 120000 总预算的一半，留出 contract / 台账 / summary 余量（F16）。
+N8_SANDBOX_BUDGET_BYTES = 60_000
+
+
+def build_sandbox_cases(
+    sandbox_dir: Path | str,
+    source_root: Path | str | None = None,
+    applied_cases: list[dict[str, Any]] | None = None,
+    *,
+    budget_bytes: int | None = None,
+) -> tuple[list[dict[str, Any]], list[str], dict[str, Any]]:
+    """构造 N8 的 `sandbox_cases`：**每个文件都在**，按预算确定性降级，逐件带 `coverage`。
+
+    规则（上下文规格 C1 / F16）：
+    - 预算内按全文；放不下的文件降级为「源代码与沙箱实际差异」的变更片段（含行号）；
+    - 降级顺序由文件名排序决定（同一输入两次构造结果一致）；
+    - 片段不可得（缺源文件 / 无可定位变更）且放不下全文 ⇒ **显式失败**，不丢文件不静默抽样。
+    """
+    budget = N8_SANDBOX_BUDGET_BYTES if budget_bytes is None else int(budget_bytes)
+    if budget <= 0:
+        raise ValueError("N8 沙箱分片预算必须为正数")
+    applied = Path(sandbox_dir)
+    source_base = Path(source_root) if source_root is not None else None
     files = sorted(applied.glob("*.sv")) if applied.is_dir() else []
-    out = []
     by_name = {Path(c.get("sandbox_path") or c.get("file") or "").name: c for c in applied_cases or []}
+
+    prepared: list[dict[str, Any]] = []
     for path in files:
         text = path.read_text(encoding="utf-8", errors="strict")
         source = None
-        if source_root is not None:
-            source = Path(source_root) / str(by_name.get(path.name, {}).get("file") or f"TESTLIB/{path.name}")
-            if not source.resolve().is_relative_to(Path(source_root).resolve()):
+        regions: list[dict[str, Any]] = []
+        if source_base is not None:
+            source = source_base / str(by_name.get(path.name, {}).get("file") or f"TESTLIB/{path.name}")
+            if not source.resolve().is_relative_to(source_base.resolve()):
                 raise RuntimeError("N8 上下文源文件越界")
-        regions = []
-        if source is not None and source.is_file():
-            before = source.read_text(encoding="utf-8", errors="strict").splitlines()
-            after = text.splitlines()
-            matcher = difflib.SequenceMatcher(a=before, b=after)
-            for group in matcher.get_grouped_opcodes(n=15):
-                _, a, _, c, _ = group[0]
-                _, _, b, _, d = group[-1]
-                regions.append({"before": {"start": a + 1, "end": b, "text": "\n".join(before[a:b])},
-                                "after": {"start": c + 1, "end": d, "text": "\n".join(after[c:d])}})
-        small = len(text) <= 6000
-        if not small and not regions:
-            raise RuntimeError(f"N8 上下文无法定位全部变更（缺源文件或没有可定位变更）：{path.name}")
-        excerpt = text if small else "\n\n".join(
-            f"// lines {r['after']['start']}-{r['after']['end']}\n{r['after']['text']}" for r in regions)
-        out.append({"file": path.name, "md5": md5_file(path), "excerpt": excerpt,
-                    "source_md5": md5_file(source) if source is not None and source.is_file() else None,
-                    "changed_regions": regions,
-                    "coverage": {"mode": "full_file" if small else "changed_regions", "complete": True,
-                                 "scope": "full_file" if small else "all_changed_regions", "regions": len(regions)}})
-    return out, [p.stem for p in files]
+            if source.is_file():
+                before = source.read_text(encoding="utf-8", errors="strict").splitlines()
+                after = text.splitlines()
+                matcher = difflib.SequenceMatcher(a=before, b=after)
+                for group in matcher.get_grouped_opcodes(n=6):
+                    _, a, _, c, _ = group[0]
+                    _, _, b, _, d = group[-1]
+                    regions.append({"before": {"start": a + 1, "end": b,
+                                              "text": "\n".join(before[a:b])},
+                                    "after": {"start": c + 1, "end": d,
+                                              "text": "\n".join(after[c:d])}})
+        prepared.append({"path": path, "text": text, "source": source, "regions": regions})
+
+    # 先算每件的「全文成本」与「片段成本」，再做**可行**打包：
+    # 决定某文件用全文前，先预留其后所有文件的最坏情况（全部降级为片段）成本，
+    # 避免贪心把预算吃光后仍放不下剩余文件的片段。
+    plans: list[dict[str, Any]] = []
+    for item in prepared:
+        regions = item["regions"]
+        region_excerpt = "\n\n".join(
+            f"// lines {region['after']['start']}-{region['after']['end']}\n{region['after']['text']}"
+            for region in regions
+        ) if regions else None
+        full_bytes = len(item["text"].encode("utf-8"))
+        public_regions = [
+            {"before": region["before"],
+             "after": {"start": region["after"]["start"], "end": region["after"]["end"]}}
+            for region in regions
+        ]
+        region_bytes = None
+        if region_excerpt is not None:
+            # 片段模式的实际序列化成本 = excerpt + changed_regions JSON + 键开销
+            region_bytes = (
+                len(region_excerpt.encode("utf-8"))
+                + len(json.dumps(public_regions, ensure_ascii=False).encode("utf-8"))
+                + 64
+            )
+        forced_region = len(item["text"]) > N8_FULL_FILE_CHARS
+        if forced_region and region_bytes is None:
+            # 既有 fail-closed：大文件必须能定位变更（缺源/无变更 ⇒ 不猜）
+            raise RuntimeError(
+                "N8 上下文无法定位全部变更（缺源文件或没有可定位变更）："
+                f"{item['path'].name}（{full_bytes} bytes）"
+            )
+        # 该件的**最小可行成本**：大文件只能片段；小文件优先片段估算（留出降级空间）
+        min_cost = region_bytes if region_bytes is not None else full_bytes
+        plans.append(
+            {
+                "item": item,
+                "full_bytes": full_bytes,
+                "region_excerpt": region_excerpt,
+                "public_regions": public_regions,
+                "region_bytes": region_bytes,
+                "forced_region": forced_region,
+                "min_cost": min_cost,
+            }
+        )
+    total_min = sum(plan["min_cost"] for plan in plans)
+    if total_min > budget:
+        raise RuntimeError(
+            f"N8 上下文预算不足：即使全部降级为变更片段仍需 {total_min} > {budget} bytes"
+            "（不得静默抽样或丢文件）"
+        )
+    # 预构造两种条目并按**实际序列化大小**计费；选择只由预算与确定性顺序决定。
+    def _entry(item: dict[str, Any], excerpt: str, mode: str,
+               public_regions: list[dict[str, Any]]) -> dict[str, Any]:
+        return {
+            "file": item["path"].name,
+            "md5": md5_file(item["path"]),
+            "excerpt": excerpt,
+            "source_md5": (
+                md5_file(item["source"])
+                if item["source"] is not None and item["source"].is_file()
+                else None
+            ),
+            "changed_regions": public_regions,
+            "coverage": {
+                "mode": mode,
+                "complete": True,
+                "scope": "full_file" if mode == "full_file" else "all_changed_regions",
+                "regions": len(public_regions),
+            },
+        }
+
+    for plan in plans:
+        item = plan["item"]
+        plan["full_entry"] = _entry(item, item["text"], "full_file", plan["public_regions"])
+        plan["region_entry"] = (
+            _entry(item, plan["region_excerpt"], "changed_regions", plan["public_regions"])
+            if plan["region_excerpt"] is not None else None
+        )
+        plan["full_cost"] = len(json.dumps(plan["full_entry"], ensure_ascii=False).encode("utf-8"))
+        plan["region_cost"] = (
+            len(json.dumps(plan["region_entry"], ensure_ascii=False).encode("utf-8"))
+            if plan["region_entry"] is not None else None
+        )
+        # 最小可行成本：强制片段 ⇒ 片段；否则片段可用时按片段估算（为降级留空间）
+        plan["min_cost"] = (
+            plan["region_cost"] if plan["region_cost"] is not None else plan["full_cost"]
+        )
+
+    total_min = sum(plan["min_cost"] for plan in plans)
+    if total_min > budget:
+        raise RuntimeError(
+            f"N8 上下文预算不足：即使全部降级为变更片段仍需 {total_min} > {budget} bytes"
+            "（不得静默抽样或丢文件）"
+        )
+
+    used = 0
+    full_files = 0
+    region_files = 0
+    out: list[dict[str, Any]] = []
+    for index, plan in enumerate(plans):
+        remaining_min = sum(later["min_cost"] for later in plans[index + 1:])
+        can_full = (
+            not plan["forced_region"]
+            and used + plan["full_cost"] + remaining_min <= budget
+        )
+        entry = plan["full_entry"] if can_full else plan["region_entry"]
+        if entry is None:
+            raise RuntimeError(
+                "N8 上下文预算不足且无法定位变更（缺源文件或没有可定位变更）："
+                f"{plan['item']['path'].name}（{plan['full_cost']} bytes，剩余预算 "
+                f"{max(0, budget - used)} bytes）"
+            )
+        cost = plan["full_cost"] if can_full else plan["region_cost"]
+        used += cost
+        if can_full:
+            full_files += 1
+        else:
+            region_files += 1
+        out.append(entry)
+    # 以**实际序列化结果**为准（条目间分隔符等），确保 used_bytes 与真实请求一致。
+    used = len(json.dumps(out, ensure_ascii=False).encode("utf-8"))
+    if used > budget:
+        raise RuntimeError(
+            f"N8 上下文预算不足：分片后 {used} > {budget} bytes（不得静默抽样）"
+        )
+    summary = {
+        "budget_bytes": budget,
+        "used_bytes": used,
+        "full_files": full_files,
+        "region_files": region_files,
+    }
+    return out, [path.stem for path in files], summary
+
+
+def _sandbox_code(ctx: RunCtx, source_root: Path | None = None,
+                  applied_cases: list[dict[str, Any]] | None = None
+                  ) -> tuple[list[dict[str, Any]], list[str], dict[str, Any]]:
+    """取 N6 施加后的沙箱代码（N8 的复核对象）、目标用例名与分片汇总。"""
+    return build_sandbox_cases(
+        ctx.run_dir / "sandbox" / "TESTLIB", source_root, applied_cases
+    )
 
 
 async def n8_check(data: Any) -> dict[str, Any]:
@@ -1211,8 +1367,8 @@ async def n8_check(data: Any) -> dict[str, Any]:
     n8_prev = data.get_state("n8_check") or {}
     n6_applied = data.get_state("n6_applied") or {}
 
-    sandbox_cases, sandbox_names = _sandbox_code(ctx, Path(data.require_resource("repo_root")),
-                                                n6_applied.get("cases") or [])
+    sandbox_cases, sandbox_names, sandbox_coverage = _sandbox_code(
+        ctx, Path(data.require_resource("repo_root")), n6_applied.get("cases") or [])
     revision_points: list[dict[str, Any]] = []
     for target in (data.get_state("n6_targets") or {}).get("targets") or []:
         revision_points.extend(target.get("revision_points") or [])
@@ -1225,12 +1381,15 @@ async def n8_check(data: Any) -> dict[str, Any]:
         "run_id": ctx.run_id,
         "cycle": cycles,
         "sandbox_cases": sandbox_cases,
+        "coverage_summary": sandbox_coverage,
         "revision_points": revision_points,
         "applied_edits": applied_edits,
         "checklist": _CHECKLIST,
         "rework_reasons": [str(f) for f in (n8_prev.get("data") or {}).get("must_fix", [])]
         if isinstance(n8_prev.get("data"), dict) else [],
-        "rule": "verdict=rework 必须给逐条可核依据；只依据本 input 的材料，不得假设未提供的文件内容。",
+        "rule": ("verdict=rework 必须给逐条可核依据；只依据本 input 的材料，不得假设未提供的文件内容。"
+                 "sandbox_cases[].coverage.mode=changed_regions 时只对这些变更区域内的 touched 行负责，"
+                 "coverage_summary 说明全文/片段各多少件。"),
     }
     out = await run_model_node(ctx, "N8", prompt_key="n8_check",
                                input_data=input_data,

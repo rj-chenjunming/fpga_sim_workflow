@@ -366,3 +366,23 @@ RuntimeError: 闸门 G1_diff_confirm 已签署但恢复失败（run 已置 faile
 必要时再按 provider 窗口重定预算（先改规格）。该缺陷使**四道门端到端在本机不可判为通过**。
 
 **未完成**：F03-b 的测试分层标记（纯软件/受控插件/真实内网）与剩余失败分类、F03-c 文档解析。
+
+## 18 F16 N8 上下文预算分片（2026-10-21）
+
+规格 [上下文规格 C1](spec/AGENT_CONTEXT_SPEC.md)、[编排规格 N8 行](spec/LOOP_ORCHESTRATION_SPEC.md)；
+计划见 [F16 切片计划](plans/2026-10-21-F16-n8-context-budget.md)。由 Lead 实现并自测，独立复核见本节末。
+
+| 验证 | 原始输出（逐字复制） | 说明 |
+|---|---|---|
+| 修改前红灯（新用例） | `5 failed in 0.60s` | `build_sandbox_cases` 尚不存在 |
+| 修改后新用例 | `5 passed in 0.56s` | 预算内全文 / 超预算降级 / 确定性 / 缺源闭锁 / 小输入保持 |
+| N8 相关既有用例 | `51 passed in 1.29s` | 大文件强制片段规则保持不变 |
+| 软件层单用例（原阻断） | `1 passed` | G1 后不再 budget failed |
+| 软件层 `test_flow.py` | `18 passed in 26.54s` | 修复前同一入口 `11 failed` |
+| 默认根全套 | `46 failed, 280 passed, 3 skipped, 1 warning in 11.13s` | 46 项仍为 `ENV_ROOT` 只读同因；通过数 275→280 |
+
+实现：单文件 >6000 字符仍强制 `changed_regions`；其余默认全文；超
+`N8_SANDBOX_BUDGET_BYTES`(60000) 按文件名顺序降级；`changed_regions` 不重复下发 after 文本
+（after 只在 `excerpt`），按实际序列化大小计费；片段不可得即 fail closed（不静默抽样、不丢文件）。
+
+**未运行**：完整软件层全套（后台执行中，见下）、浏览器（缺 Chromium）、kb 自测与端到端（`ENV_ROOT` 只读）。

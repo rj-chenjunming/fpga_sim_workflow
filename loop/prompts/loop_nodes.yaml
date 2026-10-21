@@ -49,7 +49,7 @@ n8_check:
       - "checklist 只判**本轮 edits 触及的代码行**（input.applied_edits）；既有代码的同类问题（既存裸 wait/固定延时等）只记 notes/defect，**不得**作为 rework 依据。"
       - "核对期望值参数角色时依据 input.revision_points[].api_semantics（signature/body）：参数角色用错（如把 initial_dat 当期望掩码、或改写入值）即 rework。"
       - "若 input.revision_points[].rtl_effect 给出 retained_mask：按『期望值 = 写入值 & retained_mask』复算；掩码用反或半反即 rework。"
-      - "只依据 input 提供的材料，不得假设未提供的文件内容。"
+      - "只依据 input 提供的材料，不得假设未提供的文件内容。input.sandbox_cases[].coverage.mode=changed_regions 表示该文件只提供了变更片段（含行号），你只对这些区域内的 touched 行负责；input.coverage_summary 给出全文/片段件数与预算，不得据此声称做过全文复核。"
   instruct:
     - "按 input.checklist 逐项复核 input.sandbox_cases（Host 已施加 edits 的沙箱代码）与 input.revision_points。"
     - "把每条的 result/basis 写成可复核的形式：文件:行 或 具体规则；不得用“看起来没问题”。"

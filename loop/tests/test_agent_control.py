@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 
 from test_agent_context_memory import ctx, provider, call  # noqa: F401
 from host import agent_control as C
+from workflows.chunks import model_request as MR
 from workflows.chunks import model_steps as M
 
 
@@ -197,7 +198,8 @@ async def test_cancellation_timeout_never_starts_overlapping_request(ctx, provid
             except asyncio.CancelledError:
                 pass
         return {'standin':False,'provider':'test-model','data':provider['response']}
-    monkeypatch.setattr(M, '_ask', resistant)
+    # F06：请求机制已提取到 model_request；这里固定的是机制层入口，不是测试期望。
+    monkeypatch.setattr(MR, 'ask', resistant)
     monkeypatch.setattr(C, 'CANCEL_TIMEOUT', .01)
     task = asyncio.create_task(call(ctx))
     await entered.wait()

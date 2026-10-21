@@ -30,7 +30,7 @@ import pytest
 from host import paths as P
 from host.progress import ProgressLog
 from services.contracts import KbSources
-from workflows.chunks import host_steps, long_jobs, model_steps
+from workflows.chunks import host_steps, long_jobs, model_steps, n10_semantics
 from workflows.context import RunCtx
 
 RUN_ID = "RUN-20261019-180000"
@@ -855,7 +855,8 @@ async def test_n10_persists_reconcile_and_pending_and_writes_case_state(
     """#18/A9 + #11/I2：对账文件 + 待裁决清单落盘；通过用例写「已验证通过」。"""
     data, n9, _log = _n10_state(ctx)
     pending_calls: list[list[str]] = []
-    real_tool = model_steps.run_kb_tool
+    # F06：待裁决落盘辅助已提取到 n10_semantics，补丁固定在新落点（期望不变）。
+    real_tool = n10_semantics.run_kb_tool
 
     def fake_tool(tool: str, args: list[str], **kw: Any) -> dict[str, Any]:
         if tool == "n10_pending.py":
@@ -863,7 +864,7 @@ async def test_n10_persists_reconcile_and_pending_and_writes_case_state(
             return {"cmd": "fake", "rc": 0, "stdout_tail": "ok", "stderr_tail": ""}
         return real_tool(tool, args, **kw)
 
-    monkeypatch.setattr(model_steps, "run_kb_tool", fake_tool)
+    monkeypatch.setattr(n10_semantics, "run_kb_tool", fake_tool)
 
     async def classify(*a: Any, **k: Any) -> dict[str, Any]:
         buckets = (k.get("offered") or {}).get("buckets") or []

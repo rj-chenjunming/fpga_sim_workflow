@@ -28,13 +28,9 @@ from __future__ import annotations
 
 import json
 import re
-import asyncio
 import difflib
-import hashlib
 from pathlib import Path
 from typing import Any
-
-import yaml
 
 from host import model_provider as MP
 from host import paths as P
@@ -43,21 +39,12 @@ from host import agent_memory as AM
 from ..context import RunCtx, ctx_of
 from .host_steps import md5_file, run_kb_tool
 
-PROMPTS_FILE = Path(__file__).resolve().parents[2] / "prompts" / "loop_nodes.yaml"
-
 #: Host 侧确定性校验的输出种类（= prompt_key 的前缀）
 _KNOWN_KINDS = frozenset({"n3", "n6", "n8", "n10", "n11", "n12"})
 
 #: I7 缺省上限（权威仍在 case_state 台账；这里只是缺省值，不新增漂移常量）
 DEFAULT_REWORK_LIMIT = 3
 
-#: N10 待裁决清单里需要人裁决的分类（分类 2/3）
-PENDING_CLASSES = ("本轮引入", "待裁决")
-
-
-def load_prompts() -> dict[str, Any]:
-    doc = yaml.safe_load(PROMPTS_FILE.read_text(encoding="utf-8"))
-    return doc if isinstance(doc, dict) else {}
 
 
 def _family_reason() -> str:
@@ -65,25 +52,36 @@ def _family_reason() -> str:
     return cfg.reason or "provider 不可用"
 
 
-# ---------------------------------------------------------------- 小工具
+# ---------------------------------------------------------------- 共享小工具（F06 已拆出）
+
+from .model_common import artifact as _artifact, load_prompts, read_json as _read_json, write_text as _write_text  # noqa: E402
+from . import model_request as MR  # noqa: E402
+# F06：节点语义按模块拆分；这里保留兼容导出（消费者与测试不需要改 import）。
+from .n6_facts import _api_semantics_for, build_n6_targets  # noqa: E402,F401
+from .n10_semantics import (  # noqa: E402,F401
+    PENDING_CLASSES, _case_pass_fields, _diffs_for_classification, _per_case_fail_buckets,
+    _persist_pending, _reconcile_markdown,
+)
+from .n11_guard import _host_identity  # noqa: E402,F401
 
 
-def _read_json(path: Path) -> dict[str, Any] | None:
-    try:
-        return json.loads(Path(path).read_text(encoding="utf-8"))
-    except (FileNotFoundError, json.JSONDecodeError):
-        return None
+def _request_contract(prompt_key: str) -> dict[str, Any]:
+    """兼容导出：契约构造的唯一实现在 `model_request.request_contract`。"""
+    return MR.request_contract(prompt_key)
 
 
-def _write_text(path: Path, text: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    tmp.write_text(text, encoding="utf-8")
-    tmp.replace(path)
+async def _run_model_attempt(ctx: RunCtx, node: str, *, prompt_key: str,
+                             input_data: dict[str, Any], offered: dict[str, Any]) -> dict[str, Any]:
+    """兼容导出：单次 attempt 的机制在 `model_request`，Host 校验器仍由本模块注入。"""
+    return await MR.run_attempt(ctx, node, prompt_key=prompt_key, input_data=input_data,
+                                offered=offered, validate=_validate)
 
 
-def _artifact(ctx: RunCtx, name: str) -> Path:
-    return ctx.run_dir / name
+async def run_model_node(ctx: RunCtx, node: str, *, prompt_key: str,
+                         input_data: dict[str, Any], offered: dict[str, Any]) -> dict[str, Any]:
+    """人工控制只包围模型请求，消费者在本函数返回后才取得输出（机制见 model_request）。"""
+    return await MR.run_model_node(ctx, node, prompt_key=prompt_key, input_data=input_data,
+                                   offered=offered, validate=_validate)
 
 
 # ---------------------------------------------------------------- 用例态台账（I2）
@@ -217,87 +215,6 @@ def _standin(ctx: RunCtx, node: str, artifact: str, *, extra: dict[str, Any] | N
     if extra:
         out.update(extra)
     return out
-
-
-# ---------------------------------------------------------------- 真请求
-
-
-def _render_block(value: Any) -> str:
-    if isinstance(value, str):
-        return value
-    if isinstance(value, dict):
-        return "\n".join(f"- {k}: {v}" for k, v in value.items())
-    if isinstance(value, list):
-        return "\n".join(f"- {v}" for v in value)
-    return str(value)
-
-
-def _request_contract(prompt_key: str) -> dict[str, Any]:
-    """集中构造一次请求的规则与输出形状，供调用和留痕共用。"""
-    from prompts.node_schemas import SCHEMAS
-
-    schema = SCHEMAS.get(prompt_key.split("_", 1)[0])
-    if schema is None:
-        raise KeyError(f"没有 {prompt_key!r} 的输出契约（prompts/node_schemas.py）")
-    spec = load_prompts().get(prompt_key) or {}
-    return {"info": _render_block(spec.get("info") or {}),
-            "instruct": _render_block(spec.get("instruct") or []),
-            "schema": schema.model_json_schema()}
-
-
-async def _ask(
-    ctx: RunCtx,
-    node: str,
-    *,
-    prompt_key: str,
-    input_data: dict[str, Any],
-    contract: dict[str, Any] | None = None,
-) -> dict[str, Any]:
-    """发一次真 ModelRequest。失败**不吞**：回报错误并交由调用方决定。"""
-    from agently import Agently
-
-    from prompts.node_schemas import SCHEMAS
-
-    cfg = MP.configure_agently()
-    kind = prompt_key.split("_", 1)[0]
-    schema = SCHEMAS.get(kind)
-    if schema is None:
-        raise KeyError(f"没有 {prompt_key!r} 的输出契约（prompts/node_schemas.py）")
-    contract = contract or _request_contract(prompt_key)
-
-    agent = Agently.create_agent()
-    try:
-        data = await (
-            agent.input(input_data)
-            .info(contract["info"])
-            .instruct(contract["instruct"])
-            .output(schema, format="json")
-            .async_get_data()
-        )
-        if hasattr(data, "model_dump"):
-            data = data.model_dump()
-        elif isinstance(data, dict) and hasattr((data or {}).get("$result"), "model_dump"):
-            data = data["$result"].model_dump()
-    except Exception as exc:  # noqa: BLE001 - 回报失败，不伪造输出
-        message = f"{type(exc).__name__}: {exc}"
-        if cfg._api_key:
-            message = message.replace(cfg._api_key, "[redacted]")
-        ctx.event(
-            "warning", node=node, status="model_failed",
-            detail={"prompt": prompt_key, "model": cfg.model, "error": message},
-        )
-        return {
-            "standin": False,
-            "provider": cfg.model,
-            "model_call_failed": True,
-            "error": message,
-        }
-
-    ctx.event(
-        "node_finished", node=f"{node}_model", status="ok",
-        detail={"prompt": prompt_key, "model": cfg.model, "plugin": cfg.plugin},
-    )
-    return {"standin": False, "provider": cfg.model, "plugin": cfg.plugin, "data": data}
 
 
 # ---------------------------------------------------------------- Host 侧校验
@@ -526,457 +443,7 @@ def _validate(kind: str, payload: dict[str, Any], *, offered: dict[str, Any]) ->
     return {"ok": not problems, "problems": problems, "accepted": accepted}
 
 
-async def _run_model_attempt(
-    ctx: RunCtx,
-    node: str,
-    *,
-    prompt_key: str,
-    input_data: dict[str, Any],
-    offered: dict[str, Any],
-) -> dict[str, Any]:
-    """发请求 + Host 校验；调用记录只增不改，经验不取得业务写权。"""
-    cfg = MP.resolve()
-    contract = _request_contract(prompt_key)
-    contract["info"] += "\n" + AM.MEMORY_RULE
-    if input_data.get('human_interventions'):
-        contract['info'] += ('\n人工 human_interventions 仅为当前任务的补充指令；'
-                             '不得覆盖原始事实、授权范围、输出 Schema、Host 校验或人工闸门。')
-    scope = AM.scope_for(ctx, input_data, contract)
-    lessons, diagnostics = AM.experiences(ctx, scope)
-    request_input = AM.normalized({k: v for k, v in input_data.items() if k != "approved_experiences"})
-    if lessons:
-        request_input["approved_experiences"] = lessons
-    attempt = AM.Attempt(ctx, node, {
-        "prompt_key": prompt_key, "cycle": input_data.get("cycle"),
-        "input": request_input, **contract, "offered": offered, "scope": scope,
-        "model": cfg.model if cfg.available else None,
-        "plugin": cfg.plugin if cfg.available else None,
-        "implementation_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
-        "experience_diagnostics": diagnostics,
-    })
-    for diagnostic in diagnostics:
-        ctx.event("warning", node=node, status="experience_rejected", detail={"message": diagnostic})
-    kind = prompt_key.split("_", 1)[0]
-    try:
-        AM.check_budget(request_input, contract)
-        if not cfg.available:
-            out = {"mode": "standin", "standin": True, "provider": "none", "reason": cfg.reason}
-        else:
-            payload = await _ask(ctx, node, prompt_key=prompt_key, input_data=request_input, contract=contract)
-            validation = _validate(kind, payload, offered=offered)
-    except BaseException as exc:
-        message = f"{type(exc).__name__}: {exc}"
-        secret = getattr(cfg, "_api_key", None)
-        safe_message = message.replace(secret, "[redacted]") if secret else message
-        attempt.finish("interrupted" if isinstance(exc, asyncio.CancelledError) else "error",
-                       error=safe_message)
-        if safe_message != message:
-            raise RuntimeError(safe_message) from None
-        raise
-    if not cfg.available:
-        attempt.finish("standin", payload=out, validation=None)
-        return {**out, **attempt.refs(), "experience_diagnostics": diagnostics}
-    attempt.finish("validated" if validation["ok"] else "validation_failed",
-                   payload=payload, validation=validation)
-    out = {
-        "mode": "live" if not payload.get("standin") else "standin",
-        "standin": bool(payload.get("standin")),
-        "provider": payload.get("provider"),
-        "plugin": payload.get("plugin"),
-        "model_call_failed": bool(payload.get("model_call_failed")),
-        "error": payload.get("error"),
-        "validation": validation,
-        "data": validation.get("accepted") or payload.get("data"),
-        "input_digest": {k: (len(v) if isinstance(v, (list, dict)) else v) for k, v in request_input.items()},
-        **attempt.refs(),
-        "experience_diagnostics": diagnostics,
-    }
-    ctx.event(
-        "node_finished", node=f"{node}_request",
-        status="ok" if validation["ok"] else "validation_failed",
-        detail={"model": out["provider"], "mode": out["mode"],
-                "problems": validation["problems"][:5]},
-    )
-    return out
-
-
-async def run_model_node(ctx: RunCtx, node: str, *, prompt_key: str,
-                         input_data: dict[str, Any], offered: dict[str, Any]) -> dict[str, Any]:
-    """人工控制只包围模型请求，消费者在本函数返回后才取得输出。"""
-    from host import agent_control as control
-
-    async def invoke(instructions):
-        request = {k: v for k, v in input_data.items() if k != 'human_interventions'}
-        if instructions:
-            request['human_interventions'] = instructions
-        return await _run_model_attempt(ctx, node, prompt_key=prompt_key,
-                                        input_data=request, offered=offered)
-
-    return await control.execute(ctx, node, invoke)
-
-
 # ---------------------------------------------------------------- N6 目标构造
-
-
-def _doc_bitdef_from_diff(diff: dict[str, Any] | None) -> dict[str, Any] | None:
-    if not isinstance(diff, dict):
-        return None
-    raw = diff.get("after")
-    if isinstance(raw, str):
-        try:
-            parsed = json.loads(raw)
-        except json.JSONDecodeError:
-            return {"raw": raw}
-    elif isinstance(raw, dict):
-        parsed = raw
-    else:
-        return None
-    if not isinstance(parsed, dict):
-        return None
-    keep = ("name", "segment", "offset_global", "reset", "rw", "bytes",
-            "bitdef_present", "entry_id")
-    out = {k: parsed.get(k) for k in keep if parsed.get(k) is not None}
-    return out or None
-
-
-def _doc_bitdef_from_snapshot(ctx: RunCtx, entry_id: str) -> dict[str, Any] | None:
-    """从**本轮文档条目快照**取位定义（`bundle/doc_entries.jsonl`）。
-
-    为什么必须有这条：`_doc_bitdef_from_diff` 只在「N2 的差异条目本身是 doc_entry」时
-    才有 `after` JSON。真实 RTL-only 改动（本仓最常见）里，N2 的差异条目是 **RTL 文件**，
-    `diffs_by_id` 里没有 `0x0d00#0x0d04`，于是 N6 会把「拿不到文档位定义」当失败
-    —— 实测 2026-10-20 real 首跑就死在这里（N5 已正确给出 5 个必须用例）。
-    文档条目快照是 N1 冻结进本轮 bundle 的权威输入（与 baseline doc_fingerprint 同源）。
-    """
-    if not entry_id:
-        return None
-    snapshot = ctx.run_dir / "bundle" / "doc_entries.jsonl"
-    if not snapshot.is_file():
-        return None
-    keep = ("name", "segment", "offset_global", "reset", "rw", "bytes",
-            "bitdef_present", "entry_id")
-    for line in snapshot.read_text(encoding="utf-8", errors="replace").splitlines():
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            rec = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        if not isinstance(rec, dict) or str(rec.get("entry_id")) != str(entry_id):
-            continue
-        out = {k: rec.get(k) for k in keep if rec.get(k) is not None}
-        if not out:
-            return None
-        out["source"] = f"run_snapshot:{snapshot.relative_to(ctx.run_dir)}"
-        return out
-    return None
-
-
-def _doc_bitdef_for(ctx: RunCtx, entry_id: str, diff: dict[str, Any] | None) -> dict[str, Any] | None:
-    """位定义取数：diff 里的 doc_entry（drill/文档变更）优先，其次本轮文档条目快照。"""
-    return _doc_bitdef_from_diff(diff) or _doc_bitdef_from_snapshot(ctx, entry_id)
-
-
-#: 从调用行里抽候选 callee 时忽略的语言关键字（其余候选再去源码里找定义）
-_API_KEYWORDS = frozenset({
-    "if", "else", "for", "foreach", "while", "do", "case", "begin", "end", "task",
-    "function", "return", "new", "void", "int", "bit", "logic", "input", "output",
-    "reg", "wire", "assign", "always", "initial", "repeat", "fork", "join", "wait",
-    "posedge", "negedge", "this", "super",
-})
-_API_SEARCH_DIRS = ("TB", "TESTLIB")
-_API_SEARCH_MAX_BYTES = 4 * 1024 * 1024  # 单文件上限，避免把超大生成件读进内存
-
-
-def _call_candidates(window_text: str) -> list[str]:
-    """从调用窗口抽 callee 名（`obj.method(` 与 `method(`），过滤关键字。"""
-    names: list[str] = []
-    for match in re.finditer(r"(?:\.|\b)([A-Za-z_]\w*)\s*\(", window_text):
-        name = match.group(1)
-        if name in _API_KEYWORDS:
-            continue
-        if name not in names:
-            names.append(name)
-    return names
-
-
-def _extract_api_definition(text: str, callee: str) -> dict[str, Any] | None:
-    """只读提取完整签名/函数体；不闭合的定义显式标记不完整。"""
-    pattern = re.compile(r"\b(task|function)\b[^\n;]*?\b%s\s*\(" % re.escape(callee))
-    match = pattern.search(text)
-    if match is None:
-        return None
-    start = text.rfind("\n", 0, match.start()) + 1
-    lines = text[start:].splitlines()
-    sig_lines: list[str] = []
-    depth = 0
-    seen_paren = False
-    sig_end = 0
-    for idx, line in enumerate(lines):
-        sig_lines.append(line)
-        depth += line.count("(") - line.count(")")
-        if "(" in line:
-            seen_paren = True
-        if seen_paren and depth <= 0 and ");" in line.replace(" ", ""):
-            sig_end = idx
-            break
-        if seen_paren and depth <= 0 and line.strip().endswith(");"):
-            sig_end = idx
-            break
-    signature = " ".join(x.strip() for x in sig_lines)
-    body_lines: list[str] = []
-    complete = False
-    for line in lines[sig_end + 1:]:
-        body_lines.append(line)
-        if re.search(r"\bend(task|function)\b", line):
-            complete = True
-            break
-    body = "\n".join(body_lines).strip()
-    return {"signature": signature, "body": body, "complete": complete,
-            "line": start_lines(text, match.start())}
-
-
-def start_lines(text: str, pos: int) -> int:
-    return text.count("\n", 0, pos) + 1
-
-
-def _find_api_definition(env_root: Path, case_text: str, callee: str,
-                         cache: dict | None = None) -> dict[str, Any] | None:
-    """先查本用例文件（本地 task/function），再查 ENV_ROOT/TB、TESTLIB 的定义。
-
-    只做**只读文本扫描**，不执行任何环境脚本；找不到定义返回 None（由调用方标 not_found，
-    不得让模型去猜参数语义）。
-    """
-    local = _extract_api_definition(case_text, callee)
-    if local is not None:
-        return {"callee": callee, "defined_in": "<case_file>", "source": "case_file",
-                "signature": local["signature"], "body": local["body"], "complete": local["complete"]}
-    if cache is None:
-        cache = {}
-    key = (str(env_root), callee)
-    if key in cache:
-        return cache[key]
-    for dirname in _API_SEARCH_DIRS:
-        root = env_root / dirname
-        if not root.is_dir():
-            continue
-        for path in sorted(root.rglob("*.sv")):
-            try:
-                if path.stat().st_size > _API_SEARCH_MAX_BYTES:
-                    continue
-                text = path.read_text(encoding="utf-8", errors="ignore")
-            except OSError:
-                continue
-            found = _extract_api_definition(text, callee)
-            if found is None:
-                continue
-            result = {
-                "callee": callee,
-                "defined_in": str(path.relative_to(env_root)),
-                "source": f"scan:{dirname}",
-                "signature": found["signature"],
-                "body": found["body"],
-                "complete": found["complete"],
-            }
-            cache[key] = result
-            return result
-    cache[key] = None
-    return None
-
-
-def _api_semantics_for(env_root: Path, source_text: str, line: int,
-                       cache: dict | None = None) -> list[dict[str, Any]]:
-    """取修订点附近调用的**测试台 API 语义**（signature + body），供 N6 判断实参角色。
-
-    实测教训（2026-10-20 real 首跑）：`reg_field_test(addr, data_expmask, initial_dat, only_r)`
-    的第 2 个数据参数是**期望掩码**、第 3 个是初始值；模型只看到调用行，把两者弄反，
-    期望值改错（N7 只抓语法，抓不到）。把定义源码作为事实输入，模型才能按**参数名**定位。
-    """
-    if not source_text or line < 1:
-        return []
-    lines = source_text.splitlines()
-    window = "\n".join(lines[max(0, line - 3):min(len(lines), line + 2)])
-    semantics: list[dict[str, Any]] = []
-    seen: set[tuple[str, str]] = set()
-    for callee in _call_candidates(window):
-        found = _find_api_definition(env_root, source_text, callee, cache)
-        if found is None:
-            continue
-        key = (found["callee"], found["signature"])
-        if key in seen:
-            continue
-        seen.add(key)
-        semantics.append(found)
-    return semantics
-
-
-#: RTL 截断/清零的常见写法：`{16'h0, wdata[15:0]}`（高半清零、低半保留）
-_RTL_CONCAT_RE = re.compile(
-    r"\{\s*(\d+)'([hb])([0-9a-fA-F_]+)\s*,\s*([A-Za-z_]\w*)\s*\[\s*(\d+)\s*:\s*(\d+)\s*\]\s*\}"
-)
-
-
-def _rtl_effect_hint(rtl_change: list[dict[str, Any]]) -> dict[str, Any] | None:
-    """从 RTL 新增行里抽**确定性的位截断事实**（readback mask / 保留位）。
-
-    为什么由 Host 算而不是让模型推：实测 2026-10-20 real 第二轮，模型知道要改
-    `data_expmask`，但把掩码应用到相反的一半（写 `0xffff_0000` / `0x1234_0000`）。
-    `{16'h0, w[15:0]}` 的语义是确定的：保留 `[15:0]`、清 `[31:16]` ⇒ 期望值 = 写入值 &
-    `0x0000ffff`。Host 把这条算术作为事实给模型，模型只负责选对实参与填值。
-    """
-    for change in rtl_change:
-        hunk = str(change.get("hunk") or "")
-        for line in hunk.splitlines():
-            if not line.startswith("+") or line.startswith("+++"):
-                continue
-            for match in _RTL_CONCAT_RE.finditer(line):
-                const_bits = match.group(3).replace("_", "").strip()
-                if const_bits.strip("0"):
-                    continue  # 只处理"常量全 0"的截断（其余形态不当成确定事实）
-                hi, lo = int(match.group(5)), int(match.group(6))
-                if lo < 0 or hi < lo or hi > 31:
-                    continue
-                width = int(match.group(1))
-                total = 32
-                retained_mask = ((1 << (hi - lo + 1)) - 1) << lo
-                cleared_mask = ((1 << total) - 1) ^ retained_mask
-                cleared_hi = total - 1
-                cleared_lo = hi + 1
-                return {
-                    "pattern": match.group(0).strip(),
-                    "retained_bits": f"[{hi}:{lo}]",
-                    "retained_mask": f"0x{retained_mask:08x}",
-                    "cleared_bits": f"[{cleared_hi}:{cleared_lo}]" if cleared_lo <= cleared_hi else None,
-                    "cleared_mask": f"0x{cleared_mask:08x}",
-                    "rule": "期望读回值 = 写入值 & retained_mask；不得把掩码应用到相反的一半",
-                    "zero_prefix_bits": width,
-                    "source": change.get("file"),
-                }
-    return None
-
-
-def _excerpt(text: str, line: int, *, radius: int = 15) -> dict[str, Any]:
-    lines = text.splitlines()
-    if line < 1 or line > len(lines):
-        raise ValueError(f"目标行号 {line} 超出文件行数 {len(lines)}")
-    start = max(1, line - radius)
-    end = min(len(lines), line + radius)
-    body = "\n".join(f"{n:>6}: {lines[n - 1]}" for n in range(start, end + 1))
-    return {"start": start, "end": end, "line": line, "text": body}
-
-
-def build_n6_targets(ctx: RunCtx, data: Any) -> list[dict[str, Any]]:
-    """Host 签发 N6 的**有界任务事实**：目标用例 + 源码摘录 + 修订点 + 文档位定义。
-
-    拿不到（源文件缺失 / 无修订点 / 无文档位定义）⇒ **显式失败**（real），
-    不给空值让模型去编（审计 C11/I14 的教训）。
-    """
-    n5_doc = _read_json(ctx.run_dir / "n5_impact.json") or {}
-    n2_doc = _read_json(ctx.run_dir / "n2_diff.json") or {}
-    must_change = [m for m in (n5_doc.get("must_change") or []) if isinstance(m, dict)]
-    diffs = [d for d in (n2_doc.get("diffs") or []) if isinstance(d, dict)]
-    diffs_by_id = {str(d.get("entry_id") or d.get("id") or ""): d for d in diffs}
-    repo_root = Path(data.require_resource("repo_root"))
-    lenient = ctx.mode == "drill"
-
-    targets: list[dict[str, Any]] = []
-    problems: list[str] = []
-    api_cache: dict[tuple[str, str], dict[str, Any] | None] = {}
-    for item in must_change:
-        case = str(item.get("case") or "")
-        if not case:
-            continue
-        file_rel = str(item.get("file") or f"TESTLIB/{case}.sv")
-        source = repo_root / file_rel
-        if not source.is_file():
-            source = repo_root / "TESTLIB" / f"{case}.sv"
-        if not source.is_file():
-            problems.append(f"{case}: 源用例不存在（{file_rel}）")
-            continue
-        text = source.read_text(encoding="utf-8", errors="strict")
-        line = int(item.get("line") or 0)
-        try:
-            excerpt = _excerpt(text, line)
-        except ValueError as exc:
-            problems.append(f"{case}: {exc}")
-            continue
-        entry_id = str(item.get("entry_id") or "")
-        diff = diffs_by_id.get(entry_id)
-        doc_bitdef = _doc_bitdef_for(ctx, entry_id, diff)
-        segment = str(item.get("segment") or "")
-        offset = str(item.get("offset") or "")
-        if not doc_bitdef:
-            problems.append(f"{case}: 拿不到文档位定义（entry_id={entry_id!r}）")
-            continue
-        if not (segment and offset):
-            problems.append(f"{case}: 缺修订点（segment/offset）")
-            continue
-        display = f"{segment}+{offset}" if "+" not in offset else offset
-        rtl_files = [str(x) for x in (item.get("rtl_files") or [])]
-        rtl_change: list[dict[str, Any]] = []
-        for d in diffs:
-            did = str(d.get("entry_id") or d.get("id") or "")
-            if did in rtl_files and str(d.get("kind") or "") == "rtl_file":
-                rtl_change.append({
-                    "file": did,
-                    "lines": d.get("lines") or [],
-                    "offsets": d.get("offsets") or [],
-                    "hunk": d.get("diff_hunk"),
-                })
-        if not rtl_change:  # N5 未给 rtl_files 时：按 offset 命中取 RTL hunk
-            for d in diffs:
-                if not d.get("diff_hunk"):
-                    continue
-                if offset and offset in [str(o) for o in (d.get("offsets") or [])]:
-                    rtl_change.append({
-                        "file": str(d.get("entry_id") or d.get("id") or ""),
-                        "lines": d.get("lines") or [],
-                        "offsets": d.get("offsets") or [],
-                        "hunk": d.get("diff_hunk"),
-                    })
-        api_semantics = _api_semantics_for(repo_root, text, line, api_cache)
-        if any(not api.get("complete") for api in api_semantics):
-            problems.append(f"{case}: API 定义上下文不完整")
-            continue
-        rtl_effect = _rtl_effect_hint(rtl_change)
-        point = {
-            "entry_id": entry_id or None,
-            "segment": segment,
-            "offset": offset,
-            "display": display,
-            "doc_bitdef": doc_bitdef,
-            "rtl_change": rtl_change,
-            "api_semantics": api_semantics,
-            "rtl_effect": rtl_effect,
-        }
-        existing = next((t for t in targets if t["case"] == case), None)
-        if existing is not None:
-            # 同一用例可能命中多个 offset（N5 逐条给）：合并修订点，别重复要求 revision
-            existing["revision_points"].append(point)
-            existing["excerpts"].append(excerpt)
-            known = {(a.get("callee"), a.get("signature")) for a in existing.get("api_semantics") or []}
-            for api in api_semantics:
-                if (api.get("callee"), api.get("signature")) not in known:
-                    existing.setdefault("api_semantics", []).append(api)
-            continue
-        targets.append({
-            "case": case,
-            "file": file_rel,
-            "md5": md5_file(source),
-            "excerpt": excerpt,
-            "excerpts": [excerpt],
-            "revision_points": [point],
-            "doc_bitdef": doc_bitdef,
-            "rtl_change": rtl_change,
-            "api_semantics": list(api_semantics),
-            "rtl_effect": rtl_effect,
-            "why": str(item.get("why") or ""),
-        })
-    if problems and not lenient:
-        ctx.node_failed("N6", message="N6 目标事实不完整：" + "；".join(problems[:5]))
-        raise RuntimeError("N6：目标事实不完整（不允许让模型去编）：" + "；".join(problems[:8]))
-    return targets
 
 
 # ---------------------------------------------------------------- N3
@@ -1516,147 +983,6 @@ async def n8_check(data: Any) -> dict[str, Any]:
 # ---------------------------------------------------------------- N10（Host 抽数 + 模型分类）
 
 
-def _diffs_for_classification(ctx: RunCtx) -> list[dict[str, Any]]:
-    doc = _read_json(ctx.run_dir / "n2_diff.json") or {}
-    return [d for d in (doc.get("diffs") or []) if isinstance(d, dict)]
-
-
-def _per_case_fail_buckets(ctx: RunCtx, cases: dict[str, Any],
-                           diffs: list[dict[str, Any]]) -> dict[str, Any]:
-    """逐用例调用既有 Host 函数 `fail_buckets`（不复制解析器），并把桶 id 命名空间化。"""
-    from host.evidence import fail_buckets
-
-    buckets: list[dict[str, Any]] = []
-    revision_points: list[dict[str, Any]] = []
-    merged_notes: list[dict[str, Any]] = []
-    for case, item in cases.items():
-        path = Path(str((item or {}).get("path") or ""))
-        text = path.read_text(encoding="utf-8", errors="replace") if path.is_file() else ""
-        fb = fail_buckets(text, diffs)
-        revision_points.extend(fb.get("revision_points") or [])
-        for b in fb.get("buckets") or []:
-            buckets.append({**b, "bucket_id": f"{case}:{b['bucket_id']}", "case": case})
-        if fb.get("merged_note"):
-            merged_notes.append({"case": case, **fb["merged_note"]})
-    return {"buckets": buckets, "revision_points": revision_points,
-            "merged_note": merged_notes or None}
-
-
-def _reconcile_markdown(out: dict[str, Any]) -> str:
-    counts = out.get("counts") or {}
-    k1 = (counts.get("koutou1") or {}).get("value")
-    k2 = (counts.get("koutou2") or {}).get("value")
-    verdict = out.get("verdict") or {}
-    lines = [
-        "# N10 结果对账",
-        "",
-        f"- run_id：`{out.get('run_id')}`",
-        f"- 目标用例：`{', '.join(out.get('target_cases') or [])}`",
-        f"- 口径一（`*E` 文本行数）：**{k1}**",
-        f"- 口径二（UVM Report Summary）：**{k2}**",
-        f"- 判据：`{verdict.get('criterion')}` ⇒ **passed={verdict.get('passed')}**",
-        f"- 身份四方同值：`{(out.get('identity') or {}).get('consistent')}`",
-        "",
-        "## 逐用例",
-        "",
-    ]
-    for case, item in (out.get("cases") or {}).items():
-        c = (item or {}).get("counts") or {}
-        v = (item or {}).get("verdict") or {}
-        lines.append(
-            f"- `{case}`：口径一={(c.get('koutou1') or {}).get('value')} / "
-            f"口径二={(c.get('koutou2') or {}).get('value')} ⇒ passed={v.get('passed')} "
-            f"（{'; '.join(v.get('reasons') or []) or '无'}）"
-        )
-    lines += ["", "## FAIL 三分类", ""]
-    classification = out.get("fail_classification") or {}
-    cls_data = classification.get("data") if isinstance(classification.get("data"), dict) else {}
-    for bucket in cls_data.get("items") or []:
-        lines.append(f"- `{bucket.get('bucket_id')}` ⇒ {bucket.get('classification')}：{bucket.get('basis')}")
-    if not (cls_data.get("items") or []):
-        lines.append("(无分类输出)")
-    lines += ["", "## 待裁决（分类 2/3）", ""]
-    pending = out.get("pending_items") or []
-    lines += [f"- `{p.get('bucket_id')}`：{p.get('classification')}" for p in pending] or ["(无)"]
-    lines.append("")
-    return "\n".join(lines)
-
-
-def _persist_pending(ctx: RunCtx, items: list[dict[str, Any]]) -> dict[str, Any]:
-    """把分类 2/3 落盘。**唯一写者**是 `kb/tools/n10_pending.py`（WS-K 提供）。
-
-    工具未就绪时按 Lead 批准写 run-scoped 占位 `run_dir/n10_pending.json`，
-    并在 state 里标注 `pending_written="run_scoped_placeholder"`（不冒充 workspace 权威）。
-    """
-    payload = {"run_id": ctx.run_id, "items": items, "count": len(items),
-               "classes": PENDING_CLASSES}
-    run_scoped = ctx.run_dir / "n10_pending.json"
-    _write_text(run_scoped, json.dumps(payload, ensure_ascii=False, indent=2))
-    tool = P.KB_TOOLS / "n10_pending.py"
-    if not tool.is_file():
-        return {"pending_path": str(run_scoped), "pending_written": "run_scoped_placeholder",
-                "pending_count": len(items),
-                "note": "kb/tools/n10_pending.py 未就绪 ⇒ 仅写 run-scoped 占位"}
-    res = run_kb_tool("n10_pending.py", ["--run", ctx.run_id, "--items", str(run_scoped)])
-    if res["rc"] != 0:
-        ctx.node_failed("N10", message=f"n10_pending rc={res['rc']}")
-        raise RuntimeError(
-            f"N10：待裁决清单落盘失败 rc={res['rc']}: {res['stderr_tail'][-400:]}"
-        )
-    return {"pending_path": str(P.KB_CONFLICTS / "pending.json"),
-            "pending_written": "kb/tools/n10_pending.py",
-            "pending_count": len(items), "tool_stdout": res["stdout_tail"][-400:]}
-
-
-def _case_pass_fields(ctx: RunCtx, case: str, item: dict[str, Any],
-                      n7: dict[str, Any], n9: dict[str, Any]) -> dict[str, Any]:
-    """组装 case_state `已验证通过` 的 I3 合取证据（缺一项就会被工具拒绝，本层不例外）。"""
-    counts = (item or {}).get("counts") or {}
-    imprints = (item or {}).get("imprints") or {}
-    compile_rc = None
-    for c in (n7.get("cases") or []):
-        if str(c.get("case")) == case:
-            compile_rc = c.get("rc")
-            break
-    static_check = None
-    for c in ledger(ctx).get("cases") or []:
-        if str(c.get("case")) == case:
-            static_check = c.get("static_check")
-            break
-    observed = None
-    expected = None
-    for marker, imp in imprints.items():
-        if (imp or {}).get("consistent"):
-            observed = ((imp.get("observed") or {}).get("id_count"))
-            if isinstance(observed, int):
-                expected = observed
-                break
-    run_md5 = ((n9.get("run_md5s") or {}).get(case)
-               or ((item or {}).get("identity") or {}).get("case_md5"))
-    return {
-        "file": (item or {}).get("file"),
-        "run_md5": run_md5,
-        "compile_rc": compile_rc,
-        "static_check": static_check,
-        "script_egrep": ((counts.get("koutou1") or {}).get("value")),
-        "uvm_error": (((counts.get("koutou2") or {}).get("value") or {}).get("UVM_ERROR")),
-        # 判据 passed 已由 host.evidence 的 I3 合取（含"出现 UVM Report Summary"）判定；
-        # per_case 显式带 has_report_summary 时优先，否则以 verdict.passed 为证（仅写通过态时才用）。
-        "uvm_summary_present": bool(
-            (item or {}).get("has_report_summary")
-            if "has_report_summary" in (item or {})
-            else (counts.get("koutou2") or {}).get("uvm_summary_present")
-            if (counts.get("koutou2") or {}).get("uvm_summary_present") is not None
-            else ((item or {}).get("verdict") or {}).get("passed") is True
-        ),
-        "obs_expected": expected,
-        "obs_observed": observed,
-        "evidence": (item or {}).get("path"),
-        "note": "N10：卡点B rc=0 ∧ 卡点C pass ∧ 双口径皆 0 ∧ UVM 汇总 ∧ 印记一致",
-        "updated_by": "loop:N10",
-    }
-
-
 async def n10_reconcile(data: Any) -> dict[str, Any]:
     """N10 结果对账（Host 抽数 + 模型 FAIL 三分类）。
 
@@ -1811,7 +1137,7 @@ async def n10_reconcile(data: Any) -> dict[str, Any]:
         item = cases.get(case) or {}
         verdict = item.get("verdict") or {}
         if verdict.get("passed"):
-            fields = _case_pass_fields(ctx, case, item, n7, n9)
+            fields = _case_pass_fields(ctx, case, item, n7, n9, ledger)
             res = _set_case_state(ctx, case, "已验证通过", **fields)
             if res["rc"] != 0:
                 ctx.node_failed(
@@ -1857,59 +1183,6 @@ async def n10_reconcile(data: Any) -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------- N11（guardian）
-
-
-def _host_identity(ctx: RunCtx, data: Any) -> dict[str, Any]:
-    """身份**四方同值**（Host 确定性）：run_id / case / 审的 md5 / 跑的 md5。
-
-    - 审的 md5 = `n6_applied.md5_after`（N6 冻结值）
-    - 跑的 md5 = `n9_result.cases[case].identity.case_md5`（run_guarded 身份头，经 host.evidence）
-    - 证据件必须存在且可解析（present=true）
-    """
-    applied = (data.get_state("n6_applied") or {}).get("cases") or []
-    n9 = data.get_state("n9_result") or {}
-    per_case = n9.get("cases") if isinstance(n9.get("cases"), dict) else {}
-    cases: list[dict[str, Any]] = []
-    mismatches: list[str] = []
-    reviewed_by_case = {str(c.get("case")): c for c in applied if c.get("case")}
-    for case, item in per_case.items():
-        item = item or {}
-        reviewed = reviewed_by_case.get(str(case)) or {}
-        identity = item.get("identity") or {}
-        run_md5 = identity.get("case_md5")
-        reviewed_md5 = reviewed.get("md5_after")
-        evidence_path = item.get("path")
-        evidence_ok = bool(item.get("present")) and bool(evidence_path) and Path(str(evidence_path)).is_file()
-        same_run = identity.get("run_id") == ctx.run_id
-        same_case = identity.get("case") == case
-        same_md5 = bool(reviewed_md5) and run_md5 == reviewed_md5
-        consistent = bool(evidence_ok and same_run and same_case and same_md5)
-        if not evidence_ok:
-            mismatches.append(f"{case}: 证据件缺失或不可解析（{evidence_path!r}）")
-        if not same_run:
-            mismatches.append(f"{case}: run_id 不一致（identity={identity.get('run_id')!r}）")
-        if not same_case:
-            mismatches.append(f"{case}: case 不一致（identity={identity.get('case')!r}）")
-        if not same_md5:
-            mismatches.append(f"{case}: 审的 md5({reviewed_md5}) != 跑的 md5({run_md5})")
-        cases.append({
-            "case": str(case), "reviewed_md5": reviewed_md5,
-            "run_md5": run_md5, "run_id": identity.get("run_id"),
-            "seed": identity.get("seed"), "evidence_path": evidence_path,
-            "evidence_present": evidence_ok, "consistent": consistent,
-        })
-    missing = sorted(set(reviewed_by_case) - set(per_case))
-    for case in missing:
-        mismatches.append(f"{case}: N9 没有该用例的证据")
-    return {
-        "run_id": ctx.run_id,
-        "consistent": bool(cases) and not mismatches,
-        "mismatches": mismatches,
-        "cases": cases,
-        "missing_cases": missing,
-        "checked": ["run_id", "case", "reviewed_md5(n6_applied.md5_after)",
-                    "run_md5(host.evidence identity from run_guarded header)"],
-    }
 
 
 def _ledger_summary(ctx: RunCtx) -> dict[str, Any]:

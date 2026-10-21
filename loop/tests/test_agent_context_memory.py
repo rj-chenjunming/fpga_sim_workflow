@@ -15,6 +15,7 @@ import pytest
 from host.progress import ProgressLog
 from services.contracts import KbSources
 from workflows.chunks import model_steps as M
+from workflows.chunks import n6_facts as N6
 from workflows.context import RunCtx
 
 
@@ -208,7 +209,7 @@ async def test_author_sees_distant_revision_points_in_same_case(ctx, provider, m
         {"case": "demo", "file": "TESTLIB/demo.sv", "line": line,
          "entry_id": f"entry-{line}", "segment": "s", "offset": str(line)} for line in (3, 190)]})
     write_json(ctx.run_dir / "n2_diff.json", {"diffs": []})
-    monkeypatch.setattr(M, "_doc_bitdef_for", lambda *args: {"bits": "31:0"})
+    monkeypatch.setattr(N6, "_doc_bitdef_for", lambda *args: {"bits": "31:0"})
     provider["response"] = {"revisions": [{"case": "demo", "edits": [
         {"line": 3, "old": "unique_line_3", "new": "new", "basis": "doc"}], "rationale": "doc"}],
         "rework_resolution": [], "notes": []}
@@ -244,7 +245,7 @@ async def test_author_api_facts_refresh_between_calls(ctx, provider, monkeypatch
         {"case": "demo", "file": "TESTLIB/demo.sv", "line": 1,
          "entry_id": "entry", "segment": "s", "offset": "1"}]})
     write_json(ctx.run_dir / "n2_diff.json", {"diffs": []})
-    monkeypatch.setattr(M, "_doc_bitdef_for", lambda *args: {"bits": "31:0"})
+    monkeypatch.setattr(N6, "_doc_bitdef_for", lambda *args: {"bits": "31:0"})
     provider["response"] = {"revisions": [], "rework_resolution": [], "notes": []}
     await M.n6_author(Data(ctx, root=root))
     api.write_text("task api_demo(input int data);\nNEW_RULE;\nendtask\n")

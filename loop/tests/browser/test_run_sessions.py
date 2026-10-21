@@ -312,3 +312,61 @@ def test_returning_to_submitting_gate_cannot_post_twice(ui):
     release(page, api, {"detail": {"error": "old refusal"}}, 403)
     pw.expect(page.locator('#gatePanel [data-gate-submit]')).to_have_text("提交闸门决策")
     pw.expect(page.locator("#gatePanel .gate-error")).not_to_contain_text("old refusal")
+
+
+# ---- F13：首次失败 / 刷新失败 / 恢复（Web UI §7.2） -------------------------
+
+def test_first_detail_failure_does_not_claim_loading_or_previous_success(ui):
+    page, api = ui
+    api["hold"] = lambda path: path == "/api/runs/A"
+    select(page, "A")
+    release(page, api, {"detail": {"error": "Service Unavailable"}}, 503)
+    pw.expect(page.locator("#runHead")).to_contain_text("读取失败")
+    pw.expect(page.locator("#runHead")).not_to_contain_text("加载中")
+    pw.expect(page.locator("#runAlerts")).to_contain_text("尚无成功读取的数据")
+    pw.expect(page.locator("#runAlerts")).not_to_contain_text("最近一次成功")
+    pw.expect(page.locator("#runAlerts")).not_to_contain_text("上次成功")
+    pw.expect(page.locator("#runRetry")).to_be_visible()
+    # 重新读取只重取当前运行详情；恢复后错误横幅消失
+    page.locator("#runRetry").click()
+    page.wait_for_timeout(80)
+    release(page, api, view("A", "RECOVERED-A"))
+    pw.expect(page.locator("#runHead")).to_contain_text("RECOVERED-A")
+    pw.expect(page.locator("#runAlerts")).not_to_contain_text("读取运行视图失败")
+    pw.expect(page.locator("#runRetry")).to_have_count(0)
+    assert not api["posts"]
+
+
+def test_refresh_failure_keeps_data_and_shows_expired_with_last_success(ui):
+    page, api = ui
+    select(page, "A")
+    page.locator("#segRun").click()
+    pw.expect(page.locator("#runHead")).to_contain_text("A-baseline")
+    api["hold"] = lambda path: path == "/api/runs/A"
+    tick(page)
+    release(page, api, {"detail": {"error": "timeout"}}, 503)
+    pw.expect(page.locator("#runHead")).to_contain_text("A-baseline")
+    pw.expect(page.locator("#runHead")).not_to_contain_text("加载中")
+    pw.expect(page.locator("#runAlerts")).to_contain_text("数据已过期")
+    pw.expect(page.locator("#runAlerts")).to_contain_text("上次成功")
+    pw.expect(page.locator("#runRetry")).to_be_visible()
+    # 恢复后仍保留数据，且错误与重试入口消失
+    page.locator("#runRetry").click()
+    page.wait_for_timeout(80)
+    release(page, api, view("A"))
+    pw.expect(page.locator("#runAlerts")).not_to_contain_text("数据已过期")
+    pw.expect(page.locator("#runRetry")).to_have_count(0)
+
+
+def test_refresh_failure_does_not_rebuild_gate_form_or_lose_draft(ui):
+    page, api = ui
+    open_gate(page)
+    fill(page)
+    page.locator('#gatePanel [aria-label="裁决理由"]').focus()
+    api["hold"] = lambda path: path == "/api/runs/A"
+    tick(page)
+    release(page, api, {"detail": {"error": "timeout"}}, 503)
+    pw.expect(page.locator("#gateAlerts")).to_contain_text("数据已过期")
+    pw.expect(page.locator('#gatePanel [aria-label="裁决理由"]')).to_have_value("reviewed")
+    pw.expect(page.locator('#gatePanel [aria-label="裁决理由"]')).to_be_focused()
+    assert not api["posts"]

@@ -3,8 +3,8 @@
 为什么是投影而不是状态机：执行状态权威在 TriggerFlow 执行 + `kb/tools/gate.py`；
 本模块只把事件流翻译成人能读的卡片，**不改任何状态、不写文件**。
 
-已知缺口（审计 A10）：业务契约里 N11 = 证据守护，当前实现是评估节点；
-本模块对 guardian 如实标注 `note`，不假装它在工作。
+能力展示（F02）：每张卡下发 `capabilities` 四维事实（实现/依赖/本次执行方式/验证范围），
+未知维度保持 `None`；`idle` 只表示本次未开始，不表示「未实现」。UI 不得从状态或颜色推断能力。
 """
 
 from __future__ import annotations
@@ -22,11 +22,12 @@ STAGES: list[dict[str, Any]] = [
 
 #: 6 个模型角色里出现在卡片上的 5 个（Host 单独一行，不占角色卡）。
 AGENT_ROLES: list[dict[str, Any]] = [
-    {"role": "analyst", "name": "simenv-analyst", "nodes": ["N3"]},
-    {"role": "author", "name": "simenv-author", "nodes": ["N6"]},
-    {"role": "checker", "name": "simenv-checker", "nodes": ["N8", "N10"]},
-    {"role": "guardian", "name": "simenv-guardian", "nodes": ["N11"]},
-    {"role": "reporter", "name": "simenv-reporter", "nodes": ["N12"]},
+    {"role": "analyst", "name": "simenv-analyst", "nodes": ["N3"], "implemented": True},
+    {"role": "author", "name": "simenv-author", "nodes": ["N6"], "implemented": True},
+    {"role": "checker", "name": "simenv-checker", "nodes": ["N8", "N10"], "implemented": True},
+    # N11 已有成链判断/返工实现（model_steps.n11_review）；审计 A10 的「未实现」结论已过期。
+    {"role": "guardian", "name": "simenv-guardian", "nodes": ["N11"], "implemented": True},
+    {"role": "reporter", "name": "simenv-reporter", "nodes": ["N12"], "implemented": True},
 ]
 
 #: 每个节点可读的一行结论（产物第一行）；缺失就如实说缺失。
@@ -44,7 +45,8 @@ GATE_NODES: dict[str, str] = {
     "N14": "G3_regression_decision",
 }
 
-GUARDIAN_NOTE = "N11 证据守护在业务契约中存在、当前实现为评估节点（该能力未实现，审计 A10）；本卡可能长期 idle。"
+GUARDIAN_NOTE = "N11 证据守护（成链判断/返工）已实现；本卡为事件投影，验证范围以服务端证据为准。"
+GUARDIAN_IDLE_SUMMARY = "待命：本次尚未进入 N11"
 
 
 class _NodeState:
@@ -124,6 +126,29 @@ def _status(node: str, state: _NodeState | None, pending_interrupt: dict[str, An
     if state.finished_ts is not None:
         return "done"
     return "idle"
+
+
+def _execution(state: _NodeState | None, status: str) -> str:
+    """本次执行方式：`not_started / standin / real / unknown`（未知不猜）。"""
+    if state is None or status == "idle":
+        return "not_started"
+    mode = (state.mode or "").strip().lower()
+    if mode in ("live", "real"):
+        return "real"
+    if mode == "standin":
+        return "standin"
+    return "unknown"
+
+
+def _capabilities(role: dict[str, Any], state: _NodeState | None, status: str) -> dict[str, Any]:
+    """四维能力事实（Spec §4.3 F02）。未知维度保持 `None`，不用默认值冒充。"""
+    return {
+        "implemented": bool(role.get("implemented", True)),
+        # 本层没有 provider/UVS/夹具探针 ⇒ 依赖是否齐备是**未知**，不猜。
+        "dependencies_ready": None,
+        "execution": _execution(state, status),
+        "verification_scope": None,
+    }
 
 
 def _elapsed(state: _NodeState | None, status: str, now: float | None) -> int | None:
@@ -211,7 +236,7 @@ def build_agents(
         summary, evidence = _summary(node, run_dir)
         note = GUARDIAN_NOTE if role["role"] == "guardian" else None
         if role["role"] == "guardian" and status == "idle":
-            summary = "未实现（审计 A10）"
+            summary = GUARDIAN_IDLE_SUMMARY
         result.append(
             {
                 "role": role["role"],
@@ -228,6 +253,7 @@ def build_agents(
                 "mode": (state.mode if state and state.mode else "—"),
                 "evidence": evidence,
                 "note": note,
+                "capabilities": _capabilities(role, state, status),
             }
         )
     return result

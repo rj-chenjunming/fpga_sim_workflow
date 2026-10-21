@@ -41,7 +41,10 @@ def populate(api):
                      'koutou2': {'value': 1, 'zero': False, 'label': '口径二 · 用例状态'}},
              blockers=[{'severity': 'blocker', 'code': 'REVIEW_PENDING',
                         'message': '接口差异仍有未决条目，请先核对证据。'}],
-             agents=[{'role': role, 'nodes': nodes, 'status': 'done' if role == 'analyst' else 'idle',
+             agents=[{'role': role, 'nodes': nodes,
+                      'capabilities': {'implemented': True, 'dependencies_ready': None,
+                                       'execution': 'not_started', 'verification_scope': None},
+                      'status': 'done' if role == 'analyst' else 'idle',
                       'last_action': 'node_finished(ok)' if role == 'analyst' else '等待上游步骤',
                       'summary': '已生成接口变更摘要，等待人工复核。' if role == 'analyst' else None,
                       'mode': 'standin', 'elapsed_s': 12 if role == 'analyst' else None}
@@ -156,3 +159,21 @@ def test_compatibility_console_has_return_path_and_fits_browser(ui, width):
     capture(page, f'{width}-legacy')
     page.locator('.back-workspace').click()
     pw.expect(page.locator('#viewS0')).to_be_visible()
+
+
+def test_agent_cards_show_server_capability_facts(ui):
+    """F02：能力四维由服务端下发，卡片如实显示；idle 不得再被说成「未实现」。"""
+    page, api = ui
+    populate(api)
+    select(page, 'A')
+    cards = page.locator('.agent')
+    pw.expect(cards).to_have_count(5)
+    texts = ' '.join(cards.all_inner_texts())
+    assert '能力 实现 已实现' in texts
+    assert '未实现' not in texts
+    # idle 的 guardian 卡也带能力事实（未知维度显示「未知」，不猜）
+    guardian = cards.filter(has_text='simenv-guardian')
+    pw.expect(guardian).to_have_count(1)
+    guardian_text = guardian.inner_text()
+    assert '本次 未开始' in guardian_text
+    assert '依赖 未知' in guardian_text

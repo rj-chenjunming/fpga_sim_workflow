@@ -1370,6 +1370,8 @@
     body.appendChild(h("div", null, summary ? "摘要：" + summary : "摘要：产物未生成"));
     var note = a ? a.note : deriveNote(def, status);
     if (note) body.appendChild(h("div", "agent-note", String(note)));
+    var facts = capabilityLine(a && a.capabilities);
+    if (facts) body.appendChild(h("div", "agent-note", facts));
     card.appendChild(body);
 
     var foot = h("div", "agent-foot");
@@ -1470,10 +1472,19 @@
   }
 
   function deriveNote(def, status) {
-    if (def.role === "guardian" && status === "idle") {
-      return "N11 当前为评估节点，证据守护能力未实现（审计 A10）；本卡可能长期待命。";
-    }
-    return "该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威）。";
+    // 能力事实一律以服务端 capabilities 为准（Spec §4.3 F02）；本地派生卡不得断言
+    // 「未实现」或其它能力结论，idle 也不等于未实现。
+    return "该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。";
+  }
+
+  function capabilityLine(c) {
+    if (!c) return "";
+    var impl = c.implemented === true ? "已实现" : (c.implemented === false ? "未实现" : "未知");
+    var dep = c.dependencies_ready === true ? "齐备" : (c.dependencies_ready === false ? "缺失" : "未知");
+    var execMap = { not_started: "未开始", standin: "替身", real: "真实", unknown: "未知" };
+    var exec = execMap[c.execution] || "未知";
+    var scope = c.verification_scope ? String(c.verification_scope) : "未知";
+    return "能力 实现 " + impl + " · 依赖 " + dep + " · 本次 " + exec + " · 验证范围 " + scope;
   }
 
   function renderHostRow(v, derived) {

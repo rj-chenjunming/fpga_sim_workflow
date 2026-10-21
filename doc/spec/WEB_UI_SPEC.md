@@ -148,7 +148,17 @@
 | `evidence` | run 目录内产物相对路径 | 点击先 `GET …/evidence/exists` 探测，再打开/提示缺失 |
 
 - **诚实标注**：卡片底部统一标注「投影，非权威；判据以服务端 blockers / gates.json 为准」。
-- **已知缺口**：N11 证据守护在业务契约里存在、当前实现是评估节点（审计 A10）；卡片状态可能长期 `idle`，界面必须显示「未实现（审计 A10）」而不是假装工作中。
+- **能力事实（F02）**：每张卡由**服务端**下发 `capabilities`，四个维度相互独立、不得互相推断：
+
+  | 维度 | 取值 | 含义 |
+  |---|---|---|
+  | `implemented` | `true` / `false` | 该角色的业务能力是否已有实现（当前 5 个角色均为 `true`，含 N11 成链判断/返工） |
+  | `dependencies_ready` | `true` / `false` / `null` | 当前环境依赖（provider、UVS、夹具）是否齐备；`null` = **未知**，不得猜 |
+  | `execution` | `not_started` / `standin` / `real` / `unknown` | 本次运行该节点实际执行方式；`standin` 不等于真模型完成 |
+  | `verification_scope` | 字符串 / `null` | 本次证据覆盖的验证范围；`null` = 未知 |
+
+  UI 只消费这些字段，**不得**从 `idle`、颜色或历史审计结论推断能力；未知一律显示「未知」。
+  `idle` 只表示「本次尚未开始」，不表示「未实现」。
 
 ### 4.4 右列
 
@@ -339,6 +349,7 @@
 | A6 | 闸门提交仍走服务端权威；被拒时返回 blockers 且不消耗中断 | 沿用现有测试 + 界面手测 |
 | A7 | `/legacy.html` 仍可访问且旧接口未破坏 | 冒烟测试 |
 | A8 | 页面无外部链接；关键元素 id 存在；`GET /` 200 | 冒烟测试（HTML 解析） |
+| A9 | 每张 agent 卡带 `capabilities` 四维（未知为 `null`）；idle 不显示「未实现」；`standin`/`real` 如实区分 | 单测（`test_agent_view.py`）+ 浏览器用例（需 Chromium） |
 
 ---
 
@@ -381,7 +392,8 @@
 3. **agent 摘要**取产物第一行正文（最长 120 字符），不做换行裁剪与富文本。
 4. **状态细分**仍统一为 `waiting_gate`（审计 I18），tooltip 说明可能是作业/单槽等待。
 5. **`app.js` 约 2.4k 行**（单文件、无构建）；后续可在不引入构建步骤的前提下按视图拆分模块。
-6. **N11 证据守护**：卡片如实显示「未实现（审计 A10）」，不伪造工作状态。
+6. **N11 能力展示（F02）**：N11 已有成链判断/返工实现；卡片按 §4.3 的 `capabilities` 四维如实展示，
+   不得再显示「未实现」，也不得把 `standin` 或未开始的运行说成已完成证据守护。
 7. **G1 差异清单逐条渲染（2026-10-20 补）**：闸门材料消费 `difference_items`（含未决标记、evidence、行号/offset），
    消除"界面看不到条目却要求逐条确认"的缺口；回归见 `test_web_smoke.py::test_gate_material_script_renders_n2_diff_entries`
    与 `test_api_ui_contract.py::test_gate_material_projection_has_diff_entries`。

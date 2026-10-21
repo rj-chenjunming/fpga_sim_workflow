@@ -73,10 +73,46 @@ def test_checker_uses_latest_node(tmp_path: Path) -> None:
     assert agent["evidence"] == ["reconcile.md"]
 
 
-def test_guardian_reports_known_gap(tmp_path: Path) -> None:
+def test_guardian_capability_facts_when_idle(tmp_path: Path) -> None:
+    """F02：N11 已实现（成链判断/返工）；idle 只表示本次未开始，不得说「未实现」。"""
     agent = _by_role(build_agents([], run_dir=tmp_path, now=0))["guardian"]
     assert agent["status"] == "idle"
-    assert "未实现" in (agent["note"] or "")
+    assert "未实现" not in (agent["note"] or "")
+    assert "未实现" not in agent["summary"]
+    facts = agent["capabilities"]
+    assert facts["implemented"] is True
+    assert facts["execution"] == "not_started"
+    # 未知维度必须保持未知，不得用 false/猜测值填充
+    assert facts["dependencies_ready"] is None
+    assert facts["verification_scope"] is None
+
+
+def test_every_card_exposes_capability_facts(tmp_path: Path) -> None:
+    """四维能力事实由服务端下发，五张卡都有，UI 不需要自己推断。"""
+    agents = build_agents([], run_dir=tmp_path, now=0)
+    for agent in agents:
+        facts = agent["capabilities"]
+        assert set(facts) == {"implemented", "dependencies_ready", "execution", "verification_scope"}
+        assert isinstance(facts["implemented"], bool)
+        assert facts["execution"] == "not_started"
+
+
+def test_execution_dimension_distinguishes_standin_and_real(tmp_path: Path) -> None:
+    """本次执行方式如实反映事件里的 mode；standin 不得被显示成真实完成。"""
+    standin_events = [
+        _ev(1, 10, "N11", "node_started", "running"),
+        _ev(2, 20, "N11", "node_finished", "ok", {"mode": "standin"}),
+    ]
+    guardian = _by_role(build_agents(standin_events, run_dir=tmp_path, now=21))["guardian"]
+    assert guardian["status"] == "done"
+    assert guardian["capabilities"]["execution"] == "standin"
+
+    real_events = [
+        _ev(1, 10, "N11", "node_started", "running"),
+        _ev(2, 20, "N11", "node_finished", "ok", {"mode": "live"}),
+    ]
+    guardian = _by_role(build_agents(real_events, run_dir=tmp_path, now=21))["guardian"]
+    assert guardian["capabilities"]["execution"] == "real"
 
 
 def test_last_action_recorded(tmp_path: Path) -> None:

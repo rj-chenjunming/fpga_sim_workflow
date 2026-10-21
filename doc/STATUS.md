@@ -299,3 +299,24 @@ F01–F12 延续原编号，新增 F13 首次错误反馈、F14 样式收敛、F
 **登记为后续（本轮不做）**：①`kb/tools/` 子进程未加 `-B`（既有行为，可向冻结目录写 `__pycache__`）；
 ②`services/contracts.py::baseline_chain()` 是第二套 manifest 扫描（进闸门材料，未复用 §3.1 判据）；
 ③`/api/baselines` 失败 detail 未带 `missing/errors`。
+
+## 15 F02 能力说明与实际状态对齐（2026-10-21）
+
+规格 [Web UI §4.3 能力事实](spec/WEB_UI_SPEC.md)、§7 第 6 条、§10-A9；计划见
+[F02 切片计划](plans/2026-10-21-F02-capability-facts.md)。由 Lead 实现并自测，**未指派独立验证者**。
+
+旧结论「N11 证据守护未实现（审计 A10）」在四处已过期（服务端 note/summary、`app.js::deriveNote`、规格、既有用例），
+而 `n11_review` 已有成链判断/返工/身份四方同值实现。本切片改为**服务端下发四维能力事实**，
+UI 只消费、不再从 `idle` 或颜色推断。
+
+| 验证 | 原始输出（逐字复制） | 说明 |
+|---|---|---|
+| 修改前红灯 | `3 failed, 7 passed in 0.64s` | 旧实现无 `capabilities`；guardian 文案含「未实现」 |
+| 修改后单测 | `10 passed in 0.54s` | 四维字段、idle 不称未实现、standin≠real |
+| 浏览器目录收集 | `10 passed, 3 skipped in 0.58s` | 浏览器模块因缺 playwright 整组 skip |
+| 全套单测 | `46 failed, 271 passed, 3 skipped, 1 warning in 11.31s` | 46 项与拉取后基线同因（`ENV_ROOT` 只读），无新增回归 |
+| 前端语法 | `node --check web/app.js` 通过 | 仅证明可加载，不替代浏览器行为 |
+
+**未运行**：`tests/browser` 的真实 Chromium 断言。本机尝试安装时 PyPI 连接超时
+（`ReadTimeoutError ... pypi.org`、`Could not find a version that satisfies the requirement playwright<2,>=1.50`），
+系统亦无 Chromium；因此**不声称 UI 已在浏览器中验证**，该用例留给具备 Chromium 的环境执行。

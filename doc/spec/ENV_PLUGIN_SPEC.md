@@ -119,6 +119,28 @@
 4. **不得用 `skip` 冒充通过**：默认根仍如实执行并失败这 3 项；标记只用于分层选择，不改变默认根结果。
 5. 软件层入口的结论只覆盖纯软件层；它不能替代 kb 自测、端到端或真实链路验收。
 
+### 4.2 文档路径检查的根路由（F03-c）
+
+`doc/audit/check_doc_links.py` 是**唯一**的文档路径判据（不另写第二套）。它按「谁拥有这个路径」路由：
+
+| 路径类别 | 解析根 | 例 |
+|---|---|---|
+| 本仓工具 / Schema / 文档 / 代码 | `TOOL_ROOT` | `kb/tools/*`、`kb/schema/*`、`kb/README.md`、`loop/*`、`doc/spec/*`、`workspaces/*`、根 `README.md` |
+| 数据根 | `WORKSPACE_ROOT` | `kb/runs/`、`kb/baselines/`、`kb/index/`、`kb/conflicts/`、`kb/adjudication/`、`kb/FIXTURE_IDENTITY.md` |
+| 环境资产 | `ENV_ROOT` | `RTL/`、`TB/`、`PKG/`、`TESTLIB/`、`SIMLIB_RUN/`、`uvs.setup`、`doc/AGENTS.md`、`doc/_notes/`、`doc/skills/`、`doc/tools/`、`doc/spec/evidence/` |
+| 环境文档回落 | 仅当 `TOOL_ROOT` 不存在时用 `ENV_ROOT` | `doc/SIM_ENV_TESTLIB_GUIDE.md`（环境仓自带文档） |
+
+判定与退出码：
+
+1. **本仓/数据根**路径解析不到 ⇒ `missing`，**退出码 1**（真正的断链必须失败）。
+   `loop/` 前缀**不做**环境回落：旧路径（如已迁走的 `loop/ACCEPTANCE_V1.md`）必须暴露，不得被环境仓同名文件掩盖。
+2. **环境资产**解析不到 ⇒ 记入 `env_missing`，逐条打印 `[ENV-MISSING]`，**可见但不计失败**（本机未挂载内网
+   `ENV_ROOT` 资产属环境缺件，不是本仓断链）。不得把它静默过滤掉。
+3. `KNOWN_MISSING` 登记的「文档故意引用、本仓确实不存在」的缺口 ⇒ `known_missing`，打印原因，不计失败。
+4. `doc/history/`、`doc/evidence/demo/` 内的历史路径 ⇒ 计入 `historical`，不判失败（只增不改的历史快照）。
+5. 行号后缀（`:64-67`）、符号后缀（`::func`）、URL/锚点/模板/变量 ⇒ 先按既有契约剥离或跳过。
+6. 判定只看**退出码 + `missing`**；`checked/skipped` 是诊断值，不写回文档（见 STATUS §19）。
+
 ## 5 分步计划（每步一个提交，每步独立可验）
 
 ### 第 3 步（**让新仓能跑**，不搬数据）—— ✅ **已完成**（见本仓 git log）

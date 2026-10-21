@@ -117,8 +117,14 @@ def read_view(root, node, attempt=None):
     if selected is not None and selected not in records:
         raise KeyError('调用尝试不存在')
     request, result = records.get(selected, (None, None))
+    previous_input = None
+    if selected is not None:
+        earlier = [sequence for sequence in sorted(records) if sequence < selected]
+        if earlier:
+            previous_input = records[earlier[-1]][0].get('input')
     return {'run_id': Path(root).name, 'node': node, 'live': live_view(root, node),
             'attempts': summaries, 'selected_attempt': selected, 'request': request, 'result': result,
+            'previous_input': previous_input,
             'controls': _control_events(root, node),
             'observation': '实际输入、节点事件和返回结果；不提供模型隐藏推理或 token 流。'}
 

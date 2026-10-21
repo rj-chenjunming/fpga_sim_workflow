@@ -284,7 +284,10 @@ async def agent_window(run_id: str, node: str, attempt: int | None = Query(defau
                           if event.get('node') == node or str(event.get('node', '')).startswith(node + '_')]
         # F02-c：窗口与角色卡消费同一来源的能力事实（未知维度保持 None，不在此另算）。
         from services import agent_view
+        from host import agent_memory as AM
         view['capabilities'] = agent_view.node_capabilities(node, events)
+        # F10：预算上限由 Host 常量下发，前端不硬编码（红线 8：不出现第二套同判据）。
+        view['context_budget'] = {'limit_bytes': AM.MAX_CONTEXT_BYTES}
         return view
     except KeyError as exc:
         raise HTTPException(404, detail={'error': str(exc)}) from exc

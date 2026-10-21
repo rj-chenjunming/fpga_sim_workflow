@@ -73,6 +73,9 @@ async def test_agent_window_api_returns_same_capabilities(ctx, provider, monkeyp
         "execution": "standin",
         "verification_scope": None,
     }
+    # F10：预算上限由 Host 下发，前端不硬编码
+    from host import agent_memory as AM
+    assert body["context_budget"] == {"limit_bytes": AM.MAX_CONTEXT_BYTES}
 
 
 def test_there_is_a_single_role_projection():

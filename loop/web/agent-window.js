@@ -50,6 +50,7 @@ window.AgentWindow = (function () {
     $("awIdentity").textContent = target.runId + " / " + target.node + (live ? " / " + live.session_id : " / 历史记录");
     var capsText = window.Capabilities ? window.Capabilities.line(view.capabilities) : "";
     $("awCapabilities").textContent = capsText || "能力事实未知（非模型角色节点或服务端未投影）";
+    explain(view);
     var status = live ? {working: "运行中", paused: "已暂停", interrupting: "干预处理中", starting: "正在启动"}[live.state] || live.state : "只读 · 无活跃请求";
     $("awStatus").textContent = status;
     $("awStatus").className = "chip " + (live && live.state === "working" ? "primary" : "");
@@ -110,6 +111,57 @@ window.AgentWindow = (function () {
     epoch++; request++; target = null; data = null;
     if ($("agentWindow").open) $("agentWindow").close();
   }
+  /* F10/F11：只读解释（预算构成/经验原因/尝试摘要/输入差异）；不发请求、不改记录。 */
+  function explain(view) {
+    var X = window.ContextExplain;
+    var request = view.request || null;
+    var budgetEl = $("awBudget");
+    var summaryEl = $("awBudgetSummary");
+    var attemptsEl = $("awAttempts");
+    if (!X || !budgetEl || !summaryEl || !attemptsEl) return;
+    if (!request) {
+      budgetEl.textContent = "无请求记录（历史为空或该尝试不可读）";
+      summaryEl.textContent = "—";
+    } else {
+      var limit = (view.context_budget || {}).limit_bytes;
+      var b = X.budget(request.input || {}, limit);
+      var lines = b.rows.map(function (row) {
+        return row.label + ": " + row.bytes + " B（" + row.percent + "%）";
+      });
+      lines.push("合计: " + b.totalBytes + " B");
+      lines.push("上限: " + (b.limitBytes === null ? "未知" : b.limitBytes + " B") +
+        " · 使用率: " + (b.usedPercent === null ? "未知" : b.usedPercent + "%"));
+      lines.push("token 估算: 未知（未测量）");
+      var reasons = X.experience(request);
+      if (reasons.length) {
+        lines.push("经验采用/拒绝原因:");
+        reasons.forEach(function (item) { lines.push("  - " + item.message); });
+      }
+      budgetEl.textContent = lines.join("\n");
+      summaryEl.textContent = b.totalBytes + " B" + (b.limitBytes === null ? "" : " / " + b.limitBytes + " B");
+    }
+    var rows = X.attempts(view.attempts || []);
+    var attLines = rows.map(function (row) {
+      return "#" + row.attempt + " · " + row.status + " · 方式 " + row.model + " · cycle " + row.cycle;
+    });
+    if (request && request.input) {
+      var diff = X.inputDiff(view.previous_input || {}, request.input);
+      attLines.push("");
+      if (!view.previous_input) {
+        attLines.push("输入差异: 无更早的可比较尝试");
+      } else if (!diff.changed) {
+        attLines.push("输入差异: 与上一尝试无差异");
+      } else {
+        attLines.push("输入差异（相对上一尝试）:");
+        diff.rows.forEach(function (row) {
+          attLines.push("  - " + row.key + "：" + row.change + " · " +
+            row.fromBytes + " B → " + row.toBytes + " B");
+        });
+      }
+    }
+    attemptsEl.textContent = attLines.length ? attLines.join("\n") : "无尝试记录";
+  }
+
   function reset() {
     data = null; attempt = ""; draftRequest = null; sessionSeen = null;
     $("awActor").value = "human:"; $("awMessage").value = "";
@@ -118,6 +170,8 @@ window.AgentWindow = (function () {
     $("awAttempt").value = "";
     $("awModel").textContent = "读取中…";
     $("awCapabilities").textContent = "能力事实读取中…";
+    if ($("awBudget")) $("awBudget").textContent = "读取中…";
+    if ($("awAttempts")) $("awAttempts").textContent = "读取中…";
     $("awResultStatus").textContent = "读取中…";
     $("awIdentity").textContent = target.runId + " / " + target.node;
     ["awInput", "awPrompt", "awOutput"].forEach(function (id) { $(id).textContent = "读取中…"; });

@@ -56,9 +56,10 @@
 | 前端语法 | `node --check web/app.js` 通过 | 不替代浏览器行为 |
 | 默认根全套 | `46 failed, 291 passed, 3 skipped, 1 warning in 11.66s` | 46 项同因；通过数 288→291 |
 | 软件层全套 | `3 failed, 334 passed, 3 skipped, 1 warning in 75.55s` | 仍为 3 项环境层 |
-| 文档门（复核整改后） | `checked=894 skipped=11279 historical=834 missing=0` | 原记录 `890/11006/834/1` 属先测后写漂移，已改口径（报告落盘后复跑） |
+| 文档门（最终口径） | 退出码 `0`、`missing=0` | `checked/skipped` 为诊断值且由记录动作本身改变（复核实测 11029/11302），不再作为门禁数字 |
 
 ## 7 独立复核
 
-报告：[doc/audit/F02b-verify-20261021.md](../audit/F02b-verify-20261021.md)（仅验证者写入），md5 `36a66e6a6af5e3dc10b8bac168e6b4fe`；
-结论建议合并；2 项必改（§9→§6.4、文档门计数）与建议项（去重/截断标注/浏览器表述）已修。
+报告：[doc/audit/F02b-verify-20261021.md](../audit/F02b-verify-20261021.md)（仅验证者写入），md5 `47af1e563e6f736984c39888e4209e48`；
+首轮建议合并；回归复核停在 `3b9475f` 并记录 2 项未完全闭合（漏一处 §9、诊断计数漂移）。最终处置见 [STATUS §21.1](../STATUS.md)：
+补齐引用 + 门禁改为「退出码 0 + missing=0」；独立复核未覆盖最后一处修复，登记为残余。

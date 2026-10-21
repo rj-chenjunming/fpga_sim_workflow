@@ -263,7 +263,7 @@ F01–F12 延续原编号，新增 F13 首次错误反馈、F14 样式收敛、F
 ## 14 F01 基线准入与全链身份（2026-10-21）
 
 基线提交 `fb83ed0`。规格 [编排规格 §3.1](spec/LOOP_ORCHESTRATION_SPEC.md#31-基线准入与身份f01) 与
-[Web UI §6.1/§9](spec/WEB_UI_SPEC.md)，计划见 [F01 切片计划](plans/2026-10-21-F01-baseline-admission.md)。
+[Web UI §6.1/§6.4](spec/WEB_UI_SPEC.md)，计划见 [F01 切片计划](plans/2026-10-21-F01-baseline-admission.md)。
 本切片由 Lead 实现；**会话内独立复核 `f01-verifier`（只读两轮：首轮 3 项必改 → 修复 → 二轮「可合并」）**，
 复核报告未落盘为独立文件（流程偏差见 §19）；数字一律从命令输出复制。
 
@@ -418,7 +418,7 @@ F16 前已在用片段；120063 来自片段 **after 文本在 excerpt/changed_r
 | DoD 四道门未全绿 | 单测仅软件层可判（323 passed / 3 环境层 failed）；kb 自测与端到端未运行（`ENV_ROOT` 只读/内网缺件） | 高 | 维持「不声称合规」；内网侧补跑后回填 |
 | 数字口径 | 两处加和错误、46 项失败表述过粗（实为 44 + 2） | 中 | 数字必须来自命令输出；跨字段加和需注明不适用情形 |
 | 文档门自引用漂移 | 记录 missing 数时又把 `TB/top.sv` 写回文档，导致下次扫描 +1（F16-b 复核两次遇到） | 中 | 环境缺件登记 `KNOWN_MISSING`（`doc/audit/check_doc_links.py`）并写明理由；文档门以登记后 `missing=0` 为准 |
-| 文档门「先测后写」漂移 | F02-b 先测 `skipped=11006`、写文档后同树实为 11029（复核发现） | 中 | 文档门的数字必须在**文档最终写入后**复跑记录，或在同提交内复跑确认 |
+| 文档门诊断计数不稳定 | F02-b 连续三次记录 `skipped` 均与同树实测不符（11006→11029、11279→11302）：**记录动作本身**会新增被扫描的代码跨度 | 中 | 门禁只认**退出码 + `missing`**；`checked/skipped` 仅诊断、不回填；需要趋势时单独落盘快照文件而非写进被扫文档 |
 
 ## 20 F16-b coverage 语义与空沙盒闭锁（2026-10-21）
 
@@ -459,7 +459,7 @@ F16 前已在用片段；120063 来自片段 **after 文本在 excerpt/changed_r
 
 ## 21 F02-b 基线错误结构化 detail 与前端展示（2026-10-21）
 
-规格 [Web UI §9 / §6.1](spec/WEB_UI_SPEC.md)、计划 [F02-b](plans/2026-10-21-F02b-baseline-error-detail.md)。
+规格 [Web UI §6.4 / §6.1](spec/WEB_UI_SPEC.md)、计划 [F02-b](plans/2026-10-21-F02b-baseline-error-detail.md)。
 顺序遵循 §19：**计划+规格先提交**（`29626db`）→ **红灯用例**（`fcfefa3`）→ 实现（本节提交）。
 
 | 验证 | 原始输出（逐字复制） | 说明 |
@@ -469,7 +469,7 @@ F16 前已在用片段；120063 来自片段 **after 文本在 excerpt/changed_r
 | 前端语法 | `node --check web/app.js` 通过 | 不替代浏览器行为 |
 | 默认根全套 | `46 failed, 291 passed, 3 skipped, 1 warning in 11.23s` | 46 项同因；通过数 288→291 |
 | 软件层全套 | `3 failed, 334 passed, 3 skipped, 1 warning in 72.07s` | 仍为 3 项环境层（archive ×2、冻结见证） |
-| 文档门（复核整改后） | `checked=894 skipped=11279 historical=834 missing=0` | 复核前记录 `890/11006/834/1` 是「先测后写」漂移（见 §21.1） |
+| 文档门（最终口径） | 退出码 `0`、`missing=0` | `checked/skipped` 是**诊断值**且会因记录动作本身改变（复核实测同一提交 11029/11302），**不再作为门禁数字**；详见 §21.1 |
 
 实现：`api.py` 仅对 `BaselineInvalid` 返回 `{error, baseline, missing[], errors[]}`（取判据的 `details`，
 不二次推导；其它 `ValueError` 形态不变）；`app.js` 的 `errText` 追加「缺件/违规」，配置视图基线提示与
@@ -479,9 +479,14 @@ UI 仅有语法检查与静态审查，F13 一并补浏览器用例。
 
 ### 21.1 独立复核（f02b-verifier，报告已落盘）
 
-报告 [doc/audit/F02b-verify-20261021.md](audit/F02b-verify-20261021.md)，md5 `36a66e6a6af5e3dc10b8bac168e6b4fe`。
-结论 **建议合并**（无代码阻断），2 项必改已在本轮修复：① 契约引用误写 §9，实际为 **§6.4**（计划/STATUS/代码注释/测试共 5 处）；
-② 文档门记录 `skipped=11006` 不可复现（同树实测 11029，属先测后写），已改为**最终态复跑**并记录 `894/11279/834/0`。
-建议项亦已处理：`errText` 不再重复展示原因；违规截断时标注总条数；浏览器表述更正为「缺 playwright 包、系统有 google-chrome」。
-复核确认：detail 四字段与 `host.baseline.inspect` 逐项相等（无二次推导）、拒绝零副作用、红灯（`git archive fcfefa3`）
-`2 failed, 1 passed` 真实、失败集与 `f4f0979` 逐个相同。
+报告 [doc/audit/F02b-verify-20261021.md](audit/F02b-verify-20261021.md)，md5 `47af1e563e6f736984c39888e4209e48`
+（含回归复核小节；初版 md5 `36a66e6a…`）。首轮结论 **建议合并**，2 项必改：① 契约引用误写 §9（实为 **§6.4**）；
+② 文档门计数不可复现。建议项：`errText` 去重、违规截断标注、浏览器表述更正为「缺 playwright 包、系统有 google-chrome」。
+
+**回归复核（停在 `3b9475f`）的发现与最终处置**：
+- 必改 1：当时仍漏 `STATUS §21` 一处 §9（与「5 处已修复」的表述矛盾）——已在后续提交补齐（含 F01 行的 §6.1/§9→§6.1/§6.4）。
+- 必改 2：`skipped` 在 `3b9475f` 干净树实测 11302（记录 11279）——根因是**记录动作本身引入被扫描的代码跨度**。
+  处置：门禁口径改为「退出码 0 + `missing=0`」，`checked/skipped` 仅作诊断且不再回填（见 §19 新行）。
+- 诚实边界：独立复核**未覆盖**最后一处 §9 修复与本口径变更；登记为残余，下一轮切片复核一并确认。
+复核已确认（`3b9475f` 状态）：detail 四字段与 `host.baseline.inspect` 逐项相等（无二次推导）、拒绝零副作用、
+红灯（`git archive fcfefa3`）`2 failed, 1 passed` 真实、失败集与 `f4f0979` 逐个相同。

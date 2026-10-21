@@ -56,6 +56,18 @@
 - 重新打开记录可校验完整性并读取当时输入和结果；核验命令不重发模型请求、不重放写操作、不默认打印源码内容。输出中的 request/result 引用用于追踪；下游不得据其绕过业务校验。
 - SHA-256 用于核验文件是否与所记录的指纹一致，不构成不可抵赖签名；拥有本机写权者能同时修改文件与指纹。跨用户可信审批需要后续鉴权契约。
 
+## 封存与恢复（F08）
+
+- 一次调用尝试的记录由 `request.json` + `.sha256`（以及完成时的 `result.json` + `.sha256`）构成；
+  写作者唯一为 Host `agent_memory`，读者不得修改或回填。
+- 公开诊断 `record_state(path)` 只读返回：`absent`（无文件）/ `incomplete`（数据在、校验缺，或 result 缺）/
+  `corrupt`（校验不匹配或 JSON 不可解析）/ `committed`（内容与校验一致）。
+- 消费规则：`incomplete`/`corrupt` 的尝试**不得**被当作有效请求/结果消费；读取视图把该尝试标为对应状态，
+  其它 `committed` 尝试照常可读。路径越界、符号链接、身份不匹配仍显式失败。
+- 进程终止（含 `SIGKILL`）留下的半写记录由上述状态诊断；恢复只读诊断**不自动重发**模型请求，
+  新尝试按序号继续分配、不覆盖已发布记录。
+- 公开封存接口 `seal_record(path, value)`；跨模块不得直接调用私有 `_sealed`。
+
 ## M2 人工确认经验
 
 - 可选文件为 `<WORKSPACE_ROOT>/adjudication/agent_experiences.json`，顶层 `{version: 1, items: [...]}`。Host 只读；缺文件视为未配置，不影响普通执行。

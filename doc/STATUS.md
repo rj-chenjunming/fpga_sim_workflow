@@ -337,3 +337,30 @@ UI 只消费、不再从 `idle` 或颜色推断。
 沙箱内 `ps` 不可见），故不能用 mtime/md5 反证「测试未写共享 state」；证据改为进程内 `STATE_DIR`
 指向一次性目录的断言。**未解决**：46 项 `ENV_ROOT` 只读失败（F03-b 需按测试类别注入可写数据根），
 F03-c 文档解析器根解析，多环境按 `ENV_ID` 分区 state/槽键。
+
+## 17 F03-b 软件层入口与新发现 F16（2026-10-21）
+
+计划见 [F03-b 切片计划](plans/2026-10-21-F03b-software-layer.md)。新增
+`loop/spikes/run_software_checks.sh`：可写影子数据根（`runs/` 新建、`index/conflicts/adjudication` 浅拷贝、
+`baselines/` 与 drill 夹具轮 `RUN-20261015-120626` 符号链接）+ conftest 注入的 `$LOOP_STATE_ROOT`。
+
+| 验证 | 原始输出（逐字复制） | 说明 |
+|---|---|---|
+| 默认根 | `46 failed, 275 passed, 3 skipped in 11.23s` | 46 项全为只读 `OSError` |
+| 影子根首跑（未链夹具） | `44 failed, 271 passed, 9 skipped in 650.84s` | 失败转为 `AssertionError`（N0/N1 缺 drill 夹具） |
+| 链接夹具后 `test_flow.py` | `11 failed`（18 项中） | 链路可执行，暴露 F16 |
+
+### F16 · N6 上下文预算超限（阻断）
+
+```
+RuntimeError: 闸门 G1_diff_confirm 已签署但恢复失败（run 已置 failed）：
+  agent context budget exceeded（上下文预算）: 130546 > 120000 bytes
+```
+
+复现：`bash spikes/run_software_checks.sh tests/test_flow.py::test_gates_are_recorded_once_each`。
+原因：本次拉取删除了 N6「20 行/6000 字/3 个定义」上限，`api_semantics` 全文 + `excerpts` 全量后
+输入 130546 bytes 超过 120000 硬预算；`check_budget` 显式失败 ⇒ drill 全链在 G1 后收敛为 failed。
+默认只读根下因更早的 `mkdir` 失败而未暴露。**未修**；方向见计划 §4（去重 / 重定上限 / 分块），
+需要先定契约。该缺陷使**四道门端到端在本机不可判为通过**。
+
+**未完成**：F03-b 的测试分层标记（纯软件/受控插件/真实内网）与剩余失败分类、F03-c 文档解析。

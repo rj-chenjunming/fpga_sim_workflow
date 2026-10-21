@@ -179,7 +179,7 @@
     return prefix + (e.message || String(e)) + errDetailText(e);
   }
 
-  // 基线拒绝的结构化字段（Web UI §9）：missing=缺件，errors=schema/身份/指纹/链违规。
+  // 基线拒绝的结构化字段（Web UI §6.4）：missing=缺件，errors=schema/身份/指纹/链违规。
   // 只展示服务端下发内容，不在前端重新推导或猜测原因。
   function errDetailText(e) {
     var d = e && e.body && e.body.detail;
@@ -189,7 +189,9 @@
       parts.push("缺件：" + d.missing.join("、"));
     }
     if (Array.isArray(d.errors) && d.errors.length) {
-      parts.push("违规：" + d.errors.slice(0, 3).join("、"));
+      var shown = d.errors.slice(0, 3).join("、");
+      if (d.errors.length > 3) shown += " …（共 " + d.errors.length + " 条）";
+      parts.push("违规：" + shown);
     }
     return parts.length ? "（" + parts.join("；") + "）" : "";
   }

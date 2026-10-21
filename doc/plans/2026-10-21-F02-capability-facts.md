@@ -58,7 +58,7 @@
 | 前端语法 | `node --check web/app.js` 通过 | 仅证明可加载，不替代浏览器行为 |
 
 **未运行**：`tests/browser` 的真实 Chromium 断言（本机 `pip install playwright` 无网络到 PyPI、
-系统无 Chromium）。因此本轮**不声称** UI 已在浏览器中验证；新增用例留给具备 Chromium 的环境执行。
+系统有 `/usr/bin/google-chrome`，但缺 `playwright` Python 包）。因此本轮**不声称** UI 已在浏览器中验证；新增用例留给具备 playwright 的环境执行。
 
 ## 6 回退
 

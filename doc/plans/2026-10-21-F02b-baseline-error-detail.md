@@ -9,7 +9,7 @@
 | 类型 | 缺陷修复（错误可诊断性）＋前端展示 |
 | 基线提交 | `f4f0979` |
 | 唯一 owner | API 投影 owner（detail）+ UI owner（展示）；本切片同一 owner |
-| 规格位置 | [Web UI §9 POST /api/runs](../spec/WEB_UI_SPEC.md)、§6.1 |
+| 规格位置 | [Web UI §6.4 POST /api/runs](../spec/WEB_UI_SPEC.md)、§6.1 |
 | 允许修改 | `loop/services/api.py`、`loop/web/app.js`、`loop/tests/test_api_baseline_detail.py`（新增）、`doc/spec/WEB_UI_SPEC.md`、本计划、`doc/STATUS.md` |
 | 不修改 | `kb/**`、闸门、拓扑、冻结证据；不改准入判据本身 |
 
@@ -40,7 +40,8 @@
 | F02-b3 | 实现：`api.py` 构造 detail；`app.js` 展示 missing/errors | 定向 + 全套；`node --check` |
 | F02-b4 | 独立复核报告 `doc/audit/F02b-verify-20261021.md` | 报告含命令与 md5 |
 
-**验证边界**：本机无 Chromium，UI 行为不跑浏览器断言（如实登记未运行）；API detail 有单测覆盖。
+**验证边界**：缺 `playwright` Python 包（系统有 `/usr/bin/google-chrome`，PyPI 不可达），UI 行为不跑浏览器断言
+（如实登记未运行）；API detail 有单测覆盖。
 
 ## 5 回退
 
@@ -55,8 +56,9 @@
 | 前端语法 | `node --check web/app.js` 通过 | 不替代浏览器行为 |
 | 默认根全套 | `46 failed, 291 passed, 3 skipped, 1 warning in 11.66s` | 46 项同因；通过数 288→291 |
 | 软件层全套 | `3 failed, 334 passed, 3 skipped, 1 warning in 75.55s` | 仍为 3 项环境层 |
-| 文档门 | `checked=890 skipped=11006 historical=834 missing=1` | 唯一缺件为待生成复核报告；落盘后复跑 |
+| 文档门（复核整改后） | `checked=894 skipped=11279 historical=834 missing=0` | 原记录 `890/11006/834/1` 属先测后写漂移，已改口径（报告落盘后复跑） |
 
 ## 7 独立复核
 
-报告：[doc/audit/F02b-verify-20261021.md](../audit/F02b-verify-20261021.md)（仅验证者写入；md5 由 Lead 在 STATUS 记录）。
+报告：[doc/audit/F02b-verify-20261021.md](../audit/F02b-verify-20261021.md)（仅验证者写入），md5 `36a66e6a6af5e3dc10b8bac168e6b4fe`；
+结论建议合并；2 项必改（§9→§6.4、文档门计数）与建议项（去重/截断标注/浏览器表述）已修。

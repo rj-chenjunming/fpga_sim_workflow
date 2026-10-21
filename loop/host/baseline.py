@@ -47,9 +47,8 @@ class BaselineInvalid(ValueError):
     def __init__(self, baseline_id: str, details: dict[str, Any]):
         self.baseline_id = baseline_id
         self.details = details
-        reasons = [*(details.get("missing") or []), *(details.get("errors") or [])]
-        summary = "；".join(reasons) or "基线无效"
-        super().__init__(f"基线 {baseline_id!r} 未通过准入：{summary}")
+        # 只给身份：缺失件/违规由 `details` 承载，避免 API/UI 同时展示 message 与数组造成重复。
+        super().__init__(f"基线 {baseline_id!r} 未通过准入（详情见 missing/errors）")
 
 
 def normalize(value: Any) -> str:

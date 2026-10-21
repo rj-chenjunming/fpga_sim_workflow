@@ -1,6 +1,6 @@
 """F02-b：`POST /api/runs` 在基线无效时返回**结构化** detail（missing / errors）。
 
-契约见 [Web UI §9](../../doc/spec/WEB_UI_SPEC.md)。失败必须可诊断，而不是一段拼接文本。
+契约见 [Web UI §6.4](../../doc/spec/WEB_UI_SPEC.md)。失败必须可诊断，而不是一段拼接文本。
 """
 
 from __future__ import annotations
@@ -56,6 +56,8 @@ def test_bad_manifest_returns_errors_list(
     assert detail["baseline"] == "v9"
     assert isinstance(detail["missing"], list)
     assert isinstance(detail["errors"], list) and detail["errors"], detail
+    # 结构化字段与 message 分工：message 不重复拼接 schema 违规（避免 UI 双份展示）。
+    assert "schema" not in detail["error"], detail["error"]
 
 
 def test_non_baseline_value_error_detail_shape_is_unchanged(

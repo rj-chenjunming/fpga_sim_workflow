@@ -320,7 +320,7 @@ UI 只消费、不再从 `idle` 或颜色推断。
 
 **未运行**：`tests/browser` 的真实 Chromium 断言。本机尝试安装时 PyPI 连接超时
 （`ReadTimeoutError ... pypi.org`、`Could not find a version that satisfies the requirement playwright<2,>=1.50`），
-系统亦无 Chromium；因此**不声称 UI 已在浏览器中验证**，该用例留给具备 Chromium 的环境执行。
+系统存在 `/usr/bin/google-chrome`，但缺 `playwright` Python 包（PyPI 不可达）⇒ 浏览器用例仍无法在 pytest 中执行；因此**不声称 UI 已在浏览器中验证**。
 
 ## 16 F03-a 验证隔离最小切片（2026-10-21）
 
@@ -390,7 +390,7 @@ F16 前已在用片段；120063 来自片段 **after 文本在 excerpt/changed_r
 `N8_SANDBOX_BUDGET_BYTES`(60000) 按文件名顺序降级；`changed_regions` 不重复下发 after 文本
 （after 只在 `excerpt`），按实际序列化大小计费；片段不可得即 fail closed（不静默抽样、不丢文件）。
 
-**未运行**：浏览器（缺 Chromium）、kb 自测与端到端（`ENV_ROOT` 只读）。
+**未运行**：浏览器（缺 `playwright` Python 包；系统有 `/usr/bin/google-chrome`）、kb 自测与端到端（`ENV_ROOT` 只读）。
 
 ### 18.1 独立复核（f16-verifier，只读）
 
@@ -418,6 +418,7 @@ F16 前已在用片段；120063 来自片段 **after 文本在 excerpt/changed_r
 | DoD 四道门未全绿 | 单测仅软件层可判（323 passed / 3 环境层 failed）；kb 自测与端到端未运行（`ENV_ROOT` 只读/内网缺件） | 高 | 维持「不声称合规」；内网侧补跑后回填 |
 | 数字口径 | 两处加和错误、46 项失败表述过粗（实为 44 + 2） | 中 | 数字必须来自命令输出；跨字段加和需注明不适用情形 |
 | 文档门自引用漂移 | 记录 missing 数时又把 `TB/top.sv` 写回文档，导致下次扫描 +1（F16-b 复核两次遇到） | 中 | 环境缺件登记 `KNOWN_MISSING`（`doc/audit/check_doc_links.py`）并写明理由；文档门以登记后 `missing=0` 为准 |
+| 文档门「先测后写」漂移 | F02-b 先测 `skipped=11006`、写文档后同树实为 11029（复核发现） | 中 | 文档门的数字必须在**文档最终写入后**复跑记录，或在同提交内复跑确认 |
 
 ## 20 F16-b coverage 语义与空沙盒闭锁（2026-10-21）
 
@@ -466,12 +467,21 @@ F16 前已在用片段；120063 来自片段 **after 文本在 excerpt/changed_r
 | 失败用例先红 | `2 failed, 1 passed in 0.81s` | 未知基线 / 坏 manifest 的 400 只有 error |
 | 实现后定向 | `3 passed in 0.76s` | 含「非基线 ValueError 形态不变」 |
 | 前端语法 | `node --check web/app.js` 通过 | 不替代浏览器行为 |
-| 默认根全套 | `46 failed, 291 passed, 3 skipped, 1 warning in 11.66s` | 46 项同因；通过数 288→291 |
-| 软件层全套 | `3 failed, 334 passed, 3 skipped, 1 warning in 75.55s` | 仍为 3 项环境层（archive ×2、冻结见证） |
-| 文档门 | `checked=890 skipped=11006 historical=834 missing=1` | 唯一缺件为待生成复核报告；落盘后复跑 |
+| 默认根全套 | `46 failed, 291 passed, 3 skipped, 1 warning in 11.23s` | 46 项同因；通过数 288→291 |
+| 软件层全套 | `3 failed, 334 passed, 3 skipped, 1 warning in 72.07s` | 仍为 3 项环境层（archive ×2、冻结见证） |
+| 文档门（复核整改后） | `checked=894 skipped=11279 historical=834 missing=0` | 复核前记录 `890/11006/834/1` 是「先测后写」漂移（见 §21.1） |
 
 实现：`api.py` 仅对 `BaselineInvalid` 返回 `{error, baseline, missing[], errors[]}`（取判据的 `details`，
 不二次推导；其它 `ValueError` 形态不变）；`app.js` 的 `errText` 追加「缺件/违规」，配置视图基线提示与
-目录选择器展示 `errors`。**未运行**：浏览器断言（缺 Chromium/PyPI 不可达）——UI 仅有语法检查与静态审查，
-F13 一并补浏览器用例。独立复核：报告由验证者写入
-[doc/audit/F02b-verify-20261021.md](audit/F02b-verify-20261021.md)（Lead 不改该文件）。
+目录选择器展示 `errors`；`BaselineInvalid` 的 message 改为只给身份（缺失件/违规由 detail 承载，避免 UI 双份展示），
+`errors` 超过 3 条时标注总数。**未运行**：浏览器断言（缺 `playwright` Python 包；系统有 google-chrome）——
+UI 仅有语法检查与静态审查，F13 一并补浏览器用例。
+
+### 21.1 独立复核（f02b-verifier，报告已落盘）
+
+报告 [doc/audit/F02b-verify-20261021.md](audit/F02b-verify-20261021.md)，md5 `36a66e6a6af5e3dc10b8bac168e6b4fe`。
+结论 **建议合并**（无代码阻断），2 项必改已在本轮修复：① 契约引用误写 §9，实际为 **§6.4**（计划/STATUS/代码注释/测试共 5 处）；
+② 文档门记录 `skipped=11006` 不可复现（同树实测 11029，属先测后写），已改为**最终态复跑**并记录 `894/11279/834/0`。
+建议项亦已处理：`errText` 不再重复展示原因；违规截断时标注总条数；浏览器表述更正为「缺 playwright 包、系统有 google-chrome」。
+复核确认：detail 四字段与 `host.baseline.inspect` 逐项相等（无二次推导）、拒绝零副作用、红灯（`git archive fcfefa3`）
+`2 failed, 1 passed` 真实、失败集与 `f4f0979` 逐个相同。

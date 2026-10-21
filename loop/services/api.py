@@ -197,7 +197,7 @@ async def create_run(payload: dict[str, Any] = Body(default={})) -> dict[str, An
         from host.baseline import BaselineInvalid
 
         if isinstance(exc, BaselineInvalid):
-            # 结构化拒绝（Web UI §9）：missing/errors 直接取判据（唯一来源），不在 API 层二次推导。
+            # 结构化拒绝（Web UI §6.4）：missing/errors 直接取判据（唯一来源），不在 API 层二次推导。
             details = exc.details
             raise HTTPException(status_code=400, detail={
                 "error": str(exc),

@@ -84,8 +84,10 @@ def test_unlocatable_change_fails_closed(tmp_path: Path) -> None:
     sandbox = tmp_path / "sandbox" / "TESTLIB"
     sandbox.mkdir(parents=True)
     (sandbox / "tc_big.sv").write_text("// " + "z" * 5000 + "\n", encoding="utf-8")
-    with pytest.raises(RuntimeError, match="N8 上下文预算"):
+    with pytest.raises(RuntimeError, match="N8 上下文预算") as excinfo:
         MS.build_sandbox_cases(sandbox, None, [], budget_bytes=1000)
+    # F16-c：错误消息必须能定位到具体文件，不能只给泛化结论。
+    assert "tc_big.sv" in str(excinfo.value)
 
 
 def test_small_input_keeps_full_text(tmp_path: Path) -> None:
@@ -166,6 +168,32 @@ def test_complete_means_all_changed_regions_are_provided(tmp_path: Path) -> None
             assert coverage["regions"] == expected, (item["file"], coverage["regions"], expected)
             assert coverage["complete"] is True
             assert item["changed_regions"], "complete=true 必须确有变更区域"
+
+
+def test_partial_missing_error_lists_missing_and_present_cases(tmp_path: Path) -> None:
+    """F16-c：消息含缺失用例名与沙盒内现有用例名，便于定位是哪一件没被写出来。"""
+    sandbox = tmp_path / "sandbox" / "TESTLIB"
+    sandbox.mkdir(parents=True)
+    (sandbox / "a.sv").write_text("module a; endmodule\n", encoding="utf-8")
+    applied = [
+        {"case": "a", "file": "TESTLIB/a.sv", "edits": [{"line": 1}]},
+        {"case": "b", "file": "TESTLIB/b.sv", "edits": [{"line": 2}]},
+    ]
+    with pytest.raises(RuntimeError) as excinfo:
+        MS.build_sandbox_cases(sandbox, None, applied)
+    message = str(excinfo.value)
+    assert "b.sv" in message and "a.sv" in message
+
+
+def test_empty_sandbox_error_names_expected_cases(tmp_path: Path) -> None:
+    """F16-c：空沙盒闭锁时必须说明 applied_cases 期待哪些用例（或明确为空）。"""
+    sandbox = tmp_path / "sandbox" / "TESTLIB"
+    sandbox.mkdir(parents=True)
+    applied = [{"case": "demo", "file": "TESTLIB/demo.sv", "edits": [{"line": 1}]}]
+    with pytest.raises(RuntimeError) as excinfo:
+        MS.build_sandbox_cases(sandbox, None, applied)
+    message = str(excinfo.value)
+    assert "demo.sv" in message and "没有 *.sv" in message
 
 
 def test_applied_case_missing_one_file_fails_closed(tmp_path: Path) -> None:

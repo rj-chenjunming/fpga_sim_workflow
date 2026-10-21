@@ -135,6 +135,50 @@ async def test_characterization_small_n8_reads_code_and_emits_pass(ctx, provider
     assert data.emitted == ["N8_PASS"]
 
 
+async def test_n8_closure_fails_before_any_model_call(ctx, provider):
+    """F16-c：闭锁必须发生在模型调用之前（不创建 agent、不产生请求）。"""
+    ctx.mode = "drill"
+    lib = ctx.run_dir / "sandbox" / "TESTLIB"
+    lib.mkdir(parents=True)
+    data = Data(ctx)
+    with pytest.raises(RuntimeError, match="沙盒|可复核"):
+        await M.n8_check(data)
+    assert provider["agents"] == []
+    assert provider["inputs"] == []
+    assert data.emitted == []
+
+
+async def test_n8_full_request_stays_within_context_budget(ctx, provider, monkeypatch):
+    """F16-c：真实 N8 请求（触发分片）的整请求大小由 check_budget 实测且 ≤ 上限。"""
+    ctx.mode = "drill"
+    lib = ctx.run_dir / "sandbox" / "TESTLIB"
+    src = ctx.run_dir / "source" / "TESTLIB"
+    lib.mkdir(parents=True)
+    src.mkdir(parents=True)
+    for index in range(20):
+        body = [f"// case {index} line {line} " + "x" * 60 for line in range(50)]
+        changed = list(body)
+        changed[25] = f"// UPDATED case {index} " + "y" * 60
+        (src / f"tc_{index:02d}.sv").write_text("\n".join(body) + "\n", encoding="utf-8")
+        (lib / f"tc_{index:02d}.sv").write_text("\n".join(changed) + "\n", encoding="utf-8")
+    sizes: list[int] = []
+    real = M.AM.check_budget
+
+    def spy(input_data, contract):
+        size = real(input_data, contract)
+        sizes.append(size)
+        return size
+
+    monkeypatch.setattr(M.AM, "check_budget", spy)
+    provider["response"] = {"verdict": "pass", "findings": [], "must_fix": []}
+    await M.n8_check(Data(ctx))
+    assert sizes, "N8 请求必须经过 check_budget 守门"
+    assert max(sizes) <= M.AM.MAX_CONTEXT_BYTES, sizes
+    summary = provider["inputs"][0]["coverage_summary"]
+    assert summary["used_bytes"] <= M.N8_SANDBOX_BUDGET_BYTES
+    assert summary["region_files"] >= 1, "大输入应触发分片（否则断言没有覆盖 F16 场景）"
+
+
 async def test_characterization_author_receives_last_rework(ctx, provider, monkeypatch):
     monkeypatch.setattr(M, "build_n6_targets", lambda *args: [{"case": "demo", "excerpt": {"text": "old"}}])
     provider["response"] = {"revisions": [{"case": "demo", "edits": [

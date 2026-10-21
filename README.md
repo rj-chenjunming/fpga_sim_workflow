@@ -8,11 +8,13 @@
 
 ---
 
+下一阶段工作：[优化与重构执行手册](doc/plans/OPTIMIZATION_PLAYBOOK.md)（优先级、任务卡、提交切片、验证方法和回退）；[当前复核](doc/audit/AUDIT-20261021-post-ui-roadmap.md)。待办不代表已修复，实际结果以 [STATUS](doc/STATUS.md) 为准。
+
 ## 1 组成
 
 | 目录 | 是什么 | 入口 |
 |---|---|---|
-| `loop/` | 编排层 + HTTP 服务 + 单文件前端 + 测试 + 验收装置（Agently TriggerFlow） | [`loop/README.md`](loop/README.md) |
+| `loop/` | 编排层 + HTTP 服务 + 网页工作台 + 测试 + 验收装置（Agently TriggerFlow） | [`loop/README.md`](loop/README.md) |
 | `kb/` | Host 确定性工具（不上模型）+ JSON Schema + 契约 | [`kb/README.md`](kb/README.md) |
 | `doc/spec/` | 三份契约：业务篇 / 编排篇 / 环境插件篇 | [`doc/README.md`](doc/README.md) |
 | `doc/agents/` | 6 个角色定义 + 开工提示词 | [`doc/agents/README.md`](doc/agents/README.md) |

@@ -24,12 +24,12 @@
 | [`history/`](history/) | 拆仓前的历史快照（**不是现状**） | [`history/README.md`](history/README.md) |
 | `audit/` | 2026-10-19 审计：总报告 + 各审计员附录（**只登记不修复**） | [`audit/README.md`](audit/README.md)、[`audit/AUDIT-20261019-spec-conformance.md`](audit/AUDIT-20261019-spec-conformance.md)、`audit/parts/*.md`（附录） |
 | [`STATUS.md`](STATUS.md) | 唯一数字源：HEAD、单测/断言数、四道门状态、外部数据根 | 由 Lead 维护 |
-| [`plans/`](plans/) | 按 SpecDD 拆分的实施计划与验收条件 | [后续优化与特征重构路线](plans/2026-10-21-specdd-followups.md) |
+| [`plans/`](plans/) | 按 SpecDD 拆分的实施计划与验收条件 | [优化与重构执行手册](plans/OPTIMIZATION_PLAYBOOK.md) |
 
 > 逐级入口：[`../README.md`](../README.md)（项目导航）→ [`../AGENTS.md`](../AGENTS.md)（流程 / 写权 / 红线）
 > → 本文件 → 各子目录 README。
 
-后续工作入口：[优化评估与优先级](audit/AUDIT-20261021-specdd-followups.md) → [分切片实施路线](plans/2026-10-21-specdd-followups.md)。本轮为整理，尚未实施这些后续变更；现状与验证限制见 STATUS §11。
+后续工作统一入口：[网页重设计后复核](audit/AUDIT-20261021-post-ui-roadmap.md) → [优化与重构执行手册](plans/OPTIMIZATION_PLAYBOOK.md)。包含任务顺序、owner、切片、验证命令、回退和领取模板；本轮为准备与成册，尚未实施待办，现状见 STATUS §13。此前 [优化评估](audit/AUDIT-20261021-specdd-followups.md) 与 [原路线](plans/2026-10-21-specdd-followups.md) 保留为来源。
 
 网页视觉升级：[视觉契约](spec/WEB_UI_SPEC.md#14-全站网页视觉系统2026-10-21) → [实施计划](plans/2026-10-21-desktop-redesign.md) → [预览与验证证据](evidence/WEB_REDESIGN_20261021.md)。范围为浏览器中的现有工作台；状态与本轮实测见 STATUS §12。
 

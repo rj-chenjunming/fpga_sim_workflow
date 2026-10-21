@@ -2,7 +2,7 @@
 
 > **本文件是数字的唯一权威**。其它文档引用这里，不各自抄一份。
 > **本次采样**：2026-10-19T18:02+0800（修复轮终验，四道门全绿）；采样命令与输出见各节（数字一律复制，不手算）。
-> **最新补充采样**：2026-10-21 云环境优化、S0 与 Agent 工作窗口，见 §7–§10；后续优化整理见 §11；全站网页视觉升级见 §12。旧采样保留为历史；本轮没有四道门全绿。
+> **最新补充采样**：2026-10-21 云环境优化、S0 与 Agent 工作窗口，见 §7–§10；后续优化整理见 §11；全站网页视觉升级见 §12；下一阶段执行手册与当前复核见 §13。旧采样保留为历史；本轮没有四道门全绿。
 > **不声称合规**：审计发现但未修复的阻断项在 §5 保持可见。
 
 ---
@@ -239,3 +239,23 @@ S0-a 已实现完整派生、RTL 整体替换、非 RTL 比对、基线前后指
 | 业务全套 / kb 自测 / 完整端到端 | 未运行 | 本轮为网页展示与导航，不改后端判据；内网缺件限制沿用既有记录 |
 
 验证中修正了旧页 events 响应及加载容器选择两处测试装置错误，原始失败输出见证据，不作为产品缺陷先红后绿。最终局部集合通过不等于再次执行完整业务四道门；本轮仍不声称四道门全绿。
+
+## 13 下一阶段优化与重构成册（2026-10-21）
+
+复核基线 `d7cf7c6`。用户要求准备后续优化/重构并成册提交；本轮交付 [执行手册](plans/OPTIMIZATION_PLAYBOOK.md)、[当前复核](audit/AUDIT-20261021-post-ui-roadmap.md) 与 [受控探针证据](evidence/NEXT_STAGE_REVIEW_20261021.md)（MD5 `0e1258c4bfe2b296ccde54f86f651604`）。同一执行者只读复核，不是独立终验。
+
+F01–F12 延续原编号，新增 F13 首次错误反馈、F14 样式收敛、F15 规格/验证入口治理；手册列出优先级、owner、依赖、实施步骤、目标验收、回退、提交切片和领取模板。建议先完成基线准入/身份，再修能力与错误提示、隔离验证，随后拆分样式/前端/模型节点；S0-b、持久暂停和性能优化分别按协议、故障与测量推进。没有执行这些后续修复。
+
+| 本轮检查 | 原始输出 / 状态 | 说明 |
+|---|---|---|
+| 基线只读探针 | `manifest_only: valid=true`；`manifest_array: exception=AttributeError`；`n2_baseline: requested=v-next, actual=v0` | 临时目录与截获参数；没有真实 N2 执行 |
+| 能力提示 | `guardian_idle: summary=未实现（审计 A10）` | 已有 N11 实现与旧提示不一致 |
+| 文档解析 | `tool_reference: local_exists=true, resolved=None, root=env?` | 本仓工具根解析误判仍在 |
+| 网页首次失败探针 | `head=A\n加载中…\n读取失败`；`claims_previous_success=true`；`write_requests=0`；`page_errors=[]` | 受控首次 503，实际静态网页；证明现有反馈问题，不代表缺陷验收通过 |
+| 文档链接与路径增量 | `PASS: changed Markdown links, anchors and source line references resolve.`；`PASS: no additional unresolved inline paths versus HEAD.` | 本轮变更范围，不声称全库缺件已消除 |
+| 任务覆盖 | `PASS: F01-F15 task cards, priority table and dependency references agree.` | 总表、任务卡和依赖编号一致 |
+| 冻结件与实现边界 | `PASS: prior evidence, history and audit content MD5 values are unchanged.`；`PASS: loop/kb implementation has no diff against HEAD.` | 旧证据/审计未回填，未改变业务实现 |
+| 语法与补丁 | `PASS: read-only probe Python syntax is valid.`；`PASS: git diff --check.` | 探针 AST 解析及补丁空白检查 |
+| 业务单测 / 完整浏览器集 / kb / 完整端到端 | 未运行 | 本轮是成册与只读复核，未改变实现；不复用 §12 为本轮结果 |
+
+性能、进程杀断恢复、真实三库和非默认基线整链影响均未在本轮实测；不声称它们已复现事故、已修复或四道门全绿。既有环境限制和未完成能力继续有效。

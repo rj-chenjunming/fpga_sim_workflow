@@ -1,6 +1,6 @@
 # `doc/agents/` —— 角色定义索引
 
-> 本目录 = 本仓的 **6 个角色定义** + **1 份开工提示词**。
+> 本目录 = 本仓的 **6 个角色定义** + **2 份开工提示词**（用例生成 / 后续批次一次性执行）。
 > 团队演练产物（32 件）已于 2026-10-19 迁至 [`../evidence/demo/`](../evidence/demo/)，
 > 迁移记录见 [`../evidence/demo/MIGRATION.md`](../evidence/demo/MIGRATION.md)。
 > 组织层流程 / 写权 / 红线见本仓 [`../../AGENTS.md`](../../AGENTS.md) 与环境仓 `doc/AGENTS.md`（只读引用）。

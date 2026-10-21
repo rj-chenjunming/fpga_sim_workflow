@@ -81,7 +81,7 @@ cd loop && rm -rf state spikes/.accept_v1_state.json && bash spikes/accept_v1_ru
 
 ## 5 红线（摘要，完整版见 `AGENTS.md`）
 
-1. 本软件仓按 [`AGENTS.md`](AGENTS.md) §3 的写权执行（`loop/**`、`kb/tools/**`、`doc/spec/**` 等各有唯一 owner）；环境的 `RTL/ TB/ PKG/ TESTLIB/`、已定稿基线资产与冻结件**绝不修改**。
+1. 本软件仓按 [`AGENTS.md`](AGENTS.md) §3 的写权执行（`loop/**` 等实现目录各有唯一 owner）；`kb/tools/**`、`kb/schema/**` 是**冻结目录**，改语义需单独变更并留证；环境的 `RTL/ TB/ PKG/ TESTLIB/`、已定稿基线资产与冻结件**绝不修改**。
 2. 数字一律由命令输出复制，禁止手算；唯一数字源是 `doc/STATUS.md`。
 3. 归档只增不改；已冻结运行目录绝不回填。
 4. 闸门枚举权威 = `kb_lib.GATE_DECISIONS`；前端与脚本不许手抄。

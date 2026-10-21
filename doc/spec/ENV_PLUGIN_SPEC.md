@@ -22,6 +22,7 @@
 | `TOOL_ROOT` | **软件仓根**（含 `kb/tools/kb_lib.py`） | 自锚定，不需要配置 | `/home/work/chenjunming/change-impact-loop` |
 | `ENV_ROOT` | **被守卫的环境仓根**（插件） | `environments.json` / `$LOOP_ENV_ROOT`（`--env-root` **未实现**，见下） | `…/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES` |
 | `WORKSPACE_ROOT` | **该环境的数据根**（软件管理） | `environments.json` 的 `workspace` / `$LOOP_WORKSPACE`（`--workspace` **未实现**） | 目标：`<TOOL_ROOT>/workspaces/simenv-tcs9620-64ch`；**当前 = `<ENV_ROOT>/kb`**（§7 决定暂不搬） |
+| `STATE_ROOT` | **软件 state 根**：`jobs/`、`recovery/`、`events/`、单槽锁与队列 | `$LOOP_STATE_ROOT`；缺省 `<TOOL_ROOT>/loop/state` | 测试/独立副本必须指向隔离目录（F03-a）；生产保持缺省 |
 
 > **注册表为什么是 JSON 而不是 YAML**：`kb/tools/**` 必须**只用 stdlib**（项目既有约束：环境里没有 `pyyaml`），
 > 自己写一个 YAML 子集解析器会把「解析错 ⇒ 环境根解错」这种静默故障引进来。JSON 是 stdlib 且无歧义。
@@ -177,8 +178,9 @@
   ⇒ 靠目录 444 只读 + 外部 md5 账本保完整性，需要一条"数据根备份"的作业（当前没有）。
 - ⚠ `[部分自证]` 多个环境共享一个软件实例时的并发：`run_guarded.sh` 的**包装锁**按 `ENV_ROOT` 分区
   （`$ROOT/SIMLIB_RUN/.run_guarded.lock` 与 `$ROOT/.compile_only.lock`，`ROOT=ENV_ROOT`）；
-  但**编排层单槽** `loop/host/admission.py` 的 `slot.lock` 落在 `TOOL_ROOT/loop/state/`
-  （`loop/host/paths.py:78,85`），是**软件实例级全局锁** ⇒ 多环境共享一个软件实例时仍串行。
-  该场景未测；若要真正按环境并行，需把 `STATE_DIR` 或槽键按 `ENV_ID` 分区（审计待办）。
+  但**编排层单槽** `loop/host/admission.py` 的 `slot.lock` 落在 `STATE_ROOT`（缺省 `TOOL_ROOT/loop/state/`），
+  是**软件实例级全局锁** ⇒ 多环境共享一个软件实例时仍串行。
+  该场景未测；若要真正按环境并行，需把 `STATE_ROOT` 或槽键按 `ENV_ID` 分区（审计待办）。
+  `$LOOP_STATE_ROOT` 只解决「测试与独立副本不写共享 state」（F03-a），**不代表**已按环境隔离。
 - ✅ `[已修]` `kb/README.md` 已按三根重写：本仓 `kb/` = `README.md` + `schema/` + `tools/`；
   运行数据写作 `<WORKSPACE_ROOT>/{index,conflicts,baselines,runs,adjudication}`（当前 = `ENV_ROOT/kb/…`）。

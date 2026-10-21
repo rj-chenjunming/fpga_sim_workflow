@@ -18,6 +18,15 @@ import pytest
 # 真实链路验证走 `spikes/probe_provider.py` 与显式 `LOOP_LLM_MODE=live` 的运行。
 os.environ.setdefault("LOOP_LLM_MODE", "standin")
 
+# 软件 state 隔离（F03-a）：jobs/recovery/events/单槽锁不写共享 `loop/state`。
+# 必须在 `from host import paths as P` 之前设置——`STATE_DIR` 在 import 期解析一次。
+import atexit  # noqa: E402
+import tempfile  # noqa: E402
+
+_STATE_ROOT = Path(tempfile.mkdtemp(prefix="loop-state-"))
+os.environ["LOOP_STATE_ROOT"] = str(_STATE_ROOT)
+atexit.register(shutil.rmtree, _STATE_ROOT, ignore_errors=True)
+
 LOOP_DIR = Path(__file__).resolve().parents[1]
 if str(LOOP_DIR) not in sys.path:
     sys.path.insert(0, str(LOOP_DIR))

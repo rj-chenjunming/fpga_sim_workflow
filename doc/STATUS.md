@@ -320,3 +320,20 @@ UI 只消费、不再从 `idle` 或颜色推断。
 **未运行**：`tests/browser` 的真实 Chromium 断言。本机尝试安装时 PyPI 连接超时
 （`ReadTimeoutError ... pypi.org`、`Could not find a version that satisfies the requirement playwright<2,>=1.50`），
 系统亦无 Chromium；因此**不声称 UI 已在浏览器中验证**，该用例留给具备 Chromium 的环境执行。
+
+## 16 F03-a 验证隔离最小切片（2026-10-21）
+
+规格 [环境插件规格 三根表](../doc/spec/ENV_PLUGIN_SPEC.md)（新增 `STATE_ROOT` / `$LOOP_STATE_ROOT`）；
+计划见 [F03-a 切片计划](plans/2026-10-21-F03a-test-isolation.md)。由 Lead 实现并自测，未指派独立验证者。
+
+| 验证 | 原始输出（逐字复制） | 说明 |
+|---|---|---|
+| 修改前红灯（stash 三处改动） | `3 failed, 1 passed in 0.69s` | `$LOOP_STATE_ROOT` 注入/测试隔离/子进程 `-B` 先红 |
+| 修改后 | `4 passed in 0.62s` | 四项全绿 |
+| 全套单测 | `46 failed, 275 passed, 3 skipped, 1 warning in 11.23s` | 46 项仍为 `ENV_ROOT` 只读同因；通过数 271→275 = 新增 4 项 |
+| 冻结目录字节码 | `find kb/tools -name '*.pyc' -newermt <start>` 无输出 | kb 工具子进程已带 `-B` |
+
+**验证边界**：共享 `loop/state/recovery` 由**沙箱 PID 命名空间外的常驻服务**持续改写（空闲 3 秒内容也会变，
+沙箱内 `ps` 不可见），故不能用 mtime/md5 反证「测试未写共享 state」；证据改为进程内 `STATE_DIR`
+指向一次性目录的断言。**未解决**：46 项 `ENV_ROOT` 只读失败（F03-b 需按测试类别注入可写数据根），
+F03-c 文档解析器根解析，多环境按 `ENV_ID` 分区 state/槽键。

@@ -86,7 +86,10 @@ def missing_plugin_parts() -> list[str]:
 def missing_workspace_parts() -> list[str]:
     """工作区数据根缺什么（空 = 齐全）。外显，避免"索引缺口"式的难懂失败。"""
     return list(_KB.check_workspace())
-STATE_DIR: Path = LOOP_DIR / "state"
+#: **软件 state 根**：jobs / recovery / events / 单槽锁。
+#: 必须可注入（`$LOOP_STATE_ROOT`）：测试与独立副本不能写进共享的 `<TOOL_ROOT>/loop/state`。
+#: 缺省保持原布局，历史路径不变。
+STATE_DIR: Path = Path(os.environ.get("LOOP_STATE_ROOT") or (LOOP_DIR / "state"))
 JOBS_DIR: Path = STATE_DIR / "jobs"
 RECOVERY_DIR: Path = STATE_DIR / "recovery"
 EVENTS_DIR: Path = STATE_DIR / "events"

@@ -50,7 +50,8 @@ STAGED_DEFAULT_RTL = ("RTL/SRC/imports", "RTL/RTL_COMMON")
 
 def run_kb_tool(tool: str, args: list[str], *, timeout: float | None = None) -> dict[str, Any]:
     """以子进程调用 kb 工具；rc 语义由工具自己定义（3 = 铁律拒绝，不是崩溃）。"""
-    cmd = [sys.executable, str(P.KB_TOOLS / tool), *args]
+    # `-B`：`kb/tools/` 是冻结目录，子进程导入 kb_lib 时不得写出 `__pycache__`。
+    cmd = [sys.executable, "-B", str(P.KB_TOOLS / tool), *args]
     proc = subprocess.run(
         cmd,
         cwd=str(P.REPO_ROOT),

@@ -46,6 +46,13 @@ C = _load()
     ("README.md", "tool"),
     ("AGENTS.md", "tool"),
     ("environments.json", "tool"),
+    ("kb/tools", "tool"),
+    ("kb/schema", "tool"),
+    ("kb/runs", "workspace"),
+    ("kb/baselines", "workspace"),
+    ("RTL", "env"),
+    ("TB", "env"),
+    ("SIMLIB_RUN", "env"),
     ("kb/runs/RUN-1/view.json", "workspace"),
     ("kb/baselines/v0/manifest.json", "workspace"),
     ("kb/index/cases.json", "workspace"),
@@ -105,6 +112,19 @@ def test_tool_owned_paths_never_resolve_against_workspace_or_env(roots: C.Roots)
     _touch(roots.workspace / "kb/schema/manifest.schema.json")
     schema = _touch(roots.tool / "kb/schema/manifest.schema.json")
     assert C.resolve("kb/schema/manifest.schema.json", roots)[0] == schema
+
+
+def test_directory_references_use_owner_root_not_decoys(roots: C.Roots):
+    """M1：`kb/tools`（无尾斜杠）必须归 TOOL_ROOT；数据根/环境根的同名目录不得命中。"""
+    expected = _touch(roots.workspace / "tools/gate.py")  # 诱饵：数据根下的 tools/
+    (roots.workspace / "schema").mkdir(parents=True, exist_ok=True)
+    (roots.tool / "kb/tools").mkdir(parents=True, exist_ok=True)
+    (roots.tool / "kb/schema").mkdir(parents=True, exist_ok=True)
+    resolved, where = C.resolve("kb/tools", roots)
+    assert resolved == roots.tool / "kb/tools" and where == "tool"
+    resolved, where = C.resolve("kb/schema", roots)
+    assert resolved == roots.tool / "kb/schema" and where == "tool"
+    assert expected.exists()
 
 
 def test_loop_paths_have_no_env_fallback(roots: C.Roots):
@@ -185,6 +205,74 @@ def test_historical_docs_are_counted_not_judged(roots: C.Roots):
     assert report.missing == []
     assert report.historical == 2
     assert report.exit_code == 0
+
+
+# ---------------------------------------------------------------- M2：根解析唯一来源
+
+def _kb_lib():
+    import importlib
+    import sys
+
+    tools = str(MODULE_PATH.parents[2] / "kb" / "tools")
+    if tools not in sys.path:
+        sys.path.insert(0, tools)
+    previous = sys.dont_write_bytecode
+    sys.dont_write_bytecode = True
+    try:
+        return importlib.import_module("kb_lib")
+    finally:
+        sys.dont_write_bytecode = previous
+
+
+def test_root_resolution_is_reused_from_kb_lib():
+    """M2：检查器不自己解析注册表/环境变量；三根与 kb_lib 完全一致。"""
+    import inspect
+
+    # 只看实现函数，不看模块 docstring/注释。
+    impl = inspect.getsource(C._load_kb_lib) + inspect.getsource(C.default_roots)
+    assert "kb_lib" in impl
+    for forbidden in ("json.load", "import json", "os.environ", "ENV_REGISTRY", "environments.json\""):
+        assert forbidden not in impl, f"不得自带第二套解析：{forbidden}"
+    assert not hasattr(C, "_env_roots"), "旧的自带解析必须删除"
+    kb = _kb_lib()
+    roots = C.default_roots()
+    assert str(roots.tool) == str(Path(kb.TOOL_ROOT))
+    assert str(roots.env) == str(Path(kb.ENV_ROOT))
+    assert str(roots.workspace) == str(Path(kb.WORKSPACE_ROOT))
+
+
+def test_root_resolution_failure_is_explicit(monkeypatch):
+    """M2：三根不可确定必须显式失败（exit 2），不得退化成 env_missing/绿色。"""
+
+    def broken(_tool_root):
+        raise RuntimeError("环境注册表不可解析")
+
+    monkeypatch.setattr(C, "_load_kb_lib", broken)
+    with pytest.raises(C.RootError):
+        C.default_roots()
+
+    def broken_roots():
+        raise C.RootError("环境注册表不可解析")
+
+    monkeypatch.setattr(C, "default_roots", broken_roots)
+    assert C.main() == 2
+
+
+def test_cli_honors_kb_lib_env_priority(tmp_path):
+    """M2：LOOP_ENV_ROOT 由 kb_lib 决定，检查器只消费（消除两套解析的漂移）。"""
+    import os
+    import subprocess
+    import sys
+
+    env_root = tmp_path / "env-custom"
+    env_root.mkdir()
+    env = dict(os.environ)
+    env["LOOP_ENV_ROOT"] = str(env_root)
+    proc = subprocess.run([sys.executable, str(MODULE_PATH)], capture_output=True, text=True,
+                          env=env, timeout=120)
+    line = next(ln for ln in proc.stdout.splitlines() if ln.startswith("ENV_ROOT"))
+    assert str(env_root) in line
+    assert proc.returncode in (0, 1), proc.stderr
 
 
 def test_resolved_and_skipped_are_counted(roots: C.Roots):

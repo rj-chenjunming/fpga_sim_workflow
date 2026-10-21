@@ -24,7 +24,7 @@
   5. 判定只看**退出码 + missing**；`checked/skipped` 是诊断值，不写回文档（见 STATUS §19）。
 
 用法：`python3 doc/audit/check_doc_links.py [--verbose]`
-退出码：0 = 无本仓/数据根断链；1 = 存在断链。
+退出码：0 = 无本仓/数据根断链；1 = 存在断链；2 = 三根不可确定（不得伪造通过）。
 """
 from __future__ import annotations
 
@@ -99,23 +99,36 @@ class Report:
         return 1 if self.missing else 0
 
 
-def _env_roots() -> tuple[Path | None, Path | None]:
-    env_root = os.environ.get("LOOP_ENV_ROOT")
-    workspace = os.environ.get("LOOP_WORKSPACE")
+class RootError(RuntimeError):
+    """三根不可确定（注册表坏、缺配置等）：必须显式失败，不得降级成 env_missing。"""
+
+
+def _load_kb_lib(tool_root: Path):
+    """加载三根解析器的**唯一实现** `kb/tools/kb_lib.py`；不写冻结目录字节码。
+
+    口径只有一份（ENV_PLUGIN_SPEC §1）：本检查器**不自己**解析 `environments.json` 或
+    环境变量名，避免与 kb_lib 漂移（第二套解析必然漂移：旧布局回落、LOOP_ENV、坏注册表）。
+    """
+    tools = str(tool_root / "kb" / "tools")
+    if tools not in sys.path:
+        sys.path.insert(0, tools)
+    previous = sys.dont_write_bytecode
+    sys.dont_write_bytecode = True
     try:
-        reg = json.loads((TOOL_ROOT / "environments.json").read_text(encoding="utf-8"))
-        env_id = reg.get("default")
-        entry = (reg.get("environments") or {}).get(env_id or "", {})
-        env_root = env_root or entry.get("path")
-        workspace = workspace or entry.get("workspace")
-    except Exception:
-        pass
-    return (Path(env_root) if env_root else None), (Path(workspace) if workspace else None)
+        import importlib
+
+        return importlib.import_module("kb_lib")
+    finally:
+        sys.dont_write_bytecode = previous
 
 
 def default_roots() -> Roots:
-    env_root, workspace = _env_roots()
-    return Roots(tool=TOOL_ROOT, env=env_root, workspace=workspace)
+    try:
+        kb = _load_kb_lib(TOOL_ROOT)
+        return Roots(tool=Path(kb.TOOL_ROOT), env=Path(kb.ENV_ROOT),
+                     workspace=Path(kb.WORKSPACE_ROOT))
+    except Exception as exc:  # noqa: BLE001 - 根不可确定必须整体失败
+        raise RootError(f"三根不可确定（复用 kb_lib 失败）：{type(exc).__name__}: {exc}") from exc
 
 
 def normalize(token: str) -> str | None:
@@ -132,6 +145,14 @@ def normalize(token: str) -> str | None:
     return SYMBOL_SUFFIX.sub("", LINE_SUFFIX.sub("", token.rstrip(".")))
 
 
+def _matches(clean: str, prefixes: list[str]) -> bool:
+    """前缀匹配：目录引用可带/不带尾斜杠（`kb/tools` 与 `kb/tools/` 同等对待）。"""
+    for prefix in prefixes:
+        if clean == prefix.rstrip("/") or clean.startswith(prefix):
+            return True
+    return False
+
+
 def classify(token: str) -> str | None:
     """按路径所有权分类：tool / workspace / env / doc / None（非路径或不判定）。
 
@@ -142,11 +163,11 @@ def classify(token: str) -> str | None:
         return None
     if clean.startswith(tuple(SKIP_PREFIXES)):
         return None
-    if clean.startswith(tuple(WORKSPACE_PREFIXES)):
+    if _matches(clean, WORKSPACE_PREFIXES):
         return "workspace"
-    if clean.startswith(tuple(TOOL_PREFIXES)):
+    if _matches(clean, TOOL_PREFIXES):
         return "tool"
-    if clean.startswith(tuple(ENV_PREFIXES)):
+    if _matches(clean, ENV_PREFIXES):
         return "env"
     if clean.startswith("doc/"):
         # 本仓文档优先；本仓没有时允许回落到 ENV_ROOT（环境仓自带文档）。
@@ -233,7 +254,11 @@ def scan(roots: Roots, docs_root: Path | None = None) -> Report:
 
 def main() -> int:
     verbose = "--verbose" in sys.argv
-    roots = default_roots()
+    try:
+        roots = default_roots()
+    except RootError as exc:
+        print(f"[ROOT-ERROR] {exc}", file=sys.stderr)
+        return 2
     report = scan(roots)
 
     print(f"TOOL_ROOT = {roots.tool}")

@@ -635,7 +635,10 @@ STATUS；`doc/README.md`/`doc/agents/README.md` 索引现状（2 份开工提示
 （`_ask`→`model_request.ask`、`_doc_bitdef_for`→`n6_facts`、`run_kb_tool`/`ledger` 注入），**期望值未改**。
 `implementation_sha256` 现记录 `model_request.py` 指纹（属预期变化，不用它替代语义对照）。
 
-**独立复核**：报告见 §34（本轮复核者运行中，落盘后补 md5）。
+**独立复核**（[F06-verify-20261022.md](audit/F06-verify-20261022.md)，md5 `67d29e2d29810631ce255d94bf4b2a77`）：
+**建议合并**（条件性）；M1（STATUS §27 数字）已按本行/下表更正，M2（回填 md5）已在本节完成。
+函数级 AST 对照 49 个旧函数逐字同一；提示词/Schema 零 diff；默认根失败集逐项相同。
+**未复核**：`implementation_sha256` 覆盖边界建议（S1）、`_ask` 别名建议（S2）。
 
 ## 28 F05 前端按功能拆分（第一步：闸门会话判定，2026-10-22）
 
@@ -704,7 +707,10 @@ STATUS；`doc/README.md`/`doc/agents/README.md` 索引现状（2 份开工提示
 `agent_control` 不再引用私有 `_sealed`；默认选中只从可消费记录取。故障注入用真实子进程
 （数据/校验之间 `os._exit(9)`、写入循环 `SIGKILL`）与篡改校验，不是内存模拟。
 
-**独立复核**：报告见 §34（复核者运行中，落盘后补 md5）。
+**独立复核**（[F08-verify-20261022.md](audit/F08-verify-20261022.md)，md5 `974ec8bbf192b9acbad1c435f8b8dbe6`）：
+**首轮不建议合并**（M1：`record_state` 绕过符号链接检查，安全契约回归）→ 整改 `500622a`（`record_state`/
+`verify_attempt` 拒绝符号链接，`read_view` 读状态前补 `_safe`）→ 定向 `77 passed`。
+**未复核**：整改 `500622a` 本身（登记为残余）。
 
 ## 32 F10 / F11（前半）只读可解释性（2026-10-22）
 
@@ -722,6 +728,10 @@ STATUS；`doc/README.md`/`doc/agents/README.md` 索引现状（2 份开工提示
 `unknown`）；窗口新增两个只读区块；`read_view` 增加 `previous_input`（只读）；API 下发
 `context_budget.limit_bytes`（Host 常量，前端不硬编码）；不新增请求、不改记录/筛选。
 **未完成**：F11 分页/完整历史导航（F07 未达阈值）；F10 token 预检（需真实 provider）。
+**独立复核**（[F10F11-verify-20261022.md](audit/F10F11-verify-20261022.md)，md5 `03a788dfc8a646e20da73e5f4bd1a07b`）：
+**首轮不建议合并**（A1：窗口把嵌套 `request.input` 传给按顶层字段统计的 `budget()`，真实记录下预算恒 0 B）
+→ 整改 `59f57e7`（传整条 `request`；`explain` 包 try/catch；补记录形状与接线断言）→ 定向 `14 passed, 3 skipped`。
+**未复核**：整改 `59f57e7` 本身（登记为残余）。其余判定（只读、token 未知、previous_input、textContent-only）通过。
 **未运行**：浏览器渲染（缺 playwright）。
 
 ## 33 阻塞与未完成清单（本轮结束状态）
@@ -742,3 +752,46 @@ STATUS；`doc/README.md`/`doc/agents/README.md` 索引现状（2 份开工提示
 
 **口径纠正**：`TB/top.sv` 属「资产名不存在」（`ENV_ROOT/TB/` 下无 `top.sv`），不是「ENV_ROOT 未挂载」；
 文档门把它单列为 `[ENV-MISSING]` 可见项，不计失败。
+
+## 34 本批独立验证汇总与诚实边界（2026-10-22）
+
+| 切片 | 复核报告 | md5 | 复核结论 | 整改 | 整改后是否再复核 |
+|---|---|---|---|---|---|
+| F13 | [F13-verify-20261021.md](audit/F13-verify-20261021.md) | `667b6d89b770dc808f9c093b365283f9` | 首轮不建议合并 → 回归可合并 | `219fb70`、`d272a80` | 回归复核覆盖 `219fb70`；`d272a80` **未复核** |
+| F03-b | [F03b-verify-20261022.md](audit/F03b-verify-20261022.md) | `904e46d92a099a71a3c7f37dd94ec087` | 建议合并（无阻断） | `4d1c65b` | **未复核** |
+| F03-c | [F03c-verify-20261022.md](audit/F03c-verify-20261022.md) | `dd9f06e9651f968702665b1b44deeffe` | 首轮不建议合并 → 回归可合并 | `e392d1b`、`2805c2b` | 回归复核覆盖 `e392d1b`；`2805c2b` **未复核** |
+| F16-c/F02-c | [F16c-F02c-verify-20261022.md](audit/F16c-F02c-verify-20261022.md) | `66f1cb98dbb7facf78816b6ac8ce1cab` | 建议合并（2 项证据口径必改） | `a32b13e` | **未复核** |
+| F15-a | [F15a-verify-20261022.md](audit/F15a-verify-20261022.md) | `89adeb379e2bf1736d7e9551f3094e7d` | 不建议合并（3 项文字必改） | `0328222` | **未复核** |
+| F06 | [F06-verify-20261022.md](audit/F06-verify-20261022.md) | `67d29e2d29810631ce255d94bf4b2a77` | 建议合并（条件：STATUS 数字/回填） | 本节 + §27 | 条件已在 §27 关闭 |
+| F07 | [F07-verify-20261022.md](audit/F07-verify-20261022.md) | `e83ff5888aca23c5ace65733a2b34701` | 有条件建议合并（CPU 口径必改） | `9ebee73` | **未复核** |
+| F08 | [F08-verify-20261022.md](audit/F08-verify-20261022.md) | `974ec8bbf192b9acbad1c435f8b8dbe6` | 首轮不建议合并（符号链接回归） | `500622a` | **未复核** |
+| F10/F11 | [F10F11-verify-20261022.md](audit/F10F11-verify-20261022.md) | `03a788dfc8a646e20da73e5f4bd1a07b` | 首轮不建议合并（预算传参错） | `59f57e7` | **未复核** |
+
+> md5 为**最终全文 md5**（报告自引用限制说明见各报告末节）。本批所有复核者都是只读子代理：
+> 只写各自报告、未改被测文件、未做 git 写命令（各报告已登记）。
+
+### 34.1 最终门禁数字（从命令输出复制；串行执行）
+
+| 门 | 命令 | 结果 | 判读 |
+|---|---|---|---|
+| 默认根单测 | `cd loop && LOOP_LLM_MODE=standin .venv/bin/python -m pytest -q --tb=no` | `46 failed, 413 passed, 3 skipped, 1 warning in 19.69s` | 46 项为环境层（`ENV_ROOT` 只读 44 项 `Errno 30` + 2 项 archive），失败集与 §14–§32 基线相同；**不是全绿** |
+| 软件层单测 | `cd loop && bash spikes/run_software_checks.sh --tb=no` | `454 passed, 3 skipped, 3 deselected, 1 warning in 87.37s` | 软件层 **0 failed**；3 项环境层被显式排除（非 skip） |
+| 文档门 | `python3 doc/audit/check_doc_links.py` | 退出码 `0`；`missing=0`；`env_missing`/`known_missing` 可见 | 本仓断链为零；环境缺件单列不隐藏 |
+| 端到端 | `cd loop && bash spikes/accept_v1_run.sh` | **未运行** | 缺可写 `ENV_ROOT`/UVS/内网夹具；不得用软件层结果替代 |
+| kb 自测 | `kb/tools/_selftest_*.py` | **未运行** | 同上；不能声称通过 |
+| 浏览器 | `tests/browser` | `3 skipped`（模块级） | 缺 `playwright` Python 包（系统有 `/usr/bin/google-chrome`）；UI 交互/视觉**未验证** |
+
+**结论口径**：本批完成了 11 个软件可验证切片的计划、红灯/特征基线、实现与独立复核；
+**kb 自测、端到端、浏览器验收与真实 provider 链路均未运行**，因此**不声称四道门全绿、也不声称合规**。
+§33 的阻塞项保持可见；F14 的视觉验收与 F05 的余下渲染提取需要具备浏览器依赖的执行端。
+
+### 34.2 本批流程偏差与纠正（不补造证据）
+
+| 偏差 | 事实 | 处理 |
+|---|---|---|
+| 计划与实测顺序 | F07 的测量脚本先实跑、后提交计划；计划正文不含实测数字，但严格顺序应为计划先行 | 登记为偏差；数字仍只从命令输出进入 STATUS |
+| 红灯数字笔误 | F10/F11 红灯提交信息写「8 failed」，实际 `9 failed` | §32 按实跑更正；复核报告亦记录 |
+| 红灯归因错误 | F16-c 红灯中一条能力投影用例失败原因是**测试签名写错**（TypeError），不是能力缺失 | §25 勘误；不计入「能力缺失」证据 |
+| 执行日志时间 | 初版执行日志的时间列曾按会话顺序估算 | 已用 `git log --format=%ad` 的实际提交时间替换 |
+| 临时文档门变红 | 验证者在途写报告时，示例路径曾使文档门短暂 `missing>0` | 各 owner 改写模板写法后恢复 `missing=0`；不记为切片缺陷 |
+| 整改后未再复核 | 9 份报告中有 6 份的整改提交未再次独立复核（见 §34 表） | 逐条登记；不声称「复核通过」 |

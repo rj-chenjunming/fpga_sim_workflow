@@ -42,6 +42,22 @@
 4. 模型输出必须有**授权消费者**；没有消费者的字段/节点不得保留（YAGNI）。
 5. 拒绝必须发生在提交前（闸门 actor/枚举/I4 校验先于签署与 resume）。
 
+### 2.1 优化与重构必须执行的 SpecDD 顺序
+
+1. 先读相关业务/机制/UI 规格，明确问题、可观察行为、不变量、唯一 owner 和验收条件；先更新规格，再改实现。
+2. 计划写入 `doc/plans/`，列出切片、落点、验证门与环境限制。未经验证的能力和未决项必须显式登记。
+3. 重构前先用**特征测试**固定既有可观察行为并运行通过；新行为/缺陷另加先失败用例。先做保持行为的局部提取，再实现行为变化，不把重构当作静默改契约的理由。
+4. 每个切片执行受影响测试，再按 §4 验证。通过、失败、跳过、未运行分别记录；内网环境不可用时完成独立验证并保留内网验收条件，不能伪造环境或把跳过当通过。
+5. 本轮实测写入 `doc/STATUS.md`；证据只新增，冻结后不得回填。同一执行者分阶段验证应如实说明，不能声称独立复核。
+
+### 2.2 Agent 上下文与记忆纪律
+
+- 具体契约见 [`AGENT_CONTEXT_SPEC.md`](doc/spec/AGENT_CONTEXT_SPEC.md)。Host 负责输入覆盖、预算、来源与版本校验；禁止静默截断后声称已完成全范围分析。
+- 工作记忆由本轮结构化状态提供；每次模型请求使用新的 agent。重启记忆来自执行快照和权威文件，不依赖进程内聊天记录。
+- 模型调用前保存输入、提示词/Schema 版本与校验上下文；结果、失败和替身状态分别留痕。调用记录按运行/节点/尝试只增不改，保存失败必须显式失败；不保存认证凭据。
+- 跨运行经验由人明确确认并指定来源、适用环境/基线/事实和提示词版本；来源变化、版本不符或未确认则不使用并记录原因。模型不得自行把输出晋升为经验。
+- 历史经验仅作有来源的建议；当前事实、文档和 Host 校验优先。经验不能签闸门、绕过 blockers 或改写业务权威。“human”字段是单机流程元数据，不等于身份认证。
+
 ---
 
 ## 3 写权（互只读）
@@ -57,7 +73,10 @@
 | `doc/STATUS.md` | Lead（唯一数字源） |
 | `doc/audit/**` | 审计 owner（一次审计一份，只新增） |
 | 环境仓 `RTL/ TB/ PKG/ TESTLIB/` | **谁都不许改**（需环境侧显式授权，见环境 `doc/AGENTS.md` 红线） |
-| `WORKSPACE_ROOT/{index,conflicts,baselines,runs}` | `kb/tools/*` 经唯一解析器写入；人工只手写 `adjudication/` 请求 |
+| `WORKSPACE_ROOT/{index,conflicts,baselines}` 与 run 内业务台账 | `kb/tools/*` 经唯一解析器写入；其余运行产物按节点契约分配写权 |
+| run 内 `agent_calls/**` | Host `loop/host/agent_memory.py`（只增不改的模型调用记录） |
+| run 内 `agent_controls/**` 与活跃模型请求控制 | Host `loop/host/agent_control.py`（只增不改审计；按 [工作窗口契约](doc/spec/AGENT_WINDOW_SPEC.md) 在请求边界取消/重发） |
+| 工作区 `adjudication/agent_experiences.json` | 人工；Host 只读筛选，模型不得写回 |
 
 ---
 
@@ -65,9 +84,9 @@
 
 | 门 | 命令 | 期望 |
 |---|---|---|
-| 单测 | `cd loop && LOOP_LLM_MODE=standin .venv/bin/python -m pytest -q` | 70 收集；无回归 |
-| kb 自测 | `loop/.venv/bin/python kb/tools/_selftest_gate_schema.py` / `_selftest_n5_reachability.py` | 10/10、9/9（需要可写 `WORKSPACE_ROOT`） |
-| 端到端 | `cd loop && bash spikes/accept_v1_run.sh` | rc=0、117 断言（需要可写 `ENV_ROOT`） |
+| 单测 | `cd loop && LOOP_LLM_MODE=standin .venv/bin/python -m pytest -q` | 收集/通过/失败/跳过分别记录于 STATUS；无回归 |
+| kb 自测 | `loop/.venv/bin/python kb/tools/_selftest_gate_schema.py` / `_selftest_n5_reachability.py` | 全部断言通过；需要可写 `WORKSPACE_ROOT` 与历史夹具 |
+| 端到端 | `cd loop && bash spikes/accept_v1_run.sh` | 退出成功且断言完整执行，实测见 STATUS；需要可写 `ENV_ROOT` |
 | 文档 | 路径引用存在性 + 移动件有 MIGRATION/横幅 + 数字与 `doc/STATUS.md` 一致 | 零断链 |
 
 > **不得声称「已合规」**：审计发现但未修复的阻断项，必须在 `doc/STATUS.md` 与审计报告中保持可见。
@@ -76,7 +95,7 @@
 
 ## 5 红线（继承并适用于本仓）
 
-1. 只新增 `kb/` 与 `doc/` 下文件；环境的 `RTL/ TB/ PKG/ TESTLIB/` 与已定稿基线资产**绝不修改**。
+1. 本软件仓的新增与修改按 §3 写权和 §2 SpecDD 执行；环境的 `RTL/ TB/ PKG/ TESTLIB/` 与已定稿基线资产**绝不修改**。原“只新增 kb/doc”是拆仓前环境仓限制，不得与本软件仓 §3 的实现写权混用。
 2. 数字一律由命令输出复制，禁止手算；唯一数字源 `doc/STATUS.md`。
 3. 归档只增不改；已冻结运行目录绝不回填。
 4. 闸门枚举权威 = `kb_lib.GATE_DECISIONS`，任何脚本/前端不许手抄；`pending` 是状态不是动作。
@@ -84,9 +103,10 @@
 6. 单槽：`uvs.setup` 是环境根下全局单文件 ⇒ 同环境禁止并发；跨机走 `run_tc.py`。
 7. 时间字段是唯一允许的非确定性，必须经 `--now`/`KB_NOW` 单一入口注入。
 8. 口径唯一：不许出现第二套同判据实现。
-9. 发现缺陷**只报告不改**；独立验证者不修被测文件。
+9. 独立验证者发现缺陷**只报告不改**，不修被测文件；获得实现授权的 owner 按 §2 SpecDD 修复，不得同时声称独立验证。
 10. 引用冻结文件必须带 md5；判「未改动」按内容 md5，不按 mtime。
 11. **软件对环境的承诺**：除 `SIMLIB_RUN/` 与 `uvs.setup`（自愈还原）外，不写 `ENV_ROOT` 任何文件。
+    S0 例外仅适用于**新建且与基线分离的派生副本**：Host 可完整复制并整体替换副本 RTL，基线原件零写入。副本 `TB/top.sv` 接口适配、逐 hunk 登记及三库冒烟按 [S0 契约](doc/spec/S0_ENVIRONMENT_SPEC.md)；未接入能力不得宣称通过，不扩大原环境写权。
 12. **文档纪律**：移动文件必须留迁移记录（旧→新 + 内容 md5 未变声明）；历史快照必须加「已过期」横幅。
 
 ---

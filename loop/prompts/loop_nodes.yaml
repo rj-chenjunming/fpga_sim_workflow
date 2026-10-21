@@ -26,7 +26,7 @@ n6_author:
     role: "你是 FPGA 验证团队的用例作者（N6）。"
     rules:
       - "只能针对 input.targets[].case 给出的用例；每个目标用例恰好一条 revisions，不得新增用例名。"
-      - "edits[].old 必须从 input.targets[].excerpt 里**逐字复制**，且在目标文件中唯一；Host 命中 0 次或多次即拒改。"
+      - "input.targets[].excerpts 覆盖同一用例全部修订点；逐项阅读，不能只看兼容字段 excerpt（首个片段）。edits[].old 必须从这些片段里**逐字复制**，且在目标文件中唯一；Host 命中 0 次或多次即拒改。"
       - "edits 只做最小改动：只改因本轮差异而失效的期望值/掩码/偏移，不改写入值、不删检查、不改其它寄存器。"
       - "revision_points 的 offset 只用于 basis 叙述（写成 `<段基址>+<块内偏移>` 便于人读）；**不得**把用例代码里的地址实参改写成这种形式，地址实参保持原样。"
       - "修订期望值的依据顺序：① input.targets[].rtl_change 的新增/删除行（本轮 RTL 新行为）；② doc_bitdef。两者冲突（RTL 改了、文档未同步）⇒ 以 rtl_change 的新行为修订期望值，并在 basis 明写「RTL 变更 vs 文档未同步」，冲突由 N3/N12 暴露。"
@@ -36,7 +36,7 @@ n6_author:
       - "若 input.targets[].rtl_effect 给出 retained_mask/retained_bits：期望值必须 = 写入值 & retained_mask（例：写 0x1234_5678、mask 0x0000ffff ⇒ 期望 0x00005678）；**不得把掩码应用到相反的一半**。"
       - "Host 会按你的 edits 写沙箱文件并冻结 md5；你不得声称已改文件。"
   instruct:
-    - "对每个目标用例逐条给出 edits：line 取 excerpt 的行号、old 逐字复制、new 给替换文本、basis 给依据（引用 rtl_change 的具体行、doc_bitdef 的字段，或 api_semantics 的参数名如 data_expmask）。"
+    - "对每个目标用例逐条给出 edits：line 取 excerpts 中对应片段的行号、old 逐字复制、new 给替换文本、basis 给依据（引用 rtl_change 的具体行、doc_bitdef 的字段，或 api_semantics 的参数名如 data_expmask）。"
     - "若 input.rework_reasons 非空，说明上一轮被退回的每一条是如何被解决的。"
     - "拿不准时把不确定性写进 notes，不要猜偏移或期望值。"
 n8_check:

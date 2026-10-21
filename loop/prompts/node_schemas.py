@@ -47,7 +47,7 @@ class N6Edit(BaseModel):
     `line` 是 input.targets[].excerpt 中给出的行号（1-based），仅用于溯源与 N8 复核。
     """
 
-    line: int = Field(description="源文件中 1-based 行号（取自 input.targets[].excerpt）")
+    line: int = Field(description="源文件中 1-based 行号（取自 input.targets[].excerpts 对应片段）")
     old: str = Field(description="必须逐字复制的原文片段；Host 要求它在文件里唯一命中")
     new: str = Field(description="替换后的片段；只做最小改动")
     basis: str = Field(description="依据：差异条目 id / 文档位定义 / 偏移 / 卡点A 检索结论")

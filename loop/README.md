@@ -1,5 +1,9 @@
 # `loop/` — 变更影响闭环的编排层与操作界面
 
+> **Agent 工作窗口**：在“运行监控”点击角色卡片或名字进入。可看当前节点的事件、完整输入、提示词快照、输出及 Host 校验；checker 可切换 N8/N10，尝试选择器可查历史。填写 `human:<name>` 后可补充指令并重跑、暂停、恢复或终止当前节点，动作由服务端下发。暂停/重跑会取消本地旧请求并新建尝试，旧响应不进入下游；终止使本轮按失败收敛。关闭窗口不停止执行。当前暂停限服务进程存活期间，重启后历史只读；远端推理取消取决于提供方。契约见 [Agent 工作窗口](../doc/spec/AGENT_WINDOW_SPEC.md)。
+
+> **S0 工作台增量**：默认首页为“环境准备”，契约见 [S0 环境准备](../doc/spec/S0_ENVIRONMENT_SPEC.md)。填写完整基线、新 RTL、版本声明和新副本绝对路径，执行完整派生与内容核验；已有目录不覆盖。允许路径沿用服务端浏览根配置，可通过 `LOOP_BROWSE_ROOTS` 扩展挂载目录（页面可展开查看范围）。准备记录在本软件 `loop/state/s0`，报告和派生 context 位于各记录目录；不覆盖用户 context。S0-b 接口适配、三库驱动、新版执行入口尚未接入，页面持续显示阻断。现有运行与闸门仍可通过顶部导航访问，保持旧契约。
+
 > **状态**：P0 可运行（drill 全链 117/117；审计阻断项已修复并补回归；2026-10-20 已在真实环境副本上 **real N0→N8 跑通**——证据见 `doc/evidence/REAL_RUN_SCN_RTL_0D04_20261020.md`；更长的 N9 真实全跑仍未做）
 > **上游契约**：`doc/spec/CHANGE_IMPACT_LOOP_SPEC.md`（业务与不变量 I1–I8）
 > **本层契约**：`doc/spec/LOOP_ORCHESTRATION_SPEC.md`（owner / 生命周期 / 长任务 / 准入 / 恢复 / 投影）
@@ -72,6 +76,24 @@ python3.11 -m venv .venv
 ```bash
 cd loop && .venv/bin/python -m pytest -q      # 70 项，约 33 s
 ```
+
+运行 UI 特征与异步交互回归（真实 Chromium，API 使用受控响应；不需要环境仓夹具）：
+
+```bash
+cd loop
+.venv/bin/python -m pip install -r requirements-ui.txt
+.venv/bin/python -m playwright install chromium
+.venv/bin/python -m pytest tests/browser -q
+# 使用系统 Chromium 时：LOOP_BROWSER_EXECUTABLE=/usr/bin/chromium .venv/bin/python -m pytest tests/browser -q
+```
+
+未安装 Playwright 时浏览器测试会明确跳过，不能据此声称 UI 已验证。测试范围与重构约束见
+[`会话可靠性计划`](../doc/plans/2026-10-21-ui-session-reliability.md)；整体优化顺序见
+[`工作流优化评估`](../doc/audit/AUDIT-20261021-workflow-priorities.md)。
+
+Agent 上下文与记忆规则见 [`AGENT_CONTEXT_SPEC`](../doc/spec/AGENT_CONTEXT_SPEC.md)：新调用在本 run 的
+`agent_calls/` 下保存输入、规则版本、输出与校验；已确认经验由人维护，按来源和作用域只读筛选。
+使用与核验命令见该规格末节；独立测试为 `tests/test_agent_context_memory.py`，不要求内网仿真夹具。
 
 ---
 

@@ -1,6 +1,6 @@
 /* 变更影响闭环 · 运营台 v1（app.js）
  *
- * 定位（spec §1 / §9）：界面是**只读投影 + 两个写动作的传输层**，不是第二套状态机。
+ * 定位（spec §1 / §9）：界面投影服务端状态并传输操作，不持有业务判据。
  *   · 数据只消费：/api/health、/api/runs、/api/runs/{id}、/api/baselines、
  *     /api/env/check、/api/fs/dirs、POST /api/runs、闸门决策、job 取消、证据存在性探测。
  *   · 闸门决策枚举、blockers、counts、stage_map、agents 全部由服务端下发；本文件不手抄枚举。
@@ -81,8 +81,9 @@
   };
 
   var VIEW_META = {
-    setup: ["新建运行", "选择基线版本与项目目录 → 校验 → 确认启动"],
-    run: ["运行监控", "四段流程 + 6 个 agent 工作状态（投影，非权威）"],
+    s0: ["环境准备", "从只读基线派生工作副本，让每一次验证都有据可查"],
+    setup: ["运行配置 · 现有闭环", "选择基线版本与项目目录 → 校验 → 确认启动"],
+    run: ["运行监控 · 现有闭环", "查看流程进度、Agent 状态与服务端证据"],
     gate: ["闸门等待", "执行已停放（interrupt），可安全重启；闸门态权威在 gates.json"]
   };
 
@@ -95,9 +96,11 @@
     runs: [],
     runsError: null,
     runId: null,
+    selectionEpoch: 0,
+    detailRequest: 0,
     viewData: null,
     viewError: null,
-    view: "setup",
+    view: "s0",
     baselines: [],
     baselinesLoading: false,
     baselinesError: null,
@@ -116,6 +119,7 @@
     },
     picker: null,
     gateDraft: { key: null, gate: null, decision: null, actor: "human:", reason: "", submitting: false, error: null, blockers: null, note: null },
+    gateSubmissions: Object.create(null),
     stageOverride: "auto",
     connError: null,
     lastOkAt: null,
@@ -178,7 +182,8 @@
   /* ------------------------------------------------------------------ *
    * HTTP：统一错误形态；超时/断连都转成可展示的错误，不吞异常。
    * ------------------------------------------------------------------ */
-  async function api(path, opts) {
+  async function api(path, opts, timeoutMs) {
+    if (timeoutMs === undefined) timeoutMs = 15000;
     var init = Object.assign({ headers: { "Content-Type": "application/json" } }, opts || {});
     if (init.body && typeof init.body !== "string") init.body = JSON.stringify(init.body);
     var ctrl = null;
@@ -186,14 +191,14 @@
     if (typeof AbortController === "function") {
       ctrl = new AbortController();
       init.signal = ctrl.signal;
-      timer = setTimeout(function () { ctrl.abort(); }, 15000);
+      if (timeoutMs) timer = setTimeout(function () { ctrl.abort(); }, timeoutMs);
     }
     var res;
     try {
       res = await fetch(path, init);
     } catch (e) {
       var msg = (e && e.name === "AbortError")
-        ? "请求超时（15 s）：" + path
+        ? "请求超时（" + (timeoutMs / 1000) + " s）：" + path
         : "网络不可达：" + (e && e.message ? e.message : String(e));
       throw Object.assign(new Error(msg), { status: 0, path: path, body: null });
     } finally {
@@ -442,10 +447,24 @@
   }
 
   async function fetchRunView() {
-    if (!state.runId) return;
-    var view = await api("/api/runs/" + enc(state.runId));
-    state.viewData = view;
-    state.viewError = null;
+    if (!state.runId) return false;
+    var runId = state.runId;
+    var epoch = state.selectionEpoch;
+    var request = ++state.detailRequest;
+    function current() {
+      return state.runId === runId && state.selectionEpoch === epoch && state.detailRequest === request;
+    }
+    try {
+      var view = await api("/api/runs/" + enc(runId));
+      if (!current()) return false;
+      state.viewData = view;
+      state.viewError = null;
+      return true;
+    } catch (e) {
+      if (!current()) return false;
+      state.viewError = errText(e);
+      throw e;
+    }
   }
 
   /* 轮询：单个来源失败不覆盖其它来源；失败保留最近成功数据并出横幅。 */
@@ -464,7 +483,6 @@
         try {
           await fetchRunView();
         } catch (e2) {
-          state.viewError = errText(e2);
           firstErr = firstErr || e2;
         }
       }
@@ -490,13 +508,14 @@
   function showView(v) {
     if (!VIEW_META[v]) v = "setup";
     state.view = v;
-    ["setup", "run", "gate"].forEach(function (k) {
+    ["s0", "setup", "run", "gate"].forEach(function (k) {
       var section = $("view" + k.charAt(0).toUpperCase() + k.slice(1));
       if (section) section.classList.toggle("hidden", k !== v);
     });
     var segs = document.querySelectorAll("#viewSeg button");
     for (var i = 0; i < segs.length; i++) {
       segs[i].classList.toggle("on", segs[i].getAttribute("data-view") === v);
+      segs[i].setAttribute("aria-selected", segs[i].getAttribute("data-view") === v ? "true" : "false");
     }
     setText("pageTitle", VIEW_META[v][0]);
     setText("pageSub", VIEW_META[v][1]);
@@ -507,14 +526,17 @@
 
   async function openRun(id) {
     if (!id) return;
+    if (window.AgentWindow) window.AgentWindow.close();
     state.runId = String(id);
+    state.selectionEpoch++;
     state.viewData = null;
     state.viewError = null;
     state.stageOverride = "auto";
+    resetGateDraft();
+    showView("run");
     try {
-      state.viewData = await api("/api/runs/" + enc(state.runId));
+      if (!await fetchRunView()) return;
     } catch (e) {
-      state.viewError = errText(e);
       toast("打开运行失败：" + e.message);
     }
     var st = state.viewData ? state.viewData.status : null;
@@ -1295,19 +1317,35 @@
       : status === "working" ? "primary"
         : status === "waiting" ? "warn"
           : status === "failed" ? "bad" : "";
-    var label = { idle: "待命", working: "工作中", waiting: "等待", done: "完成", failed: "失败" }[status] || status || "待命";
+    var label = { idle: "待命", working: "工作中", paused: "已暂停", interrupting: "干预处理中", waiting: "等待", done: "完成", failed: "失败" }[status] || status || "待命";
     var text = label + (elapsed !== null && elapsed !== undefined ? " · " + elapsed + " s" : "");
     return h("span", "chip" + (cls ? " " + cls : ""), text);
   }
 
   function agentCard(def, a, v, derived) {
     var status = a ? (a.status || "idle") : deriveAgentStatus(def, v);
+    if (a && a.live_control && ["paused", "interrupting"].indexOf(a.live_control.state) >= 0) status = a.live_control.state;
     var card = h("div", "agent " + (status === "working" ? "working" : status === "waiting" ? "waiting" : status === "failed" ? "failed" : ""));
     var head = h("div", "agent-head");
     head.appendChild(h("div", "avatar " + (def.cls || "a6"), def.avatar || "•"));
     var nameBox = h("div");
-    nameBox.appendChild(h("div", "agent-name", a && a.name ? a.name : def.name));
+    var name = a && a.name ? a.name : def.name;
+    var open = h("button", "agent-name agent-open", name + " ↗");
+    open.type = "button";
+    open.setAttribute("data-agent-node", (def.nodes || [])[0] || "");
+    open.setAttribute("aria-label", "打开 " + name + " 工作窗口");
+    nameBox.appendChild(open);
     var nodes = a && Array.isArray(a.nodes) && a.nodes.length ? a.nodes : (def.nodes || []);
+    var runId = state.runId;
+    function openWindow() {
+      if (window.AgentWindow && runId) window.AgentWindow.open({runId: runId, name: name, nodes: nodes,
+        node: a && a.active_node && nodes.indexOf(a.active_node) >= 0 ? a.active_node : nodes[0]});
+    }
+    open.addEventListener("click", openWindow);
+    card.classList.add("agent-clickable");
+    card.addEventListener("click", function (event) {
+      if (!event.target.closest("button, a, input, textarea, select")) openWindow();
+    });
     nameBox.appendChild(h("div", "agent-role", nodes.join(" / ") + " · " + (def.desc || "")));
     head.appendChild(nameBox);
     head.appendChild(h("div", "spacer"));
@@ -1901,9 +1939,18 @@
     updateGateForm(host, pending);
   }
 
+  function gateSessionKey(pending) {
+    return JSON.stringify([state.runId, pending.id, pending.gate, pending.cycle]);
+  }
+
   function ensureDraft(pending) {
-    var key = pending.gate + "|" + (pending.cycle !== null ? pending.cycle : "0");
-    if (state.gateDraft.key === key) return;
+    var key = gateSessionKey(pending);
+    if (state.gateDraft.key === key) {
+      if (!gateOptionsFor(pending).some(function (o) { return o.value === state.gateDraft.decision; })) {
+        state.gateDraft.decision = null;
+      }
+      return;
+    }
     state.gateDraft = {
       key: key,
       gate: pending.gate,
@@ -1918,11 +1965,11 @@
   }
 
   function ensureGateForm(container, pending, compact) {
-    var key = pending.gate + "|" + (pending.cycle !== null ? pending.cycle : "0");
+    ensureDraft(pending);
+    var key = gateSessionKey(pending) + "|" + JSON.stringify(gateOptionsFor(pending));
     if (container.getAttribute("data-gate-key") === key) return;
     container.setAttribute("data-gate-key", key);
     clearEl(container);
-    ensureDraft(pending);
 
     var form = h("div", "gate-form");
     if (compact) {
@@ -1975,7 +2022,10 @@
     actorInput.value = state.gateDraft.actor;
     actorInput.setAttribute("aria-label", "actor");
     actorInput.style.maxWidth = "220px";
-    actorInput.addEventListener("input", function () { state.gateDraft.actor = actorInput.value; });
+    actorInput.addEventListener("input", function () {
+      state.gateDraft.actor = actorInput.value;
+      syncGateForms();
+    });
     actorRow.appendChild(actorInput);
     form.appendChild(actorRow);
     form.appendChild(h("div", "foot-note", "actor 必须以 human 开头（I6）；模型/替身 actor 会被服务端拒绝。"));
@@ -1986,7 +2036,10 @@
     reason.value = state.gateDraft.reason;
     reason.style.marginTop = "8px";
     reason.setAttribute("aria-label", "裁决理由");
-    reason.addEventListener("input", function () { state.gateDraft.reason = reason.value; });
+    reason.addEventListener("input", function () {
+      state.gateDraft.reason = reason.value;
+      syncGateForms();
+    });
     form.appendChild(reason);
 
     var errorBox = h("div", "gate-error");
@@ -2008,16 +2061,27 @@
     if (!form) return;
     var options = gateOptionsFor(pending);
     var d = state.gateDraft;
+    d.submitting = !!state.gateSubmissions[d.key];
     var labels = form.querySelectorAll(".option");
     for (var i = 0; i < labels.length; i++) {
       var input = labels[i].querySelector("input");
       var on = !!(input && d.decision === input.value);
       labels[i].classList.toggle("on", on);
-      if (input) input.checked = on;
+      if (input) {
+        input.checked = on;
+        input.disabled = d.submitting;
+      }
     }
+    var actor = form.querySelector('[aria-label="actor"]');
+    var reason = form.querySelector('[aria-label="裁决理由"]');
+    if (actor && actor.value !== d.actor) actor.value = d.actor;
+    if (reason && reason.value !== d.reason) reason.value = d.reason;
+    if (actor) actor.disabled = d.submitting;
+    if (reason) reason.disabled = d.submitting;
     var submit = form.querySelector("[data-gate-submit]");
     if (submit) {
-      submit.disabled = !d.decision || d.submitting || !options.length;
+      var offered = options.some(function (o) { return o.value === d.decision; });
+      submit.disabled = !offered || d.submitting;
       submit.textContent = d.submitting ? "提交中…" : "提交闸门决策";
     }
     var errorBox = form.querySelector("[data-gate-error]");
@@ -2074,13 +2138,13 @@
     }
     ensureDraft(pending);
     var d = state.gateDraft;
-    if (d.submitting) return;
+    if (state.gateSubmissions[d.key]) return;
     var options = gateOptionsFor(pending);
     var selected = null;
     for (var i = 0; i < options.length; i++) {
       if (options[i].value === d.decision) { selected = options[i]; break; }
     }
-    if (!d.decision) {
+    if (!selected) {
       d.error = "请先选择一个决策（选项由服务端下发）。";
       d.blockers = null;
       d.note = null;
@@ -2100,12 +2164,20 @@
       return;
     }
     d.submitting = true;
+    state.gateSubmissions[d.key] = true;
     d.error = null;
     d.blockers = null;
     d.note = null;
     syncGateForms();
+    var runId = state.runId;
+    var epoch = state.selectionEpoch;
+    function sameSelection() { return state.runId === runId && state.selectionEpoch === epoch; }
+    function currentSubmission() {
+      var current = pendingInfo(state.viewData);
+      return sameSelection() && state.gateDraft === d && current && gateSessionKey(current) === d.key;
+    }
     try {
-      await api("/api/runs/" + enc(state.runId) + "/gates/" + enc(pending.gate) + "/decision", {
+      await api("/api/runs/" + enc(runId) + "/gates/" + enc(pending.gate) + "/decision", {
         method: "POST",
         body: {
           decision: d.decision,
@@ -2113,11 +2185,13 @@
           reason: String(d.reason || "").trim() || null
         }
       });
+      if (!currentSubmission()) return;
       toast("闸门决策已提交：" + pending.gate + " · " + d.decision);
       resetGateDraft();
       await poll();
-      showView("run");
+      if (sameSelection()) showView("run");
     } catch (e) {
+      if (!currentSubmission()) return;
       d.error = errText(e);
       var detail = e.body && e.body.detail;
       if (detail && typeof detail === "object") {
@@ -2127,8 +2201,9 @@
       toast("闸门提交被拒：" + e.message);
       syncGateForms();
     } finally {
+      delete state.gateSubmissions[d.key];
       d.submitting = false;
-      syncGateForms();
+      if (state.gateDraft.key === d.key) syncGateForms();
     }
   }
 
@@ -2430,6 +2505,7 @@
    * 静态绑定与启动
    * ------------------------------------------------------------------ */
   function bindStatic() {
+    $("btnS0").addEventListener("click", function () { showView("s0"); });
     var btnNew = $("btnNew");
     if (btnNew) btnNew.addEventListener("click", function () { showView("setup"); });
 
@@ -2487,7 +2563,9 @@
   async function init() {
     bindStatic();
     renderAll();
-    showView("setup");
+    showView("s0");
+    if (window.S0Workbench) window.S0Workbench.init(api);
+    if (window.AgentWindow) window.AgentWindow.init(api);
     await Promise.allSettled([loadHealth(false), loadBaselines(false)]);
     try {
       await loadRuns();

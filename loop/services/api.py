@@ -1,7 +1,7 @@
 """FastAPI 边界：闸门操作台 + 长任务看板。
 
 定位（spec §1 / §10.2）：**UI 是 ExecutionExchange 适配器，不是权威**。
-本层只做三件事：准入、投影、把闸门提交转交给权威（`kb/tools/gate.py`）+ 中断（TriggerFlow）。
+本层负责准入、投影、转交操作；闸门归 `kb/tools/gate.py`，S0 派生归 `host/s0.py`。
 **不实现自己的状态机**。
 
 启动时 `async_restore_all()`：重新判定作业命运并从快照恢复执行
@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import Body, FastAPI, HTTPException, Query
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from host import paths as P
@@ -113,7 +113,60 @@ def fs_dirs_api(path: str = Query(...)) -> dict[str, Any]:
         raise HTTPException(status_code=400, detail={"error": str(exc)}) from exc
 
 
-# ---------------------------------------------------------------- runs
+# ---------------------------------------------------------------- S0 preparation (separate from existing runs)
+
+def _s0_store():
+    from host.s0 import S0Store
+    from services import config_api
+    registry = config_api.load_registry(P.TOOL_ROOT / 'environments.json')
+    roots = config_api.allowed_roots(registry, P.WORKSPACE_ROOT,
+                                     settings_path=P.LOOP_DIR / 'SETTINGS.yaml', extra=[P.ENV_ROOT])
+    return S0Store(P.STATE_DIR / 's0', roots)
+
+
+@app.get('/api/s0')
+def s0_index():
+    store = _s0_store()
+    return {'baseline': str(P.ENV_ROOT), 'allowed_roots': [str(p) for p in store.allowed_roots],
+            'records': store.list(), 'capabilities': {'prepare': True, 'tb_adapt': False, 'smoke': False}}
+
+
+@app.post('/api/s0')
+async def s0_prepare(payload: dict[str, Any] = Body(default={})):
+    from host.s0 import PreparationFailed
+    try:
+        return await asyncio.to_thread(_s0_store().prepare, payload)
+    except FileExistsError as exc:
+        raise HTTPException(409, detail={'error': str(exc)}) from exc
+    except PermissionError as exc:
+        raise HTTPException(403, detail={'error': str(exc)}) from exc
+    except ValueError as exc:
+        raise HTTPException(400, detail={'error': str(exc)}) from exc
+    except PreparationFailed as exc:
+        raise HTTPException(422, detail={'error': str(exc), 'record': exc.record}) from exc
+    except OSError as exc:
+        raise HTTPException(422, detail={'error': str(exc)}) from exc
+
+
+@app.get('/api/s0/{record_id}/report')
+def s0_report(record_id: str):
+    try:
+        path = _s0_store().report_path(record_id)
+    except ValueError as exc:
+        raise HTTPException(400, detail={'error': str(exc)}) from exc
+    if not path.is_file():
+        raise HTTPException(404, detail={'error': '准备报告不存在'})
+    return FileResponse(path, media_type='text/markdown; charset=utf-8', filename='env-check-report.md')
+
+
+@app.get('/api/s0/{record_id}')
+def s0_get(record_id: str):
+    try:
+        return _s0_store().get(record_id)
+    except FileNotFoundError as exc:
+        raise HTTPException(404, detail={'error': '准备记录不存在'}) from exc
+    except (ValueError, PermissionError) as exc:
+        raise HTTPException(400, detail={'error': str(exc)}) from exc
 
 @app.get("/api/runs")
 def list_runs() -> dict[str, Any]:
@@ -179,7 +232,15 @@ def get_run(run_id: str) -> dict[str, Any]:
     if run_id not in manager.docs:
         raise HTTPException(status_code=404, detail={"error": f"未知 run_id：{run_id}"})
     try:
-        return manager.run_view(run_id)
+        view = manager.run_view(run_id)
+        from host import agent_control as control
+        for agent in view.get('agents', []):
+            for node in agent.get('nodes', []):
+                live = control.live_view(manager.docs[run_id].run_dir, node)
+                if live:
+                    agent['live_control'] = live
+                    break
+        return view
     except KeyError as exc:
         raise HTTPException(status_code=404, detail={"error": str(exc)}) from exc
 
@@ -190,6 +251,44 @@ def get_events(run_id: str, since_seq: int = Query(default=0, ge=0)) -> dict[str
 
 
 # ---------------------------------------------------------------- gates
+
+def _agent_root(run_id: str, node: str):
+    from host import agent_control as control
+    manager = _manager()
+    if run_id not in manager.docs or node not in control.NODES:
+        raise HTTPException(404, detail={'error': '运行或模型节点不存在'})
+    return Path(manager.docs[run_id].run_dir)
+
+
+@app.get('/api/runs/{run_id}/agents/{node}')
+async def agent_window(run_id: str, node: str, attempt: int | None = Query(default=None, ge=1)):
+    from host import agent_control as control
+    root = _agent_root(run_id, node)
+    try:
+        view = control.read_view(root, node, attempt=attempt)
+        view['events'] = [event for event in _manager()._progress(run_id).read()
+                          if event.get('node') == node or str(event.get('node', '')).startswith(node + '_')]
+        return view
+    except KeyError as exc:
+        raise HTTPException(404, detail={'error': str(exc)}) from exc
+    except (OSError, ValueError) as exc:
+        raise HTTPException(422, detail={'error': str(exc)}) from exc
+
+
+@app.post('/api/runs/{run_id}/agents/{node}/control')
+async def agent_command(run_id: str, node: str, payload: dict[str, Any] = Body(default={})):
+    from host import agent_control as control
+    root = _agent_root(run_id, node)
+    try:
+        return control.command(root, node, payload)
+    except PermissionError as exc:
+        raise HTTPException(403, detail={'error': str(exc)}) from exc
+    except control.ControlConflict as exc:
+        raise HTTPException(409, detail={'error': str(exc)}) from exc
+    except ValueError as exc:
+        raise HTTPException(400, detail={'error': str(exc)}) from exc
+    except OSError as exc:
+        raise HTTPException(503, detail={'error': f'控制审计写入失败：{exc}'}) from exc
 
 @app.post("/api/runs/{run_id}/gates/{gate_id}/decision")
 async def submit_decision(

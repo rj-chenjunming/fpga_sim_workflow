@@ -790,6 +790,7 @@ async def test_n3_writes_digest_file_drill_and_real_standin(
                   scenario="happy", kb=ctx.kb, progress=ProgressLog(tmp_path / "e2", RUN_ID),
                   admission=FakeAdmission(), runner=FakeRunner()))
     ctx2.run_dir.mkdir(parents=True)
+    (ctx2.run_dir / "n2_diff.json").write_text(json.dumps({"diffs": []}), encoding="utf-8")
     # real+standin ⇒ fail closed（real 端到端需 live provider；standin 不冒充）
     with pytest.raises(RuntimeError, match="live provider"):
         await model_steps.n3_digest(FakeData(state={"n2_diff": {}}))
@@ -799,6 +800,7 @@ async def test_n3_writes_digest_file_drill_and_real_standin(
 async def test_n3_validation_failure_aborts_round(
         ctx: RunCtx, monkeypatch: pytest.MonkeyPatch) -> None:
     """#18/A21：N3 解析失败 ⇒ 显式终止（不得把空摘要送进闸门1）。"""
+    (ctx.run_dir / "n2_diff.json").write_text(json.dumps({"diffs": []}), encoding="utf-8")
     async def failed(*a: Any, **k: Any) -> dict[str, Any]:
         return {"mode": "live", "standin": False, "validation": {"ok": False, "problems": ["bad"]},
                 "data": None, "provider": "fake"}

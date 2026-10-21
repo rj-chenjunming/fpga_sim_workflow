@@ -1,5 +1,7 @@
 # 环境插件规格（software standalone / environment as plugin）
 
+> S0 补充见 [S0_ENVIRONMENT_SPEC.md](S0_ENVIRONMENT_SPEC.md)：基线只读、派生副本准备。修订稿 `docs/ + run` 兼容 `doc/ + run`，不等于满足本文件既有运行插件的 `run_local/uvs.setup` 契约，进程不自动切换副本。
+
 > **定位**：软件是独立产品，环境是插件。软件可以被指向**任意**符合本规格的环境仓；
 > 一个环境在软件侧的全部状态（索引/冲突/基线/运行记录）由软件自己管理。
 >

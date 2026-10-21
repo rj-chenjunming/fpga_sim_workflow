@@ -3,19 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>变更影响闭环 · 运营台 v1</title>
+<title>FPGA Flow · 仿真工作台</title>
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
 <div id="app">
 
   <header>
-    <div class="brand"><span class="mark"></span> 变更影响闭环 <span class="muted tiny">· 运营台</span></div>
+    <div class="brand"><span class="mark"></span> FPGA Flow <span class="muted tiny">仿真工作台</span></div>
     <span class="pill" id="hdrEnv"><span class="dot idle" id="hdrDot"></span><span id="hdrEnvText">环境未就绪</span></span>
     <span class="pill mono tiny" id="hdrAddr">—</span>
     <span class="pill tiny" id="hdrHealth">健康检查中…</span>
     <div class="spacer"></div>
-    <span class="ver-flag">v1 · 真实数据</span>
+    <span class="ver-flag">S0 · 环境准备</span>
     <a class="btn btn-ghost btn-sm" id="lnkLegacy" href="legacy.html">旧界面</a>
   </header>
 
@@ -24,6 +24,8 @@
     <!-- ================= 左栏：入口 + 运行列表 + 根信息 ================= -->
     <aside id="sidebar">
       <div class="rail-top">
+        <div class="rail-kicker">WORKSPACE / 工作空间</div>
+        <button class="btn btn-block rail-entry" id="btnS0">▣　环境准备 <span class="chip">S0</span></button>
         <button class="btn btn-primary btn-block" id="btnNew">＋ 新建运行</button>
       </div>
       <div class="rail-label">运行记录</div>
@@ -39,21 +41,84 @@
     <main>
       <div class="page-head">
         <div>
-          <h1 id="pageTitle">新建运行</h1>
-          <div class="muted tiny" id="pageSub">选择基线版本与项目目录 → 校验 → 确认启动</div>
+          <h1 id="pageTitle">环境准备</h1>
+          <div class="muted tiny" id="pageSub">从只读基线派生工作副本，让每一次验证都有据可查</div>
         </div>
         <div class="spacer"></div>
         <div class="seg" id="viewSeg" role="tablist" aria-label="视图切换">
-          <button id="segSetup" data-view="setup" class="on">① 配置</button>
-          <button id="segRun" data-view="run">② 执行</button>
-          <button id="segGate" data-view="gate">③ 闸门</button>
+          <button id="segS0" data-view="s0" class="on" role="tab">环境准备</button>
+          <button id="segSetup" data-view="setup" role="tab">运行配置</button>
+          <button id="segRun" data-view="run" role="tab">运行监控</button>
+          <button id="segGate" data-view="gate" role="tab">人工闸门</button>
         </div>
       </div>
 
       <div id="banners"></div>
 
+      <section id="viewS0" aria-label="S0 环境准备">
+        <div class="s0-hero">
+          <div><div class="eyebrow">SIMULATION / ENVIRONMENT</div>
+            <h2>准备好副本，再开始验证。</h2>
+            <p>基线只读继承 · 新版 RTL 整体替换 · 每一步都有内容见证</p>
+            <div class="hero-tags"><span>基线零写入</span><span>独立工作副本</span><span>Host 确定性校验</span></div>
+          </div>
+          <div class="hero-stamp"><span class="mono">S0</span><small>ENVIRONMENT PREPARATION</small></div>
+        </div>
+
+        <div class="s0-phases">
+          <div class="phase-card" id="s0PhaseA"><span class="phase-index">01</span><div><div class="eyebrow">S0-a / 派生准备</div><h3>复制、替换、核对</h3><p>与差异分析并行，无需等待接口报告。</p></div><span class="chip" id="s0PhaseAStatus">待准备</span></div>
+          <div class="phase-card" id="s0PhaseB"><span class="phase-index">02</span><div><div class="eyebrow">S0-b / 执行前检查</div><h3>接口适配与三库冒烟</h3><p>接口差异、TB 登记及真实编译驱动未接入。</p></div><span class="chip warn">未接入</span></div>
+        </div>
+
+        <div class="s0-grid">
+          <div>
+            <div class="card">
+              <div class="card-head"><span class="section-index">A</span><h2>派生工作副本</h2><span class="sub">S0-a</span></div>
+              <form id="s0Form" class="card-body">
+                <div class="form-section-label">来源 / 只读输入</div>
+                <label class="s0-label" for="s0Baseline">基线工程目录 <span>完整 UVS 工程</span></label>
+                <input class="input mono" id="s0Baseline" required placeholder="/sim/项目基线" autocomplete="off">
+                <label class="s0-label" for="s0Version">基线版本 <span>分支、tag 或 commit，由操作者声明</span></label>
+                <input class="input mono" id="s0Version" required placeholder="例如 v1.2 / commit 标识" autocomplete="off">
+                <label class="s0-label" for="s0Rtl">新版 RTL 目录 <span>整体替换副本 RTL/</span></label>
+                <input class="input mono" id="s0Rtl" required placeholder="/project/src/rtl" autocomplete="off">
+                <div class="form-section-label form-divider">目标 / 独立可写副本</div>
+                <label class="s0-label" for="s0Work">新工作副本目录 <span>父目录已存在，目标尚未创建</span></label>
+                <input class="input mono" id="s0Work" required placeholder="/sim/项目基线_wk_v2" autocomplete="off">
+                <div class="s0-boundary"><span>→</span><div>完整继承 TB、TESTLIB、PKG、文档与 run。<br>仅替换新副本 RTL；已有目标不会覆盖。</div></div>
+                <details class="adv s0-access"><summary>可访问的目录范围</summary><div class="mono tiny" id="s0AllowedRoots">由服务端配置；路径必须位于允许根内。</div></details>
+                <div id="s0Error" role="alert"></div>
+                <div class="s0-form-actions"><span class="muted tiny" id="s0SubmitHint">准备完成后仍需 S0-b 与 GATE-1</span><button class="btn btn-primary" id="s0Prepare" type="submit">派生并校验 <span aria-hidden="true">→</span></button></div>
+              </form>
+            </div>
+            <details class="card s0-history"><summary>准备记录 <span class="muted tiny">查看历史派生与重新核验</span></summary><div class="card-body" id="s0History">加载中…</div></details>
+          </div>
+
+          <div class="s0-evidence">
+            <div class="card">
+              <div class="card-head"><span class="section-index">B</span><h2>检查与证据</h2><button class="btn btn-ghost btn-sm" id="s0Refresh" type="button">刷新</button></div>
+              <div class="card-body">
+                <div class="readiness" id="s0Readiness" role="status" aria-live="polite"><span class="dot warn"></span> 尚未准出</div>
+                <div id="s0Result" class="s0-result"><div class="receipt-empty">每次派生，都有一份记录。</div><p class="muted tiny">填写左侧路径，生成工作副本与逐文件指纹。准备记录可随时重新核验。</p></div>
+                <ol class="s0-checks" id="s0Checks">
+                  <li><span>01</span><div>完整派生工作副本<small>保留完整工程结构</small></div><b>待执行</b></li>
+                  <li><span>02</span><div>新版 RTL 整体替换<small>逐文件 MD5 一致</small></div><b>待执行</b></li>
+                  <li><span>03</span><div>非 RTL 初检一致<small>复制不得污染继承资产</small></div><b>待执行</b></li>
+                  <li><span>04</span><div>接口核对与 TB 登记<small>仅限 top.sv 接口适配</small></div><b>未接入</b></li>
+                  <li><span>05</span><div>副本三库编译冒烟<small>0 error + warning 评估</small></div><b>未接入</b></li>
+                  <li><span>06</span><div>基线零写入见证<small>派生前后全量指纹</small></div><b>待执行</b></li>
+                </ol>
+                <a class="btn btn-block hidden" id="s0Report">下载准备报告 ↗</a>
+              </div>
+            </div>
+            <div class="s0-blockers"><div class="eyebrow">BEFORE EXECUTION / 执行前</div><h3>还需要完成什么</h3><div id="s0Blockers"><p>接口核对与逐 hunk 变更登记、真实三库冒烟尚未接入。</p><p>完成 S0 两段及 GATE-1 后才能进入新版执行。</p></div></div>
+          </div>
+        </div>
+        <div class="s0-scope">本页对应修订稿 S0。运行配置、运行监控与人工闸门仍属于现有闭环；新版执行入口尚未接入。</div>
+      </section>
+
       <!-- ============ 视图 1：配置 ============ -->
-      <section id="viewSetup">
+      <section id="viewSetup" class="hidden">
         <div class="card">
           <div class="card-head">
             <h2>运行配置</h2>
@@ -118,7 +183,7 @@
                     <option value="cancel">cancel（取消夹具）</option>
                   </select>
                 </div>
-                <div class="alert warn hidden" id="realWarn">real 链路尚未闭合（N1/N6/N7/N9/N15）；允许启动，但结果不得当作真机结论。</div>
+                <div class="alert warn hidden" id="realWarn">真实运行需要内网仿真插件与数据。请核对实际模型、编译与作业证据；此入口尚未消费新版 S0 准出结果。</div>
                 <details class="adv">
                   <summary>高级（时间注入）</summary>
                   <div class="field-row" style="margin-top:8px">
@@ -150,11 +215,10 @@
           <div class="card">
             <div class="card-head"><h2>操作边界</h2><span class="sub">界面只做投影与传输</span></div>
             <div class="card-body">
-              <div class="kv"><span>读</span><b class="mono tiny">/api/health · /api/runs · /api/runs/{id}</b></div>
-              <div class="kv"><span>读</span><b class="mono tiny">/api/baselines · /api/env/check · /api/fs/dirs</b></div>
-              <div class="kv"><span>写</span><b class="mono tiny">POST /api/runs（唯一建运行入口）</b></div>
-              <div class="kv"><span>写</span><b class="mono tiny">POST …/gates/{gate}/decision（唯一业务写动作）</b></div>
-              <div class="foot-note">界面不判绿、不判红、不手抄闸门枚举；决策选项一律由服务端下发。</div>
+              <div class="kv"><span>环境准备</span><b>在 S0 页面派生副本，原始基线保持只读</b></div>
+              <div class="kv"><span>运行模式</span><b>区分演练替身与真实仿真，不混用结论</b></div>
+              <div class="kv"><span>人工闸门</span><b>依据实际差异和证据逐条复核</b></div>
+              <div class="foot-note">这里启动现有闭环，不会自动切换到 S0 副本，也不代表新版执行已获准。</div>
             </div>
           </div>
         </div>
@@ -249,8 +313,7 @@
       </section>
 
       <div class="foot-note">
-        界面定位：只读投影 + 两个写动作（建运行、闸门决策）的传输层。闸门态权威在
-        <span class="mono">gates.json + gates.sha256</span>；本页不持有任何「已通过」状态。
+        FPGA Flow · 检查结论与闸门状态以服务端证据为准。
       </div>
     </main>
   </div>
@@ -274,7 +337,49 @@
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
+<dialog id="agentWindow" class="agent-window" aria-labelledby="awTitle">
+  <div class="aw-head">
+    <div class="aw-terminal-mark" aria-hidden="true">&gt;_</div>
+    <div class="grow"><div class="eyebrow">AGENT WORKSPACE / 工作窗口</div><h2 id="awTitle">Agent</h2></div>
+    <span class="chip" id="awStatus" role="status" aria-live="polite">加载中</span>
+    <button class="btn btn-ghost btn-sm" id="awClose" aria-label="关闭 Agent 窗口">关闭 ×</button>
+  </div>
+  <div class="aw-toolbar">
+    <span class="mono" id="awIdentity">—</span>
+    <div class="spacer"></div>
+    <label for="awNode">节点</label><select class="input mono" id="awNode" aria-label="Agent 节点"></select>
+    <label for="awAttempt">尝试</label><select class="input mono" id="awAttempt" aria-label="调用尝试"><option value="">跟随最新</option></select>
+    <button class="btn btn-sm" id="awRefresh">刷新</button>
+  </div>
+  <div class="aw-layout">
+    <div class="aw-observe">
+      <div class="aw-section-head"><h3>运行动态</h3><span class="tiny muted" id="awModel">—</span></div>
+      <div class="aw-timeline" id="awTimeline">等待读取实际运行记录…</div>
+      <details id="awInputDetails" class="aw-detail"><summary>任务输入 <span>完整调用输入，只读</span></summary><pre id="awInput">—</pre></details>
+      <details class="aw-detail"><summary>提示词与约束 <span>调用时快照</span></summary><pre id="awPrompt">—</pre></details>
+      <details class="aw-detail" open><summary>输出与 Host 校验 <span id="awResultStatus">尚未返回</span></summary><pre id="awOutput">等待返回后显示实际结果。</pre></details>
+      <p class="aw-note">这里展示实际输入、执行事件与返回结果，不提供模型隐藏推理或 token 流。</p>
+    </div>
+    <div class="aw-intervene">
+      <div class="aw-section-head"><h3>人工干预</h3><span class="chip">请求边界</span></div>
+      <p class="aw-note" id="awControlHint">读取当前可用操作…</p>
+      <label class="s0-label" for="awActor">操作者 <span>流程记录</span></label>
+      <input class="input mono" id="awActor" value="human:" placeholder="human:your-name" autocomplete="off">
+      <label class="s0-label" for="awMessage">补充指令 <span>仅当前任务</span></label>
+      <textarea class="input" id="awMessage" rows="6" maxlength="4000" placeholder="例如：请重点核对新增端口的位宽，保留现有断言与激励时序。"></textarea>
+      <button class="btn btn-primary btn-block" id="awSteer" disabled>补充指令并重跑</button>
+      <div class="aw-action-row"><button class="btn" id="awPause" disabled>暂停请求</button><button class="btn" id="awResume" disabled>恢复请求</button></div>
+      <div id="awReceipt" class="aw-receipt" role="status" aria-live="polite"></div>
+      <div id="awError" role="alert"></div>
+      <div class="aw-control-rule">补充指令会取消本地旧请求，再发起新的调用尝试；原始事实、Host 校验与人工闸门继续生效。暂停后恢复也会重发请求。</div>
+      <div class="aw-stop"><button class="btn btn-block" id="awTerminate" disabled>终止当前节点</button><p>终止后本轮按失败收敛。关闭窗口只收起视图，不停止任务。</p></div>
+      <details class="aw-limit"><summary>取消与恢复的边界</summary><p>应用丢弃旧响应；远端是否停止推理由模型提供方决定。当前暂停仅在服务进程存活时可恢复，重启后历史会话只读。</p></details>
+    </div>
+  </div>
+</dialog>
 <noscript><div class="banner bad">本界面需要启用 JavaScript。</div></noscript>
+<script src="s0.js"></script>
+<script src="agent-window.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

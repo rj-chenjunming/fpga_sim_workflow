@@ -1,5 +1,7 @@
 # 变更影响闭环 · 编排层规格书（ORCHESTRATION SPEC）
 
+> Agent 请求边界控制见 [AGENT_WINDOW_SPEC.md](AGENT_WINDOW_SPEC.md)。控制器只包围模型请求，不重放下游副作用、不改 TriggerFlow 拓扑或闸门；暂停限当前进程，重启后历史只读。
+
 > **状态**：v0.1 · 已实现（P0）；实现审计见 `doc/audit/AUDIT-20261019-spec-conformance.md`。
 > **上游**：`doc/spec/CHANGE_IMPACT_LOOP_SPEC.md` v0.2（业务与不变量 I1–I8、16 节点 N0–N16、三道人工闸门）。
 > **本件定位**：上游是**业务契约**，本件是它的**机制契约**——把 N0–N16 落到具体 owner
@@ -41,6 +43,7 @@
 | **`kb/tools/*.py`（既有，只读）** | **业务权威**：闸门态 + `anchor`、N2 diff、N5 影响、N16 晋升、用例态 | 不知道 TriggerFlow 存在 |
 | `loop/host/admission.py` | **单槽准入 / 队列 / 取消**（外部容量 owner） | 不决定业务是否继续 |
 | `loop/host/job_runner.py` | 长任务提交、看护、重附着、取消送达 | 不写执行状态（只返回 ref，由 chunk 写） |
+| `loop/host/agent_memory.py` | 上下文预算、模型调用记录、人工确认经验筛选（见 [上下文与记忆契约](AGENT_CONTEXT_SPEC.md)） | 不签署、不晋升、不作为执行恢复或业务通过权威 |
 | `loop/host/progress.py` | 稳定应用事件投影 | 不作为权威（只投影，不回写） |
 | `loop/services/contracts.py` | 对外投影（闸门材料 / 看板项 / 运行摘要） | 不泄露 raw event、内部 metadata |
 | `loop/services/api.py` | FastAPI 准入与 HTTP 投影（ExecutionExchange 适配器） | **不实现自己状态机** |

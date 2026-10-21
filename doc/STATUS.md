@@ -2,7 +2,8 @@
 
 > **本文件是数字的唯一权威**。其它文档引用这里，不各自抄一份。
 > **本次采样**：2026-10-19T18:02+0800（修复轮终验，四道门全绿）；采样命令与输出见各节（数字一律复制，不手算）。
-> **最新补充采样**：2026-10-21 云环境优化、S0 与 Agent 工作窗口，见 §7–§10；后续优化整理见 §11；全站网页视觉升级见 §12；下一阶段执行手册与当前复核见 §13。旧采样保留为历史；本轮没有四道门全绿。
+> **最新补充采样**：2026-10-21 云环境优化、S0 与 Agent 工作窗口，见 §7–§10；后续优化整理见 §11；全站网页视觉升级见 §12；下一阶段执行手册与当前复核见 §13。
+> **2026-10-21/22 后续批次**：F01/F02/F03-a/F16/F16-b/F02-b 见 §14–§21；本批 F13/F03-b/F03-c/F16-c/F02-c/F15-a/F06/F05/F14/F07/F08/F10/F11 见 §22–§32，阻塞清单见 §33，独立验证汇总见 §34。旧采样保留为历史；本轮没有四道门全绿。
 > **不声称合规**：审计发现但未修复的阻断项在 §5 保持可见。
 
 ---
@@ -490,3 +491,249 @@ UI 仅有语法检查与静态审查，F13 一并补浏览器用例。
 - 诚实边界：独立复核**未覆盖**最后一处 §9 修复与本口径变更；登记为残余，下一轮切片复核一并确认。
 复核已确认（`3b9475f` 状态）：detail 四字段与 `host.baseline.inspect` 逐项相等（无二次推导）、拒绝零副作用、
 红灯（`git archive fcfefa3`）`2 failed, 1 passed` 真实、失败集与 `f4f0979` 逐个相同。
+
+## 22 F13 首次失败 vs 刷新失败（2026-10-21/22）
+
+计划 [F13](plans/2026-10-21-F13-first-refresh-errors.md)，规格 [Web UI §7.2](spec/WEB_UI_SPEC.md#72-首次加载首次失败与刷新失败2026-10-21-f13)。
+顺序：**计划+规格**（`fd67ee3`）→ **红灯**（`91b85a4`）→ **实现**（`056f911`）→ **复核报告**（`274a406`）→
+**整改**（`219fb70`）→ **复核建议项**（`d272a80`）。数字一律从命令输出复制。
+
+| 验证 | 原始输出（逐字复制） | 说明 |
+|---|---|---|
+| 红灯（模块不存在） | `7 failed in 1.19s` | `Cannot find module .../web/run-view-state.js` |
+| 实现后定向 | `7 passed in 1.21s` | 五态判据纯函数受控执行（node） |
+| 默认根 | `46 failed, 298 passed, 3 skipped, 1 warning in 11.89s` | 46 项同因（`ENV_ROOT` 只读） |
+| 软件层 | `3 failed, 341 passed, 3 skipped, 1 warning in 73.83s` | 3 项环境层（archive×2 + 冻结见证） |
+| 复核后整改定向 | `12 passed, 3 skipped, 1 warning in 1.61s` | 含 idle 断言与面板 8/8 断言说明 |
+| 整改后默认根 | `46 failed, 299 passed, 3 skipped, 1 warning in 12.08s` | 失败集不变 |
+| 整改后软件层 | `3 failed, 342 passed, 3 skipped, 1 warning in 73.89s` | 3 项环境层 |
+| 建议项实现后定向 | `63 passed, 3 skipped, 1 warning in 1.64s` | run-view-state + web_smoke + browser + doc_links |
+
+实现：唯一判据 `web/run-view-state.js`（loading/idle/first_error/loaded/stale_error）；`app.js` 记录
+当前选择的成功时间与在途标记，代次隔离用 `isCurrent(runId+epoch+request)`；首次失败与陈旧失败都有可达
+「重新读取」入口（只发详情 GET）；运行视图 5 个面板与闸门视图 3 处占位统一走 `panelHint()`，闸门头失败
+改用 `status-pill fail`。
+
+**独立复核**（[F13-verify-20261021.md](audit/F13-verify-20261021.md)，md5 `667b6d89b770dc808f9c093b365283f9`）：
+首轮**不建议合并**（2 项必改：8 处占位仍判「加载中」、闸门头失败画成进行中蓝色）→ 整改 `219fb70` →
+回归复核**可合并**（新必改 0；建议 6 条，已在 `d272a80` 实施：idle 同屏、闸门头复用判据、规格 idle 行、
+面板断言 8/8、文案中性化、点击防抖）。**未复核**：`d272a80` 本身（登记为残余）。
+
+**未运行**：`tests/browser` 整组（缺 `playwright` Python 包；系统有 `/usr/bin/google-chrome`）——
+浏览器 DOM 断言一条未执行，**不声称 UI 已在浏览器验证**。
+
+## 23 F03-b 测试分层与环境层入口（2026-10-22）
+
+计划 [F03-b](plans/2026-10-21-F03b-test-layers.md)，规格 [环境插件规格 §4.1](spec/ENV_PLUGIN_SPEC.md)。
+顺序：**计划+规格**（`1b0ed64`）→ **红灯**（`65d5f10`）→ **实现**（`9afc7e5`）→ **复核报告**（`e439eaa`）
+→ **复核建议**（`4d1c65b`）。
+
+| 验证 | 原始输出（逐字复制） | 说明 |
+|---|---|---|
+| 红灯 | `6 failed in 2.42s` | 无 `env_layer` 标记注册/入口过滤/源码原因 |
+| 实现后分层断言 | `6 passed in 2.45s` | 精确 3 项、`--strict-markers` 生效、入口收集期排除 |
+| 默认根 | `46 failed, 305 passed, 3 skipped, 1 warning in 13.75s` | 3 项环境层仍**如实 FAILED**，不是 skip |
+| 软件层 | `348 passed, 3 skipped, 3 deselected, 1 warning in 75.52s` | **0 failed**；3 项环境层被显式排除 |
+| 建议项后软件层 | `429 passed, 3 skipped, 3 deselected, 1 warning in 81.82s` | 打印被排除清单（3 项逐条可见） |
+
+实现：`pytest.ini` 注册 `env_layer` + `--strict-markers`；3 项环境层用例加标记并写明原因
+（可写 `ENV_ROOT` / 冻结见证 / 布局）；`spikes/run_software_checks.sh` 默认 `-m "not env_layer"`，
+`INCLUDE_ENV_LAYER=1` 可包含，并打印被排除用例清单与用户 `-m` 覆盖警告。
+
+**独立复核**（[F03b-verify-20261022.md](audit/F03b-verify-20261022.md)，md5 `904e46d92a099a71a3c7f37dd94ec087`）：
+**建议合并**（无阻断）。5 条建议中 3.1/3.2/3.5 已在 `4d1c65b` 实施；3.3（规格/测试两处清单）
+判定保持契约编码，3.4（默认根失败数曾一次性漂移）按「串行静默复算」口径记录（见 §35）。
+**未复核**：`4d1c65b` 本身（登记为残余）。
+
+## 24 F03-c 文档路径检查根路由（2026-10-22）
+
+计划 [F03-c](plans/2026-10-21-F03c-doc-link-roots.md)，规格 [环境插件规格 §4.2](spec/ENV_PLUGIN_SPEC.md)。
+顺序：**计划+规格**（`407cfab`）→ **红灯**（`18d7e00`）→ **实现**（`c8c565b`）→ **复核报告**（`e439eaa`）
+→ **整改 M1/M2**（`e392d1b`）→ **复核建议**（`2805c2b`）。
+
+| 验证 | 原始输出（逐字复制） | 说明 |
+|---|---|---|
+| 红灯 | `38 failed, 13 errors in 0.83s` | `Roots/classify/resolve/scan` 尚不存在 |
+| 实现后定向 | `51 passed in 0.62s` | 所有权分类/诱饵根/退出码/历史件 |
+| 真实全库扫描（实现后） | 退出码 `0`、`missing=0` | `env_missing`/`known_missing` 可见 |
+| 默认根 | `46 failed, 356 passed, 3 skipped, 1 warning in 13.95s` | 失败集不变 |
+| 软件层 | `399 passed, 3 skipped, 3 deselected, 1 warning in 75.89s` | 0 failed |
+| 整改后定向 | `62 passed in 0.88s` | 目录形态/根解析复用/RootError |
+| 整改后真实扫描 | 退出码 `0`、`missing=0` | `env_missing=11`、`known_missing=10`（可见） |
+
+实现：按**路径所有权**路由（TOOL_ROOT / WORKSPACE_ROOT / ENV_ROOT / doc 回落）；`loop/` 不再回落环境根；
+环境资产缺失单列 `[ENV-MISSING]`（可见、不计失败）；本仓/数据根断链 ⇒ `missing` + 退出码 1；
+`KNOWN_MISSING` 打印原因；`root` 不可确定 ⇒ `[ROOT-ERROR]` + 退出码 2（复用 `kb_lib`，不写冻结目录字节码）。
+
+**独立复核**（[F03c-verify-20261022.md](audit/F03c-verify-20261022.md)，md5 `dd9f06e9651f968702665b1b44deeffe`）：
+首轮**不建议合并**（M1 无尾斜杠目录误路由、M2 第二套根解析）→ 整改 `e392d1b` → 回归复核**可合并**
+（M1/M2 关闭、无新必改、口径未放宽：旧/新对同一文档的 missing/env_missing/known_missing 集合逐条相同）。
+复核建议（死导入、`kb_lib` 归属校验）已在 `2805c2b` 实施，**未复核**（登记为残余）。
+
+## 25 F16-c / F02-c 残余（2026-10-22）
+
+计划 [F16-c/F02-c](plans/2026-10-21-F16c-F02c-residual.md)，规格 [Web UI §4.3](spec/WEB_UI_SPEC.md)、
+[Agent 窗口规格](spec/AGENT_WINDOW_SPEC.md)。顺序：**计划+规格**（`c564b96`）→ **红灯**（`a878b2e`）
+→ **实现**（`96cf86b`）→ **复核报告**（`0328222` 前）→ **建议项**（`a32b13e`）。
+
+| 验证 | 原始输出（逐字复制） | 说明 |
+|---|---|---|
+| 红灯（三个文件合并） | `15 failed, 15 passed, 1 warning in 1.46s` | **计数口径见下方勘误** |
+| 实现后定向（5 文件） | `101 passed, 1 warning in 2.51s` | capability + n8 + context + control |
+| 加 `test_agent_view.py` | `111 passed, 1 warning in 2.54s` | —— |
+| 能力/格式化专项 | `15 passed, 1 warning in 1.39s` | 未知维度/standin≠真实/唯一格式化 |
+| `api_ui_contract` | `2 failed, 6 passed` | 2 项为 `ENV_ROOT` 只读（环境层），不在本切片 |
+| 默认根 | `46 failed, 375 passed, 3 skipped, 1 warning in 14.73s` | 失败集不变 |
+| 软件层 | `418 passed, 3 skipped, 3 deselected, 1 warning in 76.74s` | 0 failed |
+
+**勘误（复核者必改 1）**：红灯提交 `a878b2e` 的 `test_node_capabilities_equal_role_card_projection`
+失败原因是**测试自身签名写错**（`TypeError: build_agents() takes 1 positional argument`），
+不是「缺少 `node_capabilities`」；不能把它计入「能力缺失导致红灯」的证据。其余能力/格式化/N8 消息用例为真红。
+
+实现：`agent_view.node_capabilities()` 复用 `_capabilities/_collect`（Host 节点返回 `None`）；
+`GET /api/runs/{id}/agents/{node}` 下发 `capabilities`（未知维度保持 `None`）；
+新增 `web/capabilities.js` 唯一格式化，`app.js`/`agent-window.js` 共用；N8 聚合预算不足错误消息补文件名与最小成本。
+
+**独立复核**（[F16c-F02c-verify-20261022.md](audit/F16c-F02c-verify-20261022.md)，md5 `66f1cb98dbb7facf78816b6ac8ce1cab`）：
+**建议合并**（代码层无阻断；2 项证据口径必改已在本节按原样记录：红灯归因、定向数字）。
+建议项（窗口 API 精确期望、历史 attempt 语义澄清）已在 `a32b13e` 实施；格式化 guard 随 F05 提交。**未复核**该整改提交。
+
+## 26 F15-a 规格与文档对齐（2026-10-22）
+
+计划 [F15-a](plans/2026-10-21-F15a-doc-alignment.md)。顺序：**计划**（`a51193d`）→ **文档**（`86b6216`）
+→ **复核报告**（`e439eaa`）→ **整改 M1/M2/M3**（`0328222`）。本切片无业务代码变更，不适用红灯。
+
+| 验证 | 原始输出（逐字复制） | 说明 |
+|---|---|---|
+| 文档门（文档提交后） | 退出码 `0`、`missing=0` | `env_missing`/`known_missing` 可见 |
+| 文档门（整改后） | 退出码 `0`、`missing=0` | —— |
+| 业务单测/浏览器/kb/端到端 | 未运行 | 纯文档切片；不复用其它章节结果 |
+
+实现：根 README 写权摘要对齐 AGENTS §3；删除现行入口的「单文件前端」「70/94 项」硬编码；数字统一指向
+STATUS；`doc/README.md`/`doc/agents/README.md` 索引现状（2 份开工提示词、audit 含验证报告）；历史章节加
+「历史采样/适用版本」标注（ENV_PLUGIN_SPEC §5、CHANGE_IMPACT_LOOP_SPEC 完成度行、2026-10-19 UI 计划）。
+
+**独立复核**（[F15a-verify-20261022.md](audit/F15a-verify-20261022.md)，md5 `89adeb379e2bf1736d7e9551f3094e7d`）：
+首轮**不建议合并**（3 项文字必改：§6 约束适用范围、UI 计划横幅把未实施的 F05 归为已拆分、agents 索引仍写 1 份）
+→ 整改 `0328222`（同时实施 S2/S4）。**未复核**该整改提交（登记为残余）。
+
+## 27 F06 模型请求机制与节点语义分离（2026-10-22）
+
+计划 [F06](plans/2026-10-21-F06-model-request-split.md)，规格 [AGENT_CONTEXT_SPEC 实现结构](spec/AGENT_CONTEXT_SPEC.md)。
+**纯重构切片**：先固定特征基线（重构前 `109 passed in 28.79s`），再提取；不适用红灯。
+
+| 验证 | 原始输出（逐字复制） | 说明 |
+|---|---|---|
+| 重构前特征基线 | `109 passed, 1 warning in 28.79s` | test_flow + context + control + n8 + capability |
+| 重构后同一命令 | `109 passed, 1 warning in 28.40s` | 行为特征不变 |
+| 分层结构断言 | `4 passed in 0.58s` | 机制不含校验实现/单一 `_validate`/兼容导出 |
+| 默认根 | `46 failed, 386 passed, 3 skipped, 1 warning in 16.39s` | 失败集与基线相同 |
+
+实现：新增 `model_common.py`、`model_request.py`（`validate` 注入）、`n6_facts.py`、`n10_semantics.py`、
+`n11_guard.py`；`model_steps.py` 1470 行（原 2192）保留节点入口与兼容导出。测试仅迁移内部符号补丁落点
+（`_ask`→`model_request.ask`、`_doc_bitdef_for`→`n6_facts`、`run_kb_tool`/`ledger` 注入），**期望值未改**。
+`implementation_sha256` 现记录 `model_request.py` 指纹（属预期变化，不用它替代语义对照）。
+
+**独立复核**：报告见 §34（本轮复核者运行中，落盘后补 md5）。
+
+## 28 F05 前端按功能拆分（第一步：闸门会话判定，2026-10-22）
+
+计划 [F05](plans/2026-10-21-F05-frontend-split.md)，规格 [Web UI §7.1 实现归属](spec/WEB_UI_SPEC.md)。
+顺序：**计划+规格**（`cd47ca2`）→ **红灯**（`4a6bbd9`）→ **实现**（`37e0b26`）。
+
+| 验证 | 原始输出（逐字复制） | 说明 |
+|---|---|---|
+| 红灯 | `7 failed in 1.01s` | `gate-session.js` 不存在 |
+| 实现后定向 | `19 passed, 3 skipped, 1 warning in 2.99s` | 纯函数 7 条 + F13/web smoke；browser skip |
+| 默认根 | `46 failed, 397 passed, 3 skipped, 1 warning in 18.40s` | 失败集不变 |
+| 软件层 | `440 passed, 3 skipped, 3 deselected, 1 warning in 82.38s` | 0 failed |
+
+实现：`web/gate-session.js` 唯一判定（身份 key/新身份重置/撤回选项只清决策/提交互斥/选择三元组），
+`app.js` 仍持状态与渲染、只消费纯函数；DOM id/事件/API 载荷未改。
+**未完成（明确登记）**：运行/Agent/计数与配置/目录浏览的渲染提取（F05 后续步骤，需要浏览器特征集，
+本机不可运行）。**未运行**：浏览器 P0/P1 交互验收（缺 playwright）。
+
+## 29 F14 样式与断点收敛（静态清单 + 阻塞，2026-10-22）
+
+计划 [F14](plans/2026-10-21-F14-style-convergence.md)，工具 `loop/spikes/css_inventory.py`（只读）。
+
+| 静态事实（`css_inventory.py` 输出） | 值 |
+|---|---|
+| `web/tokens.css` | 17 行、1 条 `:root` 规则、0 媒体查询、0 `!important` |
+| `web/app.css` | 730 行、795 条规则、14 条媒体查询、6 处 `!important`、98 组跨规则重复声明 |
+| `web/legacy.css` | 75 行、2 条媒体查询、1 处 `!important` |
+| 断点 | 1000/1100/1180/1200/760/850/1550/1600、1101–1390、761–1100、min 1101、prefers-reduced-motion×2 |
+
+**决策：不盲改**。视觉等价需要默认/hover/focus/disabled/告警/模态态与断点交界的截图或计算样式对照；
+本机缺 `playwright`（系统有 `/usr/bin/google-chrome`，PyPI 不可达），无法完成验收。
+本轮只交付只读清单与验收条件；**未运行**：浏览器特征集、截图对照。**不声称视觉已验证**。
+
+## 30 F07 Agent 历史读取测量（2026-10-22）
+
+计划 [F07](plans/2026-10-21-F07-agent-read-measurement.md)，规格 [AGENT_WINDOW_SPEC](spec/AGENT_WINDOW_SPEC.md)
+「测量基线与触发阈值」；脚本 `loop/spikes/measure_agent_read.py`（`--repeat 20`）。
+
+| 样本 | attempts | events | 记录字节 | 响应体字节 | median | p95 | CPU/读 | tracemalloc 峰值 |
+|---|---|---|---|---|---|---|---|---|
+| small | 1 | 10 | 1485 | 3470 | 3.795 ms | 3.835 ms | 7.867 ms | 30056 B |
+| medium | 10 | 100 | 204852 | 39116 | 28.757 ms | 28.888 ms | 36.875 ms | 447298 B |
+| large | 50 | 1000 | 10024332 | 383917 | 184.149 ms | 188.555 ms | 228.291 ms | 13142464 B |
+
+**决策**：三档均未达规格触发阈值（p95 > 500 ms 或响应体 > 1 MB）⇒ **不引入**缓存/分页/摘要列表。
+**未测量**：控制回执延迟（需活跃 model 会话与真实 provider，本机不可运行）；真实 token 上限。
+
+## 31 F08 封存发布与崩溃边界（2026-10-22）
+
+计划 [F08](plans/2026-10-21-F08-sealed-recovery.md)，规格 [AGENT_CONTEXT_SPEC](spec/AGENT_CONTEXT_SPEC.md)
+「封存与恢复」。顺序：**计划+规格**（`91c4c8e`）→ **红灯**（`aaf8974`）→ **实现**（`792bb48`）。
+
+| 验证 | 原始输出（逐字复制） | 说明 |
+|---|---|---|
+| 红灯 | `5 failed in 1.18s` | `record_state`/`seal_record` 不存在；半写记录整体抛错 |
+| 实现后定向 | `76 passed, 1 warning in 2.50s` | f08_sealed + agent_control + context_memory |
+| 默认根 | `46 failed, 402 passed, 3 skipped, 1 warning in 18.41s` | 失败集不变 |
+| 软件层 | `445 passed, 3 skipped, 3 deselected, 1 warning in 81.01s` | 0 failed |
+
+实现：`AM.record_state(path)` 只读四态（absent/incomplete/corrupt/committed）；`read_view` 对 incomplete
+尝试标状态且不消费、其它尝试可读；corrupt 仍显式失败（保持既有安全契约）；`AM.seal_record` 公开，
+`agent_control` 不再引用私有 `_sealed`；默认选中只从可消费记录取。故障注入用真实子进程
+（数据/校验之间 `os._exit(9)`、写入循环 `SIGKILL`）与篡改校验，不是内存模拟。
+
+**独立复核**：报告见 §34（复核者运行中，落盘后补 md5）。
+
+## 32 F10 / F11（前半）只读可解释性（2026-10-22）
+
+计划 [F10/F11](plans/2026-10-21-F10-F11-explainability.md)，规格 [AGENT_WINDOW_SPEC](spec/AGENT_WINDOW_SPEC.md)
+「可解释性」。顺序：**计划+规格**（`954a9dc`）→ **红灯**（`088dfe6`）→ **实现**（`e58478d`）。
+
+| 验证 | 原始输出（逐字复制） | 说明 |
+|---|---|---|
+| 红灯 | `9 failed in 1.18s` | 提交信息写「8 failed」为笔误，以此为准（模块不存在 9 条断言） |
+| 实现后定向 | `41 passed, 3 skipped, 1 warning in 2.19s` | context_explain + capability + control + web_smoke；browser skip |
+| 默认根 | `46 failed, 411 passed, 3 skipped, 1 warning in 18.97s` | 失败集不变 |
+| 软件层 | `454 passed, 3 skipped, 3 deselected, 1 warning in 83.10s` | 0 failed |
+
+实现：`web/context-explain.js` 纯函数（UTF-8 字节/预算占比、经验原因、尝试摘要、输入差异；token 估算恒为
+`unknown`）；窗口新增两个只读区块；`read_view` 增加 `previous_input`（只读）；API 下发
+`context_budget.limit_bytes`（Host 常量，前端不硬编码）；不新增请求、不改记录/筛选。
+**未完成**：F11 分页/完整历史导航（F07 未达阈值）；F10 token 预检（需真实 provider）。
+**未运行**：浏览器渲染（缺 playwright）。
+
+## 33 阻塞与未完成清单（本轮结束状态）
+
+| 项 | 状态 | 原因 / 已做部分 |
+|---|---|---|
+| F01-d 内网真实非默认基线整链 | **阻塞** | 缺内网环境与非默认有效基线；只完成软件层准入/身份切片（§14） |
+| F04 S0-b 驱动/三库/准出闭环 | **阻塞** | 缺内网驱动与授权；S0-a 软件协议已交付，`ready_for_execution` 保持 false |
+| F09 持久暂停 | **未开始（依赖 F08/F10 结论与 TriggerFlow durable 契约）** | F08 已做封存边界诊断，但续跑握手/显式恢复未实现 |
+| F12 只读并行委派 | **暂缓** | 缺具体用例与测量；不引入第二个调度框架 |
+| F15-b/CI | **部分** | 软件层入口已固化；本仓无 `.github`，**未部署 CI**，不声称 |
+| F14 视觉验收 | **阻塞** | 缺浏览器/截图对照；只交付静态清单，未改样式 |
+| F05 余下步骤 | **未完成** | 运行/Agent/计数、配置/目录浏览提取需要浏览器特征集 |
+| F11 分页 / F10 token 预检 | **未完成** | F07 未达分页阈值；token 预检需真实 provider 能力 |
+| 浏览器断言（全部切片） | **未运行** | 缺 `playwright` Python 包（系统有 google-chrome，PyPI 不可达） |
+| kb 自测 / 端到端 | **未运行** | `ENV_ROOT` 只读、内网夹具缺失；不得用软件层结果替代 |
+| F08 之后的 F09 恢复矩阵 | **未做** | 只登记观察矩阵，未实现新进程恢复握手 |
+
+**口径纠正**：`TB/top.sv` 属「资产名不存在」（`ENV_ROOT/TB/` 下无 `top.sv`），不是「ENV_ROOT 未挂载」；
+文档门把它单列为 `[ENV-MISSING]` 可见项，不计失败。

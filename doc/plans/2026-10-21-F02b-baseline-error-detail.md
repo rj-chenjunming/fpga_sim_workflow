@@ -46,6 +46,17 @@
 
 只回退 detail 字段与前端展示分支；准入判据与列表端点行为不变，历史请求记录不回填。
 
-## 6 实测
+## 6 实测（数字从命令输出复制）
 
-（实现与验证后回填；见 [STATUS §21](../STATUS.md)。）
+| 验证 | 原始输出 | 说明 |
+|---|---|---|
+| 失败用例先红（`fcfefa3`） | `2 failed, 1 passed in 0.81s` | 未知基线 / 坏 manifest 无结构化 detail |
+| 实现后定向 | `3 passed in 0.76s` | 含「非基线 ValueError 形态不变」 |
+| 前端语法 | `node --check web/app.js` 通过 | 不替代浏览器行为 |
+| 默认根全套 | `46 failed, 291 passed, 3 skipped, 1 warning in 11.66s` | 46 项同因；通过数 288→291 |
+| 软件层全套 | `3 failed, 334 passed, 3 skipped, 1 warning in 75.55s` | 仍为 3 项环境层 |
+| 文档门 | `checked=890 skipped=11006 historical=834 missing=1` | 唯一缺件为待生成复核报告；落盘后复跑 |
+
+## 7 独立复核
+
+报告：[doc/audit/F02b-verify-20261021.md](../audit/F02b-verify-20261021.md)（仅验证者写入；md5 由 Lead 在 STATUS 记录）。

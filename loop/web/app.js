@@ -176,7 +176,22 @@
   function errText(e) {
     if (!e) return "未知错误";
     var prefix = e.path ? e.path + " → " : "";
-    return prefix + (e.message || String(e));
+    return prefix + (e.message || String(e)) + errDetailText(e);
+  }
+
+  // 基线拒绝的结构化字段（Web UI §9）：missing=缺件，errors=schema/身份/指纹/链违规。
+  // 只展示服务端下发内容，不在前端重新推导或猜测原因。
+  function errDetailText(e) {
+    var d = e && e.body && e.body.detail;
+    if (!d || typeof d !== "object") return "";
+    var parts = [];
+    if (Array.isArray(d.missing) && d.missing.length) {
+      parts.push("缺件：" + d.missing.join("、"));
+    }
+    if (Array.isArray(d.errors) && d.errors.length) {
+      parts.push("违规：" + d.errors.slice(0, 3).join("、"));
+    }
+    return parts.length ? "（" + parts.join("；") + "）" : "";
   }
 
   /* ------------------------------------------------------------------ *
@@ -762,7 +777,8 @@
       host.appendChild(chipEl("manifest 有效", "ok"));
     } else {
       var missing = b.missing && b.missing.length ? "：" + b.missing.join("、") : "";
-      host.appendChild(chipEl("manifest 不可用" + missing, "bad"));
+      var why = b.errors && b.errors.length ? "（" + b.errors.join("；") + "）" : "";
+      host.appendChild(chipEl("manifest 不可用" + missing + why, "bad"));
     }
   }
 
@@ -2363,6 +2379,7 @@
           meta.appendChild(h("span", "chip ok", "manifest 有效"));
         } else {
           var missing = b.missing && b.missing.length ? "缺 " + b.missing.join("、") : "不可用";
+          if (b.errors && b.errors.length) missing += "（" + b.errors.join("；") + "）";
           meta.appendChild(h("span", "chip bad", missing));
         }
         row.appendChild(meta);

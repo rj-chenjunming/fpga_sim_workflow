@@ -194,6 +194,17 @@ async def create_run(payload: dict[str, Any] = Body(default={})) -> dict[str, An
     except FileExistsError as exc:
         raise HTTPException(status_code=409, detail={"error": str(exc)}) from exc
     except ValueError as exc:
+        from host.baseline import BaselineInvalid
+
+        if isinstance(exc, BaselineInvalid):
+            # 结构化拒绝（Web UI §9）：missing/errors 直接取判据（唯一来源），不在 API 层二次推导。
+            details = exc.details
+            raise HTTPException(status_code=400, detail={
+                "error": str(exc),
+                "baseline": exc.baseline_id,
+                "missing": list(details.get("missing") or []),
+                "errors": list(details.get("errors") or []),
+            }) from exc
         raise HTTPException(status_code=400, detail={"error": str(exc)}) from exc
     # 回 `created_at`（verifier F-V1-03-NOTE）：调用方拿到的 run 身份应当自洽，
     # 不必再发一次 GET 才能确认"这个 run 是什么时候建的"。

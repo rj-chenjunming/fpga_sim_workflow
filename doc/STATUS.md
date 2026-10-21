@@ -455,3 +455,23 @@ F16 前已在用片段；120063 来自片段 **after 文本在 excerpt/changed_r
 **§19 整改执行记录（F16-b）**：本轮已按新流程执行——计划+规格先提交（`2701b38`）、红灯用例单独提交
 （`ef8b7b1`、`b55c982`）、实现后提交、验证者报告落盘（`2c08420`）并由 Lead 记录 md5；无回退造红，
 提交顺序与红灯输出均可在 git 与本节核对。
+
+## 21 F02-b 基线错误结构化 detail 与前端展示（2026-10-21）
+
+规格 [Web UI §9 / §6.1](spec/WEB_UI_SPEC.md)、计划 [F02-b](plans/2026-10-21-F02b-baseline-error-detail.md)。
+顺序遵循 §19：**计划+规格先提交**（`29626db`）→ **红灯用例**（`fcfefa3`）→ 实现（本节提交）。
+
+| 验证 | 原始输出（逐字复制） | 说明 |
+|---|---|---|
+| 失败用例先红 | `2 failed, 1 passed in 0.81s` | 未知基线 / 坏 manifest 的 400 只有 error |
+| 实现后定向 | `3 passed in 0.76s` | 含「非基线 ValueError 形态不变」 |
+| 前端语法 | `node --check web/app.js` 通过 | 不替代浏览器行为 |
+| 默认根全套 | `46 failed, 291 passed, 3 skipped, 1 warning in 11.66s` | 46 项同因；通过数 288→291 |
+| 软件层全套 | `3 failed, 334 passed, 3 skipped, 1 warning in 75.55s` | 仍为 3 项环境层（archive ×2、冻结见证） |
+| 文档门 | `checked=890 skipped=11006 historical=834 missing=1` | 唯一缺件为待生成复核报告；落盘后复跑 |
+
+实现：`api.py` 仅对 `BaselineInvalid` 返回 `{error, baseline, missing[], errors[]}`（取判据的 `details`，
+不二次推导；其它 `ValueError` 形态不变）；`app.js` 的 `errText` 追加「缺件/违规」，配置视图基线提示与
+目录选择器展示 `errors`。**未运行**：浏览器断言（缺 Chromium/PyPI 不可达）——UI 仅有语法检查与静态审查，
+F13 一并补浏览器用例。独立复核：报告由验证者写入
+[doc/audit/F02b-verify-20261021.md](audit/F02b-verify-20261021.md)（Lead 不改该文件）。

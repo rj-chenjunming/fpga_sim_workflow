@@ -349,6 +349,7 @@ F03-c 文档解析器根解析，多环境按 `ENV_ID` 分区 state/槽键。
 | 默认根 | `46 failed, 275 passed, 3 skipped in 11.23s` | 46 项全为只读 `OSError` |
 | 影子根首跑（未链夹具） | `44 failed, 271 passed, 9 skipped in 650.84s` | 失败转为 `AssertionError`（N0/N1 缺 drill 夹具） |
 | 链接夹具后 `test_flow.py` | `11 failed`（18 项中） | 链路可执行，暴露 F16 |
+| F16 修复后软件层全套 | `3 failed, 323 passed, 3 skipped in 75.95s` | 剩余 3 项为环境层（需可写 `ENV_ROOT`）；软件层已可重复执行 |
 
 ### F16 · N6 上下文预算超限（阻断）
 
@@ -380,6 +381,7 @@ RuntimeError: 闸门 G1_diff_confirm 已签署但恢复失败（run 已置 faile
 | 软件层单用例（原阻断） | `1 passed` | G1 后不再 budget failed |
 | 软件层 `test_flow.py` | `18 passed in 26.54s` | 修复前同一入口 `11 failed` |
 | 默认根全套 | `46 failed, 280 passed, 3 skipped, 1 warning in 11.13s` | 46 项仍为 `ENV_ROOT` 只读同因；通过数 275→280 |
+| **软件层全套**（`run_software_checks.sh`） | `3 failed, 323 passed, 3 skipped, 1 warning in 75.95s (0:01:15)` | 修复前同一入口 `44 failed, 271 passed, 9 skipped in 650.84s`；剩余 3 项为**环境层**（archive/guard 需可写 `ENV_ROOT`、冻结见证），非软件层缺陷 |
 
 实现：单文件 >6000 字符仍强制 `changed_regions`；其余默认全文；超
 `N8_SANDBOX_BUDGET_BYTES`(60000) 按文件名顺序降级；`changed_regions` 不重复下发 after 文本

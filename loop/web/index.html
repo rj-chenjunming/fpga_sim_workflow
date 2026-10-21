@@ -4,19 +4,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>FPGA Flow · 仿真工作台</title>
+<link rel="stylesheet" href="tokens.css">
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
+<a class="skip-link" href="#workspace">跳到工作区</a>
 <div id="app">
 
   <header>
-    <div class="brand"><span class="mark"></span> FPGA Flow <span class="muted tiny">仿真工作台</span></div>
+    <div class="brand"><span class="mark" aria-hidden="true"></span> FPGA<span class="brand-flow">Flow</span></div>
+    <div class="header-context"><span class="context-divider">/</span> 仿真工作台 <span class="workspace-tag">WORKSPACE</span></div>
+    <div class="spacer"></div>
     <span class="pill" id="hdrEnv"><span class="dot idle" id="hdrDot"></span><span id="hdrEnvText">环境未就绪</span></span>
     <span class="pill mono tiny" id="hdrAddr">—</span>
     <span class="pill tiny" id="hdrHealth">健康检查中…</span>
-    <div class="spacer"></div>
-    <span class="ver-flag">S0 · 环境准备</span>
-    <a class="btn btn-ghost btn-sm" id="lnkLegacy" href="legacy.html">旧界面</a>
+    <a class="btn btn-ghost btn-sm" id="lnkLegacy" href="legacy.html">旧版操作台 ↗</a>
   </header>
 
   <div class="shell">
@@ -24,11 +26,18 @@
     <!-- ================= 左栏：入口 + 运行列表 + 根信息 ================= -->
     <aside id="sidebar">
       <div class="rail-top">
-        <div class="rail-kicker">WORKSPACE / 工作空间</div>
-        <button class="btn btn-block rail-entry" id="btnS0">▣　环境准备 <span class="chip">S0</span></button>
-        <button class="btn btn-primary btn-block" id="btnNew">＋ 新建运行</button>
+        <div class="rail-kicker">当前工作空间</div>
+        <button class="btn btn-block rail-entry" id="btnS0"><span class="workspace-icon" aria-hidden="true">F</span><span>仿真与验证<small>Simulation workspace</small></span><span aria-hidden="true">⌄</span></button>
+        <button class="btn btn-primary btn-block" id="btnNew"><span aria-hidden="true">＋</span> 新建运行</button>
       </div>
-      <div class="rail-label">运行记录</div>
+      <div class="rail-label">工作台 <span>WORKBENCH</span></div>
+      <div class="seg" id="viewSeg" role="tablist" aria-label="视图切换" aria-orientation="vertical">
+        <button id="segS0" data-view="s0" class="on" role="tab" aria-selected="true" aria-controls="viewS0"><span class="nav-icon" aria-hidden="true">▧</span><span>环境准备</span><small>S0</small></button>
+        <button id="segSetup" data-view="setup" role="tab" aria-selected="false" aria-controls="viewSetup"><span class="nav-icon" aria-hidden="true">⊞</span><span>运行配置</span><small>01</small></button>
+        <button id="segRun" data-view="run" role="tab" aria-selected="false" aria-controls="viewRun"><span class="nav-icon" aria-hidden="true">◴</span><span>运行监控</span><small>02</small></button>
+        <button id="segGate" data-view="gate" role="tab" aria-selected="false" aria-controls="viewGate"><span class="nav-icon" aria-hidden="true">◇</span><span>人工闸门</span><small>03</small></button>
+      </div>
+      <div class="rail-label history-label">最近运行 <span>HISTORY</span></div>
       <div class="run-list" id="runList"></div>
       <div class="rail-foot">
         <div class="mono" id="railToolRoot" title="">TOOL_ROOT · —</div>
@@ -38,31 +47,27 @@
     </aside>
 
     <!-- ================= 右区：三视图 ================= -->
-    <main>
+    <main id="workspace" tabindex="-1">
       <div class="page-head">
         <div>
+          <div class="page-breadcrumb">工作台 <span>/</span> <span id="pageCrumb">环境准备</span></div>
           <h1 id="pageTitle">环境准备</h1>
           <div class="muted tiny" id="pageSub">从只读基线派生工作副本，让每一次验证都有据可查</div>
         </div>
         <div class="spacer"></div>
-        <div class="seg" id="viewSeg" role="tablist" aria-label="视图切换">
-          <button id="segS0" data-view="s0" class="on" role="tab">环境准备</button>
-          <button id="segSetup" data-view="setup" role="tab">运行配置</button>
-          <button id="segRun" data-view="run" role="tab">运行监控</button>
-          <button id="segGate" data-view="gate" role="tab">人工闸门</button>
-        </div>
+        <div class="page-edition"><span class="edition-line"></span> SIMULATION WORKBENCH <b id="pageIndex">S0</b></div>
       </div>
 
       <div id="banners"></div>
 
-      <section id="viewS0" aria-label="S0 环境准备">
+      <section id="viewS0" role="tabpanel" aria-labelledby="segS0">
         <div class="s0-hero">
           <div><div class="eyebrow">SIMULATION / ENVIRONMENT</div>
-            <h2>准备好副本，再开始验证。</h2>
-            <p>基线只读继承 · 新版 RTL 整体替换 · 每一步都有内容见证</p>
-            <div class="hero-tags"><span>基线零写入</span><span>独立工作副本</span><span>Host 确定性校验</span></div>
+            <h2>让每一次验证，<br>都有可靠的起点。</h2>
+            <p>从基线派生独立工作副本，替换新版 RTL，逐项核对准备证据。</p>
+            <div class="hero-tags"><span>基线只读</span><span>独立副本</span><span>内容校验</span></div>
           </div>
-          <div class="hero-stamp"><span class="mono">S0</span><small>ENVIRONMENT PREPARATION</small></div>
+          <div class="hero-diagram" aria-hidden="true"><div class="diagram-label">CONTROLLED DERIVATION</div><div class="diagram-flow"><div class="diagram-source"><span>▧</span><b>BASELINE</b><small>只读基线</small></div><div class="diagram-connector"><i></i><span>派生 & 核验</span></div><div class="diagram-target"><span>⊞</span><b>WORKSPACE</b><small>独立工作副本</small></div></div><div class="diagram-caption"><span class="dot"></span> 原始资产保留 · 准备过程可追溯</div></div>
         </div>
 
         <div class="s0-phases">
@@ -118,7 +123,7 @@
       </section>
 
       <!-- ============ 视图 1：配置 ============ -->
-      <section id="viewSetup" class="hidden">
+      <section id="viewSetup" class="hidden" role="tabpanel" aria-labelledby="segSetup">
         <div class="card">
           <div class="card-head">
             <h2>运行配置</h2>
@@ -132,7 +137,7 @@
             <div class="step-card">
               <div class="step-no">1</div>
               <div class="step-main">
-                <div class="step-title">选择基线版本 <span class="chip" id="setupBaselineChip">GET /api/baselines</span></div>
+                <div class="step-title">选择基线版本 <span class="chip" id="setupBaselineChip">加载中</span></div>
                 <div class="field-row">
                   <div class="grow">
                     <select class="input mono" id="setupBaseline" aria-label="基线版本"></select>
@@ -149,7 +154,7 @@
             <div class="step-card">
               <div class="step-no">2</div>
               <div class="step-main">
-                <div class="step-title">选择要修订的项目目录 <span class="chip">ENV_ROOT（环境仓根）</span></div>
+                <div class="step-title">选择要修订的项目目录 <span class="chip">环境工程根目录</span></div>
                 <div class="field-row">
                   <input class="input mono grow" id="setupProject" readonly placeholder="尚未选择项目目录" aria-label="项目目录">
                   <button class="btn" id="btnProjectBrowse">浏览…</button>
@@ -209,7 +214,7 @@
 
         <div class="grid2">
           <div class="card">
-            <div class="card-head"><h2>本环境插件面</h2><span class="sub">GET /api/health</span></div>
+            <div class="card-head"><h2>环境与工具</h2><span class="sub">服务健康检查</span></div>
             <div class="card-body" id="healthBody"><span class="muted">加载中…</span></div>
           </div>
           <div class="card">
@@ -225,7 +230,7 @@
       </section>
 
       <!-- ============ 视图 2：执行中 ============ -->
-      <section id="viewRun" class="hidden">
+      <section id="viewRun" class="hidden" role="tabpanel" aria-labelledby="segRun">
         <div id="runEmpty" class="card empty-card">
           <div class="empty">
             <div class="empty-title">尚未选择运行</div>
@@ -240,7 +245,7 @@
           <div class="card">
             <div class="card-head">
               <h2>流程执行状态</h2>
-              <span class="sub">四段 · 闸门为菱形 · 当前段自动展开</span>
+              <span class="sub">摄取 → 修订 → 验证 → 决策</span>
             </div>
             <div class="stages" id="stages"></div>
           </div>
@@ -250,7 +255,7 @@
               <div class="card">
                 <div class="card-head">
                   <h2>Agent 工作状态</h2>
-                  <span class="sub">5 个模型角色 + Host 确定性侧 · 状态由 node/event 派生</span>
+                  <span class="sub">点击角色，查看任务详情与运行记录</span>
                 </div>
                 <div class="card-body">
                   <div class="agents" id="agents"></div>
@@ -291,7 +296,7 @@
       </section>
 
       <!-- ============ 视图 3：闸门等待 ============ -->
-      <section id="viewGate" class="hidden">
+      <section id="viewGate" class="hidden" role="tabpanel" aria-labelledby="segGate">
         <div class="run-head" id="gateHead"></div>
         <div id="gateAlerts"></div>
 
@@ -302,19 +307,17 @@
 
         <div class="grid2 run-grid">
           <div class="card">
-            <div class="card-head"><h2>闸门材料</h2><span class="sub">服务端下发 · 前端不参与判定</span></div>
+            <div class="card-head"><h2>闸门材料</h2><span class="sub">核对差异、证据与未决条目</span></div>
             <div class="card-body" id="gateMaterial"></div>
           </div>
           <div class="card">
-            <div class="card-head"><h2>闸门操作</h2><span class="sub">写动作：POST …/gates/{gate_id}/decision</span></div>
+            <div class="card-head"><h2>闸门操作</h2><span class="sub">人工复核与决策</span></div>
             <div class="card-body" id="gatePanel"></div>
           </div>
         </div>
       </section>
 
-      <div class="foot-note">
-        FPGA Flow · 检查结论与闸门状态以服务端证据为准。
-      </div>
+      <footer class="workspace-footer"><span><b>FPGA Flow</b> / 仿真工作台</span><span>检查结论与闸门状态以服务端证据为准</span></footer>
     </main>
   </div>
 

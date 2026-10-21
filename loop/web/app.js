@@ -82,9 +82,9 @@
 
   var VIEW_META = {
     s0: ["环境准备", "从只读基线派生工作副本，让每一次验证都有据可查"],
-    setup: ["运行配置 · 现有闭环", "选择基线版本与项目目录 → 校验 → 确认启动"],
-    run: ["运行监控 · 现有闭环", "查看流程进度、Agent 状态与服务端证据"],
-    gate: ["闸门等待", "执行已停放（interrupt），可安全重启；闸门态权威在 gates.json"]
+    setup: ["运行配置", "选择基线与项目，核对运行选项，启动现有闭环"],
+    run: ["运行监控", "跟踪流程进度、Agent 任务与实际运行证据"],
+    gate: ["人工闸门", "依据差异与证据逐条复核；闸门状态以服务端记录为准"]
   };
 
   /* ------------------------------------------------------------------ *
@@ -516,9 +516,12 @@
     for (var i = 0; i < segs.length; i++) {
       segs[i].classList.toggle("on", segs[i].getAttribute("data-view") === v);
       segs[i].setAttribute("aria-selected", segs[i].getAttribute("data-view") === v ? "true" : "false");
+      segs[i].tabIndex = segs[i].getAttribute("data-view") === v ? 0 : -1;
     }
     setText("pageTitle", VIEW_META[v][0]);
     setText("pageSub", VIEW_META[v][1]);
+    setText("pageCrumb", VIEW_META[v][0]);
+    setText("pageIndex", {s0: "S0", setup: "01", run: "02", gate: "03"}[v]);
     renderLive();
     if (v === "setup") renderSetup();
     try { window.scrollTo({ top: 0 }); } catch (e) { /* 老浏览器忽略 */ }
@@ -701,7 +704,7 @@
       empty.value = "";
       sel.appendChild(empty);
       sel.disabled = true;
-      setText("setupBaselineChip", "GET /api/baselines");
+      setText("setupBaselineChip", "暂无可用基线");
       return;
     }
     sel.disabled = false;
@@ -2513,6 +2516,17 @@
     for (var i = 0; i < segs.length; i++) {
       (function (btn) {
         btn.addEventListener("click", function () { showView(btn.getAttribute("data-view")); });
+        btn.addEventListener("keydown", function (event) {
+          var step = event.key === "ArrowDown" || event.key === "ArrowRight" ? 1 :
+            event.key === "ArrowUp" || event.key === "ArrowLeft" ? -1 : 0;
+          if (!step && event.key !== "Home" && event.key !== "End") return;
+          event.preventDefault();
+          var index = Array.prototype.indexOf.call(segs, btn);
+          var next = event.key === "Home" ? 0 : event.key === "End" ? segs.length - 1 :
+            (index + step + segs.length) % segs.length;
+          segs[next].focus();
+          showView(segs[next].getAttribute("data-view"));
+        });
       })(segs[i]);
     }
 

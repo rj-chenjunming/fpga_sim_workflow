@@ -31,6 +31,8 @@
 
 后续工作入口：[优化评估与优先级](audit/AUDIT-20261021-specdd-followups.md) → [分切片实施路线](plans/2026-10-21-specdd-followups.md)。本轮为整理，尚未实施这些后续变更；现状与验证限制见 STATUS §11。
 
+网页视觉升级：[视觉契约](spec/WEB_UI_SPEC.md#14-全站网页视觉系统2026-10-21) → [实施计划](plans/2026-10-21-desktop-redesign.md) → [预览与验证证据](evidence/WEB_REDESIGN_20261021.md)。范围为浏览器中的现有工作台；状态与本轮实测见 STATUS §12。
+
 ## 2 `spec/` 契约
 
 | 文件 | 管什么 |

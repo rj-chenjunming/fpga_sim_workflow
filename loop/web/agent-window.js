@@ -50,7 +50,12 @@ window.AgentWindow = (function () {
     $("awIdentity").textContent = target.runId + " / " + target.node + (live ? " / " + live.session_id : " / 历史记录");
     var capsText = window.Capabilities ? window.Capabilities.line(view.capabilities) : "";
     $("awCapabilities").textContent = capsText || "能力事实未知（非模型角色节点或服务端未投影）";
-    explain(view);
+    // 只读展示失败不得阻断基本观察（输入/输出/时间线仍要渲染）。
+    try {
+      explain(view);
+    } catch (e) {
+      if ($("awAttempts")) $("awAttempts").textContent = "解释展示失败：" + (e && e.message ? e.message : e);
+    }
     var status = live ? {working: "运行中", paused: "已暂停", interrupting: "干预处理中", starting: "正在启动"}[live.state] || live.state : "只读 · 无活跃请求";
     $("awStatus").textContent = status;
     $("awStatus").className = "chip " + (live && live.state === "working" ? "primary" : "");
@@ -124,7 +129,7 @@ window.AgentWindow = (function () {
       summaryEl.textContent = "—";
     } else {
       var limit = (view.context_budget || {}).limit_bytes;
-      var b = X.budget(request.input || {}, limit);
+      var b = X.budget(request, limit);
       var lines = b.rows.map(function (row) {
         return row.label + ": " + row.bytes + " B（" + row.percent + "%）";
       });

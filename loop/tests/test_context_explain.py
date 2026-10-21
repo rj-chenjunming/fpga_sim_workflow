@@ -109,5 +109,20 @@ def test_window_and_api_wire_the_read_only_explainer():
     window = (WEB / "agent-window.js").read_text(encoding="utf-8")
     html = (WEB / "index.html").read_text(encoding="utf-8")
     assert "window.ContextExplain" in window
+    # 接线必须传记录本身（字段在 request 顶层），不能只传嵌套 input（F10F11 复核必改 1）
+    assert "X.budget(request, limit)" in window
+    assert "X.budget(request.input" not in window
+    assert "try {" in window and "explain(view)" in window, "展示失败不得阻断基本观察"
     assert html.index("context-explain.js") < html.index("agent-window.js")
     assert 'id="awBudget"' in html and 'id="awAttempts"' in html
+
+
+def test_budget_record_shape_matches_what_window_passes():
+    """按真实记录形状（字段在顶层）验证窗口调用的实参语义。"""
+    record = {"input": {"diff": "中"}, "info": "规则", "instruct": "指令",
+              "schema": {"type": "object"}, "offered": {"cases": ["a"]},
+              "scope": {"env_id": "e"}}
+    out = _eval("C.budget(" + json.dumps(record) + ", 1000)")
+    assert [row["label"] for row in out["rows"]] == \
+        ["input", "info", "instruct", "schema", "offered", "scope"]
+    assert out["totalBytes"] > 0

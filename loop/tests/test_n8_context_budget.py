@@ -119,3 +119,50 @@ def test_used_bytes_matches_compact_encoding(tmp_path: Path) -> None:
     files, _, summary = MS.build_sandbox_cases(sandbox, source_root, [], budget_bytes=20000)
     assert summary["used_bytes"] == len(AM.encoded(files))
     assert summary["used_bytes"] <= 20000
+
+
+# ---------------------------------------------------------------- F16-b 闭锁与语义
+
+def test_missing_sandbox_dir_fails_closed(tmp_path: Path) -> None:
+    """没有沙盒目录不能说「复核 0 件」通过。"""
+    with pytest.raises(RuntimeError, match="沙盒|可复核"):
+        MS.build_sandbox_cases(tmp_path / "nope" / "TESTLIB", None, [])
+
+
+def test_empty_sandbox_fails_closed(tmp_path: Path) -> None:
+    sandbox = tmp_path / "sandbox" / "TESTLIB"
+    sandbox.mkdir(parents=True)
+    with pytest.raises(RuntimeError, match="沙盒|可复核"):
+        MS.build_sandbox_cases(sandbox, None, [])
+
+
+def test_applied_cases_without_files_fails_closed(tmp_path: Path) -> None:
+    sandbox = tmp_path / "sandbox" / "TESTLIB"
+    sandbox.mkdir(parents=True)
+    applied = [{"case": "demo", "file": "TESTLIB/demo.sv", "edits": [{"line": 3}]}]
+    with pytest.raises(RuntimeError, match="沙盒|可复核|缺"):
+        MS.build_sandbox_cases(sandbox, None, applied)
+
+
+def test_byte_level_determinism(tmp_path: Path) -> None:
+    sandbox, source_root = _write_cases(tmp_path)
+    first = MS.build_sandbox_cases(sandbox, source_root, [], budget_bytes=20000)
+    second = MS.build_sandbox_cases(sandbox, source_root, [], budget_bytes=20000)
+    assert AM.encoded(first[0]) == AM.encoded(second[0])
+
+
+def test_complete_means_all_changed_regions_are_provided(tmp_path: Path) -> None:
+    """coverage.complete=true 只承诺「全部变更区域已提供」，不是全文复核。"""
+    import difflib
+    sandbox, source_root = _write_cases(tmp_path, count=2, lines=80)
+    files, _, _ = MS.build_sandbox_cases(sandbox, source_root, [], budget_bytes=6000)
+    for item in files:
+        coverage = item["coverage"]
+        assert isinstance(coverage["complete"], bool)
+        if coverage["mode"] == "changed_regions":
+            before = (source_root / "TESTLIB" / item["file"]).read_text(encoding="utf-8").splitlines()
+            after = (sandbox / item["file"]).read_text(encoding="utf-8").splitlines()
+            expected = sum(1 for _ in difflib.SequenceMatcher(a=before, b=after).get_grouped_opcodes(n=6))
+            assert coverage["regions"] == expected, (item["file"], coverage["regions"], expected)
+            assert coverage["complete"] is True
+            assert item["changed_regions"], "complete=true 必须确有变更区域"

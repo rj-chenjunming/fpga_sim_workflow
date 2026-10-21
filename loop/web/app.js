@@ -1452,7 +1452,7 @@
     body.appendChild(h("div", null, summary ? "摘要：" + summary : "摘要：产物未生成"));
     var note = a ? a.note : deriveNote(def, status);
     if (note) body.appendChild(h("div", "agent-note", String(note)));
-    var facts = window.Capabilities.line(a && a.capabilities);
+    var facts = window.Capabilities ? window.Capabilities.line(a && a.capabilities) : "";
     if (facts) body.appendChild(h("div", "agent-note", facts));
     card.appendChild(body);
 
@@ -2039,34 +2039,19 @@
     updateGateForm(host, pending);
   }
 
-  function gateSessionKey(pending) {
-    return JSON.stringify([state.runId, pending.id, pending.gate, pending.cycle]);
-  }
-
+  /* 闸门会话判定唯一实现在 web/gate-session.js（纯函数）；这里只做状态装配。 */
   function ensureDraft(pending) {
-    var key = gateSessionKey(pending);
-    if (state.gateDraft.key === key) {
-      if (!gateOptionsFor(pending).some(function (o) { return o.value === state.gateDraft.decision; })) {
-        state.gateDraft.decision = null;
-      }
-      return;
-    }
-    state.gateDraft = {
-      key: key,
-      gate: pending.gate,
-      decision: null,
-      actor: "human:",
-      reason: "",
-      submitting: false,
-      error: null,
-      blockers: null,
-      note: null
-    };
+    var result = window.GateSession.reconcile(state.gateDraft, {
+      runId: state.runId,
+      pending: pending,
+      options: gateOptionsFor(pending)
+    });
+    state.gateDraft = result.draft;
   }
 
   function ensureGateForm(container, pending, compact) {
     ensureDraft(pending);
-    var key = gateSessionKey(pending) + "|" + JSON.stringify(gateOptionsFor(pending));
+    var key = window.GateSession.sessionKey(state.runId, pending) + "|" + JSON.stringify(gateOptionsFor(pending));
     if (container.getAttribute("data-gate-key") === key) return;
     container.setAttribute("data-gate-key", key);
     clearEl(container);
@@ -2161,7 +2146,7 @@
     if (!form) return;
     var options = gateOptionsFor(pending);
     var d = state.gateDraft;
-    d.submitting = !!state.gateSubmissions[d.key];
+    d.submitting = window.GateSession.isSubmitting(state.gateSubmissions, d.key);
     var labels = form.querySelectorAll(".option");
     for (var i = 0; i < labels.length; i++) {
       var input = labels[i].querySelector("input");
@@ -2217,10 +2202,7 @@
   }
 
   function resetGateDraft() {
-    state.gateDraft = {
-      key: null, gate: null, decision: null, actor: "human:", reason: "",
-      submitting: false, error: null, blockers: null, note: null
-    };
+    state.gateDraft = window.GateSession.freshDraft(null, null);
     ["gateCardBody", "gatePanel"].forEach(function (id) {
       var el = $(id);
       if (el) {
@@ -2238,7 +2220,7 @@
     }
     ensureDraft(pending);
     var d = state.gateDraft;
-    if (state.gateSubmissions[d.key]) return;
+    if (window.GateSession.isSubmitting(state.gateSubmissions, d.key)) return;
     var options = gateOptionsFor(pending);
     var selected = null;
     for (var i = 0; i < options.length; i++) {
@@ -2264,7 +2246,7 @@
       return;
     }
     d.submitting = true;
-    state.gateSubmissions[d.key] = true;
+    state.gateSubmissions = window.GateSession.beginSubmission(state.gateSubmissions, d.key).ledger;
     d.error = null;
     d.blockers = null;
     d.note = null;
@@ -2274,7 +2256,7 @@
     function sameSelection() { return state.runId === runId && state.selectionEpoch === epoch; }
     function currentSubmission() {
       var current = pendingInfo(state.viewData);
-      return sameSelection() && state.gateDraft === d && current && gateSessionKey(current) === d.key;
+      return sameSelection() && state.gateDraft === d && current && window.GateSession.sessionKey(state.runId, current) === d.key;
     }
     try {
       await api("/api/runs/" + enc(runId) + "/gates/" + enc(pending.gate) + "/decision", {
@@ -2301,7 +2283,7 @@
       toast("闸门提交被拒：" + e.message);
       syncGateForms();
     } finally {
-      delete state.gateSubmissions[d.key];
+      state.gateSubmissions = window.GateSession.endSubmission(state.gateSubmissions, d.key);
       d.submitting = false;
       if (state.gateDraft.key === d.key) syncGateForms();
     }

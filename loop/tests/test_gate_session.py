@@ -76,8 +76,9 @@ def test_same_identity_keeps_draft_and_focus_inputs():
 
 
 def test_withdrawn_option_clears_decision_only():
+    key = _eval("G.sessionKey('A', {id:'G1:0', gate:'G1_diff_confirm', cycle:0})")
     draft = {
-        "key": json.dumps(["A", "G1:0", "G1_diff_confirm", 0]),
+        "key": key,
         "gate": "G1_diff_confirm", "decision": "ignored", "actor": "human:reviewer",
         "reason": "reviewed", "submitting": False, "error": None, "blockers": None, "note": None,
     }
@@ -99,8 +100,9 @@ def test_submission_mutex_is_per_identity():
     # 同身份重复提交不再开始（前端幂等）
     assert _eval("G.beginSubmission(" + json.dumps(ledger) + ", 'k1').started") is False
     # 其他身份不受影响
-    assert _eval("G.beginSubmission(" + json.dumps(ledger) + ", 'k2').started") is True
-    ended = json.loads(_eval("JSON.stringify(G.endSubmission(" + json.dumps(ledger) + ", 'k1'))"))
+    both = json.loads(_eval("JSON.stringify(G.beginSubmission(" + json.dumps(ledger) + ", 'k2').ledger)"))
+    assert _eval("G.isSubmitting(" + json.dumps(both) + ", 'k2')") is True
+    ended = json.loads(_eval("JSON.stringify(G.endSubmission(" + json.dumps(both) + ", 'k1'))"))
     assert _eval("G.isSubmitting(" + json.dumps(ended) + ", 'k1')") is False
     assert _eval("G.isSubmitting(" + json.dumps(ended) + ", 'k2')") is True
 

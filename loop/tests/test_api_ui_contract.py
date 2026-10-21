@@ -67,3 +67,26 @@ def test_create_run_rejects_other_project(client: TestClient) -> None:
     r = client.post("/api/runs", json={"baseline": "v0", "mode": "drill", "project": "/tmp"})
     assert r.status_code == 400
     assert "ENV_ROOT" in r.json()["detail"]["error"]
+
+
+def test_gate_material_projection_has_diff_entries(client: TestClient) -> None:
+    """G1 材料必须带逐条差异与未决标记（前端据此渲染，不再让用户空口确认）。"""
+    r = client.post("/api/runs", json={
+        "baseline": "v0", "mode": "drill", "project": str(P.ENV_ROOT),
+    })
+    assert r.status_code == 200, r.text
+    rid = r.json()["run_id"]
+    view = client.get(f"/api/runs/{rid}").json()
+    pending = view.get("pending_interrupt") or {}
+    assert pending.get("payload", {}).get("gate") == "G1_diff_confirm"
+
+    mat = pending["payload"]
+    diff = mat.get("difference_items") or {}
+    assert diff.get("present") is True
+    entries = diff.get("entries") or []
+    assert diff.get("count") == len(entries) >= 1
+    for entry in entries:
+        assert "entry_id" in entry
+        assert "unresolved" in entry
+    assert diff.get("unresolved_count", 0) >= 1
+    assert mat.get("unresolved_entries"), "G1 材料必须单列未决条目"

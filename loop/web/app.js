@@ -1677,6 +1677,100 @@
     host.appendChild(refresh);
   }
 
+  /* ------------------------------------------------------------------ *
+   * N2 差异清单（G1 逐条核对材料；投影字段：difference_items）
+   * 只渲染服务端字段，不判定；未决条目单独标色，避免"空口确认"。
+   * ------------------------------------------------------------------ */
+  function diffPayloadOf(pending) {
+    var m = pending && pending.payload ? pending.payload : {};
+    var d = m.difference_items;
+    return d && typeof d === "object" ? d : null;
+  }
+
+  function diffSummaryText(pending) {
+    var d = diffPayloadOf(pending);
+    if (!d) return "N2 差异清单（服务端未下发）";
+    var n = d.count !== undefined && d.count !== null
+      ? d.count : (Array.isArray(d.entries) ? d.entries.length : 0);
+    var u = d.unresolved_count !== undefined && d.unresolved_count !== null
+      ? d.unresolved_count
+      : (Array.isArray(d.unresolved_ids) ? d.unresolved_ids.length : 0);
+    return "N2 差异清单 · " + n + " 条" + (u ? " · 未决 " + u + " 条" : " · 无未决");
+  }
+
+  function renderDiffEntries(host, pending, opts) {
+    if (!host) return;
+    var o = opts || {};
+    var d = diffPayloadOf(pending);
+    if (!d) {
+      host.appendChild(h("div", "alert warn", "服务端未下发 N2 差异清单（difference_items 缺失）。"));
+      return;
+    }
+    var entries = Array.isArray(d.entries) ? d.entries : [];
+    if (!o.hideHead) {
+      var head = h("div", "diff-head");
+      head.appendChild(h("b", null, diffSummaryText(pending)));
+      if (d.has_change === false) head.appendChild(chipEl("无变更", "ok"));
+      if (d.self_check_ok === true) head.appendChild(chipEl("self_check_ok", "ok"));
+      else if (d.self_check_ok === false) head.appendChild(chipEl("self_check 未通过", "warn"));
+      if (d.mode) head.appendChild(chipEl(String(d.mode), ""));
+      host.appendChild(head);
+    }
+    if (d.error) {
+      host.appendChild(h("div", "alert bad", "差异清单解析失败：" + String(d.error)));
+    }
+    if (d.present === false) {
+      host.appendChild(h("div", "alert warn", "N2 产物缺失：无法逐条核对，不得确认。"));
+      return;
+    }
+    if (!entries.length) {
+      host.appendChild(h("div", "muted tiny", "本轮没有差异条目。"));
+      return;
+    }
+
+    var payload = pending && pending.payload ? pending.payload : {};
+    var fromPayload = Array.isArray(payload.unresolved_entries) ? payload.unresolved_entries : [];
+    var unresolvedIds = Array.isArray(d.unresolved_ids) && d.unresolved_ids.length
+      ? d.unresolved_ids : fromPayload;
+    if (unresolvedIds.length) {
+      var chips = h("div", "chips");
+      unresolvedIds.forEach(function (id) {
+        chips.appendChild(chipEl(
+          "未决：" + (id === null || id === undefined ? "（无 entry_id）" : String(id)), "bad"));
+      });
+      host.appendChild(chips);
+    }
+
+    var list = h("div", "diff-list");
+    entries.forEach(function (e) {
+      if (!e || typeof e !== "object") return;
+      var unresolved = !!e.unresolved;
+      var item = h("div", "diff-item" + (unresolved ? " unresolved" : ""));
+      var line = h("div", "diff-line");
+      line.appendChild(h("span", "diff-id",
+        e.entry_id ? String(e.entry_id) : "（无 entry_id）"));
+      if (e.kind) line.appendChild(h("span", "chip", String(e.kind)));
+      if (e.change) line.appendChild(h("span", "chip", String(e.change)));
+      if (unresolved) line.appendChild(chipEl("未决", "warn"));
+      if (e.legacy_drill_fixture) line.appendChild(chipEl("drill 历史夹具", ""));
+      item.appendChild(line);
+
+      var meta = [];
+      if (e.segment) meta.push("segment " + String(e.segment));
+      if (e.offset) meta.push("offset " + String(e.offset));
+      if (Array.isArray(e.lines) && e.lines.length) meta.push("lines " + e.lines.join(", "));
+      if (meta.length) item.appendChild(h("div", "diff-meta", meta.join(" · ")));
+      if (unresolved) {
+        item.appendChild(h("div", "diff-unresolved", "未决原因：" + String(e.unresolved)));
+      }
+      item.appendChild(h("div", "diff-ev" + (e.evidence ? "" : " muted"),
+        e.evidence ? String(e.evidence) : "（无 evidence）"));
+      list.appendChild(item);
+    });
+    host.appendChild(list);
+    if (d.path) host.appendChild(h("div", "foot-note mono", String(d.path)));
+  }
+
   function renderGateMaterial(v) {
     var host = $("gateMaterial");
     if (!host) return;
@@ -1714,6 +1808,9 @@
     addKV(host, "返工轮次", reworkText(m.rework));
     addKV(host, "硬阻断", codesText(m.hard_block));
     addKV(host, "缺陷", codesText(m.defects));
+    var diffBox = h("div", "diff-block");
+    renderDiffEntries(diffBox, pending, {});
+    host.appendChild(diffBox);
     addKV(host, "权威枚举", enumsText(m.authority_enums, pending.gate));
     var options = gateOptionsFor(pending);
     addKV(host, "服务端决策选项", options.length ? options.length + " 个" : "未下发（不可提交）");
@@ -1836,6 +1933,11 @@
       addKV(materialBox, "冲突快照", conflictsText(m.conflicts));
       addKV(materialBox, "硬阻断", codesText(m.hard_block));
       form.appendChild(materialBox);
+
+      var diffDet = h("details", "adv diff-det");
+      diffDet.appendChild(h("summary", null, diffSummaryText(pending)));
+      renderDiffEntries(diffDet, pending, { hideHead: true });
+      form.appendChild(diffDet);
     }
 
     var options = gateOptionsFor(pending);

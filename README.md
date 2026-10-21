@@ -73,6 +73,7 @@ cd loop && rm -rf state spikes/.accept_v1_state.json && bash spikes/accept_v1_ru
 4. 软件与环境怎么解耦、数据放哪 → `doc/spec/ENV_PLUGIN_SPEC.md`。
 5. 哪里和 spec 不一致 → `doc/audit/AUDIT-20261019-spec-conformance.md`。
 6. 界面/交互怎么改 → `doc/spec/WEB_UI_SPEC.md`（设计样张 `loop/web/mockup.html`）。
+7. **想人工把整条链路点一遍** → [`doc/UI_RUNBOOK.md`](doc/UI_RUNBOOK.md)（起服务 → 配置 → 三道闸门 → 终点判读/排障）。
 
 ---
 

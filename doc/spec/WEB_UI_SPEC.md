@@ -147,6 +147,10 @@
 ### 4.4 右列
 
 1. **闸门卡**（仅 `pending_interrupt.type=gate_decision` 时）：标题（闸门名/轮次）、材料摘要、`gate_options`（服务端下发）、actor 输入（默认 `human:`）、理由、提交按钮（提交中禁用、防双击）。被拒时展示 `detail.blockers` 原文。
+   **G1 的 N2 差异清单必须逐条可见**（2026-10-20 补）：渲染 `pending_interrupt.payload.difference_items.entries`
+   的 `entry_id / kind / change / segment / offset / lines / unresolved / evidence`，未决条目高亮并在
+   顶部列出 chip；闸门视图完整展开，运行视图右列闸门卡提供同名可折叠块。材料仍全部来自服务端，
+   前端不判定、不排序、不隐藏。
 2. **双口径计数**：口径一 / 口径二**并列同权**，原值显示，不换算；附「两者都归零才可判绿」说明。
 3. **阻断项**：按 `severity` 分区（hard / info），code + 一句话说明；不做前端过滤。
 4. **证据概况 / 长任务**：job 状态、log_tail（折叠、等宽、只读）；证据入口先探测存在性。
@@ -355,3 +359,6 @@
 4. **状态细分**仍统一为 `waiting_gate`（审计 I18），tooltip 说明可能是作业/单槽等待。
 5. **`app.js` 约 2.4k 行**（单文件、无构建）；后续可在不引入构建步骤的前提下按视图拆分模块。
 6. **N11 证据守护**：卡片如实显示「未实现（审计 A10）」，不伪造工作状态。
+7. **G1 差异清单逐条渲染（2026-10-20 补）**：闸门材料消费 `difference_items`（含未决标记、evidence、行号/offset），
+   消除"界面看不到条目却要求逐条确认"的缺口；回归见 `test_web_smoke.py::test_gate_material_script_renders_n2_diff_entries`
+   与 `test_api_ui_contract.py::test_gate_material_projection_has_diff_entries`。

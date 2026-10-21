@@ -53,6 +53,9 @@ LOOP_PORT=9000 ./run.sh       # 换端口
 > Windows 侧用 `loop\remote\connect-loop.bat` / `.ps1`。详见
 > [`loop/remote/README.md`](remote/README.md)。
 
+> **人工操作手册**（起服务 → 配置 → 三道闸门 → 终点判读/排障）：
+> [`../doc/UI_RUNBOOK.md`](../doc/UI_RUNBOOK.md)。
+
 环境已建好（Python 3.11.7 + agently 4.1.4.8）：
 
 ```bash

@@ -42,3 +42,21 @@ def test_static_assets_are_local_and_served() -> None:
 def test_legacy_ui_still_served() -> None:
     html = _get("/legacy.html")
     assert "闸门操作台" in html, "旧界面必须保留一个迭代"
+
+
+def test_gate_material_script_renders_n2_diff_entries() -> None:
+    """G1 的「逐条差异」必须在页面上可见（否则 I1 的逐条核对只能空口 attestation）。
+
+    这是**投影渲染契约**的静态断言：投影字段由后端下发（见 test_api_ui_contract 的
+    `test_gate_material_projection_has_diff_entries`），前端必须消费它们。
+    """
+    js = _get("/app.js")
+    for token in (
+        "difference_items",
+        "unresolved_entries",
+        "renderDiffEntries",
+        "diff-item",
+    ):
+        assert token in js, f"app.js 缺少差异清单渲染：{token}"
+    css = _get("/app.css")
+    assert ".diff-item" in css, "app.css 缺少差异条目样式"

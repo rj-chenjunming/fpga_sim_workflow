@@ -166,3 +166,16 @@ def test_complete_means_all_changed_regions_are_provided(tmp_path: Path) -> None
             assert coverage["regions"] == expected, (item["file"], coverage["regions"], expected)
             assert coverage["complete"] is True
             assert item["changed_regions"], "complete=true 必须确有变更区域"
+
+
+def test_applied_case_missing_one_file_fails_closed(tmp_path: Path) -> None:
+    """applied_cases 里有、沙盒里没有的用例必须显式失败（不能只判「全有/全无」）。"""
+    sandbox = tmp_path / "sandbox" / "TESTLIB"
+    sandbox.mkdir(parents=True)
+    (sandbox / "a.sv").write_text("module a; endmodule\n", encoding="utf-8")
+    applied = [
+        {"case": "a", "file": "TESTLIB/a.sv", "edits": [{"line": 1}]},
+        {"case": "b", "file": "TESTLIB/b.sv", "edits": [{"line": 2}]},
+    ]
+    with pytest.raises(RuntimeError, match="b.sv|缺"):
+        MS.build_sandbox_cases(sandbox, None, applied)

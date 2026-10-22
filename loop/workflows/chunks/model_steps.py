@@ -647,10 +647,14 @@ def build_sandbox_cases(
 ) -> tuple[list[dict[str, Any]], list[str], dict[str, Any]]:
     """构造 N8 的 `sandbox_cases`：**每个文件都在**，按预算确定性降级，逐件带 `coverage`。
 
-    规则（上下文规格 C1 / F16）：
-    - 预算内按全文；放不下的文件降级为「源代码与沙箱实际差异」的变更片段（含行号）；
-    - 降级顺序由文件名排序决定（同一输入两次构造结果一致）；
-    - 片段不可得（缺源文件 / 无可定位变更）且放不下全文 ⇒ **显式失败**，不丢文件不静默抽样。
+    规则（上下文规格 C1 / F16 / R4）：
+    - 每件两种表示的成本是该件条目**实际紧凑序列化**的字节数（`AM.encoded`，含
+      `coverage`/`changed_regions`/键名与标点）；不得用近似字节数或「片段一定更小」的假定。
+    - 可行成本取 `min(全文成本, 片段成本)`；单文件 >6000 字符的受限件**只有片段成本**。
+    - 默认全文；按文件名的确定性顺序，先预留后续件的可行成本，只有全文放不下才降级为片段。
+    - 只有**全部候选件的最小可行成本之和**超过分片预算时才显式拒绝，不丢文件不静默抽样。
+    - 片段不可得（缺源文件 / 无可定位变更）且是受限件 ⇒ **显式失败**。
+    - 相同输入得到相同字节与相同覆盖汇总；`coverage`/`coverage_summary` 与实际发送内容一致。
     """
     budget = N8_SANDBOX_BUDGET_BYTES if budget_bytes is None else int(budget_bytes)
     if budget <= 0:
@@ -699,61 +703,6 @@ def build_sandbox_cases(
                                               "text": "\n".join(after[c:d])}})
         prepared.append({"path": path, "text": text, "source": source, "regions": regions})
 
-    # 先算每件的「全文成本」与「片段成本」，再做**可行**打包：
-    # 决定某文件用全文前，先预留其后所有文件的最坏情况（全部降级为片段）成本，
-    # 避免贪心把预算吃光后仍放不下剩余文件的片段。
-    plans: list[dict[str, Any]] = []
-    for item in prepared:
-        regions = item["regions"]
-        region_excerpt = "\n\n".join(
-            f"// lines {region['after']['start']}-{region['after']['end']}\n{region['after']['text']}"
-            for region in regions
-        ) if regions else None
-        full_bytes = len(item["text"].encode("utf-8"))
-        public_regions = [
-            {"before": region["before"],
-             "after": {"start": region["after"]["start"], "end": region["after"]["end"]}}
-            for region in regions
-        ]
-        region_bytes = None
-        if region_excerpt is not None:
-            # 片段模式的实际序列化成本 = excerpt + changed_regions JSON + 键开销
-            region_bytes = (
-                len(region_excerpt.encode("utf-8"))
-                + len(json.dumps(public_regions, ensure_ascii=False).encode("utf-8"))
-                + 64
-            )
-        forced_region = len(item["text"]) > N8_FULL_FILE_CHARS
-        if forced_region and region_bytes is None:
-            # 既有 fail-closed：大文件必须能定位变更（缺源/无变更 ⇒ 不猜）
-            raise RuntimeError(
-                "N8 上下文无法定位全部变更（缺源文件或没有可定位变更）："
-                f"{item['path'].name}（{full_bytes} bytes）"
-            )
-        # 该件的**最小可行成本**：大文件只能片段；小文件优先片段估算（留出降级空间）
-        min_cost = region_bytes if region_bytes is not None else full_bytes
-        plans.append(
-            {
-                "item": item,
-                "full_bytes": full_bytes,
-                "region_excerpt": region_excerpt,
-                "public_regions": public_regions,
-                "region_bytes": region_bytes,
-                "forced_region": forced_region,
-                "min_cost": min_cost,
-            }
-        )
-    total_min = sum(plan["min_cost"] for plan in plans)
-    if total_min > budget:
-        # F16-c：消息必须能定位到具体文件（文件名 + 最小可行成本），只给总数无法排查。
-        detail = ", ".join(
-            f"{plan['item']['path'].name}({plan['min_cost']})" for plan in plans
-        )
-        raise RuntimeError(
-            f"N8 上下文预算不足：即使全部降级为变更片段仍需 {total_min} > {budget} bytes"
-            f"（{detail}；不得静默抽样或丢文件）"
-        )
-    # 预构造两种条目并按**实际序列化大小**计费；选择只由预算与确定性顺序决定。
     def _entry(item: dict[str, Any], excerpt: str, mode: str,
                public_regions: list[dict[str, Any]]) -> dict[str, Any]:
         return {
@@ -774,25 +723,69 @@ def build_sandbox_cases(
             },
         }
 
-    for plan in plans:
-        item = plan["item"]
-        plan["full_entry"] = _entry(item, item["text"], "full_file", plan["public_regions"])
-        plan["region_entry"] = (
-            _entry(item, plan["region_excerpt"], "changed_regions", plan["public_regions"])
-            if plan["region_excerpt"] is not None else None
+    # 每件两种表示各按**真实紧凑序列化**计成本（R4）：包含 coverage/changed_regions 与键名标点，
+    # 不做近似、不假定「片段一定更小」。可行成本 = min(全文成本, 片段成本)；受限大文件只有片段成本。
+    plans: list[dict[str, Any]] = []
+    for item in prepared:
+        regions = item["regions"]
+        region_excerpt = "\n\n".join(
+            f"// lines {region['after']['start']}-{region['after']['end']}\n{region['after']['text']}"
+            for region in regions
+        ) if regions else None
+        public_regions = [
+            {"before": region["before"],
+             "after": {"start": region["after"]["start"], "end": region["after"]["end"]}}
+            for region in regions
+        ]
+        forced_region = len(item["text"]) > N8_FULL_FILE_CHARS
+        full_entry = _entry(item, item["text"], "full_file", public_regions)
+        region_entry = (
+            _entry(item, region_excerpt, "changed_regions", public_regions)
+            if region_excerpt is not None else None
         )
-        # 数组元素间的 `,` 与首尾括号也占字节：每条摊销 2 字节（最终再用整体序列化复核）。
-        plan["full_cost"] = len(AM.encoded(plan["full_entry"])) + 2
-        plan["region_cost"] = (
-            len(AM.encoded(plan["region_entry"])) + 2
-            if plan["region_entry"] is not None else None
+        if forced_region and region_entry is None:
+            # 既有 fail-closed：受限大文件必须能定位变更（缺源/无变更 ⇒ 不猜，也不退回全文）。
+            raise RuntimeError(
+                "N8 上下文无法定位全部变更（缺源文件或没有可定位变更）："
+                f"{item['path'].name}（{len(item['text'].encode('utf-8'))} bytes）"
+            )
+        full_cost = len(AM.encoded(full_entry))
+        region_cost = len(AM.encoded(region_entry)) if region_entry is not None else None
+        if forced_region:
+            min_cost = region_cost
+        elif region_cost is None:
+            min_cost = full_cost
+        else:
+            min_cost = min(full_cost, region_cost)
+        plans.append(
+            {
+                "item": item,
+                "full_entry": full_entry,
+                "region_entry": region_entry,
+                "full_cost": full_cost,
+                "region_cost": region_cost,
+                "forced_region": forced_region,
+                "min_cost": min_cost,
+            }
         )
-        # 最小可行成本：强制片段 ⇒ 片段；否则片段可用时按片段估算（为降级留空间）
-        plan["min_cost"] = (
-            plan["region_cost"] if plan["region_cost"] is not None else plan["full_cost"]
+    # 数组整体的 `[`、`]` 与 (n-1) 个 `,` 也计入预算：`AM.encoded(list)` 由逐件编码拼接而成，
+    # 精确开销为 n + 1（不再用「每条摊销 2 字节」的近似）。
+    array_overhead = len(plans) + 1
+    total_min = sum(plan["min_cost"] for plan in plans) + array_overhead
+    if total_min > budget:
+        # 只有「全部候选件的最小可行成本之和」超预算才拒绝；消息定位到具体文件（F16-c）。
+        detail = ", ".join(
+            f"{plan['item']['path'].name}({plan['min_cost']})" for plan in plans
         )
+        raise RuntimeError(
+            f"N8 上下文预算不足：全部候选件的最小可行成本合计仍需 {total_min} > {budget} bytes"
+            f"（{detail}；不得静默抽样或丢文件）"
+        )
+    # 选择（R4）：文件名确定性顺序，默认全文；先预留后续件的**可行**成本再决定当前件，
+    # 只有全文放不下才降级为片段。并列成本（全文成本 == 片段成本）时选全文：信息更多、
+    # `coverage.mode=full_file` 语义更强，且不改变可行性判断。
 
-    used = 0
+    used = array_overhead
     full_files = 0
     region_files = 0
     out: list[dict[str, Any]] = []
@@ -803,13 +796,13 @@ def build_sandbox_cases(
             and used + plan["full_cost"] + remaining_min <= budget
         )
         entry = plan["full_entry"] if can_full else plan["region_entry"]
-        if entry is None:
+        cost = plan["full_cost"] if can_full else plan["region_cost"]
+        if entry is None or cost is None:
+            # 不可达：上面的最小成本检查保证可行，且受限件必有片段。保留显式失败而非静默跳过。
             raise RuntimeError(
                 "N8 上下文预算不足且无法定位变更（缺源文件或没有可定位变更）："
-                f"{plan['item']['path'].name}（{plan['full_cost']} bytes，剩余预算 "
-                f"{max(0, budget - used)} bytes）"
+                f"{plan['item']['path'].name}（剩余预算 {max(0, budget - used)} bytes）"
             )
-        cost = plan["full_cost"] if can_full else plan["region_cost"]
         used += cost
         if can_full:
             full_files += 1
@@ -819,12 +812,14 @@ def build_sandbox_cases(
     # 以**真实请求使用的紧凑序列化**复核（`AM.encoded` 与 check_budget 同一实现）。
     used = len(AM.encoded(out))
     if used > budget:
-        # 确定性修复：从后往前把「全文」降级为片段，直到装得下（保证可行解不被 2n 等尾差硬拒）。
+        # 兜底：只在片段确实更便宜时从后往前降级；不得硬拒可行解，也不得把降级变成放大成本。
         for index in range(len(out) - 1, -1, -1):
             if used <= budget:
                 break
             plan = plans[index]
-            if out[index]["coverage"]["mode"] != "full_file" or plan["region_entry"] is None:
+            if out[index]["coverage"]["mode"] != "full_file":
+                continue
+            if plan["region_entry"] is None or plan["region_cost"] >= plan["full_cost"]:
                 continue
             out[index] = plan["region_entry"]
             used = len(AM.encoded(out))

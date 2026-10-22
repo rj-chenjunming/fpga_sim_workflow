@@ -180,7 +180,10 @@ def diff_entries_view(run_dir: Path | None, *, mode: str | None = None) -> dict[
                     "unresolved": unresolved,
                     "evidence": item.get("evidence"),
                     "lines": item.get("lines") or [],
-                    "offset": item.get("offset"),
+                    # 真实路径的 N2 用 `offsets`（复数）列表；drill 夹具用 `offset`（单数）。
+                    # 投影只做兼容读取，不改产物：单数字段缺失时取列表首项，两者都保留给界面。
+                    "offset": item.get("offset") or next(iter(item.get("offsets") or []), None),
+                    "offsets": item.get("offsets") or [],
                     "segment": item.get("segment"),
                     # R2（SPEC-REV-01）：变更本体与解码事实必须逐条下发，界面才能双栏对照；
                     # 缺失一律显式 None（**不**用路径/空串冒充"没有变化"）。

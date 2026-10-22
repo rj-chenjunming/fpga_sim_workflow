@@ -1,0 +1,52 @@
+{
+  "cases": [
+    {
+      "case": "tc_pcie_rw_02",
+      "compile_rc": 0,
+      "file": "TESTLIB/tc_pcie_rw_02.sv",
+      "md5_after": "9139589046f1ceea8af59e9249f66f0b",
+      "md5_before": "eab350bb81d14bb9987bd6691a26df54",
+      "note": "N10：卡点D 判据未通过 ⇒ 保持待验，不得称跑通",
+      "sandbox_path": "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/sandbox/TESTLIB/tc_pcie_rw_02.sv",
+      "state": "已修订待验",
+      "static_check": "pass",
+      "updated_at": "2026-10-22T19:57:06+0800",
+      "updated_by": "loop:N10"
+    },
+    {
+      "case": "tc_pcie_rw_smoke",
+      "compile_rc": 0,
+      "file": "TESTLIB/tc_pcie_rw_smoke.sv",
+      "md5_after": "18822965d0c39184a3b029c9de8b82fe",
+      "md5_before": "75f95660d375ac2abd0595efa04b2c63",
+      "note": "N10：卡点D 判据未通过 ⇒ 保持待验，不得称跑通",
+      "sandbox_path": "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/sandbox/TESTLIB/tc_pcie_rw_smoke.sv",
+      "state": "已修订待验",
+      "static_check": "pass",
+      "updated_at": "2026-10-22T19:57:06+0800",
+      "updated_by": "loop:N10"
+    },
+    {
+      "case": "tc_rtc_05",
+      "compile_rc": 0,
+      "file": "TESTLIB/tc_rtc_05.sv",
+      "md5_after": "5a5c9f73e1f8efc253f4ed976c67bd78",
+      "md5_before": "d0649ceebadf6ce32c768ee1230c314f",
+      "note": "N10：卡点D 判据未通过 ⇒ 保持待验，不得称跑通",
+      "sandbox_path": "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/sandbox/TESTLIB/tc_rtc_05.sv",
+      "state": "已修订待验",
+      "static_check": "pass",
+      "updated_at": "2026-10-22T19:57:07+0800",
+      "updated_by": "loop:N10"
+    }
+  ],
+  "rework_cycles": {
+    "limit": 3,
+    "n6_n8_cycles": 0
+  },
+  "run_id": "RUN-20261022-181700",
+  "schema": "kb/run/case_states",
+  "updated_at": "2026-10-22T19:57:07+0800",
+  "version": 1,
+  "writer": "loop:N10"
+}

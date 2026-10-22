@@ -1,0 +1,2541 @@
+{
+  "run_id": "RUN-20261022-181700",
+  "run_dir": "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700",
+  "baseline": "v0",
+  "project": "/home/work/chenjunming/change-impact-loop/workspaces/real-env-copy",
+  "s0_record_id": null,
+  "mode": "real",
+  "scenario": "happy",
+  "status": "waiting_gate",
+  "created_at": "2026-10-22T18:17:00.996576",
+  "updated_at": "2026-10-22T19:59:44.433317",
+  "pending_interrupt": {
+    "id": "G2_report_accept:0-0",
+    "type": "gate_decision",
+    "exchange_kind": null,
+    "payload": {
+      "gate": "G2_report_accept",
+      "stage": "n13_gate2",
+      "mode": "real",
+      "interrupt": null,
+      "counts": {
+        "koutou1": {
+          "label": "口径一（`*E` 文本行数，逐用例求和）",
+          "value": 1687,
+          "zero": false,
+          "refs": [
+            "line 357: UVM_INFO pcie_sequence.sv(598) @ 153.273 us [PCIE_REG_RD@3DW] *E @ADDR[0x84] -> DATA[0x0] != EXP[0xffffffff]",
+            "line 360: UVM_INFO pcie_sequence.sv(598) @ 153.593 us [PCIE_REG_RD@3DW] *E @ADDR[0x84] -> DATA[0x0] != EXP[0x55555555]",
+            "line 363: UVM_INFO pcie_sequence.sv(598) @ 153.913 us [PCIE_REG_RD@3DW] *E @ADDR[0x84] -> DATA[0x0] != EXP[0xaaaaaaaa]",
+            "line 366: UVM_INFO pcie_sequence.sv(598) @ 154.233 us [PCIE_REG_RD@3DW] *E @ADDR[0x84] -> DATA[0x0] != EXP[0x12345678]",
+            "line 374: UVM_INFO pcie_sequence.sv(598) @ 155.113 us [PCIE_REG_RD@3DW] *E @ADDR[0x88] -> DATA[0xff] != EXP[0x3]",
+            "line 35152: UVM_INFO :34930",
+            "line 35153: UVM_WARNING :    0",
+            "line 35154: UVM_ERROR :    0"
+          ]
+        },
+        "koutou2": {
+          "label": "口径二（UVM Report Summary，逐用例求和）",
+          "value": {
+            "UVM_INFO": 35066,
+            "UVM_WARNING": 0,
+            "UVM_ERROR": 0,
+            "UVM_FATAL": 0
+          },
+          "zero": true,
+          "refs": []
+        },
+        "both_zero": false,
+        "per_case": {
+          "tc_pcie_rw_02": {
+            "koutou1": {
+              "label": "口径一（`*E` 文本行数）",
+              "value": 1687,
+              "zero": false,
+              "refs": [
+                "line 357: UVM_INFO pcie_sequence.sv(598) @ 153.273 us [PCIE_REG_RD@3DW] *E @ADDR[0x84] -> DATA[0x0] != EXP[0xffffffff]",
+                "line 360: UVM_INFO pcie_sequence.sv(598) @ 153.593 us [PCIE_REG_RD@3DW] *E @ADDR[0x84] -> DATA[0x0] != EXP[0x55555555]",
+                "line 363: UVM_INFO pcie_sequence.sv(598) @ 153.913 us [PCIE_REG_RD@3DW] *E @ADDR[0x84] -> DATA[0x0] != EXP[0xaaaaaaaa]",
+                "line 366: UVM_INFO pcie_sequence.sv(598) @ 154.233 us [PCIE_REG_RD@3DW] *E @ADDR[0x84] -> DATA[0x0] != EXP[0x12345678]",
+                "line 374: UVM_INFO pcie_sequence.sv(598) @ 155.113 us [PCIE_REG_RD@3DW] *E @ADDR[0x88] -> DATA[0xff] != EXP[0x3]"
+              ]
+            },
+            "koutou2": {
+              "label": "口径二（UVM Report Summary）",
+              "value": {
+                "UVM_INFO": 34930,
+                "UVM_WARNING": 0,
+                "UVM_ERROR": 0,
+                "UVM_FATAL": 0
+              },
+              "zero": true,
+              "refs": [
+                "line 35152: UVM_INFO :34930",
+                "line 35153: UVM_WARNING :    0",
+                "line 35154: UVM_ERROR :    0",
+                "line 35155: UVM_FATAL :    0"
+              ]
+            },
+            "both_zero": false,
+            "single_source": true,
+            "note": "两套口径分别取、分别存，不得互相替代（doc/AGENTS.md 红线 3 / spec I3）。"
+          },
+          "tc_pcie_rw_smoke": {
+            "koutou1": {
+              "label": "口径一（`*E` 文本行数）",
+              "value": 0,
+              "zero": true,
+              "refs": []
+            },
+            "koutou2": {
+              "label": "口径二（UVM Report Summary）",
+              "value": {
+                "UVM_INFO": 57,
+                "UVM_WARNING": 0,
+                "UVM_ERROR": 0,
+                "UVM_FATAL": 0
+              },
+              "zero": true,
+              "refs": [
+                "line 221: UVM_INFO :   57",
+                "line 222: UVM_WARNING :    0",
+                "line 223: UVM_ERROR :    0",
+                "line 224: UVM_FATAL :    0"
+              ]
+            },
+            "both_zero": true,
+            "single_source": true,
+            "note": "两套口径分别取、分别存，不得互相替代（doc/AGENTS.md 红线 3 / spec I3）。"
+          },
+          "tc_rtc_05": {
+            "koutou1": {
+              "label": "口径一（`*E` 文本行数）",
+              "value": 0,
+              "zero": true,
+              "refs": []
+            },
+            "koutou2": {
+              "label": "口径二（UVM Report Summary）",
+              "value": {
+                "UVM_INFO": 79,
+                "UVM_WARNING": 0,
+                "UVM_ERROR": 0,
+                "UVM_FATAL": 0
+              },
+              "zero": true,
+              "refs": [
+                "line 276: UVM_INFO :   79",
+                "line 277: UVM_WARNING :    0",
+                "line 278: UVM_ERROR :    0",
+                "line 279: UVM_FATAL :    0"
+              ]
+            },
+            "both_zero": true,
+            "single_source": true,
+            "note": "两套口径分别取、分别存，不得互相替代（doc/AGENTS.md 红线 3 / spec I3）。"
+          }
+        },
+        "note": "多用例：两套口径分别取、逐例并列再求和；不得互相替代（spec I3）。"
+      },
+      "blockers": [
+        {
+          "code": "I2_CASES_PENDING",
+          "severity": "blocker",
+          "title": "本轮仍有 3 个用例「已修订待验」",
+          "message": "I2：存在「待验」不得称跑通/接受报告；先完成全跑并写入「已验证通过」。",
+          "refs": [
+            "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/case_states.json"
+          ],
+          "items": [
+            "tc_pcie_rw_02",
+            "tc_pcie_rw_smoke",
+            "tc_rtc_05"
+          ]
+        },
+        {
+          "code": "I3_KOUTOU1_NONZERO",
+          "severity": "blocker",
+          "title": "口径一 = 1687 ≠ 0（I3 第 4 项不成立）",
+          "message": "口径二为 0 **不足以**判绿。口径一由 `*E` 文本行数而来，其非零是既有缺陷所致（本轮修订点 0x0000+0x04 未命中）。根因方向：TB/AGENTS/PCIE-Agent/pcie_sequence.sv:598 走 uvm_info 而非 `uvm_error`。",
+          "refs": [
+            "line 357: UVM_INFO pcie_sequence.sv(598) @ 153.273 us [PCIE_REG_RD@3DW] *E @ADDR[0x84] -> DATA[0x0] != EXP[0xffffffff]",
+            "line 360: UVM_INFO pcie_sequence.sv(598) @ 153.593 us [PCIE_REG_RD@3DW] *E @ADDR[0x84] -> DATA[0x0] != EXP[0x55555555]",
+            "line 363: UVM_INFO pcie_sequence.sv(598) @ 153.913 us [PCIE_REG_RD@3DW] *E @ADDR[0x84] -> DATA[0x0] != EXP[0xaaaaaaaa]",
+            "line 366: UVM_INFO pcie_sequence.sv(598) @ 154.233 us [PCIE_REG_RD@3DW] *E @ADDR[0x84] -> DATA[0x0] != EXP[0x12345678]",
+            "line 374: UVM_INFO pcie_sequence.sv(598) @ 155.113 us [PCIE_REG_RD@3DW] *E @ADDR[0x88] -> DATA[0xff] != EXP[0x3]"
+          ]
+        },
+        {
+          "code": "I4_CONFLICTS_UNCLEARED",
+          "severity": "blocker",
+          "title": "冲突未清零：72/72 项 blocks_release",
+          "message": "按 I4「清单未清零不发版」⇒ 阻断 full_now/subset_only 选项与晋升动作。",
+          "refs": [
+            "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/conflicts/conflicts.json"
+          ],
+          "items": [
+            "C1",
+            "C2",
+            "C3",
+            "C4",
+            "C5",
+            "C6",
+            "C7",
+            "C8",
+            "C9",
+            "C10",
+            "C11",
+            "C12"
+          ]
+        }
+      ],
+      "hard_block": [
+        {
+          "code": "I2_CASES_PENDING",
+          "severity": "blocker",
+          "title": "本轮仍有 3 个用例「已修订待验」",
+          "message": "I2：存在「待验」不得称跑通/接受报告；先完成全跑并写入「已验证通过」。",
+          "refs": [
+            "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/case_states.json"
+          ],
+          "items": [
+            "tc_pcie_rw_02",
+            "tc_pcie_rw_smoke",
+            "tc_rtc_05"
+          ]
+        },
+        {
+          "code": "I3_KOUTOU1_NONZERO",
+          "severity": "blocker",
+          "title": "口径一 = 1687 ≠ 0（I3 第 4 项不成立）",
+          "message": "口径二为 0 **不足以**判绿。口径一由 `*E` 文本行数而来，其非零是既有缺陷所致（本轮修订点 0x0000+0x04 未命中）。根因方向：TB/AGENTS/PCIE-Agent/pcie_sequence.sv:598 走 uvm_info 而非 `uvm_error`。",
+          "refs": [
+            "line 357: UVM_INFO pcie_sequence.sv(598) @ 153.273 us [PCIE_REG_RD@3DW] *E @ADDR[0x84] -> DATA[0x0] != EXP[0xffffffff]",
+            "line 360: UVM_INFO pcie_sequence.sv(598) @ 153.593 us [PCIE_REG_RD@3DW] *E @ADDR[0x84] -> DATA[0x0] != EXP[0x55555555]",
+            "line 363: UVM_INFO pcie_sequence.sv(598) @ 153.913 us [PCIE_REG_RD@3DW] *E @ADDR[0x84] -> DATA[0x0] != EXP[0xaaaaaaaa]",
+            "line 366: UVM_INFO pcie_sequence.sv(598) @ 154.233 us [PCIE_REG_RD@3DW] *E @ADDR[0x84] -> DATA[0x0] != EXP[0x12345678]",
+            "line 374: UVM_INFO pcie_sequence.sv(598) @ 155.113 us [PCIE_REG_RD@3DW] *E @ADDR[0x88] -> DATA[0xff] != EXP[0x3]"
+          ]
+        },
+        {
+          "code": "I4_CONFLICTS_UNCLEARED",
+          "severity": "blocker",
+          "title": "冲突未清零：72/72 项 blocks_release",
+          "message": "按 I4「清单未清零不发版」⇒ 阻断 full_now/subset_only 选项与晋升动作。",
+          "refs": [
+            "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/conflicts/conflicts.json"
+          ],
+          "items": [
+            "C1",
+            "C2",
+            "C3",
+            "C4",
+            "C5",
+            "C6",
+            "C7",
+            "C8",
+            "C9",
+            "C10",
+            "C11",
+            "C12"
+          ]
+        }
+      ],
+      "defects": [],
+      "rework": {
+        "n6_n8_cycles": 0,
+        "g2_rework_cycles": 0,
+        "limit": 3,
+        "source": "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/rework_cycles.json",
+        "case_state_source": "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/case_states.json"
+      },
+      "difference_items": {
+        "path": "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/n2_diff.json",
+        "present": true,
+        "error": null,
+        "count": 2,
+        "entries": [
+          {
+            "entry_id": "RTL/SRC/imports/SRC/pcie_controller/pcie_register.v",
+            "kind": "allfile",
+            "change": "modified",
+            "unresolved": "② 路只比逐文件 md5 清单，无文本 hunk（旧版正文不在 KB）⇒ offset 由 ①/③ 路提供；本条已按『modified』计入差异",
+            "evidence": "baselines/v0/allfiles.md5:L2896 -> runs/RUN-20261022-181700/bundle/allfiles.md5:L2896（逐文件 md5 变化）",
+            "lines": [],
+            "offset": null,
+            "offsets": [],
+            "segment": null,
+            "before": "d560f2ff15388aad16dc64431d67a617",
+            "after": "50e4ca25f384d0ee384252b34f30e760",
+            "diff_hunk": null,
+            "encoding": null,
+            "legacy_drill_fixture": false
+          },
+          {
+            "entry_id": "RTL/SRC/imports/SRC/pcie_controller/pcie_register.v",
+            "kind": "rtl_file",
+            "change": "modified",
+            "unresolved": null,
+            "evidence": "baselines/v0/rtl_files.md5:L119 -> runs/RUN-20261022-181700/bundle/rtl_files.md5:L119（逐文件 md5 变化）",
+            "lines": [
+              171,
+              172
+            ],
+            "offset": "0xd04",
+            "offsets": [
+              "0xd04"
+            ],
+            "segment": null,
+            "before": "d560f2ff15388aad16dc64431d67a617",
+            "after": "50e4ca25f384d0ee384252b34f30e760",
+            "diff_hunk": "--- \n+++ \n@@ -168,7 +168,8 @@\n \tassign\ts_hit_7x\t=\tdcb_gnt ? (dcb_addr[7:4]\t\t==\t4'h7)\t?\t1'b1 : 1'b0\t:\thit_7x;\n \tassign\ts_hit_8x\t=\tdcb_gnt ? (dcb_addr[7:4]\t\t==\t4'h8)\t?\t1'b1 : 1'b0\t:\thit_8x;\n \t\n-\tassign\ts_reg_test\t\t=\t(write & hit_0x & hit_x4 & dcb_wdval) ? dcb_wdata \t: reg_test;\t\n+\t// 0x0d04 pcie_test: [31:16] reserved, read as 0; only [15:0] R/W\n+\tassign\ts_reg_test\t\t=\t(write & hit_0x & hit_x4 & dcb_wdval) ? {16'h0, dcb_wdata[15:0]} \t: reg_test;\t\n \tassign\ts_little_endian\t=\t(write & hit_0x & hit_x8 & dcb_wdval) ? |dcb_wdata\t: little_endian\t;\n \t\n \tassign\ts_dcb_gnt = \tdcb_gnt | grant_1d | grant_2d ? 1'b0               //ensure write complete",
+            "encoding": "utf-8",
+            "legacy_drill_fixture": false
+          }
+        ],
+        "unresolved_ids": [
+          "RTL/SRC/imports/SRC/pcie_controller/pcie_register.v"
+        ],
+        "unresolved_count": 1,
+        "has_change": true,
+        "self_check_ok": true,
+        "mode": "real"
+      },
+      "case_states": {
+        "path": "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/case_states.json",
+        "present": true,
+        "error": null,
+        "created_at": "2026-10-22T18:17:00.996576",
+        "cases": [
+          {
+            "case": "tc_pcie_rw_02",
+            "state": "已修订待验",
+            "updated_at": "2026-10-22T19:57:06+0800",
+            "updated_by": "loop:N10",
+            "file": "TESTLIB/tc_pcie_rw_02.sv",
+            "own": true
+          },
+          {
+            "case": "tc_pcie_rw_smoke",
+            "state": "已修订待验",
+            "updated_at": "2026-10-22T19:57:06+0800",
+            "updated_by": "loop:N10",
+            "file": "TESTLIB/tc_pcie_rw_smoke.sv",
+            "own": true
+          },
+          {
+            "case": "tc_rtc_05",
+            "state": "已修订待验",
+            "updated_at": "2026-10-22T19:57:07+0800",
+            "updated_by": "loop:N10",
+            "file": "TESTLIB/tc_rtc_05.sv",
+            "own": true
+          }
+        ],
+        "count": 3,
+        "pending_own": [
+          "tc_pcie_rw_02",
+          "tc_pcie_rw_smoke",
+          "tc_rtc_05"
+        ],
+        "pending_foreign_count": 0,
+        "pending_foreign": [],
+        "rework_cycles": {
+          "limit": 3,
+          "n6_n8_cycles": 0
+        }
+      },
+      "report": {
+        "n2_diff": "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/n2_diff.json",
+        "n3_digest": "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/n3_digest.md",
+        "n9_evidence": "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence",
+        "n11_guardian": {
+          "mode": "live",
+          "chain": "intact",
+          "model_chain": "intact",
+          "chain_effective": "intact",
+          "host_identity": {
+            "run_id": "RUN-20261022-181700",
+            "consistent": true,
+            "mismatches": [],
+            "cases": [
+              {
+                "case": "tc_pcie_rw_02",
+                "reviewed_md5": "9139589046f1ceea8af59e9249f66f0b",
+                "run_md5": "9139589046f1ceea8af59e9249f66f0b",
+                "run_id": "RUN-20261022-181700",
+                "seed": "1",
+                "evidence_path": "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-193218_tc_pcie_rw_02_1_run.log",
+                "evidence_present": true,
+                "consistent": true
+              },
+              {
+                "case": "tc_pcie_rw_smoke",
+                "reviewed_md5": "18822965d0c39184a3b029c9de8b82fe",
+                "run_md5": "18822965d0c39184a3b029c9de8b82fe",
+                "run_id": "RUN-20261022-181700",
+                "seed": "1",
+                "evidence_path": "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-195119_tc_pcie_rw_smoke_1_run.log",
+                "evidence_present": true,
+                "consistent": true
+              },
+              {
+                "case": "tc_rtc_05",
+                "reviewed_md5": "5a5c9f73e1f8efc253f4ed976c67bd78",
+                "run_md5": "5a5c9f73e1f8efc253f4ed976c67bd78",
+                "run_id": "RUN-20261022-181700",
+                "seed": "1",
+                "evidence_path": "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-195230_tc_rtc_05_1_run.log",
+                "evidence_present": true,
+                "consistent": true
+              }
+            ],
+            "missing_cases": [],
+            "checked": [
+              "run_id",
+              "case",
+              "reviewed_md5(n6_applied.md5_after)",
+              "run_md5(host.evidence identity from run_guarded header)"
+            ]
+          },
+          "escalated": false,
+          "cycle": null,
+          "limit": null,
+          "reasons": [
+            "身份四方同值（tc_pcie_rw_02）：identity.cases[0].run_id = RUN-20261022-181700，与 evidence.cases.tc_pcie_rw_02.identity.run_id = RUN-20261022-181700、run_id = RUN-20261022-181700 一致；case 名一侧为 identity.cases[0].case = tc_pcie_rw_02，另一侧为 evidence.cases.tc_pcie_rw_02.identity.case = tc_pcie_rw_02，同值；审的 md5 为 identity.cases[0].reviewed_md5 = 9139589046f1ceea8af59e9249f66f0b，与 case_states.cases[tc_pcie_rw_02].md5_after = 9139589046f1ceea8af59e9249f66f0b 同值；跑的 md5 为 identity.cases[0].run_md5 = 9139589046f1ceea8af59e9249f66f0b，与 evidence.cases.tc_pcie_rw_02.identity.case_md5 = 9139589046f1ceea8af59e9249f66f0b 同值；identity.cases[0].consistent = true，且 identity.mismatches = []、identity.missing_cases = []。",
+            "身份四方同值（tc_pcie_rw_smoke）：identity.cases[1].run_id = RUN-20261022-181700，与 evidence.cases.tc_pcie_rw_smoke.identity.run_id = RUN-20261022-181700 一致；case 名一侧为 tc_pcie_rw_smoke，另一侧为 evidence.cases.tc_pcie_rw_smoke.identity.case = tc_pcie_rw_smoke，同值；审的 md5 = 18822965d0c39184a3b029c9de8b82fe，与 case_states.cases[tc_pcie_rw_smoke].md5_after = 18822965d0c39184a3b029c9de8b82fe 同值；跑的 md5（identity.cases[1].run_md5 = 18822965d0c39184a3b029c9de8b82fe）= evidence.cases.tc_pcie_rw_smoke.identity.case_md5 = 18822965d0c39184a3b029c9de8b82fe，同值；consistent = true。",
+            "身份四方同值（tc_rtc_05）：identity.cases[2].run_id = RUN-20261022-181700，与 evidence.cases.tc_rtc_05.identity.run_id = RUN-20261022-181700 一致；case 名一侧为 tc_rtc_05，另一侧为 evidence.cases.tc_rtc_05.identity.case = tc_rtc_05，同值；审的 md5 = 5a5c9f73e1f8efc253f4ed976c67bd78，与 case_states.cases[tc_rtc_05].md5_after = 5a5c9f73e1f8efc253f4ed976c67bd78 同值；跑的 md5（identity.cases[2].run_md5 = 5a5c9f73e1f8efc253f4ed976c67bd78）= evidence.cases.tc_rtc_05.identity.case_md5 = 5a5c9f73e1f8efc253f4ed976c67bd78，同值；consistent = true。",
+            "证据件可解析且已落盘：identity.cases[*].evidence_present 全为 true；evidence.cases.{tc_pcie_rw_02,tc_pcie_rw_smoke,tc_rtc_05}.present 全为 true；path 分别为 evidence/20261022-193218_tc_pcie_rw_02_1_run.log、evidence/20261022-195119_tc_pcie_rw_smoke_1_run.log、evidence/20261022-195230_tc_rtc_05_1_run.log；各用例 counts 结构完整（koutou1/koutou2 双口径分别存在，且 note = 两套口径分别取、分别存，不得互相替代）。",
+            "evidence case_md5 与 case_states.md5_after 逐例同值（9139589046f1ceea8af59e9249f66f0b / 18822965d0c39184a3b029c9de8b82fe / 5a5c9f73e1f8efc253f4ed976c67bd78），说明三份跑的证据对应的是当前已修订文件的 md5，md5 未发生漂移；另 case_states 各例 md5_before（eab350bb81d14bb9987bd6691a26df54 / 75f95660d375ac2abd0595efa04b2c63 / d0649ceebadf6ce32c768ee1230c314f）与 md5_after 不同，仅为修订前后差异的记录。",
+            "identity.checked 覆盖 run_id、case、reviewed_md5(n6_applied.md5_after)、run_md5(host.evidence identity from run_guarded header) 四项；identity.consistent = true、mismatches = []、missing_cases = []；identity.run_id = RUN-20261022-181700 与 input.run_id、case_states 路径中的 RUN-20261022-181700 同值。",
+            "证据链之外的判据事实（不下结论、仅供 N10 使用）：verdict.passed = false，reasons 为 tc_pcie_rw_02 口径一 = 1687 ≠ 0 且无预期观测点印记；tc_pcie_rw_smoke、tc_rtc_05 均为无预期观测点印记；三例 evidence.cases[*].imprints 均为 {}（空）。该等属 I3 判据与 PASS/FAIL 判定范畴，不计入证据链结论。"
+          ],
+          "rework_requests": [],
+          "caveats": [
+            "本判定仅覆盖证据链（身份四方同值 + 证据可解析 + md5 未漂移）；不对 PASS/FAIL 或发版下结论。verdict.passed 与 verdict.reasons 的判定权属 N10。",
+            "三例 evidence.cases[*].imprints 均为 {}（空），即预期观测点印记三向一致不成立；该缺口已在 verdict.reasons 中由 N10 记为判据未通过项，本轮不作为 chain=broken 的依据，但属未闭环项。",
+            "input 未提供“冻结件”（冻结清单/冻结件 md5）的任何字段，故“冻结件未变”这一项在本轮无法核验；若上层另有冻结件基线，需另行比对后才能确认该项闭环。",
+            "evidence.path 与 evidence.present 在顶层为 null，本轮为多用例并列结构，证据以 evidence.cases[*].path / present 逐例给出；无单点汇总证据件，读取方需按用例分别消费。",
+            "case_states.state 三例均为“已修订待验”、state_counts = {已修订待验: 3}、pending_verified = 3、rework_cycles.n6_n8_cycles = 0（上限 3），即当前无已验通过用例，返工周期尚未消耗。"
+          ]
+        },
+        "n12_report": {
+          "mode": "live",
+          "claimed_verdict": "not_passed",
+          "legacy_verdict_statement": null,
+          "report_path": "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/n12_report.md",
+          "refs_checked": [
+            "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/case_states.json",
+            "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/sandbox/TESTLIB/tc_pcie_rw_02.sv",
+            "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/sandbox/TESTLIB/tc_pcie_rw_smoke.sv",
+            "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/sandbox/TESTLIB/tc_rtc_05.sv",
+            "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-193218_tc_pcie_rw_02_1_run.log",
+            "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-195119_tc_pcie_rw_smoke_1_run.log",
+            "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-195230_tc_rtc_05_1_run.log",
+            "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-193218_tc_pcie_rw_02_1_run.log",
+            "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-195119_tc_pcie_rw_smoke_1_run.log",
+            "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-195230_tc_rtc_05_1_run.log",
+            "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/case_states.json",
+            "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-193218_tc_pcie_rw_02_1_run.log",
+            "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-195119_tc_pcie_rw_smoke_1_run.log",
+            "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-195230_tc_rtc_05_1_run.log",
+            "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/case_states.json",
+            "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-193218_tc_pcie_rw_02_1_run.log",
+            "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-195119_tc_pcie_rw_smoke_1_run.log",
+            "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-195230_tc_rtc_05_1_run.log"
+          ],
+          "unresolved_refs": []
+        },
+        "n8_check": {
+          "mode": "live",
+          "verdict": "pass",
+          "escalated": false,
+          "cycle": 0,
+          "limit": 3,
+          "findings": [
+            {
+              "item": "地址实参保持原样；revision_points 的 <段基址>+<块内偏移> 不得出现在代码里",
+              "result": "pass",
+              "basis": "三处编辑行地址均与 before 文本一致：tc_pcie_rw_02.sv:238 `reg_field_test(m_pcie_seq, base_addr+'h04  ,32'h0000_ffff, 32'h0000_0000, 0);`（base_addr='PCIE_BASE_ADDR，偏移 'h04 与 before 同）；tc_pcie_rw_smoke.sv:113/114 与 tc_rtc_05.sv:115/116 均为 `'hd04`，与 before 同；代码中未出现 `0x0d00+0xd04` 组合（'0x0d00' 仅出现在 revision_points[].doc_bitdef.segment）"
+            },
+            {
+              "item": "期望读回值与 input.revision_points[].rtl_change 新行为一致（按 retained_mask 复算）",
+              "result": "pass",
+              "basis": "rtl_effect: retained_mask=0x0000ffff，rule=『期望读回值 = 写入值 & retained_mask』，RTL pcie_register.v:171-172 改为 `{16'h0, dcb_wdata[15:0]}`。复算：tc_pcie_rw_smoke.sv:114 与 tc_rtc_05.sv:116，写值 0x12345678 & 0x0000ffff = 0x0000_5678，代码恰为 `32'h0000_5678`；tc_pcie_rw_02.sv:238 第三参 data_expmask 由 32'hffff_ffff 改为 32'h0000_ffff（=retained_mask，非半反 0xffff_0000），与 reg_field_test body（revision_points.api_semantics：data_rdexp = test_data & data_expmask）一致。三处均未出现掩码取反/应用到相反半部"
+            },
+            {
+              "item": "写入值与检查未被改写/删减/放宽；参数角色（data_expmask / initial_dat / expdata）未混用",
+              "result": "pass",
+              "basis": "tc_pcie_rw_smoke.sv:113 与 tc_rtc_05.sv:115 `set_write(m_pcie_seq,'hd04, 32'h12345678);` 写值未变，仅改其后的 PCIE_REG_RDCHK 第二参（expdata，0x12345678→0x0000_5678），big_d=1 保留、检查未删；tc_pcie_rw_02.sv:238 改的是第三参 data_expmask（signature: reg_field_test(..., data_expmask, initial_dat='0, only_r=0)），第四参 initial_dat 仍为 32'h0000_0000、第五参 only_r 仍为 0，未把 initial_dat 当期望掩码，也未改 reg_field_test body 中的 set_write(..., test_data)"
+            },
+            {
+              "item": "doc_bitdef 与 RTL 新行为的同步性（doc_out_of_sync 观察，不单独作为 rework 依据）",
+              "result": "pass",
+              "basis": "input.revision_points[].doc_bitdef 仅给出 entry 0x0d00#0x0d04、name=pcie_test、reset='0'、rw='R/W'，未提供位域明细；RTL hunk（pcie_register.v:171-172 新增注释『0x0d04 pcie_test: [31:16] reserved, read as 0; only [15:0] R/W』与 `{16'h0, dcb_wdata[15:0]}`）的 [31:16] read-as-0 无法由所给 doc 字段判定为冲突。按判据顺序以 rtl_change 为准；若完整 bitdef 中 [31:16] 仍标 R/W，则由 N12/G2 作为 doc_out_of_sync 暴露给人裁决，不据此判 rework"
+            },
+            {
+              "item": "失败必须让日志出现 *E（同时发 uvm_error）——仅当本轮改动涉及失败路径/检查逻辑时评估",
+              "result": "pass",
+              "basis": "本项标 N/A：3 个用例各 1 处编辑均为期望值（tc_pcie_rw_02.sv:238、tc_pcie_rw_smoke.sv:114、tc_rtc_05.sv:116），未触及失败路径或检查逻辑；被调用的 PCIE_REG_RDCHK body（revision_points.api_semantics, TB/AGENTS/PCIE-Agent/pcie_sequence.sv）未变，仍在 rdata!=expdata 时打印 `*E ... != EXP[...]`"
+            },
+            {
+              "item": "禁止裸 wait(...)，每个（本轮新增/改动的）等待必须有超时兜底",
+              "result": "pass",
+              "basis": "三处编辑行内无 wait(...)（tc_pcie_rw_02.sv:238 为 reg_field_test 调用；tc_pcie_rw_smoke.sv:114、tc_rtc_05.sv:116 为 PCIE_REG_RDCHK 调用）；区域 tc_rtc_05.sv:110-122 内无 wait 语句"
+            },
+            {
+              "item": "禁止固定延时收尾，结束条件用 wait(test_done)",
+              "result": "pass",
+              "basis": "本轮编辑未触及用例结束条件（编辑计数各 1，均为期望值行）。tc_rtc_05.sv:121 的 `#10us;` 位于复位/解复位序列中且为既有代码（before/after 一致），按规则只记 notes/defect，不作为 rework 依据；该延时也非收尾条件"
+            },
+            {
+              "item": "白盒 uvm_hdl_force 必须成对 release 并检查返回值",
+              "result": "pass",
+              "basis": "本项标 N/A：三个 changed_regions（tc_pcie_rw_02.sv:232-244、tc_pcie_rw_smoke.sv:108-120、tc_rtc_05.sv:110-122）内及对应编辑行均无 uvm_hdl_force/uvm_hdl_release"
+            },
+            {
+              "item": "编辑行是否越界 / 是否在提供的变更区域内",
+              "result": "pass",
+              "basis": "每件编辑数=1，均落在各 changed_regions 内：tc_pcie_rw_02.sv `+ 'h04` 行（region 232-244）、tc_pcie_rw_smoke.sv `PCIE_REG_RDCHK('hd04, ...)` 行（region 108-120）、tc_rtc_05.sv 同一行（region 110-122）；coverage_summary: full_files=0、region_files=3、used_bytes=5239，未做也未声称全文复核，只对上述区域负责"
+            }
+          ],
+          "reason": null
+        },
+        "n10_reconcile": {
+          "node": "n10_reconcile",
+          "mode": null,
+          "standin": false,
+          "provider": null,
+          "data": {}
+        }
+      },
+      "n6_applied": {
+        "run_id": "RUN-20261022-181700",
+        "mode": "real",
+        "status": "applied",
+        "sandbox_root": "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/sandbox",
+        "cases": [
+          {
+            "case": "tc_pcie_rw_02",
+            "file": "TESTLIB/tc_pcie_rw_02.sv",
+            "sandbox_path": "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/sandbox/TESTLIB/tc_pcie_rw_02.sv",
+            "md5_before": "eab350bb81d14bb9987bd6691a26df54",
+            "md5_after": "9139589046f1ceea8af59e9249f66f0b",
+            "edits": 1,
+            "applied_edits": [
+              {
+                "line": 238,
+                "old_len": 77,
+                "new_len": 77,
+                "basis": "rev point 0x0d00#0x0d04（display 0x0d00+0xd04 = 段基址 base_addr(0x0d00)+块内偏移 0x004，即 base_addr+'h04）。rtl_change @pcie_register.v lines 171-172: s_reg_test 由 dcb_wdata 改为 {16'h0, dcb_wdata[15:0]}；rtl_effect: retained_mask=0x0000ffff, cleared_mask=0xffff0000。reg_field_test 第 3 个形参为 data_expmask（api_semantics: signature `bit[31:0] data_expmask`），body 中 `data_rdexp = only_r ? initial_dat : test_data & data_expmask`，only_r=0 故期望读回 = test_data & data_expmask；要让期望值与新 RTL 的 [15:0] 保留一致，掩码需改为 0x0000_ffff（test_data 的 [31:16] 现读为 0）。地址实参与写入值未动。doc_bitdef: entry 0x0d00#0x0d04 name=pcie_test, rw=R/W, reset=0（仅给整体 R/W，未细分 [31:16] reserved），与 rtl_change 新行为不同步，以 rtl_change 为准。"
+              }
+            ],
+            "case_state_rc": 0,
+            "source": "env_root",
+            "rationale": "该用例经 pcie_reg_test 访问 base_addr+'h04（= 0x0d00 段 + 0x004，即全局 0x0d04）。本轮 RTL 把 s_reg_test 的写入改为 {16'h0, dcb_wdata[15:0]}（retained_mask=0x0000ffff, cleared_mask=0xffff0000），高位 [31:16] 读回恒 0。因此把 reg_field_test 的期望掩码实参从 32'hffff_ffff 收窄为 32'h0000_ffff，使 data_rdexp = test_data & 0x0000_ffff 与新 RTL 的读回值一致；写入序列、only_r、初始值检查（reset=0）均不受影响，未做其它改动。"
+          },
+          {
+            "case": "tc_pcie_rw_smoke",
+            "file": "TESTLIB/tc_pcie_rw_smoke.sv",
+            "sandbox_path": "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/sandbox/TESTLIB/tc_pcie_rw_smoke.sv",
+            "md5_before": "75f95660d375ac2abd0595efa04b2c63",
+            "md5_after": "18822965d0c39184a3b029c9de8b82fe",
+            "edits": 1,
+            "applied_edits": [
+              {
+                "line": 114,
+                "old_len": 49,
+                "new_len": 50,
+                "basis": "rev point 0x0d00#0x0d04（display 0x0d00+0xd04；用例地址实参 'hd04 = 0x0d04）。rtl_change @pcie_register.v lines 171-172: 写入改为 {16'h0, dcb_wdata[15:0]}；rtl_effect: retained_mask=0x0000ffff，rule「期望读回值 = 写入值 & retained_mask」。第 113 行 set_write 写入值 32'h12345678 不变，故 PCIE_REG_RDCHK 的期望实参 expdata（api_semantics: `PCIE_REG_RDCHK(bit[31:0] addr, bit[31:0] expdata, ...)`，body 中 `if (rdata == expdata)`）改为 32'h0000_5678 = 32'h1234_5678 & 0x0000_ffff。地址、写入值、big_d 参数均未动。"
+              }
+            ],
+            "case_state_rc": 0,
+            "source": "env_root",
+            "rationale": "该用例在 PCIE_REG_RW 中先 set_write('hd04, 32'h12345678) 再 PCIE_REG_RDCHK('hd04, 32'h12345678,1)。新 RTL 对 0x0d04 (pcie_test) 只保留写入数据低 16 位（{16'h0, dcb_wdata[15:0]}，retained_mask=0x0000ffff，cleared_mask=0xffff0000），高位读回为 0，故期望读回值按 rtl_effect 规则取 32'h1234_5678 & 0x0000_ffff = 32'h0000_5678。仅改期望值实参，写入值与地址保持原样。"
+          },
+          {
+            "case": "tc_rtc_05",
+            "file": "TESTLIB/tc_rtc_05.sv",
+            "sandbox_path": "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/sandbox/TESTLIB/tc_rtc_05.sv",
+            "md5_before": "d0649ceebadf6ce32c768ee1230c314f",
+            "md5_after": "5a5c9f73e1f8efc253f4ed976c67bd78",
+            "edits": 1,
+            "applied_edits": [
+              {
+                "line": 116,
+                "old_len": 49,
+                "new_len": 50,
+                "basis": "rev point 0x0d00#0x0d04（display 0x0d00+0xd04；用例地址实参 'hd04 = 0x0d04）。rtl_change @pcie_register.v lines 171-172: s_reg_test 写路径改为 {16'h0, dcb_wdata[15:0]}；rtl_effect: retained_mask=0x0000ffff, cleared_mask=0xffff0000, rule「期望读回值 = 写入值 & retained_mask」。第 115 行 set_write(m_pcie_seq,'hd04, 32'h12345678) 写入值不变，故 RDCHK 的 expdata 实参改为 32'h0000_5678。后续 0x78 等 OT9548 地址不在本 rev point 内，未改。"
+              }
+            ],
+            "case_state_rc": 0,
+            "source": "env_root",
+            "rationale": "tc_rtc_05 的 PCIE_REG_RW 同样对 'hd04（pcie_test, 0x0d00 段 +0x004）做写 32'h12345678 后读校验。新 RTL 仅保留低 16 位并把 [31:16] 读为 0，按 rtl_effect 的 retained_mask=0x0000ffff 计算期望值 32'h0000_5678，故只把 PCIE_REG_RDCHK 的期望实参由 32'h12345678 改为 32'h0000_5678，写入值、地址与其余 RTC/OT9548 检查均不变。"
+          }
+        ],
+        "targets": [
+          {
+            "case": "tc_pcie_rw_02",
+            "file": "TESTLIB/tc_pcie_rw_02.sv",
+            "md5": "eab350bb81d14bb9987bd6691a26df54",
+            "excerpt": {
+              "start": 223,
+              "end": 253,
+              "line": 238,
+              "text": "   223:         reg_field_test(m_pcie_seq, base_addr+'h194  ,32'hffff_ffff, 32'h0000_0000, 0);\n   224:         reg_field_test(m_pcie_seq, base_addr+'h198  ,32'hffff_ffff, 32'h0000_0000, 0);\n   225:         reg_field_test(m_pcie_seq, base_addr+'h19c  ,32'h0000_0000, 32'h0000_0000, 1);\n   226:         reg_field_test(m_pcie_seq, base_addr+'h1a0  ,32'h0000_0000, 32'h0000_0000, 1);\n   227:         reg_field_test(m_pcie_seq, base_addr+'h1a4  ,32'h0000_0000, 32'h0000_0000, 1);\n   228:         reg_field_test(m_pcie_seq, base_addr+'h1a8  ,32'h0000_0000, 32'h0000_0000, 1);\n   229:         reg_field_test(m_pcie_seq, base_addr+'h1ac  ,32'h0000_0000, 32'h0000_0000, 1);\n   230:     endtask\n   231: \n   232:     task pcie_reg_test(pcie_pkg::pcie_seq m_pcie_seq);//cpu only\n   233:         bit[31:0] base_addr;\n   234:         \n   235:         base_addr = `PCIE_BASE_ADDR;\n   236:         \n   237:         reg_field_test(m_pcie_seq, base_addr+'h00  ,32'h0000_0000, 32'h20121017, 1);\n   238:         reg_field_test(m_pcie_seq, base_addr+'h04  ,32'hffff_ffff, 32'h0000_0000, 0);\n   239:         reg_field_test(m_pcie_seq, base_addr+'h08  ,32'hffff_ffff, 32'h0000_0000, 0);\n   240:         for(int j=0;j<4;j++) begin\n   241:           reg_field_test(m_pcie_seq, base_addr+32'h10+j*4,32'h0000_0000,32'h00,1);//0xa00~0xafc\n   242:         end\n   243:         for(int j=0;j<8;j++) begin\n   244:           reg_field_test(m_pcie_seq, base_addr+32'h70+j*4,32'h0000_0000,32'h00,1);//0xa00~0xafc\n   245:         end\n   246:     endtask\n   247: \n   248:     task dom_reg_test(pcie_pkg::pcie_seq m_pcie_seq, int n=0);//cpu only\n   249:         bit[31:0] base_addr;\n   250:         \n   251:         base_addr = `DOME_RTC_ADDR + n*`DOME_RTC_OFFSET;\n   252:         reg_field_test(m_pcie_seq, base_addr+32'h50,32'h0000_0003,32'h00,0);\n   253:         reg_field_test(m_pcie_seq, base_addr+32'h00,32'hffff_ffff,32'h4e,0);"
+            },
+            "excerpts": [
+              {
+                "start": 223,
+                "end": 253,
+                "line": 238,
+                "text": "   223:         reg_field_test(m_pcie_seq, base_addr+'h194  ,32'hffff_ffff, 32'h0000_0000, 0);\n   224:         reg_field_test(m_pcie_seq, base_addr+'h198  ,32'hffff_ffff, 32'h0000_0000, 0);\n   225:         reg_field_test(m_pcie_seq, base_addr+'h19c  ,32'h0000_0000, 32'h0000_0000, 1);\n   226:         reg_field_test(m_pcie_seq, base_addr+'h1a0  ,32'h0000_0000, 32'h0000_0000, 1);\n   227:         reg_field_test(m_pcie_seq, base_addr+'h1a4  ,32'h0000_0000, 32'h0000_0000, 1);\n   228:         reg_field_test(m_pcie_seq, base_addr+'h1a8  ,32'h0000_0000, 32'h0000_0000, 1);\n   229:         reg_field_test(m_pcie_seq, base_addr+'h1ac  ,32'h0000_0000, 32'h0000_0000, 1);\n   230:     endtask\n   231: \n   232:     task pcie_reg_test(pcie_pkg::pcie_seq m_pcie_seq);//cpu only\n   233:         bit[31:0] base_addr;\n   234:         \n   235:         base_addr = `PCIE_BASE_ADDR;\n   236:         \n   237:         reg_field_test(m_pcie_seq, base_addr+'h00  ,32'h0000_0000, 32'h20121017, 1);\n   238:         reg_field_test(m_pcie_seq, base_addr+'h04  ,32'hffff_ffff, 32'h0000_0000, 0);\n   239:         reg_field_test(m_pcie_seq, base_addr+'h08  ,32'hffff_ffff, 32'h0000_0000, 0);\n   240:         for(int j=0;j<4;j++) begin\n   241:           reg_field_test(m_pcie_seq, base_addr+32'h10+j*4,32'h0000_0000,32'h00,1);//0xa00~0xafc\n   242:         end\n   243:         for(int j=0;j<8;j++) begin\n   244:           reg_field_test(m_pcie_seq, base_addr+32'h70+j*4,32'h0000_0000,32'h00,1);//0xa00~0xafc\n   245:         end\n   246:     endtask\n   247: \n   248:     task dom_reg_test(pcie_pkg::pcie_seq m_pcie_seq, int n=0);//cpu only\n   249:         bit[31:0] base_addr;\n   250:         \n   251:         base_addr = `DOME_RTC_ADDR + n*`DOME_RTC_OFFSET;\n   252:         reg_field_test(m_pcie_seq, base_addr+32'h50,32'h0000_0003,32'h00,0);\n   253:         reg_field_test(m_pcie_seq, base_addr+32'h00,32'hffff_ffff,32'h4e,0);"
+              }
+            ],
+            "revision_points": [
+              {
+                "entry_id": "0x0d00#0x0d04",
+                "segment": "0x0d00",
+                "offset": "0xd04",
+                "display": "0x0d00+0xd04",
+                "doc_bitdef": {
+                  "name": "pcie_test",
+                  "segment": "0x0d00",
+                  "offset_global": "0x0d04",
+                  "reset": "0",
+                  "rw": "R/W",
+                  "bitdef_present": true,
+                  "entry_id": "0x0d00#0x0d04",
+                  "source": "run_snapshot:bundle/doc_entries.jsonl"
+                },
+                "rtl_change": [
+                  {
+                    "file": "RTL/SRC/imports/SRC/pcie_controller/pcie_register.v",
+                    "lines": [
+                      171,
+                      172
+                    ],
+                    "offsets": [
+                      "0xd04"
+                    ],
+                    "hunk": "--- \n+++ \n@@ -168,7 +168,8 @@\n \tassign\ts_hit_7x\t=\tdcb_gnt ? (dcb_addr[7:4]\t\t==\t4'h7)\t?\t1'b1 : 1'b0\t:\thit_7x;\n \tassign\ts_hit_8x\t=\tdcb_gnt ? (dcb_addr[7:4]\t\t==\t4'h8)\t?\t1'b1 : 1'b0\t:\thit_8x;\n \t\n-\tassign\ts_reg_test\t\t=\t(write & hit_0x & hit_x4 & dcb_wdval) ? dcb_wdata \t: reg_test;\t\n+\t// 0x0d04 pcie_test: [31:16] reserved, read as 0; only [15:0] R/W\n+\tassign\ts_reg_test\t\t=\t(write & hit_0x & hit_x4 & dcb_wdval) ? {16'h0, dcb_wdata[15:0]} \t: reg_test;\t\n \tassign\ts_little_endian\t=\t(write & hit_0x & hit_x8 & dcb_wdval) ? |dcb_wdata\t: little_endian\t;\n \t\n \tassign\ts_dcb_gnt = \tdcb_gnt | grant_1d | grant_2d ? 1'b0               //ensure write complete"
+                  }
+                ],
+                "api_semantics": [
+                  {
+                    "callee": "reg_field_test",
+                    "defined_in": "<case_file>",
+                    "source": "case_file",
+                    "signature": "task reg_field_test( pcie_pkg::pcie_seq m_pcie_seq, bit[31:0]  addr  , bit[31:0]  data_expmask, bit[31:0]  initial_dat = '0, bit only_r=0); //rev bit is masked",
+                    "body": "bit[31:0]  test_data ;                   \n      bit[31:0]  data_rdexp;\n   \n      m_pcie_seq.PCIE_REG_RDCHK(addr,initial_dat,1);\n      for (int i = 0; i < 5; i++) begin\n        case (i)\n          0: begin test_data  = 32'hffff_ffff;  end\n          1: begin test_data  = 32'h5555_5555;  end\n          2: begin test_data  = 32'haaaa_aaaa;  end\n          3: begin test_data  = 32'h1234_5678;  end\n          4: begin test_data  = 32'h0000_0000;  end\n        endcase\n        data_rdexp = only_r ? initial_dat : test_data & data_expmask; \n        set_write(m_pcie_seq, addr, test_data );//write interal rigister\n        m_pcie_seq.PCIE_REG_RDCHK(addr, data_rdexp,1); //read interal rigister \n      end \n    endtask",
+                    "complete": true
+                  }
+                ],
+                "rtl_effect": {
+                  "pattern": "{16'h0, dcb_wdata[15:0]}",
+                  "retained_bits": "[15:0]",
+                  "retained_mask": "0x0000ffff",
+                  "cleared_bits": "[31:16]",
+                  "cleared_mask": "0xffff0000",
+                  "rule": "期望读回值 = 写入值 & retained_mask；不得把掩码应用到相反的一半",
+                  "zero_prefix_bits": 16,
+                  "source": "RTL/SRC/imports/SRC/pcie_controller/pcie_register.v"
+                }
+              }
+            ],
+            "doc_bitdef": {
+              "name": "pcie_test",
+              "segment": "0x0d00",
+              "offset_global": "0x0d04",
+              "reset": "0",
+              "rw": "R/W",
+              "bitdef_present": true,
+              "entry_id": "0x0d00#0x0d04",
+              "source": "run_snapshot:bundle/doc_entries.jsonl"
+            },
+            "rtl_change": [
+              {
+                "file": "RTL/SRC/imports/SRC/pcie_controller/pcie_register.v",
+                "lines": [
+                  171,
+                  172
+                ],
+                "offsets": [
+                  "0xd04"
+                ],
+                "hunk": "--- \n+++ \n@@ -168,7 +168,8 @@\n \tassign\ts_hit_7x\t=\tdcb_gnt ? (dcb_addr[7:4]\t\t==\t4'h7)\t?\t1'b1 : 1'b0\t:\thit_7x;\n \tassign\ts_hit_8x\t=\tdcb_gnt ? (dcb_addr[7:4]\t\t==\t4'h8)\t?\t1'b1 : 1'b0\t:\thit_8x;\n \t\n-\tassign\ts_reg_test\t\t=\t(write & hit_0x & hit_x4 & dcb_wdval) ? dcb_wdata \t: reg_test;\t\n+\t// 0x0d04 pcie_test: [31:16] reserved, read as 0; only [15:0] R/W\n+\tassign\ts_reg_test\t\t=\t(write & hit_0x & hit_x4 & dcb_wdval) ? {16'h0, dcb_wdata[15:0]} \t: reg_test;\t\n \tassign\ts_little_endian\t=\t(write & hit_0x & hit_x8 & dcb_wdval) ? |dcb_wdata\t: little_endian\t;\n \t\n \tassign\ts_dcb_gnt = \tdcb_gnt | grant_1d | grant_2d ? 1'b0               //ensure write complete"
+              }
+            ],
+            "api_semantics": [
+              {
+                "callee": "reg_field_test",
+                "defined_in": "<case_file>",
+                "source": "case_file",
+                "signature": "task reg_field_test( pcie_pkg::pcie_seq m_pcie_seq, bit[31:0]  addr  , bit[31:0]  data_expmask, bit[31:0]  initial_dat = '0, bit only_r=0); //rev bit is masked",
+                "body": "bit[31:0]  test_data ;                   \n      bit[31:0]  data_rdexp;\n   \n      m_pcie_seq.PCIE_REG_RDCHK(addr,initial_dat,1);\n      for (int i = 0; i < 5; i++) begin\n        case (i)\n          0: begin test_data  = 32'hffff_ffff;  end\n          1: begin test_data  = 32'h5555_5555;  end\n          2: begin test_data  = 32'haaaa_aaaa;  end\n          3: begin test_data  = 32'h1234_5678;  end\n          4: begin test_data  = 32'h0000_0000;  end\n        endcase\n        data_rdexp = only_r ? initial_dat : test_data & data_expmask; \n        set_write(m_pcie_seq, addr, test_data );//write interal rigister\n        m_pcie_seq.PCIE_REG_RDCHK(addr, data_rdexp,1); //read interal rigister \n      end \n    endtask",
+                "complete": true
+              }
+            ],
+            "rtl_effect": {
+              "pattern": "{16'h0, dcb_wdata[15:0]}",
+              "retained_bits": "[15:0]",
+              "retained_mask": "0x0000ffff",
+              "cleared_bits": "[31:16]",
+              "cleared_mask": "0xffff0000",
+              "rule": "期望读回值 = 写入值 & retained_mask；不得把掩码应用到相反的一半",
+              "zero_prefix_bits": 16,
+              "source": "RTL/SRC/imports/SRC/pcie_controller/pcie_register.v"
+            },
+            "why": "offset 直接命中且文档有位定义表（bitdef_present=true）⇒ 必改"
+          },
+          {
+            "case": "tc_pcie_rw_smoke",
+            "file": "TESTLIB/tc_pcie_rw_smoke.sv",
+            "md5": "75f95660d375ac2abd0595efa04b2c63",
+            "excerpt": {
+              "start": 98,
+              "end": 128,
+              "line": 113,
+              "text": "    98:             `uvm_warning(\"WR_55\", $sformatf(\"ADDR:0x%0h Rdata:0x%0h != 32'h5555_5555\", addr, rdata))\n    99:         end \n   100:     endtask \n   101: \n   102:     task PCIE_REG_RW(int pid);\n   103:         bit [31:0] rdata;\n   104:         bit [31:0] addr;\n   105:         string ID = $sformatf(\"PCIE_REG_RW\");\n   106:         pcie_pkg::pcie_seq m_pcie_seq = `CREATE_OBJ(pcie_pkg::pcie_seq, \"m_pcie_seq\")\n   107:         m_pcie_seq.set_sequencer(`PCIE_SQR);\n   108:         `uvm_info(\"SYSTEM_REG_TEST\", \"----------------\", UVM_LOW)\n   109:         set_write(m_pcie_seq,'h8, 32'h12345678);\n   110:         m_pcie_seq.PCIE_REG_RDCHK('h8, 32'h12345678,1);\n   111:         set_write(m_pcie_seq,'h8, 32'hAAAA_AAAA);\n   112:         m_pcie_seq.PCIE_REG_RDCHK('h8, 32'hAAAA_AAAA);\n   113:         set_write(m_pcie_seq,'hd04, 32'h12345678);\n   114:         m_pcie_seq.PCIE_REG_RDCHK('hd04, 32'h12345678,1);\n   115:         set_read(m_pcie_seq,'h4200, rdata);\n   116:         //for (int addr = 'h0000_0000; addr <= 'h0001_FFFF; addr=addr+4)begin \n   117:         //    this.regAA_55_chk(m_pcie_seq, addr);\n   118:         //end \n   119:         set_write(m_pcie_seq,'h808, 32'h81);\n   120:         set_write(m_pcie_seq,'h808, 32'h81);\n   121:         set_read(m_pcie_seq, 'h808, rdata);\n   122:         set_read(m_pcie_seq, 'h80c, rdata);\n   123:         rdata[7] = 1;\n   124:         set_write(m_pcie_seq,'h80c, rdata);\n   125:         set_read(m_pcie_seq, 'h808, rdata);\n   126:         \n   127:         set_read(m_pcie_seq,'h8c, rdata);\n   128:         set_write(m_pcie_seq,'h8c, 32'h12345678);"
+            },
+            "excerpts": [
+              {
+                "start": 98,
+                "end": 128,
+                "line": 113,
+                "text": "    98:             `uvm_warning(\"WR_55\", $sformatf(\"ADDR:0x%0h Rdata:0x%0h != 32'h5555_5555\", addr, rdata))\n    99:         end \n   100:     endtask \n   101: \n   102:     task PCIE_REG_RW(int pid);\n   103:         bit [31:0] rdata;\n   104:         bit [31:0] addr;\n   105:         string ID = $sformatf(\"PCIE_REG_RW\");\n   106:         pcie_pkg::pcie_seq m_pcie_seq = `CREATE_OBJ(pcie_pkg::pcie_seq, \"m_pcie_seq\")\n   107:         m_pcie_seq.set_sequencer(`PCIE_SQR);\n   108:         `uvm_info(\"SYSTEM_REG_TEST\", \"----------------\", UVM_LOW)\n   109:         set_write(m_pcie_seq,'h8, 32'h12345678);\n   110:         m_pcie_seq.PCIE_REG_RDCHK('h8, 32'h12345678,1);\n   111:         set_write(m_pcie_seq,'h8, 32'hAAAA_AAAA);\n   112:         m_pcie_seq.PCIE_REG_RDCHK('h8, 32'hAAAA_AAAA);\n   113:         set_write(m_pcie_seq,'hd04, 32'h12345678);\n   114:         m_pcie_seq.PCIE_REG_RDCHK('hd04, 32'h12345678,1);\n   115:         set_read(m_pcie_seq,'h4200, rdata);\n   116:         //for (int addr = 'h0000_0000; addr <= 'h0001_FFFF; addr=addr+4)begin \n   117:         //    this.regAA_55_chk(m_pcie_seq, addr);\n   118:         //end \n   119:         set_write(m_pcie_seq,'h808, 32'h81);\n   120:         set_write(m_pcie_seq,'h808, 32'h81);\n   121:         set_read(m_pcie_seq, 'h808, rdata);\n   122:         set_read(m_pcie_seq, 'h80c, rdata);\n   123:         rdata[7] = 1;\n   124:         set_write(m_pcie_seq,'h80c, rdata);\n   125:         set_read(m_pcie_seq, 'h808, rdata);\n   126:         \n   127:         set_read(m_pcie_seq,'h8c, rdata);\n   128:         set_write(m_pcie_seq,'h8c, 32'h12345678);"
+              }
+            ],
+            "revision_points": [
+              {
+                "entry_id": "0x0d00#0x0d04",
+                "segment": "0x0d00",
+                "offset": "0xd04",
+                "display": "0x0d00+0xd04",
+                "doc_bitdef": {
+                  "name": "pcie_test",
+                  "segment": "0x0d00",
+                  "offset_global": "0x0d04",
+                  "reset": "0",
+                  "rw": "R/W",
+                  "bitdef_present": true,
+                  "entry_id": "0x0d00#0x0d04",
+                  "source": "run_snapshot:bundle/doc_entries.jsonl"
+                },
+                "rtl_change": [
+                  {
+                    "file": "RTL/SRC/imports/SRC/pcie_controller/pcie_register.v",
+                    "lines": [
+                      171,
+                      172
+                    ],
+                    "offsets": [
+                      "0xd04"
+                    ],
+                    "hunk": "--- \n+++ \n@@ -168,7 +168,8 @@\n \tassign\ts_hit_7x\t=\tdcb_gnt ? (dcb_addr[7:4]\t\t==\t4'h7)\t?\t1'b1 : 1'b0\t:\thit_7x;\n \tassign\ts_hit_8x\t=\tdcb_gnt ? (dcb_addr[7:4]\t\t==\t4'h8)\t?\t1'b1 : 1'b0\t:\thit_8x;\n \t\n-\tassign\ts_reg_test\t\t=\t(write & hit_0x & hit_x4 & dcb_wdval) ? dcb_wdata \t: reg_test;\t\n+\t// 0x0d04 pcie_test: [31:16] reserved, read as 0; only [15:0] R/W\n+\tassign\ts_reg_test\t\t=\t(write & hit_0x & hit_x4 & dcb_wdval) ? {16'h0, dcb_wdata[15:0]} \t: reg_test;\t\n \tassign\ts_little_endian\t=\t(write & hit_0x & hit_x8 & dcb_wdval) ? |dcb_wdata\t: little_endian\t;\n \t\n \tassign\ts_dcb_gnt = \tdcb_gnt | grant_1d | grant_2d ? 1'b0               //ensure write complete"
+                  }
+                ],
+                "api_semantics": [
+                  {
+                    "callee": "set_write",
+                    "defined_in": "<case_file>",
+                    "source": "case_file",
+                    "signature": "task set_write(pcie_pkg::pcie_seq m_pcie_seq, bit [31:0] addr, bit [31:0] wdata);",
+                    "body": "bit [31:0] wdata_tmp;\n      \n      wdata_tmp = {wdata[7:0],wdata[15:8],wdata[23:16],wdata[31:24]};\n      m_pcie_seq.PCIE_REG_WR(addr, wdata_tmp);\n    endtask",
+                    "complete": true
+                  },
+                  {
+                    "callee": "PCIE_REG_RDCHK",
+                    "defined_in": "TB/AGENTS/PCIE-Agent/pcie_sequence.sv",
+                    "source": "scan:TB",
+                    "signature": "virtual task PCIE_REG_RDCHK(bit [31:0] addr, bit [31:0] expdata, bit big_d=0, input bit is34dw = 0, input int gap = 0);",
+                    "body": "string dw_str = is34dw ? \"3DW\" : \"4DW\";\n        bit    m_is34dw = is34dw;\n        bit [31:0] rdata, rdata_tmp;\n        pcie_m_rd_seq  pmr_seq;\n        pmr_seq = pcie_m_rd_seq::type_id::create(\"pmr_seq\");\n        if(p_sequencer.m_pcie_cfg.m_3dw_4dw inside {[0:1]}) begin\n            dw_str = p_sequencer.m_pcie_cfg.m_3dw_4dw ? \"3DW\" : \"4DW\";\n            m_is34dw = p_sequencer.m_pcie_cfg.m_3dw_4dw;\n        end\n        m_atomic.get(1);\n        pmr_seq.s_m_read(.addr(addr), .is34dw(m_is34dw), .gap(gap), .seqr(p_sequencer));\n        glbGetTrigger($sformatf(\"Tag0x%0h@WR_RAM_FPGA_MIRROR@0x%0h\", pmr_seq.my_tag1, addr));\n        m_atomic.put(1);\n        rdata = pcie_pkg::FPGA_RAM_MIRROR[addr][`DATA_WIDTH*8-1:0];\n        if (big_d) begin\n          rdata_tmp = pcie_pkg::FPGA_RAM_MIRROR[addr][`DATA_WIDTH*8-1:0];\n          for (int i=0;i<4;i++) begin\n              rdata[i*8+:8] = rdata_tmp[31-i*8-:8];\n          end\n        end\n        if (rdata == expdata) begin\n        `uvm_info($sformatf(\"PCIE_REG_RD@%0s\",dw_str), $sformatf(\"@ADDR[0x%0h] -> DATA[0x%0h]\",addr,rdata),UVM_LOW);\n        end else begin\n          `uvm_info($sformatf(\"PCIE_REG_RD@%0s\",dw_str), $sformatf(\"*E @ADDR[0x%0h] -> DATA[0x%0h] != EXP[0x%0h]\",addr,rdata,expdata),UVM_LOW);\n        end\n    endtask",
+                    "complete": true
+                  },
+                  {
+                    "callee": "set_read",
+                    "defined_in": "<case_file>",
+                    "source": "case_file",
+                    "signature": "task set_read(pcie_pkg::pcie_seq m_pcie_seq, bit [31:0] addr, output bit [31:0] rdata);",
+                    "body": "bit [31:0] rdata_tmp;\n\n      m_pcie_seq.PCIE_REG_RD(addr, rdata_tmp);\n      rdata = {rdata_tmp[7:0],rdata_tmp[15:8],rdata_tmp[23:16],rdata_tmp[31:24]};\n    endtask",
+                    "complete": true
+                  }
+                ],
+                "rtl_effect": {
+                  "pattern": "{16'h0, dcb_wdata[15:0]}",
+                  "retained_bits": "[15:0]",
+                  "retained_mask": "0x0000ffff",
+                  "cleared_bits": "[31:16]",
+                  "cleared_mask": "0xffff0000",
+                  "rule": "期望读回值 = 写入值 & retained_mask；不得把掩码应用到相反的一半",
+                  "zero_prefix_bits": 16,
+                  "source": "RTL/SRC/imports/SRC/pcie_controller/pcie_register.v"
+                }
+              }
+            ],
+            "doc_bitdef": {
+              "name": "pcie_test",
+              "segment": "0x0d00",
+              "offset_global": "0x0d04",
+              "reset": "0",
+              "rw": "R/W",
+              "bitdef_present": true,
+              "entry_id": "0x0d00#0x0d04",
+              "source": "run_snapshot:bundle/doc_entries.jsonl"
+            },
+            "rtl_change": [
+              {
+                "file": "RTL/SRC/imports/SRC/pcie_controller/pcie_register.v",
+                "lines": [
+                  171,
+                  172
+                ],
+                "offsets": [
+                  "0xd04"
+                ],
+                "hunk": "--- \n+++ \n@@ -168,7 +168,8 @@\n \tassign\ts_hit_7x\t=\tdcb_gnt ? (dcb_addr[7:4]\t\t==\t4'h7)\t?\t1'b1 : 1'b0\t:\thit_7x;\n \tassign\ts_hit_8x\t=\tdcb_gnt ? (dcb_addr[7:4]\t\t==\t4'h8)\t?\t1'b1 : 1'b0\t:\thit_8x;\n \t\n-\tassign\ts_reg_test\t\t=\t(write & hit_0x & hit_x4 & dcb_wdval) ? dcb_wdata \t: reg_test;\t\n+\t// 0x0d04 pcie_test: [31:16] reserved, read as 0; only [15:0] R/W\n+\tassign\ts_reg_test\t\t=\t(write & hit_0x & hit_x4 & dcb_wdval) ? {16'h0, dcb_wdata[15:0]} \t: reg_test;\t\n \tassign\ts_little_endian\t=\t(write & hit_0x & hit_x8 & dcb_wdval) ? |dcb_wdata\t: little_endian\t;\n \t\n \tassign\ts_dcb_gnt = \tdcb_gnt | grant_1d | grant_2d ? 1'b0               //ensure write complete"
+              }
+            ],
+            "api_semantics": [
+              {
+                "callee": "set_write",
+                "defined_in": "<case_file>",
+                "source": "case_file",
+                "signature": "task set_write(pcie_pkg::pcie_seq m_pcie_seq, bit [31:0] addr, bit [31:0] wdata);",
+                "body": "bit [31:0] wdata_tmp;\n      \n      wdata_tmp = {wdata[7:0],wdata[15:8],wdata[23:16],wdata[31:24]};\n      m_pcie_seq.PCIE_REG_WR(addr, wdata_tmp);\n    endtask",
+                "complete": true
+              },
+              {
+                "callee": "PCIE_REG_RDCHK",
+                "defined_in": "TB/AGENTS/PCIE-Agent/pcie_sequence.sv",
+                "source": "scan:TB",
+                "signature": "virtual task PCIE_REG_RDCHK(bit [31:0] addr, bit [31:0] expdata, bit big_d=0, input bit is34dw = 0, input int gap = 0);",
+                "body": "string dw_str = is34dw ? \"3DW\" : \"4DW\";\n        bit    m_is34dw = is34dw;\n        bit [31:0] rdata, rdata_tmp;\n        pcie_m_rd_seq  pmr_seq;\n        pmr_seq = pcie_m_rd_seq::type_id::create(\"pmr_seq\");\n        if(p_sequencer.m_pcie_cfg.m_3dw_4dw inside {[0:1]}) begin\n            dw_str = p_sequencer.m_pcie_cfg.m_3dw_4dw ? \"3DW\" : \"4DW\";\n            m_is34dw = p_sequencer.m_pcie_cfg.m_3dw_4dw;\n        end\n        m_atomic.get(1);\n        pmr_seq.s_m_read(.addr(addr), .is34dw(m_is34dw), .gap(gap), .seqr(p_sequencer));\n        glbGetTrigger($sformatf(\"Tag0x%0h@WR_RAM_FPGA_MIRROR@0x%0h\", pmr_seq.my_tag1, addr));\n        m_atomic.put(1);\n        rdata = pcie_pkg::FPGA_RAM_MIRROR[addr][`DATA_WIDTH*8-1:0];\n        if (big_d) begin\n          rdata_tmp = pcie_pkg::FPGA_RAM_MIRROR[addr][`DATA_WIDTH*8-1:0];\n          for (int i=0;i<4;i++) begin\n              rdata[i*8+:8] = rdata_tmp[31-i*8-:8];\n          end\n        end\n        if (rdata == expdata) begin\n        `uvm_info($sformatf(\"PCIE_REG_RD@%0s\",dw_str), $sformatf(\"@ADDR[0x%0h] -> DATA[0x%0h]\",addr,rdata),UVM_LOW);\n        end else begin\n          `uvm_info($sformatf(\"PCIE_REG_RD@%0s\",dw_str), $sformatf(\"*E @ADDR[0x%0h] -> DATA[0x%0h] != EXP[0x%0h]\",addr,rdata,expdata),UVM_LOW);\n        end\n    endtask",
+                "complete": true
+              },
+              {
+                "callee": "set_read",
+                "defined_in": "<case_file>",
+                "source": "case_file",
+                "signature": "task set_read(pcie_pkg::pcie_seq m_pcie_seq, bit [31:0] addr, output bit [31:0] rdata);",
+                "body": "bit [31:0] rdata_tmp;\n\n      m_pcie_seq.PCIE_REG_RD(addr, rdata_tmp);\n      rdata = {rdata_tmp[7:0],rdata_tmp[15:8],rdata_tmp[23:16],rdata_tmp[31:24]};\n    endtask",
+                "complete": true
+              }
+            ],
+            "rtl_effect": {
+              "pattern": "{16'h0, dcb_wdata[15:0]}",
+              "retained_bits": "[15:0]",
+              "retained_mask": "0x0000ffff",
+              "cleared_bits": "[31:16]",
+              "cleared_mask": "0xffff0000",
+              "rule": "期望读回值 = 写入值 & retained_mask；不得把掩码应用到相反的一半",
+              "zero_prefix_bits": 16,
+              "source": "RTL/SRC/imports/SRC/pcie_controller/pcie_register.v"
+            },
+            "why": "offset 直接命中且文档有位定义表（bitdef_present=true）⇒ 必改"
+          },
+          {
+            "case": "tc_rtc_05",
+            "file": "TESTLIB/tc_rtc_05.sv",
+            "md5": "d0649ceebadf6ce32c768ee1230c314f",
+            "excerpt": {
+              "start": 100,
+              "end": 130,
+              "line": 115,
+              "text": "   100:             `uvm_warning(\"WR_55\", $sformatf(\"ADDR:0x%0h Rdata:0x%0h != 32'h5555_5555\", addr, rdata))\n   101:         end \n   102:     endtask \n   103: \n   104:     task PCIE_REG_RW(int pid);\n   105:         bit [31:0] rdata;\n   106:         bit [31:0] addr;\n   107:         string ID = $sformatf(\"PCIE_REG_RW\");\n   108:         pcie_pkg::pcie_seq m_pcie_seq = `CREATE_OBJ(pcie_pkg::pcie_seq, \"m_pcie_seq\")\n   109:         m_pcie_seq.set_sequencer(`PCIE_SQR);\n   110:         `uvm_info(\"SYSTEM_REG_TEST\", \"----------------\", UVM_LOW)\n   111:         set_write(m_pcie_seq,'h8, 32'h12345678);\n   112:         m_pcie_seq.PCIE_REG_RDCHK('h8, 32'h12345678,1);\n   113:         set_write(m_pcie_seq,'h8, 32'hAAAA_AAAA);\n   114:         m_pcie_seq.PCIE_REG_RDCHK('h8, 32'hAAAA_AAAA);\n   115:         set_write(m_pcie_seq,'hd04, 32'h12345678);\n   116:         m_pcie_seq.PCIE_REG_RDCHK('hd04, 32'h12345678,1);\n   117:         \n   118:         for(int i = 0; i < `FPGA_RTC_NUM; i++) begin\n   119:           m_pcie_seq.PCIE_REG_RDCHK(`FPGA_OT9548_ADDR + i*32'h200 + 32'h78, 32'h1,1);\n   120:           set_write(m_pcie_seq, `FPGA_OT9548_ADDR + i*32'h200 + 32'h78, 0);//复位\n   121:           #10us;\n   122:           set_write(m_pcie_seq, `FPGA_OT9548_ADDR + i*32'h200 + 32'h78, 1);///解复位\n   123:         end\n   124:         #20us;\n   125:         for(int i = 0; i < `FPGA_RTC_NUM; i++) begin\n   126:           `SPI_MST(pid).set_rdchk(`FPGA_OT9548_ADDR + i*32'h200 + 32'h78, 32'h1);\n   127:           `SPI_MST(pid).set_write(`FPGA_OT9548_ADDR + i*32'h200 + 32'h78, 0);//复位\n   128:           #10us;\n   129:           `SPI_MST(pid).set_write(`FPGA_OT9548_ADDR + i*32'h200 + 32'h78, 1);//解复位\n   130:         end"
+            },
+            "excerpts": [
+              {
+                "start": 100,
+                "end": 130,
+                "line": 115,
+                "text": "   100:             `uvm_warning(\"WR_55\", $sformatf(\"ADDR:0x%0h Rdata:0x%0h != 32'h5555_5555\", addr, rdata))\n   101:         end \n   102:     endtask \n   103: \n   104:     task PCIE_REG_RW(int pid);\n   105:         bit [31:0] rdata;\n   106:         bit [31:0] addr;\n   107:         string ID = $sformatf(\"PCIE_REG_RW\");\n   108:         pcie_pkg::pcie_seq m_pcie_seq = `CREATE_OBJ(pcie_pkg::pcie_seq, \"m_pcie_seq\")\n   109:         m_pcie_seq.set_sequencer(`PCIE_SQR);\n   110:         `uvm_info(\"SYSTEM_REG_TEST\", \"----------------\", UVM_LOW)\n   111:         set_write(m_pcie_seq,'h8, 32'h12345678);\n   112:         m_pcie_seq.PCIE_REG_RDCHK('h8, 32'h12345678,1);\n   113:         set_write(m_pcie_seq,'h8, 32'hAAAA_AAAA);\n   114:         m_pcie_seq.PCIE_REG_RDCHK('h8, 32'hAAAA_AAAA);\n   115:         set_write(m_pcie_seq,'hd04, 32'h12345678);\n   116:         m_pcie_seq.PCIE_REG_RDCHK('hd04, 32'h12345678,1);\n   117:         \n   118:         for(int i = 0; i < `FPGA_RTC_NUM; i++) begin\n   119:           m_pcie_seq.PCIE_REG_RDCHK(`FPGA_OT9548_ADDR + i*32'h200 + 32'h78, 32'h1,1);\n   120:           set_write(m_pcie_seq, `FPGA_OT9548_ADDR + i*32'h200 + 32'h78, 0);//复位\n   121:           #10us;\n   122:           set_write(m_pcie_seq, `FPGA_OT9548_ADDR + i*32'h200 + 32'h78, 1);///解复位\n   123:         end\n   124:         #20us;\n   125:         for(int i = 0; i < `FPGA_RTC_NUM; i++) begin\n   126:           `SPI_MST(pid).set_rdchk(`FPGA_OT9548_ADDR + i*32'h200 + 32'h78, 32'h1);\n   127:           `SPI_MST(pid).set_write(`FPGA_OT9548_ADDR + i*32'h200 + 32'h78, 0);//复位\n   128:           #10us;\n   129:           `SPI_MST(pid).set_write(`FPGA_OT9548_ADDR + i*32'h200 + 32'h78, 1);//解复位\n   130:         end"
+              }
+            ],
+            "revision_points": [
+              {
+                "entry_id": "0x0d00#0x0d04",
+                "segment": "0x0d00",
+                "offset": "0xd04",
+                "display": "0x0d00+0xd04",
+                "doc_bitdef": {
+                  "name": "pcie_test",
+                  "segment": "0x0d00",
+                  "offset_global": "0x0d04",
+                  "reset": "0",
+                  "rw": "R/W",
+                  "bitdef_present": true,
+                  "entry_id": "0x0d00#0x0d04",
+                  "source": "run_snapshot:bundle/doc_entries.jsonl"
+                },
+                "rtl_change": [
+                  {
+                    "file": "RTL/SRC/imports/SRC/pcie_controller/pcie_register.v",
+                    "lines": [
+                      171,
+                      172
+                    ],
+                    "offsets": [
+                      "0xd04"
+                    ],
+                    "hunk": "--- \n+++ \n@@ -168,7 +168,8 @@\n \tassign\ts_hit_7x\t=\tdcb_gnt ? (dcb_addr[7:4]\t\t==\t4'h7)\t?\t1'b1 : 1'b0\t:\thit_7x;\n \tassign\ts_hit_8x\t=\tdcb_gnt ? (dcb_addr[7:4]\t\t==\t4'h8)\t?\t1'b1 : 1'b0\t:\thit_8x;\n \t\n-\tassign\ts_reg_test\t\t=\t(write & hit_0x & hit_x4 & dcb_wdval) ? dcb_wdata \t: reg_test;\t\n+\t// 0x0d04 pcie_test: [31:16] reserved, read as 0; only [15:0] R/W\n+\tassign\ts_reg_test\t\t=\t(write & hit_0x & hit_x4 & dcb_wdval) ? {16'h0, dcb_wdata[15:0]} \t: reg_test;\t\n \tassign\ts_little_endian\t=\t(write & hit_0x & hit_x8 & dcb_wdval) ? |dcb_wdata\t: little_endian\t;\n \t\n \tassign\ts_dcb_gnt = \tdcb_gnt | grant_1d | grant_2d ? 1'b0               //ensure write complete"
+                  }
+                ],
+                "api_semantics": [
+                  {
+                    "callee": "set_write",
+                    "defined_in": "<case_file>",
+                    "source": "case_file",
+                    "signature": "task set_write(pcie_pkg::pcie_seq m_pcie_seq, bit [31:0] addr, bit [31:0] wdata);",
+                    "body": "bit [31:0] wdata_tmp;\n      \n      wdata_tmp = {wdata[7:0],wdata[15:8],wdata[23:16],wdata[31:24]};\n      m_pcie_seq.PCIE_REG_WR(addr, wdata_tmp);\n    endtask",
+                    "complete": true
+                  },
+                  {
+                    "callee": "PCIE_REG_RDCHK",
+                    "defined_in": "TB/AGENTS/PCIE-Agent/pcie_sequence.sv",
+                    "source": "scan:TB",
+                    "signature": "virtual task PCIE_REG_RDCHK(bit [31:0] addr, bit [31:0] expdata, bit big_d=0, input bit is34dw = 0, input int gap = 0);",
+                    "body": "string dw_str = is34dw ? \"3DW\" : \"4DW\";\n        bit    m_is34dw = is34dw;\n        bit [31:0] rdata, rdata_tmp;\n        pcie_m_rd_seq  pmr_seq;\n        pmr_seq = pcie_m_rd_seq::type_id::create(\"pmr_seq\");\n        if(p_sequencer.m_pcie_cfg.m_3dw_4dw inside {[0:1]}) begin\n            dw_str = p_sequencer.m_pcie_cfg.m_3dw_4dw ? \"3DW\" : \"4DW\";\n            m_is34dw = p_sequencer.m_pcie_cfg.m_3dw_4dw;\n        end\n        m_atomic.get(1);\n        pmr_seq.s_m_read(.addr(addr), .is34dw(m_is34dw), .gap(gap), .seqr(p_sequencer));\n        glbGetTrigger($sformatf(\"Tag0x%0h@WR_RAM_FPGA_MIRROR@0x%0h\", pmr_seq.my_tag1, addr));\n        m_atomic.put(1);\n        rdata = pcie_pkg::FPGA_RAM_MIRROR[addr][`DATA_WIDTH*8-1:0];\n        if (big_d) begin\n          rdata_tmp = pcie_pkg::FPGA_RAM_MIRROR[addr][`DATA_WIDTH*8-1:0];\n          for (int i=0;i<4;i++) begin\n              rdata[i*8+:8] = rdata_tmp[31-i*8-:8];\n          end\n        end\n        if (rdata == expdata) begin\n        `uvm_info($sformatf(\"PCIE_REG_RD@%0s\",dw_str), $sformatf(\"@ADDR[0x%0h] -> DATA[0x%0h]\",addr,rdata),UVM_LOW);\n        end else begin\n          `uvm_info($sformatf(\"PCIE_REG_RD@%0s\",dw_str), $sformatf(\"*E @ADDR[0x%0h] -> DATA[0x%0h] != EXP[0x%0h]\",addr,rdata,expdata),UVM_LOW);\n        end\n    endtask",
+                    "complete": true
+                  }
+                ],
+                "rtl_effect": {
+                  "pattern": "{16'h0, dcb_wdata[15:0]}",
+                  "retained_bits": "[15:0]",
+                  "retained_mask": "0x0000ffff",
+                  "cleared_bits": "[31:16]",
+                  "cleared_mask": "0xffff0000",
+                  "rule": "期望读回值 = 写入值 & retained_mask；不得把掩码应用到相反的一半",
+                  "zero_prefix_bits": 16,
+                  "source": "RTL/SRC/imports/SRC/pcie_controller/pcie_register.v"
+                }
+              }
+            ],
+            "doc_bitdef": {
+              "name": "pcie_test",
+              "segment": "0x0d00",
+              "offset_global": "0x0d04",
+              "reset": "0",
+              "rw": "R/W",
+              "bitdef_present": true,
+              "entry_id": "0x0d00#0x0d04",
+              "source": "run_snapshot:bundle/doc_entries.jsonl"
+            },
+            "rtl_change": [
+              {
+                "file": "RTL/SRC/imports/SRC/pcie_controller/pcie_register.v",
+                "lines": [
+                  171,
+                  172
+                ],
+                "offsets": [
+                  "0xd04"
+                ],
+                "hunk": "--- \n+++ \n@@ -168,7 +168,8 @@\n \tassign\ts_hit_7x\t=\tdcb_gnt ? (dcb_addr[7:4]\t\t==\t4'h7)\t?\t1'b1 : 1'b0\t:\thit_7x;\n \tassign\ts_hit_8x\t=\tdcb_gnt ? (dcb_addr[7:4]\t\t==\t4'h8)\t?\t1'b1 : 1'b0\t:\thit_8x;\n \t\n-\tassign\ts_reg_test\t\t=\t(write & hit_0x & hit_x4 & dcb_wdval) ? dcb_wdata \t: reg_test;\t\n+\t// 0x0d04 pcie_test: [31:16] reserved, read as 0; only [15:0] R/W\n+\tassign\ts_reg_test\t\t=\t(write & hit_0x & hit_x4 & dcb_wdval) ? {16'h0, dcb_wdata[15:0]} \t: reg_test;\t\n \tassign\ts_little_endian\t=\t(write & hit_0x & hit_x8 & dcb_wdval) ? |dcb_wdata\t: little_endian\t;\n \t\n \tassign\ts_dcb_gnt = \tdcb_gnt | grant_1d | grant_2d ? 1'b0               //ensure write complete"
+              }
+            ],
+            "api_semantics": [
+              {
+                "callee": "set_write",
+                "defined_in": "<case_file>",
+                "source": "case_file",
+                "signature": "task set_write(pcie_pkg::pcie_seq m_pcie_seq, bit [31:0] addr, bit [31:0] wdata);",
+                "body": "bit [31:0] wdata_tmp;\n      \n      wdata_tmp = {wdata[7:0],wdata[15:8],wdata[23:16],wdata[31:24]};\n      m_pcie_seq.PCIE_REG_WR(addr, wdata_tmp);\n    endtask",
+                "complete": true
+              },
+              {
+                "callee": "PCIE_REG_RDCHK",
+                "defined_in": "TB/AGENTS/PCIE-Agent/pcie_sequence.sv",
+                "source": "scan:TB",
+                "signature": "virtual task PCIE_REG_RDCHK(bit [31:0] addr, bit [31:0] expdata, bit big_d=0, input bit is34dw = 0, input int gap = 0);",
+                "body": "string dw_str = is34dw ? \"3DW\" : \"4DW\";\n        bit    m_is34dw = is34dw;\n        bit [31:0] rdata, rdata_tmp;\n        pcie_m_rd_seq  pmr_seq;\n        pmr_seq = pcie_m_rd_seq::type_id::create(\"pmr_seq\");\n        if(p_sequencer.m_pcie_cfg.m_3dw_4dw inside {[0:1]}) begin\n            dw_str = p_sequencer.m_pcie_cfg.m_3dw_4dw ? \"3DW\" : \"4DW\";\n            m_is34dw = p_sequencer.m_pcie_cfg.m_3dw_4dw;\n        end\n        m_atomic.get(1);\n        pmr_seq.s_m_read(.addr(addr), .is34dw(m_is34dw), .gap(gap), .seqr(p_sequencer));\n        glbGetTrigger($sformatf(\"Tag0x%0h@WR_RAM_FPGA_MIRROR@0x%0h\", pmr_seq.my_tag1, addr));\n        m_atomic.put(1);\n        rdata = pcie_pkg::FPGA_RAM_MIRROR[addr][`DATA_WIDTH*8-1:0];\n        if (big_d) begin\n          rdata_tmp = pcie_pkg::FPGA_RAM_MIRROR[addr][`DATA_WIDTH*8-1:0];\n          for (int i=0;i<4;i++) begin\n              rdata[i*8+:8] = rdata_tmp[31-i*8-:8];\n          end\n        end\n        if (rdata == expdata) begin\n        `uvm_info($sformatf(\"PCIE_REG_RD@%0s\",dw_str), $sformatf(\"@ADDR[0x%0h] -> DATA[0x%0h]\",addr,rdata),UVM_LOW);\n        end else begin\n          `uvm_info($sformatf(\"PCIE_REG_RD@%0s\",dw_str), $sformatf(\"*E @ADDR[0x%0h] -> DATA[0x%0h] != EXP[0x%0h]\",addr,rdata,expdata),UVM_LOW);\n        end\n    endtask",
+                "complete": true
+              }
+            ],
+            "rtl_effect": {
+              "pattern": "{16'h0, dcb_wdata[15:0]}",
+              "retained_bits": "[15:0]",
+              "retained_mask": "0x0000ffff",
+              "cleared_bits": "[31:16]",
+              "cleared_mask": "0xffff0000",
+              "rule": "期望读回值 = 写入值 & retained_mask；不得把掩码应用到相反的一半",
+              "zero_prefix_bits": 16,
+              "source": "RTL/SRC/imports/SRC/pcie_controller/pcie_register.v"
+            },
+            "why": "offset 直接命中且文档有位定义表（bitdef_present=true）⇒ 必改"
+          }
+        ],
+        "count": 3,
+        "case_state_path": "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/case_states.json"
+      },
+      "n3_digest": {
+        "path": "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/n3_digest.md",
+        "exists": true
+      },
+      "host_trace": {
+        "path": "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/staged/mock_change_applied.json",
+        "exists": false,
+        "count": 0,
+        "changes": [],
+        "applied_at": null,
+        "baseline_from": null,
+        "error": "缺失"
+      },
+      "ledger_notes": [],
+      "conflicts": {
+        "total": 72,
+        "expected_total": 72,
+        "blocks_release": 72,
+        "open": 72,
+        "source": "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/conflicts/conflicts.json",
+        "consistent": true
+      },
+      "conflict_items": [
+        {
+          "id": "C1",
+          "blocks_release": true,
+          "status": "open"
+        },
+        {
+          "id": "C2",
+          "blocks_release": true,
+          "status": "open"
+        },
+        {
+          "id": "C3",
+          "blocks_release": true,
+          "status": "open"
+        },
+        {
+          "id": "C4",
+          "blocks_release": true,
+          "status": "open"
+        },
+        {
+          "id": "C5",
+          "blocks_release": true,
+          "status": "open"
+        },
+        {
+          "id": "C6",
+          "blocks_release": true,
+          "status": "open"
+        },
+        {
+          "id": "C7",
+          "blocks_release": true,
+          "status": "open"
+        },
+        {
+          "id": "C8",
+          "blocks_release": true,
+          "status": "open"
+        },
+        {
+          "id": "C9",
+          "blocks_release": true,
+          "status": "open"
+        },
+        {
+          "id": "C10",
+          "blocks_release": true,
+          "status": "open"
+        },
+        {
+          "id": "C11",
+          "blocks_release": true,
+          "status": "open"
+        },
+        {
+          "id": "C12",
+          "blocks_release": true,
+          "status": "open"
+        }
+      ],
+      "baselines": [
+        {
+          "name": "v0",
+          "manifest": "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/baselines/v0/manifest.json",
+          "parent": null,
+          "created_at": "2026-10-22T17:29:12+0800"
+        }
+      ],
+      "model_modes": {
+        "n8_check": "live",
+        "n11_review": "live",
+        "n12_report": "live"
+      },
+      "standin_model_nodes": false,
+      "standin_nodes": [],
+      "entry_decisions_required": true,
+      "unresolved_entries": [
+        "RTL/SRC/imports/SRC/pcie_controller/pcie_register.v"
+      ],
+      "decision_record": null,
+      "invariant_note": "I3：两套口径均为 0 才可判跑通；I2：待验用例不得称跑通；I4：清单未清零不发版。",
+      "actor_policy": "actor_kind 必须为 human；rehearsal/模型 actor 在 require-signed 下被拒（I6 / F-GATE-01）。",
+      "refs": [
+        "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/n2_diff.json",
+        "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/case_states.json",
+        "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/n3_digest.md",
+        "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence"
+      ],
+      "run_id": "RUN-20261022-181700",
+      "cycle": "0-0",
+      "decision_options": [
+        {
+          "value": "accept",
+          "label": "接受报告",
+          "requires_reason": false
+        },
+        {
+          "value": "rework",
+          "label": "返工",
+          "requires_reason": true
+        }
+      ],
+      "gate_node": "N13",
+      "authority_enums": {
+        "G1_diff_confirm": [
+          "confirmed",
+          "ignored",
+          "disputed",
+          "pending"
+        ],
+        "G2_report_accept": [
+          "accept",
+          "rework",
+          "pending"
+        ],
+        "G3_regression_decision": [
+          "full_now",
+          "subset_only",
+          "milestone_only",
+          "defer",
+          "pending"
+        ]
+      }
+    },
+    "resume_event": null,
+    "resume_to": "self",
+    "status": "waiting",
+    "source_execution_id": "5302671ad8a44b0d8038efb8a31739e5",
+    "source_flow_name": "change-impact-loop",
+    "source_operator_id": "chunk-edb98ce3f0d912c5",
+    "source_signal": {
+      "id": "b0f901d0270d40f5aab903aecfcbd0fc",
+      "trigger_event": "Chunk[n12_report]-chunk-25cb767a4d82be75",
+      "trigger_type": "event",
+      "value": {
+        "mode": "live",
+        "standin": false,
+        "provider": "origin-deepseek-v4-1-flash",
+        "plugin": "OpenAIResponsesCompatible",
+        "model_call_failed": false,
+        "error": null,
+        "validation": {
+          "ok": true,
+          "problems": [],
+          "accepted": {
+            "title": "RUN-20261022-181700 评估报告草稿（N12）",
+            "sections": [
+              {
+                "heading": "本轮改了什么",
+                "body_md": "受影响用例（`state_counts.已修订待验`: 3）：\n\n- `tc_pcie_rw_02`：`TESTLIB/tc_pcie_rw_02.sv`，`md5_before` 为 `eab350bb81d14bb9987bd6691a26df54`，`md5_after` 为 `9139589046f1ceea8af59e9249f66f0b`；`compile_rc`: 0，`static_check`: pass，`state`: 已修订待验。\n- `tc_pcie_rw_smoke`：`TESTLIB/tc_pcie_rw_smoke.sv`，`md5_before` 为 `75f95660d375ac2abd0595efa04b2c63`，`md5_after` 为 `18822965d0c39184a3b029c9de8b82fe`；`compile_rc`: 0，`static_check`: pass，`state`: 已修订待验。\n- `tc_rtc_05`：`TESTLIB/tc_rtc_05.sv`，`md5_before` 为 `d0649ceebadf6ce32c768ee1230c314f`，`md5_after` 为 `5a5c9f73e1f8efc253f4ed976c67bd78`；`compile_rc`: 0，`static_check`: pass，`state`: 已修订待验。\n\n以上用例 `updated_by` 为 `loop:N10`；`note` 均为“N10：卡点D 判据未通过 ⇒ 保持待验，不得称跑通”。本报告仅形成评估草稿，不替人做发版决策。",
+                "refs": [
+                  "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/case_states.json",
+                  "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/sandbox/TESTLIB/tc_pcie_rw_02.sv",
+                  "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/sandbox/TESTLIB/tc_pcie_rw_smoke.sv",
+                  "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/sandbox/TESTLIB/tc_rtc_05.sv"
+                ]
+              },
+              {
+                "heading": "两套口径（并列陈述）",
+                "body_md": "两套口径分别取、分别存，不得互相替代（doc/AGENTS.md 红线 3 / spec I3）。\n\n**口径一（`*E` 文本行数，逐用例求和）**：`value`: 1687，`zero`: false。`refs` 覆盖 line 357、line 360、line 363、line 366、line 374、line 35152、line 35153、line 35154。\n\n**口径二（UVM Report Summary，逐用例求和）**：`value`: {UVM_ERROR: 0, UVM_FATAL: 0, UVM_INFO: 35066, UVM_WARNING: 0}，`zero`: true。\n\n逐用例并列：\n\n- `tc_pcie_rw_02`：口径一 `value`: 1687，`zero`: false；口径二 UVM_ERROR: 0、UVM_FATAL: 0、UVM_INFO: 34930、UVM_WARNING: 0，`zero`: true；`both_zero`: false。\n- `tc_pcie_rw_smoke`：口径一 `value`: 0，`zero`: true；口径二 UVM_ERROR: 0、UVM_FATAL: 0、UVM_INFO: 57、UVM_WARNING: 0，`zero`: true；`both_zero`: true。\n- `tc_rtc_05`：口径一 `value`: 0，`zero`: true；口径二 UVM_ERROR: 0、UVM_FATAL: 0、UVM_INFO: 79、UVM_WARNING: 0，`zero`: true；`both_zero`: true。\n\n**口径二为 0 不足以判绿**：口径一非 0 或印记不一致时，不得判跑通。",
+                "refs": [
+                  "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-193218_tc_pcie_rw_02_1_run.log",
+                  "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-195119_tc_pcie_rw_smoke_1_run.log",
+                  "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-195230_tc_rtc_05_1_run.log"
+                ]
+              },
+              {
+                "heading": "观测印记",
+                "body_md": "`imprints`: {}；逐用例 `tc_pcie_rw_02`、`tc_pcie_rw_smoke`、`tc_rtc_05` 的 `imprints` 均为 {}。各用例均无预期观测点印记，触发 I3：预期观测点必须留下通过印记。",
+                "refs": [
+                  "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-193218_tc_pcie_rw_02_1_run.log",
+                  "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-195119_tc_pcie_rw_smoke_1_run.log",
+                  "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-195230_tc_rtc_05_1_run.log"
+                ]
+              },
+              {
+                "heading": "受影响用例态与判定事实",
+                "body_md": "`case_states.pending_verified`: 3；`state_counts.已修订待验`: 3；`rework_cycles.limit`: 3；`rework_cycles.n6_n8_cycles`: 0。\n\n| case | state | static_check | compile_rc | verdict.passed | reasons |\n|---|---|---|---|---|---|\n| `tc_pcie_rw_02` | 已修订待验 | pass | 0 | false | 口径一 = 1687 ≠ 0；无预期观测点印记（I3：预期观测点必须留下通过印记） |\n| `tc_pcie_rw_smoke` | 已修订待验 | pass | 0 | false | 无预期观测点印记（I3：预期观测点必须留下通过印记） |\n| `tc_rtc_05` | 已修订待验 | pass | 0 | false | 无预期观测点印记（I3：预期观测点必须留下通过印记） |\n\n聚合判据 = 各用例 I3 判据的合取（含印记三向一致）；`verdict.passed`: false。",
+                "refs": [
+                  "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/case_states.json",
+                  "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-193218_tc_pcie_rw_02_1_run.log",
+                  "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-195119_tc_pcie_rw_smoke_1_run.log",
+                  "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-195230_tc_rtc_05_1_run.log"
+                ]
+              },
+              {
+                "heading": "未闭环项与冲突",
+                "body_md": "- `conflicts.total`: 72；`conflicts.blocks_release`: 72。\n- `pending_verified`: 3；`state_counts.已修订待验`: 3。\n- `imprints`: {}；各用例均无预期观测点印记。\n- `tc_pcie_rw_02`：口径一 = 1687 ≠ 0，且无预期观测点印记；不得称跑通。\n- `tc_pcie_rw_smoke`：口径二为 0，但无预期观测点印记；口径二为 0 不足以判绿。\n- `tc_rtc_05`：口径二为 0，但无预期观测点印记；口径二为 0 不足以判绿。\n- `rework_cycles.n6_n8_cycles`: 0，`rework_cycles.limit`: 3。\n\n本报告仅陈述当前事实与 blockers，不替人做发版决策；不以历史 approved_experiences 替代当前 Host 校验。",
+                "refs": [
+                  "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/case_states.json",
+                  "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-193218_tc_pcie_rw_02_1_run.log",
+                  "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-195119_tc_pcie_rw_smoke_1_run.log",
+                  "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-195230_tc_rtc_05_1_run.log"
+                ]
+              }
+            ],
+            "counts_quoted": {
+              "koutou1": {
+                "label": "口径一（`*E` 文本行数，逐用例求和）",
+                "refs": [
+                  "line 357: UVM_INFO pcie_sequence.sv(598) @ 153.273 us [PCIE_REG_RD@3DW] *E @ADDR[0x84] -> DATA[0x0] != EXP[0xffffffff]",
+                  "line 360: UVM_INFO pcie_sequence.sv(598) @ 153.593 us [PCIE_REG_RD@3DW] *E @ADDR[0x84] -> DATA[0x0] != EXP[0x55555555]",
+                  "line 363: UVM_INFO pcie_sequence.sv(598) @ 153.913 us [PCIE_REG_RD@3DW] *E @ADDR[0x84] -> DATA[0x0] != EXP[0xaaaaaaaa]",
+                  "line 366: UVM_INFO pcie_sequence.sv(598) @ 154.233 us [PCIE_REG_RD@3DW] *E @ADDR[0x84] -> DATA[0x0] != EXP[0x12345678]",
+                  "line 374: UVM_INFO pcie_sequence.sv(598) @ 155.113 us [PCIE_REG_RD@3DW] *E @ADDR[0x88] -> DATA[0xff] != EXP[0x3]",
+                  "line 35152: UVM_INFO :34930",
+                  "line 35153: UVM_WARNING :    0",
+                  "line 35154: UVM_ERROR :    0"
+                ],
+                "value": 1687,
+                "zero": false
+              },
+              "koutou2": {
+                "label": "口径二（UVM Report Summary，逐用例求和）",
+                "refs": [],
+                "value": {
+                  "UVM_ERROR": 0,
+                  "UVM_FATAL": 0,
+                  "UVM_INFO": 35066,
+                  "UVM_WARNING": 0
+                },
+                "zero": true
+              }
+            },
+            "authoritative_counts": {
+              "koutou1": 1687,
+              "koutou2": {
+                "UVM_INFO": 35066,
+                "UVM_WARNING": 0,
+                "UVM_ERROR": 0,
+                "UVM_FATAL": 0
+              }
+            },
+            "counts_match_authority": true,
+            "claimed_verdict": "not_passed",
+            "expected_claimed_verdict": "not_passed",
+            "open_items": [
+              "conflicts.total: 72；conflicts.blocks_release: 72。",
+              "pending_verified: 3；state_counts.已修订待验: 3。",
+              "imprints: {}；各用例均无预期观测点印记（I3：预期观测点必须留下通过印记）。",
+              "tc_pcie_rw_02：口径一 = 1687 ≠ 0，且无预期观测点印记；不得称跑通。",
+              "tc_pcie_rw_smoke：口径二为 0，但无预期观测点印记；口径二为 0 不足以判绿。",
+              "tc_rtc_05：口径二为 0，但无预期观测点印记；口径二为 0 不足以判绿。",
+              "rework_cycles.n6_n8_cycles: 0，rework_cycles.limit: 3。"
+            ]
+          }
+        },
+        "data": {
+          "title": "RUN-20261022-181700 评估报告草稿（N12）",
+          "sections": [
+            {
+              "heading": "本轮改了什么",
+              "body_md": "受影响用例（`state_counts.已修订待验`: 3）：\n\n- `tc_pcie_rw_02`：`TESTLIB/tc_pcie_rw_02.sv`，`md5_before` 为 `eab350bb81d14bb9987bd6691a26df54`，`md5_after` 为 `9139589046f1ceea8af59e9249f66f0b`；`compile_rc`: 0，`static_check`: pass，`state`: 已修订待验。\n- `tc_pcie_rw_smoke`：`TESTLIB/tc_pcie_rw_smoke.sv`，`md5_before` 为 `75f95660d375ac2abd0595efa04b2c63`，`md5_after` 为 `18822965d0c39184a3b029c9de8b82fe`；`compile_rc`: 0，`static_check`: pass，`state`: 已修订待验。\n- `tc_rtc_05`：`TESTLIB/tc_rtc_05.sv`，`md5_before` 为 `d0649ceebadf6ce32c768ee1230c314f`，`md5_after` 为 `5a5c9f73e1f8efc253f4ed976c67bd78`；`compile_rc`: 0，`static_check`: pass，`state`: 已修订待验。\n\n以上用例 `updated_by` 为 `loop:N10`；`note` 均为“N10：卡点D 判据未通过 ⇒ 保持待验，不得称跑通”。本报告仅形成评估草稿，不替人做发版决策。",
+              "refs": [
+                "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/case_states.json",
+                "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/sandbox/TESTLIB/tc_pcie_rw_02.sv",
+                "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/sandbox/TESTLIB/tc_pcie_rw_smoke.sv",
+                "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/sandbox/TESTLIB/tc_rtc_05.sv"
+              ]
+            },
+            {
+              "heading": "两套口径（并列陈述）",
+              "body_md": "两套口径分别取、分别存，不得互相替代（doc/AGENTS.md 红线 3 / spec I3）。\n\n**口径一（`*E` 文本行数，逐用例求和）**：`value`: 1687，`zero`: false。`refs` 覆盖 line 357、line 360、line 363、line 366、line 374、line 35152、line 35153、line 35154。\n\n**口径二（UVM Report Summary，逐用例求和）**：`value`: {UVM_ERROR: 0, UVM_FATAL: 0, UVM_INFO: 35066, UVM_WARNING: 0}，`zero`: true。\n\n逐用例并列：\n\n- `tc_pcie_rw_02`：口径一 `value`: 1687，`zero`: false；口径二 UVM_ERROR: 0、UVM_FATAL: 0、UVM_INFO: 34930、UVM_WARNING: 0，`zero`: true；`both_zero`: false。\n- `tc_pcie_rw_smoke`：口径一 `value`: 0，`zero`: true；口径二 UVM_ERROR: 0、UVM_FATAL: 0、UVM_INFO: 57、UVM_WARNING: 0，`zero`: true；`both_zero`: true。\n- `tc_rtc_05`：口径一 `value`: 0，`zero`: true；口径二 UVM_ERROR: 0、UVM_FATAL: 0、UVM_INFO: 79、UVM_WARNING: 0，`zero`: true；`both_zero`: true。\n\n**口径二为 0 不足以判绿**：口径一非 0 或印记不一致时，不得判跑通。",
+              "refs": [
+                "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-193218_tc_pcie_rw_02_1_run.log",
+                "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-195119_tc_pcie_rw_smoke_1_run.log",
+                "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-195230_tc_rtc_05_1_run.log"
+              ]
+            },
+            {
+              "heading": "观测印记",
+              "body_md": "`imprints`: {}；逐用例 `tc_pcie_rw_02`、`tc_pcie_rw_smoke`、`tc_rtc_05` 的 `imprints` 均为 {}。各用例均无预期观测点印记，触发 I3：预期观测点必须留下通过印记。",
+              "refs": [
+                "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-193218_tc_pcie_rw_02_1_run.log",
+                "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-195119_tc_pcie_rw_smoke_1_run.log",
+                "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-195230_tc_rtc_05_1_run.log"
+              ]
+            },
+            {
+              "heading": "受影响用例态与判定事实",
+              "body_md": "`case_states.pending_verified`: 3；`state_counts.已修订待验`: 3；`rework_cycles.limit`: 3；`rework_cycles.n6_n8_cycles`: 0。\n\n| case | state | static_check | compile_rc | verdict.passed | reasons |\n|---|---|---|---|---|---|\n| `tc_pcie_rw_02` | 已修订待验 | pass | 0 | false | 口径一 = 1687 ≠ 0；无预期观测点印记（I3：预期观测点必须留下通过印记） |\n| `tc_pcie_rw_smoke` | 已修订待验 | pass | 0 | false | 无预期观测点印记（I3：预期观测点必须留下通过印记） |\n| `tc_rtc_05` | 已修订待验 | pass | 0 | false | 无预期观测点印记（I3：预期观测点必须留下通过印记） |\n\n聚合判据 = 各用例 I3 判据的合取（含印记三向一致）；`verdict.passed`: false。",
+              "refs": [
+                "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/case_states.json",
+                "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-193218_tc_pcie_rw_02_1_run.log",
+                "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-195119_tc_pcie_rw_smoke_1_run.log",
+                "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-195230_tc_rtc_05_1_run.log"
+              ]
+            },
+            {
+              "heading": "未闭环项与冲突",
+              "body_md": "- `conflicts.total`: 72；`conflicts.blocks_release`: 72。\n- `pending_verified`: 3；`state_counts.已修订待验`: 3。\n- `imprints`: {}；各用例均无预期观测点印记。\n- `tc_pcie_rw_02`：口径一 = 1687 ≠ 0，且无预期观测点印记；不得称跑通。\n- `tc_pcie_rw_smoke`：口径二为 0，但无预期观测点印记；口径二为 0 不足以判绿。\n- `tc_rtc_05`：口径二为 0，但无预期观测点印记；口径二为 0 不足以判绿。\n- `rework_cycles.n6_n8_cycles`: 0，`rework_cycles.limit`: 3。\n\n本报告仅陈述当前事实与 blockers，不替人做发版决策；不以历史 approved_experiences 替代当前 Host 校验。",
+              "refs": [
+                "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/case_states.json",
+                "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-193218_tc_pcie_rw_02_1_run.log",
+                "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-195119_tc_pcie_rw_smoke_1_run.log",
+                "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-195230_tc_rtc_05_1_run.log"
+              ]
+            }
+          ],
+          "counts_quoted": {
+            "koutou1": {
+              "label": "口径一（`*E` 文本行数，逐用例求和）",
+              "refs": [
+                "line 357: UVM_INFO pcie_sequence.sv(598) @ 153.273 us [PCIE_REG_RD@3DW] *E @ADDR[0x84] -> DATA[0x0] != EXP[0xffffffff]",
+                "line 360: UVM_INFO pcie_sequence.sv(598) @ 153.593 us [PCIE_REG_RD@3DW] *E @ADDR[0x84] -> DATA[0x0] != EXP[0x55555555]",
+                "line 363: UVM_INFO pcie_sequence.sv(598) @ 153.913 us [PCIE_REG_RD@3DW] *E @ADDR[0x84] -> DATA[0x0] != EXP[0xaaaaaaaa]",
+                "line 366: UVM_INFO pcie_sequence.sv(598) @ 154.233 us [PCIE_REG_RD@3DW] *E @ADDR[0x84] -> DATA[0x0] != EXP[0x12345678]",
+                "line 374: UVM_INFO pcie_sequence.sv(598) @ 155.113 us [PCIE_REG_RD@3DW] *E @ADDR[0x88] -> DATA[0xff] != EXP[0x3]",
+                "line 35152: UVM_INFO :34930",
+                "line 35153: UVM_WARNING :    0",
+                "line 35154: UVM_ERROR :    0"
+              ],
+              "value": 1687,
+              "zero": false
+            },
+            "koutou2": {
+              "label": "口径二（UVM Report Summary，逐用例求和）",
+              "refs": [],
+              "value": {
+                "UVM_ERROR": 0,
+                "UVM_FATAL": 0,
+                "UVM_INFO": 35066,
+                "UVM_WARNING": 0
+              },
+              "zero": true
+            }
+          },
+          "authoritative_counts": {
+            "koutou1": 1687,
+            "koutou2": {
+              "UVM_INFO": 35066,
+              "UVM_WARNING": 0,
+              "UVM_ERROR": 0,
+              "UVM_FATAL": 0
+            }
+          },
+          "counts_match_authority": true,
+          "claimed_verdict": "not_passed",
+          "expected_claimed_verdict": "not_passed",
+          "open_items": [
+            "conflicts.total: 72；conflicts.blocks_release: 72。",
+            "pending_verified: 3；state_counts.已修订待验: 3。",
+            "imprints: {}；各用例均无预期观测点印记（I3：预期观测点必须留下通过印记）。",
+            "tc_pcie_rw_02：口径一 = 1687 ≠ 0，且无预期观测点印记；不得称跑通。",
+            "tc_pcie_rw_smoke：口径二为 0，但无预期观测点印记；口径二为 0 不足以判绿。",
+            "tc_rtc_05：口径二为 0，但无预期观测点印记；口径二为 0 不足以判绿。",
+            "rework_cycles.n6_n8_cycles: 0，rework_cycles.limit: 3。"
+          ]
+        },
+        "input_digest": {
+          "run_id": "RUN-20261022-181700",
+          "counts": 5,
+          "verdict": 3,
+          "imprints": 0,
+          "cases": 3,
+          "evidence_paths": 3,
+          "chain": "intact",
+          "must_change_count": 3,
+          "must_change_cases": 3,
+          "case_states": 6,
+          "conflicts": 2,
+          "rule": "所有数字逐字引用本 input，禁止手算；claimed_verdict 必须与 input.verdict.passed 一致；sections[].refs 必须是可解析的产物路径。"
+        },
+        "request_ref": "agent_calls/N12/attempt-000001/request.json",
+        "result_ref": "agent_calls/N12/attempt-000001/result.json",
+        "experience_diagnostics": [],
+        "report_path": "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/n12_report.md",
+        "refs_checked": [
+          "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/case_states.json",
+          "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/sandbox/TESTLIB/tc_pcie_rw_02.sv",
+          "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/sandbox/TESTLIB/tc_pcie_rw_smoke.sv",
+          "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/sandbox/TESTLIB/tc_rtc_05.sv",
+          "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-193218_tc_pcie_rw_02_1_run.log",
+          "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-195119_tc_pcie_rw_smoke_1_run.log",
+          "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-195230_tc_rtc_05_1_run.log",
+          "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-193218_tc_pcie_rw_02_1_run.log",
+          "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-195119_tc_pcie_rw_smoke_1_run.log",
+          "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-195230_tc_rtc_05_1_run.log",
+          "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/case_states.json",
+          "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-193218_tc_pcie_rw_02_1_run.log",
+          "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-195119_tc_pcie_rw_smoke_1_run.log",
+          "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-195230_tc_rtc_05_1_run.log",
+          "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/case_states.json",
+          "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-193218_tc_pcie_rw_02_1_run.log",
+          "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-195119_tc_pcie_rw_smoke_1_run.log",
+          "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-195230_tc_rtc_05_1_run.log"
+        ],
+        "unresolved_refs": [],
+        "authoritative_verdict": {
+          "passed": false,
+          "reasons": [
+            "tc_pcie_rw_02：判据未通过（口径一 = 1687 ≠ 0；无预期观测点印记（I3：预期观测点必须留下通过印记））",
+            "tc_pcie_rw_smoke：判据未通过（无预期观测点印记（I3：预期观测点必须留下通过印记））",
+            "tc_rtc_05：判据未通过（无预期观测点印记（I3：预期观测点必须留下通过印记））"
+          ],
+          "criterion": "聚合判据 = 各用例 I3 判据的合取（含印记三向一致）"
+        }
+      },
+      "layer_marks": [],
+      "source": "chunk",
+      "meta": {
+        "_triggerflow_parent_signal_id": "e20069ae8b96449a85fa22a19c8a4161",
+        "_triggerflow_aggregation_scope": "03b32ddd93034a84b90d6efc3cef679d",
+        "origin_chunk": {
+          "run_id": "8fad5efc176c47be8ae3d2720ac514d8",
+          "chunk_id": "chunk-25cb767a4d82be75",
+          "chunk_name": "n12_report",
+          "operator_kind": "chunk"
+        }
+      }
+    },
+    "continuation_event": "Chunk[gate_G2_report_accept]-chunk-edb98ce3f0d912c5",
+    "resume_count": 0,
+    "max_resumes": 1,
+    "created_at": 1792670274.7571614,
+    "resumed_at": null,
+    "resume_value": null,
+    "external_wait_request": {
+      "request_id": "G2_report_accept:0-0",
+      "interrupt_id": "G2_report_accept:0-0",
+      "exchange_kind": null,
+      "exchange_id": null,
+      "callback_idempotency_key": null,
+      "actor_id": null,
+      "channel_id": null,
+      "provider_id": null,
+      "wait_mode": "disconnected",
+      "hot_wait_timeout": null,
+      "cold_persistence_policy": "persist",
+      "request_payload_schema": null,
+      "response_payload_schema": null,
+      "dispatch_state": "exposed",
+      "audit_metadata": {
+        "type": "gate_decision",
+        "exchange_kind": null,
+        "payload": {
+          "gate": "G2_report_accept",
+          "stage": "n13_gate2",
+          "mode": "real",
+          "interrupt": null,
+          "counts": {
+            "koutou1": {
+              "label": "口径一（`*E` 文本行数，逐用例求和）",
+              "value": 1687,
+              "zero": false,
+              "refs": [
+                "line 357: UVM_INFO pcie_sequence.sv(598) @ 153.273 us [PCIE_REG_RD@3DW] *E @ADDR[0x84] -> DATA[0x0] != EXP[0xffffffff]",
+                "line 360: UVM_INFO pcie_sequence.sv(598) @ 153.593 us [PCIE_REG_RD@3DW] *E @ADDR[0x84] -> DATA[0x0] != EXP[0x55555555]",
+                "line 363: UVM_INFO pcie_sequence.sv(598) @ 153.913 us [PCIE_REG_RD@3DW] *E @ADDR[0x84] -> DATA[0x0] != EXP[0xaaaaaaaa]",
+                "line 366: UVM_INFO pcie_sequence.sv(598) @ 154.233 us [PCIE_REG_RD@3DW] *E @ADDR[0x84] -> DATA[0x0] != EXP[0x12345678]",
+                "line 374: UVM_INFO pcie_sequence.sv(598) @ 155.113 us [PCIE_REG_RD@3DW] *E @ADDR[0x88] -> DATA[0xff] != EXP[0x3]",
+                "line 35152: UVM_INFO :34930",
+                "line 35153: UVM_WARNING :    0",
+                "line 35154: UVM_ERROR :    0"
+              ]
+            },
+            "koutou2": {
+              "label": "口径二（UVM Report Summary，逐用例求和）",
+              "value": {
+                "UVM_INFO": 35066,
+                "UVM_WARNING": 0,
+                "UVM_ERROR": 0,
+                "UVM_FATAL": 0
+              },
+              "zero": true,
+              "refs": []
+            },
+            "both_zero": false,
+            "per_case": {
+              "tc_pcie_rw_02": {
+                "koutou1": {
+                  "label": "口径一（`*E` 文本行数）",
+                  "value": 1687,
+                  "zero": false,
+                  "refs": [
+                    "line 357: UVM_INFO pcie_sequence.sv(598) @ 153.273 us [PCIE_REG_RD@3DW] *E @ADDR[0x84] -> DATA[0x0] != EXP[0xffffffff]",
+                    "line 360: UVM_INFO pcie_sequence.sv(598) @ 153.593 us [PCIE_REG_RD@3DW] *E @ADDR[0x84] -> DATA[0x0] != EXP[0x55555555]",
+                    "line 363: UVM_INFO pcie_sequence.sv(598) @ 153.913 us [PCIE_REG_RD@3DW] *E @ADDR[0x84] -> DATA[0x0] != EXP[0xaaaaaaaa]",
+                    "line 366: UVM_INFO pcie_sequence.sv(598) @ 154.233 us [PCIE_REG_RD@3DW] *E @ADDR[0x84] -> DATA[0x0] != EXP[0x12345678]",
+                    "line 374: UVM_INFO pcie_sequence.sv(598) @ 155.113 us [PCIE_REG_RD@3DW] *E @ADDR[0x88] -> DATA[0xff] != EXP[0x3]"
+                  ]
+                },
+                "koutou2": {
+                  "label": "口径二（UVM Report Summary）",
+                  "value": {
+                    "UVM_INFO": 34930,
+                    "UVM_WARNING": 0,
+                    "UVM_ERROR": 0,
+                    "UVM_FATAL": 0
+                  },
+                  "zero": true,
+                  "refs": [
+                    "line 35152: UVM_INFO :34930",
+                    "line 35153: UVM_WARNING :    0",
+                    "line 35154: UVM_ERROR :    0",
+                    "line 35155: UVM_FATAL :    0"
+                  ]
+                },
+                "both_zero": false,
+                "single_source": true,
+                "note": "两套口径分别取、分别存，不得互相替代（doc/AGENTS.md 红线 3 / spec I3）。"
+              },
+              "tc_pcie_rw_smoke": {
+                "koutou1": {
+                  "label": "口径一（`*E` 文本行数）",
+                  "value": 0,
+                  "zero": true,
+                  "refs": []
+                },
+                "koutou2": {
+                  "label": "口径二（UVM Report Summary）",
+                  "value": {
+                    "UVM_INFO": 57,
+                    "UVM_WARNING": 0,
+                    "UVM_ERROR": 0,
+                    "UVM_FATAL": 0
+                  },
+                  "zero": true,
+                  "refs": [
+                    "line 221: UVM_INFO :   57",
+                    "line 222: UVM_WARNING :    0",
+                    "line 223: UVM_ERROR :    0",
+                    "line 224: UVM_FATAL :    0"
+                  ]
+                },
+                "both_zero": true,
+                "single_source": true,
+                "note": "两套口径分别取、分别存，不得互相替代（doc/AGENTS.md 红线 3 / spec I3）。"
+              },
+              "tc_rtc_05": {
+                "koutou1": {
+                  "label": "口径一（`*E` 文本行数）",
+                  "value": 0,
+                  "zero": true,
+                  "refs": []
+                },
+                "koutou2": {
+                  "label": "口径二（UVM Report Summary）",
+                  "value": {
+                    "UVM_INFO": 79,
+                    "UVM_WARNING": 0,
+                    "UVM_ERROR": 0,
+                    "UVM_FATAL": 0
+                  },
+                  "zero": true,
+                  "refs": [
+                    "line 276: UVM_INFO :   79",
+                    "line 277: UVM_WARNING :    0",
+                    "line 278: UVM_ERROR :    0",
+                    "line 279: UVM_FATAL :    0"
+                  ]
+                },
+                "both_zero": true,
+                "single_source": true,
+                "note": "两套口径分别取、分别存，不得互相替代（doc/AGENTS.md 红线 3 / spec I3）。"
+              }
+            },
+            "note": "多用例：两套口径分别取、逐例并列再求和；不得互相替代（spec I3）。"
+          },
+          "blockers": [
+            {
+              "code": "I2_CASES_PENDING",
+              "severity": "blocker",
+              "title": "本轮仍有 3 个用例「已修订待验」",
+              "message": "I2：存在「待验」不得称跑通/接受报告；先完成全跑并写入「已验证通过」。",
+              "refs": [
+                "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/case_states.json"
+              ],
+              "items": [
+                "tc_pcie_rw_02",
+                "tc_pcie_rw_smoke",
+                "tc_rtc_05"
+              ]
+            },
+            {
+              "code": "I3_KOUTOU1_NONZERO",
+              "severity": "blocker",
+              "title": "口径一 = 1687 ≠ 0（I3 第 4 项不成立）",
+              "message": "口径二为 0 **不足以**判绿。口径一由 `*E` 文本行数而来，其非零是既有缺陷所致（本轮修订点 0x0000+0x04 未命中）。根因方向：TB/AGENTS/PCIE-Agent/pcie_sequence.sv:598 走 uvm_info 而非 `uvm_error`。",
+              "refs": [
+                "line 357: UVM_INFO pcie_sequence.sv(598) @ 153.273 us [PCIE_REG_RD@3DW] *E @ADDR[0x84] -> DATA[0x0] != EXP[0xffffffff]",
+                "line 360: UVM_INFO pcie_sequence.sv(598) @ 153.593 us [PCIE_REG_RD@3DW] *E @ADDR[0x84] -> DATA[0x0] != EXP[0x55555555]",
+                "line 363: UVM_INFO pcie_sequence.sv(598) @ 153.913 us [PCIE_REG_RD@3DW] *E @ADDR[0x84] -> DATA[0x0] != EXP[0xaaaaaaaa]",
+                "line 366: UVM_INFO pcie_sequence.sv(598) @ 154.233 us [PCIE_REG_RD@3DW] *E @ADDR[0x84] -> DATA[0x0] != EXP[0x12345678]",
+                "line 374: UVM_INFO pcie_sequence.sv(598) @ 155.113 us [PCIE_REG_RD@3DW] *E @ADDR[0x88] -> DATA[0xff] != EXP[0x3]"
+              ]
+            },
+            {
+              "code": "I4_CONFLICTS_UNCLEARED",
+              "severity": "blocker",
+              "title": "冲突未清零：72/72 项 blocks_release",
+              "message": "按 I4「清单未清零不发版」⇒ 阻断 full_now/subset_only 选项与晋升动作。",
+              "refs": [
+                "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/conflicts/conflicts.json"
+              ],
+              "items": [
+                "C1",
+                "C2",
+                "C3",
+                "C4",
+                "C5",
+                "C6",
+                "C7",
+                "C8",
+                "C9",
+                "C10",
+                "C11",
+                "C12"
+              ]
+            }
+          ],
+          "hard_block": [
+            {
+              "code": "I2_CASES_PENDING",
+              "severity": "blocker",
+              "title": "本轮仍有 3 个用例「已修订待验」",
+              "message": "I2：存在「待验」不得称跑通/接受报告；先完成全跑并写入「已验证通过」。",
+              "refs": [
+                "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/case_states.json"
+              ],
+              "items": [
+                "tc_pcie_rw_02",
+                "tc_pcie_rw_smoke",
+                "tc_rtc_05"
+              ]
+            },
+            {
+              "code": "I3_KOUTOU1_NONZERO",
+              "severity": "blocker",
+              "title": "口径一 = 1687 ≠ 0（I3 第 4 项不成立）",
+              "message": "口径二为 0 **不足以**判绿。口径一由 `*E` 文本行数而来，其非零是既有缺陷所致（本轮修订点 0x0000+0x04 未命中）。根因方向：TB/AGENTS/PCIE-Agent/pcie_sequence.sv:598 走 uvm_info 而非 `uvm_error`。",
+              "refs": [
+                "line 357: UVM_INFO pcie_sequence.sv(598) @ 153.273 us [PCIE_REG_RD@3DW] *E @ADDR[0x84] -> DATA[0x0] != EXP[0xffffffff]",
+                "line 360: UVM_INFO pcie_sequence.sv(598) @ 153.593 us [PCIE_REG_RD@3DW] *E @ADDR[0x84] -> DATA[0x0] != EXP[0x55555555]",
+                "line 363: UVM_INFO pcie_sequence.sv(598) @ 153.913 us [PCIE_REG_RD@3DW] *E @ADDR[0x84] -> DATA[0x0] != EXP[0xaaaaaaaa]",
+                "line 366: UVM_INFO pcie_sequence.sv(598) @ 154.233 us [PCIE_REG_RD@3DW] *E @ADDR[0x84] -> DATA[0x0] != EXP[0x12345678]",
+                "line 374: UVM_INFO pcie_sequence.sv(598) @ 155.113 us [PCIE_REG_RD@3DW] *E @ADDR[0x88] -> DATA[0xff] != EXP[0x3]"
+              ]
+            },
+            {
+              "code": "I4_CONFLICTS_UNCLEARED",
+              "severity": "blocker",
+              "title": "冲突未清零：72/72 项 blocks_release",
+              "message": "按 I4「清单未清零不发版」⇒ 阻断 full_now/subset_only 选项与晋升动作。",
+              "refs": [
+                "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/conflicts/conflicts.json"
+              ],
+              "items": [
+                "C1",
+                "C2",
+                "C3",
+                "C4",
+                "C5",
+                "C6",
+                "C7",
+                "C8",
+                "C9",
+                "C10",
+                "C11",
+                "C12"
+              ]
+            }
+          ],
+          "defects": [],
+          "rework": {
+            "n6_n8_cycles": 0,
+            "g2_rework_cycles": 0,
+            "limit": 3,
+            "source": "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/rework_cycles.json",
+            "case_state_source": "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/case_states.json"
+          },
+          "difference_items": {
+            "path": "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/n2_diff.json",
+            "present": true,
+            "error": null,
+            "count": 2,
+            "entries": [
+              {
+                "entry_id": "RTL/SRC/imports/SRC/pcie_controller/pcie_register.v",
+                "kind": "allfile",
+                "change": "modified",
+                "unresolved": "② 路只比逐文件 md5 清单，无文本 hunk（旧版正文不在 KB）⇒ offset 由 ①/③ 路提供；本条已按『modified』计入差异",
+                "evidence": "baselines/v0/allfiles.md5:L2896 -> runs/RUN-20261022-181700/bundle/allfiles.md5:L2896（逐文件 md5 变化）",
+                "lines": [],
+                "offset": null,
+                "offsets": [],
+                "segment": null,
+                "before": "d560f2ff15388aad16dc64431d67a617",
+                "after": "50e4ca25f384d0ee384252b34f30e760",
+                "diff_hunk": null,
+                "encoding": null,
+                "legacy_drill_fixture": false
+              },
+              {
+                "entry_id": "RTL/SRC/imports/SRC/pcie_controller/pcie_register.v",
+                "kind": "rtl_file",
+                "change": "modified",
+                "unresolved": null,
+                "evidence": "baselines/v0/rtl_files.md5:L119 -> runs/RUN-20261022-181700/bundle/rtl_files.md5:L119（逐文件 md5 变化）",
+                "lines": [
+                  171,
+                  172
+                ],
+                "offset": "0xd04",
+                "offsets": [
+                  "0xd04"
+                ],
+                "segment": null,
+                "before": "d560f2ff15388aad16dc64431d67a617",
+                "after": "50e4ca25f384d0ee384252b34f30e760",
+                "diff_hunk": "--- \n+++ \n@@ -168,7 +168,8 @@\n \tassign\ts_hit_7x\t=\tdcb_gnt ? (dcb_addr[7:4]\t\t==\t4'h7)\t?\t1'b1 : 1'b0\t:\thit_7x;\n \tassign\ts_hit_8x\t=\tdcb_gnt ? (dcb_addr[7:4]\t\t==\t4'h8)\t?\t1'b1 : 1'b0\t:\thit_8x;\n \t\n-\tassign\ts_reg_test\t\t=\t(write & hit_0x & hit_x4 & dcb_wdval) ? dcb_wdata \t: reg_test;\t\n+\t// 0x0d04 pcie_test: [31:16] reserved, read as 0; only [15:0] R/W\n+\tassign\ts_reg_test\t\t=\t(write & hit_0x & hit_x4 & dcb_wdval) ? {16'h0, dcb_wdata[15:0]} \t: reg_test;\t\n \tassign\ts_little_endian\t=\t(write & hit_0x & hit_x8 & dcb_wdval) ? |dcb_wdata\t: little_endian\t;\n \t\n \tassign\ts_dcb_gnt = \tdcb_gnt | grant_1d | grant_2d ? 1'b0               //ensure write complete",
+                "encoding": "utf-8",
+                "legacy_drill_fixture": false
+              }
+            ],
+            "unresolved_ids": [
+              "RTL/SRC/imports/SRC/pcie_controller/pcie_register.v"
+            ],
+            "unresolved_count": 1,
+            "has_change": true,
+            "self_check_ok": true,
+            "mode": "real"
+          },
+          "case_states": {
+            "path": "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/case_states.json",
+            "present": true,
+            "error": null,
+            "created_at": "2026-10-22T18:17:00.996576",
+            "cases": [
+              {
+                "case": "tc_pcie_rw_02",
+                "state": "已修订待验",
+                "updated_at": "2026-10-22T19:57:06+0800",
+                "updated_by": "loop:N10",
+                "file": "TESTLIB/tc_pcie_rw_02.sv",
+                "own": true
+              },
+              {
+                "case": "tc_pcie_rw_smoke",
+                "state": "已修订待验",
+                "updated_at": "2026-10-22T19:57:06+0800",
+                "updated_by": "loop:N10",
+                "file": "TESTLIB/tc_pcie_rw_smoke.sv",
+                "own": true
+              },
+              {
+                "case": "tc_rtc_05",
+                "state": "已修订待验",
+                "updated_at": "2026-10-22T19:57:07+0800",
+                "updated_by": "loop:N10",
+                "file": "TESTLIB/tc_rtc_05.sv",
+                "own": true
+              }
+            ],
+            "count": 3,
+            "pending_own": [
+              "tc_pcie_rw_02",
+              "tc_pcie_rw_smoke",
+              "tc_rtc_05"
+            ],
+            "pending_foreign_count": 0,
+            "pending_foreign": [],
+            "rework_cycles": {
+              "limit": 3,
+              "n6_n8_cycles": 0
+            }
+          },
+          "report": {
+            "n2_diff": "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/n2_diff.json",
+            "n3_digest": "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/n3_digest.md",
+            "n9_evidence": "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence",
+            "n11_guardian": {
+              "mode": "live",
+              "chain": "intact",
+              "model_chain": "intact",
+              "chain_effective": "intact",
+              "host_identity": {
+                "run_id": "RUN-20261022-181700",
+                "consistent": true,
+                "mismatches": [],
+                "cases": [
+                  {
+                    "case": "tc_pcie_rw_02",
+                    "reviewed_md5": "9139589046f1ceea8af59e9249f66f0b",
+                    "run_md5": "9139589046f1ceea8af59e9249f66f0b",
+                    "run_id": "RUN-20261022-181700",
+                    "seed": "1",
+                    "evidence_path": "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-193218_tc_pcie_rw_02_1_run.log",
+                    "evidence_present": true,
+                    "consistent": true
+                  },
+                  {
+                    "case": "tc_pcie_rw_smoke",
+                    "reviewed_md5": "18822965d0c39184a3b029c9de8b82fe",
+                    "run_md5": "18822965d0c39184a3b029c9de8b82fe",
+                    "run_id": "RUN-20261022-181700",
+                    "seed": "1",
+                    "evidence_path": "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-195119_tc_pcie_rw_smoke_1_run.log",
+                    "evidence_present": true,
+                    "consistent": true
+                  },
+                  {
+                    "case": "tc_rtc_05",
+                    "reviewed_md5": "5a5c9f73e1f8efc253f4ed976c67bd78",
+                    "run_md5": "5a5c9f73e1f8efc253f4ed976c67bd78",
+                    "run_id": "RUN-20261022-181700",
+                    "seed": "1",
+                    "evidence_path": "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-195230_tc_rtc_05_1_run.log",
+                    "evidence_present": true,
+                    "consistent": true
+                  }
+                ],
+                "missing_cases": [],
+                "checked": [
+                  "run_id",
+                  "case",
+                  "reviewed_md5(n6_applied.md5_after)",
+                  "run_md5(host.evidence identity from run_guarded header)"
+                ]
+              },
+              "escalated": false,
+              "cycle": null,
+              "limit": null,
+              "reasons": [
+                "身份四方同值（tc_pcie_rw_02）：identity.cases[0].run_id = RUN-20261022-181700，与 evidence.cases.tc_pcie_rw_02.identity.run_id = RUN-20261022-181700、run_id = RUN-20261022-181700 一致；case 名一侧为 identity.cases[0].case = tc_pcie_rw_02，另一侧为 evidence.cases.tc_pcie_rw_02.identity.case = tc_pcie_rw_02，同值；审的 md5 为 identity.cases[0].reviewed_md5 = 9139589046f1ceea8af59e9249f66f0b，与 case_states.cases[tc_pcie_rw_02].md5_after = 9139589046f1ceea8af59e9249f66f0b 同值；跑的 md5 为 identity.cases[0].run_md5 = 9139589046f1ceea8af59e9249f66f0b，与 evidence.cases.tc_pcie_rw_02.identity.case_md5 = 9139589046f1ceea8af59e9249f66f0b 同值；identity.cases[0].consistent = true，且 identity.mismatches = []、identity.missing_cases = []。",
+                "身份四方同值（tc_pcie_rw_smoke）：identity.cases[1].run_id = RUN-20261022-181700，与 evidence.cases.tc_pcie_rw_smoke.identity.run_id = RUN-20261022-181700 一致；case 名一侧为 tc_pcie_rw_smoke，另一侧为 evidence.cases.tc_pcie_rw_smoke.identity.case = tc_pcie_rw_smoke，同值；审的 md5 = 18822965d0c39184a3b029c9de8b82fe，与 case_states.cases[tc_pcie_rw_smoke].md5_after = 18822965d0c39184a3b029c9de8b82fe 同值；跑的 md5（identity.cases[1].run_md5 = 18822965d0c39184a3b029c9de8b82fe）= evidence.cases.tc_pcie_rw_smoke.identity.case_md5 = 18822965d0c39184a3b029c9de8b82fe，同值；consistent = true。",
+                "身份四方同值（tc_rtc_05）：identity.cases[2].run_id = RUN-20261022-181700，与 evidence.cases.tc_rtc_05.identity.run_id = RUN-20261022-181700 一致；case 名一侧为 tc_rtc_05，另一侧为 evidence.cases.tc_rtc_05.identity.case = tc_rtc_05，同值；审的 md5 = 5a5c9f73e1f8efc253f4ed976c67bd78，与 case_states.cases[tc_rtc_05].md5_after = 5a5c9f73e1f8efc253f4ed976c67bd78 同值；跑的 md5（identity.cases[2].run_md5 = 5a5c9f73e1f8efc253f4ed976c67bd78）= evidence.cases.tc_rtc_05.identity.case_md5 = 5a5c9f73e1f8efc253f4ed976c67bd78，同值；consistent = true。",
+                "证据件可解析且已落盘：identity.cases[*].evidence_present 全为 true；evidence.cases.{tc_pcie_rw_02,tc_pcie_rw_smoke,tc_rtc_05}.present 全为 true；path 分别为 evidence/20261022-193218_tc_pcie_rw_02_1_run.log、evidence/20261022-195119_tc_pcie_rw_smoke_1_run.log、evidence/20261022-195230_tc_rtc_05_1_run.log；各用例 counts 结构完整（koutou1/koutou2 双口径分别存在，且 note = 两套口径分别取、分别存，不得互相替代）。",
+                "evidence case_md5 与 case_states.md5_after 逐例同值（9139589046f1ceea8af59e9249f66f0b / 18822965d0c39184a3b029c9de8b82fe / 5a5c9f73e1f8efc253f4ed976c67bd78），说明三份跑的证据对应的是当前已修订文件的 md5，md5 未发生漂移；另 case_states 各例 md5_before（eab350bb81d14bb9987bd6691a26df54 / 75f95660d375ac2abd0595efa04b2c63 / d0649ceebadf6ce32c768ee1230c314f）与 md5_after 不同，仅为修订前后差异的记录。",
+                "identity.checked 覆盖 run_id、case、reviewed_md5(n6_applied.md5_after)、run_md5(host.evidence identity from run_guarded header) 四项；identity.consistent = true、mismatches = []、missing_cases = []；identity.run_id = RUN-20261022-181700 与 input.run_id、case_states 路径中的 RUN-20261022-181700 同值。",
+                "证据链之外的判据事实（不下结论、仅供 N10 使用）：verdict.passed = false，reasons 为 tc_pcie_rw_02 口径一 = 1687 ≠ 0 且无预期观测点印记；tc_pcie_rw_smoke、tc_rtc_05 均为无预期观测点印记；三例 evidence.cases[*].imprints 均为 {}（空）。该等属 I3 判据与 PASS/FAIL 判定范畴，不计入证据链结论。"
+              ],
+              "rework_requests": [],
+              "caveats": [
+                "本判定仅覆盖证据链（身份四方同值 + 证据可解析 + md5 未漂移）；不对 PASS/FAIL 或发版下结论。verdict.passed 与 verdict.reasons 的判定权属 N10。",
+                "三例 evidence.cases[*].imprints 均为 {}（空），即预期观测点印记三向一致不成立；该缺口已在 verdict.reasons 中由 N10 记为判据未通过项，本轮不作为 chain=broken 的依据，但属未闭环项。",
+                "input 未提供“冻结件”（冻结清单/冻结件 md5）的任何字段，故“冻结件未变”这一项在本轮无法核验；若上层另有冻结件基线，需另行比对后才能确认该项闭环。",
+                "evidence.path 与 evidence.present 在顶层为 null，本轮为多用例并列结构，证据以 evidence.cases[*].path / present 逐例给出；无单点汇总证据件，读取方需按用例分别消费。",
+                "case_states.state 三例均为“已修订待验”、state_counts = {已修订待验: 3}、pending_verified = 3、rework_cycles.n6_n8_cycles = 0（上限 3），即当前无已验通过用例，返工周期尚未消耗。"
+              ]
+            },
+            "n12_report": {
+              "mode": "live",
+              "claimed_verdict": "not_passed",
+              "legacy_verdict_statement": null,
+              "report_path": "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/n12_report.md",
+              "refs_checked": [
+                "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/case_states.json",
+                "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/sandbox/TESTLIB/tc_pcie_rw_02.sv",
+                "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/sandbox/TESTLIB/tc_pcie_rw_smoke.sv",
+                "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/sandbox/TESTLIB/tc_rtc_05.sv",
+                "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-193218_tc_pcie_rw_02_1_run.log",
+                "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-195119_tc_pcie_rw_smoke_1_run.log",
+                "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-195230_tc_rtc_05_1_run.log",
+                "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-193218_tc_pcie_rw_02_1_run.log",
+                "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-195119_tc_pcie_rw_smoke_1_run.log",
+                "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-195230_tc_rtc_05_1_run.log",
+                "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/case_states.json",
+                "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-193218_tc_pcie_rw_02_1_run.log",
+                "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-195119_tc_pcie_rw_smoke_1_run.log",
+                "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-195230_tc_rtc_05_1_run.log",
+                "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/case_states.json",
+                "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-193218_tc_pcie_rw_02_1_run.log",
+                "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-195119_tc_pcie_rw_smoke_1_run.log",
+                "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence/20261022-195230_tc_rtc_05_1_run.log"
+              ],
+              "unresolved_refs": []
+            },
+            "n8_check": {
+              "mode": "live",
+              "verdict": "pass",
+              "escalated": false,
+              "cycle": 0,
+              "limit": 3,
+              "findings": [
+                {
+                  "item": "地址实参保持原样；revision_points 的 <段基址>+<块内偏移> 不得出现在代码里",
+                  "result": "pass",
+                  "basis": "三处编辑行地址均与 before 文本一致：tc_pcie_rw_02.sv:238 `reg_field_test(m_pcie_seq, base_addr+'h04  ,32'h0000_ffff, 32'h0000_0000, 0);`（base_addr='PCIE_BASE_ADDR，偏移 'h04 与 before 同）；tc_pcie_rw_smoke.sv:113/114 与 tc_rtc_05.sv:115/116 均为 `'hd04`，与 before 同；代码中未出现 `0x0d00+0xd04` 组合（'0x0d00' 仅出现在 revision_points[].doc_bitdef.segment）"
+                },
+                {
+                  "item": "期望读回值与 input.revision_points[].rtl_change 新行为一致（按 retained_mask 复算）",
+                  "result": "pass",
+                  "basis": "rtl_effect: retained_mask=0x0000ffff，rule=『期望读回值 = 写入值 & retained_mask』，RTL pcie_register.v:171-172 改为 `{16'h0, dcb_wdata[15:0]}`。复算：tc_pcie_rw_smoke.sv:114 与 tc_rtc_05.sv:116，写值 0x12345678 & 0x0000ffff = 0x0000_5678，代码恰为 `32'h0000_5678`；tc_pcie_rw_02.sv:238 第三参 data_expmask 由 32'hffff_ffff 改为 32'h0000_ffff（=retained_mask，非半反 0xffff_0000），与 reg_field_test body（revision_points.api_semantics：data_rdexp = test_data & data_expmask）一致。三处均未出现掩码取反/应用到相反半部"
+                },
+                {
+                  "item": "写入值与检查未被改写/删减/放宽；参数角色（data_expmask / initial_dat / expdata）未混用",
+                  "result": "pass",
+                  "basis": "tc_pcie_rw_smoke.sv:113 与 tc_rtc_05.sv:115 `set_write(m_pcie_seq,'hd04, 32'h12345678);` 写值未变，仅改其后的 PCIE_REG_RDCHK 第二参（expdata，0x12345678→0x0000_5678），big_d=1 保留、检查未删；tc_pcie_rw_02.sv:238 改的是第三参 data_expmask（signature: reg_field_test(..., data_expmask, initial_dat='0, only_r=0)），第四参 initial_dat 仍为 32'h0000_0000、第五参 only_r 仍为 0，未把 initial_dat 当期望掩码，也未改 reg_field_test body 中的 set_write(..., test_data)"
+                },
+                {
+                  "item": "doc_bitdef 与 RTL 新行为的同步性（doc_out_of_sync 观察，不单独作为 rework 依据）",
+                  "result": "pass",
+                  "basis": "input.revision_points[].doc_bitdef 仅给出 entry 0x0d00#0x0d04、name=pcie_test、reset='0'、rw='R/W'，未提供位域明细；RTL hunk（pcie_register.v:171-172 新增注释『0x0d04 pcie_test: [31:16] reserved, read as 0; only [15:0] R/W』与 `{16'h0, dcb_wdata[15:0]}`）的 [31:16] read-as-0 无法由所给 doc 字段判定为冲突。按判据顺序以 rtl_change 为准；若完整 bitdef 中 [31:16] 仍标 R/W，则由 N12/G2 作为 doc_out_of_sync 暴露给人裁决，不据此判 rework"
+                },
+                {
+                  "item": "失败必须让日志出现 *E（同时发 uvm_error）——仅当本轮改动涉及失败路径/检查逻辑时评估",
+                  "result": "pass",
+                  "basis": "本项标 N/A：3 个用例各 1 处编辑均为期望值（tc_pcie_rw_02.sv:238、tc_pcie_rw_smoke.sv:114、tc_rtc_05.sv:116），未触及失败路径或检查逻辑；被调用的 PCIE_REG_RDCHK body（revision_points.api_semantics, TB/AGENTS/PCIE-Agent/pcie_sequence.sv）未变，仍在 rdata!=expdata 时打印 `*E ... != EXP[...]`"
+                },
+                {
+                  "item": "禁止裸 wait(...)，每个（本轮新增/改动的）等待必须有超时兜底",
+                  "result": "pass",
+                  "basis": "三处编辑行内无 wait(...)（tc_pcie_rw_02.sv:238 为 reg_field_test 调用；tc_pcie_rw_smoke.sv:114、tc_rtc_05.sv:116 为 PCIE_REG_RDCHK 调用）；区域 tc_rtc_05.sv:110-122 内无 wait 语句"
+                },
+                {
+                  "item": "禁止固定延时收尾，结束条件用 wait(test_done)",
+                  "result": "pass",
+                  "basis": "本轮编辑未触及用例结束条件（编辑计数各 1，均为期望值行）。tc_rtc_05.sv:121 的 `#10us;` 位于复位/解复位序列中且为既有代码（before/after 一致），按规则只记 notes/defect，不作为 rework 依据；该延时也非收尾条件"
+                },
+                {
+                  "item": "白盒 uvm_hdl_force 必须成对 release 并检查返回值",
+                  "result": "pass",
+                  "basis": "本项标 N/A：三个 changed_regions（tc_pcie_rw_02.sv:232-244、tc_pcie_rw_smoke.sv:108-120、tc_rtc_05.sv:110-122）内及对应编辑行均无 uvm_hdl_force/uvm_hdl_release"
+                },
+                {
+                  "item": "编辑行是否越界 / 是否在提供的变更区域内",
+                  "result": "pass",
+                  "basis": "每件编辑数=1，均落在各 changed_regions 内：tc_pcie_rw_02.sv `+ 'h04` 行（region 232-244）、tc_pcie_rw_smoke.sv `PCIE_REG_RDCHK('hd04, ...)` 行（region 108-120）、tc_rtc_05.sv 同一行（region 110-122）；coverage_summary: full_files=0、region_files=3、used_bytes=5239，未做也未声称全文复核，只对上述区域负责"
+                }
+              ],
+              "reason": null
+            },
+            "n10_reconcile": {
+              "node": "n10_reconcile",
+              "mode": null,
+              "standin": false,
+              "provider": null,
+              "data": {}
+            }
+          },
+          "n6_applied": {
+            "run_id": "RUN-20261022-181700",
+            "mode": "real",
+            "status": "applied",
+            "sandbox_root": "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/sandbox",
+            "cases": [
+              {
+                "case": "tc_pcie_rw_02",
+                "file": "TESTLIB/tc_pcie_rw_02.sv",
+                "sandbox_path": "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/sandbox/TESTLIB/tc_pcie_rw_02.sv",
+                "md5_before": "eab350bb81d14bb9987bd6691a26df54",
+                "md5_after": "9139589046f1ceea8af59e9249f66f0b",
+                "edits": 1,
+                "applied_edits": [
+                  {
+                    "line": 238,
+                    "old_len": 77,
+                    "new_len": 77,
+                    "basis": "rev point 0x0d00#0x0d04（display 0x0d00+0xd04 = 段基址 base_addr(0x0d00)+块内偏移 0x004，即 base_addr+'h04）。rtl_change @pcie_register.v lines 171-172: s_reg_test 由 dcb_wdata 改为 {16'h0, dcb_wdata[15:0]}；rtl_effect: retained_mask=0x0000ffff, cleared_mask=0xffff0000。reg_field_test 第 3 个形参为 data_expmask（api_semantics: signature `bit[31:0] data_expmask`），body 中 `data_rdexp = only_r ? initial_dat : test_data & data_expmask`，only_r=0 故期望读回 = test_data & data_expmask；要让期望值与新 RTL 的 [15:0] 保留一致，掩码需改为 0x0000_ffff（test_data 的 [31:16] 现读为 0）。地址实参与写入值未动。doc_bitdef: entry 0x0d00#0x0d04 name=pcie_test, rw=R/W, reset=0（仅给整体 R/W，未细分 [31:16] reserved），与 rtl_change 新行为不同步，以 rtl_change 为准。"
+                  }
+                ],
+                "case_state_rc": 0,
+                "source": "env_root",
+                "rationale": "该用例经 pcie_reg_test 访问 base_addr+'h04（= 0x0d00 段 + 0x004，即全局 0x0d04）。本轮 RTL 把 s_reg_test 的写入改为 {16'h0, dcb_wdata[15:0]}（retained_mask=0x0000ffff, cleared_mask=0xffff0000），高位 [31:16] 读回恒 0。因此把 reg_field_test 的期望掩码实参从 32'hffff_ffff 收窄为 32'h0000_ffff，使 data_rdexp = test_data & 0x0000_ffff 与新 RTL 的读回值一致；写入序列、only_r、初始值检查（reset=0）均不受影响，未做其它改动。"
+              },
+              {
+                "case": "tc_pcie_rw_smoke",
+                "file": "TESTLIB/tc_pcie_rw_smoke.sv",
+                "sandbox_path": "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/sandbox/TESTLIB/tc_pcie_rw_smoke.sv",
+                "md5_before": "75f95660d375ac2abd0595efa04b2c63",
+                "md5_after": "18822965d0c39184a3b029c9de8b82fe",
+                "edits": 1,
+                "applied_edits": [
+                  {
+                    "line": 114,
+                    "old_len": 49,
+                    "new_len": 50,
+                    "basis": "rev point 0x0d00#0x0d04（display 0x0d00+0xd04；用例地址实参 'hd04 = 0x0d04）。rtl_change @pcie_register.v lines 171-172: 写入改为 {16'h0, dcb_wdata[15:0]}；rtl_effect: retained_mask=0x0000ffff，rule「期望读回值 = 写入值 & retained_mask」。第 113 行 set_write 写入值 32'h12345678 不变，故 PCIE_REG_RDCHK 的期望实参 expdata（api_semantics: `PCIE_REG_RDCHK(bit[31:0] addr, bit[31:0] expdata, ...)`，body 中 `if (rdata == expdata)`）改为 32'h0000_5678 = 32'h1234_5678 & 0x0000_ffff。地址、写入值、big_d 参数均未动。"
+                  }
+                ],
+                "case_state_rc": 0,
+                "source": "env_root",
+                "rationale": "该用例在 PCIE_REG_RW 中先 set_write('hd04, 32'h12345678) 再 PCIE_REG_RDCHK('hd04, 32'h12345678,1)。新 RTL 对 0x0d04 (pcie_test) 只保留写入数据低 16 位（{16'h0, dcb_wdata[15:0]}，retained_mask=0x0000ffff，cleared_mask=0xffff0000），高位读回为 0，故期望读回值按 rtl_effect 规则取 32'h1234_5678 & 0x0000_ffff = 32'h0000_5678。仅改期望值实参，写入值与地址保持原样。"
+              },
+              {
+                "case": "tc_rtc_05",
+                "file": "TESTLIB/tc_rtc_05.sv",
+                "sandbox_path": "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/sandbox/TESTLIB/tc_rtc_05.sv",
+                "md5_before": "d0649ceebadf6ce32c768ee1230c314f",
+                "md5_after": "5a5c9f73e1f8efc253f4ed976c67bd78",
+                "edits": 1,
+                "applied_edits": [
+                  {
+                    "line": 116,
+                    "old_len": 49,
+                    "new_len": 50,
+                    "basis": "rev point 0x0d00#0x0d04（display 0x0d00+0xd04；用例地址实参 'hd04 = 0x0d04）。rtl_change @pcie_register.v lines 171-172: s_reg_test 写路径改为 {16'h0, dcb_wdata[15:0]}；rtl_effect: retained_mask=0x0000ffff, cleared_mask=0xffff0000, rule「期望读回值 = 写入值 & retained_mask」。第 115 行 set_write(m_pcie_seq,'hd04, 32'h12345678) 写入值不变，故 RDCHK 的 expdata 实参改为 32'h0000_5678。后续 0x78 等 OT9548 地址不在本 rev point 内，未改。"
+                  }
+                ],
+                "case_state_rc": 0,
+                "source": "env_root",
+                "rationale": "tc_rtc_05 的 PCIE_REG_RW 同样对 'hd04（pcie_test, 0x0d00 段 +0x004）做写 32'h12345678 后读校验。新 RTL 仅保留低 16 位并把 [31:16] 读为 0，按 rtl_effect 的 retained_mask=0x0000ffff 计算期望值 32'h0000_5678，故只把 PCIE_REG_RDCHK 的期望实参由 32'h12345678 改为 32'h0000_5678，写入值、地址与其余 RTC/OT9548 检查均不变。"
+              }
+            ],
+            "targets": [
+              {
+                "case": "tc_pcie_rw_02",
+                "file": "TESTLIB/tc_pcie_rw_02.sv",
+                "md5": "eab350bb81d14bb9987bd6691a26df54",
+                "excerpt": {
+                  "start": 223,
+                  "end": 253,
+                  "line": 238,
+                  "text": "   223:         reg_field_test(m_pcie_seq, base_addr+'h194  ,32'hffff_ffff, 32'h0000_0000, 0);\n   224:         reg_field_test(m_pcie_seq, base_addr+'h198  ,32'hffff_ffff, 32'h0000_0000, 0);\n   225:         reg_field_test(m_pcie_seq, base_addr+'h19c  ,32'h0000_0000, 32'h0000_0000, 1);\n   226:         reg_field_test(m_pcie_seq, base_addr+'h1a0  ,32'h0000_0000, 32'h0000_0000, 1);\n   227:         reg_field_test(m_pcie_seq, base_addr+'h1a4  ,32'h0000_0000, 32'h0000_0000, 1);\n   228:         reg_field_test(m_pcie_seq, base_addr+'h1a8  ,32'h0000_0000, 32'h0000_0000, 1);\n   229:         reg_field_test(m_pcie_seq, base_addr+'h1ac  ,32'h0000_0000, 32'h0000_0000, 1);\n   230:     endtask\n   231: \n   232:     task pcie_reg_test(pcie_pkg::pcie_seq m_pcie_seq);//cpu only\n   233:         bit[31:0] base_addr;\n   234:         \n   235:         base_addr = `PCIE_BASE_ADDR;\n   236:         \n   237:         reg_field_test(m_pcie_seq, base_addr+'h00  ,32'h0000_0000, 32'h20121017, 1);\n   238:         reg_field_test(m_pcie_seq, base_addr+'h04  ,32'hffff_ffff, 32'h0000_0000, 0);\n   239:         reg_field_test(m_pcie_seq, base_addr+'h08  ,32'hffff_ffff, 32'h0000_0000, 0);\n   240:         for(int j=0;j<4;j++) begin\n   241:           reg_field_test(m_pcie_seq, base_addr+32'h10+j*4,32'h0000_0000,32'h00,1);//0xa00~0xafc\n   242:         end\n   243:         for(int j=0;j<8;j++) begin\n   244:           reg_field_test(m_pcie_seq, base_addr+32'h70+j*4,32'h0000_0000,32'h00,1);//0xa00~0xafc\n   245:         end\n   246:     endtask\n   247: \n   248:     task dom_reg_test(pcie_pkg::pcie_seq m_pcie_seq, int n=0);//cpu only\n   249:         bit[31:0] base_addr;\n   250:         \n   251:         base_addr = `DOME_RTC_ADDR + n*`DOME_RTC_OFFSET;\n   252:         reg_field_test(m_pcie_seq, base_addr+32'h50,32'h0000_0003,32'h00,0);\n   253:         reg_field_test(m_pcie_seq, base_addr+32'h00,32'hffff_ffff,32'h4e,0);"
+                },
+                "excerpts": [
+                  {
+                    "start": 223,
+                    "end": 253,
+                    "line": 238,
+                    "text": "   223:         reg_field_test(m_pcie_seq, base_addr+'h194  ,32'hffff_ffff, 32'h0000_0000, 0);\n   224:         reg_field_test(m_pcie_seq, base_addr+'h198  ,32'hffff_ffff, 32'h0000_0000, 0);\n   225:         reg_field_test(m_pcie_seq, base_addr+'h19c  ,32'h0000_0000, 32'h0000_0000, 1);\n   226:         reg_field_test(m_pcie_seq, base_addr+'h1a0  ,32'h0000_0000, 32'h0000_0000, 1);\n   227:         reg_field_test(m_pcie_seq, base_addr+'h1a4  ,32'h0000_0000, 32'h0000_0000, 1);\n   228:         reg_field_test(m_pcie_seq, base_addr+'h1a8  ,32'h0000_0000, 32'h0000_0000, 1);\n   229:         reg_field_test(m_pcie_seq, base_addr+'h1ac  ,32'h0000_0000, 32'h0000_0000, 1);\n   230:     endtask\n   231: \n   232:     task pcie_reg_test(pcie_pkg::pcie_seq m_pcie_seq);//cpu only\n   233:         bit[31:0] base_addr;\n   234:         \n   235:         base_addr = `PCIE_BASE_ADDR;\n   236:         \n   237:         reg_field_test(m_pcie_seq, base_addr+'h00  ,32'h0000_0000, 32'h20121017, 1);\n   238:         reg_field_test(m_pcie_seq, base_addr+'h04  ,32'hffff_ffff, 32'h0000_0000, 0);\n   239:         reg_field_test(m_pcie_seq, base_addr+'h08  ,32'hffff_ffff, 32'h0000_0000, 0);\n   240:         for(int j=0;j<4;j++) begin\n   241:           reg_field_test(m_pcie_seq, base_addr+32'h10+j*4,32'h0000_0000,32'h00,1);//0xa00~0xafc\n   242:         end\n   243:         for(int j=0;j<8;j++) begin\n   244:           reg_field_test(m_pcie_seq, base_addr+32'h70+j*4,32'h0000_0000,32'h00,1);//0xa00~0xafc\n   245:         end\n   246:     endtask\n   247: \n   248:     task dom_reg_test(pcie_pkg::pcie_seq m_pcie_seq, int n=0);//cpu only\n   249:         bit[31:0] base_addr;\n   250:         \n   251:         base_addr = `DOME_RTC_ADDR + n*`DOME_RTC_OFFSET;\n   252:         reg_field_test(m_pcie_seq, base_addr+32'h50,32'h0000_0003,32'h00,0);\n   253:         reg_field_test(m_pcie_seq, base_addr+32'h00,32'hffff_ffff,32'h4e,0);"
+                  }
+                ],
+                "revision_points": [
+                  {
+                    "entry_id": "0x0d00#0x0d04",
+                    "segment": "0x0d00",
+                    "offset": "0xd04",
+                    "display": "0x0d00+0xd04",
+                    "doc_bitdef": {
+                      "name": "pcie_test",
+                      "segment": "0x0d00",
+                      "offset_global": "0x0d04",
+                      "reset": "0",
+                      "rw": "R/W",
+                      "bitdef_present": true,
+                      "entry_id": "0x0d00#0x0d04",
+                      "source": "run_snapshot:bundle/doc_entries.jsonl"
+                    },
+                    "rtl_change": [
+                      {
+                        "file": "RTL/SRC/imports/SRC/pcie_controller/pcie_register.v",
+                        "lines": [
+                          171,
+                          172
+                        ],
+                        "offsets": [
+                          "0xd04"
+                        ],
+                        "hunk": "--- \n+++ \n@@ -168,7 +168,8 @@\n \tassign\ts_hit_7x\t=\tdcb_gnt ? (dcb_addr[7:4]\t\t==\t4'h7)\t?\t1'b1 : 1'b0\t:\thit_7x;\n \tassign\ts_hit_8x\t=\tdcb_gnt ? (dcb_addr[7:4]\t\t==\t4'h8)\t?\t1'b1 : 1'b0\t:\thit_8x;\n \t\n-\tassign\ts_reg_test\t\t=\t(write & hit_0x & hit_x4 & dcb_wdval) ? dcb_wdata \t: reg_test;\t\n+\t// 0x0d04 pcie_test: [31:16] reserved, read as 0; only [15:0] R/W\n+\tassign\ts_reg_test\t\t=\t(write & hit_0x & hit_x4 & dcb_wdval) ? {16'h0, dcb_wdata[15:0]} \t: reg_test;\t\n \tassign\ts_little_endian\t=\t(write & hit_0x & hit_x8 & dcb_wdval) ? |dcb_wdata\t: little_endian\t;\n \t\n \tassign\ts_dcb_gnt = \tdcb_gnt | grant_1d | grant_2d ? 1'b0               //ensure write complete"
+                      }
+                    ],
+                    "api_semantics": [
+                      {
+                        "callee": "reg_field_test",
+                        "defined_in": "<case_file>",
+                        "source": "case_file",
+                        "signature": "task reg_field_test( pcie_pkg::pcie_seq m_pcie_seq, bit[31:0]  addr  , bit[31:0]  data_expmask, bit[31:0]  initial_dat = '0, bit only_r=0); //rev bit is masked",
+                        "body": "bit[31:0]  test_data ;                   \n      bit[31:0]  data_rdexp;\n   \n      m_pcie_seq.PCIE_REG_RDCHK(addr,initial_dat,1);\n      for (int i = 0; i < 5; i++) begin\n        case (i)\n          0: begin test_data  = 32'hffff_ffff;  end\n          1: begin test_data  = 32'h5555_5555;  end\n          2: begin test_data  = 32'haaaa_aaaa;  end\n          3: begin test_data  = 32'h1234_5678;  end\n          4: begin test_data  = 32'h0000_0000;  end\n        endcase\n        data_rdexp = only_r ? initial_dat : test_data & data_expmask; \n        set_write(m_pcie_seq, addr, test_data );//write interal rigister\n        m_pcie_seq.PCIE_REG_RDCHK(addr, data_rdexp,1); //read interal rigister \n      end \n    endtask",
+                        "complete": true
+                      }
+                    ],
+                    "rtl_effect": {
+                      "pattern": "{16'h0, dcb_wdata[15:0]}",
+                      "retained_bits": "[15:0]",
+                      "retained_mask": "0x0000ffff",
+                      "cleared_bits": "[31:16]",
+                      "cleared_mask": "0xffff0000",
+                      "rule": "期望读回值 = 写入值 & retained_mask；不得把掩码应用到相反的一半",
+                      "zero_prefix_bits": 16,
+                      "source": "RTL/SRC/imports/SRC/pcie_controller/pcie_register.v"
+                    }
+                  }
+                ],
+                "doc_bitdef": {
+                  "name": "pcie_test",
+                  "segment": "0x0d00",
+                  "offset_global": "0x0d04",
+                  "reset": "0",
+                  "rw": "R/W",
+                  "bitdef_present": true,
+                  "entry_id": "0x0d00#0x0d04",
+                  "source": "run_snapshot:bundle/doc_entries.jsonl"
+                },
+                "rtl_change": [
+                  {
+                    "file": "RTL/SRC/imports/SRC/pcie_controller/pcie_register.v",
+                    "lines": [
+                      171,
+                      172
+                    ],
+                    "offsets": [
+                      "0xd04"
+                    ],
+                    "hunk": "--- \n+++ \n@@ -168,7 +168,8 @@\n \tassign\ts_hit_7x\t=\tdcb_gnt ? (dcb_addr[7:4]\t\t==\t4'h7)\t?\t1'b1 : 1'b0\t:\thit_7x;\n \tassign\ts_hit_8x\t=\tdcb_gnt ? (dcb_addr[7:4]\t\t==\t4'h8)\t?\t1'b1 : 1'b0\t:\thit_8x;\n \t\n-\tassign\ts_reg_test\t\t=\t(write & hit_0x & hit_x4 & dcb_wdval) ? dcb_wdata \t: reg_test;\t\n+\t// 0x0d04 pcie_test: [31:16] reserved, read as 0; only [15:0] R/W\n+\tassign\ts_reg_test\t\t=\t(write & hit_0x & hit_x4 & dcb_wdval) ? {16'h0, dcb_wdata[15:0]} \t: reg_test;\t\n \tassign\ts_little_endian\t=\t(write & hit_0x & hit_x8 & dcb_wdval) ? |dcb_wdata\t: little_endian\t;\n \t\n \tassign\ts_dcb_gnt = \tdcb_gnt | grant_1d | grant_2d ? 1'b0               //ensure write complete"
+                  }
+                ],
+                "api_semantics": [
+                  {
+                    "callee": "reg_field_test",
+                    "defined_in": "<case_file>",
+                    "source": "case_file",
+                    "signature": "task reg_field_test( pcie_pkg::pcie_seq m_pcie_seq, bit[31:0]  addr  , bit[31:0]  data_expmask, bit[31:0]  initial_dat = '0, bit only_r=0); //rev bit is masked",
+                    "body": "bit[31:0]  test_data ;                   \n      bit[31:0]  data_rdexp;\n   \n      m_pcie_seq.PCIE_REG_RDCHK(addr,initial_dat,1);\n      for (int i = 0; i < 5; i++) begin\n        case (i)\n          0: begin test_data  = 32'hffff_ffff;  end\n          1: begin test_data  = 32'h5555_5555;  end\n          2: begin test_data  = 32'haaaa_aaaa;  end\n          3: begin test_data  = 32'h1234_5678;  end\n          4: begin test_data  = 32'h0000_0000;  end\n        endcase\n        data_rdexp = only_r ? initial_dat : test_data & data_expmask; \n        set_write(m_pcie_seq, addr, test_data );//write interal rigister\n        m_pcie_seq.PCIE_REG_RDCHK(addr, data_rdexp,1); //read interal rigister \n      end \n    endtask",
+                    "complete": true
+                  }
+                ],
+                "rtl_effect": {
+                  "pattern": "{16'h0, dcb_wdata[15:0]}",
+                  "retained_bits": "[15:0]",
+                  "retained_mask": "0x0000ffff",
+                  "cleared_bits": "[31:16]",
+                  "cleared_mask": "0xffff0000",
+                  "rule": "期望读回值 = 写入值 & retained_mask；不得把掩码应用到相反的一半",
+                  "zero_prefix_bits": 16,
+                  "source": "RTL/SRC/imports/SRC/pcie_controller/pcie_register.v"
+                },
+                "why": "offset 直接命中且文档有位定义表（bitdef_present=true）⇒ 必改"
+              },
+              {
+                "case": "tc_pcie_rw_smoke",
+                "file": "TESTLIB/tc_pcie_rw_smoke.sv",
+                "md5": "75f95660d375ac2abd0595efa04b2c63",
+                "excerpt": {
+                  "start": 98,
+                  "end": 128,
+                  "line": 113,
+                  "text": "    98:             `uvm_warning(\"WR_55\", $sformatf(\"ADDR:0x%0h Rdata:0x%0h != 32'h5555_5555\", addr, rdata))\n    99:         end \n   100:     endtask \n   101: \n   102:     task PCIE_REG_RW(int pid);\n   103:         bit [31:0] rdata;\n   104:         bit [31:0] addr;\n   105:         string ID = $sformatf(\"PCIE_REG_RW\");\n   106:         pcie_pkg::pcie_seq m_pcie_seq = `CREATE_OBJ(pcie_pkg::pcie_seq, \"m_pcie_seq\")\n   107:         m_pcie_seq.set_sequencer(`PCIE_SQR);\n   108:         `uvm_info(\"SYSTEM_REG_TEST\", \"----------------\", UVM_LOW)\n   109:         set_write(m_pcie_seq,'h8, 32'h12345678);\n   110:         m_pcie_seq.PCIE_REG_RDCHK('h8, 32'h12345678,1);\n   111:         set_write(m_pcie_seq,'h8, 32'hAAAA_AAAA);\n   112:         m_pcie_seq.PCIE_REG_RDCHK('h8, 32'hAAAA_AAAA);\n   113:         set_write(m_pcie_seq,'hd04, 32'h12345678);\n   114:         m_pcie_seq.PCIE_REG_RDCHK('hd04, 32'h12345678,1);\n   115:         set_read(m_pcie_seq,'h4200, rdata);\n   116:         //for (int addr = 'h0000_0000; addr <= 'h0001_FFFF; addr=addr+4)begin \n   117:         //    this.regAA_55_chk(m_pcie_seq, addr);\n   118:         //end \n   119:         set_write(m_pcie_seq,'h808, 32'h81);\n   120:         set_write(m_pcie_seq,'h808, 32'h81);\n   121:         set_read(m_pcie_seq, 'h808, rdata);\n   122:         set_read(m_pcie_seq, 'h80c, rdata);\n   123:         rdata[7] = 1;\n   124:         set_write(m_pcie_seq,'h80c, rdata);\n   125:         set_read(m_pcie_seq, 'h808, rdata);\n   126:         \n   127:         set_read(m_pcie_seq,'h8c, rdata);\n   128:         set_write(m_pcie_seq,'h8c, 32'h12345678);"
+                },
+                "excerpts": [
+                  {
+                    "start": 98,
+                    "end": 128,
+                    "line": 113,
+                    "text": "    98:             `uvm_warning(\"WR_55\", $sformatf(\"ADDR:0x%0h Rdata:0x%0h != 32'h5555_5555\", addr, rdata))\n    99:         end \n   100:     endtask \n   101: \n   102:     task PCIE_REG_RW(int pid);\n   103:         bit [31:0] rdata;\n   104:         bit [31:0] addr;\n   105:         string ID = $sformatf(\"PCIE_REG_RW\");\n   106:         pcie_pkg::pcie_seq m_pcie_seq = `CREATE_OBJ(pcie_pkg::pcie_seq, \"m_pcie_seq\")\n   107:         m_pcie_seq.set_sequencer(`PCIE_SQR);\n   108:         `uvm_info(\"SYSTEM_REG_TEST\", \"----------------\", UVM_LOW)\n   109:         set_write(m_pcie_seq,'h8, 32'h12345678);\n   110:         m_pcie_seq.PCIE_REG_RDCHK('h8, 32'h12345678,1);\n   111:         set_write(m_pcie_seq,'h8, 32'hAAAA_AAAA);\n   112:         m_pcie_seq.PCIE_REG_RDCHK('h8, 32'hAAAA_AAAA);\n   113:         set_write(m_pcie_seq,'hd04, 32'h12345678);\n   114:         m_pcie_seq.PCIE_REG_RDCHK('hd04, 32'h12345678,1);\n   115:         set_read(m_pcie_seq,'h4200, rdata);\n   116:         //for (int addr = 'h0000_0000; addr <= 'h0001_FFFF; addr=addr+4)begin \n   117:         //    this.regAA_55_chk(m_pcie_seq, addr);\n   118:         //end \n   119:         set_write(m_pcie_seq,'h808, 32'h81);\n   120:         set_write(m_pcie_seq,'h808, 32'h81);\n   121:         set_read(m_pcie_seq, 'h808, rdata);\n   122:         set_read(m_pcie_seq, 'h80c, rdata);\n   123:         rdata[7] = 1;\n   124:         set_write(m_pcie_seq,'h80c, rdata);\n   125:         set_read(m_pcie_seq, 'h808, rdata);\n   126:         \n   127:         set_read(m_pcie_seq,'h8c, rdata);\n   128:         set_write(m_pcie_seq,'h8c, 32'h12345678);"
+                  }
+                ],
+                "revision_points": [
+                  {
+                    "entry_id": "0x0d00#0x0d04",
+                    "segment": "0x0d00",
+                    "offset": "0xd04",
+                    "display": "0x0d00+0xd04",
+                    "doc_bitdef": {
+                      "name": "pcie_test",
+                      "segment": "0x0d00",
+                      "offset_global": "0x0d04",
+                      "reset": "0",
+                      "rw": "R/W",
+                      "bitdef_present": true,
+                      "entry_id": "0x0d00#0x0d04",
+                      "source": "run_snapshot:bundle/doc_entries.jsonl"
+                    },
+                    "rtl_change": [
+                      {
+                        "file": "RTL/SRC/imports/SRC/pcie_controller/pcie_register.v",
+                        "lines": [
+                          171,
+                          172
+                        ],
+                        "offsets": [
+                          "0xd04"
+                        ],
+                        "hunk": "--- \n+++ \n@@ -168,7 +168,8 @@\n \tassign\ts_hit_7x\t=\tdcb_gnt ? (dcb_addr[7:4]\t\t==\t4'h7)\t?\t1'b1 : 1'b0\t:\thit_7x;\n \tassign\ts_hit_8x\t=\tdcb_gnt ? (dcb_addr[7:4]\t\t==\t4'h8)\t?\t1'b1 : 1'b0\t:\thit_8x;\n \t\n-\tassign\ts_reg_test\t\t=\t(write & hit_0x & hit_x4 & dcb_wdval) ? dcb_wdata \t: reg_test;\t\n+\t// 0x0d04 pcie_test: [31:16] reserved, read as 0; only [15:0] R/W\n+\tassign\ts_reg_test\t\t=\t(write & hit_0x & hit_x4 & dcb_wdval) ? {16'h0, dcb_wdata[15:0]} \t: reg_test;\t\n \tassign\ts_little_endian\t=\t(write & hit_0x & hit_x8 & dcb_wdval) ? |dcb_wdata\t: little_endian\t;\n \t\n \tassign\ts_dcb_gnt = \tdcb_gnt | grant_1d | grant_2d ? 1'b0               //ensure write complete"
+                      }
+                    ],
+                    "api_semantics": [
+                      {
+                        "callee": "set_write",
+                        "defined_in": "<case_file>",
+                        "source": "case_file",
+                        "signature": "task set_write(pcie_pkg::pcie_seq m_pcie_seq, bit [31:0] addr, bit [31:0] wdata);",
+                        "body": "bit [31:0] wdata_tmp;\n      \n      wdata_tmp = {wdata[7:0],wdata[15:8],wdata[23:16],wdata[31:24]};\n      m_pcie_seq.PCIE_REG_WR(addr, wdata_tmp);\n    endtask",
+                        "complete": true
+                      },
+                      {
+                        "callee": "PCIE_REG_RDCHK",
+                        "defined_in": "TB/AGENTS/PCIE-Agent/pcie_sequence.sv",
+                        "source": "scan:TB",
+                        "signature": "virtual task PCIE_REG_RDCHK(bit [31:0] addr, bit [31:0] expdata, bit big_d=0, input bit is34dw = 0, input int gap = 0);",
+                        "body": "string dw_str = is34dw ? \"3DW\" : \"4DW\";\n        bit    m_is34dw = is34dw;\n        bit [31:0] rdata, rdata_tmp;\n        pcie_m_rd_seq  pmr_seq;\n        pmr_seq = pcie_m_rd_seq::type_id::create(\"pmr_seq\");\n        if(p_sequencer.m_pcie_cfg.m_3dw_4dw inside {[0:1]}) begin\n            dw_str = p_sequencer.m_pcie_cfg.m_3dw_4dw ? \"3DW\" : \"4DW\";\n            m_is34dw = p_sequencer.m_pcie_cfg.m_3dw_4dw;\n        end\n        m_atomic.get(1);\n        pmr_seq.s_m_read(.addr(addr), .is34dw(m_is34dw), .gap(gap), .seqr(p_sequencer));\n        glbGetTrigger($sformatf(\"Tag0x%0h@WR_RAM_FPGA_MIRROR@0x%0h\", pmr_seq.my_tag1, addr));\n        m_atomic.put(1);\n        rdata = pcie_pkg::FPGA_RAM_MIRROR[addr][`DATA_WIDTH*8-1:0];\n        if (big_d) begin\n          rdata_tmp = pcie_pkg::FPGA_RAM_MIRROR[addr][`DATA_WIDTH*8-1:0];\n          for (int i=0;i<4;i++) begin\n              rdata[i*8+:8] = rdata_tmp[31-i*8-:8];\n          end\n        end\n        if (rdata == expdata) begin\n        `uvm_info($sformatf(\"PCIE_REG_RD@%0s\",dw_str), $sformatf(\"@ADDR[0x%0h] -> DATA[0x%0h]\",addr,rdata),UVM_LOW);\n        end else begin\n          `uvm_info($sformatf(\"PCIE_REG_RD@%0s\",dw_str), $sformatf(\"*E @ADDR[0x%0h] -> DATA[0x%0h] != EXP[0x%0h]\",addr,rdata,expdata),UVM_LOW);\n        end\n    endtask",
+                        "complete": true
+                      },
+                      {
+                        "callee": "set_read",
+                        "defined_in": "<case_file>",
+                        "source": "case_file",
+                        "signature": "task set_read(pcie_pkg::pcie_seq m_pcie_seq, bit [31:0] addr, output bit [31:0] rdata);",
+                        "body": "bit [31:0] rdata_tmp;\n\n      m_pcie_seq.PCIE_REG_RD(addr, rdata_tmp);\n      rdata = {rdata_tmp[7:0],rdata_tmp[15:8],rdata_tmp[23:16],rdata_tmp[31:24]};\n    endtask",
+                        "complete": true
+                      }
+                    ],
+                    "rtl_effect": {
+                      "pattern": "{16'h0, dcb_wdata[15:0]}",
+                      "retained_bits": "[15:0]",
+                      "retained_mask": "0x0000ffff",
+                      "cleared_bits": "[31:16]",
+                      "cleared_mask": "0xffff0000",
+                      "rule": "期望读回值 = 写入值 & retained_mask；不得把掩码应用到相反的一半",
+                      "zero_prefix_bits": 16,
+                      "source": "RTL/SRC/imports/SRC/pcie_controller/pcie_register.v"
+                    }
+                  }
+                ],
+                "doc_bitdef": {
+                  "name": "pcie_test",
+                  "segment": "0x0d00",
+                  "offset_global": "0x0d04",
+                  "reset": "0",
+                  "rw": "R/W",
+                  "bitdef_present": true,
+                  "entry_id": "0x0d00#0x0d04",
+                  "source": "run_snapshot:bundle/doc_entries.jsonl"
+                },
+                "rtl_change": [
+                  {
+                    "file": "RTL/SRC/imports/SRC/pcie_controller/pcie_register.v",
+                    "lines": [
+                      171,
+                      172
+                    ],
+                    "offsets": [
+                      "0xd04"
+                    ],
+                    "hunk": "--- \n+++ \n@@ -168,7 +168,8 @@\n \tassign\ts_hit_7x\t=\tdcb_gnt ? (dcb_addr[7:4]\t\t==\t4'h7)\t?\t1'b1 : 1'b0\t:\thit_7x;\n \tassign\ts_hit_8x\t=\tdcb_gnt ? (dcb_addr[7:4]\t\t==\t4'h8)\t?\t1'b1 : 1'b0\t:\thit_8x;\n \t\n-\tassign\ts_reg_test\t\t=\t(write & hit_0x & hit_x4 & dcb_wdval) ? dcb_wdata \t: reg_test;\t\n+\t// 0x0d04 pcie_test: [31:16] reserved, read as 0; only [15:0] R/W\n+\tassign\ts_reg_test\t\t=\t(write & hit_0x & hit_x4 & dcb_wdval) ? {16'h0, dcb_wdata[15:0]} \t: reg_test;\t\n \tassign\ts_little_endian\t=\t(write & hit_0x & hit_x8 & dcb_wdval) ? |dcb_wdata\t: little_endian\t;\n \t\n \tassign\ts_dcb_gnt = \tdcb_gnt | grant_1d | grant_2d ? 1'b0               //ensure write complete"
+                  }
+                ],
+                "api_semantics": [
+                  {
+                    "callee": "set_write",
+                    "defined_in": "<case_file>",
+                    "source": "case_file",
+                    "signature": "task set_write(pcie_pkg::pcie_seq m_pcie_seq, bit [31:0] addr, bit [31:0] wdata);",
+                    "body": "bit [31:0] wdata_tmp;\n      \n      wdata_tmp = {wdata[7:0],wdata[15:8],wdata[23:16],wdata[31:24]};\n      m_pcie_seq.PCIE_REG_WR(addr, wdata_tmp);\n    endtask",
+                    "complete": true
+                  },
+                  {
+                    "callee": "PCIE_REG_RDCHK",
+                    "defined_in": "TB/AGENTS/PCIE-Agent/pcie_sequence.sv",
+                    "source": "scan:TB",
+                    "signature": "virtual task PCIE_REG_RDCHK(bit [31:0] addr, bit [31:0] expdata, bit big_d=0, input bit is34dw = 0, input int gap = 0);",
+                    "body": "string dw_str = is34dw ? \"3DW\" : \"4DW\";\n        bit    m_is34dw = is34dw;\n        bit [31:0] rdata, rdata_tmp;\n        pcie_m_rd_seq  pmr_seq;\n        pmr_seq = pcie_m_rd_seq::type_id::create(\"pmr_seq\");\n        if(p_sequencer.m_pcie_cfg.m_3dw_4dw inside {[0:1]}) begin\n            dw_str = p_sequencer.m_pcie_cfg.m_3dw_4dw ? \"3DW\" : \"4DW\";\n            m_is34dw = p_sequencer.m_pcie_cfg.m_3dw_4dw;\n        end\n        m_atomic.get(1);\n        pmr_seq.s_m_read(.addr(addr), .is34dw(m_is34dw), .gap(gap), .seqr(p_sequencer));\n        glbGetTrigger($sformatf(\"Tag0x%0h@WR_RAM_FPGA_MIRROR@0x%0h\", pmr_seq.my_tag1, addr));\n        m_atomic.put(1);\n        rdata = pcie_pkg::FPGA_RAM_MIRROR[addr][`DATA_WIDTH*8-1:0];\n        if (big_d) begin\n          rdata_tmp = pcie_pkg::FPGA_RAM_MIRROR[addr][`DATA_WIDTH*8-1:0];\n          for (int i=0;i<4;i++) begin\n              rdata[i*8+:8] = rdata_tmp[31-i*8-:8];\n          end\n        end\n        if (rdata == expdata) begin\n        `uvm_info($sformatf(\"PCIE_REG_RD@%0s\",dw_str), $sformatf(\"@ADDR[0x%0h] -> DATA[0x%0h]\",addr,rdata),UVM_LOW);\n        end else begin\n          `uvm_info($sformatf(\"PCIE_REG_RD@%0s\",dw_str), $sformatf(\"*E @ADDR[0x%0h] -> DATA[0x%0h] != EXP[0x%0h]\",addr,rdata,expdata),UVM_LOW);\n        end\n    endtask",
+                    "complete": true
+                  },
+                  {
+                    "callee": "set_read",
+                    "defined_in": "<case_file>",
+                    "source": "case_file",
+                    "signature": "task set_read(pcie_pkg::pcie_seq m_pcie_seq, bit [31:0] addr, output bit [31:0] rdata);",
+                    "body": "bit [31:0] rdata_tmp;\n\n      m_pcie_seq.PCIE_REG_RD(addr, rdata_tmp);\n      rdata = {rdata_tmp[7:0],rdata_tmp[15:8],rdata_tmp[23:16],rdata_tmp[31:24]};\n    endtask",
+                    "complete": true
+                  }
+                ],
+                "rtl_effect": {
+                  "pattern": "{16'h0, dcb_wdata[15:0]}",
+                  "retained_bits": "[15:0]",
+                  "retained_mask": "0x0000ffff",
+                  "cleared_bits": "[31:16]",
+                  "cleared_mask": "0xffff0000",
+                  "rule": "期望读回值 = 写入值 & retained_mask；不得把掩码应用到相反的一半",
+                  "zero_prefix_bits": 16,
+                  "source": "RTL/SRC/imports/SRC/pcie_controller/pcie_register.v"
+                },
+                "why": "offset 直接命中且文档有位定义表（bitdef_present=true）⇒ 必改"
+              },
+              {
+                "case": "tc_rtc_05",
+                "file": "TESTLIB/tc_rtc_05.sv",
+                "md5": "d0649ceebadf6ce32c768ee1230c314f",
+                "excerpt": {
+                  "start": 100,
+                  "end": 130,
+                  "line": 115,
+                  "text": "   100:             `uvm_warning(\"WR_55\", $sformatf(\"ADDR:0x%0h Rdata:0x%0h != 32'h5555_5555\", addr, rdata))\n   101:         end \n   102:     endtask \n   103: \n   104:     task PCIE_REG_RW(int pid);\n   105:         bit [31:0] rdata;\n   106:         bit [31:0] addr;\n   107:         string ID = $sformatf(\"PCIE_REG_RW\");\n   108:         pcie_pkg::pcie_seq m_pcie_seq = `CREATE_OBJ(pcie_pkg::pcie_seq, \"m_pcie_seq\")\n   109:         m_pcie_seq.set_sequencer(`PCIE_SQR);\n   110:         `uvm_info(\"SYSTEM_REG_TEST\", \"----------------\", UVM_LOW)\n   111:         set_write(m_pcie_seq,'h8, 32'h12345678);\n   112:         m_pcie_seq.PCIE_REG_RDCHK('h8, 32'h12345678,1);\n   113:         set_write(m_pcie_seq,'h8, 32'hAAAA_AAAA);\n   114:         m_pcie_seq.PCIE_REG_RDCHK('h8, 32'hAAAA_AAAA);\n   115:         set_write(m_pcie_seq,'hd04, 32'h12345678);\n   116:         m_pcie_seq.PCIE_REG_RDCHK('hd04, 32'h12345678,1);\n   117:         \n   118:         for(int i = 0; i < `FPGA_RTC_NUM; i++) begin\n   119:           m_pcie_seq.PCIE_REG_RDCHK(`FPGA_OT9548_ADDR + i*32'h200 + 32'h78, 32'h1,1);\n   120:           set_write(m_pcie_seq, `FPGA_OT9548_ADDR + i*32'h200 + 32'h78, 0);//复位\n   121:           #10us;\n   122:           set_write(m_pcie_seq, `FPGA_OT9548_ADDR + i*32'h200 + 32'h78, 1);///解复位\n   123:         end\n   124:         #20us;\n   125:         for(int i = 0; i < `FPGA_RTC_NUM; i++) begin\n   126:           `SPI_MST(pid).set_rdchk(`FPGA_OT9548_ADDR + i*32'h200 + 32'h78, 32'h1);\n   127:           `SPI_MST(pid).set_write(`FPGA_OT9548_ADDR + i*32'h200 + 32'h78, 0);//复位\n   128:           #10us;\n   129:           `SPI_MST(pid).set_write(`FPGA_OT9548_ADDR + i*32'h200 + 32'h78, 1);//解复位\n   130:         end"
+                },
+                "excerpts": [
+                  {
+                    "start": 100,
+                    "end": 130,
+                    "line": 115,
+                    "text": "   100:             `uvm_warning(\"WR_55\", $sformatf(\"ADDR:0x%0h Rdata:0x%0h != 32'h5555_5555\", addr, rdata))\n   101:         end \n   102:     endtask \n   103: \n   104:     task PCIE_REG_RW(int pid);\n   105:         bit [31:0] rdata;\n   106:         bit [31:0] addr;\n   107:         string ID = $sformatf(\"PCIE_REG_RW\");\n   108:         pcie_pkg::pcie_seq m_pcie_seq = `CREATE_OBJ(pcie_pkg::pcie_seq, \"m_pcie_seq\")\n   109:         m_pcie_seq.set_sequencer(`PCIE_SQR);\n   110:         `uvm_info(\"SYSTEM_REG_TEST\", \"----------------\", UVM_LOW)\n   111:         set_write(m_pcie_seq,'h8, 32'h12345678);\n   112:         m_pcie_seq.PCIE_REG_RDCHK('h8, 32'h12345678,1);\n   113:         set_write(m_pcie_seq,'h8, 32'hAAAA_AAAA);\n   114:         m_pcie_seq.PCIE_REG_RDCHK('h8, 32'hAAAA_AAAA);\n   115:         set_write(m_pcie_seq,'hd04, 32'h12345678);\n   116:         m_pcie_seq.PCIE_REG_RDCHK('hd04, 32'h12345678,1);\n   117:         \n   118:         for(int i = 0; i < `FPGA_RTC_NUM; i++) begin\n   119:           m_pcie_seq.PCIE_REG_RDCHK(`FPGA_OT9548_ADDR + i*32'h200 + 32'h78, 32'h1,1);\n   120:           set_write(m_pcie_seq, `FPGA_OT9548_ADDR + i*32'h200 + 32'h78, 0);//复位\n   121:           #10us;\n   122:           set_write(m_pcie_seq, `FPGA_OT9548_ADDR + i*32'h200 + 32'h78, 1);///解复位\n   123:         end\n   124:         #20us;\n   125:         for(int i = 0; i < `FPGA_RTC_NUM; i++) begin\n   126:           `SPI_MST(pid).set_rdchk(`FPGA_OT9548_ADDR + i*32'h200 + 32'h78, 32'h1);\n   127:           `SPI_MST(pid).set_write(`FPGA_OT9548_ADDR + i*32'h200 + 32'h78, 0);//复位\n   128:           #10us;\n   129:           `SPI_MST(pid).set_write(`FPGA_OT9548_ADDR + i*32'h200 + 32'h78, 1);//解复位\n   130:         end"
+                  }
+                ],
+                "revision_points": [
+                  {
+                    "entry_id": "0x0d00#0x0d04",
+                    "segment": "0x0d00",
+                    "offset": "0xd04",
+                    "display": "0x0d00+0xd04",
+                    "doc_bitdef": {
+                      "name": "pcie_test",
+                      "segment": "0x0d00",
+                      "offset_global": "0x0d04",
+                      "reset": "0",
+                      "rw": "R/W",
+                      "bitdef_present": true,
+                      "entry_id": "0x0d00#0x0d04",
+                      "source": "run_snapshot:bundle/doc_entries.jsonl"
+                    },
+                    "rtl_change": [
+                      {
+                        "file": "RTL/SRC/imports/SRC/pcie_controller/pcie_register.v",
+                        "lines": [
+                          171,
+                          172
+                        ],
+                        "offsets": [
+                          "0xd04"
+                        ],
+                        "hunk": "--- \n+++ \n@@ -168,7 +168,8 @@\n \tassign\ts_hit_7x\t=\tdcb_gnt ? (dcb_addr[7:4]\t\t==\t4'h7)\t?\t1'b1 : 1'b0\t:\thit_7x;\n \tassign\ts_hit_8x\t=\tdcb_gnt ? (dcb_addr[7:4]\t\t==\t4'h8)\t?\t1'b1 : 1'b0\t:\thit_8x;\n \t\n-\tassign\ts_reg_test\t\t=\t(write & hit_0x & hit_x4 & dcb_wdval) ? dcb_wdata \t: reg_test;\t\n+\t// 0x0d04 pcie_test: [31:16] reserved, read as 0; only [15:0] R/W\n+\tassign\ts_reg_test\t\t=\t(write & hit_0x & hit_x4 & dcb_wdval) ? {16'h0, dcb_wdata[15:0]} \t: reg_test;\t\n \tassign\ts_little_endian\t=\t(write & hit_0x & hit_x8 & dcb_wdval) ? |dcb_wdata\t: little_endian\t;\n \t\n \tassign\ts_dcb_gnt = \tdcb_gnt | grant_1d | grant_2d ? 1'b0               //ensure write complete"
+                      }
+                    ],
+                    "api_semantics": [
+                      {
+                        "callee": "set_write",
+                        "defined_in": "<case_file>",
+                        "source": "case_file",
+                        "signature": "task set_write(pcie_pkg::pcie_seq m_pcie_seq, bit [31:0] addr, bit [31:0] wdata);",
+                        "body": "bit [31:0] wdata_tmp;\n      \n      wdata_tmp = {wdata[7:0],wdata[15:8],wdata[23:16],wdata[31:24]};\n      m_pcie_seq.PCIE_REG_WR(addr, wdata_tmp);\n    endtask",
+                        "complete": true
+                      },
+                      {
+                        "callee": "PCIE_REG_RDCHK",
+                        "defined_in": "TB/AGENTS/PCIE-Agent/pcie_sequence.sv",
+                        "source": "scan:TB",
+                        "signature": "virtual task PCIE_REG_RDCHK(bit [31:0] addr, bit [31:0] expdata, bit big_d=0, input bit is34dw = 0, input int gap = 0);",
+                        "body": "string dw_str = is34dw ? \"3DW\" : \"4DW\";\n        bit    m_is34dw = is34dw;\n        bit [31:0] rdata, rdata_tmp;\n        pcie_m_rd_seq  pmr_seq;\n        pmr_seq = pcie_m_rd_seq::type_id::create(\"pmr_seq\");\n        if(p_sequencer.m_pcie_cfg.m_3dw_4dw inside {[0:1]}) begin\n            dw_str = p_sequencer.m_pcie_cfg.m_3dw_4dw ? \"3DW\" : \"4DW\";\n            m_is34dw = p_sequencer.m_pcie_cfg.m_3dw_4dw;\n        end\n        m_atomic.get(1);\n        pmr_seq.s_m_read(.addr(addr), .is34dw(m_is34dw), .gap(gap), .seqr(p_sequencer));\n        glbGetTrigger($sformatf(\"Tag0x%0h@WR_RAM_FPGA_MIRROR@0x%0h\", pmr_seq.my_tag1, addr));\n        m_atomic.put(1);\n        rdata = pcie_pkg::FPGA_RAM_MIRROR[addr][`DATA_WIDTH*8-1:0];\n        if (big_d) begin\n          rdata_tmp = pcie_pkg::FPGA_RAM_MIRROR[addr][`DATA_WIDTH*8-1:0];\n          for (int i=0;i<4;i++) begin\n              rdata[i*8+:8] = rdata_tmp[31-i*8-:8];\n          end\n        end\n        if (rdata == expdata) begin\n        `uvm_info($sformatf(\"PCIE_REG_RD@%0s\",dw_str), $sformatf(\"@ADDR[0x%0h] -> DATA[0x%0h]\",addr,rdata),UVM_LOW);\n        end else begin\n          `uvm_info($sformatf(\"PCIE_REG_RD@%0s\",dw_str), $sformatf(\"*E @ADDR[0x%0h] -> DATA[0x%0h] != EXP[0x%0h]\",addr,rdata,expdata),UVM_LOW);\n        end\n    endtask",
+                        "complete": true
+                      }
+                    ],
+                    "rtl_effect": {
+                      "pattern": "{16'h0, dcb_wdata[15:0]}",
+                      "retained_bits": "[15:0]",
+                      "retained_mask": "0x0000ffff",
+                      "cleared_bits": "[31:16]",
+                      "cleared_mask": "0xffff0000",
+                      "rule": "期望读回值 = 写入值 & retained_mask；不得把掩码应用到相反的一半",
+                      "zero_prefix_bits": 16,
+                      "source": "RTL/SRC/imports/SRC/pcie_controller/pcie_register.v"
+                    }
+                  }
+                ],
+                "doc_bitdef": {
+                  "name": "pcie_test",
+                  "segment": "0x0d00",
+                  "offset_global": "0x0d04",
+                  "reset": "0",
+                  "rw": "R/W",
+                  "bitdef_present": true,
+                  "entry_id": "0x0d00#0x0d04",
+                  "source": "run_snapshot:bundle/doc_entries.jsonl"
+                },
+                "rtl_change": [
+                  {
+                    "file": "RTL/SRC/imports/SRC/pcie_controller/pcie_register.v",
+                    "lines": [
+                      171,
+                      172
+                    ],
+                    "offsets": [
+                      "0xd04"
+                    ],
+                    "hunk": "--- \n+++ \n@@ -168,7 +168,8 @@\n \tassign\ts_hit_7x\t=\tdcb_gnt ? (dcb_addr[7:4]\t\t==\t4'h7)\t?\t1'b1 : 1'b0\t:\thit_7x;\n \tassign\ts_hit_8x\t=\tdcb_gnt ? (dcb_addr[7:4]\t\t==\t4'h8)\t?\t1'b1 : 1'b0\t:\thit_8x;\n \t\n-\tassign\ts_reg_test\t\t=\t(write & hit_0x & hit_x4 & dcb_wdval) ? dcb_wdata \t: reg_test;\t\n+\t// 0x0d04 pcie_test: [31:16] reserved, read as 0; only [15:0] R/W\n+\tassign\ts_reg_test\t\t=\t(write & hit_0x & hit_x4 & dcb_wdval) ? {16'h0, dcb_wdata[15:0]} \t: reg_test;\t\n \tassign\ts_little_endian\t=\t(write & hit_0x & hit_x8 & dcb_wdval) ? |dcb_wdata\t: little_endian\t;\n \t\n \tassign\ts_dcb_gnt = \tdcb_gnt | grant_1d | grant_2d ? 1'b0               //ensure write complete"
+                  }
+                ],
+                "api_semantics": [
+                  {
+                    "callee": "set_write",
+                    "defined_in": "<case_file>",
+                    "source": "case_file",
+                    "signature": "task set_write(pcie_pkg::pcie_seq m_pcie_seq, bit [31:0] addr, bit [31:0] wdata);",
+                    "body": "bit [31:0] wdata_tmp;\n      \n      wdata_tmp = {wdata[7:0],wdata[15:8],wdata[23:16],wdata[31:24]};\n      m_pcie_seq.PCIE_REG_WR(addr, wdata_tmp);\n    endtask",
+                    "complete": true
+                  },
+                  {
+                    "callee": "PCIE_REG_RDCHK",
+                    "defined_in": "TB/AGENTS/PCIE-Agent/pcie_sequence.sv",
+                    "source": "scan:TB",
+                    "signature": "virtual task PCIE_REG_RDCHK(bit [31:0] addr, bit [31:0] expdata, bit big_d=0, input bit is34dw = 0, input int gap = 0);",
+                    "body": "string dw_str = is34dw ? \"3DW\" : \"4DW\";\n        bit    m_is34dw = is34dw;\n        bit [31:0] rdata, rdata_tmp;\n        pcie_m_rd_seq  pmr_seq;\n        pmr_seq = pcie_m_rd_seq::type_id::create(\"pmr_seq\");\n        if(p_sequencer.m_pcie_cfg.m_3dw_4dw inside {[0:1]}) begin\n            dw_str = p_sequencer.m_pcie_cfg.m_3dw_4dw ? \"3DW\" : \"4DW\";\n            m_is34dw = p_sequencer.m_pcie_cfg.m_3dw_4dw;\n        end\n        m_atomic.get(1);\n        pmr_seq.s_m_read(.addr(addr), .is34dw(m_is34dw), .gap(gap), .seqr(p_sequencer));\n        glbGetTrigger($sformatf(\"Tag0x%0h@WR_RAM_FPGA_MIRROR@0x%0h\", pmr_seq.my_tag1, addr));\n        m_atomic.put(1);\n        rdata = pcie_pkg::FPGA_RAM_MIRROR[addr][`DATA_WIDTH*8-1:0];\n        if (big_d) begin\n          rdata_tmp = pcie_pkg::FPGA_RAM_MIRROR[addr][`DATA_WIDTH*8-1:0];\n          for (int i=0;i<4;i++) begin\n              rdata[i*8+:8] = rdata_tmp[31-i*8-:8];\n          end\n        end\n        if (rdata == expdata) begin\n        `uvm_info($sformatf(\"PCIE_REG_RD@%0s\",dw_str), $sformatf(\"@ADDR[0x%0h] -> DATA[0x%0h]\",addr,rdata),UVM_LOW);\n        end else begin\n          `uvm_info($sformatf(\"PCIE_REG_RD@%0s\",dw_str), $sformatf(\"*E @ADDR[0x%0h] -> DATA[0x%0h] != EXP[0x%0h]\",addr,rdata,expdata),UVM_LOW);\n        end\n    endtask",
+                    "complete": true
+                  }
+                ],
+                "rtl_effect": {
+                  "pattern": "{16'h0, dcb_wdata[15:0]}",
+                  "retained_bits": "[15:0]",
+                  "retained_mask": "0x0000ffff",
+                  "cleared_bits": "[31:16]",
+                  "cleared_mask": "0xffff0000",
+                  "rule": "期望读回值 = 写入值 & retained_mask；不得把掩码应用到相反的一半",
+                  "zero_prefix_bits": 16,
+                  "source": "RTL/SRC/imports/SRC/pcie_controller/pcie_register.v"
+                },
+                "why": "offset 直接命中且文档有位定义表（bitdef_present=true）⇒ 必改"
+              }
+            ],
+            "count": 3,
+            "case_state_path": "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/case_states.json"
+          },
+          "n3_digest": {
+            "path": "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/n3_digest.md",
+            "exists": true
+          },
+          "host_trace": {
+            "path": "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/staged/mock_change_applied.json",
+            "exists": false,
+            "count": 0,
+            "changes": [],
+            "applied_at": null,
+            "baseline_from": null,
+            "error": "缺失"
+          },
+          "ledger_notes": [],
+          "conflicts": {
+            "total": 72,
+            "expected_total": 72,
+            "blocks_release": 72,
+            "open": 72,
+            "source": "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/conflicts/conflicts.json",
+            "consistent": true
+          },
+          "conflict_items": [
+            {
+              "id": "C1",
+              "blocks_release": true,
+              "status": "open"
+            },
+            {
+              "id": "C2",
+              "blocks_release": true,
+              "status": "open"
+            },
+            {
+              "id": "C3",
+              "blocks_release": true,
+              "status": "open"
+            },
+            {
+              "id": "C4",
+              "blocks_release": true,
+              "status": "open"
+            },
+            {
+              "id": "C5",
+              "blocks_release": true,
+              "status": "open"
+            },
+            {
+              "id": "C6",
+              "blocks_release": true,
+              "status": "open"
+            },
+            {
+              "id": "C7",
+              "blocks_release": true,
+              "status": "open"
+            },
+            {
+              "id": "C8",
+              "blocks_release": true,
+              "status": "open"
+            },
+            {
+              "id": "C9",
+              "blocks_release": true,
+              "status": "open"
+            },
+            {
+              "id": "C10",
+              "blocks_release": true,
+              "status": "open"
+            },
+            {
+              "id": "C11",
+              "blocks_release": true,
+              "status": "open"
+            },
+            {
+              "id": "C12",
+              "blocks_release": true,
+              "status": "open"
+            }
+          ],
+          "baselines": [
+            {
+              "name": "v0",
+              "manifest": "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/baselines/v0/manifest.json",
+              "parent": null,
+              "created_at": "2026-10-22T17:29:12+0800"
+            }
+          ],
+          "model_modes": {
+            "n8_check": "live",
+            "n11_review": "live",
+            "n12_report": "live"
+          },
+          "standin_model_nodes": false,
+          "standin_nodes": [],
+          "entry_decisions_required": true,
+          "unresolved_entries": [
+            "RTL/SRC/imports/SRC/pcie_controller/pcie_register.v"
+          ],
+          "decision_record": null,
+          "invariant_note": "I3：两套口径均为 0 才可判跑通；I2：待验用例不得称跑通；I4：清单未清零不发版。",
+          "actor_policy": "actor_kind 必须为 human；rehearsal/模型 actor 在 require-signed 下被拒（I6 / F-GATE-01）。",
+          "refs": [
+            "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/n2_diff.json",
+            "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/case_states.json",
+            "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/n3_digest.md",
+            "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/evidence"
+          ],
+          "run_id": "RUN-20261022-181700",
+          "cycle": "0-0",
+          "decision_options": [
+            {
+              "value": "accept",
+              "label": "接受报告",
+              "requires_reason": false
+            },
+            {
+              "value": "rework",
+              "label": "返工",
+              "requires_reason": true
+            }
+          ],
+          "gate_node": "N13",
+          "authority_enums": {
+            "G1_diff_confirm": [
+              "confirmed",
+              "ignored",
+              "disputed",
+              "pending"
+            ],
+            "G2_report_accept": [
+              "accept",
+              "rework",
+              "pending"
+            ],
+            "G3_regression_decision": [
+              "full_now",
+              "subset_only",
+              "milestone_only",
+              "defer",
+              "pending"
+            ]
+          }
+        }
+      },
+      "provider_metadata": {}
+    }
+  },
+  "error": null,
+  "notes": [
+    "snapshot 失败：RuntimeError: Can not save TriggerFlowExecution 5302671ad8a44b0d8038efb8a31739e5 with require_idle=True while tasks are active."
+  ]
+}

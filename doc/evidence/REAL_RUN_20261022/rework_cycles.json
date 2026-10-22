@@ -1,0 +1,7 @@
+{
+  "n6_n8_cycles": 0,
+  "g2_rework_cycles": 0,
+  "limit": 3,
+  "source": "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/rework_cycles.json",
+  "case_state_source": "/home/work/chenjunming/change-impact-loop/workspaces/real-ws/runs/RUN-20261022-181700/case_states.json"
+}

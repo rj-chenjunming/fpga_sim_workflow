@@ -61,6 +61,26 @@ def test_dead_owner_is_reclaimed(tmp_path: Path) -> None:
     assert result.granted is True and result.reason == "reclaimed_dead_owner"
 
 
+def test_job_command_ending_with_exit_still_writes_rc(tmp_path: Path) -> None:
+    """N9 real 全跑命令以 `exit 0` 结尾：rc 写入不能被它提前跳过。
+
+    真实实证（2026-10-22 real 轮）：N9 三个用例全部 rc=0（证据日志齐全），
+    但作业被判 `dead`（rc 文件缺失）⇒ 整个 run failed。根因是 JobRunner 把
+    `__rc=$?; echo $__rc > <rc>` 追加在命令**之后**，命令自己的 `exit 0` 先退出了 shell。
+    """
+    runner = JobRunner(tmp_path / "jobs")
+    rec = runner.submit(run_id="R1", node="N9",
+                        command="echo working; exit 0", cwd=tmp_path)
+    deadline = time.time() + 10
+    status = runner.poll(rec.job_id)
+    while status.phase == "running" and time.time() < deadline:
+        time.sleep(0.05)
+        status = runner.poll(rec.job_id)
+    assert status.phase == "done", status
+    assert status.rc == 0
+    assert Path(rec.rc_path).is_file(), "rc 文件必须由 wrapper 写出"
+
+
 def test_job_lifecycle_done_cancelled_dead(tmp_path: Path) -> None:
     """三态判定：有 rc ⇒ done；取消 ⇒ cancelled；无 rc 且进程没了 ⇒ **dead**。"""
     runner = JobRunner(tmp_path / "jobs")

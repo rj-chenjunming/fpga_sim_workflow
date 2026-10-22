@@ -123,7 +123,11 @@ class JobRunner:
             rc_path.unlink()
 
         # 用 shell 包一层，作业自己落 rc —— 这是跨重启唯一可靠的完成凭据。
-        wrapped = f"{command}\n__rc=$?\necho $__rc > {str(rc_path)!r}\nexit $__rc"
+        # **命令必须放进子 shell**：N9 real 全跑的命令串以 `exit 0` 结尾（单例 rc 记进
+        # summary，交 N10 三分类）。若直接拼接，那个 `exit 0` 会先退出本 shell，
+        # 追加的 rc 写入永远不执行 ⇒ 作业被判 dead，整个 run failed。
+        # 实证：2026-10-22 real 轮 JOB-0f3710bd9b21（3 例全 rc=0，作业却 dead）。
+        wrapped = f"(\n{command}\n)\n__rc=$?\necho $__rc > {str(rc_path)!r}\nexit $__rc"
         log_fh = log_path.open("wb")
         proc = subprocess.Popen(
             ["/bin/bash", "-lc", wrapped],

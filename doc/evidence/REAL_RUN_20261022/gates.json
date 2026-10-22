@@ -1,0 +1,83 @@
+{
+  "anchor": {
+    "algo": "sha256-of-canonical-state-without-anchor",
+    "file": "gates.sha256",
+    "value": "3eb5084e1509f9d73123b27f3f65c16af2ff65ba7bb8be56fd089c7441cdc8a3"
+  },
+  "created_at": "2026-10-22T18:17:01+0800",
+  "gates": {
+    "G1_diff_confirm": {
+      "actor": "human:chenjunming",
+      "actor_kind": "human",
+      "artifacts": [
+        "n2_diff.json md5=95080c9e71afcf70bdc5f39cfb20272b",
+        "n3_digest.md md5=889ae21328d9f4ad0594a6a09758473b"
+      ],
+      "decision": "confirmed",
+      "gate_id": "G1_diff_confirm",
+      "history": [
+        {
+          "actor": "human:chenjunming",
+          "actor_kind": "human",
+          "at": "2026-10-22T19:30:39+0800",
+          "decision": "confirmed",
+          "gate": "G1_diff_confirm",
+          "human_signed": true,
+          "note": "已逐条核对：pcie_register.v 写入值由 32 位收窄为 [15:0]（高 16 位恒 0）；allfile 仅为 md5 证据；rtl_file hunk 行 171/172 与 offset 0xd04 一致",
+          "prev": {
+            "actor": null,
+            "actor_kind": null,
+            "artifacts": [],
+            "decision": "pending",
+            "gate_id": "G1_diff_confirm",
+            "human_signed": false,
+            "kind": "diff_confirm",
+            "note": null,
+            "rework_target": null,
+            "signed_at": null,
+            "status": "pending"
+          },
+          "rework_target": null
+        }
+      ],
+      "human_signed": true,
+      "kind": "diff_confirm",
+      "note": "已逐条核对：pcie_register.v 写入值由 32 位收窄为 [15:0]（高 16 位恒 0）；allfile 仅为 md5 证据；rtl_file hunk 行 171/172 与 offset 0xd04 一致",
+      "rework_target": null,
+      "signed_at": "2026-10-22T19:30:39+0800",
+      "status": "signed"
+    },
+    "G2_report_accept": {
+      "actor": null,
+      "actor_kind": null,
+      "artifacts": [],
+      "decision": "pending",
+      "gate_id": "G2_report_accept",
+      "human_signed": false,
+      "kind": "report_accept",
+      "note": null,
+      "rework_target": null,
+      "signed_at": null,
+      "status": "pending"
+    },
+    "G3_regression_decision": {
+      "actor": null,
+      "actor_kind": null,
+      "artifacts": [],
+      "decision": "pending",
+      "gate_id": "G3_regression_decision",
+      "human_signed": false,
+      "kind": "regression_decision",
+      "note": null,
+      "rework_target": null,
+      "signed_at": null,
+      "status": "pending"
+    }
+  },
+  "manifest_from": "N/A",
+  "manifest_to": "runs/RUN-20261022-181700/n1_manifest_new.json",
+  "run_id": "RUN-20261022-181700",
+  "schema": "kb/gate-state",
+  "updated_at": "2026-10-22T19:30:39+0800",
+  "version": 1
+}

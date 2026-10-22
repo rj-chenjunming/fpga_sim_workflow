@@ -430,6 +430,8 @@ def test_g1_material_entries_carry_before_after_hunk_encoding(client: TestClient
     assert any(e["after"] for e in entries), "至少一条要有变更后原文"
     # 夹具的 rtl_file 产出于 R3 之前 ⇒ 没有 encoding 时必须显式 null，不得编造
     assert all(e["encoding"] is None or isinstance(e["encoding"], str) for e in entries)
+    # 真实路径的 N2 用 offsets（复数）列表：投影必须兼容，单数字段取首项
+    assert all(isinstance(e.get("offsets"), list) for e in entries)
 
     n3 = material.get("n3_digest") or {}
     assert n3.get("exists") is True and str(n3.get("path")).endswith("n3_digest.md")
@@ -442,6 +444,28 @@ def test_g1_material_entries_carry_before_after_hunk_encoding(client: TestClient
                     "encoding", "rationale", "evidence"):
             assert key in change, (key, sorted(change))
     assert {c["id"] for c in trace["changes"]} >= {"M1"}
+
+
+def test_g1_entry_offset_falls_back_to_offsets_list(tmp_path: Path) -> None:
+    """真实 N2 产物只有 `offsets`（复数）时，`offset` 必须回退为首项（否则材料丢 offset）。"""
+    from services import contracts
+
+    (tmp_path / "n2_diff.json").write_text(json.dumps({
+        "has_change": True,
+        "diffs": [{
+            "kind": "rtl_file", "id": "RTL/x.v", "entry_id": "RTL/x.v",
+            "change": "modified", "before": "a" * 32, "after": "b" * 32,
+            "evidence": "RTL/x.v:L171（逐文件 md5 变化）",
+            "diff_hunk": "@@ -1 +1 @@\n- 32'h04\n+ 32'h0000_0004",
+            "lines": [171, 172], "offsets": ["0xd04"], "encoding": "utf-8",
+            "unresolved": None,
+        }],
+    }), encoding="utf-8")
+    view = contracts.diff_entries_view(tmp_path, mode="real")
+    entry = view["entries"][0]
+    assert entry["offsets"] == ["0xd04"]
+    assert entry["offset"] == "0xd04"
+    assert entry["diff_hunk"].startswith("@@")
 
 
 def test_n0_copies_host_trace_into_the_run_dir(client: TestClient) -> None:

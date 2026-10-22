@@ -1,0 +1,237 @@
+{
+  "blocking_gap": false,
+  "blocking_gap_reasons": [],
+  "checks": {
+    "deterministic": true,
+    "generated_at_source": "wallclock(kb_lib.now_iso)",
+    "normalized_sha256": "4e988f6e6c2ab86f48e3a161aa7499f93bb64ae95aeb95dc0a9228a057dcd23c",
+    "schema": "kb/schema/n2_diff.schema.json",
+    "self_check_ok": true,
+    "time_fields": [
+      "generated_at"
+    ],
+    "weak_criterion": "kb_lib.sha256_obj_normalized(obj, ('generated_at',))"
+  },
+  "diffs": [
+    {
+      "after": "50e4ca25f384d0ee384252b34f30e760",
+      "before": "d560f2ff15388aad16dc64431d67a617",
+      "change": "modified",
+      "diff_hunk": null,
+      "evidence": "baselines/v0/allfiles.md5:L2896 -> runs/RUN-20261022-181700/bundle/allfiles.md5:L2896（逐文件 md5 变化）",
+      "id": "RTL/SRC/imports/SRC/pcie_controller/pcie_register.v",
+      "kind": "allfile",
+      "lines": [],
+      "offsets": [],
+      "unresolved": "② 路只比逐文件 md5 清单，无文本 hunk（旧版正文不在 KB）⇒ offset 由 ①/③ 路提供；本条已按『modified』计入差异"
+    },
+    {
+      "after": "50e4ca25f384d0ee384252b34f30e760",
+      "before": "d560f2ff15388aad16dc64431d67a617",
+      "change": "modified",
+      "diff_hunk": "--- \n+++ \n@@ -168,7 +168,8 @@\n \tassign\ts_hit_7x\t=\tdcb_gnt ? (dcb_addr[7:4]\t\t==\t4'h7)\t?\t1'b1 : 1'b0\t:\thit_7x;\n \tassign\ts_hit_8x\t=\tdcb_gnt ? (dcb_addr[7:4]\t\t==\t4'h8)\t?\t1'b1 : 1'b0\t:\thit_8x;\n \t\n-\tassign\ts_reg_test\t\t=\t(write & hit_0x & hit_x4 & dcb_wdval) ? dcb_wdata \t: reg_test;\t\n+\t// 0x0d04 pcie_test: [31:16] reserved, read as 0; only [15:0] R/W\n+\tassign\ts_reg_test\t\t=\t(write & hit_0x & hit_x4 & dcb_wdval) ? {16'h0, dcb_wdata[15:0]} \t: reg_test;\t\n \tassign\ts_little_endian\t=\t(write & hit_0x & hit_x8 & dcb_wdval) ? |dcb_wdata\t: little_endian\t;\n \t\n \tassign\ts_dcb_gnt = \tdcb_gnt | grant_1d | grant_2d ? 1'b0               //ensure write complete",
+      "encoding": "utf-8",
+      "evidence": "baselines/v0/rtl_files.md5:L119 -> runs/RUN-20261022-181700/bundle/rtl_files.md5:L119（逐文件 md5 变化）",
+      "id": "RTL/SRC/imports/SRC/pcie_controller/pcie_register.v",
+      "kind": "rtl_file",
+      "lines": [
+        171,
+        172
+      ],
+      "offsets": [
+        "0xd04"
+      ],
+      "unresolved": null
+    }
+  ],
+  "from": {
+    "baseline": "v0",
+    "manifest_path": "baselines/v0/manifest.json",
+    "manifest_sha256": "27436600f84ac6faab19a320fd43c74db8efb18e2c3e14f010204bcfc0ff8860"
+  },
+  "generated_at": "2026-10-22T18:17:02+0800",
+  "generator": "kb/tools/n2_diff.py (Host 确定性)",
+  "has_change": true,
+  "index_gaps": [],
+  "inputs": {
+    "allfiles_md5_from": {
+      "entries": 4491,
+      "path": "baselines/v0/allfiles.md5",
+      "scope": [
+        "PKG",
+        "RTL",
+        "TB",
+        "TESTLIB"
+      ],
+      "sha256": "a723b153c3785c5637def02d6093b154c5c6a7a5b2bb57b4191aed3da8855fa9"
+    },
+    "allfiles_md5_to": {
+      "entries": 4491,
+      "path": "runs/RUN-20261022-181700/bundle/allfiles.md5",
+      "scope": [
+        "PKG",
+        "RTL",
+        "TB",
+        "TESTLIB"
+      ],
+      "sha256": "c55b8bb531fe0b106b6e09b2ee6ef6f87cb1ca84f018261648b5b93c929a8798"
+    },
+    "allfiles_scope_intersection": [
+      "PKG",
+      "RTL",
+      "TB",
+      "TESTLIB"
+    ],
+    "doc_entries_from": {
+      "entries": 126,
+      "path": "baselines/v0/doc_entries.jsonl",
+      "resolved_by": "manifest.doc_fingerprint.path 同目录（主口径）",
+      "sha256": "79ca33dd98a106e57276ed216ff6afb32ab4137e7ec89996e42891f6ce634f0a"
+    },
+    "doc_entries_to": {
+      "entries": 126,
+      "path": "runs/RUN-20261022-181700/bundle/doc_entries.jsonl",
+      "resolved_by": "manifest.doc_fingerprint.path 同目录（主口径）",
+      "sha256": "79ca33dd98a106e57276ed216ff6afb32ab4137e7ec89996e42891f6ce634f0a"
+    },
+    "doc_fingerprint_from": {
+      "entries": 126,
+      "path": "baselines/v0/doc_entries.txt",
+      "sha256": "0bedd7a35f7b3bb3be3a7d0c40ffa7ac96339a4151b248f14b28221366472359"
+    },
+    "doc_fingerprint_to": {
+      "entries": 126,
+      "path": "runs/RUN-20261022-181700/bundle/doc_entries.txt",
+      "sha256": "0bedd7a35f7b3bb3be3a7d0c40ffa7ac96339a4151b248f14b28221366472359"
+    },
+    "from_manifest": {
+      "path": "baselines/v0/manifest.json",
+      "sha256": "27436600f84ac6faab19a320fd43c74db8efb18e2c3e14f010204bcfc0ff8860"
+    },
+    "rtl_files_md5_from": {
+      "entries": 162,
+      "path": "baselines/v0/rtl_files.md5",
+      "sha256": "a86f7d6959fcf9082ed964a926e88d5d7e0cd017f413a01d6cca941bcb06d95b"
+    },
+    "rtl_files_md5_to": {
+      "entries": 162,
+      "path": "runs/RUN-20261022-181700/bundle/rtl_files.md5",
+      "sha256": "2df9da4b8b53764f89e42fd54b31298053a9479002b3388b89c83fa04866fdc6"
+    },
+    "rtl_snapshot_sha256_from": {
+      "path": "baselines/v0/rtl_snapshot.tar",
+      "sha256": "983d835813fb3b4796e86f976c0329764749550ec61d6800580855b823f5be6f"
+    },
+    "rtl_snapshot_sha256_to": {
+      "path": "runs/RUN-20261022-181700/bundle/rtl_snapshot.tar",
+      "sha256": "07b0b99dfac507e57b4d0f545b55d7df91b0d7355a3b9c2d8a7a16c82aac268e"
+    },
+    "to_manifest": {
+      "path": "runs/RUN-20261022-181700/n1_manifest_new.json",
+      "sha256": "dc23476b297e48e82f2a09b9a22293d42f6f858ece2a161bba50f96ab743a757"
+    }
+  },
+  "no_change_statement": null,
+  "notes": [],
+  "offsets": [
+    {
+      "entry_id": null,
+      "kind": "rtl_file",
+      "lines": [
+        171,
+        172
+      ],
+      "raw": "0x0d04",
+      "source": "RTL/SRC/imports/SRC/pcie_controller/pcie_register.v",
+      "value": "0xd04"
+    }
+  ],
+  "routes": {
+    "allfiles": {
+      "added": 0,
+      "changed": 1,
+      "entries_from": 4491,
+      "entries_to": 4491,
+      "md5_listing_from": "baselines/v0/allfiles.md5",
+      "md5_listing_sha256_from": "a723b153c3785c5637def02d6093b154c5c6a7a5b2bb57b4191aed3da8855fa9",
+      "md5_listing_sha256_to": "c55b8bb531fe0b106b6e09b2ee6ef6f87cb1ca84f018261648b5b93c929a8798",
+      "md5_listing_to": "runs/RUN-20261022-181700/bundle/allfiles.md5",
+      "ok": true,
+      "only_in_from": [],
+      "only_in_to": [],
+      "removed": 0,
+      "scope": [
+        "PKG",
+        "RTL",
+        "TB",
+        "TESTLIB"
+      ],
+      "scope_from": [
+        "PKG",
+        "RTL",
+        "TB",
+        "TESTLIB"
+      ],
+      "scope_intersection": [
+        "PKG",
+        "RTL",
+        "TB",
+        "TESTLIB"
+      ],
+      "scope_to": [
+        "PKG",
+        "RTL",
+        "TB",
+        "TESTLIB"
+      ]
+    },
+    "doc_entries": {
+      "added": 0,
+      "changed": 0,
+      "entries_derivation": "主口径 dirname(manifest.doc_fingerprint.path)/doc_entries.jsonl；回退链 <manifest>/bundle → <manifest> 同目录 → kb/index/regmap.json",
+      "entries_from": 126,
+      "entries_from_path": "baselines/v0/doc_entries.jsonl",
+      "entries_from_resolved_by": "manifest.doc_fingerprint.path 同目录（主口径）",
+      "entries_to": 126,
+      "entries_to_path": "runs/RUN-20261022-181700/bundle/doc_entries.jsonl",
+      "entries_to_resolved_by": "manifest.doc_fingerprint.path 同目录（主口径）",
+      "fingerprint_entries_from": 126,
+      "fingerprint_entries_to": 126,
+      "fingerprint_from": "0bedd7a35f7b3bb3be3a7d0c40ffa7ac96339a4151b248f14b28221366472359",
+      "fingerprint_to": "0bedd7a35f7b3bb3be3a7d0c40ffa7ac96339a4151b248f14b28221366472359",
+      "ok": true,
+      "removed": 0,
+      "used_fallback": false
+    },
+    "rtl_files": {
+      "added": 0,
+      "changed": 1,
+      "entries_from": 162,
+      "entries_to": 162,
+      "manifest_sha256_from": "a86f7d6959fcf9082ed964a926e88d5d7e0cd017f413a01d6cca941bcb06d95b",
+      "manifest_sha256_to": "2df9da4b8b53764f89e42fd54b31298053a9479002b3388b89c83fa04866fdc6",
+      "md5_listing_from": "baselines/v0/rtl_files.md5",
+      "md5_listing_to": "runs/RUN-20261022-181700/bundle/rtl_files.md5",
+      "ok": true,
+      "removed": 0,
+      "tar_sha256_from": "983d835813fb3b4796e86f976c0329764749550ec61d6800580855b823f5be6f",
+      "tar_sha256_to": "07b0b99dfac507e57b4d0f545b55d7df91b0d7355a3b9c2d8a7a16c82aac268e"
+    }
+  },
+  "run_id": "RUN-20261022-181700",
+  "schema": "kb/run/n2_diff",
+  "scope_notes": [],
+  "to": {
+    "baseline": "v1",
+    "manifest_path": "runs/RUN-20261022-181700/n1_manifest_new.json",
+    "manifest_sha256": "dc23476b297e48e82f2a09b9a22293d42f6f858ece2a161bba50f96ab743a757"
+  },
+  "unresolved_offsets": [
+    {
+      "id": "RTL/SRC/imports/SRC/pcie_controller/pcie_register.v",
+      "kind": "allfile",
+      "reason": "② 路只比逐文件 md5 清单，无文本 hunk（旧版正文不在 KB）⇒ offset 由 ①/③ 路提供；本条已按『modified』计入差异"
+    }
+  ],
+  "version": 1
+}

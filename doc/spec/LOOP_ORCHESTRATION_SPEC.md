@@ -273,8 +273,12 @@ n9_sim chunk                       park chunk                      job_runner �
 ## 9. 进度流投影契约
 
 - 载体：稳定应用事件 `{seq, ts, run_id, node, kind, status, refs}`。
-- `kind` 白名单：`node_started` / `node_finished` / `job_submitted` / `job_progress` /
-  `gate_pending` / `gate_decided` / `warning` / `dead_job`。
+- `kind` 白名单的**唯一权威 = `loop/host/progress.py` 的 `ALLOWED_KINDS`**（当前 15 个）：
+  `run_started` / `run_finished` / `node_started` / `node_finished` / `node_failed` /
+  `job_submitted` / `job_progress` / `job_finished` / `dead_job` /
+  `gate_pending` / `gate_decided` / `admission_queued` / `admission_granted` /
+  `admission_refused` / `warning`。`/api/health.event_kinds` 原样下发该集合；
+  前端**消费**它（静态兜底表必须与权威集合逐项相等，由测试钉住），不得各写一套。
 - **禁止**把 raw parser 路径作为前端协议；日志原文只以 `refs`（路径 + 行号）出现。
 - **临时项对账**：`job_progress` 的计数是临时值，终态必须用最终校验值覆盖并标注
   `provisional=false`（stream bridge 要求）。

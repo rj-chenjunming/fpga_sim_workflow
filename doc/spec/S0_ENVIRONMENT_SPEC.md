@@ -36,8 +36,19 @@ Host `loop/host/s0.py` 是派生及核验的唯一写者；API 传输、UI 投�
 
 ## 4 API 与报告
 
-- `GET /api/s0`：默认基线、允许根、记录索引和能力边界。
+- `GET /api/s0`：默认基线、允许根、记录索引和能力边界。`capabilities.rehearsal=true` 只表示"可以点一次本机演练"，不表示环境就绪，也不表示 S0-b 已接入（`tb_adapt`/`smoke` 仍为 `false`）。
 - `POST /api/s0`：`baseline, baseline_version, rtl_source, work_env, now?`，派生。重复目标 409、越界 403、非法输入 400；操作失败持久化 failed/error 并返回失败，不伪装成功。
+- `POST /api/s0/rehearsal`：**S0-rehearsal 一键演练**（软件能力验收，见 §6.2）。body **只允许可选 `now`**（含时区 ISO；非法 400）。
+  Host 在**软件 state 目录**下自造一次性小基线（`${STATE_DIR}/s0-rehearsal/<UTC 戳>/baseline/`，含
+  `RTL/ TB/top.sv PKG/ TESTLIB/ doc/`（兼容 `docs/`）与 `run`）与新 RTL（同戳 `rtl/`，含被替换的旧文件与新文件），
+  派生到同戳的 `work/`；记录仍写 `${STATE_DIR}/s0/`（与真实 S0 记录同源，记录带 `rehearsal.kind=S0-rehearsal` 标记）。
+  约束：
+  - **不接受任何客户端路径参数**：多给任何键（`baseline`/`rtl_source`/`work_env` 等）⇒ 400（防任意写）；演练输入一律由 Host 自造；
+  - 输入不能落在记录根内（§2 禁止输入/记录互相包含），所以演练目录是记录根 `${STATE_DIR}/s0/` 的**兄弟目录** `${STATE_DIR}/s0-rehearsal/`；
+  - 每次调用都新建目录与**新记录**（同一个 `now` 也不复用），不覆盖上一次演练；
+  - 失败沿用 `PreparationFailed` 语义：`status=failed` + `error` 原文 + 422，记录与已产生的部分副本保留；
+  - **零写 `ENV_ROOT`**、不签闸门、不改变任何 run；返回记录的 `ready_for_execution` 仍恒 `false`，
+    `ports/smoke` 仍 `waiting` ⇒ **S0-b 阻断不变**（§3、§6.2）。
 - `GET /api/s0/{id}`：历史记录及当前只读核验；漂移即失败，不改历史清单。ID 限单层安全名称，不接受路径穿越。
 - 报告下载只读。报告含路径、版本声明、时间、基线前后全量清单、RTL 清单、非 RTL 初检、阻断与失败原因；TB 空登记表明确未执行。
 - 核验列出新增/删除/变化资产。准备期间全量非 RTL 保持一致；准备后只读核验对资产漂移报错，不把合法的未来运行输出与 S0-a 基础证据混同。时间只经 `now` 注入。
@@ -97,5 +108,16 @@ Host `loop/host/s0.py` 是派生及核验的唯一写者；API 传输、UI 投�
 ## 7 验收（增补：S0-rehearsal）
 
 - 先跑既有 `loop/tests/test_s0.py`，不改期望；新增失败用例覆盖：copy 完整性、旧 RTL 删除、非 RTL 污染拒绝、基线零写入、失败保留记录；
+- **工作台可一键完成 S0-rehearsal**：环境准备视图的「运行 S0 演练（临时小基线）」按钮 ⇒ `POST /api/s0/rehearsal`。
+  成功后展示返回记录的 `id`/`status`/四项 checks（`copy`/`rtl`/`non_rtl`/`baseline`）与副本路径，并明确标注
+  「演练：只证明 copy→replace→核验链路，**不是**环境就绪、不是 S0-b」；失败展示 `detail.error` 原文；
+  按钮防双击，刷新准备记录不得清掉演练回执（表单与回执都不参与重建）；
 - 工作台：环境准备视图能完成一次 S0-rehearsal 并显示四项 checks（浏览器验收证据）；
+- **真实验收映射**（本次软件能力验收 = 下面三项，映射不到内网）：
+  1. `loop/tests/test_s0.py` 的演练用例：200 + `status=prepared` + 四项 `passed` + `ports/smoke=waiting` +
+     `ready_for_execution=false` + 副本 `work/RTL` 清单 == 演练新 RTL 清单（旧 RTL 零残留）+
+     基线前后清单一致 + 重复调用不同记录 id + 非法 `now` 400 + 客户端路径参数 400 + `ENV_ROOT` 零写入；
+  2. `spikes/run_software_checks.sh`（软件层全量，确认无回归）；
+  3. 工作台一键动作的浏览器证据（成功回执 + 免责声明 + 失败原文）。
+  这些证据**只**证明软件链路；**S0-real（内网真实环境 + 三库冒烟）仍未跑**，不得映射成"S0 通过/环境就绪"。
 - 证据落 `doc/evidence/`（只增不改）。内网 S0-real 未跑时明确标"**未跑**"，不得记为通过，也不得用 drill 或 rehearsal 冒充。

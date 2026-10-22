@@ -1148,3 +1148,59 @@ R6 防御性登记未立项；F01-d / F04 S0-b / F09 阻塞；kb 自测、端到
   （与 §3.1「端到端独占 state」同族），不是本轮代码缺陷。
 
 **结论**：本轮把 R2–R6 落到代码并留下可复跑证据，但**不声称四道门全绿或已合规**。
+
+### 42.5 第二轮收口：端到端复跑 + E1/E2 修复 + S0-rehearsal（2026-10-22 同日）
+
+覆盖 42.4 中"端到端未运行"与 E1/E2 两项；均在同一工作树、同一会话内完成，仍**无独立终验**。
+
+**① 端到端终验（隔离副本，不写共享 state/ENV_ROOT）**
+
+```bash
+# 用当前工作树做一次性副本（清 .agently/state/logs 运行时状态），复用一次性 workspace 副本
+rsync -a --exclude '.git' --exclude 'loop/.venv' --exclude 'loop/state' \
+  --exclude 'loop/.logs' --exclude 'loop/.pytest_cache' --exclude 'workspaces' \
+  --exclude '__pycache__' ./ workspaces/verify-e2e2/
+rm -rf workspaces/verify-e2e2/loop/.agently
+cd workspaces/verify-e2e2/loop
+LOOP_WORKSPACE=<verify-e2e-ws> LOOP_LLM_MODE=standin LOOP_PORT=18097 bash spikes/accept_v1_run.sh
+```
+
+实测：`phase 1–5 全部 rc=0`、`=> ALL PASS`；断言 **117/117**（50/27/18/8/8/6），与历史验收同集。
+踩点登记：副本若保留旧 `.agently/`（RecordStore 身份状态），首跑会 `RecordStoreError: identity state belongs to a different RecordStore`；
+副本必须清运行时状态——这是**复制方法**的坑，不是产品缺陷。
+
+**② E1（N2 rc=3 语义）已修**
+
+- `host_steps.n2_diff`：`rc=3`（`RC_GAP`，工具**不产出** `n2_diff.json`）改为 `node_failed` + 抛错，绝不落"完成、0 差异"；`rc=4` 仍失败。
+- 回归：`tests/test_fix_real_chain.py::test_n2_rc3_gap_fails_explicitly_and_writes_no_diff`；
+  `tests/test_baseline_admission.py::test_n2_uses_selected_baseline` 的 fake rc 由 3 改 0（旧口径断言同步）。
+
+**③ E2（事件 kind 白名单）已修**
+
+- 唯一权威 = `host.progress.ALLOWED_KINDS`（15 个）；`GET /api/health.event_kinds` 原样下发；
+- 前端运行时消费 `event_kinds`（静态表为兜底，删掉服务端没有的 `run_failed`）；
+- SPEC-02 §9 同步为 15 个并写明唯一权威；
+- 漂移测试：`tests/test_api_ui_contract.py::test_frontend_event_whitelist_matches_server_authority`；
+  `test_api.py::test_health_and_static_ui` 断言 `event_kinds == sorted(ALLOWED_KINDS)`。
+
+**④ S0-rehearsal（SPEC-05 §6.2/§4/§7）已接入工作台**
+
+- `POST /api/s0/rehearsal`：Host 在软件 state 下自造一次性小基线 → copy → 整体替换 RTL → 四项核验；
+  **不接受客户端路径**（多给键即 400）、每次新记录新目录、失败 422 且保留记录、`ENV_ROOT` 零写入、`ready_for_execution` 仍 false。
+- 工作台「运行 S0 演练（临时小基线）」按钮 + 回执（id/status/四项 checks/副本路径）+ 固定免责声明
+  「只证明 copy→replace→核验链路，**不是**环境就绪、不是 S0-b」；失败显示 `detail.error` 原文。
+- 测试：`tests/test_s0.py` 共 **33 passed**（新增演练用例：四项 passed、ports/smoke waiting、旧 RTL 零残留、
+  基线前后一致、重复调用不同 id、非法 now 400、客户端路径参数 400）；
+  浏览器 `tests/browser/test_run_sessions.py::test_s0_rehearsal_runs_once_and_shows_four_checks_with_scope_notice`。
+
+**⑤ 最终门禁（本轮工作树）**
+
+| 门 | 命令 | 结果 |
+|---|---|---|
+| 软件层 | `bash loop/spikes/run_software_checks.sh --ignore=tests/browser` | **531 passed, 3 deselected, 1 warning in 105.38s** |
+| 浏览器 | `pytest -q tests/browser`（系统 Chrome + 可写 HOME） | **56 passed in 76.76s** |
+| 端到端 | 隔离副本 `bash spikes/accept_v1_run.sh` | **117/117，ALL PASS** |
+| 文档 | `python3 doc/audit/check_doc_links.py` | `checked=1614 … known_missing=10 env_missing=12 missing=0`，rc=0 |
+
+**仍未关闭**：S0-real（内网真实环境 + 三库冒烟）未跑；`real` 真机链路未跑；8099 仍是旧构建（新界面需重启）；
+历史 run 不回填。**不声称四道门全绿或已合规**。

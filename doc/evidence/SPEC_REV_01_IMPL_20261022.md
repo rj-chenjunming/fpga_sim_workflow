@@ -146,3 +146,63 @@ bash loop/remote/serve.sh --sandbox
    `waiting_gate`）。复核实例已停止；重启后请新建运行，旧 run 不建议复用。
 6. 浏览器用例依赖系统 Chrome + 可写 HOME（见 2.2 的命令）；不满足时 setup 直接失败，不冒充通过。
 7. 本轮由 Lead 一人集成与复核，**无独立验证者**；不声称四道门全绿。
+
+---
+
+## 5 第二轮收口：端到端复跑 / E1 / E2 / S0-rehearsal（同日）
+
+> 覆盖第 4 节中的「端到端未跑」与 E1/E2；S0-rehearsal 为同一规格 R5 的补齐。仍无独立终验。
+
+### 5.1 端到端终验（隔离副本）
+
+```bash
+# 工作树一次性副本（清运行时状态），复用一次性 workspace 副本；端口 18097
+rsync -a --exclude '.git' --exclude 'loop/.venv' --exclude 'loop/state' \
+  --exclude 'loop/.logs' --exclude 'loop/.pytest_cache' --exclude 'workspaces' \
+  --exclude '__pycache__' ./ workspaces/verify-e2e2/
+rm -rf workspaces/verify-e2e2/loop/.agently
+cd workspaces/verify-e2e2/loop
+LOOP_WORKSPACE=<verify-e2e-ws> LOOP_LLM_MODE=standin LOOP_PORT=18097 bash spikes/accept_v1_run.sh
+```
+
+```
+phase 1 rc=0 / phase 2 rc=0 / phase 3 rc=0 / phase 4 rc=0 / phase 4b rc=0 / phase 5 rc=0
+=> ALL PASS
+断言：117/117（50/27/18/8/8/6）
+```
+
+**踩点**：副本若带旧 `.agently/`，首跑 `RecordStoreError: identity state belongs to a different RecordStore`；
+清运行时状态后通过。属复制方法，不是产品缺陷。
+
+### 5.2 E1（N2 rc=3）
+
+- 修复：`host_steps.n2_diff` 对 `rc=3`（`RC_GAP`，不产出 `n2_diff.json`）→ `node_failed` + 抛错；`rc=4` 仍失败。
+- 回归：`tests/test_fix_real_chain.py::test_n2_rc3_gap_fails_explicitly_and_writes_no_diff`（断言无 `n2_diff.json`、事件为 `node_failed`）。
+- 同步：`tests/test_baseline_admission.py::test_n2_uses_selected_baseline` 的 fake rc 3→0（旧口径）。
+
+### 5.3 E2（事件 kind 白名单）
+
+- 唯一权威 `host.progress.ALLOWED_KINDS`（15）；`/api/health.event_kinds` 下发；前端运行时消费、删 `run_failed`；SPEC-02 §9 同步。
+- 测试：`test_api.py::test_health_and_static_ui`（`event_kinds == sorted(ALLOWED_KINDS)`）+
+  `test_api_ui_contract.py::test_frontend_event_whitelist_matches_server_authority`（解析 app.js 静态兜底表，防漂移）。
+
+### 5.4 S0-rehearsal（SPEC-05 §6.2/§4/§7）
+
+- `POST /api/s0/rehearsal`：只接受可选 `now`；Host 在 `${STATE_DIR}/s0-rehearsal/<UTC 戳>/` 自造小基线，
+  派生到同戳 `work/`；记录写 `${STATE_DIR}/s0/`（带 `rehearsal.kind=S0-rehearsal`）。
+- 安全：客户端路径参数一律 400；每次新记录/新目录；失败 422 + 记录保留；`ENV_ROOT` 零写入；`ready_for_execution` 恒 false。
+- 工作台：S0 视图「运行 S0 演练（临时小基线）」按钮 + 回执（id/status/四项 checks/副本路径）+ 固定免责声明。
+- 测试：`tests/test_s0.py` 33 passed；浏览器
+  `test_run_sessions.py::test_s0_rehearsal_runs_once_and_shows_four_checks_with_scope_notice`。
+
+### 5.5 最终门禁（本轮工作树）
+
+| 门 | 命令 | 结果 |
+|---|---|---|
+| 软件层 | `bash loop/spikes/run_software_checks.sh --ignore=tests/browser` | `531 passed, 3 deselected, 1 warning in 105.38s` |
+| 浏览器 | `pytest -q tests/browser`（系统 Chrome + 可写 HOME） | `56 passed in 76.76s` |
+| 端到端 | 见 5.1 | `117/117，ALL PASS` |
+| 文档 | `python3 doc/audit/check_doc_links.py` | `checked=1614 … missing=0`，rc=0 |
+
+**仍未关闭**：S0-real（内网真实环境 + 三库冒烟）未跑；`real` 真机链路未跑；8099 仍是旧构建；历史 run 不回填。
+**不声称四道门全绿或已合规。**

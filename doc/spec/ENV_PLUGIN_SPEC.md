@@ -1,6 +1,9 @@
-# 环境插件规格（software standalone / environment as plugin）
+# SPEC-03 · 环境插件规格（software standalone / environment as plugin）
+
+> 编号：**SPEC-03**（文件名不变；编号与修订记录见 [SPEC-REV-01](SPEC-REV-01-20261022.md)）。
 
 > S0 补充见 [S0_ENVIRONMENT_SPEC.md](S0_ENVIRONMENT_SPEC.md)：基线只读、派生副本准备。修订稿 `docs/ + run` 兼容 `doc/ + run`，不等于满足本文件既有运行插件的 `run_local/uvs.setup` 契约，进程不自动切换副本。
+> run 与 S0 的关系（run 文档必须带可空的 `s0_record_id`；drill 不覆盖 S0）见该文件 §6。
 
 > **定位**：软件是独立产品，环境是插件。软件可以被指向**任意**符合本规格的环境仓；
 > 一个环境在软件侧的全部状态（索引/冲突/基线/运行记录）由软件自己管理。

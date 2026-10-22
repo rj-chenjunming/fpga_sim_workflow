@@ -1,4 +1,6 @@
-# Agent 上下文、调用记录与经验契约
+# SPEC-06 · Agent 上下文、调用记录与经验契约
+
+> 编号：**SPEC-06**（文件名不变；编号与修订记录见 [SPEC-REV-01](SPEC-REV-01-20261022.md)）。
 
 > 运行干预见 [AGENT_WINDOW_SPEC.md](AGENT_WINDOW_SPEC.md)。新尝试携带本会话 human_interventions，仍执行原预算、记录及 Host 校验；不覆盖旧尝试，不自动晋升经验。
 

@@ -1,4 +1,6 @@
-# 变更影响闭环 · 编排层规格书（ORCHESTRATION SPEC）
+# SPEC-02 · 变更影响闭环 · 编排层规格书（ORCHESTRATION SPEC）
+
+> 编号：**SPEC-02**（文件名不变；编号与修订记录见 [SPEC-REV-01](SPEC-REV-01-20261022.md)）。
 
 > Agent 请求边界控制见 [AGENT_WINDOW_SPEC.md](AGENT_WINDOW_SPEC.md)。控制器只包围模型请求，不重放下游副作用、不改 TriggerFlow 拓扑或闸门；暂停限当前进程，重启后历史只读。
 
@@ -348,6 +350,74 @@ n9_sim chunk                       park chunk                      job_runner �
 - 判绿条件由 `contracts.py` 在**服务端**计算；前端不参与判定（防前端伪造）。
 
 ---
+
+### 10.4 节点执行详情投影（**全部节点**，供界面点击）
+
+> 来源：[SPEC-REV-01](SPEC-REV-01-20261022.md) R4。执行视图的**每一个**节点 chip 都必须可点击，
+> 点开能看到**该节点执行了什么、结果是什么、证据在哪**；不许只有一句"完成"。
+
+**范围 = 全部节点，不按白名单裁剪**：`node_history` 里出现的任何 node 都必须能打开详情，
+包括 N0–N16、四段之外/内部的节点（`N6_apply` / `N9_submit` / `N15_select` / `N15_submit`）、
+`HALT`，以及将来新增的节点。未知节点也要能打开（显示原始事件与 detail，`known=false`），
+不得因为没有中文名/owner 就不可点、或 404。
+
+**数据来源唯一**：事件流（§9，**每条事件顶层的 `refs`**）+ `node_finished.detail` / `node_failed.detail`。
+`node_history` 投影**只含** `{node,status,kind,at,detail}`——`refs` 只在事件里，构造 `node_history` 时已丢弃；
+界面**不得**自行拼装事件或推断结论。
+
+**每个节点（Host / 模型 / 闸门 / 框架）的 `node_finished.detail` 必含**：
+
+| 字段 | 含义 |
+|---|---|
+| `source` | 执行路径：`drill_fixture` / `kb_tool` / `model_live` / `model_standin` / `human_gate` / `framework`；drill 夹具必须能看出是夹具 |
+| `summary` | 一行可读结论（人话，含关键数字与去向，如"N1：allfiles 3374 条 + 162 用例冻结，parent=v0"） |
+
+- **证据引用**：`refs` 属于事件顶层字段（`node_finished` 的 `refs`），detail 内不重复；
+  详情投影把两者合并展示，但不改写任何一类数据。**只展示 run 目录内路径**（[SPEC-04](WEB_UI_SPEC.md) §6.7）；
+  目录外引用（如 `loop/state/jobs/*.log`）只以 `refs_omitted` 计数呈现，不给路径。
+- **status 语义**：节点 status **不只** `ok/failed`——闸门节点 status = 决策值（`confirmed`/`accept`/…）、
+  `N8 ∈ {pass, rework, escalated}`、`N11 ∈ {intact, broken, escalated}`、`N16 ∈ {ok, refused, failed}`、
+  `HALT = halted`。服务端原值下发，界面**原样显示**，不得自行把非 `ok` 当失败（反之亦然）。
+
+**逐节点下限（现状 → 必须补到）**：
+
+| 节点 | 现状 detail（实测） | 必须补到 |
+|---|---|---|
+| N0 | `mode` / `fixture_files` / `gate_init_rc`；refs=run_dir | `summary`；`baseline` |
+| N1 | `artifact` / `parent` / `source` | `summary`；manifest 摘要（allfiles 条目数与 sha256、cases 冻结数、doc 指纹、commit 可解析性） |
+| N2 | `artifact` / `rc` / `source` / `has_change` / `diff_count` / `diff_ids` / `pending_entries` / `diffs` / `self_check_ok` | `summary`；`routes`；`unresolved_count`；`offsets` |
+| N3 | `mode` / `provider` / `problems` | `summary`（差异语义一句话）；`source` |
+| N4 / N13 / N14（闸门） | `gate` / `decision` / `branch` / `actor` | `summary`（含是否给了理由）；`human_signed`；refs（`gates.json`） |
+| N5 | `must_change_count` / `must_change_cases` / `index_complete` / `index_gaps` / `gate1_rc` / `source` | `summary`；`index_gap_count` |
+| N6 | `mode` / `cycle` / `targets` / `validation_ok` | `summary`；`source` |
+| N6_apply | `status` / `cases` / `edits` | `summary`；`source` |
+| N7 | `cases` / `all_ok` | `summary`；`source`；失败用例名单 |
+| N8 | `verdict` / `cycle`（+`limit` / `escalated`） | `summary`；`source` |
+| N9 | `cases` / `koutou1` / `koutou2` | `summary`；`source`（drill 为模拟）；`job_id` |
+| N9_submit | `job_id` / `cases` 或 `scenario` | `summary` |
+| N10 | `cases` / `verdict_passed` / `pending` | `summary`；`source` |
+| N11 | `chain` / `host_consistent` | `summary`；`source` |
+| N12 | `mode` / `claimed_verdict` / `refs`（**与事件 refs 同名冲突**） | `summary`；`source`；detail 内改名为 `ref_count` |
+| N15_select | `count` / `g3` | `summary` |
+| N15 | `simulated`/`count` 或 `cases`/`passed` | `summary`；`source`；`job_id` |
+| N15_submit | `job_id` / `cases` | `summary` |
+| N16 | `cmd` / `rc` / `mode` / `dry_run` / `actor` / `actor_kind` / stdout/stderr 尾 | `summary`；refs（`n16_promote.json` / `promote_result.json`） |
+| HALT | `reason` | `summary`（终止原因原文） |
+
+> **现状差距**：上表右列字段当前**全部缺失**（`summary`/`source` 系统性缺失，N1/N2 另缺摘要与统计）。
+> 因此"只加一个节点详情端点"不足以满足本节——`host_steps.py` / `model_steps.py` / `long_jobs.py` / `gates.py`
+> 的 `node_finished` 调用都必须补 detail（各自 owner 的写权）。
+
+**失败态**：`node_failed` + `message` 原文 + 最后一条事件；界面不得显示"完成"。
+**禁止**把"有输入缺口/子步失败"记成 `node_finished ok`（现存反例见 [SPEC-REV-01](SPEC-REV-01-20261022.md) §D1：N2 的 `rc=3` 被当成功）。
+
+**缺失与历史**：缺失字段一律显式 `null` / 列进 `missing_fields`，显示"未下发"，不猜、不补默认值。
+事件与 detail 只增不改；新增字段只对生效后的新 run 出现，**旧 run 不回填**。
+
+**只读契约**：详情投影不写盘、不改变业务权威；界面不得用详情里的数字判绿（判据仍在服务端 `blockers/can` 与 `gates.json`）。
+
+**端点**：`GET /api/runs/{run_id}/nodes/{node}`（契约见 [SPEC-04](WEB_UI_SPEC.md) §6.7）；覆盖全部节点；
+未实现的节点返回显式空投影（`known=false`），不返回 404 冒充"节点不存在"。
 
 ## 11. P0 验收判据（可判定）
 

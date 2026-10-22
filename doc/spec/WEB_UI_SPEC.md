@@ -1,4 +1,6 @@
-# Web UI 规格（v1 · 运营台）
+# SPEC-04 · Web UI 规格（v1 · 运营台）
+
+> 编号：**SPEC-04**（文件名不变；编号与修订记录见 [SPEC-REV-01](SPEC-REV-01-20261022.md)）。
 
 > **2026-10-21 网页视觉修订**：当前视觉契约以 §14 为准，覆盖下文 v1 的导航尺寸和样张样式。旧样张保留为历史参考。
 
@@ -125,6 +127,34 @@
 - 闸门用菱形标记；`等待` 状态的闸门节点高亮为琥珀色。
 - **映射是展示契约**（写在本文 §4.2），不是执行契约；节点集合变化时以 `node_history` 为准并显式显示未知节点。
 
+### 4.2.1 节点详情面板（节点 chip 可点击）
+
+> 来源：[SPEC-REV-01](SPEC-REV-01-20261022.md) R4。数据契约见 [SPEC-02](LOOP_ORCHESTRATION_SPEC.md) §10.4。
+
+- **范围 = 全部节点**：执行视图里出现的**每一个**节点 chip 都可点击——N0–N16、四段之外/内部的节点
+  （`N6_apply` / `N9_submit` / `N15_select` / `N15_submit`）、`HALT`，以及将来新增的节点；
+  闸门节点（N4/N13/N14）同样可点。不按白名单裁剪，不因"没有中文名/owner"就不可点。
+- **数据**：`GET /api/runs/{run_id}/nodes/{node}`（§6.7）；内容来自事件流 + `node_finished.detail` + `refs`，**界面不自行拼装**。
+- **状态原值**：节点 status 不只 `ok/failed`（闸门=决策值、N8/N11/N16/HALT 各不相同）；面板显示服务端原值，不得自行归成"完成/失败"。
+- **必须显示**：
+
+  | 区块 | 内容 |
+  |---|---|
+  | 身份 | node / 名称 / owner / 状态（服务端原值）/ 开始与结束时间 / `source`（`kb_tool` / `drill_fixture` / `model_live` / `model_standin` / `human_gate` / `framework`；夹具与 standin 必须醒目） |
+  | 执行情况 | 该节点事件切片（`node_started` / `node_finished` / `warning` / `node_failed`），按 `seq` 排列，最近一条在前 |
+  | 结果 | `summary` 一行 + 结构化 `detail`（原样展示，未知显示"未下发"） |
+  | 证据 | `refs` 列表；点击先 `GET …/evidence/exists` 探测，缺失显式标"证据缺失"，不在页面打开正文 |
+  | 失败 | `node_failed` 时显示 `error` 原文 + 最后事件，**不得**显示"完成" |
+
+- **逐节点字段下限**：见 [SPEC-02](LOOP_ORCHESTRATION_SPEC.md) §10.4 的逐节点表（N0–N16 + 内部节点 + HALT）；
+  缺失字段显示"未下发"并进 `missing_fields`，不得用前端默认值补齐。
+- **身份来源**：节点名 / owner 以**服务端下发**为准；前端 `NODE_META` 仅作服务端未下发时的**兜底**，不得成为第二权威（AGENTS §2：两个 owner 写同一份状态 ⇒ 设计不成立）。
+- **与 §12 的边界**：本条与 §12「v1 不做」里 agent 卡的「详细模式」是不同对象——前者是**节点执行详情**，后者是**模型角色的输入/输出详情**；§12 该条不覆盖本面板。
+- **边界**：面板只读、不写盘、不触发重跑；不提供 run 目录外的任何路径；模型节点可从这里跳到 Agent 工作窗口（[SPEC-07](AGENT_WINDOW_SPEC.md)），Host 节点不提供工作窗口入口；闸门节点可跳闸门视图（材料同源）。
+- **轮询不丢**：执行视图流程条约 1.5 s 全量重建，面板必须是**独立弹层/抽屉**（自带状态），不能做成 chip 内联展开块。
+- **历史 run**：旧 run 的 detail 可能缺新字段，面板显示"未下发"并列出 `missing_fields`；**不回填**历史事件与既有 run。
+- **诚实标注**：面板底部固定一句「投影，非权威；判据以服务端 blockers / gates.json 为准」。
+
 ### 4.3 Agent 工作状态（6 张简洁角色卡）
 
 | 角色卡 | 节点 | 负责 |
@@ -173,10 +203,28 @@
    的 `entry_id / kind / change / segment / offset / lines / unresolved / evidence`，未决条目高亮并在
    顶部列出 chip；闸门视图完整展开，运行视图右列闸门卡提供同名可折叠块。材料仍全部来自服务端，
    前端不判定、不排序、不隐藏。
+   **G1 材料必须可判（2026-10-22 增补，[SPEC-REV-01](SPEC-REV-01-20261022.md) R2）**：每条差异必须展示
+   `before` / `after` **双栏对照**；`diff_hunk` 非空时按行渲染并标行号；`doc_entry` 先列**变化字段**
+   （before→after），其余字段折叠为"未变（N 项）"；`rtl_file` 无文本 hunk 时必须显示**原因**
+   （编码 / 二进制 / 夹具）与可替代的行号证据。非 UTF-8 源文件必须显示 `encoding`（如 `gbk`）与
+   "解码后对比"标注。drill / 夹具条目必须带 `drill_fixture` 徽标。材料另需给出 `n3_digest.md`
+   与 Host 留痕（如夹具的 `mock_change_applied.json`）入口（存在性探测）。
+   逐条处置（`entry_decisions`）必须有界面输入通道；v1 若未实现，必须显式提示"该门需走 API"
+   并给出可复制样例，**不得让人盲签**。
 2. **双口径计数**：口径一 / 口径二**并列同权**，原值显示，不换算；附「两者都归零才可判绿」说明。
 3. **阻断项**：按 `severity` 分区（hard / info），code + 一句话说明；不做前端过滤。
 4. **证据概况 / 长任务**：job 状态、log_tail（折叠、等宽、只读）；证据入口先探测存在性。
 5. **事件流**：折叠；只显示白名单 `kind`；`seq` 递增；不把 raw parser 路径暴露给前端（只显示 `refs`）。
+
+### 4.5 环境来源（S0）徽标
+
+> 来源：[SPEC-REV-01](SPEC-REV-01-20261022.md) R5。S0 能力与验收见 [SPEC-05](S0_ENVIRONMENT_SPEC.md) §6。
+
+- 运行视图顶部必须显示该 run 的**环境来源**：`S0 记录 <id>`（输入目录来自 S0 派生副本）或
+  `未经 S0 派生`（现有闭环）。
+- 数据来自 run 文档的 `s0_record_id`（可空）；为空时显示"未经 S0 派生"，**不得**显示为"环境就绪"。
+- drill 运行必须同时显示 `mode=drill`，来源徽标显示"未经 S0 派生（drill 不覆盖 S0）"。
+- 边界：徽标只是只读投影，不证明 S0-b 或环境可用。
 
 ---
 
@@ -188,6 +236,10 @@
 - 提交路径：`POST /api/runs/{run_id}/gates/{gate_id}/decision`；成功后回到运行视图并刷新。
 - 被拒（403）：显示服务端 `detail.error` + `blockers`，**不消耗中断**的说明如实展示。
 - 执行停放说明：顶部固定一句「执行处于 interrupt，可安全重启；闸门态权威在 `gates.json`」。
+- **材料可判性（[SPEC-REV-01](SPEC-REV-01-20261022.md) R2）**：闸门视图与右列闸门卡使用**同一份**服务端材料；
+  G1 逐条展示 before/after、diff_hunk、encoding、未决原因与 `drill_fixture` 徽标；材料不足以判断时
+  必须显式提示（"材料不足以判断：缺 X"），不提供"直接确认"的诱导。
+- **入口**：材料区提供 N3 摘要与 Host 留痕入口（存在性探测）；未生成时显示"未生成"而不是空白。
 
 ---
 
@@ -296,6 +348,32 @@
 - 所有新端点不写任何文件；`POST /api/runs` 是唯一建运行入口，闸门决策是唯一业务写动作。
 
 ---
+
+### 6.7 `GET /api/runs/{run_id}/nodes/{node}`（节点详情，只读）
+
+> 供 §4.2.1 节点详情面板使用；数据契约见 [SPEC-02](LOOP_ORCHESTRATION_SPEC.md) §10.4。
+
+```json
+{
+  "run_id": "RUN-…", "node": "N1", "known": true, "name": "输入摄取", "owner": "Host",
+  "status": "ok", "started_at": 1792650932.891, "finished_at": 1792650932.892,
+  "source": "drill_fixture",
+  "summary": "N1：v0→v1，manifest 已产出",
+  "detail": {"artifact": "…/n1_manifest_new.json", "parent": "v0", "source": "drill_fixture"},
+  "refs": ["…/n1_manifest_new.json"],
+  "refs_omitted": 0,
+  "events": [{"seq": 4, "kind": "node_started", "status": "running", "ts": 1792650932.891}],
+  "missing_fields": ["manifest_entries"],
+  "authority": "projection"
+}
+```
+
+- 未知 node：返回 200 + `{"known": false, …}` 空投影，**不**用 404 冒充"节点不存在"。
+- 只读：不写盘；`refs` 只给 run 目录内路径；**不返回文件内容**。`refs` 取自事件流顶层
+  （`node_history` 不含 `refs`），由本端点合并展示；目录外引用（如作业日志）只以
+  `refs_omitted` 计数呈现，**不给路径**。
+- 字段缺失必须列进 `missing_fields`；前端显示"未下发"，不猜、不补默认值；历史 run 不回填。
+- 端点实现前，前端可先从 `GET /api/runs/{run_id}` 的 `node_history` + `/events` 拼同一投影，但契约字段一致。
 
 ## 7 状态、刷新与错误
 

@@ -40,15 +40,18 @@
 
 ## 2 `spec/` 契约
 
-| 文件 | 管什么 |
-|---|---|
-| [S0 环境准备](spec/S0_ENVIRONMENT_SPEC.md) | 修订稿 S0 双段、基线零写、派生校验、TB 授权及三库准出边界 |
-| [`spec/CHANGE_IMPACT_LOOP_SPEC.md`](spec/CHANGE_IMPACT_LOOP_SPEC.md) | 业务与不变量 I1–I8、16 节点 N0–N16、三道人工闸门（Gate1/2/3） |
-| [`spec/LOOP_ORCHESTRATION_SPEC.md`](spec/LOOP_ORCHESTRATION_SPEC.md) | 编排层机制契约：owner 账本、生命周期、长任务停等、单槽准入、重启恢复、进度/UI 投影 |
-| [`spec/ENV_PLUGIN_SPEC.md`](spec/ENV_PLUGIN_SPEC.md) | 三根（`TOOL_ROOT`/`ENV_ROOT`/`WORKSPACE_ROOT`）解析、环境插件契约、拆仓分步与「数据不搬」决定 |
-| [`spec/WEB_UI_SPEC.md`](spec/WEB_UI_SPEC.md) | v1 运营台：两区信息架构、配置/运行/闸门三视图、目录选择、agent 状态投影、新增 API 契约与验收判据 |
-| [`spec/AGENT_CONTEXT_SPEC.md`](spec/AGENT_CONTEXT_SPEC.md) | Agent 上下文覆盖、逐次调用留痕、人工确认经验及版本/来源失效规则 |
-| [Agent 工作窗口](spec/AGENT_WINDOW_SPEC.md) | 逐节点观察、人工补充指令、请求暂停/恢复/终止、控制审计与身份隔离 |
+> **编号**：每份 SPEC 有稳定编号 `SPEC-0X`（文件名不变）。当前修订记录：[`SPEC-REV-01`](spec/SPEC-REV-01-20261022.md)（2026-10-22，待验收）。
+> 修订记录只增不改；后续依次 `SPEC-REV-02`…
+
+| 编号 | 文件 | 管什么 |
+|---|---|---|
+| SPEC-01 | [`spec/CHANGE_IMPACT_LOOP_SPEC.md`](spec/CHANGE_IMPACT_LOOP_SPEC.md) | 业务与不变量 I1–I8、16 节点 N0–N16、三道人工闸门（Gate1/2/3）、闸门材料充分性（§7.1） |
+| SPEC-02 | [`spec/LOOP_ORCHESTRATION_SPEC.md`](spec/LOOP_ORCHESTRATION_SPEC.md) | 编排层机制契约：owner 账本、生命周期、长任务停等、单槽准入、重启恢复、进度/UI 投影、节点执行详情投影（§10.4） |
+| SPEC-03 | [`spec/ENV_PLUGIN_SPEC.md`](spec/ENV_PLUGIN_SPEC.md) | 三根（`TOOL_ROOT`/`ENV_ROOT`/`WORKSPACE_ROOT`）解析、环境插件契约、拆仓分步与「数据不搬」决定 |
+| SPEC-04 | [`spec/WEB_UI_SPEC.md`](spec/WEB_UI_SPEC.md) | v1 运营台：两区信息架构、配置/运行/闸门三视图、节点详情面板（§4.2.1）、闸门材料可判性、环境来源徽标（§4.5）、新增 API 契约与验收判据 |
+| SPEC-05 | [S0 环境准备](spec/S0_ENVIRONMENT_SPEC.md) | 修订稿 S0 双段、基线零写、派生校验、TB 授权及三库准出边界；S0 与 drill/N0–N16 的关系与两级验收（§6/§7） |
+| SPEC-06 | [`spec/AGENT_CONTEXT_SPEC.md`](spec/AGENT_CONTEXT_SPEC.md) | Agent 上下文覆盖、逐次调用留痕、人工确认经验及版本/来源失效规则 |
+| SPEC-07 | [Agent 工作窗口](spec/AGENT_WINDOW_SPEC.md) | 逐节点观察、人工补充指令、请求暂停/恢复/终止、控制审计与身份隔离（仅模型节点；Host 节点用 SPEC-04 §4.2.1） |
 
 ## 3 阅读顺序（新接手）
 

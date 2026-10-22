@@ -564,7 +564,9 @@ async def test_n2_uses_selected_baseline(
 
     def fake_tool(name: str, args: list[str], **kw: Any) -> dict[str, Any]:
         calls.append([name, *args])
-        return {"rc": 3, "stderr_tail": ""}
+        # rc=0 = 工具成功；rc=3 在 SPEC-REV-01 §D E1 之后是『blocking 输入缺口』，
+        # 由 tests/test_fix_real_chain.py::test_n2_rc3_gap_fails_explicitly_and_writes_no_diff 覆盖。
+        return {"rc": 0, "stderr_tail": ""}
 
     monkeypatch.setattr(host_steps, "run_kb_tool", fake_tool)
 

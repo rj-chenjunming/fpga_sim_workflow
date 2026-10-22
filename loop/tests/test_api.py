@@ -50,6 +50,10 @@ def test_health_and_static_ui(client: TestClient) -> None:
     health = client.get("/api/health").json()
     assert health["ok"] is True
     assert health["agently"].startswith("4.1.4")
+    # SPEC-02 §9：事件 kind 白名单的唯一权威经 /api/health 下发（前端不手抄）
+    from host.progress import ALLOWED_KINDS
+
+    assert health["event_kinds"] == sorted(ALLOWED_KINDS)
     html = client.get("/").text
     assert "<!DOCTYPE html>" in html
     assert "http://" not in html and "https://" not in html, "前端不得有外链"

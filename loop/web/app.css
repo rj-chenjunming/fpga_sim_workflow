@@ -838,3 +838,25 @@ button.chip:hover{border-color:var(--primary-line);color:var(--primary)}
   .diff-pair{grid-template-columns:minmax(0,1fr)}
   .diff-fields,.host-trace-table{table-layout:auto}
 }
+
+/* ── S0-rehearsal（SPEC-05 §6.2/§7）：点一次的本机演练入口与回执 ───────────────
+   结果块独立于派生表单与准备记录刷新，不随轮询重建；沿用 tokens.css 的配色与边框。
+   演练只证明 copy→replace→核验链路，样式上也不再暗示"环境就绪"。 */
+.s0-rehearsal{margin-top:18px}
+.s0-rehearsal .card-body{padding-top:6px}
+.s0-rehearsal .card-body>p:first-child{margin:0 0 12px;line-height:1.7}
+.s0-rehearsal-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.s0-rehearsal-actions .btn{flex-shrink:0}
+.s0-rehearsal-result{border-top:1px dashed var(--line);padding-top:14px;
+  display:flex;flex-direction:column;gap:5px;overflow-wrap:anywhere;min-width:0}
+.s0-rehearsal-result p{margin:0}
+.s0-rehearsal-result .receipt-label{font-size:12px;margin-bottom:2px}
+.s0-rehearsal-checks{margin:8px 0 0}
+.s0-rehearsal-checks li{font-size:12.5px}
+.s0-rehearsal-scope{margin:12px 0 0;padding:10px 12px;border:1px solid #ebdfc6;border-radius:8px;
+  background:var(--warn-weak);color:#7d6339;font-size:12px;line-height:1.7}
+.s0-rehearsal-scope b{font-weight:600;color:#6b5127}
+@media(max-width:760px){
+  .s0-rehearsal-actions{flex-direction:column;align-items:stretch}
+  .s0-rehearsal-actions .btn{width:100%}
+}

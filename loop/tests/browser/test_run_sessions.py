@@ -67,6 +67,10 @@ def ui(static_url):
                 body = {"ok": True, "env_root": "/fixture", "plugin_missing": [], "workspace_missing": []}
             elif path == "/api/baselines":
                 body = {"baselines": []}
+            elif path == "/api/s0":
+                body = {"baseline": "/fixture", "records": [], "allowed_roots": ["/fixture"],
+                        "capabilities": {"prepare": True, "rehearsal": True,
+                                         "tb_adapt": False, "smoke": False}}
             elif path == "/api/runs":
                 body = {"runs": [{"run_id": rid, "status": "waiting_gate", "mode": "drill"}
                                  for rid in api["views"]]}
@@ -144,6 +148,33 @@ def test_s0_prepare_captures_paths_prevents_duplicate_and_shows_blockers(ui):
     pw.expect(page.locator('#s0Blockers')).to_contain_text('三库未执行')
     pw.expect(page.locator('#s0Result')).to_contain_text('/fixture/baseline_wk_v2')
     pw.expect(page.locator('#s0Report')).to_have_attribute('href', '/api/s0/S0-fixture/report')
+
+
+def test_s0_rehearsal_runs_once_and_shows_four_checks_with_scope_notice(ui):
+    """SPEC-05 §7：工作台可一键完成 S0-rehearsal，并明确"不是环境就绪、不是 S0-b"。"""
+    page, api = ui
+    record = {
+        "id": "S0-REHEARSAL-0001", "status": "prepared",
+        "work_env": "/state/s0-rehearsal/20261022/work",
+        "ready_for_execution": False,
+        "checks": [
+            {"key": "copy", "label": "完整派生工作副本", "status": "passed"},
+            {"key": "rtl", "label": "新版 RTL 整体替换", "status": "passed"},
+            {"key": "non_rtl", "label": "非 RTL 初检一致", "status": "passed"},
+            {"key": "ports", "label": "接口核对与 TB 变更登记", "status": "waiting"},
+            {"key": "smoke", "label": "副本三库编译冒烟", "status": "waiting"},
+            {"key": "baseline", "label": "基线零写入见证", "status": "passed"},
+        ],
+    }
+    page.locator("#s0Rehearsal").click()
+    release(page, api, record)
+    box = page.locator("#s0RehearsalResult")
+    pw.expect(box).to_contain_text("S0-a 链路已走通")
+    pw.expect(box).to_contain_text("S0-REHEARSAL-0001")
+    pw.expect(box).to_contain_text("完整派生工作副本")
+    pw.expect(box).to_contain_text("副本三库编译冒烟")
+    pw.expect(box).to_contain_text("不是环境就绪")
+    assert [p[0] for p in api["posts"]].count("/api/s0/rehearsal") == 1
 
 
 def test_s0_rejection_keeps_inputs_and_focus_survives_polling(ui):

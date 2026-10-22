@@ -90,3 +90,25 @@ def test_gate_material_projection_has_diff_entries(client: TestClient) -> None:
         assert "unresolved" in entry
     assert diff.get("unresolved_count", 0) >= 1
     assert mat.get("unresolved_entries"), "G1 材料必须单列未决条目"
+
+
+def test_frontend_event_whitelist_matches_server_authority() -> None:
+    """SPEC-02 §9 / SPEC-REV-01 §D E2：前端静态兜底表必须与服务端 `ALLOWED_KINDS` 逐项相等。
+
+    前端运行时已改为消费 `/api/health.event_kinds`；静态表只用于首屏。若两边漂移，
+    就会重现"规格 8 / 服务端 15 / 前端 16"的三套口径，故用测试钉住。
+    """
+    import re
+    from pathlib import Path
+
+    from host.progress import ALLOWED_KINDS
+
+    app_js = (Path(P.LOOP_DIR) / "web" / "app.js").read_text(encoding="utf-8")
+    match = re.search(r"var EVENT_WHITELIST = \{(.*?)\};", app_js, re.S)
+    assert match, "app.js 里找不到 EVENT_WHITELIST 静态兜底表"
+    keys = set(re.findall(r"\b([a-z_]+)\s*:\s*1\b", match.group(1)))
+    assert keys == set(ALLOWED_KINDS), (
+        "前端事件白名单与 host.progress.ALLOWED_KINDS 漂移："
+        f"only_frontend={sorted(keys - set(ALLOWED_KINDS))} "
+        f"only_server={sorted(set(ALLOWED_KINDS) - keys)}"
+    )

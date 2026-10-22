@@ -23,7 +23,7 @@ from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from host import paths as P
-from host.progress import ProgressLog
+from host.progress import ALLOWED_KINDS, ProgressLog
 from services import node_view
 from workflows.main_flow import RunManager, get_manager
 
@@ -69,6 +69,8 @@ def health() -> dict[str, Any]:
         "python": sys.version.split()[0],
         # 模型 provider 状态（**不含密钥**）：界面据此显示"模型节点是 live 还是替身"
         "llm": MP.status(),
+        # 事件 kind 白名单的**唯一权威**（SPEC-02 §9）：/api/health 下发，界面消费，不手抄。
+        "event_kinds": sorted(ALLOWED_KINDS),
         "restore_report": getattr(app.state, "restore_report", None) if hasattr(app, "state") else None,
         "server_authority": "闸门态权威在 kb/tools/gate.py（gate_state + anchor）；界面与 HTTP 层都是只读投影 + 传输。",
     }
@@ -121,8 +123,9 @@ def _s0_store():
     from host.s0 import S0Store
     from services import config_api
     registry = config_api.load_registry(P.TOOL_ROOT / 'environments.json')
+    # STATE_DIR 是 S0-rehearsal 输入/副本的根：必须在允许根内，否则 `_path` 会误拒。
     roots = config_api.allowed_roots(registry, P.WORKSPACE_ROOT,
-                                     settings_path=P.LOOP_DIR / 'SETTINGS.yaml', extra=[P.ENV_ROOT])
+                                     settings_path=P.LOOP_DIR / 'SETTINGS.yaml', extra=[P.ENV_ROOT, P.STATE_DIR])
     return S0Store(P.STATE_DIR / 's0', roots)
 
 
@@ -130,7 +133,9 @@ def _s0_store():
 def s0_index():
     store = _s0_store()
     return {'baseline': str(P.ENV_ROOT), 'allowed_roots': [str(p) for p in store.allowed_roots],
-            'records': store.list(), 'capabilities': {'prepare': True, 'tb_adapt': False, 'smoke': False}}
+            'records': store.list(),
+            # rehearsal=True 只说明"可以点一次本机演练"：既不表示环境就绪，也不表示 S0-b 已接入。
+            'capabilities': {'prepare': True, 'rehearsal': True, 'tb_adapt': False, 'smoke': False}}
 
 
 @app.post('/api/s0')
@@ -138,6 +143,36 @@ async def s0_prepare(payload: dict[str, Any] = Body(default={})):
     from host.s0 import PreparationFailed
     try:
         return await asyncio.to_thread(_s0_store().prepare, payload)
+    except FileExistsError as exc:
+        raise HTTPException(409, detail={'error': str(exc)}) from exc
+    except PermissionError as exc:
+        raise HTTPException(403, detail={'error': str(exc)}) from exc
+    except ValueError as exc:
+        raise HTTPException(400, detail={'error': str(exc)}) from exc
+    except PreparationFailed as exc:
+        raise HTTPException(422, detail={'error': str(exc), 'record': exc.record}) from exc
+    except OSError as exc:
+        raise HTTPException(422, detail={'error': str(exc)}) from exc
+
+
+@app.post('/api/s0/rehearsal')
+async def s0_rehearsal(payload: dict[str, Any] = Body(default={})):
+    """S0-rehearsal：一次性的"copy → 整体替换 RTL → 核验"，只证明链路可走。
+
+    - **不接受任何客户端路径**（防任意写）：body 只允许可选 `now`（含时区 ISO 时间），
+      其余键一律 400；输入由 Host 在软件 state 目录下自造。
+    - 记录写进 `STATE_DIR/s0/`（与真实 S0 记录同源），每次点击都是新记录、新目录。
+    - 不写 `ENV_ROOT`、不签闸门、不改变运行；`ready_for_execution` 仍恒 false（S0-b 未接入）。
+    - 失败沿用既有 `PreparationFailed` 语义：`status=failed` + `error` + 422（记录保留）。
+    """
+    from host.s0 import PreparationFailed
+    unknown = sorted(str(key) for key in payload if key != 'now')
+    if unknown:
+        raise HTTPException(400, detail={'error': (
+            'S0 演练不接受客户端路径参数：' + '、'.join(unknown)
+            + '；只允许可选 now（含时区 ISO 时间），演练输入由服务端在软件 state 下自造')})
+    try:
+        return await asyncio.to_thread(_s0_store().rehearse, payload.get('now'))
     except FileExistsError as exc:
         raise HTTPException(409, detail={'error': str(exc)}) from exc
     except PermissionError as exc:

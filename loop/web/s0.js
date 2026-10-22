@@ -1,7 +1,7 @@
 /* S0 准备记录投影；表单不参与轮询重建，所有结论由 Host 返回。 */
 "use strict";
 window.S0Workbench = (function () {
-  var api, busy = false, selected = null, selection = 0;
+  var api, busy = false, rehearsalBusy = false, selected = null, selection = 0;
   function $(id) { return document.getElementById(id); }
   function el(tag, cls, text) {
     var node = document.createElement(tag);
@@ -17,6 +17,7 @@ window.S0Workbench = (function () {
     busy = value;
     $("s0Prepare").disabled = value;
     $("s0Refresh").disabled = value;
+    $("s0Rehearsal").disabled = value || rehearsalBusy;
     $("s0Form").setAttribute("aria-busy", String(value));
     $("s0Prepare").textContent = value ? "正在派生与校验…" : "派生并校验 →";
     $("s0SubmitHint").textContent = value ? "完整工程复制可能需要较长时间，请保留本页" : "准备完成后仍需 S0-b 与 GATE-1";
@@ -60,6 +61,62 @@ window.S0Workbench = (function () {
     var report = $("s0Report");
     report.classList.toggle("hidden", !/^S0-[A-Za-z0-9_-]+$/.test(record.id || ""));
     if (/^S0-[A-Za-z0-9_-]+$/.test(record.id || "")) report.href = "/api/s0/" + encodeURIComponent(record.id) + "/report";
+  }
+  // ---------------------------------------------------------------- S0-rehearsal
+  // 演练只证明 copy→replace→核验链路；结果独立成块，准备记录轮询/刷新不会清掉它。
+  var REHEARSAL_SCOPE = "演练：只证明 copy→replace→核验链路，不是环境就绪、不是 S0-b。";
+  function checkRows(record) {
+    var list = el("ol", "s0-checks s0-rehearsal-checks");
+    (record.checks || []).forEach(function (check, index) {
+      var item = el("li", check.status === "passed" ? "check-passed" : "");
+      item.appendChild(el("span", null, check.status === "passed" ? "✓" : String(index + 1).padStart(2, "0")));
+      item.appendChild(el("div", null, check.label || check.key));
+      item.appendChild(el("b", null, {passed: "已验证", failed: "失败", waiting: "未完成"}[check.status] || check.status));
+      list.appendChild(item);
+    });
+    return list;
+  }
+  function setRehearsalBusy(value) {
+    rehearsalBusy = value;
+    $("s0Rehearsal").disabled = value;
+    $("s0Rehearsal").setAttribute("aria-busy", String(value));
+    $("s0Rehearsal").textContent = value ? "演练运行中…" : "运行 S0 演练（临时小基线）";
+    $("s0RehearsalHint").textContent = value ? "正在复制与核验，请保留本页" : "只验证链路，不代表环境就绪";
+  }
+  function renderRehearsal(record) {
+    var prepared = record.status === "prepared";
+    var box = $("s0RehearsalResult");
+    box.replaceChildren(
+      el("div", "receipt-label", prepared ? "演练记录 · S0-a 链路已走通（S0-b 仍未接入）" : "演练失败（记录已保留，未删除）"),
+      el("div", "mono receipt-id", record.id || "—"),
+      el("div", "mono tiny muted", "status = " + (record.status || "—")),
+      el("div", "mono receipt-path", "副本：" + (record.work_env || "—")));
+    if (record.error) box.appendChild(el("div", "alert bad", record.error));
+    if (Array.isArray(record.checks) && record.checks.length) {
+      box.appendChild(checkRows(record));
+      box.appendChild(el("p", "muted tiny", "四项（copy/rtl/non_rtl/baseline）通过；端口核对与三库冒烟属 S0-b，仍未接入。"));
+    }
+    box.appendChild(el("p", "s0-rehearsal-scope", REHEARSAL_SCOPE));
+  }
+  async function rehearse() {
+    if (rehearsalBusy || busy) return;
+    setRehearsalBusy(true);
+    $("s0RehearsalError").replaceChildren();
+    try {
+      // 演练不接受任何客户端路径（防任意写）：只发空 body，输入由服务端在软件 state 下自造。
+      var record = await api("/api/s0/rehearsal", {method: "POST", body: {}}, 0);
+      renderRehearsal(record);
+      try { await loadIndex(); } catch (e) {
+        $("s0RehearsalError").replaceChildren(el("div", "alert bad", "读取准备记录失败：" + e.message));
+      }
+    } catch (e) {
+      // 失败展示服务端 detail.error 原文；有 failed 记录时一并显示，便于复核。
+      var detail = e.body && e.body.detail;
+      $("s0RehearsalError").replaceChildren(el("div", "alert bad", (detail && detail.error) || e.message));
+      if (detail && detail.record) renderRehearsal(detail.record);
+    } finally {
+      setRehearsalBusy(false);
+    }
   }
   async function loadIndex() {
     var data = await api("/api/s0");
@@ -115,6 +172,7 @@ window.S0Workbench = (function () {
   return {init: function (request) {
     api = request;
     $("s0Form").addEventListener("submit", submit);
+    $("s0Rehearsal").addEventListener("click", rehearse);
     $("s0Refresh").addEventListener("click", async function () {
       if (busy) return;
       try { await loadIndex(); if (selected) await loadRecord(selected); }

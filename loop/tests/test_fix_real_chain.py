@@ -268,6 +268,31 @@ async def test_n1_real_passes_required_parent_and_uses_env_defaults(
     assert "--rtl-src" not in joined, "没有 staged 输入时应使用 ENV_ROOT 现态"
 
 
+async def test_n2_rc3_gap_fails_explicitly_and_writes_no_diff(
+        ctx: RunCtx, env_repo: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """SPEC-REV-01 §D E1：`n2_diff.py` 的 rc=3 是 **blocking 输入缺口**（不产出 n2_diff.json）。
+
+    修复前：rc=3 被放行 ⇒ 读不到产物就当 `diff_count=0` 并报 `node_finished ok`
+    （界面显示"完成、0 条差异"）。修复后：必须显式失败，绝不冒充无差异。
+    """
+    def fake_tool(tool: str, args: list[str], **kw: Any) -> dict[str, Any]:
+        assert tool == "n2_diff.py", tool
+        (ctx.run_dir / "n2_diff.gap.json").write_text('{"blocking": true}', encoding="utf-8")
+        return {"cmd": "fake n2_diff", "rc": 3, "stdout_tail": "", "stderr_tail": "blocking gap"}
+
+    monkeypatch.setattr(host_steps, "run_kb_tool", fake_tool)
+    data = FakeData(input={"baseline": "v0"})
+    with pytest.raises(RuntimeError) as exc:
+        await host_steps.n2_diff(data)
+    assert "rc=3" in str(exc.value) or "缺口" in str(exc.value)
+
+    events = [e for e in ctx.progress.read() if e.get("node") == "N2"]
+    assert any(e.get("kind") == "node_failed" for e in events), events
+    assert not (ctx.run_dir / "n2_diff.json").exists(), "缺口时不得伪造差异清单"
+    failed = [e for e in events if e.get("kind") == "node_failed"][-1]
+    assert "不得当成" in str((failed.get("detail") or {}).get("message"))
+
+
 async def test_n1_staged_inputs_are_passed_with_mapping(
         ctx: RunCtx, env_repo: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """#6/A19：staged/{RTL,doc,regmap} 存在时走显式输入并校验完整性。"""

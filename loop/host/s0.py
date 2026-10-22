@@ -74,6 +74,54 @@ S0B_BLOCKERS = [
     {'key': 'execution', 'message': '新版执行入口尚未接入 S0 准出判据；现有闭环不代表新版 S3。'},
 ]
 
+# ---------------------------------------------------------------- S0-rehearsal（SPEC-05 §6.2/§7）
+#
+# 演练 = 本机自造一份**一次性小基线**，走一次真实的 copy → 整体替换 RTL → 核验。
+# 它只证明"链路能走通"，不证明环境就绪、不证明 S0-b、不签任何闸门。
+
+REHEARSAL_NOTE = '演练：只证明 copy→replace→核验链路，不是环境就绪、不是 S0-b。'
+
+#: 演练输入（相对演练根）。`RTL/legacy.v` 只存在于基线，用来证明"整体替换"而非"覆盖合并"。
+REHEARSAL_FILES = {
+    'baseline/RTL/old.v': 'module old;\n  // 基线旧 RTL\nendmodule\n',
+    'baseline/RTL/legacy.v': 'module legacy;\n  // 只在基线里存在；整体替换后必须消失\nendmodule\n',
+    'baseline/TB/top.sv': 'module top;\n  old u_old();\nendmodule\n',
+    'baseline/PKG/x.v': 'package x;\nendpackage\n',
+    'baseline/TESTLIB/tc_demo.sv': 'module tc_demo;\nendmodule\n',
+    'baseline/doc/S0_REHEARSAL.md': '# 演练基线（临时）\n\n只用于 S0-rehearsal，不是真实工程。\n',
+    'baseline/run': '#!/bin/sh\n# 演练基线里的 run 文件；只复制不执行\nexit 99\n',
+    'rtl/old.v': 'module old;\n  // 演练：整体替换后的新版 RTL\nendmodule\n',
+    'rtl/new.v': 'module new;\nendmodule\n',
+}
+
+
+def _parse_now(value):
+    """`now` 是唯一的时间注入入口；缺省取当前 UTC。非法/无时区一律 ValueError。"""
+    if value is None:
+        return datetime.now(timezone.utc)
+    if not isinstance(value, str):
+        raise ValueError('now 必须为含时区的 ISO 时间')
+    try:
+        stamp = datetime.fromisoformat(value.replace('Z', '+00:00'))
+    except ValueError as exc:
+        raise ValueError('now 必须为含时区的 ISO 时间') from exc
+    if stamp.tzinfo is None:
+        raise ValueError('now 必须为含时区的 ISO 时间')
+    return stamp
+
+
+def _unique_dir(parent: Path, name: str) -> Path:
+    """独占创建一层新目录；同名已存在则加序号，绝不覆盖上一次演练。"""
+    if parent.is_symlink():
+        raise ValueError(f'演练目录不允许符号链接：{parent}')
+    parent.mkdir(parents=True, exist_ok=True)
+    candidate, index = parent / name, 0
+    while candidate.exists() or candidate.is_symlink():
+        index += 1
+        candidate = parent / f'{name}-{index}'
+    candidate.mkdir(exist_ok=False)
+    return candidate
+
 
 class S0Store:
     def __init__(self, root: Path, allowed_roots):
@@ -108,7 +156,7 @@ class S0Store:
             records.append({k: row.get(k) for k in ('id', 'status', 'work_env', 'created_at', 'baseline_version')})
         return records
 
-    def prepare(self, payload: dict):
+    def prepare(self, payload: dict, extra: dict | None = None):
         baseline = self._path(payload.get('baseline'))
         rtl = self._path(payload.get('rtl_source'))
         work = self._path(payload.get('work_env'))
@@ -151,6 +199,12 @@ class S0Store:
                       rtl_source=str(rtl), work_env=str(work), created_at=stamp.isoformat(), docs_dir=docs,
                       status='preparing', ready_for_execution=False, checks=checks,
                       blockers=S0B_BLOCKERS, error=None, report_url=f'/api/s0/{record_id}/report')
+        if extra:
+            # 附加标记只允许新增字段（如演练标记）；覆盖既有字段会让记录自相矛盾。
+            clash = sorted(set(extra) & set(record))
+            if clash:
+                raise ValueError(f'附加标记不得覆盖记录字段：{"、".join(clash)}')
+            record.update(extra)
         _json(folder / 'baseline-before.json', before)
         _json(folder / 'rtl-source.json', source)
         owned_work = False
@@ -201,10 +255,42 @@ class S0Store:
             raise PreparationFailed(record)
         return record
 
+    def rehearse(self, now=None):
+        """S0-rehearsal：自造一次性小基线 → 完整派生 → 四项 checks；不接受任何客户端路径。
+
+        - 输入/副本都落在**软件 state 目录**下：`<state>/s0-rehearsal/<UTC 戳>/`；
+          记录仍写 `<state>/s0/`（与真实 S0 记录同源）。输入不能放进记录根内
+          （§2 禁止输入/记录互相包含），所以是记录根的**兄弟目录**。
+        - 每次都新建目录、新记录；同名戳自动加序号，绝不覆盖上一次演练。
+        - `ENV_ROOT` 零写入：本方法不解析、不引用环境根。
+        - `ready_for_execution` 仍恒 false：演练不签闸门、不改变 S0-b 阻断（§3）。
+        """
+        stamp = _parse_now(now)
+        utc = stamp.astimezone(timezone.utc)
+        stage = _unique_dir(self.root.parent / 's0-rehearsal', utc.strftime('%Y%m%dT%H%M%S%fZ'))
+        baseline, source, work = stage / 'baseline', stage / 'rtl', stage / 'work'
+        extra = {'rehearsal': {'kind': 'S0-rehearsal', 'note': REHEARSAL_NOTE,
+                               'fixture_root': str(stage), 'baseline': str(baseline),
+                               'rtl_source': str(source), 'work_env': str(work),
+                               'created_at': stamp.isoformat()}}
+        for relative, text in REHEARSAL_FILES.items():
+            target = stage / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(text, encoding='utf-8')
+        payload = dict(baseline=str(baseline),
+                       baseline_version='S0-rehearsal:' + utc.isoformat(timespec='seconds'),
+                       rtl_source=str(source), work_env=str(work), now=stamp.isoformat())
+        # 失败按既有语义抛 PreparationFailed（记录 status=failed + error，API 422）；
+        # 演练标记随 record.json 一次写入，失败记录同样带标记。
+        return self.prepare(payload, extra=extra)
+
     def _write_report(self, folder, record):
         report = folder / 'reports/s0-env'
         report.mkdir(parents=True)
         rows = ['# S0 环境准备记录', '', 'S0-a 完成不代表 S0 准出；S0-b 未执行。', '']
+        if record.get('rehearsal'):
+            rows += ['> **演练记录（S0-rehearsal）**：只证明 copy→replace→核验链路，不是环境就绪、不是 S0-b。',
+                     '> 基线是软件 state 下的一次性小基线；真实环境（S0-real）未跑。', '']
         for key in ('id', 'baseline', 'baseline_version', 'rtl_source', 'work_env', 'created_at', 'status', 'error'):
             rows.append(f'- {key}: {record[key]}')
         rows += ['', '版本标识为操作者声明，未校验为 Git ref。', '', '## 检查', '']

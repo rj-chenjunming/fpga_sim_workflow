@@ -367,7 +367,12 @@ async def n1_manifest(data: Any) -> dict[str, Any]:
 
 
 async def n2_diff(data: Any) -> dict[str, Any]:
-    """N2 差异对比。rc=3 是**业务码**（有差异），不是错误。"""
+    """N2 差异对比。
+
+    退出码语义**只以 `kb/tools/n2_diff.py` 为准**（SPEC-REV-01 §D E1）：
+    `0` 成功；`3` = blocking 输入缺口（**不产出** `n2_diff.json`，写 `n2_diff.gap.json/.md`）；
+    `4` = selfcheck 失败。因此 3/4 都必须显式失败——不得把"没产出差异清单"当成"0 条差异"。
+    """
     ctx = ctx_of(data)
     ctx.node_started("N2")
     target = ctx.run_dir / ARTIFACTS["n2"]
@@ -392,7 +397,17 @@ async def n2_diff(data: Any) -> dict[str, Any]:
         )
         result.update(run)
         result["source"] = "kb_tool"
-        if run["rc"] not in (0, 3):
+        if run["rc"] == 3:
+            gap = ctx.run_dir / "n2_diff.gap.json"
+            ctx.node_failed(
+                "N2",
+                message=("N2 存在 blocking 输入缺口（n2_diff rc=3），本轮未产出 n2_diff.json；"
+                         f"缺口报告 = {gap}（不得当成『0 条差异』）"),
+            )
+            raise RuntimeError(
+                "n2_diff rc=3：blocking 输入缺口，未产出 n2_diff.json（见 n2_diff.gap.json）"
+            )
+        if run["rc"] != 0:
             ctx.node_failed("N2", message=f"n2_diff rc={run['rc']}")
             raise RuntimeError(f"n2_diff rc={run['rc']}")
 

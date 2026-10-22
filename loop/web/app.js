@@ -62,7 +62,7 @@
 
   /* 事件流白名单：只显示这些 kind（spec §4.4 第 5 条）。 */
   var EVENT_WHITELIST = {
-    run_started: 1, run_finished: 1, run_failed: 1,
+    run_started: 1, run_finished: 1,
     node_started: 1, node_finished: 1, node_failed: 1,
     gate_pending: 1, gate_decided: 1,
     job_submitted: 1, job_progress: 1, job_finished: 1, dead_job: 1,
@@ -391,6 +391,12 @@
       var x = await api("/api/health");
       state.health = x;
       state.healthError = null;
+      // 事件白名单以服务端为准（SPEC-02 §9）：静态表只是首屏兜底，收到 health 后覆盖。
+      if (x && Array.isArray(x.event_kinds) && x.event_kinds.length) {
+        var next = {};
+        x.event_kinds.forEach(function (kind) { if (kind) next[String(kind)] = 1; });
+        EVENT_WHITELIST = next;
+      }
       if (!state.setup.project && x && x.env_root) state.setup.project = String(x.env_root);
     } catch (e) {
       state.healthError = errText(e);

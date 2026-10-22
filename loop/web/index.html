@@ -97,6 +97,21 @@
               </form>
             </div>
             <details class="card s0-history"><summary>准备记录 <span class="muted tiny">查看历史派生与重新核验</span></summary><div class="card-body" id="s0History">加载中…</div></details>
+            <div class="card s0-rehearsal">
+              <div class="card-head"><span class="section-index">R</span><h2>S0 演练</h2><span class="sub">S0-rehearsal</span></div>
+              <div class="card-body">
+                <p class="muted tiny">在软件 state 目录下生成一份临时小基线，自动完成一次 copy → 整体替换 RTL → 核验。不需要内网 UVS，不需要填写任何路径，也不会写真实环境。</p>
+                <div class="s0-rehearsal-actions">
+                  <button class="btn" id="s0Rehearsal" type="button">运行 S0 演练（临时小基线）</button>
+                  <span class="muted tiny" id="s0RehearsalHint">只验证链路，不代表环境就绪</span>
+                </div>
+                <div id="s0RehearsalError" role="alert"></div>
+                <div id="s0RehearsalResult" class="s0-rehearsal-result" aria-live="polite">
+                  <p class="muted tiny">尚未运行。演练记录与真实 S0 记录同源，写在服务端软件 state 目录。</p>
+                </div>
+                <p class="s0-rehearsal-scope">演练：只证明 copy→replace→核验链路，<b>不是</b>环境就绪、不是 S0-b。</p>
+              </div>
+            </div>
           </div>
 
           <div class="s0-evidence">

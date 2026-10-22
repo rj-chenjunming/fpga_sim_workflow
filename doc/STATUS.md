@@ -4,6 +4,7 @@
 > **本次采样**：2026-10-19T18:02+0800（修复轮终验，四道门全绿）；采样命令与输出见各节（数字一律复制，不手算）。
 > **最新补充采样**：2026-10-21 云环境优化、S0 与 Agent 工作窗口，见 §7–§10；后续优化整理见 §11；全站网页视觉升级见 §12；下一阶段执行手册与当前复核见 §13。
 > **2026-10-21/22 后续批次**：F01/F02/F03-a/F16/F16-b/F02-b 见 §14–§21；本批 F13/F03-b/F03-c/F16-c/F02-c/F15-a/F06/F05/F14/F07/F08/F10/F11 见 §22–§32，阻塞清单见 §33，独立验证汇总见 §34。旧采样保留为历史；本轮没有四道门全绿。
+> **2026-10-22 拉取后复核**：被测 `a19107c`，受影响集合与浏览器、确定性边界探针及新增待修项见 §35；不覆盖上一执行端的历史采样。
 > **不声称合规**：审计发现但未修复的阻断项在 §5 保持可见。
 
 ---
@@ -797,3 +798,26 @@ STATUS；`doc/README.md`/`doc/agents/README.md` 索引现状（2 份开工提示
 | 整改后未再复核 | 9 份报告中有 4 份的整改提交未再次独立复核（F13 `d272a80`、F03-b `4d1c65b`、F03-c `2805c2b`、F16-c `a32b13e`、F15-a `0328222`、F10/F11 `59f57e7`；见 §34 表） | 逐条登记；不声称「复核通过」 |
 | 红灯用例在实现提交中改写 | F08 红灯 `aaf8974` 对「篡改校验」的期望是「视图标 corrupt」，实现中改为「读取显式失败」并同步改了测试（`792bb48`）——属安全契约取舍，但违反「红灯提交后不再改测试期望」 | §31/§34 记录；后续切片若改期望须单独提交并说明 |
 | 观测矩阵与实现口径 | F08 复核 M2：空 attempt 目录摘要曾标 `absent`（矩阵要求 `incomplete`） | 已在 `read_view` 映射为 `incomplete` 并补用例；`record_state` API 语义仍是 `absent`（诊断 API 与摘要状态分开） |
+
+## 35 内网批次拉取后复核（2026-10-22）
+
+用户要求拉取内网修订并审查。main 从 `fb83ed0` 快进至 `a19107c`。本轮不改业务代码，仅源码复核、受控测试和文档留证；同一执行者复核，不冒充独立终验。
+
+[完整复核](audit/AUDIT-20261022-intranet-batch-review.md)、[原始命令与证据](evidence/INTRANET_REVIEW_20261022.md)（MD5 `976c315044d5c65ff4e8b3279c3c5bb9`）、[可复现探针](audit/parts/intranet-batch-probe.py)。注册表中的内网环境根/数据根在本机不存在，使用专属临时数据根及现有 conftest 的临时 state；测试不连接真实 provider/仿真器。
+
+| 本轮检查 | 实际输出 / 状态 | 范围与判读 |
+|---|---|---|
+| 受影响集合及完整现有浏览器集 | `1 failed, 283 passed, 1 warning in 71.78s (0:01:11)` | 精确命令与失败栈见证据；唯一失败为 `test_sigkill_during_publish_loop_never_yields_consumable_partial` 的 checksum mismatch；不是全套软件层 |
+| 浏览器收集 | `41 tests collected in 0.06s` | 均在上述集合内执行通过，无 browser skip；是受控网页/API，不是内网/真实模型验收 |
+| F08 失败用例单独复跑 | `1 passed in 1.05s` | 随机终止落点相关，单次转绿不抹掉首次失败 |
+| 确定性校验发布中断 | `child_exit=9, prior_state=committed, checksum_bytes=0, partial_state=corrupt, read_error=ValueError: agent record checksum mismatch: request.json` | R1：校验文件创建后退出使整个节点视图读取失败，旧完整尝试也不可读 |
+| artifact 路径 | `kind=relative, valid=true, outside_all_allowed_roots=true`；`kind=absolute, valid=false, outside_all_allowed_roots=true` | R2：同一外部文件用相对路径绕过允许根，绝对路径被拒 |
+| manifest 坏编码 | `http_status=500` | R3：临时非 UTF-8 manifest 使基线列表整体失败 |
+| N8 默认预算 | `full_bytes=59341, budget=60000, actual=N8 上下文预算不足：分片后 61835 > 60000 bytes` | R4：全文有可行解，片段更大却被当作最小成本 |
+| 窗口预算口径 | `host_bytes=72, displayed_bytes=1055` | R5：前端计入 offered/scope，并漏外层字段名/标点，与 Host 计费不同 |
+| 文档门 | 退出码 `1`；`known_missing=10 env_missing=304 missing=116` | 报告/探针落盘后、证据与本节写入前；缺内网根与既有路径问题保持可见，不把它们全部当作代码回归，也不声称零断链 |
+| 来源边界 | `PASS: existing evidence, history and audit content is unchanged.`；`PASS: reviewed loop/kb implementation is unchanged.`；`PASS: review probe Python syntax is valid.` | 旧件内容按 MD5 对照被测 HEAD，未修被测实现 |
+| 新文档 / 补丁 | 新增 Markdown 链接、锚点、来源行号检查通过；`git diff --check` 退出成功 | 仅本轮新增文档及状态入口，不代表全库文档门通过 |
+| 全套软件层 / kb / 完整端到端 / 真实 provider | 未运行 | 缺内网根/夹具；受影响集合不替代完整四道门 |
+
+当前结论：F01/F02/F03/F05/F06/F13 等有实质修订，本轮受控网页路径通过；F08 发布空窗仍应优先修正，R2–R5 分别补边界用例后收口。R1–R5 均为未修复，不改写 §34 原采样；§33 的 S0-b、真实非默认基线整链、持久暂停等前置仍有效。完整四道门未通过。

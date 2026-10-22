@@ -8,7 +8,7 @@
 
 ---
 
-下一阶段工作：[优化与重构执行手册](doc/plans/OPTIMIZATION_PLAYBOOK.md)（优先级、任务卡、提交切片、验证方法和回退）；[当前复核](doc/audit/AUDIT-20261021-post-ui-roadmap.md)。待办不代表已修复，实际结果以 [STATUS](doc/STATUS.md) 为准。
+下一阶段工作：[SpecDD 优化与重构计划](doc/plans/2026-10-22-next-iteration-specdd.md) → [内网逐步验证手册](doc/plans/2026-10-22-intranet-validation.md)（命令、预期、失败处理、证据记录）；[原执行手册](doc/plans/OPTIMIZATION_PLAYBOOK.md) 保留任务来源。待办不代表已修复，实际结果以 [STATUS](doc/STATUS.md) 为准。
 
 内网浏览器验证：[Rocky Linux 离线安装与运行](loop/offline/README.md)（依赖与备用 Chrome 随 Git 提供，安装无需 PyPI）。
 

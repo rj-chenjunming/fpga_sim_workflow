@@ -6,6 +6,7 @@
 > **2026-10-21/22 后续批次**：F01/F02/F03-a/F16/F16-b/F02-b 见 §14–§21；本批 F13/F03-b/F03-c/F16-c/F02-c/F15-a/F06/F05/F14/F07/F08/F10/F11 见 §22–§32，阻塞清单见 §33，独立验证汇总见 §34。旧采样保留为历史；本轮没有四道门全绿。
 > **2026-10-22 拉取后复核**：被测 `a19107c`，受影响集合与浏览器、确定性边界探针及新增待修项见 §35；不覆盖上一执行端的历史采样。
 > **2026-10-22 浏览器离线交付**：Rocky 8.10 / x86_64 的 Git 资源、离线安装、浏览器回归及系统库边界见 §36。
+> **2026-10-22 下一轮规划**：SpecDD 优化/重构任务与内网逐步验证手册见 §37；本轮仅成册，R1–R5 和后续功能没有在本轮实施。
 > **不声称合规**：审计发现但未修复的阻断项在 §5 保持可见。
 
 ---
@@ -844,3 +845,23 @@ STATUS；`doc/README.md`/`doc/agents/README.md` 索引现状（2 份开工提示
 | 完整业务 / kb / 完整端到端 / 内网主机 Chrome | 未运行 | 本轮是验证依赖交付；原有外部资产和业务缺口不由浏览器包解决 |
 
 **交付边界**：增量包依赖项目原有 `.venv`；Python 依赖和备用浏览器随 Git 提供，主机共享库/字体由 Rocky 提供。优先复用内网已有 `/usr/bin/google-chrome`；没有 Chrome 时可解包备用版本，但系统库缺件必须从匹配的内网 Rocky 8 RPM 源补齐后再运行。安装不自动联网下载、不执行 rpm/dpkg、不要求 root、不复制 Debian 系统库、不替换 glibc。浏览器测试缺包/缺库/跳过不冒充通过。
+
+## 37 下一轮 SpecDD 规划与内网验证手册（2026-10-22）
+
+用户要求规划后续优化/重构、补充内网可照做的验证步骤并推送。已核对远端 main，与编制基线 `343584c` 一致。本轮只交付文档：先 R1–R5 正确性收口，再 F14/F05 网页重构，F01-d/F04、F09、性能与 CI 按依赖启动；保留现有浏览器网页范围。
+
+- [下一轮 SpecDD 计划](plans/2026-10-22-next-iteration-specdd.md)：任务 owner/写权、规格入口、未决决策、红灯/特征用例、切片顺序、退出门与回退。
+- [内网验证手册](plans/2026-10-22-intranet-validation.md)：V0–V9 的版本/三根确认、离线浏览器、软件层、缺陷回归、网页人工矩阵、专用副本四道门、真实链路条件与证据冻结。
+- [本轮交付检查证据](evidence/NEXT_ITERATION_PLAN_20261022.md)，MD5 `02e33f39c0c11c5b87a2eae0ecdaa5e0`；同一执行者编制与校核，无独立终验。
+
+| 检查 | 原始输出 / 状态 | 判读 |
+|---|---|---|
+| 新计划/手册链接与命令 | `PASS: new plan/runbook Markdown targets, Bash syntax, embedded Python syntax and existing test paths.` | 目标存在、bash -n、嵌入 Python AST、现有测试文件路径；语法/入口检查不等于内网执行通过 |
+| 离线资源完整性 | `PASS: offline bundle platform and SHA-256 verification` | verify 动作，本轮未重新安装或启动浏览器 |
+| 全库文档门 | `known_missing=10 env_missing=304 missing=116`；`doc_links_exit=1` | 既有缺内网根/数据及路径问题保持可见，门未通过 |
+| 与编制 HEAD 文档对照 | `PASS: whole-repository missing/env_missing finding sets match HEAD; new plan and runbook add no findings.` | 同根解析的缺失集合一致；临时对照脚本中文文件名转义问题已纠正，详见证据 |
+| 旧件保护 | `PASS: existing evidence/history/audit, frozen kb and application files match HEAD byte-for-byte.` | 没有业务实现变更、旧证据回填或冻结目录修改 |
+| 补丁格式 | git diff --check 退出成功 | 本轮文档改动 |
+| 业务全套 / 浏览器回归 / kb / 完整端到端 / 真实 provider | 未运行 | 本次是规划交付；内网按验证手册执行后另增结果，不抄历史数字 |
+
+**仍未关闭**：§35 的 R1–R5；§33 的真实链路、S0-b、持久暂停等依赖仍适用。§36 解决了离线依赖交付，未替内网主机完成浏览器或业务验收。本轮不声称四道门全绿或功能已完成。

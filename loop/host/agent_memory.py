@@ -2,10 +2,12 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
 import hashlib
 import json
 import os
 import re
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -101,17 +103,41 @@ def check_budget(input_data: dict, contract: dict) -> int:
     return size
 
 
+def _sync_directory(folder: Path) -> None:
+    """同步目录项；不承诺断电持久性（R1 契约只承诺进程终止）。"""
+    fd = os.open(folder, os.O_RDONLY)
+    try:
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+
+
 def _write_once(path: Path, content: bytes) -> None:
-    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-    with os.fdopen(fd, "wb") as stream:
-        stream.write(content)
-        stream.flush()
-        os.fsync(stream.fileno())
-        os.fchmod(stream.fileno(), 0o400)
+    """把内容**不可覆盖地原子发布**到 `path`（R1，`AGENT_CONTEXT_SPEC` 原子发布条款）。
+
+    私有临时件（同目录）→ `fsync` → `os.link`（已存在则失败）→ 删除临时件 → 同步目录。
+    任一点被终止时，最终名下只可能「不存在」或「完整」；临时件名不参与读取扫描。
+    本函数仍是「一次写成」，与历史的 `_write_once` 语义一致，只是不再边写边暴露最终名。
+    """
+    path = Path(path)
+    folder = path.parent
+    fd, temp_name = tempfile.mkstemp(prefix=".publish-", suffix=".tmp", dir=folder)
+    temp = Path(temp_name)
+    try:
+        with os.fdopen(fd, "wb") as stream:
+            stream.write(content)
+            stream.flush()
+            os.fchmod(stream.fileno(), 0o400)
+            os.fsync(stream.fileno())
+        os.link(temp, path)  # 不可覆盖：已发布的同名记录绝不被改写
+    finally:
+        with contextlib.suppress(OSError):
+            temp.unlink()
+        _sync_directory(folder)
 
 
 def seal_record(path: Path, value: Any) -> None:
-    """公开封存接口：写数据 + 校验和（两次 O_EXCL）。跨模块不得直接调用私有实现。"""
+    """公开封存接口：写数据 + 校验和（唯一发布点；顺序固定 数据 → 校验和）。"""
     content = encoded(value)
     _write_once(path, content)
     _write_once(path.with_suffix(".sha256"), hashlib.sha256(content).hexdigest().encode("ascii"))

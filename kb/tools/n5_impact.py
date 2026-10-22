@@ -378,7 +378,8 @@ def map_idx_segments(map_idx):
 
 # ---------------------------------------------------------------- task-13 标注：可达性 + 墙钟成本
 
-DECODE_FALLBACK = ("utf-8", "gbk", "latin-1")
+#: 与 N2 同源（SPEC-REV-01 R3「口径唯一」）：复用 kb_lib 的唯一候选集，不再本地定义。
+DECODE_FALLBACK = K.DECODE_ENCODINGS
 DEFAULT_MAX_WALL = 1800.0        # 30 min（--max-wall 可覆盖）
 TASK_DEF = re.compile(r"\btask\s+(?:automatic\s+)?([A-Za-z_]\w*)\s*[;(]")
 ENDTASK = re.compile(r"\bendtask\b")
@@ -386,7 +387,7 @@ ROOT_TASK_CANDIDATES = ("m_run_phase", "run_phase", "m_run")
 
 
 def read_source_text(path):
-    """源码文本（utf-8→gbk→latin-1 回退，与 n2_diff 同口径）；不可读返回 (None, None)。"""
+    """源码文本（utf-8→GB18030→GBK→latin-1 回退，与 n2_diff 同一常量）；不可读返回 (None, None)。"""
     try:
         raw = open(path, "rb").read()
     except OSError:

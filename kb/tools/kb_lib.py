@@ -278,6 +278,13 @@ def md5_manifest_sha256(path):
     return sha256_file(path)
 
 
+#: 源码文本解码候选集（**唯一口径**）：utf-8 → GB18030（GBK 超集）→ GBK → latin-1 兜底。
+#: 为什么放在 kb_lib：N2（差异 hunk）与 N5（可达性/源码读取）都要解同一批 RTL；
+#: 两处各写一套曾在 GB18030 独有 4 字节区上产生口径分裂（SPEC-REV-01 R3「口径唯一」）。
+#: 含 NUL 的字节流视为真二进制，**不进入**本候选集（调用方须自行判 NUL）。
+DECODE_ENCODINGS = ("utf-8", "gb18030", "gbk", "latin-1")
+
+
 # ---------------------------------------------------------------- 读写
 
 def read_json(path):

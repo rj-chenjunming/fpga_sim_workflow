@@ -388,3 +388,113 @@ schema 的 `const` 与代码同源（`_selftest_gate_schema.py` 第 4 条断言�
 本目录唯一一类**给人看的非数据产物**：把"必须由人拍的事"写成可拍板的材料。
 首批两份：`I3_dual_count_dispute.md`（口径一 1687 vs 口径二 0）、`C_conflicts_triage.md`（C1—C72）。
 写权与纪律见 §1 写权表下方的说明：**只写请求，不写裁决结论**。
+
+---
+
+## 变更登记 · N2 解码回退扩到 GB18030（SPEC-REV-01 R3）
+
+**登记日期**：2026-10-22
+**改动文件**：`kb/tools/n2_diff.py`（`DECODE_ENCODINGS` 顺序 + 相关说明串）、
+`kb/tools/_selftest_n2_encoding.py`（**新增**，34 条断言、可独立复跑）、`kb/README.md`（本登记）
+**回归自测**：`kb/tools/_selftest_n2_encoding.py`（**PASS 34/34**）、
+`kb/tools/_selftest_n5_reachability.py`（9/9）、`kb/tools/_selftest_gate_schema.py`（10/10）、
+`loop/tests/test_fix_kbtools.py`（19 passed）
+
+### 缺陷（需求来源）
+
+[SPEC-REV-01 §R3](../../doc/spec/SPEC-REV-01-20261022.md)：GBK 源文件
+`RTL/SRC/imports/SRC/reg/sys_reg.v`（46584 B、含 CRLF）被判"二进制/编码不可解"，
+差异本体在闸门材料里彻底消失。现场证据：归档 `runs/RUN-20261022-143532/n2_diff.json`
+里该条 `diff_hunk=null`、`lines=[]`、`encoding` 缺失，`unresolved` 只剩一句"编码不可解"。
+契约侧见 [SPEC-01 §7.1](../../doc/spec/CHANGE_IMPACT_LOOP_SPEC.md)：非 UTF-8 时条目必须带 `encoding`。
+
+### 修法
+
+1. `DECODE_ENCODINGS`：`("utf-8", "gbk", "latin-1")` → `("utf-8", "gb18030", "gbk", "latin-1")`。
+   **GB18030 是 GBK 超集**（GBK 解不了的 4 字节区它也解），按 R3 的规范段先试它；`gbk` 保留
+   （工程内 5 个自有 RTL 就是 GBK），`latin-1` 仍是最后兜底。回退链仍只有一套。
+2. **语义不变**：含 NUL 字节仍视为真二进制（`decode_source → (None, None)`、
+   `text_diff → None`）；该条**不填** `encoding`，只留 `unresolved` —— 不因放宽解码而误判文本。
+3. `rtl_file` modified 的接线 `r["encoding"] = td.get("encoding")` **原样保留**；
+   `encoding` 的值 = **实际使用的 codec 名**，不归一、不改名、不猜。
+4. 说明串（模块 docstring / `unresolved` / `notes` / `n2_diff.md`）改为**引用常量**拼装，
+   避免文档与代码再次漂移。
+5. **口径唯一**：解码只有 `DECODE_ENCODINGS` + `decode_source` 一套，本切片未新增第二套实现。
+
+### 与规格的差异（如实登记，未改冻结规格）
+
+R3 的**规范**段要求"先 UTF-8，失败再试 GB18030（GBK 超集）"；而 R3 的**验收判据**段又写
+"条目带 `encoding=gbk`"。按 GBK ⊂ GB18030，这两句对同一 GBK 文件必然冲突：GB18030 先解成功
+⇒ 实测标签是 `encoding="gb18030"`（`gbk` 仍在回退链的下一档）。
+**实现按"规范"取值，标签 = 实际 codec，不把 gb18030 伪装成 gbk**。
+对照面：同一改动分别按 GBK 与 GB18030 解码得到的 hunk **逐字符相同**
+（`_selftest_n2_encoding.py` 第 18 条）⇒ 这是**标签口径**差异，不是差异内容差异。
+若要把判据钉成 `gbk`，须由 Lead 改 `doc/spec/**`（本切片无权改）。
+
+### 回归自测命令与真实结果
+
+沙箱数据根：`LOOP_WORKSPACE=$PWD/workspaces/simenv-tcs9620-64ch-sandbox`（`ENV_ROOT` 只读，未写）。
+
+| 命令 | 真实结果 |
+|---|---|
+| `loop/.venv/bin/python kb/tools/_selftest_n2_encoding.py` | `PASS 34/34`，rc=0 |
+| `loop/.venv/bin/python kb/tools/_selftest_n5_reachability.py` | `汇总：PASS=9 FAIL=0`，rc=0 |
+| `loop/.venv/bin/python kb/tools/_selftest_gate_schema.py` | `汇总：PASS=10 FAIL=0`，rc=0 |
+| `cd loop && LOOP_LLM_MODE=standin .venv/bin/python -m pytest -q tests/test_fix_kbtools.py` | `19 passed`，rc=0 |
+
+`_selftest_n2_encoding.py` 的覆盖：常量顺序（1–2）、GB18030 夹具（中文注释 + `32'h04` →
+`32'h0000_0004`）的 `encoding` 与 hunk（3–11）、行号可抽且能对回原文（12–14）、offset=0x4（15）、
+GB18030 独有的 4 字节序列（16）、UTF-8 标签与 hunk 等价（17–18）、含 NUL 真二进制不放宽（19–21）、
+`rtl_file` modified 条目真带 `encoding`、二进制条目 `unresolved` 不缺席（22–27）、
+确定性（28–31）、schema 允许 `encoding`（32–34）。临时目录用完即删，不写归档、不写 `ENV_ROOT`。
+
+### 真实夹具复跑（R3 的原始症状已消失）
+
+```
+loop/.venv/bin/python kb/tools/n2_diff.py \
+  --from-manifest <WS>/baselines/v0/manifest.json \
+  --to-manifest   <WS>/runs/RUN-20261015-120626/n1_manifest_new.json \
+  --run RUN-20261022-235959 --now 2026-10-22T15:20:00 --out-dir <scratch>/1
+```
+
+条目实测：`rtl_file RTL/SRC/imports/SRC/reg/sys_reg.v modified`，
+`encoding='gb18030'`、`diff_hunk` 非空（586 字符）、`lines=[539, 540]`、`offsets=['0x4']`、
+`unresolved=None`；hunk 里正是
+`-   : (cpu_addr == 32'h04) ? FPGA_DATE` → `+   : (cpu_addr == 32'h0000_0004) ? FPGA_DATE`，
+中文注释可读（不再是 latin-1 乱码）。总计 `差异条目：2（rtl_file=1 allfile=0 doc_entry=1）；抽出 offset=2；unresolved=0`。
+
+### 确定性（两条判据，均为实测）
+
+- **强判据**：同 `--now 2026-10-22T15:20:00` 连跑两次，`n2_diff.json` **逐字节相同**，
+  sha256 `6d6e46c3467002dd49ac3a6af678bd3ec680a8fc0168bf080281d11695821c48`（×2）。
+- **弱判据**：`--now` 换成 `2026-10-22T16:00:00`，`checks.normalized_sha256` 仍为
+  `0766de9ffc0b9012723164c5730ba761ebe6e518c9c5af3740d5762eadf68b60`（与前者一致）。
+- 自测第 28–31 条另把 `text_diff` / `decode_source` / `enrich_rtl_hunks` 的同输入两次等值
+  与 `json(sort_keys)` 逐字节一致固定成断言 —— 不靠"跑得快、时间戳碰巧相同"。
+
+### 边界与待办（本切片写权之外）
+
+1. `kb/tools/n5_impact.py` 另有一处 `DECODE_FALLBACK = ("utf-8", "gbk", "latin-1")`
+   （`read_source_text`，docstring 自称"与 n2_diff 同口径"）。在 **GB18030 独有的 4 字节区**
+   上它会落到 latin-1。**本次未改**（n5 不在本切片写权内，不越权改冻结目录里的另一个文件）；
+   建议由 n5 owner 单独变更把顺序对齐（最好直接复用 `n2_diff.DECODE_ENCODINGS`）并单独留证。
+2. `runs/RUN-20261022-143532/n2_diff.json` 是**旧口径**产物（`encoding` 缺失、`diff_hunk=null`），
+   按"归档只增不改"**未回填**；它就是本缺陷的现场，验收时不得当作"已修"。
+3. 本次**未跑**端到端（`loop/spikes/accept_v1_run.sh`，需可写 `ENV_ROOT`）⇒ 四道门里的该道
+   仍**未验证**，不得把本节结果当作端到端通过。
+
+### 追加：口径唯一落地（n5 复用同一候选集，2026-10-22 同日）
+
+上文「边界与待办 1」已关闭：解码候选集上收到 **`kb_lib.DECODE_ENCODINGS`**（唯一口径），
+`n2_diff.DECODE_ENCODINGS` 与 `n5_impact.DECODE_FALLBACK` 均**引用同一常量**（不再各自定义）。
+
+- 改动：`kb/tools/kb_lib.py`（新增 `DECODE_ENCODINGS = ("utf-8","gb18030","gbk","latin-1")`）、
+  `kb/tools/n2_diff.py`（`DECODE_ENCODINGS = K.DECODE_ENCODINGS`）、
+  `kb/tools/n5_impact.py`（`DECODE_FALLBACK = K.DECODE_ENCODINGS`）。
+- 防漂移：`_selftest_n2_encoding.py` 第 35–37 条断言三处**同源同序**（`is` + tuple 相等）。
+- 实测（命令输出复制）：
+  - `loop/.venv/bin/python kb/tools/_selftest_n2_encoding.py` ⇒ **PASS 37/37**，rc=0；
+  - `kb/tools/_selftest_n5_reachability.py` ⇒ `汇总：PASS=9 FAIL=0`，rc=0；
+  - `kb/tools/_selftest_gate_schema.py` ⇒ `汇总：PASS=10 FAIL=0`，rc=0；
+  - `cd loop && LOOP_LLM_MODE=standin .venv/bin/python -m pytest -q tests/test_fix_kbtools.py` ⇒ `19 passed`。
+- 未改 N5 判据与输出结构；未回填任何历史归档；`ENV_ROOT` 零写入。

@@ -22,8 +22,11 @@
       （`n1_snapshot.py` 的 `collect_doc_fingerprint` 一次写 `doc_entries.txt` 与 `doc_entries.jsonl` 到同目录）；
       回退链 `→ <manifest>/bundle/doc_entries.jsonl → <manifest>/doc_entries.jsonl → kb/index/regmap.json`，
       **用回退必写进 notes**（回退会掩盖"该版没落盘"）。
-    * 非 UTF-8 源码（task-9 N2-3）：hunk 解码按 `utf-8 → gbk → latin-1` 回退（工程内 5 个自有 RTL 是 GBK，
-      先例见 `doc/tools/extract_sys_reg.py` docstring）；实际编码写进该条 diff 的 `encoding` 与 `evidence`。
+    * 非 UTF-8 源码（task-9 N2-3 + SPEC-REV-01 R3）：hunk 解码按
+      `utf-8 → gb18030 → gbk → latin-1` 回退（GB18030 是 GBK 超集，先试它才能覆盖 4 字节区；
+      工程内 5 个自有 RTL 是 GBK，先例见 `doc/tools/extract_sys_reg.py` docstring）；
+      实际编码写进该条 diff 的 `encoding` 与 `evidence`。**解码口径只有这一套**
+      （`DECODE_ENCODINGS` + `decode_source`），不新增第二套实现。
       只有含 NUL 字节的真二进制才保留 `unresolved`。
     * 缺口产物（task-9 N2-2，裁定 (a)）：存在 blocking 缺口时**不产生** `n2_diff.json`，
       缺口报告写 `n2_diff.gap.json` + `n2_diff.gap.md`（首行标「不完整，不得作为 N3 输入」）。
@@ -282,11 +285,14 @@ def read_tar_members(tar_path):
     return out
 
 
-DECODE_ENCODINGS = ("utf-8", "gbk", "latin-1")   # task-9 N2-3：工程内 5 个自有 RTL 是 GBK
+#: 解码回退顺序（**唯一一套口径**，SPEC-REV-01 R3）：定义在 `kb_lib.DECODE_ENCODINGS`
+#: （utf-8 → GB18030 → GBK → latin-1）；N5 复用同一常量，禁止第二套实现。
+#: 成功时把**实际使用的 codec 名**写进条目的 `encoding`（不猜、不归一成别的名字）。
+DECODE_ENCODINGS = K.DECODE_ENCODINGS
 
 
 def decode_source(b):
-    """按 utf-8 → gbk → latin-1 回退解码；含 NUL 字节视为真二进制 ⇒ (None, None)。"""
+    """按 `DECODE_ENCODINGS` 顺序回退解码；含 NUL 字节视为真二进制 ⇒ (None, None)。"""
     if b"\x00" in b:
         return None, None
     for enc in DECODE_ENCODINGS:
@@ -402,15 +408,16 @@ def enrich_rtl_hunks(recs, old_tar, new_tar, notes):
         td = text_diff(old_members[rel], new_members[rel])
         if td is None:
             r["unresolved"] = ("含 NUL 字节的真二进制（非文本源码）⇒ 无数值 hunk，offset 需人工；"
-                               "文本源码已穷尽 utf-8→gbk→latin-1 回退")
+                               "文本源码已穷尽 %s 回退" % "/".join(DECODE_ENCODINGS))
             continue
         r["encoding"] = td.get("encoding")
         r["diff_hunk"] = td["hunk"] or None
         if td.get("encoding") not in (None, "utf-8"):
             r["evidence"] += ("；hunk 解码编码=%s（非 UTF-8；工程内 GBK RTL 先例见 "
                               "doc/tools/extract_sys_reg.py）" % td["encoding"])
-            notes.append("① 路 %s：GBK/非 UTF-8 源码，按 %s 回退解码成功（仍能抽 offset）"
-                         % (rel, td["encoding"]))
+            notes.append("① 路 %s：非 UTF-8 源码，按 %s 回退解码成功（仍能抽 offset；"
+                         "SPEC-REV-01 R3 顺序 = %s）"
+                         % (rel, td["encoding"], "→".join(DECODE_ENCODINGS)))
         r["lines"] = td["new_lines"]
         offs = extract_offsets(td["added_lines"] + td["removed_lines"])
         r["offsets"] = ["0x%x" % v for v, _ in offs]
@@ -568,8 +575,8 @@ def write_md(path, out, meta, gap=False):
                 de.get("used_fallback")))
     encs = sorted(set(d.get("encoding") for d in out["diffs"] if d.get("encoding")))
     if encs:
-        L.append("① 路 hunk 解码编码：%s（非 UTF-8 走 gbk/latin-1 回退；task-9 N2-3）"
-                 % ", ".join(str(e) for e in encs))
+        L.append("① 路 hunk 解码编码：%s（非 UTF-8 走 %s 回退；task-9 N2-3 / SPEC-REV-01 R3）"
+                 % (", ".join(str(e) for e in encs), "→".join(DECODE_ENCODINGS)))
     L.append("")
     return K.write_text(path, "\n".join(L) + "\n")
 

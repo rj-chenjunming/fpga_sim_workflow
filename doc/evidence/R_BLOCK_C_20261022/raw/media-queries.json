@@ -1,0 +1,262 @@
+{
+  "occurrences": [
+    {
+      "sheet": "app.css",
+      "condition": "(max-width: 1180px)",
+      "occurrence": 1,
+      "innerRuleCount": 1,
+      "matches": {
+        "1280": false,
+        "1440": false,
+        "1920": false
+      },
+      "sourceLine": 97,
+      "sourceText": "@media (max-width:1180px)",
+      "sheetOccurrence": 1
+    },
+    {
+      "sheet": "app.css",
+      "condition": "(max-width: 1100px)",
+      "occurrence": 1,
+      "innerRuleCount": 1,
+      "matches": {
+        "1280": false,
+        "1440": false,
+        "1920": false
+      },
+      "sourceLine": 197,
+      "sourceText": "@media (max-width:1100px)",
+      "sheetOccurrence": 2
+    },
+    {
+      "sheet": "app.css",
+      "condition": "(min-width: 1550px)",
+      "occurrence": 1,
+      "innerRuleCount": 3,
+      "matches": {
+        "1280": false,
+        "1440": false,
+        "1920": true
+      },
+      "sourceLine": 397,
+      "sourceText": "@media(min-width:1550px)",
+      "sheetOccurrence": 3
+    },
+    {
+      "sheet": "app.css",
+      "condition": "(max-width: 1200px)",
+      "occurrence": 1,
+      "innerRuleCount": 14,
+      "matches": {
+        "1280": false,
+        "1440": false,
+        "1920": false
+      },
+      "sourceLine": 398,
+      "sourceText": "@media(max-width:1200px)",
+      "sheetOccurrence": 4
+    },
+    {
+      "sheet": "app.css",
+      "condition": "(max-width: 1000px)",
+      "occurrence": 1,
+      "innerRuleCount": 12,
+      "matches": {
+        "1280": false,
+        "1440": false,
+        "1920": false
+      },
+      "sourceLine": 399,
+      "sourceText": "@media(max-width:1000px)",
+      "sheetOccurrence": 5
+    },
+    {
+      "sheet": "app.css",
+      "condition": "(max-width: 760px)",
+      "occurrence": 1,
+      "innerRuleCount": 43,
+      "matches": {
+        "1280": false,
+        "1440": false,
+        "1920": false
+      },
+      "sourceLine": 400,
+      "sourceText": "@media(max-width:760px)",
+      "sheetOccurrence": 6
+    },
+    {
+      "sheet": "app.css",
+      "condition": "(prefers-reduced-motion: reduce)",
+      "occurrence": 1,
+      "innerRuleCount": 1,
+      "matches": {
+        "1280": false,
+        "1440": false,
+        "1920": false
+      },
+      "sourceLine": 401,
+      "sourceText": "@media(prefers-reduced-motion:reduce)",
+      "sheetOccurrence": 7
+    },
+    {
+      "sheet": "app.css",
+      "condition": "(max-width: 850px)",
+      "occurrence": 1,
+      "innerRuleCount": 17,
+      "matches": {
+        "1280": false,
+        "1440": false,
+        "1920": false
+      },
+      "sourceLine": 453,
+      "sourceText": "@media(max-width:850px)",
+      "sheetOccurrence": 8
+    },
+    {
+      "sheet": "app.css",
+      "condition": "(min-width: 1101px)",
+      "occurrence": 1,
+      "innerRuleCount": 2,
+      "matches": {
+        "1280": true,
+        "1440": true,
+        "1920": true
+      },
+      "sourceLine": 622,
+      "sourceText": "@media(min-width:1101px)",
+      "sheetOccurrence": 9
+    },
+    {
+      "sheet": "app.css",
+      "condition": "(min-width: 1600px)",
+      "occurrence": 1,
+      "innerRuleCount": 9,
+      "matches": {
+        "1280": false,
+        "1440": false,
+        "1920": true
+      },
+      "sourceLine": 725,
+      "sourceText": "@media(min-width:1600px)",
+      "sheetOccurrence": 10
+    },
+    {
+      "sheet": "app.css",
+      "condition": "(min-width: 1101px) and (max-width: 1390px)",
+      "occurrence": 1,
+      "innerRuleCount": 19,
+      "matches": {
+        "1280": true,
+        "1440": false,
+        "1920": false
+      },
+      "sourceLine": 726,
+      "sourceText": "@media(min-width:1101px) and (max-width:1390px)",
+      "sheetOccurrence": 11
+    },
+    {
+      "sheet": "app.css",
+      "condition": "(min-width: 761px) and (max-width: 1100px)",
+      "occurrence": 1,
+      "innerRuleCount": 13,
+      "matches": {
+        "1280": false,
+        "1440": false,
+        "1920": false
+      },
+      "sourceLine": 727,
+      "sourceText": "@media(min-width:761px) and (max-width:1100px)",
+      "sheetOccurrence": 12
+    },
+    {
+      "sheet": "app.css",
+      "condition": "(max-width: 760px)",
+      "occurrence": 2,
+      "innerRuleCount": 36,
+      "matches": {
+        "1280": false,
+        "1440": false,
+        "1920": false
+      },
+      "sourceLine": 729,
+      "sourceText": "@media(max-width:760px)",
+      "sheetOccurrence": 13
+    },
+    {
+      "sheet": "app.css",
+      "condition": "(prefers-reduced-motion: reduce)",
+      "occurrence": 2,
+      "innerRuleCount": 1,
+      "matches": {
+        "1280": false,
+        "1440": false,
+        "1920": false
+      },
+      "sourceLine": 730,
+      "sourceText": "@media(prefers-reduced-motion:reduce)",
+      "sheetOccurrence": 14
+    },
+    {
+      "sheet": "(inline style)",
+      "condition": "(max-width: 1080px)",
+      "occurrence": 1,
+      "innerRuleCount": 1,
+      "matches": {
+        "1280": false,
+        "1440": false,
+        "1920": false
+      },
+      "sourceLine": null,
+      "sourceText": null,
+      "sheetOccurrence": 1
+    },
+    {
+      "sheet": "(inline style)",
+      "condition": "(max-width: 760px)",
+      "occurrence": 1,
+      "innerRuleCount": 1,
+      "matches": {
+        "1280": false,
+        "1440": false,
+        "1920": false
+      },
+      "sourceLine": null,
+      "sourceText": null,
+      "sheetOccurrence": 2
+    },
+    {
+      "sheet": "legacy.css",
+      "condition": "(max-width: 1080px)",
+      "occurrence": 1,
+      "innerRuleCount": 1,
+      "matches": {
+        "1280": false,
+        "1440": false,
+        "1920": false
+      },
+      "sourceLine": 74,
+      "sourceText": "@media(max-width:1080px)",
+      "sheetOccurrence": 1
+    },
+    {
+      "sheet": "legacy.css",
+      "condition": "(prefers-reduced-motion: reduce)",
+      "occurrence": 1,
+      "innerRuleCount": 1,
+      "matches": {
+        "1280": false,
+        "1440": false,
+        "1920": false
+      },
+      "sourceLine": 75,
+      "sourceText": "@media(prefers-reduced-motion:reduce)",
+      "sheetOccurrence": 2
+    }
+  ],
+  "unique_conditions": 16,
+  "source_counts": {
+    "tokens.css": 0,
+    "app.css": 14,
+    "legacy.css": 2
+  }
+}

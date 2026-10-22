@@ -1,0 +1,150 @@
+$ git rev-parse HEAD
+746ec8d13ea857e4dcb30190d1fcc8c27b0458b7
+$ git rev-parse --abbrev-ref HEAD
+main
+$ git status --porcelain
+ M doc/spec/AGENT_CONTEXT_SPEC.md
+?? doc/audit/R1-verify-20261022.md
+?? doc/audit/R2-verify-20261022.md
+?? doc/audit/R3-verify-20261022.md
+?? doc/audit/R4-verify-20261022.md
+?? doc/audit/R5-verify-20261022.md
+?? doc/evidence/R_BLOCK_B_20261022.md
+?? doc/evidence/R_BLOCK_B_20261022_after_probe.py
+?? doc/evidence/R_BLOCK_C_20261022/
+$ cd loop && .venv/bin/python -V
+Python 3.11.7
+$ cd loop && .venv/bin/python -c "from importlib.metadata import version; print(version(\"playwright\"))"
+1.64.0
+$ HOME=/tmp/h XDG_CONFIG_HOME=/tmp/h/.config XDG_CACHE_HOME=/tmp/h/.cache /usr/bin/google-chrome --version
+Google Chrome 152.0.7977.75 
+$ cd loop && .venv/bin/python spikes/css_inventory.py
+web = /home/work/chenjunming/change-impact-loop/loop/web
+
+== tokens.css: lines=17 rules=1 media=0 important=0 duplicate_decls=0
+
+== app.css: lines=730 rules=795 media=14 important=6 duplicate_decls=98
+   @media @media (max-width:1180px)
+   @media @media (max-width:1100px)
+   @media @media(min-width:1550px)
+   @media @media(max-width:1200px)
+   @media @media(max-width:1000px)
+   @media @media(max-width:760px)
+   @media @media(prefers-reduced-motion:reduce)
+   @media @media(max-width:850px)
+   @media @media(min-width:1101px)
+   @media @media(min-width:1600px)
+   @media @media(min-width:1101px) and (max-width:1390px)
+   @media @media(min-width:761px) and (max-width:1100px)
+   @media @media(max-width:760px)
+   @media @media(prefers-reduced-motion:reduce)
+   !important: display:none!important
+   !important: scroll-behavior:auto!important
+   !important: transition:none!important
+   !important: animation:none!important
+   !important: transition:none!important
+   !important: scroll-behavior:auto!important
+   dup x4: #hdrAddr { display: none }
+   dup x2: #hdrEnv { display: none }
+   dup x3: #hdrHealth { display: none }
+   dup x2: * { scroll-behavior: auto!important }
+   dup x2: * { transition: none!important }
+   dup x2: .agent-name { font-size: 13px }
+   dup x2: .agent-open { font-weight: 650 }
+   dup x2: .agent-window { width: calc(100vw - 20px) }
+   dup x2: .agent.working { border-color: var(--primary-line) }
+   dup x2: .agents { grid-template-columns: 1fr }
+   dup x2: .avatar { border-radius: 9px }
+   dup x3: .aw-intervene { border-left: 0 }
+   dup x3: .aw-intervene { border-top: 1px solid var(--line) }
+   dup x2: .aw-intervene { padding: 18px }
+   dup x3: .aw-layout { grid-template-columns: minmax(0,1fr) }
+   dup x2: .aw-note { line-height: 1.9 }
+   dup x2: .aw-observe { padding: 18px }
+   dup x2: .aw-toolbar { flex-wrap: wrap }
+   dup x2: .brand { flex-basis: 185px }
+   dup x2: .brand { width: 185px }
+   dup x2: .card-head { flex-wrap: wrap }
+   dup x2: .card-head .sub { color: var(--muted) }
+   dup x2: .card-head .sub { font-size: 12px }
+   dup x2: .card-head h2 { font-weight: 650 }
+   dup x2: .confirm-bar { flex-wrap: wrap }
+   dup x2: .count-box { border-radius: 9px }
+   dup x2: .diff-item { border-radius: 8px }
+   dup x2: .field-label { font-size: 12px }
+   dup x2: .field-meta { font-size: 12px }
+   dup x2: .grid2 { grid-template-columns: 1fr }
+   dup x2: .grid2 { grid-template-columns: minmax(0,1fr) }
+   dup x2: .hero-diagram { display: none }
+   dup x2: .host-row { font-size: 12px }
+   dup x2: .input:focus { border-color: var(--primary) }
+   dup x2: .log-pre { border-radius: 8px }
+   dup x2: .option { border-radius: 8px }
+   dup x2: .page-edition { display: none }
+   dup x2: .page-head { gap: 16px }
+   dup x2: .page-head h1 { font-weight: 650 }
+   dup x2: .phase-card { align-items: center }
+   dup x2: .phase-card { border-radius: 10px }
+   dup x3: .phase-card { flex-wrap: wrap }
+   dup x2: .phase-card { gap: 10px }
+   dup x2: .phase-card { gap: 14px }
+   dup x2: .phase-card { min-width: 0 }
+   dup x2: .phase-index { border-radius: 8px }
+   dup x3: .phase-index { display: grid }
+   dup x2: .rail-foot { display: none }
+   dup x2: .rail-kicker { display: none }
+   dup x2: .rail-label { display: none }
+   dup x2: .rail-label { font-size: 11px }
+   dup x2: .rail-top { display: flex }
+   dup x2: .rail-top { gap: 10px }
+   dup x2: .run-empty { font-size: 12px }
+   dup x2: .run-grid { grid-template-columns: minmax(0,1fr) }
+   dup x2: .run-item { min-width: 175px }
+   dup x2: .run-item .rid { font-size: 11px }
+   dup x2: .run-list { display: flex }
+   dup x2: .run-list { gap: 8px }
+   dup x2: .run-list { padding: 0 12px 10px }
+   dup x2: .run-meta { font-size: 12px }
+   dup x3: .s0-evidence { display: block }
+   dup x3: .s0-form-actions { align-items: center }
+   dup x2: .s0-form-actions { align-items: start }
+   dup x2: .s0-form-actions { align-items: stretch }
+   dup x4: .s0-form-actions { flex-direction: column }
+   dup x2: .s0-form-actions { flex-direction: row }
+   dup x2: .s0-form-actions .btn { flex-shrink: 0 }
+   dup x4: .s0-form-actions .btn { width: 100% }
+   dup x2: .s0-form-actions .btn { width: auto }
+   dup x2: .s0-grid { gap: 24px }
+   dup x2: .s0-grid { gap: 28px }
+   dup x2: .s0-grid { grid-template-columns: minmax(0,1fr) }
+   dup x2: .s0-hero h2 { font-size: 23px }
+   dup x3: .s0-hero h2 { font-size: 27px }
+   dup x2: .s0-hero h2 { font-weight: 550 }
+   dup x2: .s0-hero h2 { line-height: 1.5 }
+   dup x2: .s0-hero p { font-size: 12px }
+   dup x2: .s0-phases { grid-template-columns: 1fr }
+   dup x2: .s0-phases { grid-template-columns: 1fr 1fr }
+   dup x2: .s0-phases { margin-bottom: 24px }
+   dup x2: .s0-result p { line-height: 1.8 }
+   dup x2: .shell { flex-direction: column }
+   dup x2: .snode .st b { font-size: 12px }
+   dup x2: .stage-sum { font-size: 12px }
+   dup x2: .status-pill { height: 26px }
+   dup x2: .tiny { font-size: 12px }
+   dup x2: .workspace-tag { display: none }
+   dup x2: aside { flex-basis: 205px }
+   dup x2: aside { flex-basis: auto }
+   dup x2: aside { width: 100% }
+   dup x2: aside { width: 205px }
+   dup x2: header { padding: 0 16px }
+   dup x2: main { padding: 24px 16px }
+   dup x2: main { width: 100% }
+   dup x2: select.input:focus { border-color: var(--primary) }
+   dup x2: textarea.input { height: auto }
+   dup x2: textarea.input:focus { border-color: var(--primary) }
+
+== legacy.css: lines=75 rules=74 media=2 important=2 duplicate_decls=0
+   @media @media(max-width:1080px)
+   @media @media(prefers-reduced-motion:reduce)
+   !important: animation:none!important
+   !important: transition:none!important

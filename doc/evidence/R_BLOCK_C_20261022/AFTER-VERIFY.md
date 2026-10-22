@@ -1,4 +1,4 @@
-# F14-b 改后验证与差异说明（slice A / A2 / B / B2 / C，2026-10-22）
+# F14-b 改后验证与差异说明（slice A / A2 / B / B2 / C / D，2026-10-22）
 
 本文件记录 F14-b 前三个组件切片的**等价性证据与差异解释**。改前基线是 F14-a 的
 `HEAD=746ec8d`（证据提交 `9ebb986`，`loop/web` 未变）；验证在含 R5 的同一棵树上完成。
@@ -13,8 +13,9 @@
 | B 通用控件 | `c06ca97` | `.btn*`/`.input*`/`.chip*`/`.card*`/`.empty*`/`.banner*`/`.alert*`/`.toast`/`.dirpicker`/`.dp-*`/`.step-card*`/`.confirm-bar` 等 | 56 条声明 + 8 条整规则 | 否 |
 | B2 回退令牌化 | `1edd451` | 回退 3 条 `#fff -> var(--panel)`（原因见 §5） | — | 否 |
 | C S0 | `f2d39fe` | `.s0-*`/`.phase-*`/`.hero-*`/`.diagram-*`/`.eyebrow`/`.section-index`/`.form-*`/`#s0Report` 的 Base 层被覆盖声明 | 88 条声明 + 12 条整规则 | 否 |
+| D 运行/闸门 | `b4df6e6` | `.run-head`/`.status-pill`/`.stage*`/`.snode*`/`.agents`/`.agent*`/`.avatar*`/`.count*`/`.blocker`/`.sev`/`.option`/`.kv`/`.diff-item`/`.gate-*`/`.ev*`/`.refs`/`.log-pre`/`.spinner`/`.pulse` 的 Base 层被覆盖声明 | 81 条声明 + 8 条整规则 | 否 |
 
-截止 C 的 `loop/web/app.css`：57526 → **52913 字节**；规则 795 → **763**；媒体查询块 14 → **13**
+截止 D 的 `loop/web/app.css`：57526 → **51308 字节**；规则 795 → **755**；媒体查询块 14 → **13**
 （只删了重复的 reduce 块，两份 `max-width:760px` 保留）；`!important` **声明数 6 → 4，行数 3 → 2**。
 `legacy.css`、`tokens.css` 本阶段未改。
 
@@ -38,11 +39,12 @@
 | A2 | 139 | **0** | `41 passed in 55.21s` | 同上 |
 | B | 139 | **0** | `41 passed in 55.02s` | 同上 |
 | C | 139 | **0** | `41 passed in 54.07s` | **42/42 MD5 完全相同** |
-| A+A2+B+B2+C 累计 vs F14-a 基线 | **139** | **0** | `41 passed in 57.50s`（累计） | **42/42** |
+| D | 139 | **0** | `41 passed in 62.71s` | **42/42 MD5 完全相同** |
+| A+A2+B+B2+C+D 累计 vs F14-a 基线 | **139** | **0** | `41 passed in 62.71s`（累计） | **42/42** |
 
 原始日志：`raw/f14b-sliceA-verify.log`、`raw/f14b-sliceA-pytest.log`、`raw/f14b-sliceA2-verify.log`、
 `raw/f14b-sliceA2-pytest.log`、`raw/f14b-sliceB-verify.log`、`raw/f14b-sliceB-pytest.log`、
-`raw/f14b-final-verify.log`、`raw/f14b-final-pytest.log`、`raw/f14b-sliceC-verify.log`、`raw/f14b-sliceC-pytest.log`、`raw/f14b-sliceC-screens.txt`。
+`raw/f14b-final-verify.log`、`raw/f14b-final-pytest.log`、`raw/f14b-sliceC-verify.log`、`raw/f14b-sliceC-pytest.log`、`raw/f14b-sliceC-screens.txt`、`raw/f14b-sliceD-verify.log`、`raw/f14b-sliceD-pytest.log`、`raw/f14b-sliceD-screens.txt`。
 
 **缩放与键盘**：浏览器缩放只改变 CSS 视口宽度，因此断点扫描里加入了缩放等效宽度
 **853/854（1280 窗口 @150%）、1024/1025（1280 @125%）、1535/1536/1537（1920 @125%）**；
@@ -91,15 +93,14 @@ identical=42 total=42 diff=0
 
 ## 7 本阶段未完成（下一轮直接接续）
 
-C 已完成（`f2d39fe`）。下一轮接续：
+C、D 已完成（`f2d39fe`、`b4df6e6`）。下一轮接续：
 
 | 切片 | 写入面 | 预计删除 | 验证方法（同本文件 §2） |
 |---|---|---|---|
-| D 运行/闸门 | `loop/web/app.css`（`.run-head`/`.status-pill`/`.stage*`/`.snode*`/`.agents`/`.agent*`/`.count*`/`.blocker`/`.sev`/`.option`/`.diff-item`/`.gate-*`/`.ev*`/`.log-pre`） | 81 条声明 + 8 条整规则（dry-run） | 139 组合零差异 + 41 条浏览器 + 42 张冻结截图 |
 | E Agent+旧页 | `loop/web/app.css`（`.agent-window`/`.aw-*`）+ `loop/web/legacy.css`（0 条冗余声明，仅等值检查） | 60 条声明 + 4 条整规则（dry-run） | 同上（含 850/760 窄断点 Agent 窗口） |
 | F05-b/c（本窗口不启动） | `loop/web/app.js`、`run-view-state.js` 等渲染模块、`index.html` 加载顺序、`loop/tests/browser` | — | 先固定浏览器特征集，再机械提取；GET/POST 目的地与次数、草稿身份/焦点、互斥、409 保留不变 |
 
-剩余可证冗余声明合计 **160 条**（run-gate 92、agent 68；初始 410，A/A2/B/C 已删 250）。
+剩余可证冗余声明合计 **68 条**（agent；初始 410，A/A2/B/C/D 已删 342）。
 `legacy.html` 内联深色主题不在可改范围（只登记）；`tokens.css` 未改（无同角色可等值替换后的稳定目标，
 新增语义令牌需独立视觉评审）。
 

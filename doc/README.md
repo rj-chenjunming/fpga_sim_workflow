@@ -36,6 +36,8 @@
 
 网页视觉升级：[视觉契约](spec/WEB_UI_SPEC.md#14-全站网页视觉系统2026-10-21) → [实施计划](plans/2026-10-21-desktop-redesign.md) → [预览与验证证据](evidence/WEB_REDESIGN_20261021.md)。范围为浏览器中的现有工作台；状态与本轮实测见 STATUS §12。
 
+内网浏览器验证：[Rocky 离线包与运行命令](../loop/offline/README.md) → [交付计划](plans/2026-10-22-browser-offline.md)；实际结果与主机系统库限制见 STATUS §36。
+
 ## 2 `spec/` 契约
 
 | 文件 | 管什么 |

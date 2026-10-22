@@ -10,6 +10,8 @@
 
 下一阶段工作：[优化与重构执行手册](doc/plans/OPTIMIZATION_PLAYBOOK.md)（优先级、任务卡、提交切片、验证方法和回退）；[当前复核](doc/audit/AUDIT-20261021-post-ui-roadmap.md)。待办不代表已修复，实际结果以 [STATUS](doc/STATUS.md) 为准。
 
+内网浏览器验证：[Rocky Linux 离线安装与运行](loop/offline/README.md)（依赖与备用 Chrome 随 Git 提供，安装无需 PyPI）。
+
 ## 1 组成
 
 | 目录 | 是什么 | 入口 |

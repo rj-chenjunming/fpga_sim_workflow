@@ -5,6 +5,7 @@
 > **最新补充采样**：2026-10-21 云环境优化、S0 与 Agent 工作窗口，见 §7–§10；后续优化整理见 §11；全站网页视觉升级见 §12；下一阶段执行手册与当前复核见 §13。
 > **2026-10-21/22 后续批次**：F01/F02/F03-a/F16/F16-b/F02-b 见 §14–§21；本批 F13/F03-b/F03-c/F16-c/F02-c/F15-a/F06/F05/F14/F07/F08/F10/F11 见 §22–§32，阻塞清单见 §33，独立验证汇总见 §34。旧采样保留为历史；本轮没有四道门全绿。
 > **2026-10-22 拉取后复核**：被测 `a19107c`，受影响集合与浏览器、确定性边界探针及新增待修项见 §35；不覆盖上一执行端的历史采样。
+> **2026-10-22 浏览器离线交付**：Rocky 8.10 / x86_64 的 Git 资源、离线安装、浏览器回归及系统库边界见 §36。
 > **不声称合规**：审计发现但未修复的阻断项在 §5 保持可见。
 
 ---
@@ -821,3 +822,25 @@ STATUS；`doc/README.md`/`doc/agents/README.md` 索引现状（2 份开工提示
 | 全套软件层 / kb / 完整端到端 / 真实 provider | 未运行 | 缺内网根/夹具；受影响集合不替代完整四道门 |
 
 当前结论：F01/F02/F03/F05/F06/F13 等有实质修订，本轮受控网页路径通过；F08 发布空窗仍应优先修正，R2–R5 分别补边界用例后收口。R1–R5 均为未修复，不改写 §34 原采样；§33 的 S0-b、真实非默认基线整链、持久暂停等前置仍有效。完整四道门未通过。
+
+## 36 Rocky 浏览器验证离线交付（2026-10-22）
+
+用户要求将浏览器相关依赖放入 Git，内网拉取后安装；用户确认目标 Rocky Linux 8.10 / x86_64 / glibc 2.28，仓库记录 CPython 3.11。本轮新增离线增量包与校验/安装/运行工具，未修 §35 的业务缺陷。版本与全部 SHA-256 在 [资源清单](../loop/offline/browser-linux-x86_64/manifest.json)；[内网使用说明](../loop/offline/README.md)、[计划](plans/2026-10-22-browser-offline.md)、[原始证据](evidence/BROWSER_OFFLINE_20261022.md)（MD5 `51baa569374e8a15963af5991899451d`）。同一执行者分阶段实施与验证，没有独立终验。
+
+| 检查 | 实际输出 / 状态 | 范围 |
+|---|---|---|
+| 资源大小与完整性 | `bundle_bytes=194484143`；`PASS: all vendor resources are listed; every Git object is below 50 MiB.`；`PASS: offline bundle platform and SHA-256 verification` | 固定 wheels/locks 与 Chrome 分片，普通 Git 交付，不依赖 LFS；每片与整体 SHA-256 |
+| 新工具实现前 | `7 errors in 0.57s` | 新工具尚不存在，FileNotFoundError；不是既有产品缺陷红灯 |
+| 工具边界 CPython 3.12 | `7 passed in 0.53s` | 完整性、平台、归档边界、路径选择 |
+| 工具边界 CPython 3.11 | `7 passed in 0.59s` | 干净 venv 中相同断言 |
+| 干净 CPython 3.11 / 3.12 离线安装 | `Successfully installed greenlet-3.2.5 playwright-1.64.0 pyee-13.0.1 typing_extensions-4.16.0` | pip 强制本地索引关闭与哈希，完整原始输出见证据；3.11.17 / 3.12.14 |
+| 随包浏览器冒烟 | `PASS: local browser smoke; version=156.0.8078.47` | 解开原始发行包运行时至独立缓存，不安装系统包 |
+| 已有系统浏览器冒烟 | `PASS: local browser smoke; version=154.0.8037.57; executable=/usr/bin/chromium` | 复用已安装可执行文件 |
+| 随包 Chrome + CPython 3.11 浏览器集 | `41 passed in 55.22s` | 使用新 CLI `run --bundled`；受控网页/API，无 skip，非真实内网或模型链路 |
+| 项目基础依赖一致性 | `No broken requirements found.` | 临时 CPython 3.11 venv 中 pip check；基础 requirements 在联网构建阶段安装，不属于 UI 离线增量包 |
+| Rocky 8.10 容器断网安装 | wheel 安装成功；最终退出码 `1`，显式报告缺少 `libnspr4.so`、`libnss3.so`、X11/GBM 等系统库 | 真正 Docker `--network none`；最小镜像中 Chrome 启动**未通过**，不能写成 Rocky 浏览器验收通过 |
+| Rocky/glibc 核心驱动检查 | `ldd (GNU libc) 2.28`；`PASS: CPython 3.11 / greenlet / Playwright imports on Rocky 8.10`；`v24.21.0` | 同一容器无网络，Python imports 与 driver/node 正常，未证明主机字体/所有共享库 |
+| 链接/语法/补丁 | 本轮 Markdown 链接、锚点及资源路径有效；脚本 AST 解析、`git diff --check` 通过 | 变更范围检查；不覆盖 §35 全库文档门缺件 |
+| 完整业务 / kb / 完整端到端 / 内网主机 Chrome | 未运行 | 本轮是验证依赖交付；原有外部资产和业务缺口不由浏览器包解决 |
+
+**交付边界**：增量包依赖项目原有 `.venv`；Python 依赖和备用浏览器随 Git 提供，主机共享库/字体由 Rocky 提供。优先复用内网已有 `/usr/bin/google-chrome`；没有 Chrome 时可解包备用版本，但系统库缺件必须从匹配的内网 Rocky 8 RPM 源补齐后再运行。安装不自动联网下载、不执行 rpm/dpkg、不要求 root、不复制 Debian 系统库、不替换 glibc。浏览器测试缺包/缺库/跳过不冒充通过。

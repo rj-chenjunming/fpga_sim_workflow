@@ -1,0 +1,80 @@
+{
+  "format_version": 1,
+  "id": "pw1.64.0-chrome156.0.8078.47-linux-x86_64",
+  "target": {
+    "os": "Rocky Linux 8.10",
+    "machine": "x86_64",
+    "glibc_min": "2.28",
+    "python": [
+      "3.11",
+      "3.12"
+    ]
+  },
+  "python_packages": {
+    "playwright": "1.64.0",
+    "greenlet": "3.2.5",
+    "pyee": "13.0.1",
+    "typing_extensions": "4.16.0"
+  },
+  "browser": {
+    "name": "Google Chrome",
+    "version": "156.0.8078.47",
+    "source": "https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb",
+    "source_sha256": "6c92cd22e90c6e3e255d782991543fa2091db8614e8536a971a7433a5c4d7ac8",
+    "format": "upstream deb data.tar.xz (only opt/google/chrome is installed)",
+    "sha256": "6368d44dcbec134b1cfc764640b31f995bff7842a2a24043ad42b2d9d599207d",
+    "parts": [
+      "browser/chrome-runtime.tar.xz.part00",
+      "browser/chrome-runtime.tar.xz.part01",
+      "browser/chrome-runtime.tar.xz.part02",
+      "browser/chrome-runtime.tar.xz.part03"
+    ]
+  },
+  "python_source": "https://pypi.org/simple/",
+  "files": {
+    "browser/chrome-runtime.tar.xz.part00": {
+      "bytes": 41943040,
+      "sha256": "950edfe9038f999a89925b25e2fc6dbac331b8874a540d097dcbc9330b1bf5f3"
+    },
+    "browser/chrome-runtime.tar.xz.part01": {
+      "bytes": 41943040,
+      "sha256": "3657cef46dbbb7b9f0c2109421e8298ae57eef404998eacfd46fa30019333d97"
+    },
+    "browser/chrome-runtime.tar.xz.part02": {
+      "bytes": 41943040,
+      "sha256": "b0673dcd418918c7bbf6b97fced77472ae6093b07fc1459ec369d7faaf2a56d1"
+    },
+    "browser/chrome-runtime.tar.xz.part03": {
+      "bytes": 19007448,
+      "sha256": "9b15890be376d00eebb3a572a8d7b8db4a1f76156999778338e49247844493b5"
+    },
+    "requirements-cp311.lock": {
+      "bytes": 471,
+      "sha256": "a16fbbb3f0d57112121546b5f0c918369d63ab211af91cad186fb95a8aed196c"
+    },
+    "requirements-cp312.lock": {
+      "bytes": 471,
+      "sha256": "381d076740b2d28c7379eefa276728e744f35c2c793579529c07ba77eab537a6"
+    },
+    "wheels/greenlet-3.2.5-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl": {
+      "bytes": 643313,
+      "sha256": "c8317d732e2ae0935d9ed2af2ea876fa714cf6f3b887a31ca150b54329b0a6e9"
+    },
+    "wheels/greenlet-3.2.5-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl": {
+      "bytes": 655426,
+      "sha256": "45fcea7b697b91290b36eafc12fff479aca6ba6500d98ef6f34d5634c7119cbe"
+    },
+    "wheels/playwright-1.64.0-py3-none-manylinux1_x86_64.whl": {
+      "bytes": 48286664,
+      "sha256": "5a59af1b230b234008524a5d42b613b233d4256f73bc1dd25bf3f11db0c81b75"
+    },
+    "wheels/pyee-13.0.1-py3-none-any.whl": {
+      "bytes": 15659,
+      "sha256": "af2f8fede4171ef667dfded53f96e2ed0d6e6bd7ee3bb46437f77e3b57689228"
+    },
+    "wheels/typing_extensions-4.16.0-py3-none-any.whl": {
+      "bytes": 45571,
+      "sha256": "481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8"
+    }
+  }
+}

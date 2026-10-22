@@ -4,6 +4,7 @@ loop/state/
 loop/.logs/
 loop/.pytest_cache/
 loop/.agently/
+loop/.browser-cache/
 
 # ── Python 字节码
 __pycache__/

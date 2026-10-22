@@ -1,0 +1,3 @@
+# Offline archives must remain byte-identical for SHA-256 verification.
+loop/offline/**/wheels/*.whl binary
+loop/offline/**/browser/*.part* binary

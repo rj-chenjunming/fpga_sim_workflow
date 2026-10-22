@@ -97,6 +97,17 @@ cd loop
 [`会话可靠性计划`](../doc/plans/2026-10-21-ui-session-reliability.md)；整体优化顺序见
 [`工作流优化评估`](../doc/audit/AUDIT-20261021-workflow-priorities.md)。
 
+内网无法连接 PyPI 时，仓库提供 [Rocky Linux 浏览器离线包](offline/README.md)：
+
+```bash
+# 在 loop 目录；已有项目 .venv，无需 pip 联网或 playwright install
+.venv/bin/python spikes/browser_offline.py install
+.venv/bin/python spikes/browser_offline.py run
+```
+
+支持 Rocky Linux 8.10 / x86_64 / glibc 2.28 的 Python 3.11；另附 Python 3.12 wheel。
+优先复用系统 Chrome，缺浏览器时使用 Git 内的备用运行时；共享库缺件会显式失败。来源、校验和、强制随包版本与缓存位置见离线说明。
+
 Agent 上下文与记忆规则见 [`AGENT_CONTEXT_SPEC`](../doc/spec/AGENT_CONTEXT_SPEC.md)：新调用在本 run 的
 `agent_calls/` 下保存输入、规则版本、输出与校验；已确认经验由人维护，按来源和作用域只读筛选。
 使用与核验命令见该规格末节；独立测试为 `tests/test_agent_context_memory.py`，不要求内网仿真夹具。

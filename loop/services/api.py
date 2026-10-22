@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import re
 import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -23,6 +24,7 @@ from fastapi.staticfiles import StaticFiles
 
 from host import paths as P
 from host.progress import ProgressLog
+from services import node_view
 from workflows.main_flow import RunManager, get_manager
 
 import agently  # noqa: F401  (用于 /api/health 报版本)
@@ -173,6 +175,22 @@ def list_runs() -> dict[str, Any]:
     return {"runs": _manager().list_runs()}
 
 
+#: S0 记录 id 的合法格式（唯一校验入口；见 SPEC-05 §6 / WEB_UI §4.5）。
+S0_RECORD_ID_RE = re.compile(r"^S0-[A-Za-z0-9_-]+$")
+
+
+def _s0_record_id(value: Any) -> str | None:
+    """校验可选 `s0_record_id`：缺省/None ⇒ None；给了就必须匹配格式，否则 400。"""
+    if value is None:
+        return None
+    if not isinstance(value, str) or not S0_RECORD_ID_RE.fullmatch(value):
+        raise HTTPException(status_code=400, detail={
+            "error": (f"s0_record_id 格式非法：{value!r}；"
+                      "合法格式 = ^S0-[A-Za-z0-9_-]+$（省略表示未经 S0 派生）"),
+        })
+    return value
+
+
 @app.post("/api/runs")
 async def create_run(payload: dict[str, Any] = Body(default={})) -> dict[str, Any]:
     # 缺省语义只在入口解析一次（RunManager.start → host.baseline.normalize）；
@@ -188,9 +206,11 @@ async def create_run(payload: dict[str, Any] = Body(default={})) -> dict[str, An
             "current_env_root": str(P.ENV_ROOT),
         })
     manager = _manager()
+    s0_record_id = _s0_record_id(payload.get("s0_record_id"))
     try:
         run_id = await manager.start(baseline=baseline, mode=mode, scenario=scenario,
-                                     now=payload.get("now"), project=str(project))
+                                     now=payload.get("now"), project=str(project),
+                                     s0_record_id=s0_record_id)
     except FileExistsError as exc:
         raise HTTPException(status_code=409, detail={"error": str(exc)}) from exc
     except ValueError as exc:
@@ -210,7 +230,8 @@ async def create_run(payload: dict[str, Any] = Body(default={})) -> dict[str, An
     # 不必再发一次 GET 才能确认"这个 run 是什么时候建的"。
     doc = manager.docs.get(run_id)
     return {"run_id": run_id, "mode": mode, "scenario": scenario,
-            "project": str(project), "created_at": getattr(doc, "created_at", None)}
+            "project": str(project), "created_at": getattr(doc, "created_at", None),
+            "s0_record_id": s0_record_id}
 
 
 @app.post("/api/runs/{run_id}/promote")
@@ -261,6 +282,27 @@ def get_run(run_id: str) -> dict[str, Any]:
 @app.get("/api/runs/{run_id}/events")
 def get_events(run_id: str, since_seq: int = Query(default=0, ge=0)) -> dict[str, Any]:
     return {"events": ProgressLog(P.EVENTS_DIR, run_id).read(since_seq=since_seq)}
+
+
+@app.get("/api/runs/{run_id}/nodes/{node}")
+def get_node_detail(run_id: str, node: str) -> dict[str, Any]:
+    """节点执行详情投影（SPEC-02 §10.4 / SPEC-04 §6.7）。
+
+    只读：不写盘、不触发重跑、不返回文件内容。
+    - 未知 run ⇒ 404（`detail.error`）；
+    - 未知节点 ⇒ **200** + `known=false` 的空投影（不用 404 冒充"节点不存在"）。
+    """
+    manager = _manager()
+    doc = manager.docs.get(run_id)
+    if doc is None:
+        raise HTTPException(status_code=404, detail={"error": f"未知 run_id：{run_id}"})
+    return node_view.build_node_detail(
+        run_id,
+        node,
+        events=ProgressLog(P.EVENTS_DIR, run_id).read(),
+        run_doc={"mode": doc.mode, "s0_record_id": getattr(doc, "s0_record_id", None)},
+        run_dir=getattr(doc, "run_dir", None),
+    )
 
 
 # ---------------------------------------------------------------- gates

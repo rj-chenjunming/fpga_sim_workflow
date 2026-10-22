@@ -27,6 +27,7 @@ from typing import Any
 from host import paths as P
 
 from ..context import RunCtx, ctx_of
+from .model_common import counts_text
 
 #: drill 夹具的固定全跑用例（accept_v1 的 117 断言依赖该形状，drill 分支保持不变）
 _REAL_CASE = "tc_pcie_rw_02"
@@ -311,7 +312,12 @@ async def n9_submit(data: Any) -> dict[str, Any]:
         ctx.pending["n9_job_id"] = record.job_id
         await data.async_set_state("n9_job", payload)
         ctx.event("job_submitted", node="N9", status="running", detail=payload, refs=[record.log_path])
-        ctx.node_finished("N9_submit", detail={"job_id": record.job_id, "scenario": ctx.scenario})
+        ctx.node_finished("N9_submit", detail={
+            "job_id": record.job_id, "scenario": ctx.scenario,
+            "source": "drill_fixture",
+            "summary": (f"N9_submit：已提交全跑作业 {record.job_id}"
+                        f"（drill 夹具，scenario={ctx.scenario}）⇒ 图转入停放"),
+        })
         return payload
 
     # ---------------------------------------------------------------- real
@@ -354,7 +360,12 @@ async def n9_submit(data: Any) -> dict[str, Any]:
     await data.async_set_state("n9_job", payload)
     ctx.event("job_submitted", node="N9", status="running", detail=payload,
               refs=[record.log_path, str(summary_path)])
-    ctx.node_finished("N9_submit", detail={"job_id": record.job_id, "cases": len(case_names)})
+    ctx.node_finished("N9_submit", detail={
+        "job_id": record.job_id, "cases": len(case_names),
+        "source": "kb_tool",
+        "summary": (f"N9_submit：已提交全跑作业 {record.job_id}，"
+                    f"覆盖 {len(case_names)} 个沙箱用例 ⇒ 图转入停放"),
+    })
     return payload
 
 
@@ -433,7 +444,13 @@ async def n9_park(data: Any) -> dict[str, Any]:
                       refs=[ev.get("path", "")])
             ctx.node_finished("N9", status=status,
                               detail={"koutou1": (counts.get("koutou1") or {}).get("value"),
-                                      "koutou2": (counts.get("koutou2") or {}).get("value")},
+                                      "koutou2": (counts.get("koutou2") or {}).get("value"),
+                                      "cases": len(out["target_cases"]),
+                                      "job_id": job_id,
+                                      "source": "drill_fixture",
+                                      "summary": (f"N9：全跑作业 {job_id} 完成（drill 夹具），"
+                                                  f"{counts_text(counts)}，"
+                                                  f"both_zero={counts.get('both_zero')}")},
                               refs=[ev.get("path", "")])
             return out
 
@@ -495,7 +512,13 @@ async def n9_park(data: Any) -> dict[str, Any]:
         ctx.node_finished("N9", status=status,
                           detail={"cases": len(case_names),
                                   "koutou1": (counts.get("koutou1") or {}).get("value"),
-                                  "koutou2": (counts.get("koutou2") or {}).get("value")},
+                                  "koutou2": (counts.get("koutou2") or {}).get("value"),
+                                  "job_id": job_id,
+                                  "source": "kb_tool",
+                                  "summary": (f"N9：全跑作业 {job_id} 完成，"
+                                              f"{len(case_names)} 个用例，"
+                                              f"{counts_text(counts)}，"
+                                              f"身份一致={identity['consistent']}")},
                           refs=[out["evidence_paths"][c] for c in case_names][:6])
         return out
     finally:
@@ -539,7 +562,11 @@ async def n15_select(data: Any) -> list[str]:
         cases = [_REAL_CASE]
     await data.async_set_state("n15_set", {"cases": cases, "count": len(cases),
                                            "mode": ctx.mode, "g3_decision": g3})
-    ctx.node_finished("N15_select", detail={"count": len(cases), "g3": g3})
+    ctx.node_finished("N15_select", detail={
+        "count": len(cases), "g3": g3,
+        "source": "framework",
+        "summary": (f"N15_select：按 G3={g3 or '未签署'} 选出 {len(cases)} 个回归用例"),
+    })
     return cases
 
 
@@ -566,7 +593,12 @@ async def n15_run(data: Any) -> dict[str, Any]:
             "note": "drill：不真跑仿真；本节点在 drill 下为显式 no-op（不是终值冒充）。",
         }
         await data.async_set_state("n15_result", out)
-        ctx.node_finished(node, status="ok", detail={"simulated": True, "count": len(cases)})
+        ctx.node_finished(node, status="ok", detail={
+            "simulated": True, "count": len(cases), "job_id": None,
+            "source": "framework",
+            "summary": (f"N15：drill 显式 no-op（未真跑回归），回归集 {len(cases)} 个用例，"
+                        f"G3={g3 or '未签署'}"),
+        })
         return out
 
     job_state = data.get_state("n15_job") or {}
@@ -626,7 +658,12 @@ async def n15_run(data: Any) -> dict[str, Any]:
         await data.async_set_state("n15_job", job_state)
         ctx.event("job_submitted", node=node, status="running", detail=job_state,
                   refs=[record.log_path])
-        ctx.node_finished("N15_submit", detail={"job_id": record.job_id, "cases": len(cases)})
+        ctx.node_finished("N15_submit", detail={
+            "job_id": record.job_id, "cases": len(cases),
+            "source": "kb_tool",
+            "summary": (f"N15_submit：已提交回归作业 {record.job_id}，"
+                        f"覆盖 {len(cases)} 个用例（G3={g3 or '未签署'}）⇒ 图转入停放"),
+        })
         submitted_here = True
         job_id = record.job_id
 
@@ -685,7 +722,14 @@ async def n15_run(data: Any) -> dict[str, Any]:
                           "passed": verdict.get("passed")},
                   refs=[out["evidence_paths"][c] for c in case_names][:6])
         ctx.node_finished(node, status=status,
-                          detail={"cases": len(case_names), "passed": verdict.get("passed")})
+                          detail={"cases": len(case_names),
+                                  "passed": verdict.get("passed"),
+                                  "job_id": job_id,
+                                  "source": "kb_tool",
+                                  "summary": (f"N15：回归作业 {job_id} 完成，"
+                                              f"{len(case_names)} 个用例，"
+                                              f"passed={verdict.get('passed')}，"
+                                              f"身份一致={out['identity']['consistent']}")})
         return out
     finally:
         if ctx.admission is not None:

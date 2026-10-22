@@ -51,7 +51,7 @@ def ui(static_url):
         page = browser.new_page()
         page.clock.install()
         api = {"views": {rid: view(rid) for rid in ("A", "B")}, "hold": None,
-               "pending": [], "posts": [], "errors": []}
+               "pending": [], "posts": [], "errors": [], "nodes": {}}
         page.on("pageerror", lambda error: api["errors"].append(str(error)))
 
         def route_request(route):
@@ -70,6 +70,14 @@ def ui(static_url):
             elif path == "/api/runs":
                 body = {"runs": [{"run_id": rid, "status": "waiting_gate", "mode": "drill"}
                                  for rid in api["views"]]}
+            elif path.startswith("/api/runs/") and "/nodes/" in path:
+                rest = path.split("/api/runs/", 1)[1]
+                rid, node = rest.split("/nodes/", 1)
+                body = api["nodes"].get((rid, node), {
+                    "run_id": rid, "node": node, "known": False,
+                    "authority": "projection", "events": []})
+            elif path.endswith("/evidence/exists"):
+                body = {"path": "/fixture/evidence", "exists": True, "bytes": 12}
             elif path.startswith("/api/runs/"):
                 body = api["views"][path.rsplit("/", 1)[1]]
             else:

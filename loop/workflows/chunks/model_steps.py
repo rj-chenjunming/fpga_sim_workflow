@@ -54,7 +54,10 @@ def _family_reason() -> str:
 
 # ---------------------------------------------------------------- 共享小工具（F06 已拆出）
 
-from .model_common import artifact as _artifact, load_prompts, read_json as _read_json, write_text as _write_text  # noqa: E402
+from .model_common import (  # noqa: E402
+    artifact as _artifact, counts_text, load_prompts, read_json as _read_json,
+    write_text as _write_text,
+)
 from . import model_request as MR  # noqa: E402
 # F06：节点语义按模块拆分；这里保留兼容导出（消费者与测试不需要改 import）。
 from .n6_facts import _api_semantics_for, build_n6_targets  # noqa: E402,F401
@@ -549,9 +552,20 @@ async def n3_digest(data: Any) -> dict[str, Any]:
     _write_text(digest_path, text)
     out["artifact_path"] = str(digest_path)
     await data.async_set_state("n3_digest", out)
+    # §10.4：模型节点 source 按 live/standin 取；summary 用一行中文 + 该节点已有数字。
+    source = "model_live" if out["mode"] == "live" else "model_standin"
+    groups = (out.get("data") or {}).get("groups") or []
+    covered = n2.get("diff_count")
+    if source == "model_live":
+        summary = (f"N3：{len(groups)} 组语义摘要，覆盖 {covered if covered is not None else '未下发'} 条差异"
+                   f"（provider={out.get('provider')}）")
+    else:
+        summary = (f"N3：确定性替身摘要（未接入模型，非模型结论），"
+                   f"覆盖 {covered if covered is not None else '未下发'} 条差异")
     ctx.node_finished("N3", status="ok" if out["mode"] in ("live", "standin") else "failed",
                       detail={"mode": out["mode"], "provider": out.get("provider"),
-                              "problems": (out.get("validation") or {}).get("problems", [])[:3]},
+                              "problems": (out.get("validation") or {}).get("problems", [])[:3],
+                              "source": source, "summary": summary},
                       refs=[str(digest_path)])
     return out
 
@@ -609,10 +623,20 @@ async def n6_author(data: Any) -> dict[str, Any]:
                                       "targets": [t["case"] for t in targets],
                                       "write_scope": str(ctx.run_dir / "sandbox" / "TESTLIB")})
     await data.async_set_state("n6_author", out)
+    validation_ok = (out.get("validation") or {}).get("ok")
+    source = "model_live" if out["mode"] == "live" else "model_standin"
     ctx.node_finished("N6", status=out["mode"],
                       detail={"mode": out["mode"], "cycle": cycles + 1,
                               "targets": len(targets),
-                              "validation_ok": (out.get("validation") or {}).get("ok")})
+                              "validation_ok": validation_ok,
+                              "source": source,
+                              "summary": (
+                                  f"N6：第 {cycles + 1} 轮修订，目标 {len(targets)} 个用例，"
+                                  "输出校验"
+                                  + ("通过" if validation_ok is True
+                                     else "未通过" if validation_ok is False else "未下发")
+                                  + f"（{out['mode']}）"
+                              )})
     return out
 
 
@@ -917,6 +941,7 @@ async def n8_check(data: Any) -> dict[str, Any]:
         raise RuntimeError(f"N8：verdict 缺失或非法（{verdict!r}）⇒ 不得放行到 N9")
 
     cases = [str(c.get("case")) for c in (n6_applied.get("cases") or []) if c.get("case")] or sandbox_names
+    n8_source = "model_live" if out["mode"] == "live" else "model_standin"
     # drill 的 N8 是**替身复核**（夹具 check_C），不是本轮真实证据；不写本轮用例态台账。
     # 理由：I2 的 G2 前置把"本轮写入的待验"当阻断，drill 全跑证据必然不合格，
     # 若替身复核也写「已修订待验」就会把 accept_v1 的 drill 永久堵在 G2（Lead/WS-L 已确认）。
@@ -949,11 +974,18 @@ async def n8_check(data: Any) -> dict[str, Any]:
             ctx.node_finished("N8", status="escalated",
                               detail={"verdict": "rework", "cycle": new_cycles,
                                       "limit": limit, "escalated": True,
-                                      "reason": "N8 返工超限 ⇒ 升级 N13 人工裁决"})
+                                      "reason": "N8 返工超限 ⇒ 升级 N13 人工裁决",
+                                      "source": n8_source,
+                                      "summary": (f"N8：静态复核 rework 第 {new_cycles} 次，"
+                                                  f"已达上限 {limit} ⇒ 升级 N13 人工裁决"
+                                                  f"（{out['mode']}）")})
             await data.async_emit("N8_ESCALATE", out)
             return out
         ctx.node_finished("N8", status="rework",
-                          detail={"verdict": "rework", "cycle": new_cycles, "limit": limit})
+                          detail={"verdict": "rework", "cycle": new_cycles, "limit": limit,
+                                  "source": n8_source,
+                                  "summary": (f"N8：静态复核 rework（第 {new_cycles} 次，"
+                                              f"上限 {limit}）⇒ 回 N6 返工（{out['mode']}）")})
         await data.async_emit("N8_REWORK", out)
         return out
 
@@ -970,7 +1002,11 @@ async def n8_check(data: Any) -> dict[str, Any]:
     out["limit"] = limit
     out["escalated"] = False
     await data.async_set_state("n8_check", out)
-    ctx.node_finished("N8", status=out["mode"], detail={"verdict": "pass", "cycle": cycles})
+    ctx.node_finished("N8", status=out["mode"],
+                      detail={"verdict": "pass", "cycle": cycles,
+                              "source": n8_source,
+                              "summary": (f"N8：静态复核 pass（第 {cycles} 轮，上限 {limit}，"
+                                          f"{len(cases)} 个用例；{out['mode']}）")})
     await data.async_emit("N8_PASS", out)
     return out
 
@@ -1059,7 +1095,14 @@ async def n10_reconcile(data: Any) -> dict[str, Any]:
         out["reconcile_md_path"] = str(reconcile_path)
         await data.async_set_state("n10_reconcile", out)
         ctx.node_finished("N10", status="pass" if out["both_zero"] else "fail",
-                          detail={"both_zero": out["both_zero"]},
+                          detail={"both_zero": out["both_zero"],
+                                  "source": ("model_live" if cls_out["mode"] == "live"
+                                             else "model_standin"),
+                                  "summary": (
+                                      f"N10：{len(out['target_cases'])} 个用例对账，"
+                                      f"{counts_text(out.get('counts'))}，"
+                                      f"both_zero={out['both_zero']}（{cls_out['mode']}）"
+                                  )},
                           refs=[ev.get("path", ""), str(reconcile_path)])
         return out
 
@@ -1171,7 +1214,15 @@ async def n10_reconcile(data: Any) -> dict[str, Any]:
     ctx.node_finished("N10", status=status,
                       detail={"cases": len(target_cases),
                               "verdict_passed": (n9.get("verdict") or {}).get("passed"),
-                              "pending": len(pending_items)},
+                              "pending": len(pending_items),
+                              "source": ("model_live" if cls_out["mode"] == "live"
+                                         else "model_standin"),
+                              "summary": (
+                                  f"N10：{len(target_cases)} 个用例对账，"
+                                  f"{counts_text(n9.get('counts'))}，"
+                                  f"verdict_passed={(n9.get('verdict') or {}).get('passed')}，"
+                                  f"待裁决 {len(pending_items)} 项（{cls_out['mode']}）"
+                              )},
                       refs=[str(reconcile_path)] + [str((cases.get(c) or {}).get("path") or "")
                                                     for c in target_cases][:4])
     return out
@@ -1286,6 +1337,7 @@ async def n11_review(data: Any) -> dict[str, Any]:
     out["rework_requests"] = rework_requests
     await data.async_set_state("n11_review", out)
 
+    n11_source = "model_live" if out["mode"] == "live" else "model_standin"
     if chain_effective == "broken":
         # I7：证据守护返工同样吃掉返工预算（否则 broken↔N6 会无限循环）
         cycles, limit = _cycles_and_limit(ctx, data)
@@ -1310,18 +1362,31 @@ async def n11_review(data: Any) -> dict[str, Any]:
                 "N11", status="escalated",
                 detail={"chain": "broken", "cycle": new_cycles, "limit": limit,
                         "escalated": True,
-                        "reason": "N11 证据守护返工超限 ⇒ 升级 N13 人工裁决"},
+                        "reason": "N11 证据守护返工超限 ⇒ 升级 N13 人工裁决",
+                        "source": n11_source,
+                        "summary": (f"N11：证据链 broken 第 {new_cycles} 次，已达上限 {limit}"
+                                    f" ⇒ 升级 N13 人工裁决（{out['mode']}）")},
             )
             await data.async_emit("N11_ESCALATE", out)
             return out
         ctx.node_finished("N11", status="broken",
                           detail={"chain": "broken", "host_consistent": host_consistent,
                                   "rework": len(rework_requests), "cycle": new_cycles,
-                                  "limit": limit})
+                                  "limit": limit, "source": n11_source,
+                                  "summary": (f"N11：证据链 broken（第 {new_cycles} 次，"
+                                              f"上限 {limit}；Host 身份四方同值"
+                                              f"{'成立' if host_consistent else '不成立'}）"
+                                              f"⇒ 回 N6 返工，返工请求 "
+                                              f"{len(rework_requests)} 条（{out['mode']}）")})
         await data.async_emit("N11_REWORK", out)
         return out
     ctx.node_finished("N11", status="intact",
-                      detail={"chain": "intact", "host_consistent": host_consistent})
+                      detail={"chain": "intact", "host_consistent": host_consistent,
+                              "source": n11_source,
+                              "summary": (f"N11：证据链 intact（Host 身份四方同值"
+                                          f"{'成立' if host_consistent else '不成立'}，"
+                                          f"返工请求 {len(rework_requests)} 条；"
+                                          f"{out['mode']}）")})
     await data.async_emit("N11_INTACT", out)
     return out
 
@@ -1457,9 +1522,16 @@ async def n12_report(data: Any) -> dict[str, Any]:
     out["unresolved_refs"] = unresolved
     out["authoritative_verdict"] = verdict
     await data.async_set_state("n12_report", out)
+    # §10.4：detail 内的计数改名为 `ref_count`（`refs` 是**事件顶层**字段，同名会误导消费方）。
     ctx.node_finished("N12", status=out["mode"],
                       detail={"mode": out["mode"],
                               "claimed_verdict": data_out.get("claimed_verdict"),
-                              "refs": len(refs)},
+                              "ref_count": len(refs),
+                              "source": ("model_live" if out["mode"] == "live"
+                                         else "model_standin"),
+                              "summary": (f"N12：报告 claimed_verdict="
+                                          f"{data_out.get('claimed_verdict')}，"
+                                          f"引用 {len(refs)} 条（不可解析 {len(unresolved)} 条）；"
+                                          f"mode={out['mode']}")},
                       refs=[str(report_path)] + [str(_resolve_ref(ctx, r)) for r in refs][:4])
     return out

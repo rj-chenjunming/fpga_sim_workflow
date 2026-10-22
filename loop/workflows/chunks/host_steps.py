@@ -165,17 +165,35 @@ async def n0_baseline(data: Any) -> dict[str, Any]:
         ctx.node_failed("N0", message=f"gate.py init rc={gate_init['rc']}")
         raise RuntimeError(f"gate.py init rc={gate_init['rc']}: {gate_init['stderr_tail'][-300:]}")
 
+    baseline_value = data.input.get("baseline") if isinstance(data.input, dict) else None
     payload = {
         "run_id": ctx.run_id,
         "run_dir": str(ctx.run_dir),
         "mode": ctx.mode,
-        "baseline": data.input.get("baseline") if isinstance(data.input, dict) else None,
+        "baseline": baseline_value,
         "gate_init_rc": gate_init["rc"],
     }
     await data.async_set_state("run_meta", payload)
+    # §10.4：N0 必须给 baseline + source + summary（drill 必须能看出是夹具）。
+    if ctx.mode == "drill":
+        source = "drill_fixture"
+        summary = (f"N0：drill 夹具初始化（复制 {len(copied)} 个夹具文件，"
+                   f"复制清单 {len(_drill_files())} 项），gate.py init rc={gate_init['rc']}，"
+                   f"baseline={baseline_value}")
+    else:
+        source = "kb_tool"
+        summary = (f"N0：真实运行目录初始化（未复制夹具），gate.py init rc={gate_init['rc']}，"
+                   f"baseline={baseline_value}")
     ctx.node_finished(
         "N0",
-        detail={"mode": ctx.mode, "fixture_files": len(copied), "gate_init_rc": gate_init["rc"]},
+        detail={
+            "mode": ctx.mode,
+            "fixture_files": len(copied),
+            "gate_init_rc": gate_init["rc"],
+            "baseline": baseline_value,
+            "source": source,
+            "summary": summary,
+        },
         refs=[str(ctx.run_dir)],
     )
     return payload
@@ -249,6 +267,34 @@ def staged_inputs(ctx: RunCtx) -> dict[str, Any]:
     }
 
 
+def _fmt_value(value: Any) -> str:
+    """把产物里的值写进一行摘要：缺失就写"未下发"，不猜、不补默认值。"""
+    return "未下发" if value is None or value == "" else str(value)
+
+
+def _short_digest(value: Any) -> str:
+    """摘要里只放前 12 位（完整值仍在 `detail` 里，可审计）。"""
+    text = "" if value is None else str(value)
+    if not text:
+        return "未下发"
+    return text[:12] + "…" if len(text) > 12 else text
+
+
+def _manifest_summary(manifest: dict[str, Any]) -> dict[str, Any]:
+    """N1 manifest 摘要（条目数/指纹/冻结数/commit 可解析性）—— 全部取自产物字段本身。"""
+    allfiles = manifest.get("allfiles_manifest") or {}
+    cases = manifest.get("cases_freeze") or {}
+    doc_fp = manifest.get("doc_fingerprint") or {}
+    commit = manifest.get("commit") or {}
+    return {
+        "allfiles_entries": allfiles.get("entries"),
+        "allfiles_sha256": allfiles.get("sha256"),
+        "cases_frozen": cases.get("entries"),
+        "doc_fingerprint": doc_fp.get("value"),
+        "commit_parseable": commit.get("parseable"),
+    }
+
+
 async def n1_manifest(data: Any) -> dict[str, Any]:
     """N1 建立/摄取 manifest（含 parent 链）。
 
@@ -298,6 +344,20 @@ async def n1_manifest(data: Any) -> dict[str, Any]:
         raise FileNotFoundError(f"N1 未产出 {target}")
     doc = _load_json(target) or {}
     result["parent"] = doc.get("parent", result.get("parent"))
+    # §10.4：N1 必须给 manifest 摘要（allfiles 条目数 + sha256、cases 冻结数、doc 指纹、
+    # commit 可解析性）。数字全部来自产物自身字段，本层不新算、不猜。
+    summary_fields = _manifest_summary(doc if isinstance(doc, dict) else {})
+    result["manifest"] = summary_fields
+    commit_state = summary_fields["commit_parseable"]
+    result["summary"] = (
+        f"N1：allfiles {_fmt_value(summary_fields['allfiles_entries'])} 条"
+        f"（sha256 {_short_digest(summary_fields['allfiles_sha256'])}），"
+        f"cases 冻结 {_fmt_value(summary_fields['cases_frozen'])} 个，"
+        f"doc 指纹 {_short_digest(summary_fields['doc_fingerprint'])}，"
+        f"commit "
+        + ("可解析" if commit_state is True else "不可解析" if commit_state is False else "未下发")
+        + f"；parent={result['parent']}"
+    )
     await data.async_set_state("manifest", result)
     ctx.node_finished("N1", status="ok", detail=result, refs=[str(target)])
     return result
@@ -338,16 +398,32 @@ async def n2_diff(data: Any) -> dict[str, Any]:
 
     doc = _load_json(target) or {}
     diffs = doc.get("diffs", []) if isinstance(doc, dict) else []
+    pending = [d.get("entry_id") or d.get("id") for d in diffs if d.get("unresolved")]
+    offsets = doc.get("offsets") if isinstance(doc, dict) else None
     result.update(
         {
             "has_change": doc.get("has_change"),
             "diff_count": len(diffs),
             "diff_ids": [d.get("entry_id") or d.get("id") for d in diffs][:20],
-            "pending_entries": [d.get("entry_id") or d.get("id") for d in diffs if d.get("unresolved")],
+            "pending_entries": pending,
             # WS-L 的 G1 前置/派生也消费逐条 diffs（与 run_dir/n2_diff.json 同源，双读容错）
             "diffs": diffs,
             "self_check_ok": (doc.get("checks") or {}).get("self_check_ok"),
+            # §10.4：三路统计原样取自 N2 产物（`routes` 是工具给出的逐路结论，不重算）。
+            "routes": doc.get("routes") if isinstance(doc, dict) else None,
+            "offsets": offsets if isinstance(offsets, list) else [],
+            "unresolved_count": len(pending),
         }
+    )
+    kind_counts: dict[str, int] = {}
+    for item in diffs:
+        key = str(item.get("kind") or "unknown")
+        kind_counts[key] = kind_counts.get(key, 0) + 1
+    kinds_text = "、".join(f"{k} {v}" for k, v in sorted(kind_counts.items())) or "无"
+    result["summary"] = (
+        f"N2：差异 {len(diffs)} 条（{kinds_text}），未决 {len(pending)} 条，"
+        f"offset {len(result['offsets'])} 条；has_change={doc.get('has_change')}，"
+        f"self_check_ok={result['self_check_ok']}"
     )
     await data.async_set_state("n2_diff", result)
     ctx.node_finished("N2", detail=result, refs=[str(target)])
@@ -392,13 +468,23 @@ async def n5_impact(data: Any) -> dict[str, Any]:
 
     doc = _load_json(target) or {}
     must_change = doc.get("must_change", []) if isinstance(doc, dict) else []
+    index_gaps = doc.get("index_gaps", [])
     result.update(
         {
             "must_change_count": len(must_change),
             "must_change_cases": sorted({m.get("case") for m in must_change if m.get("case")}),
             "index_complete": doc.get("index_complete"),
-            "index_gaps": doc.get("index_gaps", []),
+            "index_gaps": index_gaps,
+            # §10.4：索引缺口计数（取自 N5 产物自身，不重算判据）
+            "index_gap_count": len(index_gaps) if isinstance(index_gaps, list) else 0,
         }
+    )
+    gap_count = result["index_gap_count"]
+    cases_text = "、".join(result["must_change_cases"]) or "无"
+    result["summary"] = (
+        f"N5：必改 {result['must_change_count']} 个用例（{cases_text}），"
+        f"索引缺口 {gap_count} 条，index_complete={result['index_complete']}；"
+        f"gate1 签署校验 rc={result['gate1_rc']}"
     )
     await data.async_set_state("n5_impact", result)
     ctx.node_finished("N5", detail=result, refs=[str(target)])
@@ -551,7 +637,17 @@ async def n6_apply(data: Any) -> dict[str, Any]:
                       detail={"note": payload["note"]})
         await data.async_set_state("n6_applied", payload)
         ctx.node_finished("N6_apply", status="ok",
-                          detail={"status": payload["status"], "cases": len(copied)},
+                          detail={
+                              "status": payload["status"],
+                              "cases": len(copied),
+                              "source": "drill_fixture",
+                              "summary": (
+                                  f"N6_apply：drill 采用夹具沙箱件 {len(copied)} 个"
+                                  "（未施加结构化 edits，未写用例态台账）"
+                                  if copied else
+                                  "N6_apply：drill 夹具无沙箱件 ⇒ 显式 no-op"
+                              ),
+                          },
                           refs=[str(sandbox_lib)] if copied else [])
         return payload
 
@@ -669,10 +765,19 @@ async def n6_apply(data: Any) -> dict[str, Any]:
         "case_state_path": str(ctx.run_dir / "case_states.json"),
     }
     await data.async_set_state("n6_applied", payload)
+    edits_total = sum(c["edits"] for c in applied)
     ctx.node_finished(
         "N6_apply",
-        detail={"status": "applied", "cases": len(applied),
-                "edits": sum(c["edits"] for c in applied)},
+        detail={
+            "status": "applied",
+            "cases": len(applied),
+            "edits": edits_total,
+            "source": "framework",
+            "summary": (
+                f"N6_apply：{len(applied)} 个用例写入沙箱，共施加 {edits_total} 条 edits"
+                "（old 唯一命中校验 + 冻结 md5 + 用例态记账）"
+            ),
+        },
         refs=[c["sandbox_path"] for c in applied],
     )
     return payload
@@ -708,7 +813,12 @@ async def n7_compile(data: Any) -> dict[str, Any]:
         text = ctx.read_fixture_text("check_C.md") or ""
         result.update({"rc": 0, "source": "drill_fixture", "check_c_present": bool(text),
                        "cases": [{"case": "drill", "rc": 0, "source": "drill_fixture"}],
-                       "all_ok": True})
+                       "all_ok": True,
+                       "failed_cases": []})
+        result["summary"] = (
+            "N7：drill 编译卡点B 以夹具 check_C.md 代替（未真跑编译；"
+            f"check_C.md {'存在' if text else '缺失'}）"
+        )
         await data.async_set_state("n7_compile", result)
         ctx.node_finished("N7", detail=result)
         return result
@@ -805,8 +915,22 @@ async def n7_compile(data: Any) -> dict[str, Any]:
     result.update({"rc": 0, "source": "run_guarded", "cases": per_case, "all_ok": True,
                    "slot": {"job_id": job_id, "released": True}})
     await data.async_set_state("n7_compile", result)
-    ctx.node_finished("N7", detail={"cases": len(per_case), "all_ok": True},
-                      refs=[p for c in per_case for p in c["evidence"]][:6])
+    failed_cases = [str(c["case"]) for c in per_case if c.get("rc") != 0]
+    ctx.node_finished(
+        "N7",
+        detail={
+            "cases": len(per_case),
+            "all_ok": True,
+            "case_count": len(per_case),
+            "failed_cases": failed_cases,
+            "source": "kb_tool",
+            "summary": (
+                f"N7：{len(per_case)} 个沙箱用例编译 rc=0（run_guarded compile-only，"
+                f"失败 {len(failed_cases)} 例）"
+            ),
+        },
+        refs=[p for c in per_case for p in c["evidence"]][:6],
+    )
     return result
 
 
@@ -870,12 +994,21 @@ async def n16_promote(data: Any) -> dict[str, Any]:
         args += ["--baselines-root", str(ctx.run_dir / "baseline_drill")]
         (ctx.run_dir / "baseline_drill").mkdir(parents=True, exist_ok=True)
     run = run_kb_tool("n16_promote.py", args)
+    status = "ok" if run["rc"] == 0 else ("refused" if run["rc"] == 3 else "failed")
     result = {"cmd": run["cmd"], "rc": run["rc"], "mode": ctx.mode, "dry_run": True,
               "actor": actor, "actor_kind": actor_kind,
-              "stdout_tail": run["stdout_tail"], "stderr_tail": run["stderr_tail"]}
+              "stdout_tail": run["stdout_tail"], "stderr_tail": run["stderr_tail"],
+              "source": "kb_tool",
+              "summary": (f"N16：dry-run 晋升 rc={run['rc']}（{status}），"
+                          f"actor={actor}，actor_kind={actor_kind}")}
     await data.async_set_state("n16_promote", result)
-    status = "ok" if run["rc"] == 0 else ("refused" if run["rc"] == 3 else "failed")
-    ctx.node_finished("N16", status=status, detail=result)
+    # §10.4：refs 只列**真实存在**的晋升留痕（不存在就不进 refs，不编造证据）。
+    promote_refs = [
+        str(path)
+        for path in (ctx.run_dir / ARTIFACTS["n16"], ctx.run_dir / "promote_result.json")
+        if path.is_file()
+    ]
+    ctx.node_finished("N16", status=status, detail=result, refs=promote_refs)
     if run["rc"] not in (0, 3):
         raise RuntimeError(f"n16_promote rc={run['rc']}")
     return result

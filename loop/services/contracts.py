@@ -182,6 +182,12 @@ def diff_entries_view(run_dir: Path | None, *, mode: str | None = None) -> dict[
                     "lines": item.get("lines") or [],
                     "offset": item.get("offset"),
                     "segment": item.get("segment"),
+                    # R2（SPEC-REV-01）：变更本体与解码事实必须逐条下发，界面才能双栏对照；
+                    # 缺失一律显式 None（**不**用路径/空串冒充"没有变化"）。
+                    "before": item.get("before"),
+                    "after": item.get("after"),
+                    "diff_hunk": item.get("diff_hunk"),
+                    "encoding": item.get("encoding"),
                     # drill 夹具的历史未决：标注来源，不当作本轮待处置项
                     "legacy_drill_fixture": bool(unresolved) and mode == "drill",
                 }
@@ -730,6 +736,9 @@ def gate_material(
             "n10_reconcile": _model_node_view(facts, "n10_reconcile"),
         },
         "n6_applied": facts.get("n6_applied"),
+        # R2：G1 材料的两个入口（存在性探测；正文不进协议）
+        "n3_digest": n3_digest_view(rd),
+        "host_trace": host_trace_view(rd),
         # drill 的台账跳过标记（N8/N10 替身复核不写 case_state）——原样展示给操作员，
         # 让"I2 为什么没在这条 run 上出现"可解释（不静默省略）。
         "ledger_notes": facts.get("_ledger_notes") or [],
@@ -766,6 +775,63 @@ def gate_material(
         if value
     ]
     return material
+
+
+#: Host 留痕里逐条变更的投影字段（SPEC-REV-01 R2：人必须能看出"改了什么"）。
+HOST_TRACE_FIELDS: tuple[str, ...] = (
+    "id", "kind", "old", "new", "line_before", "line_after",
+    "encoding", "rationale", "evidence",
+)
+
+
+def n3_digest_view(run_dir: Path | None) -> dict[str, Any]:
+    """N3 摘要入口（只给 `path` + `exists`；**不返回正文**）。
+
+    规格依据：WEB_UI_SPEC §4.4/§5「材料区能打开 `n3_digest.md` 入口（存在性探测，缺失显示未生成）」。
+    """
+    path = Path(run_dir) / "n3_digest.md" if run_dir is not None else None
+    return {
+        "path": str(path) if path is not None else None,
+        "exists": bool(path is not None and path.is_file()),
+    }
+
+
+def host_trace_view(run_dir: Path | None) -> dict[str, Any]:
+    """Host 留痕（`staged/mock_change_applied.json`）的摘要投影。
+
+    只投影逐条变更的九项事实（`id/kind/old/new/line_before/line_after/encoding/rationale/
+    evidence`），不返回整份文件；文件不存在时 `exists=false`（**不编造**留痕）。
+    """
+    path = Path(run_dir) / "staged" / "mock_change_applied.json" if run_dir is not None else None
+    out: dict[str, Any] = {
+        "path": str(path) if path is not None else None,
+        "exists": False,
+        "count": 0,
+        "changes": [],
+        "applied_at": None,
+        "baseline_from": None,
+        "error": None,
+    }
+    if path is None:
+        return out
+    doc, error = _read_artifact(path)
+    if not isinstance(doc, dict):
+        out["error"] = error
+        return out
+    changes: list[dict[str, Any]] = []
+    for item in doc.get("changes") or []:
+        if not isinstance(item, dict):
+            continue
+        changes.append({key: item.get(key) for key in HOST_TRACE_FIELDS})
+    out.update({
+        "exists": True,
+        "count": len(changes),
+        "changes": changes,
+        "applied_at": doc.get("applied_at"),
+        "baseline_from": doc.get("baseline_from"),
+        "error": None,
+    })
+    return out
 
 
 def _conflict_summary(kb: KbSources) -> dict[str, Any]:
@@ -880,6 +946,8 @@ def run_view(
         "events": events,
         # agent 工作状态是**投影**（事件派生），不是权威；字段见 Web UI Spec §4.3。
         "project": run_doc.get("project"),
+        # R5：环境来源徽标（空 = 未经 S0 派生；drill 不覆盖 S0）
+        "s0_record_id": run_doc.get("s0_record_id"),
         "agents": build_agents(
             events,
             run_dir=run_dir,

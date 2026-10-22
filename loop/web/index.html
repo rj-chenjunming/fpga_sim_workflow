@@ -383,6 +383,54 @@
     </div>
   </div>
 </dialog>
+
+<!-- 节点执行详情（SPEC-04 §4.2.1）：独立弹层，自带状态，1.5s 轮询重建不影响本面板。 -->
+<dialog id="nodeDetail" class="node-detail" aria-labelledby="ndTitle">
+  <div class="nd-head">
+    <div class="grow">
+      <div class="eyebrow">NODE DETAIL / 节点执行详情</div>
+      <h2 id="ndTitle">节点</h2>
+      <div class="nd-sub mono" id="ndSub">—</div>
+    </div>
+    <span class="chip" id="ndStatus" role="status" aria-live="polite">加载中</span>
+    <button class="btn btn-ghost btn-sm" id="ndClose" type="button" aria-label="关闭节点详情">关闭 ×</button>
+  </div>
+  <div class="nd-toolbar">
+    <span class="mono" id="ndPath">—</span>
+    <span class="spacer"></span>
+    <button class="btn btn-sm" id="ndRefresh" type="button">刷新</button>
+  </div>
+  <div class="nd-body">
+    <div id="ndError" role="alert"></div>
+    <div id="ndLoading" class="muted tiny">读取节点投影…</div>
+    <div id="ndContent" class="hidden">
+      <section class="nd-block" aria-labelledby="ndIdentityH">
+        <h3 id="ndIdentityH">身份 <span class="tiny muted">节点 / 名称 / owner / 状态原值 / 来源 / 起止时间</span></h3>
+        <dl class="nd-kv" id="ndIdentity"></dl>
+        <div id="ndAgentJump"></div>
+      </section>
+      <section class="nd-block" aria-labelledby="ndEventsH">
+        <h3 id="ndEventsH">执行情况 <span class="tiny muted">该节点事件切片，按 seq；最近一条在前</span></h3>
+        <div class="nd-events" id="ndEvents"></div>
+      </section>
+      <section class="nd-block" aria-labelledby="ndResultH">
+        <h3 id="ndResultH">结果 <span class="tiny muted">summary + 结构化 detail；缺失显示「未下发」</span></h3>
+        <div id="ndSummary"></div>
+        <div id="ndDetailBody"></div>
+      </section>
+      <section class="nd-block" aria-labelledby="ndRefsH">
+        <h3 id="ndRefsH">证据 <span class="tiny muted">refs；点击先探测存在性，不打开正文</span></h3>
+        <div id="ndRefs"></div>
+      </section>
+      <section class="nd-block" aria-labelledby="ndFailureH">
+        <h3 id="ndFailureH">失败 <span class="tiny muted">node_failed 时显示 error 原文</span></h3>
+        <div id="ndFailure"></div>
+      </section>
+      <div id="ndMissing"></div>
+    </div>
+  </div>
+  <div class="nd-foot">投影，非权威；判据以服务端 blockers / gates.json 为准</div>
+</dialog>
 <noscript><div class="banner bad">本界面需要启用 JavaScript。</div></noscript>
 <script src="run-view-state.js"></script>
 <script src="gate-session.js"></script>
@@ -390,6 +438,7 @@
 <script src="context-explain.js"></script>
 <script src="s0.js"></script>
 <script src="agent-window.js"></script>
+<script src="node-detail.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

@@ -169,6 +169,9 @@ class RunDoc:
     mode: str
     scenario: str
     project: str | None = None
+    #: R5：环境来源（S0 派生记录 id）。**可空**：drill 与"未经 S0 派生"都是 None，
+    #: 不得据此声称环境就绪（S0-b 未接入，ready_for_execution 恒 false）。
+    s0_record_id: str | None = None
     status: str = "running"
     created_at: str = ""
     updated_at: str = ""
@@ -182,6 +185,7 @@ class RunDoc:
             "run_dir": self.run_dir,
             "baseline": self.baseline,
             "project": self.project,
+            "s0_record_id": self.s0_record_id,
             "mode": self.mode,
             "scenario": self.scenario,
             "status": self.status,
@@ -256,6 +260,7 @@ class RunManager:
                     baseline=data.get("baseline"),
                     mode=data.get("mode", "drill"),
                     scenario=data.get("scenario", "happy"),
+                    s0_record_id=data.get("s0_record_id"),
                     status=data.get("status", "unknown"),
                     created_at=data.get("created_at", ""),
                     updated_at=data.get("updated_at", ""),
@@ -447,6 +452,7 @@ class RunManager:
         scenario: str = "happy",
         now: str | None = None,
         project: str | None = None,
+        s0_record_id: str | None = None,
     ) -> str:
         if mode not in ("drill", "real"):
             raise ValueError("mode 必须是 drill 或 real")
@@ -509,6 +515,7 @@ class RunManager:
             run_dir=str(run_dir),
             baseline=baseline_id,
             project=project or str(P.ENV_ROOT),
+            s0_record_id=s0_record_id,
             mode=mode,
             scenario=scenario,
             created_at=P.now_iso(dt),

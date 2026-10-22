@@ -1,8 +1,8 @@
 /* 变更影响闭环 · 运营台 v1（app.js）
  *
  * 定位（spec §1 / §9）：界面投影服务端状态并传输操作，不持有业务判据。
- *   · 数据只消费：/api/health、/api/runs、/api/runs/{id}、/api/baselines、
- *     /api/env/check、/api/fs/dirs、POST /api/runs、闸门决策、job 取消、证据存在性探测。
+ *   · 数据只消费：/api/health、/api/runs、/api/runs/{id}、/api/runs/{id}/nodes/{node}、
+ *     /api/baselines、/api/env/check、/api/fs/dirs、POST /api/runs、闸门决策、job 取消、证据存在性探测。
  *   · 闸门决策枚举、blockers、counts、stage_map、agents 全部由服务端下发；本文件不手抄枚举。
  *   · 渲染单向：state → render；所有服务端字符串走 textContent / replaceChildren，不拼 innerHTML。
  *   · 零外部依赖；后端未就绪时用 try/catch + 顶部横幅 + 局部空态降级，绝不白屏。
@@ -981,6 +981,19 @@
     renderEvents(v);
   }
 
+  /* SPEC-04 §4.5 环境来源徽标：只读投影 s0_record_id；空值不得说成"环境就绪"。 */
+  function s0SourceChip(v) {
+    var raw = v ? v.s0_record_id : null;
+    var hasRecord = raw !== null && raw !== undefined && String(raw) !== "";
+    var drill = !!(v && v.mode === "drill");
+    var chip = h("span", "chip s0-source" + (hasRecord ? " mono" : " warn"),
+      hasRecord ? "S0 记录 " + String(raw) : (drill ? "未经 S0 派生（drill 不覆盖 S0）" : "未经 S0 派生"));
+    chip.title = hasRecord
+      ? "运行文档 s0_record_id=" + String(raw) + "：输入目录来自 S0 派生副本；徽标只是只读投影，不证明环境已就绪。"
+      : "运行文档 s0_record_id 为空：本运行未从 S0 派生副本启动；drill 不覆盖 S0，也不代表环境就绪。";
+    return chip;
+  }
+
   function renderRunHead(v) {
     var host = $("runHead");
     if (!host) return;
@@ -1008,6 +1021,7 @@
     }
     host.appendChild(pill);
     host.appendChild(h("span", "chip", v.mode || "—"));
+    host.appendChild(s0SourceChip(v));
     if (v.baseline) host.appendChild(h("span", "chip", "基线 " + v.baseline));
     if (v.project) {
       var projectChip = h("span", "chip mono", shortPath(v.project));
@@ -1304,9 +1318,18 @@
     });
     if (extra.length) {
       var box = h("div", "unknown-nodes");
-      box.appendChild(h("div", "tiny warn", "未纳入四段展示的节点（按 node_history 显式列出，不隐藏）："));
+      box.appendChild(h("div", "tiny warn", "未纳入四段展示的节点（按 node_history 显式列出，不隐藏；全部可点）："));
       var chips = h("div", "chips");
-      extra.forEach(function (n) { chips.appendChild(h("span", "chip warn", n)); });
+      extra.forEach(function (n) {
+        var chip = h("button", "chip warn chip-btn", n);
+        chip.type = "button";
+        chip.setAttribute("data-node-chip", n);
+        chip.setAttribute("aria-haspopup", "dialog");
+        chip.setAttribute("aria-label", "节点 " + n + "（四段外/未知节点）；打开执行详情");
+        chip.title = "查看节点 " + n + " 执行详情（只读投影）";
+        chip.addEventListener("click", function () { openNodeDetail(n, null, chip); });
+        chips.appendChild(chip);
+      });
       box.appendChild(chips);
       host.appendChild(box);
     }
@@ -1347,7 +1370,14 @@
   function nodeEl(nodeId, v) {
     var st = nodeState(v, nodeId);
     var meta = NODE_META[nodeId] || { name: "未知节点", owner: "—" };
-    var wrap = h("div", "snode" + (meta.gate ? " gate" : "") + (st ? " " + st : ""));
+    /* 全节点可点（SPEC-04 §4.2.1）：用原生 button，Enter/Space 天然可达；
+     * 弹层独立于 #stages，1.5 s 全量重建不会清掉面板。 */
+    var wrap = h("button", "snode" + (meta.gate ? " gate" : "") + (st ? " " + st : ""));
+    wrap.type = "button";
+    wrap.setAttribute("data-node-chip", nodeId);
+    wrap.setAttribute("aria-haspopup", "dialog");
+    wrap.setAttribute("aria-label", "节点 " + nodeId + " " + (meta.name || "") +
+      "，owner " + (meta.owner || "—") + "，状态 " + (st || "待开始") + "；打开执行详情");
     var bubble = h("div", "sb");
     bubble.appendChild(h("span", null, nodeIcon(st)));
     var txt = h("div", "st");
@@ -1355,8 +1385,37 @@
     txt.appendChild(h("span", "own", meta.owner || "—"));
     wrap.appendChild(bubble);
     wrap.appendChild(txt);
-    wrap.title = nodeId + " " + (meta.name || "") + " · owner=" + (meta.owner || "—") + " · 状态=" + (st || "待开始");
+    wrap.title = nodeId + " " + (meta.name || "") + " · owner=" + (meta.owner || "—") +
+      " · 状态=" + (st || "待开始") + " · 点击查看节点执行详情";
+    wrap.addEventListener("click", function () { openNodeDetail(nodeId, meta, wrap); });
     return wrap;
+  }
+
+  /* 打开节点详情弹层：身份兜底名/owner 仅用于显示，服务端下发优先（节点面板内标注）。 */
+  function openNodeDetail(nodeId, meta, trigger) {
+    if (!state.runId) {
+      toast("尚未选择运行");
+      return;
+    }
+    if (!window.NodeDetail) {
+      toast("节点详情模块未加载（node-detail.js）");
+      return;
+    }
+    var agent = null;
+    AGENT_DEFS.forEach(function (def) {
+      if (!agent && (def.nodes || []).indexOf(nodeId) >= 0) {
+        agent = { name: def.name, nodes: (def.nodes || []).slice(), node: nodeId };
+      }
+    });
+    window.NodeDetail.open({
+      runId: state.runId,
+      node: nodeId,
+      fallback: meta ? { name: meta.name, owner: meta.owner } : null,
+      agent: agent,
+      gate: !!(meta && meta.gate),
+      onGate: function () { showView("gate"); },
+      trigger: trigger || null
+    });
   }
 
   /* ---------------- Agent 卡 ---------------- */
@@ -1791,6 +1850,7 @@
     pill.appendChild(document.createTextNode(" " + (pending ? "等待人工 · " + gateTitle(pending.gate) : statusLabel(v.status))));
     host.appendChild(pill);
     host.appendChild(h("span", "chip", v.mode || "—"));
+    host.appendChild(s0SourceChip(v));
     if (v.baseline) host.appendChild(h("span", "chip", "基线 " + v.baseline));
     if (v.project) {
       var projectChip = h("span", "chip mono", shortPath(v.project));
@@ -1836,12 +1896,414 @@
     return "N2 差异清单 · " + n + " 条" + (u ? " · 未决 " + u + " 条" : " · 无未决");
   }
 
+  /* ---------------- G1 材料可判（SPEC-04 §4.4/§5；SPEC-REV-01 R2） ----------------
+   * 每条差异：before/after 双栏 + diff_hunk 行级（标行号）+ 无 hunk 原因 + encoding 标注；
+   * doc_entry 先列变化字段（其余字段折叠，不隐藏）；drill 夹具带徽标；
+   * 材料区另给 n3_digest / Host 留痕入口（只做存在性探测，不打开正文）。
+   * 本段只做展示对照，不判定、不排序、不隐藏服务端条目。
+   * ------------------------------------------------------------------------ */
+  function isMissingValue(v) { return v === null || v === undefined; }
+
+  function displayValue(v) {
+    if (isMissingValue(v)) return null;
+    if (typeof v === "string") return v;
+    if (typeof v === "number" || typeof v === "boolean") return String(v);
+    try { return JSON.stringify(v, null, 2); } catch (e) { return String(v); }
+  }
+
+  function sameValue(a, b) {
+    try { return JSON.stringify(a) === JSON.stringify(b); } catch (e) { return String(a) === String(b); }
+  }
+
+  function isPlainObject(v) {
+    return !!v && typeof v === "object" && !Array.isArray(v);
+  }
+
+  function entryEncoding(e) {
+    if (typeof e.encoding === "string" && e.encoding) return e.encoding;
+    if (e.encoding && typeof e.encoding === "object") {
+      return String(e.encoding.name || e.encoding.codec || "") || null;
+    }
+    return null;
+  }
+
+  function hunkTextOf(hunk) {
+    if (typeof hunk === "string") return hunk.trim() ? hunk : "";
+    if (Array.isArray(hunk)) return hunk.length ? hunk.join("\n") : "";
+    if (hunk && typeof hunk === "object") {
+      if (typeof hunk.text === "string" && hunk.text.trim()) return hunk.text;
+      if (Array.isArray(hunk.lines) && hunk.lines.length) return hunk.lines.join("\n");
+    }
+    return "";
+  }
+
+  function diffPane(kind, label, value) {
+    var box = h("div", "diff-pane " + kind);
+    var head = h("div", "diff-pane-head");
+    head.appendChild(h("span", null, label));
+    var text = displayValue(value);
+    if (text === null) head.appendChild(chipEl("未下发", "warn"));
+    box.appendChild(head);
+    if (text === null) {
+      box.appendChild(h("div", "diff-missing", "服务端未下发该字段；界面不补默认值。"));
+    } else {
+      var pre = h("pre", "diff-text");
+      pre.textContent = text;
+      box.appendChild(pre);
+    }
+    return box;
+  }
+
+  /* doc_entry 变化字段：优先服务端 changed_fields；否则按 before/after 对照（展示用途）。 */
+  function diffFieldRows(e) {
+    if (!isPlainObject(e.before) || !isPlainObject(e.after)) return null;
+    var changed = [];
+    var serverSupplied = Array.isArray(e.changed_fields);
+    if (serverSupplied) {
+      e.changed_fields.forEach(function (item) {
+        var key = typeof item === "string" ? item : (item && (item.field || item.key));
+        if (key && changed.indexOf(key) < 0) changed.push(String(key));
+      });
+    }
+    var all = [];
+    Object.keys(e.before).concat(Object.keys(e.after)).forEach(function (key) {
+      if (all.indexOf(key) < 0) all.push(key);
+    });
+    if (!serverSupplied) {
+      changed = all.filter(function (key) { return !sameValue(e.before[key], e.after[key]); });
+    }
+    var unchanged = all.filter(function (key) { return changed.indexOf(key) < 0; });
+    return { changed: changed, unchanged: unchanged, serverSupplied: serverSupplied };
+  }
+
+  function fieldTable(keys, e) {
+    var table = h("table", "diff-fields");
+    var thead = h("thead");
+    var hr = h("tr");
+    ["字段", "变更前 before", "变更后 after"].forEach(function (label) {
+      hr.appendChild(h("th", null, label));
+    });
+    thead.appendChild(hr);
+    table.appendChild(thead);
+    var tbody = h("tbody");
+    keys.forEach(function (key) {
+      var tr = h("tr");
+      tr.appendChild(h("td", "mono", key));
+      ["before", "after"].forEach(function (side) {
+        var value = e[side] && typeof e[side] === "object" ? e[side][key] : undefined;
+        var text = displayValue(value);
+        tr.appendChild(h("td", "mono" + (text === null ? " muted" : ""), text === null ? "未下发" : text));
+      });
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    return table;
+  }
+
+  function diffLineRow(kind, oldNo, newNo, text) {
+    var row = h("span", "dh-row" + (kind ? " dh-" + kind : ""));
+    row.appendChild(h("span", "dh-no", oldNo === null ? "" : String(oldNo)));
+    row.appendChild(h("span", "dh-no", newNo === null ? "" : String(newNo)));
+    row.appendChild(h("span", "dh-txt", text));
+    return row;
+  }
+
+  function hunkEl(text) {
+    var pre = h("pre", "diff-hunk");
+    var lines = String(text).replace(/\r\n?/g, "\n").split("\n");
+    if (lines.length && lines[lines.length - 1] === "") lines.pop();
+    var unified = lines.some(function (line) { return /^@@\s/.test(line); });
+    var oldNo = 0;
+    var newNo = 0;
+    lines.forEach(function (line, idx) {
+      if (!unified) {
+        pre.appendChild(diffLineRow("raw", null, idx + 1, line));
+        return;
+      }
+      var header = /^@@\s*-(\d+)(?:,\d+)?\s+\+(\d+)(?:,\d+)?/.exec(line);
+      if (header) {
+        oldNo = parseInt(header[1], 10);
+        newNo = parseInt(header[2], 10);
+        pre.appendChild(diffLineRow("hunk", null, null, line));
+        return;
+      }
+      if (/^---\s/.test(line) || /^\+\+\+\s/.test(line)) {
+        pre.appendChild(diffLineRow("meta", null, null, line));
+        return;
+      }
+      if (line.charAt(0) === "\\") {
+        pre.appendChild(diffLineRow("meta", null, null, line));
+        return;
+      }
+      if (line.charAt(0) === "+") {
+        pre.appendChild(diffLineRow("add", null, newNo, line));
+        newNo++;
+        return;
+      }
+      if (line.charAt(0) === "-") {
+        pre.appendChild(diffLineRow("del", oldNo, null, line));
+        oldNo++;
+        return;
+      }
+      pre.appendChild(diffLineRow("ctx", oldNo, newNo, line));
+      oldNo++;
+      newNo++;
+    });
+    return pre;
+  }
+
+  function noHunkReason(e) {
+    var explicit = e.no_hunk_reason || e.hunk_reason || e.diff_hunk_reason || e.reason;
+    if (explicit) return String(explicit);
+    var encoding = entryEncoding(e);
+    if (encoding && !/^utf-?8$/i.test(encoding)) {
+      return "源文件编码为 " + encoding + "（非 UTF-8），本轮未产出可读行级 hunk";
+    }
+    if (e.binary) return "源文件被视为二进制，无文本行级 hunk";
+    if (e.legacy_drill_fixture) return "drill 历史夹具条目，服务端未下发行级 hunk";
+    if (e.drill_fixture) return "drill 夹具条目，服务端未下发行级 hunk";
+    if (e.unresolved) return "未决：" + String(e.unresolved);
+    if (Array.isArray(e.lines) && e.lines.length) {
+      return "服务端只下发行号证据（lines " + e.lines.join(", ") + "），未下发行级 hunk";
+    }
+    return "服务端未下发行级 hunk（diff_hunk 为空）";
+  }
+
+  function renderDiffEntry(e) {
+    var unresolved = !!e.unresolved;
+    var item = h("div", "diff-item" + (unresolved ? " unresolved" : ""));
+    var line = h("div", "diff-line");
+    line.appendChild(h("span", "diff-id", e.entry_id ? String(e.entry_id) : "（无 entry_id）"));
+    if (e.kind) line.appendChild(h("span", "chip", String(e.kind)));
+    if (e.change) line.appendChild(h("span", "chip", String(e.change)));
+    if (e.drill_fixture) {
+      var drillChip = chipEl("drill_fixture", "warn");
+      drillChip.title = "本次运行来自 drill 夹具，不是真实环境实测";
+      line.appendChild(drillChip);
+    }
+    if (e.legacy_drill_fixture) line.appendChild(chipEl("drill 历史夹具", ""));
+    var encoding = entryEncoding(e);
+    if (encoding) {
+      var utf8 = /^utf-?8$/i.test(encoding);
+      line.appendChild(chipEl("编码 " + encoding + (utf8 ? "" : "（解码后对比）"), utf8 ? "" : "warn"));
+    }
+    if (unresolved) line.appendChild(chipEl("未决", "warn"));
+    item.appendChild(line);
+
+    var meta = [];
+    if (e.segment) meta.push("segment " + String(e.segment));
+    if (e.offset) meta.push("offset " + String(e.offset));
+    if (Array.isArray(e.lines) && e.lines.length) meta.push("lines " + e.lines.join(", "));
+    if (meta.length) item.appendChild(h("div", "diff-meta", meta.join(" · ")));
+
+    if (String(e.kind || "") === "doc_entry") {
+      var rows = diffFieldRows(e);
+      if (rows && rows.changed.length) {
+        item.appendChild(h("div", "diff-fields-head", "变化字段（先看这里；" +
+          (rows.serverSupplied ? "服务端下发 changed_fields" : "客户端对照 before/after，非权威") + "）"));
+        item.appendChild(fieldTable(rows.changed, e));
+        if (rows.unchanged.length) {
+          var unchanged = h("details", "diff-det diff-unchanged");
+          unchanged.appendChild(h("summary", null, "其余字段未变（" + rows.unchanged.length + " 项）"));
+          unchanged.appendChild(fieldTable(rows.unchanged, e));
+          item.appendChild(unchanged);
+        }
+      } else if (rows) {
+        item.appendChild(h("div", "diff-meta",
+          "before/after 中未发现变化字段（" + rows.unchanged.length + " 项未变；原始对照见下）。"));
+      }
+    }
+
+    var pair = h("div", "diff-pair");
+    pair.appendChild(diffPane("before", "变更前 before", e.before));
+    pair.appendChild(diffPane("after", "变更后 after", e.after));
+    item.appendChild(pair);
+
+    var hunk = hunkTextOf(e.diff_hunk);
+    if (hunk) {
+      item.appendChild(h("div", "diff-hunk-head", "行级差异 diff_hunk（行号按原文件）"));
+      item.appendChild(hunkEl(hunk));
+    } else {
+      var reasonBox = h("div", "diff-nohunk");
+      reasonBox.appendChild(h("b", null, "无行级 hunk"));
+      reasonBox.appendChild(document.createTextNode("：原因：" + noHunkReason(e)));
+      if (isMissingValue(e.before) && isMissingValue(e.after)) {
+        reasonBox.appendChild(document.createTextNode("（before/after 也未下发）"));
+      }
+      item.appendChild(reasonBox);
+    }
+    if (unresolved) {
+      item.appendChild(h("div", "diff-unresolved", "未决原因：" + String(e.unresolved)));
+    }
+    item.appendChild(h("div", "diff-ev" + (e.evidence ? "" : " muted"),
+      e.evidence ? String(e.evidence) : "（无 evidence）"));
+    return item;
+  }
+
+  /* 证据入口的存在性探测：结果就地显示，不打开文件正文。 */
+  async function probeInto(ref, btn, out) {
+    if (!state.runId) return;
+    var runId = state.runId;
+    btn.disabled = true;
+    if (out) {
+      out.className = "nd-probe";
+      out.textContent = "探测中…";
+    }
+    try {
+      var body = await api("/api/runs/" + enc(runId) + "/evidence/exists?ref=" + enc(ref));
+      if (state.runId !== runId) return;
+      if (!out) return;
+      if (body.exists === true) {
+        var extra = "";
+        if (body.bytes !== undefined && body.bytes !== null) extra = " · " + body.bytes + " B";
+        if (body.entries !== undefined && body.entries !== null) extra = " · 目录 " + body.entries + " 项";
+        out.className = "nd-probe ok";
+        out.textContent = "存在" + extra;
+      } else if (body.exists === null) {
+        out.className = "nd-probe";
+        out.textContent = "不按文件路径探测：" + (body.note || "服务端未返回存在性");
+      } else {
+        out.className = "nd-probe bad";
+        out.textContent = "未生成（证据缺失 E-2）：" + (body.note || "文件不存在");
+      }
+    } catch (e) {
+      if (!out) return;
+      out.className = "nd-probe bad";
+      out.textContent = "探测失败：" + errText(e);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  function materialExtraRow(label, entry) {
+    var row = h("div", "material-extra");
+    row.appendChild(h("b", null, label));
+    var info = entry;
+    if (typeof entry === "string") info = { path: entry };
+    var path = info && (info.path || info.file);
+    if (!info) {
+      row.appendChild(chipEl("未生成", "warn"));
+      row.appendChild(h("span", "muted", "服务端未下发该入口"));
+      return row;
+    }
+    if (path) {
+      var mono = h("span", "mono", String(path));
+      mono.title = String(path);
+      row.appendChild(mono);
+    } else {
+      row.appendChild(h("span", "muted", "路径未下发"));
+    }
+    var serverExists = info.exists;
+    var status = h("span", "nd-probe" + (serverExists === true ? " ok" : serverExists === false ? " bad" : ""),
+      serverExists === true ? "存在" : serverExists === false ? "未生成" : "未探测");
+    row.appendChild(status);
+    if (path) {
+      var btn = h("button", "btn btn-sm", "探测存在性");
+      btn.type = "button";
+      btn.title = "GET /api/runs/" + state.runId + "/evidence/exists?ref=" + String(path);
+      btn.addEventListener("click", function () { probeInto(String(path), btn, status); });
+      row.appendChild(btn);
+    }
+    return row;
+  }
+
+  function hostTraceTable(changes) {
+    var wrap = h("div", "table-scroll");
+    var table = h("table", "host-trace-table");
+    var thead = h("thead");
+    var hr = h("tr");
+    ["变更", "old → new", "line_before / line_after", "rationale", "evidence"].forEach(function (label) {
+      hr.appendChild(h("th", null, label));
+    });
+    thead.appendChild(hr);
+    table.appendChild(thead);
+    var tbody = h("tbody");
+    changes.forEach(function (change) {
+      if (!change || typeof change !== "object") return;
+      var tr = h("tr");
+      var idCell = h("td", "mono");
+      idCell.appendChild(document.createTextNode(String(change.id || "—")));
+      if (change.kind) idCell.appendChild(h("span", "chip", String(change.kind)));
+      if (change.encoding) idCell.appendChild(h("span", "chip", "编码 " + String(change.encoding)));
+      tr.appendChild(idCell);
+      var pair = h("td", "mono");
+      var oldText = isMissingValue(change.old) ? "未下发" : displayValue(change.old);
+      var newValue = change.new === undefined ? change.after : change.new;
+      var newText = isMissingValue(newValue) ? "未下发" : displayValue(newValue);
+      pair.textContent = oldText + " → " + newText;
+      tr.appendChild(pair);
+      var lines = h("td", "mono", (isMissingValue(change.line_before) ? "—" : String(change.line_before)) +
+        " / " + (isMissingValue(change.line_after) ? "—" : String(change.line_after)));
+      tr.appendChild(lines);
+      tr.appendChild(h("td", null, isMissingValue(change.rationale) ? "未下发" : String(change.rationale)));
+      tr.appendChild(h("td", "mono", isMissingValue(change.evidence) ? "未下发" : String(change.evidence)));
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    wrap.appendChild(table);
+    return wrap;
+  }
+
+  /* 材料入口：N3 摘要 + Host 留痕（mock_change_applied.json）。 */
+  function renderMaterialExtras(host, pending) {
+    var payload = pending && pending.payload ? pending.payload : {};
+    var extras = h("div", "material-extras");
+    extras.appendChild(h("div", "diff-fields-head", "材料入口（只做存在性探测；不打开文件正文）"));
+    var n3 = payload.n3_digest;
+    if (!n3) {
+      extras.appendChild(materialExtraRow("N3 摘要 n3_digest.md", null));
+    } else {
+      extras.appendChild(materialExtraRow("N3 摘要 n3_digest.md", n3));
+    }
+    var host2 = payload.host_trace;
+    if (!host2) {
+      extras.appendChild(materialExtraRow("Host 留痕", null));
+    } else {
+      extras.appendChild(materialExtraRow("Host 留痕", host2));
+      var changes = host2 && Array.isArray(host2.changes) ? host2.changes : [];
+      if (changes.length) {
+        extras.appendChild(h("div", "diff-fields-head", "Host 留痕 changes（old→new / 行号 / 理由 / 证据）"));
+        extras.appendChild(hostTraceTable(changes));
+      } else {
+        extras.appendChild(h("div", "muted tiny", "Host 留痕未下发 changes。"));
+      }
+    }
+    host.appendChild(extras);
+  }
+
+  /* 逐条处置通道提示：v1 无逐条输入控件，就显式说"该门需走 API"并给可复制样例，不让人盲签。 */
+  function renderEntryDecisionHint(host, pending, entries) {
+    var payload = pending && pending.payload ? pending.payload : {};
+    if (payload.entry_decisions_required !== true) return;
+    var sample = {
+      decision: "<从上方服务端选项选择>",
+      actor: "human:<name>",
+      reason: "<ignored / disputed 必填>",
+      entry_decisions: {}
+    };
+    entries.forEach(function (entry) {
+      if (!entry || !entry.entry_id) return;
+      sample.entry_decisions[String(entry.entry_id)] =
+        { decision: "<confirmed | ignored | disputed>", reason: "<ignored / disputed 必填>" };
+    });
+    var box = h("div", "alert warn");
+    box.appendChild(h("b", null, "该门要求逐条处置（entry_decisions）："));
+    box.appendChild(document.createTextNode(
+      "当前界面 v1 未提供逐条输入控件，不得盲签；请通过 API 提交，且必须覆盖全部差异条目。"));
+    var pre = h("pre", "entry-decisions-sample");
+    pre.textContent = "POST /api/runs/" + state.runId + "/gates/" + String(pending.gate) + "/decision\n" +
+      JSON.stringify(sample, null, 2);
+    box.appendChild(pre);
+    host.appendChild(box);
+  }
+
   function renderDiffEntries(host, pending, opts) {
     if (!host) return;
     var o = opts || {};
     var d = diffPayloadOf(pending);
     if (!d) {
       host.appendChild(h("div", "alert warn", "服务端未下发 N2 差异清单（difference_items 缺失）。"));
+      renderMaterialExtras(host, pending);
       return;
     }
     var entries = Array.isArray(d.entries) ? d.entries : [];
@@ -1851,7 +2313,15 @@
       if (d.has_change === false) head.appendChild(chipEl("无变更", "ok"));
       if (d.self_check_ok === true) head.appendChild(chipEl("self_check_ok", "ok"));
       else if (d.self_check_ok === false) head.appendChild(chipEl("self_check 未通过", "warn"));
-      if (d.mode) head.appendChild(chipEl(String(d.mode), ""));
+      if (d.mode === "drill") {
+        var drillHead = chipEl("drill_fixture", "warn");
+        drillHead.title = "difference_items.mode=drill：本轮材料来自 drill 夹具，不是真实环境实测";
+        head.appendChild(drillHead);
+      } else if (d.mode) {
+        head.appendChild(chipEl(String(d.mode), ""));
+      }
+      if (d.drill_fixture) head.appendChild(chipEl("drill_fixture", "warn"));
+      if (d.legacy_drill_fixture) head.appendChild(chipEl("drill 历史夹具", ""));
       host.appendChild(head);
     }
     if (d.error) {
@@ -1859,10 +2329,12 @@
     }
     if (d.present === false) {
       host.appendChild(h("div", "alert warn", "N2 产物缺失：无法逐条核对，不得确认。"));
+      renderMaterialExtras(host, pending);
       return;
     }
     if (!entries.length) {
       host.appendChild(h("div", "muted tiny", "本轮没有差异条目。"));
+      renderMaterialExtras(host, pending);
       return;
     }
 
@@ -1882,31 +2354,12 @@
     var list = h("div", "diff-list");
     entries.forEach(function (e) {
       if (!e || typeof e !== "object") return;
-      var unresolved = !!e.unresolved;
-      var item = h("div", "diff-item" + (unresolved ? " unresolved" : ""));
-      var line = h("div", "diff-line");
-      line.appendChild(h("span", "diff-id",
-        e.entry_id ? String(e.entry_id) : "（无 entry_id）"));
-      if (e.kind) line.appendChild(h("span", "chip", String(e.kind)));
-      if (e.change) line.appendChild(h("span", "chip", String(e.change)));
-      if (unresolved) line.appendChild(chipEl("未决", "warn"));
-      if (e.legacy_drill_fixture) line.appendChild(chipEl("drill 历史夹具", ""));
-      item.appendChild(line);
-
-      var meta = [];
-      if (e.segment) meta.push("segment " + String(e.segment));
-      if (e.offset) meta.push("offset " + String(e.offset));
-      if (Array.isArray(e.lines) && e.lines.length) meta.push("lines " + e.lines.join(", "));
-      if (meta.length) item.appendChild(h("div", "diff-meta", meta.join(" · ")));
-      if (unresolved) {
-        item.appendChild(h("div", "diff-unresolved", "未决原因：" + String(e.unresolved)));
-      }
-      item.appendChild(h("div", "diff-ev" + (e.evidence ? "" : " muted"),
-        e.evidence ? String(e.evidence) : "（无 evidence）"));
-      list.appendChild(item);
+      list.appendChild(renderDiffEntry(e));
     });
     host.appendChild(list);
     if (d.path) host.appendChild(h("div", "foot-note mono", String(d.path)));
+    renderEntryDecisionHint(host, pending, entries);
+    renderMaterialExtras(host, pending);
   }
 
   function renderGateMaterial(v) {
@@ -2660,6 +3113,7 @@
     showView("s0");
     if (window.S0Workbench) window.S0Workbench.init(api);
     if (window.AgentWindow) window.AgentWindow.init(api);
+    if (window.NodeDetail) window.NodeDetail.init(api);
     await Promise.allSettled([loadHealth(false), loadBaselines(false)]);
     try {
       await loadRuns();

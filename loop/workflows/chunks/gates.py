@@ -180,6 +180,22 @@ def authority_record(ctx: RunCtx, gate: str) -> dict[str, Any]:
     return dict(item) if isinstance(item, dict) else {}
 
 
+def human_signed_flag(ctx: RunCtx, gate: str) -> bool | None:
+    """权威 `gates.json` 里的 `human_signed`（**只读**；缺失/不可解析 ⇒ None，不猜）。
+
+    红线：`human_signed` 只在 `actor_kind="human"` 时为真，唯一凭据是
+    `gates.json` + `gates.sha256` 锚（AGENTS.md §5 第 5 条）。事件流里的 actor 是自报字符串，
+    不能当签署凭据。
+    """
+    try:
+        doc = json.loads((ctx.run_dir / "gates.json").read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError):
+        return None
+    item = ((doc.get("gates") or {}).get(gate) or {})
+    value = item.get("human_signed")
+    return value if isinstance(value, bool) else None
+
+
 def gate_artifacts(run_dir: Path, gate: str) -> list[str]:
     """闸门签署时绑定的证据指纹（A17）：`<相对路径> md5=<...>`。
 
@@ -496,8 +512,28 @@ async def _resumed(ctx: RunCtx, data: Any, gate: str) -> dict[str, Any]:
         raise GatePreconditionFailed(
             f"{gate} 的决策 {decision!r} 没有映射到下游事件；BRANCH_EVENTS 与权威漂移。"
         )
-    ctx.node_finished(node, status=decision, detail={"gate": gate, "decision": decision,
-                                                     "branch": branch, "actor": actor})
+    # §10.4：闸门节点的 source=`human_gate`、summary 说明"给了什么决策/是否人签/有没有理由"，
+    # `human_signed` 只从权威 `gates.json` 读（事件流里的 actor 是自报字符串，不算凭据）。
+    signed = human_signed_flag(ctx, gate)
+    signed_text = ("已由人签署（human_signed=true）" if signed is True
+                   else "非人签署（human_signed=false）" if signed is False
+                   else "签署状态未下发")
+    gates_json = ctx.run_dir / "gates.json"
+    ctx.node_finished(
+        node,
+        status=decision,
+        detail={
+            "gate": gate,
+            "decision": decision,
+            "branch": branch,
+            "actor": actor,
+            "source": "human_gate",
+            "human_signed": signed,
+            "summary": (f"{node} {gate}：决策 {decision}，{signed_text}，"
+                        f"理由{'已给出' if reason else '未给出'}，下游事件 {branch}"),
+        },
+        refs=[str(gates_json)] if gates_json.is_file() else [],
+    )
     await data.async_emit(branch, {"gate": gate, "decision": decision, "actor": actor,
                                    "entry_decisions": record["entries"]})
     return {"gate": gate, "decision": decision, "branch": branch}
@@ -527,7 +563,14 @@ async def halt(data: Any) -> dict[str, Any]:
     reason = {g: d.get("decision") for g, d in decisions.items()}
     ctx.event("warning", node="HALT", status="halted",
               detail={"reason": "闸门未放行 ⇒ 本轮不继续", "decisions": reason})
-    ctx.node_finished("HALT", status="halted", detail=reason)
+    # §10.4：HALT 的 summary 用终止原因原文；detail 原有的 `{闸门: 决策}` 字段原样保留。
+    decisions_text = "；".join(f"{gate}={item.get('decision')}" for gate, item in decisions.items())
+    ctx.node_finished("HALT", status="halted", detail={
+        **reason,
+        "source": "framework",
+        "summary": ("HALT：闸门未放行 ⇒ 本轮不继续"
+                    + (f"（{decisions_text}）" if decisions_text else "（无闸门决策）")),
+    })
     return {"halted": True, "decisions": reason}
 
 

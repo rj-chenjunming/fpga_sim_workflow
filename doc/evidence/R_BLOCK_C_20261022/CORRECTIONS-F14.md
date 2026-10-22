@@ -20,7 +20,7 @@
 ## 2 证据工具问题（P2-2）：v2 尝试已做，但被对照实验否决
 
 - `verify_style_equivalence.py`（v1）的 docstring 声称遍历 `getComputedStyle` **全部 longhand**，
-  实际使用 149 项固定清单，漏 `scroll-behavior`（正是 A2 删除的声明）、`justify-items`、
+  实际使用固定属性清单（实现方称 149；复核者实测 **125** 项），漏 `scroll-behavior`（正是 A2 删除的声明）、`justify-items`、
   `color-scheme`、`border-image-*` 等，且不测 `:hover/:focus`；`compare_transition_declarations`
   为死代码、字段硬编码 `{}`。**该批评成立，v1 的「139 组合零差异」只覆盖其固定清单内的属性。**
 - 曾按 P2-2 改为 v2（真正 `for (i < cs.length)` 遍历全部 longhand）。**对照实验否决**：
@@ -58,6 +58,11 @@
 
 ## 5 未更正项（保留为已知限制）
 
-- `raw/f14b-sliceA-verify.log` 等 v1 日志由已被修改的旧版工具产出，无法用 v2 完整复现；作为历史证据保留，
-  终态判据只用 v2 日志。
+- `raw/f14b-sliceA-verify.log` 等 v1 日志由已被修改的旧版工具产出，无法用 v2 完整复现；作为历史证据保留。
+  终态等价判据 = v1 采样日志 + **独立静态支配性证明**（不依赖浏览器属性清单），不以 v2 日志为判据。
+- **提交信息引用了未入库文件**：`7ecbb9c`（E）提交信息提到 `raw/f14b-final2-verify.log`，该文件由已否决的
+  v2 工具产出、未提交（Lead 已删除以免误用）；`f2d39fe`（C）提交信息写 `52605` 字节，复核实测 `52913`。
+  提交信息不可修改，按实登记，不据此判定代码。
+- 复核者另指出 `raw/f14b-sliceD-verify.log` 夹带 http.server 404 traceback（不影响结论）、`screens-after/`
+  只保留终态 42 张（切片中间态截图未另存）。
 - 未做人工视觉评审、未在 Chrome UI 真实设置 125%/150% 缩放、未连真实服务端/模型。

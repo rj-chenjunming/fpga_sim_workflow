@@ -17,7 +17,10 @@
 原始日志：`raw/f14b-sliceC-verify.log`、`raw/f14b-sliceC-pytest.log`、`raw/f14b-sliceC-screens.txt`、
 `raw/f14b-sliceD-verify.log`、`raw/f14b-sliceD-pytest.log`、`raw/f14b-sliceD-screens.txt`、
 `raw/f14b-sliceE-verify.log`、`raw/f14b-sliceE-pytest.log`、`raw/f14b-sliceE-screens.txt`。
-**注意**：以上日志由 v1 校验工具产出（固定 149 项属性清单），终态判据以 v2 全属性工具复跑为准（§4）。
+**注意**：以上日志由 v1 校验工具产出（固定属性清单；复核者实测为 **125** 项，非本文早前所称 149 项），
+v2 全属性工具尝试已被对照实验否决（§4）。C/D/E 删除声明的等价性由**独立复核者的静态支配性证明**补强：
+274 条展开声明（112+92+70）全部被后置同键声明支配、未匹配 0，见
+[F14cde-verify](../audit/F14cde-verify-20261022.md)。本节在复核后更正（2026-10-22）。
 
 ## 2 终态静态事实（Lead 实测，`loop/spikes/css_inventory.py` + `git show`）
 
@@ -46,8 +49,10 @@
   已恢复提交版 v1（md5 `346d81bb7614c64817fa9fc9d14b018a`）。详见
   [CORRECTIONS-F14.md](CORRECTIONS-F14.md) §2。
 - 因此：**终态 139 组合计算样式等价没有由 Lead 独立重新建立**；现有 C/D/E「139 组合零差异」是
-  v1 工具日志（`raw/f14b-slice{C,D,E}-verify.log`）。A/A2/B 的删除声明另有独立复核者的静态支配性
-  证明；C/D/E 的静态支配性证明登记为**未完成项**（STATUS §41）。
+  v1 工具日志（`raw/f14b-slice{C,D,E}-verify.log`）。A/A2/B 与 C/D/E 的删除声明均已由独立复核者
+  做静态支配性证明（A/A2/B 140/140；C/D/E 274/274 被支配、0 未匹配），见
+  [F14b-verify](../audit/F14b-verify-20261022.md) 与 [F14cde-verify](../audit/F14cde-verify-20261022.md)。
+  本节在复核后更正（2026-10-22）。
 
 ## 5 未完成（下一轮直接接续）
 

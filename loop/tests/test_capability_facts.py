@@ -73,9 +73,37 @@ async def test_agent_window_api_returns_same_capabilities(ctx, provider, monkeyp
         "execution": "standin",
         "verification_scope": None,
     }
-    # F10：预算上限由 Host 下发，前端不硬编码
+    # F10/R5：预算上限与计费构成都由 Host 下发，前端不硬编码、不另算
     from host import agent_memory as AM
-    assert body["context_budget"] == {"limit_bytes": AM.MAX_CONTEXT_BYTES}
+    budget = body["context_budget"]
+    assert budget["limit_bytes"] == AM.MAX_CONTEXT_BYTES
+    assert budget["measured"] is True
+    assert budget["token_estimate"] == "unknown"
+    assert budget["attempt"] == body["selected_attempt"] == 1
+    assert set(budget["breakdown"]) == {"input", "info", "instruct", "schema"}
+    assert sum(budget["breakdown"].values()) + budget["overhead_bytes"] == budget["used_bytes"]
+    request = body["request"]
+    assert budget["used_bytes"] == AM.check_budget(
+        request["input"], {k: request[k] for k in ("info", "instruct", "schema")})
+    assert budget["storage"]["offered_bytes"] == len(AM.encoded(request["offered"]))
+
+
+async def test_agent_window_budget_unknown_without_record(ctx, provider, monkeypatch):
+    """无可重算计费材料 ⇒ Host 判 unknown；不拿别的数字冒充（上限仍下发）。"""
+    from host import agent_memory as AM
+    manager = SimpleNamespace(
+        docs={ctx.run_id: SimpleNamespace(run_dir=str(ctx.run_dir))},
+        _progress=lambda _run: SimpleNamespace(read=lambda: []),
+    )
+    monkeypatch.setattr(api, "_manager", lambda: manager)
+    client = TestClient(api.app)
+    budget = client.get(f"/api/runs/{ctx.run_id}/agents/N6").json()["context_budget"]
+    assert budget["measured"] is False
+    assert budget["used_bytes"] is None and budget["overhead_bytes"] is None
+    assert budget["usage"] == "unknown" and budget["used_percent"] is None
+    assert budget["limit_bytes"] == AM.MAX_CONTEXT_BYTES
+    assert budget["token_estimate"] == "unknown"
+    assert budget["storage"] == {"offered_bytes": None, "scope_bytes": None}
 
 
 def test_there_is_a_single_role_projection():

@@ -1,7 +1,8 @@
-"""F10/F11：上下文与尝试的只读解释（node 纯函数）。
+"""F10/F11 + R5：上下文与尝试的只读解释（node 纯函数）。
 
-证明：字节/占比按记录事实计算；经验原因只读展示；尝试差异只看输入顶层字段；
-token 估算保持「未知」；展示层不读全局、不发请求。
+证明：预算**只消费 Host 的测量**（不另求和/占比/上限判断）；经验原因只读展示；
+尝试差异只看输入顶层字段；token 估算保持「未知」；展示层不读全局、不发请求。
+跨层断言：同一已封存请求的 `AM.check_budget` == API `context_budget` == 窗口显示总量。
 """
 from __future__ import annotations
 
@@ -9,8 +10,14 @@ import json
 import shutil
 import subprocess
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
+from fastapi.testclient import TestClient
+
+from services import api
+
+from test_agent_context_memory import call, ctx, provider  # noqa: F401
 
 NODE = shutil.which("node")
 WEB = Path(__file__).resolve().parents[1] / "web"
@@ -31,39 +38,74 @@ def _eval(expr: str):
     return json.loads(proc.stdout)
 
 
+def host_measure(**overrides) -> dict:
+    """一份 Host 下发形状的 context_budget（数值由 Host 测量；窗口不得自行推导）。"""
+    measure = {"measured": True, "used_bytes": 100,
+               "breakdown": {"input": 60, "info": 10, "instruct": 10, "schema": 10},
+               "overhead_bytes": 10, "limit_bytes": 120000, "used_percent": 0,
+               "usage": "known", "storage": {"offered_bytes": 900, "scope_bytes": 155},
+               "token_estimate": "unknown", "attempt": 1}
+    measure.update(overrides)
+    return measure
+
+
 def test_byte_length_is_utf8_not_characters():
     assert _eval("C.byteLength('中')") == 3
     assert _eval("C.byteLength('abc')") == 3
     assert _eval("C.byteLength('')") == 0
 
 
-def test_budget_rows_come_from_recorded_fields():
-    request = {"input": {"diff": "中"}, "info": "规则", "instruct": "指令",
-               "schema": {"type": "object"}}
-    out = _eval("C.budget(" + json.dumps(request) + ", 120000)")
-    labels = [row["label"] for row in out["rows"]]
-    assert labels == ["input", "info", "instruct", "schema"]
-    assert out["totalBytes"] == sum(row["bytes"] for row in out["rows"])
+def test_budget_only_consumes_host_numbers_without_resumming():
+    out = _eval("C.budget(" + json.dumps(host_measure()) + ")")
+    assert [row["label"] for row in out["rows"]] == ["input", "info", "instruct", "schema"]
+    assert [row["bytes"] for row in out["rows"]] == [60, 10, 10, 10]
+    # 总量直接取 Host 的 used_bytes；不出现前端求和/占比（红线 8）
+    assert out["totalBytes"] == 100
+    assert out["overheadBytes"] == 10
+    assert out["usedPercent"] == 0
     assert out["limitBytes"] == 120000
+    assert out["usage"] == "known"
+    assert out["tokenEstimate"] == "unknown"
     for row in out["rows"]:
-        assert row["bytes"] > 0
-        assert 0 <= row["percent"] <= 100
+        assert "percent" not in row, "占比必须由 Host 下发，前端不得另算"
+
+
+def test_storage_sizes_are_reported_separately_from_billing():
+    out = _eval("C.budget(" + json.dumps(host_measure()) + ")")
+    # offered/scope 是记录存储大小：不在计费行里，单列
+    assert "offered" not in [row["label"] for row in out["rows"]]
+    assert "scope" not in [row["label"] for row in out["rows"]]
+    assert out["storage"] == {"offeredBytes": 900, "scopeBytes": 155}
+    assert out["totalBytes"] == 100, "存储大小不得计入预算总量"
+
+
+def test_unmeasured_record_stays_unknown():
+    """旧记录缺计费材料 ⇒ Host 判未知；窗口不得用自身字节数冒充。"""
+    measure = {"measured": False, "used_bytes": None, "breakdown": {}, "overhead_bytes": None,
+               "limit_bytes": 120000, "used_percent": None, "usage": "unknown",
+               "storage": {"offered_bytes": None, "scope_bytes": None},
+               "token_estimate": "unknown", "attempt": None}
+    out = _eval("C.budget(" + json.dumps(measure) + ")")
+    assert out["measured"] is False
+    assert out["rows"] == []
+    assert out["totalBytes"] is None
+    assert out["overheadBytes"] is None
+    assert out["usage"] == "unknown"
     assert out["tokenEstimate"] == "unknown"
 
 
-def test_budget_without_fields_is_empty_and_unknown():
-    out = _eval("C.budget({}, null)")
-    assert out["rows"] == []
-    assert out["totalBytes"] == 0
+def test_unknown_limit_has_no_fake_percent():
+    measure = host_measure(limit_bytes=None, used_percent=None, usage="unknown")
+    out = _eval("C.budget(" + json.dumps(measure) + ")")
+    assert out["measured"] is True
     assert out["limitBytes"] is None
+    assert out["usedPercent"] is None, "上限未知时不得显示假比例"
     assert out["usage"] == "unknown"
 
 
-def test_budget_usage_percent_uses_limit_when_known():
-    request = {"input": "x" * 100}
-    out = _eval("C.budget(" + json.dumps(request) + ", 1000)")
-    assert out["usage"] == "known"
-    assert out["usedPercent"] is not None
+def test_empty_measure_is_unknown():
+    out = _eval("C.budget(null)")
+    assert out["rows"] == [] and out["totalBytes"] is None and out["usage"] == "unknown"
 
 
 def test_experience_reasons_are_read_only_list():
@@ -109,20 +151,61 @@ def test_window_and_api_wire_the_read_only_explainer():
     window = (WEB / "agent-window.js").read_text(encoding="utf-8")
     html = (WEB / "index.html").read_text(encoding="utf-8")
     assert "window.ContextExplain" in window
-    # 接线必须传记录本身（字段在 request 顶层），不能只传嵌套 input（F10F11 复核必改 1）
-    assert "X.budget(request, limit)" in window
-    assert "X.budget(request.input" not in window
+    # 窗口只把 Host 下发的 context_budget 交给纯函数，不传记录、不自己数
+    assert "X.budget(view.context_budget)" in window
+    assert "X.budget(request" not in window
     assert "try {" in window and "explain(view)" in window, "展示失败不得阻断基本观察"
     assert html.index("context-explain.js") < html.index("agent-window.js")
     assert 'id="awBudget"' in html and 'id="awAttempts"' in html
 
 
-def test_budget_record_shape_matches_what_window_passes():
-    """按真实记录形状（字段在顶层）验证窗口调用的实参语义。"""
-    record = {"input": {"diff": "中"}, "info": "规则", "instruct": "指令",
-              "schema": {"type": "object"}, "offered": {"cases": ["a"]},
-              "scope": {"env_id": "e"}}
-    out = _eval("C.budget(" + json.dumps(record) + ", 1000)")
-    assert [row["label"] for row in out["rows"]] == \
-        ["input", "info", "instruct", "schema", "offered", "scope"]
-    assert out["totalBytes"] > 0
+def test_explainer_keeps_no_second_billing_criterion():
+    """纯函数层不得保留字段清单/求和：计费分项与总量都来自 Host（红线 8）。"""
+    source = MODULE.read_text(encoding="utf-8")
+    assert "FIELDS" not in source
+    assert "total +=" not in source
+    assert "jsonBytes(request[" not in source
+    assert "offered" not in source.split("function storage")[0], \
+        "offered/scope 只能出现在 Host 下发的 storage 里，不能进计费行"
+
+
+async def test_cross_layer_host_budget_matches_api_and_window(ctx, provider, monkeypatch):  # noqa: F811
+    """R5 验收：同一已封存请求，AM.check_budget == API used_bytes == 窗口显示总量。"""
+    from host import agent_memory as AM
+    await call(ctx, input_data={"run_id": ctx.run_id, "diffs": [],
+                                "note": "中文与转义 \"q\"\n第二行",
+                                "human_interventions": [{"actor": "human:a", "message": "补充"}]})
+    attempt = next((ctx.run_dir / "agent_calls" / "N3").iterdir())
+    request = AM.verify_attempt(attempt)["request"]
+    expected = AM.check_budget(request["input"],
+                               {k: request[k] for k in ("info", "instruct", "schema")})
+    manager = SimpleNamespace(
+        docs={ctx.run_id: SimpleNamespace(run_dir=str(ctx.run_dir))},
+        _progress=lambda _run: SimpleNamespace(read=lambda: []),
+    )
+    monkeypatch.setattr(api, "_manager", lambda: manager)
+    client = TestClient(api.app)
+    body = client.get(f"/api/runs/{ctx.run_id}/agents/N3").json()
+    measure = body["context_budget"]
+    # ① API 下发 Host 的测量，而不是前端可另算的原始记录
+    assert measure["measured"] is True
+    assert measure["used_bytes"] == expected
+    assert measure["limit_bytes"] == AM.MAX_CONTEXT_BYTES
+    assert set(measure["breakdown"]) == {"input", "info", "instruct", "schema"}
+    assert sum(measure["breakdown"].values()) + measure["overhead_bytes"] == measure["used_bytes"]
+    assert measure["token_estimate"] == "unknown"
+    assert measure["attempt"] == 1
+    # ② 记录存储大小（offered/scope 未发送给模型）单列、不计费
+    assert measure["storage"]["offered_bytes"] == len(AM.encoded(request["offered"]))
+    assert measure["storage"]["scope_bytes"] == len(AM.encoded(request["scope"]))
+    assert measure["storage"]["offered_bytes"] > 0 and measure["storage"]["scope_bytes"] > 0
+    # offered/scope 不计费：总量仍等于 Host 准入字节
+    assert measure["used_bytes"] == expected
+    # ③ 窗口显示总量与 Host 准入字节完全相同（不是行求和）
+    shown = _eval("C.budget(" + json.dumps(measure) + ")")
+    assert shown["totalBytes"] == expected
+    assert shown["overheadBytes"] == measure["overhead_bytes"]
+    assert shown["usedPercent"] == measure["used_percent"]
+    assert [row["bytes"] for row in shown["rows"]] == \
+        [measure["breakdown"][k] for k in ("input", "info", "instruct", "schema")]
+    assert shown["tokenEstimate"] == "unknown"

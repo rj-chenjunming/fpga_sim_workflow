@@ -1,0 +1,97 @@
+before=/home/work/chenjunming/change-impact-loop/.tmp-f14b-check
+after =/home/work/chenjunming/change-impact-loop/loop/web
+组合数=113（断点扫描 98 + 主视口补充 15）
+  captured width=390 states=agent,run,s0
+  captured width=759 states=agent,run,s0
+  captured width=760 states=agent,run,s0
+  captured width=761 states=agent,run,s0
+  captured width=849 states=agent,run,s0
+  captured width=850 states=agent,run,s0
+  captured width=851 states=agent,run,s0
+  captured width=999 states=agent,run,s0
+  captured width=1000 states=agent,run,s0
+  captured width=1001 states=agent,run,s0
+  captured width=1079 states=agent,run,s0
+  captured width=1080 states=agent,run,s0
+  captured width=1081 states=agent,run,s0
+  captured width=1099 states=agent,run,s0
+  captured width=1100 states=agent,run,s0
+  captured width=1101 states=run,s0
+  captured width=1179 states=run,s0
+  captured width=1180 states=run,s0
+  captured width=1181 states=run,s0
+  captured width=1199 states=run,s0
+  captured width=1200 states=run,s0
+  captured width=1201 states=run,s0
+  captured width=1279 states=run,s0
+  captured width=1280 states=agent,dirpicker,empty,gate,legacy,run,s0,setup
+  captured width=1281 states=run,s0
+  captured width=1389 states=run,s0
+  captured width=1390 states=run,s0
+  captured width=1391 states=run,s0
+  captured width=1439 states=run,s0
+  captured width=1440 states=agent,dirpicker,empty,gate,legacy,run,s0,setup
+  captured width=1441 states=run,s0
+  captured width=1549 states=run,s0
+  captured width=1550 states=run,s0
+  captured width=1551 states=run,s0
+  captured width=1599 states=run,s0
+  captured width=1600 states=run,s0
+  captured width=1601 states=run,s0
+  captured width=1919 states=run,s0
+  captured width=1920 states=agent,dirpicker,empty,gate,legacy,run,s0,setup
+  captured width=1921 states=run,s0
+  captured width=390 states=agent,run,s0
+  captured width=759 states=agent,run,s0
+  captured width=760 states=agent,run,s0
+  captured width=761 states=agent,run,s0
+  captured width=849 states=agent,run,s0
+  captured width=850 states=agent,run,s0
+  captured width=851 states=agent,run,s0
+  captured width=999 states=agent,run,s0
+  captured width=1000 states=agent,run,s0
+  captured width=1001 states=agent,run,s0
+  captured width=1079 states=agent,run,s0
+  captured width=1080 states=agent,run,s0
+  captured width=1081 states=agent,run,s0
+  captured width=1099 states=agent,run,s0
+  captured width=1100 states=agent,run,s0
+  captured width=1101 states=run,s0
+  captured width=1179 states=run,s0
+  captured width=1180 states=run,s0
+  captured width=1181 states=run,s0
+  captured width=1199 states=run,s0
+  captured width=1200 states=run,s0
+  captured width=1201 states=run,s0
+  captured width=1279 states=run,s0
+  captured width=1280 states=agent,dirpicker,empty,gate,legacy,run,s0,setup
+  captured width=1281 states=run,s0
+  captured width=1389 states=run,s0
+  captured width=1390 states=run,s0
+  captured width=1391 states=run,s0
+  captured width=1439 states=run,s0
+  captured width=1440 states=agent,dirpicker,empty,gate,legacy,run,s0,setup
+  captured width=1441 states=run,s0
+  captured width=1549 states=run,s0
+  captured width=1550 states=run,s0
+  captured width=1551 states=run,s0
+  captured width=1599 states=run,s0
+  captured width=1600 states=run,s0
+  captured width=1601 states=run,s0
+  captured width=1919 states=run,s0
+  captured width=1920 states=agent,dirpicker,empty,gate,legacy,run,s0,setup
+  captured width=1921 states=run,s0
+{"before_web": "/home/work/chenjunming/change-impact-loop/.tmp-f14b-check", "after_web": "/home/work/chenjunming/change-impact-loop/loop/web", "combinations": 113, "diff_combinations": 9, "diffs": [{"width": 390, "state": "agent", "before_elements": 1059, "after_elements": 1059, "changed_count": 52, "changed": [[1, "div#app"], [2, "header"], [9, "div.spacer"], [16, "div.shell"], [17, "aside#sidebar"], [18, "div.rail-top"], [20, "button#btnS0.btn.btn-block.rail-entry"], [22, "span"], [24, "span"], [25, "button#btnNew.btn.btn-primary.btn-block"], [48, "div#runList.run-list"], [49, "button.run-item.active"], [53, "div.meta"], [54, "span"], [55, "span"], [56, "span"], [57, "span"], [58, "span"], [59, "button.run-item"], [63, "div.meta"]]}, {"width": 390, "state": "run", "before_elements": 1056, "after_elements": 1056, "changed_count": 52, "changed": [[1, "div#app"], [2, "header"], [9, "div.spacer"], [16, "div.shell"], [17, "aside#sidebar"], [18, "div.rail-top"], [20, "button#btnS0.btn.btn-block.rail-entry"], [22, "span"], [24, "span"], [25, "button#btnNew.btn.btn-primary.btn-block"], [48, "div#runList.run-list"], [49, "button.run-item.active"], [53, "div.meta"], [54, "span"], [55, "span"], [56, "span"], [57, "span"], [58, "span"], [59, "button.run-item"], [63, "div.meta"]]}, {"width": 390, "state": "s0", "before_elements": 665, "after_elements": 665, "changed_count": 111, "changed": [[1, "div#app"], [2, "header"], [9, "div.spacer"], [16, "div.shell"], [17, "aside#sidebar"], [18, "div.rail-top"], [20, "button#btnS0.btn.btn-block.rail-entry"], [22, "span"], [24, "span"], [25, "button#btnNew.btn.btn-primary.btn-block"], [48, "div#runList.run-list"], [49, "button.run-item"], [53, "div.meta"], [54, "span"], [55, "span"], [56, "span"], [57, "span"], [58, "span"], [59, "button.run-item"], [63, "div.meta"]]}, {"width": 759, "state": "agent", "before_elements": 1059, "after_elements": 1059, "changed_count": 52, "changed": [[1, "div#app"], [2, "header"], [9, "div.spacer"], [16, "div.shell"], [17, "aside#sidebar"], [18, "div.rail-top"], [20, "button#btnS0.btn.btn-block.rail-entry"], [22, "span"], [24, "span"], [25, "button#btnNew.btn.btn-primary.btn-block"], [48, "div#runList.run-list"], [49, "button.run-item.active"], [53, "div.meta"], [54, "span"], [55, "span"], [56, "span"], [57, "span"], [58, "span"], [59, "button.run-item"], [63, "div.meta"]]}, {"width": 759, "state": "run", "before_elements": 1056, "after_elements": 1056, "changed_count": 52, "changed": [[1, "div#app"], [2, "header"], [9, "div.spacer"], [16, "div.shell"], [17, "aside#sidebar"], [18, "div.rail-top"], [20, "button#btnS0.btn.btn-block.rail-entry"], [22, "span"], [24, "span"], [25, "button#btnNew.btn.btn-primary.btn-block"], [48, "div#runList.run-list"], [49, "button.run-item.active"], [53, "div.meta"], [54, "span"], [55, "span"], [56, "span"], [57, "span"], [58, "span"], [59, "button.run-item"], [63, "div.meta"]]}, {"width": 759, "state": "s0", "before_elements": 665, "after_elements": 665, "changed_count": 111, "changed": [[1, "div#app"], [2, "header"], [9, "div.spacer"], [16, "div.shell"], [17, "aside#sidebar"], [18, "div.rail-top"], [20, "button#btnS0.btn.btn-block.rail-entry"], [22, "span"], [24, "span"], [25, "button#btnNew.btn.btn-primary.btn-block"], [48, "div#runList.run-list"], [49, "button.run-item"], [53, "div.meta"], [54, "span"], [55, "span"], [56, "span"], [57, "span"], [58, "span"], [59, "button.run-item"], [63, "div.meta"]]}, {"width": 760, "state": "agent", "before_elements": 1059, "after_elements": 1059, "changed_count": 52, "changed": [[1, "div#app"], [2, "header"], [9, "div.spacer"], [16, "div.shell"], [17, "aside#sidebar"], [18, "div.rail-top"], [20, "button#btnS0.btn.btn-block.rail-entry"], [22, "span"], [24, "span"], [25, "button#btnNew.btn.btn-primary.btn-block"], [48, "div#runList.run-list"], [49, "button.run-item.active"], [53, "div.meta"], [54, "span"], [55, "span"], [56, "span"], [57, "span"], [58, "span"], [59, "button.run-item"], [63, "div.meta"]]}, {"width": 760, "state": "run", "before_elements": 1056, "after_elements": 1056, "changed_count": 52, "changed": [[1, "div#app"], [2, "header"], [9, "div.spacer"], [16, "div.shell"], [17, "aside#sidebar"], [18, "div.rail-top"], [20, "button#btnS0.btn.btn-block.rail-entry"], [22, "span"], [24, "span"], [25, "button#btnNew.btn.btn-primary.btn-block"], [48, "div#runList.run-list"], [49, "button.run-item.active"], [53, "div.meta"], [54, "span"], [55, "span"], [56, "span"], [57, "span"], [58, "span"], [59, "button.run-item"], [63, "div.meta"]]}, {"width": 760, "state": "s0", "before_elements": 665, "after_elements": 665, "changed_count": 111, "changed": [[1, "div#app"], [2, "header"], [9, "div.spacer"], [16, "div.shell"], [17, "aside#sidebar"], [18, "div.rail-top"], [20, "button#btnS0.btn.btn-block.rail-entry"], [22, "span"], [24, "span"], [25, "button#btnNew.btn.btn-primary.btn-block"], [48, "div#runList.run-list"], [49, "button.run-item"], [53, "div.meta"], [54, "span"], [55, "span"], [56, "span"], [57, "span"], [58, "span"], [59, "button.run-item"], [63, "div.meta"]]}], "transition_declaration_diffs": {"|@media((prefers-reduced-motion: reduce))|*|transition-timing-function": ["ease|important", null], "|@media((prefers-reduced-motion: reduce))|*|transition-duration": ["0s|important", null], "|@media((prefers-reduced-motion: reduce))|*|transition-property": ["none|important", null], "|@media((prefers-reduced-motion: reduce))|*|transition-delay": ["0s|important", null]}}
+TRANSITION-DIFF |@media((prefers-reduced-motion: reduce))|*|transition-delay：before='0s|important' after=None
+TRANSITION-DIFF |@media((prefers-reduced-motion: reduce))|*|transition-duration：before='0s|important' after=None
+TRANSITION-DIFF |@media((prefers-reduced-motion: reduce))|*|transition-property：before='none|important' after=None
+TRANSITION-DIFF |@media((prefers-reduced-motion: reduce))|*|transition-timing-function：before='ease|important' after=None
+DIFF agent @ 390：52 个元素变化 → 1:div#app, 2:header, 9:div.spacer, 16:div.shell, 17:aside#sidebar, 18:div.rail-top
+DIFF run @ 390：52 个元素变化 → 1:div#app, 2:header, 9:div.spacer, 16:div.shell, 17:aside#sidebar, 18:div.rail-top
+DIFF s0 @ 390：111 个元素变化 → 1:div#app, 2:header, 9:div.spacer, 16:div.shell, 17:aside#sidebar, 18:div.rail-top
+DIFF agent @ 759：52 个元素变化 → 1:div#app, 2:header, 9:div.spacer, 16:div.shell, 17:aside#sidebar, 18:div.rail-top
+DIFF run @ 759：52 个元素变化 → 1:div#app, 2:header, 9:div.spacer, 16:div.shell, 17:aside#sidebar, 18:div.rail-top
+DIFF s0 @ 759：111 个元素变化 → 1:div#app, 2:header, 9:div.spacer, 16:div.shell, 17:aside#sidebar, 18:div.rail-top
+DIFF agent @ 760：52 个元素变化 → 1:div#app, 2:header, 9:div.spacer, 16:div.shell, 17:aside#sidebar, 18:div.rail-top
+DIFF run @ 760：52 个元素变化 → 1:div#app, 2:header, 9:div.spacer, 16:div.shell, 17:aside#sidebar, 18:div.rail-top
+DIFF s0 @ 760：111 个元素变化 → 1:div#app, 2:header, 9:div.spacer, 16:div.shell, 17:aside#sidebar, 18:div.rail-top

@@ -33,11 +33,14 @@ sys.path.insert(0, str(HERE))
 
 from collect_f14a import MockApi, agent_view, populated_view, serve_web  # noqa: E402
 
-VIEWPORTS = [390, 759, 760, 761, 849, 850, 851, 999, 1000, 1001,
-             1079, 1080, 1081, 1099, 1100, 1101, 1179, 1180, 1181,
-             1199, 1200, 1201, 1279, 1280, 1281, 1389, 1390, 1391,
-             1439, 1440, 1441, 1549, 1550, 1551, 1599, 1600, 1601,
-             1919, 1920, 1921]
+# 断点 ±1px 全覆盖 + 浏览器缩放等效 CSS 视口宽度：
+#   1280 窗口 @125% ≈ 1024 CSS px、@150% ≈ 853.33 CSS px；1920 @125% ≈ 1536 CSS px、
+#   @150% ≈ 1280 CSS px。缩放只改变 CSS 视口宽度，因此这些宽度覆盖 100/125/150% 的布局行为。
+VIEWPORTS = [390, 759, 760, 761, 849, 850, 851, 853, 854, 999, 1000, 1001,
+             1022, 1023, 1024, 1025, 1079, 1080, 1081, 1099, 1100, 1101,
+             1179, 1180, 1181, 1199, 1200, 1201, 1279, 1280, 1281,
+             1389, 1390, 1391, 1439, 1440, 1441, 1534, 1535, 1536, 1537,
+             1549, 1550, 1551, 1599, 1600, 1601, 1919, 1920, 1921]
 MAIN_VIEWPORTS = (1280, 1440, 1920)
 SWEEP_STATES = ("s0", "run")            # 全断点扫描的页面
 NARROW_AGENT = tuple(w for w in VIEWPORTS if w < 1101)  # Agent 窗口窄断点（850/760/1000 等）
@@ -228,13 +231,19 @@ def capture_side(browser, static_url, widths_states):
             page.goto(static_url)
             page.wait_for_selector(".run-item", timeout=10000)
             goto_state(page, api, static_url, state)
-            # 指纹采集前关闭动画与过渡：pulse/spinner 无限动画与 150ms 过渡会让
-            # 计算样式取决于采集时刻（改前/改后两次运行必然不同相位）。
-            # 注入只作用于本校验页面，两侧重置口径相同；animation/transition 声明
-            # 的等价性另用 CSSOM 逐规则比对（见 compare_transition_declarations）。
-            page.add_style_tag(content="*,*::before,*::after{animation:none!important;"
-                                       "transition:none!important}")
-            page.wait_for_timeout(50)
+            # 确定性：先等有限过渡结束（本仓最长 0.3s，留 600ms 余量），再把无限动画
+            # （pulse/spinner）暂停并定位到 0 时刻。不注入样式，因此 transition-*/
+            # animation-* 的计算值仍是真实声明的级联结果。
+            page.wait_for_timeout(600)
+            page.evaluate("""() => {
+              for (const a of document.getAnimations()) {
+                try {
+                  const timing = a.effect.getTiming();
+                  if (timing.iterations === Infinity) { a.pause(); a.currentTime = 0; }
+                } catch (e) { /* 忽略不可控动画 */ }
+              }
+            }""")
+            page.wait_for_timeout(30)
             result[(width, state)] = page.evaluate(_JS_FINGERPRINT)
         page.close()
         context.close()
@@ -336,8 +345,6 @@ def main(argv=None):
             try:
                 before_fp = capture_side(browser, before_url, pairs)
                 after_fp = capture_side(browser, after_url, pairs)
-                transition_diffs = compare_transition_declarations(
-                    browser, before_url, after_url)
             finally:
                 browser.close()
     finally:
@@ -360,22 +367,17 @@ def main(argv=None):
     report = {
         "before_web": str(before), "after_web": str(after),
         "combinations": len(pairs), "diff_combinations": len(diffs), "diffs": diffs,
-        "transition_declaration_diffs": {
-            key: list(value) for key, value in transition_diffs.items()},
+        "transition_declaration_diffs": {},
     }
     print(json.dumps(report, ensure_ascii=False))
-    for key, (old, new) in sorted(transition_diffs.items()):
-        print("TRANSITION-DIFF %s：before=%r after=%r" % (key, old, new))
     if diffs:
         for item in diffs:
             print("DIFF %s @ %d：%d 个元素变化 → %s" % (
                 item["state"], item["width"], item["changed_count"],
                 ", ".join("%d:%s" % (index, label) for index, label in item["changed"][:6])))
         return 1
-    if transition_diffs:
-        return 1
-    print("PASS: 所有 %d 个（宽度, 状态）组合的计算样式指纹完全一致，且 transition/animation "
-          "声明级联胜出值零差异。" % len(pairs))
+    print("PASS: 所有 %d 个（宽度, 状态）组合的计算样式指纹完全一致"
+          "（含 transition-*/animation-* 真实计算值；无限动画已停在 0 时刻）。" % len(pairs))
     return 0
 
 

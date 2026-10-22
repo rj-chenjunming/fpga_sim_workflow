@@ -161,11 +161,13 @@ def test_window_and_api_wire_the_read_only_explainer():
 
 def test_explainer_keeps_no_second_billing_criterion():
     """纯函数层不得保留字段清单/求和：计费分项与总量都来自 Host（红线 8）。"""
+    import re
     source = MODULE.read_text(encoding="utf-8")
-    assert "FIELDS" not in source
-    assert "total +=" not in source
-    assert "jsonBytes(request[" not in source
-    assert "offered" not in source.split("function storage")[0], \
+    code = re.sub(r"/\*.*?\*/", "", source, flags=re.S)  # 只看代码，不看注释
+    assert "FIELDS" not in code
+    assert "total +=" not in code
+    assert "jsonBytes(request[" not in code
+    assert "offered" not in code.split("function storage")[0], \
         "offered/scope 只能出现在 Host 下发的 storage 里，不能进计费行"
 
 

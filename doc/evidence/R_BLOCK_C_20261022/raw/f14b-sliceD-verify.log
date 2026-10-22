@@ -1,0 +1,139 @@
+before=/home/work/chenjunming/change-impact-loop/.tmp-f14b-base
+after =/home/work/chenjunming/change-impact-loop/loop/web
+组合数=139（断点扫描 124 + 主视口补充 15）
+  captured width=390 states=agent,run,s0
+  captured width=759 states=agent,run,s0
+  captured width=760 states=agent,run,s0
+  captured width=761 states=agent,run,s0
+  captured width=849 states=agent,run,s0
+  captured width=850 states=agent,run,s0
+  captured width=851 states=agent,run,s0
+  captured width=853 states=agent,run,s0
+  captured width=854 states=agent,run,s0
+  captured width=999 states=agent,run,s0
+  captured width=1000 states=agent,run,s0
+  captured width=1001 states=agent,run,s0
+  captured width=1022 states=agent,run,s0
+  captured width=1023 states=agent,run,s0
+  captured width=1024 states=agent,run,s0
+  captured width=1025 states=agent,run,s0
+  captured width=1079 states=agent,run,s0
+  captured width=1080 states=agent,run,s0
+  captured width=1081 states=agent,run,s0
+  captured width=1099 states=agent,run,s0
+  captured width=1100 states=agent,run,s0
+  captured width=1101 states=run,s0
+  captured width=1179 states=run,s0
+  captured width=1180 states=run,s0
+  captured width=1181 states=run,s0
+  captured width=1199 states=run,s0
+  captured width=1200 states=run,s0
+  captured width=1201 states=run,s0
+  captured width=1279 states=run,s0
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 45620)
+Traceback (most recent call last):
+  File "/usr/lib64/python3.11/http/server.py", line 730, in send_head
+    f = open(path, 'rb')
+        ^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/home/work/chenjunming/change-impact-loop/.tmp-f14b-base/api/runs'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/usr/lib64/python3.11/socketserver.py", line 691, in process_request_thread
+    self.finish_request(request, client_address)
+  File "/usr/lib64/python3.11/socketserver.py", line 361, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "/usr/lib64/python3.11/http/server.py", line 671, in __init__
+    super().__init__(*args, **kwargs)
+  File "/usr/lib64/python3.11/socketserver.py", line 755, in __init__
+    self.handle()
+  File "/usr/lib64/python3.11/http/server.py", line 436, in handle
+    self.handle_one_request()
+  File "/usr/lib64/python3.11/http/server.py", line 424, in handle_one_request
+    method()
+  File "/usr/lib64/python3.11/http/server.py", line 675, in do_GET
+    f = self.send_head()
+        ^^^^^^^^^^^^^^^^
+  File "/usr/lib64/python3.11/http/server.py", line 732, in send_head
+    self.send_error(HTTPStatus.NOT_FOUND, "File not found")
+  File "/usr/lib64/python3.11/http/server.py", line 491, in send_error
+    self.wfile.write(body)
+  File "/usr/lib64/python3.11/socketserver.py", line 834, in write
+    self._sock.sendall(b)
+BrokenPipeError: [Errno 32] Broken pipe
+----------------------------------------
+  captured width=1280 states=agent,dirpicker,empty,gate,legacy,run,s0,setup
+  captured width=1281 states=run,s0
+  captured width=1389 states=run,s0
+  captured width=1390 states=run,s0
+  captured width=1391 states=run,s0
+  captured width=1439 states=run,s0
+  captured width=1440 states=agent,dirpicker,empty,gate,legacy,run,s0,setup
+  captured width=1441 states=run,s0
+  captured width=1534 states=run,s0
+  captured width=1535 states=run,s0
+  captured width=1536 states=run,s0
+  captured width=1537 states=run,s0
+  captured width=1549 states=run,s0
+  captured width=1550 states=run,s0
+  captured width=1551 states=run,s0
+  captured width=1599 states=run,s0
+  captured width=1600 states=run,s0
+  captured width=1601 states=run,s0
+  captured width=1919 states=run,s0
+  captured width=1920 states=agent,dirpicker,empty,gate,legacy,run,s0,setup
+  captured width=1921 states=run,s0
+  captured width=390 states=agent,run,s0
+  captured width=759 states=agent,run,s0
+  captured width=760 states=agent,run,s0
+  captured width=761 states=agent,run,s0
+  captured width=849 states=agent,run,s0
+  captured width=850 states=agent,run,s0
+  captured width=851 states=agent,run,s0
+  captured width=853 states=agent,run,s0
+  captured width=854 states=agent,run,s0
+  captured width=999 states=agent,run,s0
+  captured width=1000 states=agent,run,s0
+  captured width=1001 states=agent,run,s0
+  captured width=1022 states=agent,run,s0
+  captured width=1023 states=agent,run,s0
+  captured width=1024 states=agent,run,s0
+  captured width=1025 states=agent,run,s0
+  captured width=1079 states=agent,run,s0
+  captured width=1080 states=agent,run,s0
+  captured width=1081 states=agent,run,s0
+  captured width=1099 states=agent,run,s0
+  captured width=1100 states=agent,run,s0
+  captured width=1101 states=run,s0
+  captured width=1179 states=run,s0
+  captured width=1180 states=run,s0
+  captured width=1181 states=run,s0
+  captured width=1199 states=run,s0
+  captured width=1200 states=run,s0
+  captured width=1201 states=run,s0
+  captured width=1279 states=run,s0
+  captured width=1280 states=agent,dirpicker,empty,gate,legacy,run,s0,setup
+  captured width=1281 states=run,s0
+  captured width=1389 states=run,s0
+  captured width=1390 states=run,s0
+  captured width=1391 states=run,s0
+  captured width=1439 states=run,s0
+  captured width=1440 states=agent,dirpicker,empty,gate,legacy,run,s0,setup
+  captured width=1441 states=run,s0
+  captured width=1534 states=run,s0
+  captured width=1535 states=run,s0
+  captured width=1536 states=run,s0
+  captured width=1537 states=run,s0
+  captured width=1549 states=run,s0
+  captured width=1550 states=run,s0
+  captured width=1551 states=run,s0
+  captured width=1599 states=run,s0
+  captured width=1600 states=run,s0
+  captured width=1601 states=run,s0
+  captured width=1919 states=run,s0
+  captured width=1920 states=agent,dirpicker,empty,gate,legacy,run,s0,setup
+  captured width=1921 states=run,s0
+{"before_web": "/home/work/chenjunming/change-impact-loop/.tmp-f14b-base", "after_web": "/home/work/chenjunming/change-impact-loop/loop/web", "combinations": 139, "diff_combinations": 0, "diffs": [], "transition_declaration_diffs": {}}
+PASS: 所有 139 个（宽度, 状态）组合的计算样式指纹完全一致（含 transition-*/animation-* 真实计算值；无限动画已停在 0 时刻）。

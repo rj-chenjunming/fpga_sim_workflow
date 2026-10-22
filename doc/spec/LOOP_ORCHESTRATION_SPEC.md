@@ -116,6 +116,12 @@
    `rtl_snapshot`（含 `rtl_files.md5` 的 `manifest_sha256`）、`allfiles_manifest`、`doc_fingerprint`、
    `cases_freeze`、`conflicts_snapshot`、`evidence_index`。清单内路径按环境仓根书写，
    解析顺序 `<WORKSPACE_ROOT>/<path>` → `<WORKSPACE_ROOT>/../<path>`。
+   **统一边界判据（R2，2026-10-22）**：无论清单写绝对路径还是相对路径，候选都先 `resolve()`
+   （跟随符号链接）再判定必须落在允许根集合内（`<WORKSPACE_ROOT>`、其父、环境根），**然后**才读取/哈希；
+   `..` 越界、相对符号链接逃逸、断链/循环链接与绝对越界使用**同一条**判据，不得出现第二套近似规则。
+   越界 ⇒ 该件按 `missing`/`errors` 计入并拒绝，且准入零副作用（不写 run、作业、事件）。
+   **解码失败隔离（R3，2026-10-22）**：manifest 非 UTF-8 的解码失败归入**该条** `errors`，
+   同目录其它基线仍可列出；不得用 `errors="ignore"` 改写清单内容来掩盖。
 5. parent 链可回放：`parent` 为 `null`（v0）或指向另一个 `valid` 基线；成环、超深、指向未知版本即拒。
 6. **只读**：准入过程不写任何文件（不落临时件、不写字节码）。
 

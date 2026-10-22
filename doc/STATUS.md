@@ -1085,3 +1085,62 @@ v2 全属性工具尝试被对照实验否决，**不作为判据**；`7ecbb9c` 
 **仍未关闭**（保持可见）：F05-b/c 未开始；人工视觉评审 / 真实 125%/150% 缩放 / `:hover`/`:focus` 动态态未验证；
 R6 防御性登记未立项；F01-d / F04 S0-b / F09 阻塞；kb 自测、端到端、真实 provider、内网主机浏览器未运行。
 **不声称四道门全绿或合规。**
+
+## 42 SPEC-REV-01 实现：全节点投影 / G1 可判材料 / 节点面板 / S0 徽标（2026-10-22）
+
+用户验收 `SPEC-REV-01` 后按其 R2–R6 实施。**本轮不改业务判据、不新增写动作、闸门权威仍只在 `gates.json`**；
+实现分三片（后端投影+端点、前端面板+材料、kb 解码口径），同一会话内集成并复核，**没有独立终验**。
+
+### 42.1 交付
+
+| 切片 | 落点 | 关键内容 |
+|---|---|---|
+| R4 全节点投影 | `loop/services/node_view.py`（新）、`loop/services/api.py`、`loop/workflows/chunks/{host_steps,model_steps,long_jobs,gates}.py`、`loop/workflows/main_flow.py` | 22 个节点（N0–N16 + `N6_apply`/`N9_submit`/`N15_select`/`N15_submit`/`HALT`）逐处补 `detail.source`+`detail.summary` 与 §10.4 右列；`GET /api/runs/{id}/nodes/{node}`（未知 run 404，未知节点 200+`known=false`） |
+| R2 G1 可判材料 | `loop/services/contracts.py`、`loop/workflows/chunks/gates.py`、`DRILL_FILES` | 逐条 entry 增 `before`/`after`/`diff_hunk`/`encoding`；`gate_material` 增 `n3_digest{path,exists}`、`host_trace{exists,count,changes[9 字段]}`；drill 复制 `staged/mock_change_applied.json`（10→11 个夹具文件） |
+| R4 前端面板 | `loop/web/{app.js,index.html,app.css,node-detail.js}` | 全部节点 chip 可点 → 独立 `<dialog>` 五区块；G1 双栏 before/after、行级 hunk、编码/夹具徽标、N3/Host 留痕入口；S0 来源徽标（§4.5） |
+| R3 解码口径 | `kb/tools/{kb_lib,n2_diff,n5_impact}.py`、`kb/tools/_selftest_n2_encoding.py`（新）、`kb/README.md` | 候选集上收 `kb_lib.DECODE_ENCODINGS=("utf-8","gb18030","gbk","latin-1")`，N2/N5 同源（不再第二套）；条目带实际 codec 的 `encoding` |
+| refs 安全边界 | `loop/services/node_view.py` | `refs` 只给 run 目录内路径；目录外只给 `refs_omitted` 计数（§6.7） |
+
+### 42.2 实测（数字均为命令输出复制）
+
+| 门 | 命令 | 实际结果 |
+|---|---|---|
+| 软件层单测（官方入口） | `bash loop/spikes/run_software_checks.sh --ignore=tests/browser` | **523 passed, 3 deselected, 1 warning in 95.80s** |
+| 新增投影测试 | `pytest -q tests/test_node_detail_projection.py`（sandbox 数据根） | **34 passed** |
+| 浏览器（系统 Chrome + 可写 HOME） | `pytest -q tests/browser` | **55 passed in 72.79s**（41 旧 + 14 新） |
+| kb 自测 · N2 解码 | `loop/.venv/bin/python kb/tools/_selftest_n2_encoding.py` | **PASS 37/37**，rc=0 |
+| kb 自测 · N5 可达性 | `... _selftest_n5_reachability.py` | `汇总：PASS=9 FAIL=0` |
+| kb 自测 · gate schema | `... _selftest_gate_schema.py` | `汇总：PASS=10 FAIL=0` |
+| 文档门 | `python3 doc/audit/check_doc_links.py` | `checked=1587 skipped=19615 historical=857 known_missing=10 env_missing=12 missing=0`，退出码 0 |
+| 端到端终验 | `cd loop && bash spikes/accept_v1_run.sh` | **未运行**（本会话 `ENV_ROOT` 只读；该门仍未验证） |
+
+**注册表默认命令（`pytest -q`）在本会话的结果**：`54 failed, 471 passed, 55 errors in 67.13s`。
+失败/错误**全部来自环境限制、零代码层失败**：52 × `OSError [Errno 30] Read-only file system`（默认
+`WORKSPACE_ROOT=<ENV_ROOT>/kb` 只读，drill 建不了 run 目录）、2 × `env_layer` 归档用例（需可写 `ENV_ROOT/SIMLIB_RUN`）、
+55 × 浏览器 setup error（未安装 playwright 自带 chromium）。可写影子数据根 + 系统 Chrome 下的真实结果见上表。
+
+### 42.3 实服务复核（隔离实例，不碰 8099）
+
+`LOOP_STATE_ROOT=workspaces/verify-state-18099 LOOP_WORKSPACE=<sandbox> LOOP_LLM_MODE=standin LOOP_PORT=18099 bash loop/remote/serve.sh --sandbox`
+⇒ 17 条路由（含 `/api/runs/{id}/nodes/{node}`）；新建 drill run `RUN-20261022-160528`，实测：
+
+- G1 `difference_items` 2 条均带 `before`/`after`（`0x0000#0x0004` reset `2023_0911`→`2026_0708`；`sys_reg.v` md5→md5），
+  `diff_hunk` 为空（夹具历史产物，**未回填**）；
+- `host_trace.exists=true`、`count=3`：M1 `32'h04→32'h0000_0004`（行 539→540，`encoding=gbk`）、
+  M2a/M2b 文档值变更（行 414/447，`encoding=utf-8`）⇒ 人在 drill 下也能看出"改了什么"；
+- `n3_digest.exists=true`；
+- 节点详情：N0/N1/N2/N3 均有 `source`+`summary`（N1 摘要含 allfiles 3374 条 / cases 162 / doc 指纹 / commit 可解析）；
+  N4 等待签署时 `missing_fields=[summary,source,human_signed]`（诚实未下发）；`N9_submit`/`HALT` 可点但未执行；
+  未知节点 `known=false`；`refs_omitted=0`（本轮 refs 均在 run 目录内）。
+- 历史 run（`RUN-20261022-143532` 等）**不回填**：缺新字段时列 `missing_fields`，验收不得当作缺陷。
+
+### 42.4 未关闭 / 不声称合规
+
+- **端到端未运行**（需可写 `ENV_ROOT`）：四道门中该门仍**未验证**。
+- **E1 未修**（SPEC-REV-01 §D）：N2 把 `rc=3`（`RC_GAP`，不产出 `n2_diff.json`）当成功放行，仍可能显示"完成、0 差异"；建议单独切片。
+- **E2 未修**：事件 kind 白名单规格 8 / 服务端 15 / 前端 16 三处不一致；本轮未夹带。
+- **历史 run 不回填**（事件只增不改），验收不能用旧 run 判定新字段。
+- 真机 `real` 链路、内网 S0-real、`accept_v1_run.sh` 断言均未在本会话执行。
+- 8099 上仍在跑**旧构建**（`/openapi.json` 11 条路由）；本轮实服务复核用的是隔离实例 18099。
+
+**结论**：本轮把 R2–R6 落到代码并留下可复跑证据，但**不声称四道门全绿或已合规**。

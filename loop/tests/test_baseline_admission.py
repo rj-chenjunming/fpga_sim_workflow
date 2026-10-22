@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from pathlib import Path
 from typing import Any
 
@@ -231,6 +232,119 @@ def test_absolute_artifact_path_outside_roots_is_missing(tmp_path: Path) -> None
     assert any("allfiles_manifest" in item for item in record["missing"])
 
 
+# ------------------------------------------------- R2：artifact 路径统一边界判据
+#
+# 允许根集合固定为「工作区数据根、其父、环境根」（编排规格 §3.1 条款 4「统一边界判据」）。
+# 这组用例只从公开入口（列表投影 / real 启动）观察，不直接调私有解析函数。
+
+
+def _outside_dir(tmp_path: Path) -> Path:
+    """构造一个**在所有允许根之外**的目录（工作区根、其父、ENV_ROOT 都不含它）。"""
+    outside = tmp_path.parents[1] / f"{tmp_path.name}-outside"
+    outside.mkdir(parents=True, exist_ok=True)
+    allowed = (tmp_path.resolve(), tmp_path.parent.resolve())
+    resolved = outside.resolve()
+    assert not any(resolved == base or base in resolved.parents for base in allowed), (
+        f"用例前提不成立：{resolved} 仍在允许根内"
+    )
+    return outside
+
+
+def _set_artifact_path(baseline_dir: Path, field: str, raw_path: str, digest: str) -> None:
+    """把 manifest 的一个 artifact 改写成指定路径与真实摘要（制造边界用例）。"""
+    manifest_path = baseline_dir / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest[field]["path"] = raw_path
+    manifest[field]["sha256"] = digest
+    manifest_path.write_text(json.dumps(manifest, ensure_ascii=False), encoding="utf-8")
+
+
+def _has_reason(record: dict[str, Any], field: str) -> bool:
+    return any(field in item for item in [*record["missing"], *record["errors"]])
+
+
+def test_relative_dotdot_escape_is_rejected_like_absolute(tmp_path: Path) -> None:
+    """R2 红灯：同一允许根外文件，相对 `..` 与绝对路径必须**同一条判据**拒绝。
+
+    旧实现相对分支只判 `exists()` ⇒ `../..` 越界文件仍 `valid=true` 并被读取/哈希。
+    """
+    outside = _outside_dir(tmp_path)
+    outside_file = outside / "outside.md5"
+    outside_file.write_bytes(b"outside-data")
+    digest = _sha256(outside_file)
+    baseline_dir = make_baseline(tmp_path, "v1")
+
+    relative = os.path.relpath(outside_file, tmp_path)
+    assert not Path(relative).is_absolute()
+    _set_artifact_path(baseline_dir, "allfiles_manifest", relative, digest)
+    escaped = _entry(tmp_path, "v1")
+    assert escaped["valid"] is False, f"相对路径越界仍被准入：{escaped}"
+    assert _has_reason(escaped, "allfiles_manifest"), escaped
+
+    # 对照：同一文件写成绝对路径（旧实现已拒绝，修复后必须保持一致）
+    _set_artifact_path(baseline_dir, "allfiles_manifest", str(outside_file), digest)
+    absolute = _entry(tmp_path, "v1")
+    assert absolute["valid"] is False, f"绝对路径越界被准入：{absolute}"
+    assert _has_reason(absolute, "allfiles_manifest"), absolute
+
+
+def test_relative_symlink_escape_is_rejected(tmp_path: Path) -> None:
+    """R2 红灯：允许根内的相对写法经**符号链接**指向根外 ⇒ 同样拒绝。
+
+    旧实现相对分支不 resolve ⇒ 链接目标在允许根外仍被读到内容并算出匹配指纹。
+    """
+    outside = _outside_dir(tmp_path)
+    outside_file = outside / "leak.md5"
+    outside_file.write_bytes(b"outside-data")
+    baseline_dir = make_baseline(tmp_path, "v1")
+    link = baseline_dir / "leak.md5"
+    link.symlink_to(outside_file)
+
+    _set_artifact_path(
+        baseline_dir, "allfiles_manifest", f"baselines/v1/{link.name}", _sha256(outside_file)
+    )
+    record = _entry(tmp_path, "v1")
+    assert record["valid"] is False, f"相对符号链接逃逸仍被准入：{record}"
+    assert _has_reason(record, "allfiles_manifest"), record
+
+
+def test_absolute_and_relative_paths_inside_roots_both_pass(tmp_path: Path) -> None:
+    """R2 成对对照：**合法根内**同一文件，绝对与相对写法都必须通过。"""
+    baseline_dir = make_baseline(tmp_path, "v1")
+    inside = tmp_path / "shared" / "allfiles.md5"
+    inside.parent.mkdir()
+    inside.write_bytes(b"inside-data")
+    digest = _sha256(inside)
+
+    for raw in (str(inside), os.path.relpath(inside, tmp_path)):
+        _set_artifact_path(baseline_dir, "allfiles_manifest", raw, digest)
+        record = _entry(tmp_path, "v1")
+        assert record["valid"] is True, f"允许根内路径被误拒（{raw}）：{record}"
+        assert record["missing"] == [] and record["errors"] == []
+
+
+def test_broken_and_looping_symlink_artifacts_are_structured(tmp_path: Path) -> None:
+    """R2：断链/循环链接给结构化记录（valid=false + 原因），绝不抛到端点。"""
+    outside = _outside_dir(tmp_path)
+    baseline_dir = make_baseline(tmp_path, "v1")
+
+    broken = baseline_dir / "broken.md5"
+    broken.symlink_to(outside / "not-there.md5")
+    _set_artifact_path(baseline_dir, "allfiles_manifest", f"baselines/v1/{broken.name}", "0" * 64)
+    broken_record = _entry(tmp_path, "v1")
+    assert broken_record["valid"] is False, broken_record
+    assert _has_reason(broken_record, "allfiles_manifest"), broken_record
+
+    loop_a = baseline_dir / "loop_a.md5"
+    loop_b = baseline_dir / "loop_b.md5"
+    loop_a.symlink_to(loop_b)
+    loop_b.symlink_to(loop_a)
+    _set_artifact_path(baseline_dir, "allfiles_manifest", f"baselines/v1/{loop_a.name}", "0" * 64)
+    loop_record = _entry(tmp_path, "v1")
+    assert loop_record["valid"] is False, loop_record
+    assert _has_reason(loop_record, "allfiles_manifest"), loop_record
+
+
 # ---------------------------------------------------------------- 准入：零副作用
 
 
@@ -253,6 +367,41 @@ async def test_start_real_rejects_baseline_before_creating_run_dir(
         await manager.start(baseline="v9", mode="real")
     events_after = sorted(p.name for p in Path(P.EVENTS_DIR).glob("*")) if Path(P.EVENTS_DIR).is_dir() else []
     assert events_after == events_before, "拒绝前不得写事件流"
+
+
+async def test_start_real_rejects_escaping_artifact_with_zero_side_effects(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """R2：结构完整但 artifact 越界的基线 ⇒ real 拒绝，且 run/作业/事件零写入。"""
+    outside = _outside_dir(tmp_path)
+    outside_file = outside / "outside.md5"
+    outside_file.write_bytes(b"outside-data")
+    baseline_dir = make_baseline(tmp_path, "v1")
+    _set_artifact_path(
+        baseline_dir,
+        "allfiles_manifest",
+        os.path.relpath(outside_file, tmp_path),
+        _sha256(outside_file),
+    )
+    monkeypatch.setattr(P, "KB_DIR", tmp_path)
+
+    def must_not_prepare(*args: Any, **kw: Any) -> Any:
+        raise AssertionError("越界基线必须在 prepare_run_dir 之前被拒绝")
+
+    monkeypatch.setattr(main_flow, "prepare_run_dir", must_not_prepare)
+
+    def snapshot() -> dict[str, list[str]]:
+        return {
+            "runs": sorted(path.name for path in P.KB_RUNS.glob("*")) if P.KB_RUNS.is_dir() else [],
+            "jobs": sorted(path.name for path in P.JOBS_DIR.glob("*")) if P.JOBS_DIR.is_dir() else [],
+            "events": sorted(path.name for path in P.EVENTS_DIR.glob("*")) if P.EVENTS_DIR.is_dir() else [],
+        }
+
+    before = snapshot()
+    manager = main_flow.RunManager()
+    with pytest.raises(ValueError, match="未通过准入"):
+        await manager.start(baseline="v1", mode="real")
+    assert snapshot() == before, "越界拒绝前不得写 run/作业/事件"
 
 
 async def test_start_real_accepts_valid_baseline_past_admission(

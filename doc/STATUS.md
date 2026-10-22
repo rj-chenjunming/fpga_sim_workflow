@@ -964,3 +964,90 @@ STATUS；`doc/README.md`/`doc/agents/README.md` 索引现状（2 份开工提示
 **未运行/边界**：端到端 `accept_v1_run.sh`、kb 自测、真实 provider、内网主机浏览器未运行（缺可写 `ENV_ROOT`/内网夹具）；
 默认根全量仍有 46 项已知环境层失败。五份复核报告均由只读子代理撰写（只写报告、不改被测文件、不做 git 写命令）。
 R6 未实现修法 ⇒ **不声称已关闭**。
+
+## 41 阶段 C 网页样式收敛与最终门禁（F14-a / F14-b A–E，2026-10-22）
+
+阶段 C 在 B 稳定后启动，实现 owner `web-refactor`，Lead 负责门禁/证据/整合。**F05-b/c 本轮未开始**（登记见 §41.5）。
+证据（新增）：[F14-a 基线](evidence/R_BLOCK_C_20261022/style-inventory.md)、
+[C/D/E 与终态](evidence/R_BLOCK_C_20261022/AFTER-VERIFY-CDE.md)、
+[更正与冻结声明](evidence/R_BLOCK_C_20261022/CORRECTIONS-F14.md)、
+[F14-b 独立复核](audit/F14b-verify-20261022.md)（只读子代理，建议合并、代码阻断 0、P2×2/P3×6/O1）。
+冻结件：`AFTER-VERIFY.md` MD5 `9a388b5cb5038d4510f1da7021513171`；`MD5SUMS-F14B.txt` MD5 `48cd4a92694f4f2a5280d2bd0cc31e3e`。
+
+### 41.1 切片、提交与验证
+
+| 切片 | commit | 内容 | 计算样式 139 组合（v1 工具） | tests/browser | 冻结截图 42 对 |
+|---|---|---|---|---|---|
+| F14-a 基线 | `9ebb986` | 45 张改前截图 + 计算样式/焦点/断点矩阵 + 命令 | — | `41 passed` | — |
+| A 布局/框架 | `837d2aa` | 删 51 条被完全覆盖声明 + 11 条整规则 | 113 组合 **0 差异** | `41 passed in 57.34s` | 42/42 相同 |
+| A2 断点/reduce | `25714b3` | 删重复 `prefers-reduced-motion` 块（`!important` 声明 −2）；合并两份 760 **否决**（9 组合出现差异） | 139 **0** | `41 passed in 55.21s` | 42/42 相同 |
+| B 通用控件 | `c06ca97` | 删 54 条声明 + 2 处令牌替换（后回退）+ 8 条整规则 | 139 **0** | `41 passed in 55.02s` | 42/42 相同 |
+| B2 回退 | `1edd451` | 回退 3 条 `#fff→var(--panel)`（理由已更正，见 §41.3） | — | — | 回退后 42/42 相同 |
+| C S0 | `f2d39fe` | 删 88 条声明 + 12 条整规则 | 139 **0** | `41 passed in 54.07s` | 42/42 相同 |
+| D 运行/闸门 | `b4df6e6` | 删 81 条声明 + 8 条整规则 | 139 **0** | `41 passed in 62.71s` | 42/42 相同 |
+| E Agent+旧页 | `7ecbb9c` | 删 60 条声明 + 4 条整规则；`legacy.css` 无可证冗余未改 | 139 **0** | `41 passed in 56.32s` | 42/42 相同 |
+
+**终态静态事实（Lead 实测）**：`app.css` `57834 → 50069` 字节；规则 `795 → 751`；媒体块 `14 → 13`；
+`!important` 声明 `app 6 → 4`（行 3 → 2）、`legacy 2`（行 1）、`tokens 0`；**新增 `!important` = 0**；
+`legacy.css`/`tokens.css`/JS/HTML/`tests/**` 未改。命令：`loop/spikes/css_inventory.py`、
+`grep -o "!important" loop/web/*.css | wc -l`、`git show 9ebb986:loop/web/app.css | wc -c`。
+
+### 41.2 最终门禁（数字从命令输出复制）
+
+| 门 | 命令 | 实际输出 | 判读 |
+|---|---|---|---|
+| 软件层 | `HOME=… LOOP_BROWSER_EXECUTABLE=/usr/bin/google-chrome bash spikes/run_software_checks.sh --tb=no` | `530 passed, 3 deselected, 1 warning in 139.39s` | 0 failed / 0 skip |
+| 默认根 | 同环境 `.venv/bin/python -m pytest -q --tb=no` | `46 failed, 487 passed, 1 warning in 74.98s` | 失败集与 §34.1 同集：44 × `Errno 30`（`ENV_ROOT` 只读）+ 2 × `test_archive_e2`（环境层）；非回归 |
+| 浏览器 | `.venv/bin/python -m pytest -q tests/browser` | `41 passed in 55.92s` | 0 skip / 0 error |
+| 文档门 | `python3 doc/audit/check_doc_links.py` | 见 §41.6 最终运行 | 目标 `missing=0` |
+
+### 41.3 更正与流程偏差（不补造证据）
+
+1. **撤回 B2 的「非等价」结论**：原称令牌化造成 `1920-gate-rejected` 14 像素 RGB ±1 差异，但引用的
+   `raw/f14b-tokenization-diff.txt` 未入库，复核者重放得到 42/42 与终态相同。B2 回退**保留**，理由改为
+   「缺少可复现证据证明逐像素等价，故不采用」。见 [CORRECTIONS-F14](evidence/R_BLOCK_C_20261022/CORRECTIONS-F14.md) §1。
+2. **v2 全属性指纹工具未采用**：P2-2 指出的 docstring/实现不一致成立；按此改为真正遍历全部 longhand 后，
+   对照实验（**同一份** CSS 放两个目录）仍报逐元素差异（`1280/run` 1056/1056、`1280/s0` 665/665）⇒ 系统性误报，
+   已恢复提交版 v1（md5 `346d81bb7614c64817fa9fc9d14b018a`）。因此 **C/D/E 的「零差异」仍只有 v1 工具证据**，
+   其静态支配性证明登记为未完成（§41.5）。
+3. **数字更正**：`app.css` 改前字节 `57526 → 57834`；B 的「56」= 54 删除 + 2 令牌替换；760 合并否决实为
+   **9 个（宽度,状态）组合**（390/759/760 × agent/run/s0，元素 52/52/111）；`sliceA` selfrepeat 对照日志产出于
+   冻结时钟修复前，不作确定性证据；`commands.md` 未记 F14-b 命令（以 raw 日志与提交信息为准）。
+4. **证据就地改写（O1，流程偏差）**：`b832525`/`5b85667` 把 C/D 结果就地追加进已提交的 `AFTER-VERIFY.md`
+   与 `MD5SUMS-F14B.txt`（复核时两文件 md5 漂移）。已把两文件**恢复为 `70c4cfb` 冻结内容**（逐字节一致），
+   C/D/E 结果改记入新增 `AFTER-VERIFY-CDE.md`；历史提交中的改写不抹除，按实登记。
+5. **执行中断**：`web-refactor` 在纠正阶段被 Lead 中断（会话时长控制），其未提交的纠正由 Lead 按同一口径完成并复核；
+   该阶段不再有新的实现改动。
+6. **§29 计数口径更正**：`legacy.css` 的 `!important` 为 **1 行 / 2 处声明**（`animation`+`transition`），
+   §29 的「1 处」是按行口径；`app.css` 为 3 行 / 6 处声明（终态 2 行 / 4 处）。另 §29 所述
+   「本机缺 playwright」已由 §39 的离线包安装解决，本轮浏览器用例真实执行。
+
+### 41.4 回退方式（每切片一行）
+
+| 切片 | 回退 |
+|---|---|
+| R1 | `git revert 907697e bfaaf9e`（旧格式记录保持可读） |
+| R2 | `git revert e279eac 039fc8f` |
+| R3 | `git revert 96e9705 74fb06d` |
+| R4 | `git revert 1a5f619 5199dd3`（不增大默认预算） |
+| R5 | `git revert 746ec8d 34f62cc 0ec6684`（先回 UI 消费，再回 API 字段） |
+| F14-a | `git revert 9ebb986`（仅证据，无行为） |
+| F14-b A/A2/B/B2/C/D/E | 逐片 `git revert 837d2aa` / `25714b3` / `c06ca97` / `1edd451` / `f2d39fe` / `b4df6e6` / `7ecbb9c`；证据提交逐片 revert，冻结件不回填 |
+| R6 | 无代码改动，无需回退 |
+
+### 41.5 未关闭项（保持可见）
+
+| 项 | 状态 | 原因 |
+|---|---|---|
+| F05-b/c 运行/Agent/计数与配置/目录渲染提取 | **未开始** | 本轮时间盒止于 F14-b；前置（R5、`agent-window.js`、浏览器特征集）已具备，下一轮按 [C/D/E 登记](evidence/R_BLOCK_C_20261022/AFTER-VERIFY-CDE.md) §5 接续 |
+| C/D/E 删除声明的静态支配性证明 | **未完成** | 复核者已对 A/A2/B 做 140/140 证明；C/D/E 仅有 v1 浏览器指纹与截图证据，独立静态证明待补 |
+| F14 人工视觉评审 / 真实 125%/150% 缩放 / `:hover`/`:focus` 动态态 | **未验证** | 无人工评审与真实缩放；不得声称视觉验收通过 |
+| R6 沙箱多余件 | **防御性登记** | 当前拓扑不可达，未改行为（§40 否决依据） |
+| F01-d / F04 S0-b / F09 | **阻塞** | 缺内网环境、驱动授权与恢复契约评审 |
+| kb 自测 / 端到端 / 真实 provider / 内网主机浏览器 | **未运行** | 缺可写 `ENV_ROOT` 与内网夹具 |
+| 四道门全绿 | **不声称** | 端到端与 kb 自测未运行；软件层 0 failed 不等于四道门通过 |
+
+### 41.6 文档门
+
+最终运行见本轮提交后的命令输出：`python3 doc/audit/check_doc_links.py` ⇒
+`checked=… missing=0`（退出码 0；`known_missing=10`/`env_missing=12` 为已知环境缺件，不回填）。

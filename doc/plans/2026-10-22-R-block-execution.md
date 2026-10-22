@@ -29,8 +29,8 @@
 | R3 坏编码 | `r2r3-baseline`（R2 后） | `loop/host/baseline.py` | `LOOP_ORCHESTRATION_SPEC` §3.1 条款 4「解码失败隔离」 | R3-A |
 | R4 N8 真实成本 | `r4r6-n8-sandbox` | `loop/workflows/chunks/model_steps.py` | `AGENT_CONTEXT_SPEC` C1「按真实序列化成本选择表示」 | R4-A |
 | R6 沙箱残留（候选） | `r4r6-n8-sandbox` | 先只确认；授权后 `host_steps.py`/`model_steps.py`/`main_flow.py` | 待 Lead 依红灯结论补条款 | 是否成立 + 修后回归 |
-| F14 样式收敛 | 待派（B 稳定后） | `loop/web/tokens.css`、`app.css`、`legacy.css`、`tests/browser/**` | `WEB_UI_SPEC` + F14 前置清单 | 前后截图逐条解释、无 `!important` 掩盖 |
-| F05 余下 | 待派（F14 后） | `loop/web/app.js` + 新渲染模块 | `WEB_UI_SPEC`、F05 首步计划 | GET/POST 次数、DOM id、草稿身份/焦点、409 保留不变 |
+| F14 样式收敛 | `web-refactor`（`r1r5-host-memory` R5 合入后） | `loop/web/tokens.css`、`app.css`、`legacy.css`、`tests/browser/**` | `WEB_UI_SPEC` + F14 前置清单 | 前后截图逐条解释、无 `!important` 掩盖 |
+| F05 余下 | `web-refactor`（F14 之后） | `loop/web/app.js` + 新渲染模块 | `WEB_UI_SPEC`、F05 首步计划 | GET/POST 次数、DOM id、草稿身份/焦点、409 保留不变 |
 
 **唯一 git 写者纪律**：提交统一经 `flock .git/agent-commit.lock` 串行 + 显式路径 `git add`；
 禁止 `git add -A`、`commit -a`、push、amend 他人提交。每切片固定两笔：红灯（只加测试）→ 实现。

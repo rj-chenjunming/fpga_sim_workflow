@@ -907,3 +907,26 @@ STATUS；`doc/README.md`/`doc/agents/README.md` 索引现状（2 份开工提示
 ### 38.4 本轮附带观察（未修复、未独立复核、待登记）
 
 在合入前的源码复核中另发现一处**未收录于 R1–R5** 的风险：`n6_apply` 建沙箱目录时不清理残留（[host_steps.py:597](../loop/workflows/chunks/host_steps.py#L597)），N8 用 `glob("*.sv")` 收全部沙箱文件（[model_steps.py:660](../loop/workflows/chunks/model_steps.py#L660)），闭锁只校验「缺件」不校验「多余件」（[model_steps.py:673](../loop/workflows/chunks/model_steps.py#L673)），而三条返工回边复用同一 `run_dir`（[main_flow.py:90](../loop/workflows/main_flow.py#L90)）⇒ 返工轮目标缩水时，上一轮遗留的 `.sv` 可能被当作本轮已复核对象，短文件还会标 `coverage.complete=true`。**该项既未修复也未经独立复核**，建议在下一轮按 §37 顺序与 R4 同区间立项，先补红灯再改实现。
+
+## 39 R 门缺陷收口：阶段 A 验证基线（2026-10-22）
+
+按 [开工提示词](agents/开工提示词_R门缺陷与网页重构.md) 执行本轮。采样 `HEAD=5e2f8cb`，契约先行提交 `8669cd7`
+（R1 原子发布 / R2–R3 基线边界 / R4 真实成本 / R5 预算计量写入 `doc/spec/*`）。执行计划见
+[R 门执行计划](plans/2026-10-22-R-block-execution.md)，原始命令与输出见
+[阶段 A 证据](evidence/R_BLOCK_A_20261022.md)（MD5 `47de12cab6bd9625a5378d3c5ab1ee1e`）。
+
+| 步骤 | 命令 | 实际输出 | 判读 |
+|---|---|---|---|
+| V0 三根/版本 | `git rev-parse HEAD`；`git status -sb` | `5e2f8cb0149a95823d3f8ebd4cd0c729398fccf6`；`main...origin/main [ahead 2]`；CPython `3.11.7` | 采样可追踪；`/home` 为 `ro` 挂载，`ENV_ROOT` 只读 |
+| V1 离线浏览器 verify | `loop/.venv/bin/python spikes/browser_offline.py verify` | `PASS: offline bundle platform and SHA-256 verification`（rc=0） | 包完整 |
+| V1 安装 | `... browser_offline.py install` | `Successfully installed greenlet-3.2.5 playwright-1.64.0 pyee-13.0.1`；随后启动冒烟 `FAIL: TargetClosedError`（rc=1） | wheels 安装成功；失败因 **`$HOME` 只读**（Chrome 写 `~/.local/share` 被 EROFS 拒） |
+| V1 真实启动 | `HOME=/tmp/h XDG_*=. .venv/bin/python spikes/browser_offline.py check` | `PASS: local browser smoke; version=152.0.7977.75; executable=/usr/bin/google-chrome`（rc=0） | 浏览器真实启动通过（前提：HOME 可写）；**未出现** `libnspr4/libnss3` 等缺件 |
+| V2 软件层 | `HOME=… LOOP_BROWSER_EXECUTABLE=/usr/bin/google-chrome bash spikes/run_software_checks.sh --tb=no` | `505 passed, 3 deselected, 1 warning in 142.96s`（rc=0） | 0 failed；`+41` 为 `tests/browser`（装包后不再 skip），`skipped` 3→0；非回归 |
+| V3 浏览器回归 | `... spikes/browser_offline.py run` | `41 passed in 54.45s`（rc=0） | 0 skip；改前视觉基线在阶段 C 采集 |
+
+**环境事实（本轮新增，命令必须带）**：浏览器用例需要
+（a）`LOOP_BROWSER_EXECUTABLE=/usr/bin/google-chrome`（或随包 Chrome）与（b）**可写 `HOME`/`XDG_CONFIG_HOME`/`XDG_CACHE_HOME`**。
+缺任一条件时是 `error` 而不是 skip，不得当通过。默认根全量仍有 46 项已知环境层失败（`ENV_ROOT` 只读），不修、不 skip。
+
+**未运行**：端到端 `accept_v1_run.sh`、kb 自测、真实 provider、内网主机浏览器（缺可写 `ENV_ROOT` 与内网夹具）。
+§33 的 F01-d / F04 S0-b / F09 阻塞不变。阶段 B（R1–R6）与阶段 C（F14/F05）结果见后续 §40–§41。

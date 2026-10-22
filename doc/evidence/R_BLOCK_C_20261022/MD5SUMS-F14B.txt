@@ -82,7 +82,7 @@ ef874a379a3c6b4aefee7ca46447726b  screens-after/1920-loading.png
 83d6cc7b1d2c555b6bb1b69cf5ddf825  screens-after/1920-s0.png
 569867f19b1319a616ea00d8460879cb  screens-after/1920-setup.png
 eccd939b816f3a8c4764f755aebe1a0b  screens-after/1920-stale-error.png
-9a388b5cb5038d4510f1da7021513171  AFTER-VERIFY.md
+b01eb73da246dc680aecc6910977b8c7  AFTER-VERIFY.md
 240d354663e0de4e86335ed3a5ad2de0  capture_pair.py
 346d81bb7614c64817fa9fc9d14b018a  verify_style_equivalence.py
 9fae46d677ed0eafbb8a094503c59a70  css_convergence.py
@@ -95,5 +95,8 @@ f9ab30af0d7fafe3a9dc5f26b8be4113  raw/f14b-sliceA2-merge760-attempt.log
 58a72147b9811a57bac68b0e7d92ec3a  raw/f14b-sliceA-verify.log
 550a3839ca89e9b6dffd65d6a5d74e16  raw/f14b-sliceB-pytest.log
 bce42b81472160fa92f5e91c24443b54  raw/f14b-sliceB-verify.log
+3f0815556d17c45d7dae3415dcbe138d  raw/f14b-sliceC-pytest.log
+93f0cbf370affe0f4ddd8cadef1722a3  raw/f14b-sliceC-verify.log
 532900d29e452bfe7b67a7be7e2d84c4  raw/f14b-screens-compare.txt
 22cf012a886bc1c230540f4b605e0300  raw/f14b-screens-selfrepeat.txt
+124592143dc1f335b07b7e8bf93b766c  raw/f14b-sliceC-screens.txt

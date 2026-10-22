@@ -930,3 +930,37 @@ STATUS；`doc/README.md`/`doc/agents/README.md` 索引现状（2 份开工提示
 
 **未运行**：端到端 `accept_v1_run.sh`、kb 自测、真实 provider、内网主机浏览器（缺可写 `ENV_ROOT` 与内网夹具）。
 §33 的 F01-d / F04 S0-b / F09 阻塞不变。阶段 B（R1–R6）与阶段 C（F14/F05）结果见后续 §40–§41。
+
+## 40 R 门阶段 B 缺陷收口（R1–R6，2026-10-22）
+
+契约先行 `8669cd7`（R1/R2/R3/R4/R5 条款）；R6 未决条款随本节追加。原始命令、红灯/绿灯与跨切片探针见
+[阶段 B 证据](evidence/R_BLOCK_B_20261022.md)（MD5 `bc8c964c48313ffac9232cc803bce00e`）、
+[收口探针](evidence/R_BLOCK_B_20261022_after_probe.py)（MD5 `30e15e4902da96fec2ad8a7d1ab6cbb8`）。
+
+| 切片 | 红灯提交 | 实现提交 | 定向绿灯 | 独立复核（只读子代理） | 结论 |
+|---|---|---|---|---|---|
+| R1 原子发布 | `bfaaf9e`（`3 failed, 8 passed`） | `907697e` | `82 passed` | [R1-verify](audit/R1-verify-20261022.md) `b453265f4b268535461a482f4a67a272` | 建议合并，阻断 0 |
+| R2 路径边界 | `039fc8f`（`2 failed, 3 passed` 定向；复核者整文件 `3 failed, 19 passed`） | `e279eac` | `31 passed`（复核者 `35 passed`） | [R2-verify](audit/R2-verify-20261022.md) `e0f13e9513a0c74206b49e9b2224d338` | 建议合并，阻断 0 |
+| R3 坏编码隔离 | `74fb06d`（`4 failed`，真实 HTTP 500） | `96e9705` | `29 passed`（复核者 `42 passed`） | [R3-verify](audit/R3-verify-20261022.md) `3b09e50e2d7f60896b4b4d26fd85faff` | 建议合并，阻断 0 |
+| R4 N8 真实成本 | `5199dd3`（`5 failed, 18 passed`） | `1a5f619` | `23 passed`（复核者 `75 passed`） | [R4-verify](audit/R4-verify-20261022.md) `e6882e79f6ddafcfb04d2aec06d96921` | 建议合并，阻断 0 |
+| R5 预算口径 | `0ec6684`＋`34f62cc`（`10 failed, 9 passed`） | `746ec8d` | `67 passed` | [R5-verify](audit/R5-verify-20261022.md) `6fe36b627f8617f55be8818e91b541e8` | 建议合并，阻断 0 |
+| R6 沙箱残留 | 未实现（确认探针 RED） | —— | —— | 无（未改行为） | **当前缺陷不成立**；防御性登记 |
+
+**收口复验（Lead 串行）**：
+
+| 检查 | 命令 | 实际输出 | 判读 |
+|---|---|---|---|
+| 受影响集合（8 文件） | `pytest -q --tb=no` 8 个切片测试文件 | `153 passed, 1 warning in 6.11s` | 0 failed / 0 skip |
+| 跨切片收口探针 | `loop/.venv/bin/python doc/evidence/R_BLOCK_B_20261022_after_probe.py` | `R1_kill_before_checksum_publish ok`（`child_exit=9, checksum_published=false, state=incomplete, attempts={1:validated,2:incomplete}`）、`R2…ok`（相对/绝对均 `valid=false`）、`R3…ok`（`http_status=200, v1_valid=true, v2_valid=false`）、`R4…ok`（`used=59341, budget=60000, full_files=86, region_files=0`）、`R5…ok`（`host=api=window=86 B`，分项 46 + 开销 40 = 86，token `unknown`）、`fails=[]` | 五项均按现行契约独立复验通过（新协议，不依赖旧探针注入） |
+| 软件层 | `HOME=… LOOP_BROWSER_EXECUTABLE=/usr/bin/google-chrome bash spikes/run_software_checks.sh --tb=no` | `530 passed, 3 deselected, 1 warning in 141.94s`（rc=0） | 0 failed / 0 skip；较阶段 A `+25` 即本轮新增切片用例 |
+| 文档门 | `python3 doc/audit/check_doc_links.py` | `checked=1507 skipped=17990 historical=857 known_missing=10 env_missing=12 missing=0`；rc=0 | 本仓断链 0；环境缺件保持可见 |
+
+**R6 否决依据（不立项）**：纯函数探针可稳定复现「残留 `.sv` 被计入且 `coverage.complete=true`」，
+但该输入状态在当前拓扑**不可由正常执行产生**（N5 只一次、返工回边只到 `n6_author`、每轮目标集强制全覆盖并重写、
+跨 run 新目录）。按交付标准记录否决依据，防御性修法（清理沙箱 / `applied_cases` 白名单 / 多余件显式失败）
+与触发条件写入 [AGENT_CONTEXT_SPEC](spec/AGENT_CONTEXT_SPEC.md)「未决（R6）」；未来出现第二个沙箱写入者、
+可缩水目标集或同 `run_id` 复用目录时立项。
+
+**未运行/边界**：端到端 `accept_v1_run.sh`、kb 自测、真实 provider、内网主机浏览器未运行（缺可写 `ENV_ROOT`/内网夹具）；
+默认根全量仍有 46 项已知环境层失败。五份复核报告均由只读子代理撰写（只写报告、不改被测文件、不做 git 写命令）。
+R6 未实现修法 ⇒ **不声称已关闭**。

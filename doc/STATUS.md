@@ -865,3 +865,45 @@ STATUS；`doc/README.md`/`doc/agents/README.md` 索引现状（2 份开工提示
 | 业务全套 / 浏览器回归 / kb / 完整端到端 / 真实 provider | 未运行 | 本次是规划交付；内网按验证手册执行后另增结果，不抄历史数字 |
 
 **仍未关闭**：§35 的 R1–R5；§33 的真实链路、S0-b、持久暂停等依赖仍适用。§36 解决了离线依赖交付，未替内网主机完成浏览器或业务验收。本轮不声称四道门全绿或功能已完成。
+
+## 38 内网修订经 bundle 合入与本地复核（2026-10-22）
+
+本轮为**网络不可达条件下的手动同步**，不是常规 fetch：`git fetch/pull` 对 `https://github.com/rj-chenjunming/fpga_sim_workflow.git` 持续返回 `Received HTTP code 503 from proxy after CONNECT`（代理 `192.168.1.27:3128` 的 CONNECT 隧道对该目标失败；同期代理对普通 HTTP 与其它 HTTPS 目标正常，本机 `/etc/resolv.conf` 无 nameserver、无 VPN 路由，直连亦不通）。故改由外网执行端拉取后交付 `git bundle`，本机完成校验与合入。本轮不改业务代码，只合入、复核与留证；**同一执行者实施并验证，不冒充独立终验**。
+
+### 38.1 同步事实
+
+| 项 | 实际输出 / 状态 |
+|---|---|
+| 交付件摘要 | `cic-inc.bundle` md5 `45ceee9bb11624c5a0a6a6716a203e7d`；`cic-full.bundle` md5 `6433cf1e24d2c7cd310a2534944dd387`；与随附 `MD5SUMS.txt` 逐位一致 |
+| `git bundle verify` | `is okay`；含 `8816dbce58cef1f46437f7a51bf423e4469ebedd refs/remotes/origin/main`；requires `a19107ce87065040fc79b8d2233477c87a2ace00`；`sha1` |
+| `git fetch <bundle>` | `a19107c..8816dbc  origin/main -> origin/main` |
+| SHA 对照 | 本机 `origin/main` == 外网镜像 HEAD == `8816dbce58cef1f46437f7a51bf423e4469ebedd`（未失真） |
+| 合入方式 | `git merge --ff-only`；合入前 `git rev-list --count origin/main..HEAD` = 0、工作树干净 |
+| 变更规模 | `3` 提交 / `32` 文件 / `+1493 -5`，另含离线资产约 `186 MiB`（工作树 `loop/offline`） |
+| 合入的提交 | `d861ca3`（内网批次复核 R1–R5 登记）、`343584c`（Rocky 离线浏览器包）、`8816dbc`（下一轮 SpecDD 计划与内网验证手册） |
+| 回滚锚点 | tag `pre-sync-20261022` = `a19107c`；回滚命令 `git reset --hard pre-sync-20261022` |
+| 传输件清理 | `/home/work/chenjunming/fpga_sim/`（758M：两个 bundle + 镜像）已删除；大写 `FPGA_SIM` 环境仓未触碰 |
+| 仓库体积 | `.git` `238M`（合入前 `52M`） |
+
+### 38.2 本轮实测（数字从命令输出复制）
+
+| 检查 | 命令 | 结果 |
+|---|---|---|
+| 软件层单测 | `cd loop && LOOP_LLM_MODE=standin bash spikes/run_software_checks.sh --tb=no` | `464 passed, 3 skipped, 3 deselected, 1 warning in 85.98s`（同一命令合入前为 `457 passed`，增量 7 项即新增离线工具用例；**0 failed**） |
+| 离线包完整性 | `loop/.venv/bin/python loop/spikes/browser_offline.py verify` | `PASS: offline bundle platform and SHA-256 verification`，rc=0 |
+| 文档门 | `python3 doc/audit/check_doc_links.py` | rc=0；`checked=1418 skipped=14250 historical=857 known_missing=10 env_missing=12 missing=0` |
+| 对象体积声明 | 最大 blob | `46.0 MiB`（playwright wheel）；Chrome 分片 `40.0/40.0/40.0/18.1 MiB`；均 < 50 MiB，未用 LFS |
+| 证据只增不改 | `git diff --name-status a19107c..HEAD -- doc/evidence doc/audit doc/history` | 5 项全为 `A`，无 `M`/`D` |
+| §35 缺陷复现 | `loop/.venv/bin/python doc/audit/parts/intranet-batch-probe.py` | 与 §35 登记一致：`artifact relative valid=true outside=true` / `absolute valid=false`；`manifest http500`；`child_exit=9 prior_state=committed checksum_bytes=0 partial=corrupt`；`full_bytes=59341 budget=60000` 仍报 `61835 > 60000`；`host_bytes=72 displayed_bytes=1055` |
+
+### 38.3 未运行与诚实边界
+
+1. **端到端 `accept_v1_run.sh`、kb 自测、真实 provider、内网主机浏览器**：本轮**未运行**（缺可写 `ENV_ROOT` 与内网夹具）；软件层通过**不能**替代四道门。
+2. **真远端未再核对**：代理仍不可达，`origin/main` 现由 bundle 手动维护；出网恢复后必须跑一次真实 `git fetch` 复核 sha，未复核前不得声称与远端一致。
+3. 合入与验证为同一执行者，**无独立终验**。
+4. §35 的 R1–R5 **全部未修复**；§33 的 F01-d、F04 S0-b、F09 等前置与阻塞不变。
+5. 本机文档门 `missing=0` 与 §35 记录的 `missing=116` 口径不同：后者执行端缺注册内网根与历史夹具，属环境缺件，不是本仓断链。
+
+### 38.4 本轮附带观察（未修复、未独立复核、待登记）
+
+在合入前的源码复核中另发现一处**未收录于 R1–R5** 的风险：`n6_apply` 建沙箱目录时不清理残留（[host_steps.py:597](../loop/workflows/chunks/host_steps.py#L597)），N8 用 `glob("*.sv")` 收全部沙箱文件（[model_steps.py:660](../loop/workflows/chunks/model_steps.py#L660)），闭锁只校验「缺件」不校验「多余件」（[model_steps.py:673](../loop/workflows/chunks/model_steps.py#L673)），而三条返工回边复用同一 `run_dir`（[main_flow.py:90](../loop/workflows/main_flow.py#L90)）⇒ 返工轮目标缩水时，上一轮遗留的 `.sv` 可能被当作本轮已复核对象，短文件还会标 `coverage.complete=true`。**该项既未修复也未经独立复核**，建议在下一轮按 §37 顺序与 R4 同区间立项，先补红灯再改实现。

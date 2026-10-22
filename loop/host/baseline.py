@@ -75,30 +75,64 @@ def _schema_errors(doc: Any) -> list[str]:
         return [f"无法读取 manifest 权威判据：{type(exc).__name__}: {exc}"]
 
 
+def _allowed_roots(workspace_root: Path) -> tuple[Path, ...]:
+    """artifact 路径的**允许根集合**（唯一来源）：工作区数据根、其父、环境根。
+
+    与旧绝对路径分支保持同一集合，不扩大：`<root>/../<path>` 的兼容写法落在「其父」里，
+    因此仍然通过；再往上（`../..`）就越界。
+    """
+    roots: list[Path] = []
+    for base in (workspace_root, workspace_root.parent, Path(P.ENV_ROOT)):
+        resolved = base.resolve()
+        if resolved not in roots:
+            roots.append(resolved)
+    return tuple(roots)
+
+
+def _inside_roots(candidate: Path, roots: tuple[Path, ...]) -> bool:
+    return any(candidate == base or base in candidate.parents for base in roots)
+
+
+def _resolved_or_none(candidate: Path) -> Path | None:
+    """resolve 失败（断链/循环链接）⇒ `None`：拒绝而不是把异常抛到端点。"""
+    try:
+        return candidate.resolve()
+    except (OSError, RuntimeError):
+        return None
+
+
 def _artifact_path(workspace_root: Path, raw: Any) -> Path | None:
-    """解析 manifest 内 artifact 路径。
+    """解析 manifest 内 artifact 路径（**唯一**的路径边界判据，R2）。
 
     清单内路径按**环境仓根**书写（如 `kb/baselines/v0/rtl_snapshot.tar`）；拆分数据根后
-    可能出现相对 `<WORKSPACE_ROOT>` 的写法。解析顺序：`<root>/<path>` → `<root>/../<path>`；
-    都不存在 ⇒ `None`（由调用方计入 `missing`）。绝对路径只在工作区根/其父/环境根内允许。
+    也可能出现相对 `<WORKSPACE_ROOT>` 的写法。相对路径解析基准：
+    `<root>/<path>` → `<root>/../<path>`（后者兼容按环境根书写的清单）。
+
+    **统一边界判据（R2）**：绝对与相对候选都先 `resolve()`（跟随符号链接），再判是否落在
+    允许根集合（见 `_allowed_roots`），**先判边界再读/哈希**。`..` 越界、相对符号链接逃逸、
+    断链/循环链接与绝对越界走**同一条**判据 ⇒ `None`（调用方计入 `missing`）。
+    返回值是**已 resolve** 的目标：读/哈希只碰判定过的位置。
     """
     if not isinstance(raw, str) or not raw.strip():
         return None
     candidate = Path(raw)
     if candidate.is_absolute():
-        # 绝对路径必须落在允许的根内（工作区根 / 环境根 / 其父）：清单是运维写的，
-        # 但列表端点不能因为一行脏清单去哈希任意系统文件。
-        resolved = candidate.resolve()
-        for base in (workspace_root, workspace_root.parent, Path(P.ENV_ROOT)):
-            base = base.resolve()
-            if resolved == base or base in resolved.parents:
-                return candidate
-        return None
-    for base in (workspace_root, workspace_root.parent):
-        resolved = base / candidate
+        candidates: tuple[Path, ...] = (candidate,)
+    else:
+        candidates = tuple(base / candidate for base in (workspace_root, workspace_root.parent))
+    roots = _allowed_roots(workspace_root)
+    # 解析顺序保持不变：先取存在的候选；都不存在时回退到第一个「合法根内」候选，
+    # 让调用方按 missing 报出声明路径（越界/断链仍是 None）。
+    fallback: Path | None = None
+    for item in candidates:
+        resolved = _resolved_or_none(item)
+        if resolved is None or not _inside_roots(resolved, roots):
+            continue
+        if fallback is None:
+            fallback = resolved
         if resolved.exists():
             return resolved
-    return None
+    return fallback
 
 
 def inspect(

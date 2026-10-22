@@ -96,11 +96,55 @@ def experiences(ctx, scope: dict) -> tuple[list[dict], list[str]]:
     return selected, diagnostics
 
 
+BILLING_FIELDS = ("info", "instruct", "schema")
+
+
+def measure_budget(input_data: Any, contract: dict) -> dict:
+    """Host 唯一的预算测量（C1/R5）：紧凑序列化 `{input, info, instruct, schema}`。
+
+    计量口径只有这一份：准入 `check_budget` 与对外展示 `context_budget` 都从这里取数。
+    分项为各字段值的紧凑序列化字节；`overhead_bytes` 是外层键名/冒号/逗号/花括号的显式开销，
+    保证 `sum(breakdown) + overhead == used_bytes`。
+    """
+    fields = {"input": input_data, **contract}
+    breakdown = {key: len(encoded(value)) for key, value in fields.items()}
+    total = len(encoded(fields))
+    return {"used_bytes": total, "breakdown": breakdown,
+            "overhead_bytes": total - sum(breakdown.values()), "limit_bytes": MAX_CONTEXT_BYTES}
+
+
 def check_budget(input_data: dict, contract: dict) -> int:
-    size = len(encoded({"input": input_data, **contract}))
+    size = measure_budget(input_data, contract)["used_bytes"]
     if size > MAX_CONTEXT_BYTES:
         raise RuntimeError(f"agent context budget exceeded（上下文预算）: {size} > {MAX_CONTEXT_BYTES} bytes")
     return size
+
+
+def context_budget(request: Any, attempt: int | None = None) -> dict:
+    """把**已封存记录**投影成窗口可解释的预算事实（只读，不回写历史 request 文件）。
+
+    记录带齐 `input`/`info`/`instruct`/`schema` 时用 `measure_budget` 重算，与准入同一实现；
+    缺计费材料（旧记录）⇒ `measured=False` 且总量保持 `None`，不估算、不拿记录大小冒充。
+    `storage` 是 `offered`/`scope` 等**未发送**材料的记录存储大小，单列、不计费。
+    token 一律 `unknown`（没有测量依据，不用字节折算）。
+    """
+    measure = {"measured": False, "used_bytes": None, "breakdown": {}, "overhead_bytes": None,
+               "limit_bytes": MAX_CONTEXT_BYTES, "used_percent": None, "usage": "unknown",
+               "storage": {"offered_bytes": None, "scope_bytes": None},
+               "token_estimate": "unknown", "attempt": attempt}
+    if not isinstance(request, dict):
+        return measure
+    for key in ("offered", "scope"):
+        if key in request:
+            measure["storage"][f"{key}_bytes"] = len(encoded(request[key]))
+    if not isinstance(request.get("input"), dict) or any(key not in request for key in BILLING_FIELDS):
+        return measure
+    measured = measure_budget(request["input"], {key: request[key] for key in BILLING_FIELDS})
+    limit = measured["limit_bytes"]
+    measure.update({**measured, "measured": True,
+                    "usage": "known" if limit else "unknown",
+                    "used_percent": round(measured["used_bytes"] / limit * 100) if limit else None})
+    return measure
 
 
 def _sync_directory(folder: Path) -> None:

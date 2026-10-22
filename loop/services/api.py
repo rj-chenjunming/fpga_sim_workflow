@@ -286,8 +286,8 @@ async def agent_window(run_id: str, node: str, attempt: int | None = Query(defau
         from services import agent_view
         from host import agent_memory as AM
         view['capabilities'] = agent_view.node_capabilities(node, events)
-        # F10：预算上限由 Host 常量下发，前端不硬编码（红线 8：不出现第二套同判据）。
-        view['context_budget'] = {'limit_bytes': AM.MAX_CONTEXT_BYTES}
+        # F10/R5：预算事实由 Host 唯一测量（总量与 AM.check_budget 同一实现），前端只消费。
+        view['context_budget'] = AM.context_budget(view.get('request'), attempt=view.get('selected_attempt'))
         return view
     except KeyError as exc:
         raise HTTPException(404, detail={'error': str(exc)}) from exc

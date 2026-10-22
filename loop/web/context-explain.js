@@ -1,7 +1,9 @@
-/* 上下文与尝试的只读解释（F10 / F11 前半）。
+/* 上下文与尝试的只读解释（F10 / F11 前半 + R5）。
  *
  * 纯函数：不读全局、不发请求、不写 DOM，只把**记录里的事实**整理成可读行：
- *   - 预算构成（UTF-8 字节与占比）与上限（上限由服务端下发，不在前端硬编码）；
+ *   - 预算构成：**只消费 Host 下发的 `context_budget` 测量**（`used_bytes`/`breakdown`/
+ *     `overhead_bytes`/`limit_bytes`/`used_percent`），本层不求和、不另算占比、不判上限；
+ *   - `offered`/`scope` 等未发送材料只作为 `storage`（记录存储大小）单列，不计费；
  *   - 人工确认经验的采用/拒绝原因（experience_diagnostics）；
  *   - 尝试摘要（status/model/cycle）；
  *   - 输入顶层字段差异（字节变化）。
@@ -11,7 +13,8 @@
 (function (root) {
   "use strict";
 
-  var FIELDS = ["input", "info", "instruct", "schema", "offered", "scope"];
+  /* 计费字段的展示顺序；数值全部来自 Host，不在此推导。 */
+  var BILLED = ["input", "info", "instruct", "schema"];
 
   function byteLength(text) {
     var str = text === null || text === undefined ? "" : String(text);
@@ -31,26 +34,41 @@
     return byteLength(text);
   }
 
-  function budget(request, limitBytes) {
-    request = request || {};
+  function numberOrNull(value) {
+    return typeof value === "number" && isFinite(value) ? value : null;
+  }
+
+  function storage(host) {
+    var raw = host && typeof host.storage === "object" && host.storage ? host.storage : {};
+    return { offeredBytes: numberOrNull(raw.offered_bytes), scopeBytes: numberOrNull(raw.scope_bytes) };
+  }
+
+  function budget(measure) {
+    var host = measure && typeof measure === "object" ? measure : {};
+    var measured = host.measured === true && numberOrNull(host.used_bytes) !== null;
+    var breakdown = measured && host.breakdown && typeof host.breakdown === "object" ? host.breakdown : {};
     var rows = [];
-    var total = 0;
-    FIELDS.forEach(function (key) {
-      if (!Object.prototype.hasOwnProperty.call(request, key)) return;
-      var bytes = jsonBytes(request[key]);
-      rows.push({ label: key, bytes: bytes });
-      total += bytes;
-    });
-    rows.forEach(function (row) {
-      row.percent = total > 0 ? Math.round((row.bytes / total) * 100) : 0;
-    });
-    var limit = typeof limitBytes === "number" && isFinite(limitBytes) && limitBytes > 0 ? limitBytes : null;
+    if (measured) {
+      BILLED.concat(Object.keys(breakdown).filter(function (key) {
+        return BILLED.indexOf(key) < 0;
+      }).sort()).forEach(function (field) {
+        if (!Object.prototype.hasOwnProperty.call(breakdown, field)) return;
+        var bytes = numberOrNull(breakdown[field]);
+        if (bytes === null) return;
+        rows.push({ label: field, bytes: bytes });
+      });
+    }
+    var limit = numberOrNull(host.limit_bytes);
+    if (limit !== null && limit <= 0) limit = null;
     return {
+      measured: measured,
       rows: rows,
-      totalBytes: total,
+      totalBytes: measured ? numberOrNull(host.used_bytes) : null,
+      overheadBytes: measured ? numberOrNull(host.overhead_bytes) : null,
       limitBytes: limit,
-      usage: limit === null ? "unknown" : "known",
-      usedPercent: limit === null ? null : Math.round((total / limit) * 100),
+      usage: measured && limit !== null ? "known" : "unknown",
+      usedPercent: measured && limit !== null ? numberOrNull(host.used_percent) : null,
+      storage: storage(host),
       tokenEstimate: "unknown"
     };
   }

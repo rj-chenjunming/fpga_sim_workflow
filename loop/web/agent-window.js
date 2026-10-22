@@ -128,14 +128,22 @@ window.AgentWindow = (function () {
       budgetEl.textContent = "无请求记录（历史为空或该尝试不可读）";
       summaryEl.textContent = "—";
     } else {
-      var limit = (view.context_budget || {}).limit_bytes;
-      var b = X.budget(request, limit);
-      var lines = b.rows.map(function (row) {
-        return row.label + ": " + row.bytes + " B（" + row.percent + "%）";
-      });
-      lines.push("合计: " + b.totalBytes + " B");
-      lines.push("上限: " + (b.limitBytes === null ? "未知" : b.limitBytes + " B") +
-        " · 使用率: " + (b.usedPercent === null ? "未知" : b.usedPercent + "%"));
+      /* R5：预算数字全部来自 Host 的 `context_budget`；本函数不求和、不另算占比、不判上限。 */
+      var b = X.budget(view.context_budget);
+      var lines = [];
+      if (!b.measured) {
+        lines.push("预算构成: 未知（该记录没有可重算的计费材料，Host 不估算）");
+      } else {
+        b.rows.forEach(function (row) { lines.push(row.label + ": " + row.bytes + " B"); });
+        lines.push("合计（Host 计费）: " + b.totalBytes + " B");
+        lines.push("其中序列化开销（键名/标点）: " + b.overheadBytes + " B");
+        lines.push("上限: " + (b.limitBytes === null ? "未知" : b.limitBytes + " B") +
+          " · 使用率: " + (b.usedPercent === null ? "未知" : b.usedPercent + "%"));
+      }
+      var stored = [];
+      if (b.storage.offeredBytes !== null) stored.push("offered " + b.storage.offeredBytes + " B");
+      if (b.storage.scopeBytes !== null) stored.push("scope " + b.storage.scopeBytes + " B");
+      if (stored.length) lines.push("记录存储大小（不计费）: " + stored.join(" · "));
       lines.push("token 估算: 未知（未测量）");
       var reasons = X.experience(request);
       if (reasons.length) {
@@ -143,7 +151,8 @@ window.AgentWindow = (function () {
         reasons.forEach(function (item) { lines.push("  - " + item.message); });
       }
       budgetEl.textContent = lines.join("\n");
-      summaryEl.textContent = b.totalBytes + " B" + (b.limitBytes === null ? "" : " / " + b.limitBytes + " B");
+      summaryEl.textContent = !b.measured ? "未知（未测量）"
+        : b.totalBytes + " B" + (b.limitBytes === null ? "" : " / " + b.limitBytes + " B");
     }
     var rows = X.attempts(view.attempts || []);
     var attLines = rows.map(function (row) {

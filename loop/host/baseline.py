@@ -185,8 +185,18 @@ def inspect(
         missing.append(MANIFEST)
         return record
     try:
-        doc = json.loads(manifest_path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
+        text = manifest_path.read_text(encoding="utf-8")
+    except UnicodeDecodeError as exc:
+        # R3：坏编码只让**该条** invalid；不得用 errors="ignore" 改写清单内容来掩盖，
+        # 也不得让解码异常冒到列表端点（旧实现 ⇒ GET /api/baselines 整体 500）。
+        errors.append(f"{MANIFEST} 编码不是 UTF-8（解码失败）：{type(exc).__name__}: {exc}")
+        return record
+    except OSError as exc:
+        errors.append(f"{MANIFEST} 无法读取：{type(exc).__name__}: {exc}")
+        return record
+    try:
+        doc = json.loads(text)
+    except json.JSONDecodeError as exc:
         errors.append(f"{MANIFEST} 无法解析：{type(exc).__name__}: {exc}")
         return record
     if not isinstance(doc, dict):

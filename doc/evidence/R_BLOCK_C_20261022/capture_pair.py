@@ -26,10 +26,14 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from collect_f14a import MockApi, agent_view, populated_view  # noqa: E402
+import datetime as _dt
+
+from collect_f14a import MockApi, agent_view, base_view, populated_view  # noqa: E402
 from verify_style_equivalence import HEIGHT, MAIN_VIEWPORTS, serve_dir  # noqa: E402
 
 FREEZE_CSS = "*,*::before,*::after{animation:none!important;transition:none!important}"
+# 固定假时钟：否则「上次成功 HH:MM:SS」等时间文本会随真实采集时刻变化
+FIXED_TIME = _dt.datetime(2026, 10, 22, 12, 0, 0, tzinfo=_dt.timezone.utc)
 
 
 def wait_js(page, expr, desc, timeout=8000):
@@ -48,6 +52,8 @@ def wait_js(page, expr, desc, timeout=8000):
 def fresh(page, static_url, api):
     api.hold = None
     api.pending.clear()
+    # 复位受控数据：run/gate 状态会写入 populated/failed 视图，不能让后续状态继承
+    api.views = {"A": base_view("A"), "B": base_view("B")}
     page.goto(static_url)
     page.wait_for_selector(".run-item", timeout=10000)
     page.add_style_tag(content=FREEZE_CSS)
@@ -82,7 +88,8 @@ def capture(browser, static_url, screens_dir):
         context = browser.new_context(viewport={"width": width, "height": HEIGHT},
                                       device_scale_factor=1)
         page = context.new_page()
-        page.clock.install()
+        page.clock.install(time=FIXED_TIME)
+        page.clock.pause_at(FIXED_TIME)  # install 只换实现、时间仍随真实时间走；暂停后才可复现
         api = MockApi(page)
         for name, driver in width_states:
             if driver == "legacy":
@@ -223,6 +230,8 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--web", required=True, help="要渲染的 web 目录（只读）")
     parser.add_argument("--screens-dir", required=True, help="截图输出目录")
+    parser.add_argument("--port", type=int, default=0,
+                        help="固定端口（改前/改后必须用同一端口；页面头部会显示端口号）")
     args = parser.parse_args(argv)
     web = Path(args.web).resolve()
     if not (web / "index.html").exists():
@@ -231,7 +240,7 @@ def main(argv=None):
     screens_dir = Path(args.screens_dir).resolve()
     from playwright.sync_api import sync_playwright
 
-    server, thread, static_url = serve_dir(web)
+    server, thread, static_url = serve_dir(web, port=args.port)
     try:
         with sync_playwright() as pw:
             executable = os.environ.get("LOOP_BROWSER_EXECUTABLE")

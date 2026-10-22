@@ -276,7 +276,7 @@ details.events[open] summary{border-bottom:1px solid var(--line)}
   white-space:pre-wrap;overflow-wrap:anywhere}
 
 /* ---------- 目录选择器 ---------- */
-.dirpicker{border:1px solid var(--line-strong);background:var(--panel);
+.dirpicker{border:1px solid var(--line-strong);background:#fff;
   margin-top:10px;overflow:hidden}
 .dp-head{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--line);background:#f8fafc}
 .dp-crumb{flex:1;font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
@@ -463,7 +463,7 @@ body{font-family:var(--font-sans);font-size:14px;line-height:1.65}
 .skip-link:focus{top:12px}
 :where(button,a,summary):focus-visible{outline:3px solid var(--primary);outline-offset:3px}
 main:focus{outline:none}
-header{height:72px;padding:0 28px;gap:16px;background:var(--panel);box-shadow:0 1px 0 #21383104}
+header{height:72px;padding:0 28px;gap:16px;background:#fff;box-shadow:0 1px 0 #21383104}
 .brand{width:205px;flex:0 0 205px;gap:9px;font-size:21px;font-weight:750;letter-spacing:-.7px}
 .brand-flow{font-weight:450;margin-left:-5px;color:#456a58}
 .mark{width:31px;height:31px;border-radius:9px;background:var(--primary);box-shadow:inset 0 0 0 1px #ffffff20}
@@ -533,7 +533,7 @@ main{width:calc(100% - 244px);max-width:1800px;padding:32px 36px 24px;margin:0 a
 .btn:disabled{opacity:.5;box-shadow:none}
 .input,select.input,textarea.input{height:42px;padding:0 13px;border-radius:7px;border-color:var(--line-strong);font-size:14px;background:#fcfdfc;transition:border-color .15s,box-shadow .15s}
 textarea.input{height:auto;padding:11px 13px;line-height:1.7}
-.input:focus,select.input:focus,textarea.input:focus{outline:2px solid #c4e2cf;outline-offset:1px;border-color:var(--primary);background:var(--panel)}
+.input:focus,select.input:focus,textarea.input:focus{outline:2px solid #c4e2cf;outline-offset:1px;border-color:var(--primary);background:#fff}
 .input::placeholder{color:#7b8980;opacity:1;font-size:12px}
 .chip{font-size:11px;border-radius:5px;background:#f3f6f3;padding:3px 8px}
 .card{border-color:var(--line);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:20px;min-width:0}

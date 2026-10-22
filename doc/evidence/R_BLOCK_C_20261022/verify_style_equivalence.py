@@ -113,8 +113,8 @@ _JS_FINGERPRINT = r"""
 """
 
 
-def serve_dir(directory):
-    """与 collect_f14a.serve_web 同构，但可指定目录。"""
+def serve_dir(directory, port=0):
+    """与 collect_f14a.serve_web 同构，但可指定目录与端口（固定端口用于可复现截图）。"""
     import threading
     from functools import partial
     from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -123,7 +123,7 @@ def serve_dir(directory):
         def log_message(self, *_args):
             pass
 
-    server = ThreadingHTTPServer(("127.0.0.1", 0), partial(Quiet, directory=str(directory)))
+    server = ThreadingHTTPServer(("127.0.0.1", port), partial(Quiet, directory=str(directory)))
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     return server, thread, "http://127.0.0.1:%d" % server.server_port

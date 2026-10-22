@@ -13,6 +13,7 @@ from fastapi.testclient import TestClient
 
 from host import paths as P
 from services.api import app
+from test_baseline_admission import make_baseline
 
 
 @pytest.fixture
@@ -69,3 +70,58 @@ def test_non_baseline_value_error_detail_shape_is_unchanged(
     detail = response.json()["detail"]
     assert "error" in detail
     assert "missing" not in detail and "errors" not in detail
+
+
+# ------------------------------------------------- R3：manifest 解码失败隔离
+#
+# 契约：非 UTF-8 的 manifest 只让**该条** invalid + errors（编排规格 §3.1 条款 4
+# 「解码失败隔离」），不得使整个列表端点 500，也不得用 errors="ignore" 改写清单。
+
+
+def test_non_utf8_manifest_does_not_break_baseline_list(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """R3 红灯：一个坏编码 manifest 曾让真实 `GET /api/baselines` 整体 500。"""
+    workspace = tmp_path / "kb"
+    make_baseline(workspace, "v1")
+    bad = make_baseline(workspace, "v2")
+    (bad / "manifest.json").write_bytes(b"\xff\xfe")
+    monkeypatch.setattr(P, "WORKSPACE_ROOT", workspace)
+
+    # 默认 TestClient 会把服务端异常重新抛出：这里要观察真实 HTTP 状态码。
+    with TestClient(app, raise_server_exceptions=False) as raw_client:
+        response = raw_client.get("/api/baselines")
+
+    assert response.status_code == 200, response.text
+    by_id = {item["id"]: item for item in response.json()["baselines"]}
+    assert by_id["v1"]["valid"] is True, by_id["v1"]
+    assert by_id["v2"]["valid"] is False, by_id["v2"]
+    assert by_id["v2"]["errors"], by_id["v2"]
+    assert any(
+        word in error for error in by_id["v2"]["errors"] for word in ("解码", "编码", "UTF-8")
+    ), by_id["v2"]
+
+
+def test_non_utf8_manifest_real_start_is_rejected_with_structured_errors(
+    client: TestClient, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """R3：real 选坏编码基线 ⇒ HTTP 400 + 结构化 errors（不是 500，也不建 run）。"""
+    workspace = tmp_path / "kb"
+    bad = make_baseline(workspace, "v9")
+    (bad / "manifest.json").write_bytes(b"\xff\xfe")
+    monkeypatch.setattr(P, "KB_DIR", workspace)
+
+    from workflows import main_flow
+
+    def must_not_prepare(*args: object, **kwargs: object) -> object:
+        raise AssertionError("坏编码基线必须在 prepare_run_dir 之前被拒绝")
+
+    monkeypatch.setattr(main_flow, "prepare_run_dir", must_not_prepare)
+
+    response = _start(client, "v9")
+    assert response.status_code == 400, response.text
+    detail = response.json()["detail"]
+    assert detail["baseline"] == "v9"
+    assert isinstance(detail["missing"], list)
+    assert isinstance(detail["errors"], list) and detail["errors"], detail
+

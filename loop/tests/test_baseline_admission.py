@@ -19,6 +19,7 @@ from typing import Any
 import pytest
 
 from host import paths as P
+from host.baseline import BaselineInvalid
 from host.progress import ProgressLog
 from services import config_api
 from services.contracts import KbSources
@@ -197,6 +198,29 @@ def test_list_reports_bad_entries_without_raising(tmp_path: Path) -> None:
     assert by_id["v2"]["errors"]
 
 
+# ------------------------------------------------- R3：manifest 解码失败隔离
+#
+# 契约：非 UTF-8 manifest 只让**该条** invalid + errors（编排规格 §3.1 条款 4
+# 「解码失败隔离」），不得使列表整体失败，也不得用 errors="ignore" 改写清单。
+
+
+def test_list_isolates_non_utf8_manifest_and_keeps_good_entries(tmp_path: Path) -> None:
+    """R3 红灯：坏编码 manifest 曾让列表整体 500，同目录好基线也列不出来。"""
+    make_baseline(tmp_path, "v1")
+    bad = make_baseline(tmp_path, "v2")
+    (bad / "manifest.json").write_bytes(b"\xff\xfe")
+
+    listed = config_api.list_baselines(tmp_path)
+    by_id = {item["id"]: item for item in listed["baselines"]}
+    assert by_id["v1"]["valid"] is True, by_id["v1"]
+    assert by_id["v2"]["valid"] is False, by_id["v2"]
+    assert by_id["v2"]["errors"], by_id["v2"]
+    assert any(
+        word in error for error in by_id["v2"]["errors"] for word in ("解码", "编码", "UTF-8")
+    ), by_id["v2"]
+
+
+
 def test_symlink_baseline_is_listed_invalid_not_hidden(tmp_path: Path) -> None:
     real = make_baseline(tmp_path, "v1")
     (tmp_path / "baselines" / "v2").symlink_to(real, target_is_directory=True)
@@ -348,6 +372,15 @@ def test_broken_and_looping_symlink_artifacts_are_structured(tmp_path: Path) -> 
 # ---------------------------------------------------------------- 准入：零副作用
 
 
+def _state_snapshot() -> dict[str, list[str]]:
+    """run/作业/事件三个目录的条目名快照（用于断言拒绝零副作用）。"""
+    return {
+        "runs": sorted(path.name for path in P.KB_RUNS.glob("*")) if P.KB_RUNS.is_dir() else [],
+        "jobs": sorted(path.name for path in P.JOBS_DIR.glob("*")) if P.JOBS_DIR.is_dir() else [],
+        "events": sorted(path.name for path in P.EVENTS_DIR.glob("*")) if P.EVENTS_DIR.is_dir() else [],
+    }
+
+
 async def test_start_real_rejects_baseline_before_creating_run_dir(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -389,19 +422,35 @@ async def test_start_real_rejects_escaping_artifact_with_zero_side_effects(
         raise AssertionError("越界基线必须在 prepare_run_dir 之前被拒绝")
 
     monkeypatch.setattr(main_flow, "prepare_run_dir", must_not_prepare)
-
-    def snapshot() -> dict[str, list[str]]:
-        return {
-            "runs": sorted(path.name for path in P.KB_RUNS.glob("*")) if P.KB_RUNS.is_dir() else [],
-            "jobs": sorted(path.name for path in P.JOBS_DIR.glob("*")) if P.JOBS_DIR.is_dir() else [],
-            "events": sorted(path.name for path in P.EVENTS_DIR.glob("*")) if P.EVENTS_DIR.is_dir() else [],
-        }
-
-    before = snapshot()
+    before = _state_snapshot()
     manager = main_flow.RunManager()
     with pytest.raises(ValueError, match="未通过准入"):
         await manager.start(baseline="v1", mode="real")
-    assert snapshot() == before, "越界拒绝前不得写 run/作业/事件"
+    assert _state_snapshot() == before, "越界拒绝前不得写 run/作业/事件"
+
+
+async def test_start_real_rejects_non_utf8_manifest_with_zero_side_effects(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """R3：real 选坏编码基线 ⇒ 结构化拒绝，且 run/作业/事件零写入。"""
+    baseline_dir = make_baseline(tmp_path, "v1")
+    (baseline_dir / "manifest.json").write_bytes(b"\xff\xfe")
+    monkeypatch.setattr(P, "KB_DIR", tmp_path)
+
+    def must_not_prepare(*args: Any, **kw: Any) -> Any:
+        raise AssertionError("坏编码基线必须在 prepare_run_dir 之前被拒绝")
+
+    monkeypatch.setattr(main_flow, "prepare_run_dir", must_not_prepare)
+    before = _state_snapshot()
+    manager = main_flow.RunManager()
+    with pytest.raises(BaselineInvalid) as excinfo:
+        await manager.start(baseline="v1", mode="real")
+    details = excinfo.value.details
+    assert details["errors"] and not details["missing"], details
+    assert any(
+        word in error for error in details["errors"] for word in ("解码", "编码", "UTF-8")
+    ), details
+    assert _state_snapshot() == before, "坏编码拒绝前不得写 run/作业/事件"
 
 
 async def test_start_real_accepts_valid_baseline_past_admission(

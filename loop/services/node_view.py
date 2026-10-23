@@ -43,7 +43,7 @@ TERMINAL_RUN_STATUSES: frozenset[str] = frozenset({"finished", "failed"})
 
 #: 节点目录（name / owner / purpose）**由服务端下发**，前端 `NODE_META` 只是兜底，不得成为第二权威。
 #: 名称与 `WEB_UI_SPEC.md` §4.2 的展示契约一致；内部节点与 HALT 见 §10.4；
-#: `purpose` 是面板「这一步做什么」的一句话（SPEC-REV-02 R1），**不随数据变化**。
+#: `purpose` 是面板「这一步做什么」的一句话（SPEC-REV-04 R1），**不随数据变化**。
 NODE_CATALOG: dict[str, dict[str, str]] = {
     "N0": {"name": "基线", "owner": "Host",
            "purpose": "把这次运行要用的工作目录准备好，并把闸门/基线状态初始化。"},
@@ -265,7 +265,7 @@ def build_node_detail(
     mode = doc.get("mode") if doc.get("mode") is not None else (
         (run_view or {}).get("mode") if isinstance(run_view, dict) else None)
     started_present = any(event.get("kind") == "node_started" for event in node_events)
-    # 展示投影（SPEC-REV-02 R1 + P 项）：服务端确定性生成的人话摘要；不改变任何原始字段。
+    # 展示投影（SPEC-REV-04 R1 + P 项）：服务端确定性生成的人话摘要；不改变任何原始字段。
     story = node_story.build_story(
         node,
         events=node_events,

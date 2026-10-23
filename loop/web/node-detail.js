@@ -1,4 +1,4 @@
-/* 节点执行详情面板（SPEC-04 §4.2.1；SPEC-REV-02 R1「人话优先」/ R2 闸门二级清单 / §4 前端渲染约定）。
+/* 节点执行详情面板（SPEC-04 §4.2.1；SPEC-REV-04 R1「人话优先」/ R2 闸门二级清单 / §4 前端渲染约定）。
  *
  * 边界：
  *   · 独立 <dialog>，自带状态；执行视图每 1.5 s 全量重建 #stages 不会清掉本面板。
@@ -9,7 +9,7 @@
  *   · 证据只做存在性探测（GET .../evidence/exists），不在页面打开文件正文；
  *     唯一的文件正文例外是 P-28 的报告只读视图（GET .../report，白名单 + 只读 + 有上限）。
  *   · 闸门逐条处置只写共享 gate-session 草稿（window.GateDraftBridge），本面板绝不发 POST；
- *     提交入口仍只有闸门视图表单（SPEC-REV-02 §R2.2）。
+ *     提交入口仍只有闸门视图表单（SPEC-REV-04 §R2.2）。
  *   · 差异对比浮窗用页内 overlay；报告全文浮窗用公共 report-viewer.js 的独立 <dialog>
  *     （N12 面板与 G2 材料共用一次点击入口）。Esc 只关上层、焦点回到触发按钮；窄屏全屏。
  *   · 并发/过期回包用 epoch + request 双守卫；切换节点或关闭窗口后旧回包一律丢弃。
@@ -535,7 +535,7 @@ window.NodeDetail = (function () {
     if (host) host.appendChild(el("div", "alert bad", "报告浮窗模块未加载（report-viewer.js）。"));
   }
 
-  /* ---------------- 闸门二级清单（P-15/P-17/P-18/P-29；SPEC-REV-02 §R2） ---------------- */
+  /* ---------------- 闸门二级清单（P-15/P-17/P-18/P-29；SPEC-REV-04 §R2） ---------------- */
 
   function gateOf(view) {
     return view && view.gate && typeof view.gate === "object" && !Array.isArray(view.gate) ? view.gate : null;

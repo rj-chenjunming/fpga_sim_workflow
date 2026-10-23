@@ -1,4 +1,4 @@
-# 节点详情面板"人话优先"实测（SPEC-REV-02 R1，2026-10-23）
+# 节点详情面板"人话优先"实测（SPEC-REV-04 R1，2026-10-23）
 
 > **这是什么**：把节点执行详情从"技术键值 + 事件流水 + 原始 detail"改成"一句话用途 → 一句话结果 →
 > 关键数字 → 过程步骤 → 证据 → 原始记录（默认收起）"的过程与证据。
@@ -13,7 +13,7 @@
 
 | 层 | 落点 | 内容 |
 |---|---|---|
-| 规格 | [`SPEC-REV-02`](../spec/SPEC-REV-02-20261023.md)、[SPEC-04](../spec/WEB_UI_SPEC.md) §4.2.1/§6.7、[SPEC-02](../spec/LOOP_ORCHESTRATION_SPEC.md) §10.4 | 面板七块结构；`story`（`purpose`/`steps`/`key_results`）由服务端确定性生成；`seq` 只留在收起的「原始记录」并注明"事件流水号，不是业务状态" |
+| 规格 | [`SPEC-REV-04`](../spec/SPEC-REV-04-20261023.md)、[SPEC-04](../spec/WEB_UI_SPEC.md) §4.2.1/§6.7、[SPEC-02](../spec/LOOP_ORCHESTRATION_SPEC.md) §10.4 | 面板七块结构；`story`（`purpose`/`steps`/`key_results`）由服务端确定性生成；`seq` 只留在收起的「原始记录」并注明"事件流水号，不是业务状态" |
 | 投影 | `loop/services/node_story.py`（新增）、`loop/services/node_view.py` | 逐节点一句话用途（`NODE_CATALOG.purpose`）+ 步骤人话（按事件 `kind` 白名单）+ 关键数字（逐节点字段表）；缺失逐项"未下发"，不猜、不换算 |
 | 前端 | `loop/web/node-detail.js`、`loop/web/index.html`、`loop/web/app.css` | 首屏：这一步做什么 / 结果 / 关键数字 / 过程；证据单独一段；失败时显示 error 原文；「原始记录（排查用）」`<details>` 默认收起，含 `seq`、完整 detail、`missing_fields`、身份技术字段 |
 | 测试 | `loop/tests/test_node_story.py`（新增）、`test_node_detail_projection.py`、`tests/browser/test_node_detail.py` | 单元：purpose/steps/key_results/缺失/确定性；浏览器：首屏可读、seq 默认收起、失败不声称完成 |
@@ -48,7 +48,7 @@
 | N12 | 让报告模型写本轮评估报告。 | 报告结论 not_passed、引用 18 条 | 开始 → 结束 |
 | N4/N13/N14 | 闸门：人做决定。 | 未收尾时显示"该节点还没有收尾记录"，收尾后给出决策/签署人 | — |
 
-完整清单与措辞见 [`SPEC-REV-02`](../spec/SPEC-REV-02-20261023.md) §R1；N15/N15_select/N15_submit/N16/HALT
+完整清单与措辞见 [`SPEC-REV-04`](../spec/SPEC-REV-04-20261023.md) §R1；N15/N15_select/N15_submit/N16/HALT
 在 drill 全链中同形（N16 实测：`dry-run`、退出码、操作者类型在一屏内可见）。
 
 **`seq` 的处理**：正文不再出现；只在「原始记录（排查用）」顶部写
@@ -64,7 +64,7 @@
 | 软件层 | `bash loop/spikes/run_software_checks.sh --ignore=tests/browser --junitxml=…` | **546 tests, 0 failures, 0 errors, 0 skipped**（108.16s；3 项 `env_layer` 按脚本默认排除并在输出列出） |
 | 浏览器 | `LOOP_BROWSER_EXECUTABLE=/usr/bin/google-chrome pytest -q tests/browser`（可写 `HOME`） | **56 passed**（75.22s） |
 | 端到端 | 隔离工具副本 + 副本环境：`LOOP_ENV_ROOT=workspaces/real-env-copy LOOP_WORKSPACE=workspaces/real-env-copy/kb LOOP_PORT=18199 bash spikes/accept_v1_run.sh` | **ALL PASS，117/117**（phase 1/2/3/4/4b/5 = 50/27/18/8/8/6，全部 rc=0） |
-| 文档 | `python3 doc/audit/check_doc_links.py` | 见 `doc/STATUS.md` §44（`missing=0`） |
+| 文档 | `python3 doc/audit/check_doc_links.py` | 见 `doc/STATUS.md` §47（`missing=0`） |
 
 **端到端隔离方法的坑（实测记录）**：直接从仓库 `cp` 出工具副本会带上 `loop/.agently/records/identity/state.json`，
 其中 `record_store_id` 绑定原工具根；新进程建 RecordStore 时报

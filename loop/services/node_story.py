@@ -1,6 +1,6 @@
 """节点详情的人话展示投影（只读、非权威）。
 
-规格依据：`doc/spec/SPEC-REV-02-20261023.md` R1 / §C.2（P-01～P-35）与
+规格依据：`doc/spec/SPEC-REV-04-20261023.md` R1 / §C.2（P-01～P-35）与
 `doc/plans/2026-10-23-node-panel-unified-revision-plan.md` §1（S1 接口契约）；
 `LOOP_ORCHESTRATION_SPEC.md` §10.4（`story`）；`WEB_UI_SPEC.md` §4.2.1 / §6.7。
 
@@ -2000,7 +2000,7 @@ def build_story(
         "status_glossary": dict(STATUS_GLOSSARY),
         "steps": steps,
         # 未走到 / 确实没执行 / 还没收尾的节点不逐项堆"未下发"（结果一句话已说清状态；
-        # 前端对"detail 为空还没有收尾记录"另有固定提示，见 SPEC-REV-02 R1 / P-06）。
+        # 前端对"detail 为空还没有收尾记录"另有固定提示，见 SPEC-REV-04 R1 / P-06）。
         "key_results": (
             [] if (not_reached or (not_executed and not event_list)
                    or (not node_detail and not has_terminal and not gate_counts_present))

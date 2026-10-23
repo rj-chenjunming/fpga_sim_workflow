@@ -2,7 +2,7 @@
 
 > **这是什么**：第二轮 9 项裁决落地后的**遗漏审计 + 第三轮开工包**。新窗口把 §1 的代码块整段粘进去即可开工。
 > **背景**：P-01～P-35 已修订，9 项用户裁决已落地；四道门在第二轮工作树上全绿。本文件只列**还没闭环**的项。
-> **不是什么**：不改变任何已定契约；行为以 [`SPEC-REV-02`](../spec/SPEC-REV-02-20261023.md)、
+> **不是什么**：不改变任何已定契约；行为以 [`SPEC-REV-04`](../spec/SPEC-REV-04-20261023.md)、
 > [`SPEC-02 §10.4`](../spec/LOOP_ORCHESTRATION_SPEC.md)、[`SPEC-04`](../spec/WEB_UI_SPEC.md) 为准。
 
 ---
@@ -19,7 +19,7 @@
     `doc/spec/S0_ENVIRONMENT_SPEC.md` 等。
   **一律先 `git diff <文件>` 看清再动手；只叠加不回退；`FS_STALE_VERSION` ⇒ re-read 后重做。**
 - 未跟踪的新文件：`loop/services/node_story.py`、`loop/tests/test_node_story.py`、`loop/web/report-viewer.js`、
-  `doc/spec/SPEC-REV-02-20261023.md`、`doc/plans/2026-10-23-node-panel-*.md`、`doc/evidence/NODE_PANEL_*.md`。
+  `doc/spec/SPEC-REV-04-20261023.md`、`doc/plans/2026-10-23-node-panel-*.md`、`doc/evidence/NODE_PANEL_*.md`。
 - `.tmp/` 是本会话临时目录（日志/看守），可直接删；删前确认没有看守在写（见 ④）。
 
 **② 门禁基线（第二轮工作树，2026-10-23 20:4x 实测；新窗口记录新数字）**
@@ -86,10 +86,10 @@
 3) 读这些文件（按顺序）：
    AGENTS.md
    doc/plans/2026-10-23-node-panel-unified-revision-plan.md   ← 第一/二轮接口契约 + §8 九项裁决（已定，勿重问）
-   doc/spec/SPEC-REV-02-20261023.md 的 §C.2（P 项状态）与 §R1/§R2
+   doc/spec/SPEC-REV-04-20261023.md 的 §C.2（P 项状态）与 §R1/§R2
    doc/spec/LOOP_ORCHESTRATION_SPEC.md §10.4（10.4.1–10.4.5）
    doc/spec/WEB_UI_SPEC.md §4.2.1/§4.2.2/§4.4/§6.7/§6.8
-   doc/STATUS.md §47/§48/§49（门禁数字与未关闭项）
+   doc/STATUS.md §49/§50/§51（门禁数字与未关闭项）
    doc/evidence/NODE_PANEL_REVISION_20261023.md（全部实测证据）
    loop/host/evidence.py（**只读**：印记解析/期望解析/_verdict 是权威，本轮不改它）
    现状实现：loop/services/{node_story,node_view,contracts,api}.py、
@@ -201,7 +201,7 @@ R3-15 `GATE_NODES` 集合（node_story）与 `GATE_ID_BY_NODE`（node_view）是
 【P2｜文档与验收】
 R3-16 `doc/UI_RUNBOOK.md` 已过期（line ~524 仍写"v1 未提供逐条处置输入控件"）：先确认该文件是否仍被
   另一条线占用；若已落，更新节点面板/G1 逐条处置/报告全文/G2 材料入口/未到达态描述 + 截图。
-R3-17 收尾：SPEC-REV-02 §C.2 对应状态（P-15/P-22/P-24/P-25 的补充项）、`STATUS §50` 追加
+R3-17 收尾：SPEC-REV-04 §C.2 对应状态（P-15/P-22/P-24/P-25 的补充项）、`STATUS §52` 追加
   （改了什么/四道门数字/未关闭项，只追加不回填）、evidence 新文件只增。
 R3-18 真实轮验收（只登记，不阻塞）：等下一轮 real run 跑到 N16，补 P-13/P-14/P-20/P-21/P-24/P-26/
   P-27/P-28/P-29/P-31/P-32/P-34/P-35 的真机观测；写到 evidence 与 STATUS。
@@ -232,8 +232,8 @@ kb 自测：LOOP_WORKSPACE=<可写影子> loop/.venv/bin/python kb/tools/_selfte
 N6 印记端到端单测（R3-01④）必须绿——这是本轮"能过 I3"的唯一证据。
 
 收尾：
-- SPEC-REV-02 §C.2 对应行状态改「已修（日期）」，未做的保留「未定/待拍板」并写原因；
-- doc/STATUS.md 追加 §50（只追加）：改了什么/四道门实测数字/仍未关闭项；
+- SPEC-REV-04 §C.2 对应行状态改「已修（日期）」，未做的保留「未定/待拍板」并写原因；
+- doc/STATUS.md 追加 §52（只追加）：改了什么/四道门实测数字/仍未关闭项；
 - 新增 doc/evidence/NODE_PANEL_ROUND3_<日期>.md（只增）；引用本轮裁决与证据；
 - 不声称"已合规"；未拍板项与"未执行的真机项"必须在 STATUS 与 evidence 保持可见。
 

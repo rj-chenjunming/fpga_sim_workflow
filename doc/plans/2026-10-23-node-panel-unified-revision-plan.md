@@ -1,11 +1,11 @@
 # 节点面板统一修订 · 实施计划与接口契约（2026-10-23）
 
 > **上游**：[开工交接提示词](2026-10-23-node-panel-revision-kickoff.md)（用户用法与硬约束）、
-> [SPEC-REV-02 §C](../spec/SPEC-REV-02-20261023.md)（P-01～P-35 唯一权威清单）、
-> [SPEC-REV-02 §R2](../spec/SPEC-REV-02-20261023.md)（闸门复核 UI 设计已定）。
-> **本文件不是新契约**：只把 SPEC-REV-02 已定的行为**落成实现接口**（字段名/形状/文案），
-> 让多个 owner 能互不重叠地并行实现。行为冲突以 SPEC-REV-02 为准。
-> **状态**：**已实施（2026-10-23）**。四道门实测与未关闭项写 [`doc/STATUS.md` §47](../STATUS.md)，
+> [SPEC-REV-04 §C](../spec/SPEC-REV-04-20261023.md)（P-01～P-35 唯一权威清单）、
+> [SPEC-REV-04 §R2](../spec/SPEC-REV-04-20261023.md)（闸门复核 UI 设计已定）。
+> **本文件不是新契约**：只把 SPEC-REV-04 已定的行为**落成实现接口**（字段名/形状/文案），
+> 让多个 owner 能互不重叠地并行实现。行为冲突以 SPEC-REV-04 为准。
+> **状态**：**已实施（2026-10-23）**。四道门实测与未关闭项写 [`doc/STATUS.md` §49](../STATUS.md)，
 > 证据见 [`doc/evidence/NODE_PANEL_REVISION_20261023.md`](../evidence/NODE_PANEL_REVISION_20261023.md)。
 
 ---
@@ -18,7 +18,7 @@
 | S2 宿主数据面 | 新 detail 字段（N3/N5/N6/N6_apply/N8/N9/N10/N11/N12/N15*/N16/HALT）、闸门逐条处置落账、`node_started` 补齐、N16 结果件、P-14 提示词 | **host-owner** | `loop/workflows/chunks/*.py`、`loop/prompts/node_schemas.py`、`loop/prompts/loop_nodes.yaml`、`loop/tests/test_flow.py` 等受影响单测 |
 | S3 服务端闸门/报告投影 | `node_view` 扩展、`contracts.gate_entries_view`、`GET /api/runs/{id}/report` | **Lead** | `loop/services/node_view.py`、`loop/services/contracts.py`、`loop/services/api.py`、`loop/tests/test_node_detail_projection.py` |
 | S4 前端 | 结果区 headline/note、状态 chip 释义、未到达/未执行文案、证据入口、闸门二级清单 + 浮窗 + 共享草稿、N12 报告全文视图 | **web-owner** | `loop/web/node-detail.js`、`loop/web/index.html`、`loop/web/app.css`、`loop/web/app.js`（只加桥）、`loop/tests/browser/test_node_detail.py` |
-| S5 文档 | WEB_UI_SPEC / LOOP_ORCHESTRATION_SPEC / SPEC-REV-02 §C.2 / STATUS §47 / evidence | **Lead** | `doc/**` |
+| S5 文档 | WEB_UI_SPEC / LOOP_ORCHESTRATION_SPEC / SPEC-REV-04 §C.2 / STATUS §49 / evidence | **Lead** | `doc/**` |
 
 **并发红线**（交接提示词 §0.5 ④，比原文更严）：
 
@@ -289,9 +289,9 @@ P-14（提示词/schema）：`loop_nodes.yaml::n3_digest` ①分组改为有条�
 
 1. 四道门（软件层 standin / 浏览器 / 端到端隔离副本 / 文档门）实测数字**从命令输出复制**；
    18098 真实作业在跑时先做代码+单测，浏览器与 e2e 留到作业结束（交接提示词 §0.5 ④.4）。
-2. `SPEC-REV-02 §C.2` 状态改「已修（2026-10-23）」或保留「未定」并写明原因；
+2. `SPEC-REV-04 §C.2` 状态改「已修（2026-10-23）」或保留「未定」并写明原因；
    `WEB_UI_SPEC` §4.2.1/§4.4/§6.7、`LOOP_ORCHESTRATION_SPEC` §10.4 同步新字段与只读报告契约。
-3. `doc/STATUS.md` 追加 **§47**（§46 已被 Lead 预订）：改了什么/四道门数字/未关闭项；只追加不回填。
+3. `doc/STATUS.md` 追加 **§49**（§54 已被 Lead 预订）：改了什么/四道门数字/未关闭项；只追加不回填。
 4. `doc/evidence/NODE_PANEL_REVISION_20261023.md`（只新增）记录实测证据。
 5. **不声称"已合规"**：未拍板项（P-25 系统侧印记、N13/N14 待确认项数据源、P-02/P-05 等）在
    STATUS 与 §C.2 保持可见。

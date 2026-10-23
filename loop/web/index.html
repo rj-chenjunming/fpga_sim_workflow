@@ -399,7 +399,7 @@
   </div>
 </dialog>
 
-<!-- 节点执行详情（SPEC-04 §4.2.1；SPEC-REV-02 R1）：独立弹层，人话优先，原始记录默认收起。 -->
+<!-- 节点执行详情（SPEC-04 §4.2.1；SPEC-REV-04 R1）：独立弹层，人话优先，原始记录默认收起。 -->
 <dialog id="nodeDetail" class="node-detail" aria-labelledby="ndTitle">
   <div class="nd-head">
     <div class="grow">
@@ -470,7 +470,7 @@
     </div>
   </div>
   <div class="nd-foot">投影，非权威；判据以服务端 blockers / gates.json 为准</div>
-  <!-- 浮窗（SPEC-REV-02 §R2 / §4）：节点面板本身是 <dialog>，浮窗用页内 overlay；
+  <!-- 浮窗（SPEC-REV-04 §R2 / §4）：节点面板本身是 <dialog>，浮窗用页内 overlay；
        Esc 只关上层、焦点回到触发按钮；窄屏全屏。 -->
   <div class="nd-overlay hidden" id="ndDiffOverlay" role="dialog" aria-modal="true" aria-labelledby="ndDiffTitle">
     <div class="nd-overlay-card" id="ndDiffCard">

@@ -412,13 +412,13 @@ n9_sim chunk                       park chunk                      job_runner �
 > 因此"只加一个节点详情端点"不足以满足本节——`host_steps.py` / `model_steps.py` / `long_jobs.py` / `gates.py`
 > 的 `node_finished` 调用都必须补 detail（各自 owner 的写权）。
 
-**展示投影 `story`（SPEC-REV-02 R1）**：详情响应在既有字段之外**只增**一个 `story` 对象，
+**展示投影 `story`（SPEC-REV-04 R1）**：详情响应在既有字段之外**只增**一个 `story` 对象，
 由服务端确定性生成，供面板"人话优先"展示；界面直接渲染，不自行拼装：
 
 | 字段 | 含义 | 生成规则 |
 |---|---|---|
 | `purpose` | 一句话：这个节点在流程里干什么 | 来自节点目录（`NODE_CATALOG`）；未知节点 `null`；**不随数据变化** |
-| `headline` | 一句话结果（面板「结果」区首屏显示） | 服务端按节点模板从已有 `detail` 字段确定性生成（[SPEC-REV-02](SPEC-REV-02-20261023.md) §1.1/§C.2）；缺数据写"未下发"；**不改写** `summary` 原文（原文移入面板「原始记录」） |
+| `headline` | 一句话结果（面板「结果」区首屏显示） | 服务端按节点模板从已有 `detail` 字段确定性生成（[SPEC-REV-04](SPEC-REV-04-20261023.md) §1.1/§C.2）；缺数据写"未下发"；**不改写** `summary` 原文（原文移入面板「原始记录」） |
 | `headline_source` | `template` / `summary` / `missing` | 说清 headline 是模板生成、退化为 summary，还是确实未下发 |
 | `note` | 首屏黄条 `{text, level}` 或 `null` | 例：N2「N 条需要你确认，到 G1 逐条处置」；闸门等待态硬阻断白话（P-10/P-29）。`level ∈ {warn, info}` |
 | `not_reached` | 运行已终态且该节点无事件 | 只有 `run_status ∈ {finished, failed}` 才可为真（P-30）；为真时正文不得出现"等它跑完" |
@@ -426,7 +426,7 @@ n9_sim chunk                       park chunk                      job_runner �
 | `evidence_note` | 证据区首行说明 `{text, kind}` 或 `null` | `kind ∈ {agent_calls, not_executed, in_events, artifact}`；`agent_calls` 时界面**不得**显示"证据缺失"（P-20/P-23/P-27） |
 | `status_note` / `status_glossary` | 状态原值的中文释义 | 只作释义：界面显示 `{原值} {释义}`，原值逐字保留、不归一（P-07）；glossary 由服务端下发，前端不手抄 |
 | `steps` | 按事件顺序的人话步骤 | 逐条事件按 `kind` 白名单映射：`node_started`→"开始执行"；`gate_pending`→"等待人工决策（可选 …）"；`gate_decided`→"人工已决策：…（actor）"；`job_submitted`→"提交作业 … 覆盖 N 个用例"；`job_finished`/`node_finished`→"结束，状态 …"；`node_failed`→"失败：<原文>"；`warning`→"警告：…"；`admission_*`→槽位事件。只读事件现有字段，缺字段写"未下发/原因未下发" |
-| `key_results` | 逐节点精选字段 | 按 [SPEC-REV-02](SPEC-REV-02-20261023.md) §R1 的「关键数字」清单取值；缺失项 `missing=true` + `text="未下发"`；不换算、不判绿。P-09/P-12/P-19 起逐节点精简（N1 只留 2 项；N2 用内容维度；md5/路由计数不进关键数字） |
+| `key_results` | 逐节点精选字段 | 按 [SPEC-REV-04](SPEC-REV-04-20261023.md) §R1 的「关键数字」清单取值；缺失项 `missing=true` + `text="未下发"`；不换算、不判绿。P-09/P-12/P-19 起逐节点精简（N1 只留 2 项；N2 用内容维度；md5/路由计数不进关键数字） |
 | `gate` | 闸门节点二级差异清单（见 §10.4.2） | 非闸门节点 `null`；只透传服务端只读投影，界面不自行拼装 |
 
 
@@ -446,7 +446,7 @@ n9_sim chunk                       park chunk                      job_runner �
 **端点**：`GET /api/runs/{run_id}/nodes/{node}`（契约见 [SPEC-04](WEB_UI_SPEC.md) §6.7）；覆盖全部节点；
 未实现的节点返回显式空投影（`known=false`），不返回 404 冒充"节点不存在"。
 
-### 10.4.1 节点详情的新增只读字段（SPEC-REV-02 §C 的实现面）
+### 10.4.1 节点详情的新增只读字段（SPEC-REV-04 §C 的实现面）
 
 详情投影在原字段之外**只增**下列字段（界面直接渲染；不新增业务写动作、不改事件 kind/status）：
 
@@ -486,7 +486,7 @@ n9_sim chunk                       park chunk                      job_runner �
   该文件是**面板展示材料**，不是闸门权威：权威仍是 `gates.json` + `gates.sha256`。
   该文件是**面板展示材料**，不是闸门权威：权威仍是 `gates.json` + `gates.sha256`。
   `gates.json` 不存逐条处置 ⇒ 没有落账的历史 run，面板只能显示"整门决策 + 逐条处置未留存"，
-  **不得**从 `gates.json` 反推逐条处置（SPEC-REV-02 §C.2 P-18、交接提示词 §0.5 ⑥）。
+  **不得**从 `gates.json` 反推逐条处置（SPEC-REV-04 §C.2 P-18、交接提示词 §0.5 ⑥）。
 - **G2/G3 只读「待确认项」（2026-10-23 裁决 #2）**：闸门节点投影增 `gate.items`，
   形状 `[{id, kind, title, detail, severity}]`，`kind ∈ {blocker, open_item, conflict, case}`；
   **不带 disposition、不参与提交**（逐条处置语义只属于 G1/I1）。来源：
@@ -513,7 +513,7 @@ N16 每次尝试都必须留下结果件：`run_dir/n16_result.json`（已存在
 它与人触发真实晋升的 `promote_result.json` **分开**（避免 dry-run 与真实晋升互相覆盖）；
 详情投影把两者都列入 `refs`（存在即列，缺失不编造）。
 
-### 10.4.5 逐节点新增 detail 字段（SPEC-REV-02 §C 实现面，只对新 run 生效）
+### 10.4.5 逐节点新增 detail 字段（SPEC-REV-04 §C 实现面，只对新 run 生效）
 
 下表字段由各节点 owner 在 `node_finished.detail` 补齐（旧 run 不回填、不删既有字段、不改事件）：
 

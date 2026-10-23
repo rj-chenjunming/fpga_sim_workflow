@@ -2,8 +2,8 @@
 
 > **范围**：遗漏审计开工包 [`plans/2026-10-23-node-panel-revision-round3-kickoff.md`](../plans/2026-10-23-node-panel-revision-round3-kickoff.md)
 > 的 R3-01～R3-18；实现契约 [`plans/2026-10-23-node-panel-revision-round3-impl.md`](../plans/2026-10-23-node-panel-revision-round3-impl.md)。
-> **规格**：[`SPEC-REV-02` §E](../spec/SPEC-REV-02-20261023.md)、[`SPEC-02` §10.4.5](../spec/LOOP_ORCHESTRATION_SPEC.md)、
-> [`SPEC-04` §4.2.1/§4.2.2/§6.7](../spec/WEB_UI_SPEC.md)。门禁数字同步在 [`doc/STATUS.md` §50](../STATUS.md)。
+> **规格**：[`SPEC-REV-04` §E](../spec/SPEC-REV-04-20261023.md)、[`SPEC-02` §10.4.5](../spec/LOOP_ORCHESTRATION_SPEC.md)、
+> [`SPEC-04` §4.2.1/§4.2.2/§6.7](../spec/WEB_UI_SPEC.md)。门禁数字同步在 [`doc/STATUS.md` §52](../STATUS.md)。
 > **只增不改**：本文件记录本轮实测；旧证据 [`NODE_PANEL_REVISION_20261023.md`](NODE_PANEL_REVISION_20261023.md) 保持原样。
 > **不声称合规**：§8 的未执行项与边界必须与本文件一起读。
 
@@ -77,10 +77,10 @@ story_keys= ['key_results', 'purpose', 'steps']      # 没有 headline/note/gate
 run_status= failed  mode= real
 ```
 
-⇒ 服务进程仍是**第一版"人话面板"（§45）时的旧代码**，第二轮与第三轮的服务端改动都没加载。
+⇒ 服务进程仍是**第一版"人话面板"（§48）时的旧代码**，第二轮与第三轮的服务端改动都没加载。
 按并发红线（进程在独立 PID 命名空间、Agent 无法按 PID 停止；重启必须由人执行）**未重启**，
 因此 N1–N9 的新 `story`/N4 逐条处置/N12 报告全文/N13 只读待确认项等**真机复核未执行**。
-重启命令见 [`doc/STATUS.md` §50.4](../STATUS.md)；重启后可复核清单见 §8。
+重启命令见 [`doc/STATUS.md` §52.4](../STATUS.md)；重启后可复核清单见 §8。
 
 ---
 
@@ -98,7 +98,7 @@ run_status= failed  mode= real
 （第二轮基线 82；本轮 +23 条断言）。浏览器 `tests/browser/test_node_detail.py` ⇒ **43 passed in 61.04s**（基线 33）。
 
 > 说明：**"未收尾节点"**（运行未终态、该节点 detail 为空）的「还没有收尾记录，关键数字等它跑完再看」
-> 是 SPEC-REV-02 §R1 规定的**另一种状态**（节点确实还没跑完），不属于 R3-08 的 `not_reached`；
+> 是 SPEC-REV-04 §R1 规定的**另一种状态**（节点确实还没跑完），不属于 R3-08 的 `not_reached`；
 > 本轮未改它，浏览器断言只覆盖 `not_reached`/`not_executed` 两种终态。
 
 ---
@@ -178,4 +178,4 @@ G3 `[I4_CONFLICTS_UNCLEARED]`。
 5. **旧 run 不回填**：新 story 字段/新 detail 字段/闸门 `hard_block` 只对新 run 生效；历史 run 显示"未下发/未留存"。
 6. **`app.js` 删除区与另一条线改动同 hunk**：删的是死函数（`renderEntryDecisionHint`），
    另一条线的逐条处置控件完整保留；review 时按实体区分。
-7. **不声称"已合规"**：以上与 [`doc/STATUS.md` §50](../STATUS.md)、[`SPEC-REV-02` §E](../spec/SPEC-REV-02-20261023.md) 同一份。
+7. **不声称"已合规"**：以上与 [`doc/STATUS.md` §52](../STATUS.md)、[`SPEC-REV-04` §E](../spec/SPEC-REV-04-20261023.md) 同一份。

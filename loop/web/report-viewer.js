@@ -1,4 +1,4 @@
-/* 报告全文只读浮窗（SPEC-REV-02 P-28 / 裁决 #8：G2 材料一次点击）。
+/* 报告全文只读浮窗（SPEC-REV-04 P-28 / 裁决 #8：G2 材料一次点击）。
  *
  * 边界（与 SPEC-04 §6.8 一致）：
  *   · 唯一数据来源 GET /api/runs/{run_id}/report；服务端白名单仅本 run 的 n12_report.md；

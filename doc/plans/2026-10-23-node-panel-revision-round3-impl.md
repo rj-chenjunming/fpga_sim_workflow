@@ -2,13 +2,13 @@
 
 > **上游**：[`2026-10-23-node-panel-revision-round3-kickoff.md`](2026-10-23-node-panel-revision-round3-kickoff.md)
 > （R3-01～R3-18 唯一清单）、[`2026-10-23-node-panel-unified-revision-plan.md`](2026-10-23-node-panel-unified-revision-plan.md)
-> （§1–§8 既有接口契约，**不改**）、[`SPEC-REV-02` §C.2](../spec/SPEC-REV-02-20261023.md)、
+> （§1–§8 既有接口契约，**不改**）、[`SPEC-REV-04` §C.2](../spec/SPEC-REV-04-20261023.md)、
 > [`SPEC-02` §10.4](../spec/LOOP_ORCHESTRATION_SPEC.md)、[`SPEC-04` §4.2.1/§4.2.2/§6.7](../spec/WEB_UI_SPEC.md)。
 > **本文件只做一件事**：把 R3 项落成**字段名/形状/文案/断言落点**，让多个 owner 互不重叠地并行。
 > 与 SPEC 冲突以 SPEC 为准；本文件不新增业务写动作、不改判据、不改事件。
-> **状态**：**已实施（2026-10-23 晚）**。四道门实测与未关闭项见 [`doc/STATUS.md` §50](../STATUS.md)，
+> **状态**：**已实施（2026-10-23 晚）**。四道门实测与未关闭项见 [`doc/STATUS.md` §52](../STATUS.md)，
 > 证据见 [`doc/evidence/NODE_PANEL_ROUND3_20261023.md`](../evidence/NODE_PANEL_ROUND3_20261023.md)；
-> 规格状态见 [`SPEC-REV-02` §E](../spec/SPEC-REV-02-20261023.md)。
+> 规格状态见 [`SPEC-REV-04` §E](../spec/SPEC-REV-04-20261023.md)。
 
 ---
 
@@ -158,7 +158,7 @@ GATE_NODES: frozenset[str] = frozenset(GATE_ID_BY_NODE)
 |---|---|---|
 | R3-01 a/b/c | `loop/tests/test_n6_imprint.py`（新） | 提示词含 `uvm_info("<marker>"` 且不含 `uvm_info("N6",`；合法 marker+edits 通过；`N6_CHECK_1` 不可解析 ⇒ fail-closed 且原因点名 marker |
 | R3-01 d | 同上 | 真格式日志 + by-id 段 + run 级 `doc_entries.jsonl` ⇒ `evidence_view()` 该印记 `consistent=True`、`verdict.passed=True` |
-| R3-02/R3-05 | `doc/STATUS.md` §50 | 未执行 + 原因（服务进程仍是旧代码：`GET …/nodes/N1` 无 `story`） |
+| R3-02/R3-05 | `doc/STATUS.md` §52 | 未执行 + 原因（服务进程仍是旧代码：`GET …/nodes/N1` 无 `story`） |
 | R3-03 | `test_node_story.py` + `tests/browser/test_node_detail.py` | story 两态（有/无 observation_points + key_results 行）；前端有列表/无文案 |
 | R3-04 | `tests/test_flow.py`（写侧）+ `test_node_detail_projection.py`（读侧） | 新 drill run 的 G1 ledger 含 `hard_block`；已决策 gate 块含 `hard_block`；无 ledger 旧 run 显示"当时的阻断项未留存" |
 | R3-06 | `test_node_story.py` + 浏览器 | N9 3 用例 ⇒ 3 组（空 refs 组带 note）；N7 无名 ⇒ `[]` + note |
@@ -171,9 +171,9 @@ GATE_NODES: frozenset[str] = frozenset(GATE_ID_BY_NODE)
 | R3-13 | `test_web_smoke.py`/`test_gate_session.py`（跑通）+ 浏览器 | 删除 `renderEntryDecisionHint` 后既有行为不变（无死函数引用） |
 | R3-14 | `loop/tests/test_software_checks_script.py`（新） | 带 `-q` 调用脚本时输出仍含 `passed`（不再 `-qq` 吞掉汇总） |
 | R3-15 | `loop/tests/test_node_registry.py`（新） | 两份定义合并为一份（`is` 同一对象） |
-| R3-16 | `doc/STATUS.md` §50 | 未执行 + 原因（`UI_RUNBOOK.md` 仍是另一条线未提交改动） |
-| R3-17 | `doc/**` | SPEC-REV-02 §C.2 / SPEC-02 §10.4.5 / STATUS §50 / evidence 只增 |
-| R3-18 | `doc/STATUS.md` §50 | 只登记，不阻塞 |
+| R3-16 | `doc/STATUS.md` §52 | 未执行 + 原因（`UI_RUNBOOK.md` 仍是另一条线未提交改动） |
+| R3-17 | `doc/**` | SPEC-REV-04 §C.2 / SPEC-02 §10.4.5 / STATUS §52 / evidence 只增 |
+| R3-18 | `doc/STATUS.md` §52 | 只登记，不阻塞 |
 
 ---
 

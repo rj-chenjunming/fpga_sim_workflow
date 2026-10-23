@@ -1,9 +1,9 @@
 # 节点面板可读性修订 · 开工交接提示词（2026-10-23）
 
 > **这是什么**：用户按节点逐个走查完节点详情面板后的**集中修订开工包**。走查记录与全部待修订项
-> 在 [`SPEC-REV-02`](../spec/SPEC-REV-02-20261023.md) §C（P-01～P-35）；本文件是给下一个窗口/实现 owner
+> 在 [`SPEC-REV-04`](../spec/SPEC-REV-04-20261023.md) §C（P-01～P-35）；本文件是给下一个窗口/实现 owner
 > 的**可直接粘贴的开工提示词**与执行约束。
-> **不是什么**：不是新契约；契约以 SPEC-REV-02 / SPEC-04 / SPEC-02 为准。本文件不改变任何判据。
+> **不是什么**：不是新契约；契约以 SPEC-REV-04 / SPEC-04 / SPEC-02 为准。本文件不改变任何判据。
 > **状态**：走查完成（2026-10-23），**P-01～P-35 尚未实现**（第一版"人话面板"已在工作树，未提交）。
 > **校订（2026-10-23 18:45，Lead）**：按当时仓库与运行态更新了并发改动清单、门禁基线数字、
 > STATUS 节号与"禁止操作"清单，见 [§0.5](#05-粘贴前必须知道的现状2026-10-23-1845-校订)。
@@ -14,10 +14,10 @@
 
 1. 打开新窗口，把下面代码块**整段**粘进去（改好第一行的仓库路径即可）；
 2. 新窗口的 owner 先 `git status` 确认工作树，再按切片实现；
-3. 完成后按 §5 收尾：SPEC-REV-02 §C.2 状态、STATUS 新节、证据追加、四道门数字。
+3. 完成后按 §5 收尾：SPEC-REV-04 §C.2 状态、STATUS 新节、证据追加、四道门数字。
 
-> 走查完成状态见 [SPEC-REV-02 §C.1](../spec/SPEC-REV-02-20261023.md)；第一版面板的实现范围与门禁数字见
-> [NODE_PANEL_READABILITY_20261023](../evidence/NODE_PANEL_READABILITY_20261023.md) 与 [STATUS §45](../STATUS.md)。
+> 走查完成状态见 [SPEC-REV-04 §C.1](../spec/SPEC-REV-04-20261023.md)；第一版面板的实现范围与门禁数字见
+> [NODE_PANEL_READABILITY_20261023](../evidence/NODE_PANEL_READABILITY_20261023.md) 与 [STATUS §48](../STATUS.md)。
 
 ---
 
@@ -44,8 +44,8 @@
   （`/usr/bin/google-chrome` 存在；`~/.cache/ms-playwright` 里没有 chrome-headless-shell）。
 - 端口：**不要用 18098**（真实 run 正在跑），隔离端口用 18199。
 
-**③ STATUS 节号**：§45 已被"节点面板第一版"占用，**§46 由 Lead 预订**（S0-a 真实派生 + 真实 run 实测 +
-两处缺口登记）。新会话请写 **§47**；写入前 re-read，只追加。
+**③ STATUS 节号**：§48 已被"节点面板第一版"占用，**§54 由 Lead 预订**（S0-a 真实派生 + 真实 run 实测 +
+两处缺口登记）。新会话请写 **§49**；写入前 re-read，只追加。
 
 **④ 现在绝对不能做的事**（比提示词原文更严）：
 
@@ -84,14 +84,14 @@
 ============================================================
 1) git status --short && git diff --stat
    本批面板改造的未提交改动：`loop/services/node_story.py`（新增）、`loop/services/node_view.py`、
-   `loop/web/node-detail.js`、`index.html`、`app.css`、两份测试、SPEC-REV-02、STATUS §45、
+   `loop/web/node-detail.js`、`index.html`、`app.css`、两份测试、SPEC-REV-04、STATUS §48、
    evidence/NODE_PANEL_READABILITY_20261023.md——这是**已完成的第一版"人话面板"**，不要回退。
    **注意有并发会话**：写作时已观察到 `loop/web/app.js` / `gate-session.js` / `loop/services/agent_view.py`
    等文件也被另一会话改动（完整清单见本文件 §0.5 ①）。一律先 `git diff <文件>` 看清再动手，不要回退别人的改动；
    冲突时在最新内容上叠加（FS_STALE_VERSION 就 re-read 后重做）。
 2) 读这些文件（按顺序）：
    AGENTS.md
-   doc/spec/SPEC-REV-02-20261023.md   ← **本轮唯一权威清单**：§R1 逐节点文案、§R2 闸门复核 UI（设计已定）、
+   doc/spec/SPEC-REV-04-20261023.md   ← **本轮唯一权威清单**：§R1 逐节点文案、§R2 闸门复核 UI（设计已定）、
                                           §C.1 走查进度、§C.2 P-01～P-35、§C.3 固定动作
    doc/spec/WEB_UI_SPEC.md §4.2.1/§6.7、doc/spec/LOOP_ORCHESTRATION_SPEC.md §10.4
    loop/services/node_story.py、loop/services/node_view.py、loop/web/node-detail.js
@@ -152,7 +152,7 @@ P-05 模型子事件（N3_model/N3_request）：**不并入**父节点，保持�
 P-06 未收尾两行提示：保留。
 P-07 状态 chip：英文原值 + 中文释义（如「ok 通过」「fail 未通过」「live 真实模型」「intact 完整」「confirmed 已确认」）；
      原值必须在，不得归一。
-P-08 用途文案：以 SPEC-REV-02 §R1 为准 + §C.2 各 P 项修正。
+P-08 用途文案：以 SPEC-REV-04 §R1 为准 + §C.2 各 P 项修正。
 P-09 N1：结果只留"总文件数 + 用例数"；其余（sha256/指纹/commit/parent）收进原始记录。
 P-13 N3：详情显示模型摘要正文 + "需人工确认 N 条"；Host 的节点 summary 改用模型 `summary`
      （组数降级为关键数字）；"0 组"解释为"没有段信息、无法分组（不是没分析）"。
@@ -250,9 +250,9 @@ P-25 印记（面板侧）：N9/N10 用白话解释"印记"（用例自己打印
   python3 doc/audit/check_doc_links.py   （missing=0，rc=0）
 
 收尾：
-- 把 SPEC-REV-02 §C.2 对应行状态改为「已修（2026-10-23）」，未做的保留「未定/待拍板」；
-- doc/STATUS.md 追加新一节（**§47**；§46 已被 Lead 预订，见 §0.5 ③）：改了什么/四道门实测数字/仍未关闭项，**只追加不回填**；
-- 追加/更新 doc/evidence/ 证据（只增不改），引用 SPEC-REV-02 与本次改动；
+- 把 SPEC-REV-04 §C.2 对应行状态改为「已修（2026-10-23）」，未做的保留「未定/待拍板」；
+- doc/STATUS.md 追加新一节（**§49**；§54 已被 Lead 预订，见 §0.5 ③）：改了什么/四道门实测数字/仍未关闭项，**只追加不回填**；
+- 追加/更新 doc/evidence/ 证据（只增不改），引用 SPEC-REV-04 与本次改动；
 - 不要声称"已合规"；未拍板项必须在 STATUS 与 §C 保持可见。
 
 ============================================================

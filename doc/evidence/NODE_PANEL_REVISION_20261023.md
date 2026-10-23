@@ -1,10 +1,10 @@
-# 节点面板统一修订（SPEC-REV-02 P-01～P-35）· 实测证据（2026-10-23）
+# 节点面板统一修订（SPEC-REV-04 P-01～P-35）· 实测证据（2026-10-23）
 
 > **这是什么**：本轮「节点执行详情面板可读性集中修订」的实现与门禁证据。修订清单的唯一权威是
-> [`SPEC-REV-02` §C](../spec/SPEC-REV-02-20261023.md)；实现接口契约见
+> [`SPEC-REV-04` §C](../spec/SPEC-REV-04-20261023.md)；实现接口契约见
 > [`doc/plans/2026-10-23-node-panel-unified-revision-plan.md`](../plans/2026-10-23-node-panel-unified-revision-plan.md)。
 > **不是什么**：不是新契约、不改变任何判据；本文只记录"改了什么 + 命令实测输出"。
-> **状态**：P-01～P-35 已按清单修订；仍未关闭项见 §7（`doc/STATUS.md` §47 同一份，数字不各抄一套）。
+> **状态**：P-01～P-35 已按清单修订；仍未关闭项见 §7（`doc/STATUS.md` §49 同一份，数字不各抄一套）。
 
 ---
 
@@ -31,7 +31,7 @@
 | S2 宿主数据面 | N3/N5/N6/N6_apply/N8/N9/N10/N11/N12/N15*/N16/HALT 新 detail 字段；闸门逐条处置落账 `run_dir/decisions/<gate>.json`；`node_started` 补齐；`n16_result.json`；P-14 提示词 | `loop/workflows/chunks/{gates,host_steps,long_jobs,model_steps,model_common,n10_semantics}.py`、`loop/prompts/{loop_nodes.yaml,node_schemas.py}`、`loop/tests/test_flow.py` |
 | S3 服务端投影 | `run_status` / `run_terminal` / `node_started_present` / `gate` 块（二级清单、`redundant_of`、P-29 数字）/ `report` 块；`GET /api/runs/{id}/report` | `loop/services/{node_view,contracts,api}.py`、`loop/tests/test_node_detail_projection.py` |
 | S4 前端 | 结果区 headline + 黄条、状态 chip 释义、未到达/未执行/证据入口、闸门二级清单 + 前后对比浮窗 + 逐条处置草稿、N12 报告全文浮窗、G2 材料报告入口、`window.GateDraftBridge` | `loop/web/{node-detail.js,index.html,app.css,app.js}`、`loop/tests/browser/test_node_detail.py` |
-| S5 文档 | SPEC-04 §4.2.1/§4.2.2/§4.4/§6.7/§6.8、SPEC-02 §10.4.1–§10.4.5、SPEC-REV-02 §C.2 状态 | `doc/**` |
+| S5 文档 | SPEC-04 §4.2.1/§4.2.2/§4.4/§6.7/§6.8、SPEC-02 §10.4.1–§10.4.5、SPEC-REV-04 §C.2 状态 | `doc/**` |
 
 **单一判据（AGENTS 红线 8）**：同一文件的"多路证据归并"只有一份实现
 （`node_story.group_diff_entries`），闸门清单的 `contracts._group_diff_entries` **委托**它；
@@ -39,7 +39,7 @@
 
 ---
 
-## 3 P 项 → 落点（要点；逐条状态见 SPEC-REV-02 §C.2）
+## 3 P 项 → 落点（要点；逐条状态见 SPEC-REV-04 §C.2）
 
 | P 项 | 落点（实现事实） |
 |---|---|
@@ -70,7 +70,7 @@
 | kb 自测 | `LOOP_WORKSPACE=<可写影子数据根> loop/.venv/bin/python kb/tools/_selftest_gate_schema.py` | **PASS=10 FAIL=0** |
 | kb 自测 | `LOOP_WORKSPACE=<可写影子数据根> loop/.venv/bin/python kb/tools/_selftest_n5_reachability.py` | **PASS=9 FAIL=0** |
 | 端到端（隔离副本） | 工具副本 `.tmp/e2e`（rsync 排除 workspaces、.git、虚拟环境、日志、state、.agently 六类）+ `LOOP_ENV_ROOT=workspaces/real-env-copy LOOP_WORKSPACE=workspaces/real-env-copy/kb LOOP_PORT=18199 bash spikes/accept_v1_run.sh` | **ALL PASS，117/117**（phase 1/2/3/4/4b/5 = 50/27/18/8/8/6，六相 `rc=0`，`EXIT=0`） |
-| 文档 | `python3 doc/audit/check_doc_links.py` | 见 `doc/STATUS.md` §47（同一命令与同一份数字） |
+| 文档 | `python3 doc/audit/check_doc_links.py` | 见 `doc/STATUS.md` §49（同一命令与同一份数字） |
 
 ### 4.1 环境注意事项（实测）
 
@@ -120,7 +120,7 @@
 
 ---
 
-## 7 未关闭项（与 `doc/STATUS.md` §47 同一份）
+## 7 未关闭项（与 `doc/STATUS.md` §49 同一份）
 
 1. **P-25 系统侧（印记谁产生）未拍板**：面板只能解释"缺印记 = 无法证明预期检查点真的跑过"，真实轮仍过不了 I3；
    未擅自改 N6 提示词/schema。
@@ -132,14 +132,14 @@
 6. **浏览器门一次伪失败**记录在 §4.1-3（不是代码回归），不放宽断言、不抹掉。
 7. **`run_software_checks.sh` 会重复传 `-q`**（脚本自带 `-q` + 调用方再传 ⇒ `-qq` 吞掉 "N passed" 汇总行）：
    既有脚本行为，本轮只登记不修（不在本批写权内）。
-8. **未声称"已合规"**：上表与 `STATUS §47` 的未关闭项保持可见。
+8. **未声称"已合规"**：上表与 `STATUS §49` 的未关闭项保持可见。
 
 ---
 
 ## 8 二轮：9 项用户裁决落地（2026-10-23）
 
 > 裁决原文与逐项解释见 [`doc/plans/2026-10-23-node-panel-unified-revision-plan.md` §8](../plans/2026-10-23-node-panel-unified-revision-plan.md)；
-> 状态数字唯一源仍为 `doc/STATUS.md` §48（本文只记事实与命令输出）。
+> 状态数字唯一源仍为 `doc/STATUS.md` §50（本文只记事实与命令输出）。
 
 ### 8.1 落地内容
 
@@ -176,7 +176,7 @@
 
 后台看守每 60s 记录 `RUN-20261023-171744`：收尾时仍 `waiting_job`（`JOB-63f79d482690` / `running`）。
 未重启 `:18098`、未 `pkill uvicorn`；e2e 隔离副本 + `:18199`，收尾已删除副本与 3 个 `.loop_drill` 测试 run。
-**重启需由人执行**（进程在独立 PID 命名空间，Agent 无法按 PID 操作）；命令与前置条件见 `STATUS §48.5`。
+**重启需由人执行**（进程在独立 PID 命名空间，Agent 无法按 PID 操作）；命令与前置条件见 `STATUS §50.5`。
 
 ### 8.5 二轮遗留
 
@@ -202,11 +202,11 @@
 | 计数快照 | 口径一=25（非 0）；口径二 value={} |
 
 **观测结论**：作业是被**外部取消**（`cancel_requested` 事件；非本 Agent 发起，本 Agent 全程未对
-`:18098` 做任何写操作），并按既定契约**判失败**（"取消不得当成功"），符合 §43/§48 的失败语义。
+`:18098` 做任何写操作），并按既定契约**判失败**（"取消不得当成功"），符合 §43/§50 的失败语义。
 看守日志（每分钟一条）见会话临时目录 `job_watch.log`（收尾随 `.tmp` 删除），首条 20:10:05、
 末条 21:25:09 = `failed cancelled`。
 
 **重启前置条件已满足**：run 已不在 `waiting_job/running`。但 `:18098` 的 uvicorn 进程在**独立 PID 命名空间**，
 本 Agent 的沙箱只能看到自己的进程（`/proc` 仅 bwrap/bash 自身），**无法按 PID 停止**该进程 ⇒
-物理重启需由人执行（命令见 `STATUS §48.5`）。重启后可用本 run 复核：N1–N9 新 `story`、
+物理重启需由人执行（命令见 `STATUS §50.5`）。重启后可用本 run 复核：N1–N9 新 `story`、
 N9"未收尾/运行停在 failed"、N10–N16 的"本轮没有走到这个节点"、N4 的"逐条处置未留存"。

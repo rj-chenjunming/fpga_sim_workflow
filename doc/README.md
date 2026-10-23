@@ -38,12 +38,12 @@
 
 内网浏览器验证：[Rocky 离线包与运行命令](../loop/offline/README.md) → [交付计划](plans/2026-10-22-browser-offline.md)；实际结果与主机系统库限制见 STATUS §36。
 
-节点面板可读性集中修订：[走查记录与 P-01～P-35](spec/SPEC-REV-02-20261023.md#c-逐节点走查记录与待修订项滚动登记集中一次性修订) → [开工交接提示词](plans/2026-10-23-node-panel-revision-kickoff.md) → [实施计划与接口契约](plans/2026-10-23-node-panel-unified-revision-plan.md) → [实测证据](evidence/NODE_PANEL_REVISION_20261023.md) → [第三轮补充修订开工包](plans/2026-10-23-node-panel-revision-round3-kickoff.md)（遗漏审计：N6 印记可解析性是 P0）→ [第三轮实现契约](plans/2026-10-23-node-panel-revision-round3-impl.md) → [第三轮实测证据](evidence/NODE_PANEL_ROUND3_20261023.md)（R3-01～R3-18）。**P-01～P-35 已集中修订（2026-10-23）**，二轮 9 项用户裁决（P-25 观测点输出、N13/N14 只读待确认项、G2 报告一次点击等）已落地，门禁见 STATUS §47/§48；第三轮补充修订的 R3 项与门禁见 STATUS §50；第一版"人话面板"的实测见 STATUS §45。
+节点面板可读性集中修订：[走查记录与 P-01～P-35](spec/SPEC-REV-04-20261023.md#c-逐节点走查记录与待修订项滚动登记集中一次性修订) → [开工交接提示词](plans/2026-10-23-node-panel-revision-kickoff.md) → [实施计划与接口契约](plans/2026-10-23-node-panel-unified-revision-plan.md) → [实测证据](evidence/NODE_PANEL_REVISION_20261023.md) → [第三轮补充修订开工包](plans/2026-10-23-node-panel-revision-round3-kickoff.md)（遗漏审计：N6 印记可解析性是 P0）→ [第三轮实现契约](plans/2026-10-23-node-panel-revision-round3-impl.md) → [第三轮实测证据](evidence/NODE_PANEL_ROUND3_20261023.md)（R3-01～R3-18）。**P-01～P-35 已集中修订（2026-10-23）**，二轮 9 项用户裁决（P-25 观测点输出、N13/N14 只读待确认项、G2 报告一次点击等）已落地，门禁见 STATUS §49/§50；第三轮补充修订的 R3 项与门禁见 STATUS §52；第一版"人话面板"的实测见 STATUS §48。
 
 ## 2 `spec/` 契约
 
-> **编号**：每份 SPEC 有稳定编号 `SPEC-0X`（文件名不变）。当前修订记录：[`SPEC-REV-02`](spec/SPEC-REV-02-20261023.md)（2026-10-23，P-01～P-35 已修订、门禁见 STATUS §47；上一份 [`SPEC-REV-01`](spec/SPEC-REV-01-20261022.md) 已生效）。
-> 修订记录只增不改；后续依次 `SPEC-REV-03`…
+> **编号**：每份 SPEC 有稳定编号 `SPEC-0X`（文件名不变）。当前修订记录：[`SPEC-REV-04`](spec/SPEC-REV-04-20261023.md)（2026-10-23，P-01～P-35 已修订、门禁见 STATUS §49；上一份 [`SPEC-REV-01`](spec/SPEC-REV-01-20261022.md) 已生效）。
+> 修订记录只增不改；后续依次 `SPEC-REV-05`…
 
 | 编号 | 文件 | 管什么 |
 |---|---|---|

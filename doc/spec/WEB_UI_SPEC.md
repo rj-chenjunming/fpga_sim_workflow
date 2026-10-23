@@ -129,14 +129,14 @@
 
 ### 4.2.1 节点详情面板（节点 chip 可点击）
 
-> 来源：[SPEC-REV-01](SPEC-REV-01-20261022.md) R4、[SPEC-REV-02](SPEC-REV-02-20261023.md) R1。数据契约见 [SPEC-02](LOOP_ORCHESTRATION_SPEC.md) §10.4。
+> 来源：[SPEC-REV-01](SPEC-REV-01-20261022.md) R4、[SPEC-REV-04](SPEC-REV-04-20261023.md) R1。数据契约见 [SPEC-02](LOOP_ORCHESTRATION_SPEC.md) §10.4。
 
 - **范围 = 全部节点**：执行视图里出现的**每一个**节点 chip 都可点击——N0–N16、四段之外/内部的节点
   （`N6_apply` / `N9_submit` / `N15_select` / `N15_submit`）、`HALT`，以及将来新增的节点；
   闸门节点（N4/N13/N14）同样可点。不按白名单裁剪，不因"没有中文名/owner"就不可点。
 - **数据**：`GET /api/runs/{run_id}/nodes/{node}`（§6.7）；内容来自事件流 + `node_finished.detail` + `refs`，**界面不自行拼装**。
 - **状态原值**：节点 status 不只 `ok/failed`（闸门=决策值、N8/N11/N16/HALT 各不相同）；面板显示服务端原值，不得自行归成"完成/失败"。
-- **可读性优先（SPEC-REV-02 R1）**：面板从上到下固定为
+- **可读性优先（SPEC-REV-04 R1）**：面板从上到下固定为
   ① 头部（节点/名称/owner/状态原值/执行方式）→ ②「这一步做什么」（`story.purpose` 一句话）→
   ③「结果一句话」（`summary` 原文）→ ④「关键数字」（`story.key_results` 逐项标签+值）→
   ⑤「过程」（`story.steps` 按事件顺序的人话步骤）→ ⑥「证据 / 失败」→
@@ -187,7 +187,7 @@
 
 ### 4.2.2 闸门节点的二级差异清单（N4/N13/N14；P-17/P-18/P-29）
 
-> 来源：[SPEC-REV-02](SPEC-REV-02-20261023.md) §R2（设计已定）。数据面见 [SPEC-02](LOOP_ORCHESTRATION_SPEC.md) §10.4.2。
+> 来源：[SPEC-REV-04](SPEC-REV-04-20261023.md) §R2（设计已定）。数据面见 [SPEC-02](LOOP_ORCHESTRATION_SPEC.md) §10.4.2。
 
 - **位置**：闸门节点面板在「结果」之后新增「差异清单」区，标题行 `共 N 条修订点，已处置 M 条`
   （`N = gate.counts.revision_points`；等待态 `M` 由共享草稿算，已决策态取 `gate.counts.disposed`）。
@@ -475,7 +475,7 @@
 }
 ```
 
-- **`story` 是展示投影（SPEC-REV-02 R1）**：`purpose` 来自服务端节点目录；`headline` 由服务端按节点模板
+- **`story` 是展示投影（SPEC-REV-04 R1）**：`purpose` 来自服务端节点目录；`headline` 由服务端按节点模板
   从已有 `detail` 字段确定性生成（`summary` 原文移入面板「原始记录」）；`note` 是首屏黄条；`steps` 由该节点
   事件按 `kind` 白名单确定性生成（缺字段写"未下发/原因未下发"，不推断）；`key_results` 按 §4.2.1 逐节点清单
   取值（缺失项 `missing=true`、`text="未下发"`）。**界面直接渲染，不自行拼装**；`story` 不含业务判定，

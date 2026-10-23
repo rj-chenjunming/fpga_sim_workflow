@@ -3341,7 +3341,7 @@
     if (btnDirChoose) btnDirChoose.addEventListener("click", chooseDir);
   }
 
-  /* ---------------- 节点面板 ↔ 闸门草稿桥（SPEC-REV-02 §4，2026-10-23 新增） ----------------
+  /* ---------------- 节点面板 ↔ 闸门草稿桥（SPEC-REV-04 §4，2026-10-23 新增） ----------------
    * 唯一职责：让节点面板把逐条勾选/理由写进**同一份** state.gateDraft.entryDecisions，
    * 供闸门视图现有表单提交（提交入口只有那里）。桥本身不判定、不发请求、不复制提交逻辑；
    * 覆盖与推导复用 GateSession.validateEntryDecisions / deriveEntryDecision（口径同 gates.py）。

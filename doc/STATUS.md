@@ -1204,3 +1204,53 @@ LOOP_WORKSPACE=<verify-e2e-ws> LOOP_LLM_MODE=standin LOOP_PORT=18097 bash spikes
 
 **仍未关闭**：S0-real（内网真实环境 + 三库冒烟）未跑；`real` 真机链路未跑；8099 仍是旧构建（新界面需重启）；
 历史 run 不回填。**不声称四道门全绿或已合规**。
+
+## 43 真实模式（real）完整轮：环境副本 + live 模型 + UVS 真机编译/全跑（2026-10-22/23）
+
+用户要求"真机跑一轮完整流程后再落实成 drill 演示"。本轮在**可写环境副本**上跑 real，权威 `ENV_ROOT`
+零写入；三道闸门由**人**签（`human:chenjunming`），Lead 未代签。证据：
+[`evidence/REAL_RUN_20261022.md`](evidence/REAL_RUN_20261022.md) + 冻结件 `evidence/REAL_RUN_20261022/`。
+
+### 43.1 环境与输入
+
+| 项 | 实测 |
+|---|---|
+| 环境副本 / 数据根 | `workspaces/real-env-copy`（2.6G）/ `workspaces/real-ws` |
+| v0 基线（副本重建） | allfiles **4491** / cases **162** / rtl **162** / conflicts **72** / doc **126** |
+| 变更（已知答案） | SCN_RTL_0D04 `pcie_register.v`；md5 `d560f2ff…` → `50e4ca25…`（与预登记一致），行 171/172，hunk 643 字符 |
+| 服务 | 新构建，`LOOP_ENV_ROOT=<副本>`，`18099`，模型 `origin-deepseek-v4-1-flash`（live），UVS `UVS2026.06.P3` |
+
+### 43.2 两轮结果
+
+| run | 结果 |
+|---|---|
+| `RUN-20261022-173237` | N0–N8 ✅（N7 真机编译 3/3 rc=0）；**N9 作业被判 dead**（3 例实际全 rc=0，日志齐全）⇒ run failed。根因：JobRunner 的 rc 写入被 N9 命令自带的 `exit 0` 提前跳过（真机全跑首次真正执行才暴露） |
+| `RUN-20261022-181700` | N0–N8 ✅；**N9 真机全跑 done，1465s，3/3 rc=0**（`tc_pcie_rw_02`/`tc_pcie_rw_smoke`/`tc_rtc_05`），口径一 **1687**、`UVM_ERROR=0/UVM_FATAL=0`、身份四方同值；N10 `verdict_passed=False`；N11 `intact`；N12 `not_passed`；**G2 accept 被 I2 阻断**（3 例仍待验）⇒ 停在 G2，**N16 不可达（诚实终点）** |
+
+### 43.3 本轮暴露的问题
+
+| 编号 | 事实 | 状态 |
+|---|---|---|
+| F1 | JobRunner rc 写入被命令自带 `exit` 跳过 ⇒ 真机全跑判 dead | **已修**：命令包进子 shell + 回归 `test_job_command_ending_with_exit_still_writes_rc` |
+| F4 | 真实 N2 用 `offsets`（复数），G1 材料 offset 显示 null | **已修**：`diff_entries_view` 兼容读取 + 回归；旧 run 不回填 |
+| F2 | 失败报告下 G2 `accept` 不可达（I2 要求无待验，失败轮必有待验）⇒ real 轮 N16 不可达 | **待决**（契约问题，需人决定"接受未通过报告并停止"是否合法） |
+| F3 | N5 必改 **3 例** vs SCN 预登记 **5 例**（多 `tc_cpu_i2c_03`、`tc_rtc_10`） | **待查**：权威索引与 SCN 场景索引口径不同；不得当"通过" |
+
+### 43.4 门禁复跑（本轮工作树）
+
+| 门 | 命令 | 结果 |
+|---|---|---|
+| 软件层 | `bash loop/spikes/run_software_checks.sh --ignore=tests/browser` | **533 passed, 3 deselected** |
+| 浏览器 | `pytest -q tests/browser`（系统 Chrome + 可写 HOME） | **56 passed in 74.86s** |
+| 端到端 | 隔离副本 `bash spikes/accept_v1_run.sh`（端口 18098） | **117/117，ALL PASS**（job_runner 修复后复跑） |
+| 文档 | `python3 doc/audit/check_doc_links.py` | `checked=1630 … known_missing=10 env_missing=12 missing=0`，rc=0 |
+
+### 43.5 drill 全流程演示（待签）
+
+真实轮无法到达 G3/N16（F2），按用户选择另跑 drill 演示：`RUN-20261022-195952`（8099，drill+standin）
+停在 G1，等待人用
+`bash loop/spikes/demo_drill_sign.sh RUN-20261022-195952 human:<你的名字>`
+三道闸门各按一次 Enter 签名（G1 confirmed / G2 accept / G3 milestone_only）后走到 N16 refused 并归档为演示样例。
+**未跑完之前，不写"drill 演示已归档"**。
+
+> 诚实边界：本轮**不**声称真实轮"跑通/判绿"——证据不通过（I3 既有缺陷）是事实；N16 不可达是系统正确拒绝放行。

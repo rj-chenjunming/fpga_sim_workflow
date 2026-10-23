@@ -1,10 +1,25 @@
 #!/usr/bin/env bash
-# S0/drill 演示：按阶段等你按 Enter，再由你（human:chenjunming）签名。
-# 每个 Enter 都对应一次人工闸门决策；脚本不替代你的判断，只替你发 POST。
+# drill 全流程演示的人工闸门签名助手（仅用于本地演练/演示，不是生产工具）。
+#
+# 用法：
+#   bash loop/spikes/demo_drill_sign.sh <RUN_ID> <human:你的名字>
+#
+# 它每到一道闸门先打印材料摘要与选项，**等你按 Enter 才**以你给的 actor 发签名；
+# 脚本不替你做判断，也不内置任何人的名字（I6：人工闸门必须由人签）。
 set -u
-RUN="${1:-RUN-20261022-195952}"
-ACTOR="${2:-human:chenjunming}"
-BASE=http://127.0.0.1:8099
+RUN="${1:-}"
+ACTOR="${2:-}"
+BASE="${LOOP_DEMO_BASE:-http://127.0.0.1:8099}"
+export LOOP_DEMO_BASE="$BASE"
+if [ -z "$RUN" ] || [ -z "$ACTOR" ]; then
+  echo "用法：bash loop/spikes/demo_drill_sign.sh <RUN_ID> <human:你的名字>" >&2
+  echo "  例：bash loop/spikes/demo_drill_sign.sh RUN-20261022-195952 human:chenjunming" >&2
+  exit 2
+fi
+case "$ACTOR" in
+  human:?*) ;;
+  *) echo "actor 必须以 'human:' 开头（I6）" >&2; exit 2 ;;
+esac
 PY=loop/.venv/bin/python
 
 post() { # gate decision reason
@@ -13,7 +28,7 @@ import json, sys, urllib.request, urllib.error
 run, actor, gate, decision, reason = sys.argv[1:6]
 body = {"decision": decision, "actor": actor, "reason": reason}
 req = urllib.request.Request(
-    f"http://127.0.0.1:8099/api/runs/{run}/gates/{gate}/decision",
+    f"{__import__('os').environ.get('LOOP_DEMO_BASE', 'http://127.0.0.1:8099')}/api/runs/{run}/gates/{gate}/decision",
     data=json.dumps(body).encode(), headers={"Content-Type": "application/json"}, method="POST")
 try:
     r = json.load(urllib.request.urlopen(req))
@@ -24,21 +39,6 @@ except urllib.error.HTTPError as e:
 PY
 }
 
-wait_gate() {
-  for _ in $(seq 1 120); do
-    line=$(curl -s --max-time 5 "$BASE/api/runs/$RUN" | "$PY" -c "
-import json,sys
-v=json.load(sys.stdin); p=(v.get('pending_interrupt') or {}).get('payload') or {}
-print(v['status'], p.get('gate') or '-', v.get('error') or '')" 2>/dev/null)
-    set -- $line
-    st=$1; gate=$2
-    if [ "$st" = "failed" ]; then echo "!! run failed: $3"; exit 1; fi
-    if [ "$st" = "finished" ]; then echo "== run finished"; return 2; fi
-    if [ "$st" = "waiting_gate" ] && [ "$gate" = "$1" ]; then return 0; fi
-    sleep 1
-  done
-  echo "!! 等闸门超时"; exit 1
-}
 
 step() { # gate decision reason
   local gate=$1 decision=$2 reason=$3

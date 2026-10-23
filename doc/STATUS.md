@@ -1660,3 +1660,30 @@ LOOP_PORT=18098 ./run.sh
 5. `GET /api/runs/RUN-20261023-171744/nodes/N13` ⇒ 只读待确认项（G2 未到达时不编条目）。
 
 复核结果按"只增"追加到 [`evidence/NODE_PANEL_ROUND3_20261023.md`](evidence/NODE_PANEL_ROUND3_20261023.md) 或新 §52 子节。
+
+## 53 上游 latest 集成与编号归一（2026-10-23 深夜）
+
+拉取 `origin/main` 三个提交（`356dc7c` 引用边界修复、`d1b5ae9` SPEC-08 DSH 草案、`47893ce` SPEC-09
+AI 面板草案），在独立 worktree 完成与本地节点面板 R3 未提交工作的合并；`main` 工作树、运行中的
+`18098`/`8099` 实例与停在 `waiting_gate` 的 `RUN-20261023-213737` 均未触碰。同一执行者实施与验证，
+无独立终验；命令与原始输出见 [集成证据](evidence/SPEC_MERGE_20261023.md)。
+
+**编号裁定（方案①）**：上游已发布 `SPEC-REV-02`（DSH）/`SPEC-REV-03`（AI 面板）保持不动；本地面板
+修订线 `SPEC-REV-02` → `SPEC-REV-04`（文件改名，迁移记录见文件头），本地 22 文件/92 处引用同步；
+本节之后的 S0-a 预留改为 §54。
+
+| 检查 | 实际结果 | 边界 |
+|---|---|---|
+| 定向单测（refs + story + registry） | **113 passed**，1 warning，1.12s | 含上游新增 `test_node_detail_refs.py` |
+| 节点详情浏览器 | **43 passed**，54.76s | 系统 Chrome + 受控 API |
+| web smoke + registry | **8 passed**，0.78s | —— |
+| 投影回归 | 41 passed、20 failed | 失败全部为默认数据根只读（`OSError [Errno 30]`），环境限制 |
+| API/UI 契约 | 7 passed、2 failed | 同因只读数据根 |
+| 文档链接门 | `missing=22`、`env_missing=19`、`known_missing=10`，exit=1 | 22 条均为 worktree 缺数据根路径，无本仓文档断链 |
+
+冲突仅 `doc/README.md`、`doc/STATUS.md`、`doc/spec/WEB_UI_SPEC.md` 三处；`loop/services/node_view.py`
+自动合并，上游逐事件引用边界与本地面板 `story` 投影均保留。另行补了两处语义接线：上游 endpoint 用例
+夹具补 `run_view`；前端逐事件显示 `refs_omitted` 条数（不显示目录外路径）。
+
+**未运行/未完成**：完整软件层、kb 自测、端到端、真实模型/仿真与真 DSH 接入；分支未推送、环境未发布；
+main 工作树保持原样。合回条件见 [证据 §6](evidence/SPEC_MERGE_20261023.md)。

@@ -60,9 +60,13 @@ def test_node_endpoint_filters_event_refs_and_leaves_log_unchanged(tmp_path: Pat
     log = ProgressLog(tmp_path / "events", event["run_id"])
     log.append("node_finished", node="N2", status="ok", detail=event["detail"], refs=event["refs"])
     before = log.path.read_bytes()
-    manager = SimpleNamespace(docs={event["run_id"]: SimpleNamespace(
-        mode="drill", s0_record_id=None, run_dir=str(run_dir),
-    )})
+    manager = SimpleNamespace(
+        docs={event["run_id"]: SimpleNamespace(
+            mode="drill", s0_record_id=None, run_dir=str(run_dir),
+        )},
+        # 集成适配：节点端点经 manager.run_view 取闸门/报告材料；该用例只验引用边界。
+        run_view=lambda _run_id: None,
+    )
     monkeypatch.setattr(api, "_manager", lambda: manager)
     monkeypatch.setattr(api.P, "EVENTS_DIR", log.dir)
 

@@ -1592,9 +1592,16 @@ window.NodeDetail = (function () {
         pre.textContent = detailText;
         row.appendChild(pre);
       }
-      if (Array.isArray(event.refs) && event.refs.length) {
+      var omitted = Number(event.refs_omitted) || 0;
+      if ((Array.isArray(event.refs) && event.refs.length) || omitted > 0) {
         var refs = el("div", "tiny muted mono nd-event-refs");
-        refs.textContent = "refs：" + event.refs.map(String).join(" · ");
+        var parts = [];
+        if (Array.isArray(event.refs) && event.refs.length) {
+          parts.push("refs：" + event.refs.map(String).join(" · "));
+        }
+        // 服务端只给 run 目录内的引用；目录外引用按条数提示，不提交路径。
+        if (omitted > 0) parts.push("另有 " + omitted + " 条运行目录外引用未展示");
+        refs.textContent = parts.join("；");
         row.appendChild(refs);
       }
       host.appendChild(row);

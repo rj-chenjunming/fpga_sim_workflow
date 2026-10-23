@@ -21,6 +21,7 @@
 | [`SPEC_REV_01_IMPL_20261022.md`](SPEC_REV_01_IMPL_20261022.md) | SPEC-REV-01（全节点投影 / G1 可判材料 / 节点面板 / S0 徽标 / N2 GB18030）的实现与实测证据 | 软件层 **523 passed**；浏览器 **55 passed**；kb 自测 37/37、9/9、10/10；文档门 `missing=0`；**端到端未运行**（`ENV_ROOT` 只读）；同会话集成，无独立终验 |
 | [`NODE_PANEL_REVISION_20261023.md`](NODE_PANEL_REVISION_20261023.md) | 节点面板统一修订（SPEC-REV-04 P-01～P-35）的实现与实测证据 | 软件层 **656 passed**；浏览器 **75 passed**；kb 自测 10/0、9/0；端到端 **117/117**；文档门 `missing=0`（数字见 STATUS §49/§50） |
 | [`NODE_PANEL_ROUND3_20261023.md`](NODE_PANEL_ROUND3_20261023.md) | 第三轮补充修订（R3-01～R3-18）实测证据：N6 印记可解析（P0）、闸门 hard_block 落账、story/前端补齐、一致性与清理 | 软件层 **695 passed**；浏览器 **85 passed**；kb 自测 10/0、9/0；端到端 **117/117**；文档门 `missing=0`（数字见 STATUS §52）；真机复核未执行（服务未重启） |
+| [`SPEC_MERGE_20261023.md`](SPEC_MERGE_20261023.md) | 上游 `origin/main`（3 提交）与本地节点面板 R3 工作树的集成：引用边界修复、SPEC-08/09 草案、SPEC-REV-02→04 与 STATUS 节号归一 | 定向单测 **113 passed**；浏览器 **43 passed**；web smoke **8 passed**；投影 41/20、API 契约 7/2（失败均只读数据根）；文档门 `missing=22` 全为 worktree 数据根缺件；分支未推送 |
 | [`demo/`](demo/) | 团队演练（**只编译、不仿真**）冻结证据，共 32 件 | `accept/`（验收演练）、`evidence/`（编译/运行前证据）、`review/`（检查）、`guard/`（守护）、`TESTLIB_sandbox/`（沙箱用例）；入口 [`demo/README.md`](demo/README.md) |
 | [`demo/MIGRATION.md`](demo/MIGRATION.md) | 迁移记录：doc/agents/_demo/ → `doc/evidence/demo/` | 目录级 + 关键件级 old→new 映射、内容 md5 未变声明、内部历史路径字符串说明 |
 

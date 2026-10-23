@@ -4,6 +4,8 @@
 
 > 运行干预见 [AGENT_WINDOW_SPEC.md](AGENT_WINDOW_SPEC.md)。新尝试携带本会话 human_interventions，仍执行原预算、记录及 Host 校验；不覆盖旧尝试，不自动晋升经验。
 
+> 拟议扩展：[DSH 核执行后端草案](DSH_AGENT_RUNTIME_SPEC.md)。工具补读、候选编辑与执行审计尚未实现；现行能力仍按本文及 STATUS 判读。
+
 本契约由用户授权的本轮优化建立。上游为 [编排规格](LOOP_ORCHESTRATION_SPEC.md)、[业务规格](CHANGE_IMPACT_LOOP_SPEC.md)，执行纪律为 [AGENTS.md](../../AGENTS.md) §2。
 本轮不变更执行拓扑、审批身份或业务权威，不引入自动学习与向量数据库。
 

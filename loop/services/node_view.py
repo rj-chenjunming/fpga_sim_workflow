@@ -185,17 +185,19 @@ def _split_refs(refs: Sequence[str], run_dir: str | None) -> tuple[list[str], in
     return inside, len(refs) - len(inside)
 
 
-def _slice(events: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
+def _slice(events: Sequence[dict[str, Any]], run_dir: str | None) -> list[dict[str, Any]]:
     """面板用的事件切片：最近一条在前（§4.2.1 "按 seq 排列，最近一条在前"）。"""
     out: list[dict[str, Any]] = []
     for event in reversed(events):
+        refs, refs_omitted = _split_refs(event.get("refs") or [], run_dir)
         out.append({
             "seq": event.get("seq"),
             "kind": event.get("kind"),
             "status": event.get("status"),
             "ts": event.get("ts"),
             "detail": event.get("detail") or {},
-            "refs": list(event.get("refs") or []),
+            "refs": refs,
+            "refs_omitted": refs_omitted,
             "provisional": bool(event.get("provisional")),
         })
     return out
@@ -308,7 +310,7 @@ def build_node_detail(
         "refs": refs,
         # 运行目录外的引用只计数、不给路径（§6.7 安全边界）。
         "refs_omitted": refs_omitted,
-        "events": _slice(node_events),
+        "events": _slice(node_events, run_dir),
         "missing_fields": missing,
         "authority": "projection",
         # 只读投影附带的环境来源（§4.5 徽标；drill 不覆盖 S0）。

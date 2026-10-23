@@ -58,7 +58,7 @@
 | **合入 main 后**：`python3 doc/audit/check_doc_links.py` | `checked=1807 skipped=22704 historical=857 known_missing=10 env_missing=19 missing=0`，exit=0 |
 
 未运行：完整软件层、kb gate schema/N5 自测、端到端、真实模型/仿真、真 DSH 接入。
-未推送远端、环境未发布。
+已推送 `origin/main`（合并点 `317df8c`）；环境未发布。
 
 ## 6 落地结果与剩余事项
 
@@ -67,5 +67,5 @@
   原 WIP 完整在 main 历史中。
 - 合并用的临时 worktree `.tmp/integration-20261023` 与分支 `integration/20261023-specmerge` 已删除；
   `.tmp/restart_watch.log` 在合并后仍写 `new_code=NO`，服务端口未变化，run 仍 `waiting_gate`。
-- 仍待补：完整软件层、kb 自测、端到端、真实模型/仿真与真 DSH 接入（内网数据根就绪时），
-  以及推送远端——本轮未 push。
+- 已推送 `origin/main`（`47893ce..0ed54d6 main -> main`，快进成功）。仍待补：完整软件层、kb 自测、
+  端到端、真实模型/仿真与真 DSH 接入（内网数据根就绪时）。

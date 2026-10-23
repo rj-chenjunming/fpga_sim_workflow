@@ -53,6 +53,9 @@
 - **请求机制**（`_request_contract` / `_ask` / 单次 attempt / `run_model_node` 的控制包装）唯一放在
   `workflows/chunks/model_request.py`；Host 校验 `_validate` 仍是**唯一实现**，由机制层以参数注入，
   机制层不得复制节点判据。
+- D1 将实际 SDK 调用提取到 `host/agent_backends`；请求机制仍持有预算、校验及封存调用。
+  后端选择、固定 provider 快照和兼容 backend 指纹字段见
+  [SPEC-08 §4.0](DSH_AGENT_RUNTIME_SPEC.md#40-d1-首片执行契约先于实现)。旧记录不回填。
 - **节点语义**分别放在 `n6_facts.py`（N6 事实构造）、`n10_semantics.py`（N10 分类/对账辅助）、
   `n11_guard.py`（N11 证据守护辅助）；`model_steps.py` 保留节点入口（N3/N6/N8/N10/N11/N12）
   与兼容导出，TriggerFlow 拓扑与消费者不变。

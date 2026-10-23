@@ -133,7 +133,7 @@ def provider(monkeypatch):
         return agent
 
     monkeypatch.setattr(M.MP, "resolve", lambda: cfg)
-    monkeypatch.setattr(M.MP, "configure_agently", lambda: cfg)
+    monkeypatch.setattr(M.MP, "configure_agently", lambda **_: cfg)
     monkeypatch.setattr(Agently, "create_agent", create)
     calls["cfg"] = cfg
     return calls
@@ -457,7 +457,7 @@ async def test_audit_write_failure_prevents_model_call(ctx, provider):
 async def test_configuration_error_does_not_store_authentication_value(ctx, provider, monkeypatch):
     from host import agent_memory as AM
 
-    def broken_configuration():
+    def broken_configuration(**_):
         raise RuntimeError("transport setup failed: never-record-this-secret")
 
     monkeypatch.setattr(M.MP, "configure_agently", broken_configuration)

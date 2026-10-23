@@ -223,15 +223,21 @@ def resolve(*, family: str | None = None, model: str | None = None) -> ProviderC
     )
 
 
-def configure_agently(*, family: str | None = None, model: str | None = None) -> ProviderConfig:
+def configure_agently(*, family: str | None = None, model: str | None = None,
+                      config: ProviderConfig | None = None) -> ProviderConfig:
     """把解析结果写进 Agently settings。返回配置；不可用时抛 `ProviderUnavailable`。
+
+    单次 attempt 可传入已解析的 config，确保审计与执行使用同一模型配置。
+    不传 config 的诊断入口仍按原规则解析；config 不能与覆盖参数混用。
 
     只调用框架的 settings 接口，不手写 provider HTTP（技能 `agently-request` 的
     "Avoid" 第一条）。
     """
     from agently import Agently
 
-    cfg = resolve(family=family, model=model)
+    if config is not None and (family is not None or model is not None):
+        raise ValueError('prepared provider config cannot be combined with overrides')
+    cfg = config if config is not None else resolve(family=family, model=model)
     if not cfg.available:
         raise ProviderUnavailable(cfg.reason or "provider 不可用")
 

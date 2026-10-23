@@ -1739,3 +1739,44 @@ DSH 按 SPEC-08 保留 Agently 默认，N3 只验证可行性，N6 配对验证�
 
 **旧提交仍待恢复**：本实例复查仍没有 `080c60f7076427f8dd5e083d4cd082a010de9177` 对象，也没有原
 `node-inspector-20261023.bundle`；没有恢复、迁移或宣称已由本轮代码替代。此前内网验收缺口继续有效。
+
+## 56 DSH D1 首片：后端边界与 Agently 适配（2026-10-24）
+
+用户要求提交当前版本后继续 DSH。上一版 `dacdf54` 已推送，本轮开始 fetch 远端 main，
+`HEAD...FETCH_HEAD` 为 `0 0`，工作树干净。从该基线先更新
+[SPEC-REV-06](spec/SPEC-REV-06-20261024.md)、[SPEC-08 §4.0](spec/DSH_AGENT_RUNTIME_SPEC.md#40-d1-首片执行契约先于实现)
+及 [D1 计划](plans/2026-10-24-dsh-backend-boundary.md)，再按特征基线、新用例红灯、局部提取、行为接线推进。
+同一执行者设计、实现与验证，不声称独立终验或四道门全绿。
+
+原始输出见 [D1 证据](evidence/DSH_D1_20261024/README.md)
+（README MD5 `aff1e9926ba7269d9c9bd65d4a9f713c`，目录外
+[清单](evidence/DSH_D1_20261024.md5)）；日志包保留原始字节，包含新能力先失败的输出。
+
+**交付范围**：实际请求经 `host/agent_backends` 的 Agently 适配器执行；缺省及节点覆盖由非机密
+SETTINGS 解析。显式 DSH 在 provider 解析前失败，无 standin/Agently 静默替换；未知配置拒绝且不回显原文。
+一次 attempt 固定 provider 快照，避免重复解析导致审计模型与执行模型漂移。兼容新增后端名称/适配器指纹，
+旧记录不回填；请求机制原指纹保留。预算、经验、Schema/业务校验、控制和封存仍在原 Host 权威路径，
+后端没有 RunCtx/校验器/业务写盘句柄。既有测试仅调整配置替身以接受新增快照参数，原断言保留。
+
+| 检查 | 实际结果 | 说明 |
+|---|---|---|
+| 提取前特征基线 | `73 passed, 1 warning in 2.27s` | 含新增 Schema 对象/包装返回特征及原 memory/control |
+| 新行为先失败 | `1 failed, 21 errors in 0.91s` | 缺少 backend 模块/选择器与 configure_agently 快照参数；未把错误算跳过 |
+| 仅提取后的特征回归 | `73 passed, 1 warning in 2.48s` | 在新增选择/审计行为接线前运行 |
+| 接线后集成 | `95 passed, 1 warning in 2.79s` | DSH 拒绝、配置错误、配置快照、后端标识、Host 校验与取消 |
+| 最终相关软件回归 | `196 passed, 1 warning in 7.11s` | 含历史不回填、sealed 故障、N6/N8、context、control/view、web smoke、节点/能力契约；受控 SDK，无 live 调用 |
+| 官方全套软件入口 | `exit=2`，测试未启动 | 配置数据根不存在；未伪造归档夹具 |
+| kb schema 自测 | `PASS=9 FAIL=1`，`exit=1` | 临时可写数据根，真实归档 gates 缺失 |
+| kb N5 自测 | `PASS=6 FAIL=1`，`exit=1` | 真实归档 TESTLIB 缺失 |
+| 端到端 | 前置阻塞，未运行驱动 | ENV_ROOT 与数据根均不存在；驱动会清理状态，需隔离工具副本与真实资产 |
+| 文档门增量 | `missing=129`、`env_missing=315`、`known_missing=10`；新增均 `0`；整门 `exit=1` | 与基线一致；新增相对链接和围栏通过 |
+| 补丁格式 | `git diff --check` 通过 | 本轮原始日志以归档包保全字节，不改此前冻结证据 |
+
+**环境事实与未完成项**：runtime 的 `observations_current=true`、running/connected；网络策略观测为
+`unknown`，没有 enforced 证据；fetch 成功仅证明这次 Git 操作可达。保留原代理、CA、配置，未发布环境。
+有界发现未找到 PATH 中的 dsh 或仓库中的原生接口说明；未读凭据库、未使用历史聊天 Token、未安装依赖。
+完整统一执行投影、D0 原生能力验收、D2/D3 会话/子进程取消与工具隔离、N3 真机探针、N6 价值对照均待完成。
+本片的 Agently 协程取消测试不证明远端工具进程终止，不能启用真实 DSH。
+
+**提交保护缺口仍在**：原任务 `080c60f7076427f8dd5e083d4cd082a010de9177` 对象和
+`/workspace/node-inspector-20261023.bundle` 本实例均不存在，继续列为待恢复；本片未恢复或替代它们。

@@ -43,12 +43,13 @@
 ## 2 `spec/` 契约
 
 > **编号**：每份 SPEC 有稳定编号 `SPEC-0X`（文件名不变）。当前修订记录：
+> [SPEC-REV-06](spec/SPEC-REV-06-20261024.md)（DSH D1 后端边界首片，实测见 STATUS §56）、
 > [SPEC-REV-05](spec/SPEC-REV-05-20261024.md)（DSH/UI 采纳评估与 AI 面板首批契约，实测见 STATUS §55）、
 > [SPEC-REV-04](spec/SPEC-REV-04-20261023.md)（2026-10-23，节点面板 P-01～P-35 已修订、门禁见 STATUS §49）、
 > [SPEC-REV-03](spec/SPEC-REV-03-20261023.md)（AI 工作面板体验设计草案，未实现）、
 > [SPEC-REV-02](spec/SPEC-REV-02-20261023.md)（DSH 执行后端设计草案，未实现）、
 > [SPEC-REV-01](spec/SPEC-REV-01-20261022.md)（2026-10-22，已生效）。
-> 修订记录只增不改；后续依次 `SPEC-REV-06`…
+> 修订记录只增不改；后续依次 `SPEC-REV-07`…
 
 | 编号 | 文件 | 管什么 |
 |---|---|---|
@@ -59,10 +60,11 @@
 | SPEC-05 | [S0 环境准备](spec/S0_ENVIRONMENT_SPEC.md) | 修订稿 S0 双段、基线零写、派生校验、TB 授权及三库准出边界；S0 与 drill/N0–N16 的关系与两级验收（§6/§7） |
 | SPEC-06 | [`spec/AGENT_CONTEXT_SPEC.md`](spec/AGENT_CONTEXT_SPEC.md) | Agent 上下文覆盖、逐次调用留痕、人工确认经验及版本/来源失效规则 |
 | SPEC-07 | [Agent 工作窗口](spec/AGENT_WINDOW_SPEC.md) | 逐节点观察、人工补充指令、请求暂停/恢复/终止、控制审计与身份隔离（仅模型节点；Host 节点用 SPEC-04 §4.2.1） |
-| SPEC-08（草案） | [DSH Agent 执行后端](spec/DSH_AGENT_RUNTIME_SPEC.md) | 环境 DSH 核接入、工具与候选目录权限、会话/控制/审计及验收；未实现 |
+| SPEC-08（分期实施） | [DSH Agent 执行后端](spec/DSH_AGENT_RUNTIME_SPEC.md) | D1 首片提取后端边界；原生 DSH 核、工具/候选权限及真实会话接入仍待验证 |
 | SPEC-09（分期实施） | [AI 工作面板体验设计](spec/AI_WORK_PANEL_SPEC.md) | 首批统一入口与 N3/N6/N8 成果展示；后置能力、验证边界见 STATUS §55 |
 
 DSH 接入阅读入口：[设计草案](spec/DSH_AGENT_RUNTIME_SPEC.md) → [实施切片](plans/2026-10-23-dsh-agent-runtime.md)。保持 Agently 默认，N3 做只读接入探针，N6 做价值对照，按收益决定是否扩展。
+当前开发：[D1 后端边界首片](plans/2026-10-24-dsh-backend-boundary.md)；不把后端抽象或受控测试等同于真实 DSH 接通。
 
 AI 界面优化入口：[设计与布局示意](spec/AI_WORK_PANEL_SPEC.md) → [实施切片](plans/2026-10-23-ai-work-panel.md)；
 初版范围见 [SPEC-REV-03](spec/SPEC-REV-03-20261023.md)，当前采纳与分期调整见 [SPEC-REV-05](spec/SPEC-REV-05-20261024.md)。

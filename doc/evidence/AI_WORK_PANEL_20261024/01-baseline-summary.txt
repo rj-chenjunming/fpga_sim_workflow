@@ -1,0 +1,5 @@
+Command (before product implementation):
+LOOP_BROWSER_EXECUTABLE=/usr/bin/chromium .venv/bin/python -m pytest -q tests/browser/test_agent_window.py tests/browser/test_node_detail.py
+
+Tool output excerpt (full baseline stdout was not redirected):
+52 passed in 96.27s (0:01:36)

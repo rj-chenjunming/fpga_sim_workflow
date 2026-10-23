@@ -1,0 +1,70 @@
+FF.F                                                                     [100%]
+=================================== FAILURES ===================================
+_____ test_unknown_payload_shape_keeps_raw_access_without_invented_summary _____
+tests/browser/test_ai_work_panel.py:75: in test_unknown_payload_shape_keeps_raw_access_without_invented_summary
+    pw.expect(page.locator('#awResults')).to_contain_text('结构未识别，请查看原始输出', timeout=1200)
+E   AssertionError: Locator expected to contain text '结构未识别，请查看原始输出'
+E   Actual value: 变更摘要未记录变更分组未记录分组。需要人工关注未记录条目；以原始输出为准。 
+E   Call log:
+E     - Expect "to_contain_text" locator("#awResults") with timeout 1200ms
+E     - waiting for locator("#awResults")
+E       2 × locator resolved to <div id="awResults">…</div>
+E         - unexpected value "当前成果该尝试尚无结果；当前执行状态请看上方。"
+E       11 × locator resolved to <div id="awResults">…</div>
+E          - unexpected value "变更摘要未记录变更分组未记录分组。需要人工关注未记录条目；以原始输出为准。"
+E   
+E   Aria snapshot:
+E   - heading "变更摘要" [level=4]
+E   - paragraph: 未记录
+E   - heading "变更分组" [level=4]
+E   - paragraph: 未记录分组。
+E   - heading "需要人工关注" [level=4]
+E   - paragraph: 未记录条目；以原始输出为准。
+__________ test_changed_revision_invalidates_termination_confirmation __________
+tests/browser/test_ai_work_panel.py:152: in test_changed_revision_invalidates_termination_confirmation
+    pw.expect(page.locator('#awStopConfirm')).not_to_be_visible(timeout=1200)
+E   AssertionError: Locator expected not to be visible
+E   Actual value: visible 
+E   Call log:
+E     - Expect "not_to_be_visible" locator("#awStopConfirm") with timeout 1200ms
+E     - waiting for locator("#awStopConfirm")
+E       13 × locator resolved to <div class="aw-stop" id="awStopConfirm">…</div>
+E          - unexpected value "visible"
+E   
+E   Aria snapshot:
+E   - paragraph: "确认终止 N3（A，尝试 #1）？本轮将按失败收敛。"
+E   - button "取消终止"
+E   - button "确认终止"
+_______________ test_node_details_returns_to_single_agent_panel ________________
+tests/browser/test_ai_work_panel.py:216: in test_node_details_returns_to_single_agent_panel
+    pw.expect(page.locator('#nodeDetail')).not_to_be_visible(timeout=1200)
+E   AssertionError: Locator expected not to be visible
+E   Actual value: visible 
+E   Call log:
+E     - Expect "not_to_be_visible" locator("#nodeDetail") with timeout 1200ms
+E     - waiting for locator("#nodeDetail")
+E       12 × locator resolved to <dialog open="" id="nodeDetail" class="node-detail" aria-labelledby="ndTitle">…</dialog>
+E          - unexpected value "visible"
+E   
+E   Aria snapshot:
+E   - dialog "N3 总结":
+E     - text: NODE DETAIL / 节点执行详情
+E     - heading "N3 总结" [level=2]
+E     - text: A / N3 · 只读投影（projection） owner：analyst 执行方式：等节点收尾后下发
+E     - status "服务端 status 原值；中文只是释义，原值逐字保留，不折算成完成/失败。": 未下发
+E     - button "关闭节点详情": 关闭 ×
+E     - text: GET /api/runs/A/nodes/N3
+E     - button "刷新"
+E     - alert: 服务端未登记该节点（known=false）：以下为该节点在事件流中的原始记录与空投影；「未登记」不等于「未执行」，也不据此判定失败。
+E     - region "这一步做什么"
+E     - region "结果 一句话结果（服务端 story.headline）；summary 原文在「原始记录」"
+E     - region "关键数字 逐节点精选字段；缺失逐项「未下发」"
+E     - region "过程 按事件发生顺序；时间取自事件 ts"
+E     - region "证据 refs；点击先探测存在性，不打开正文"
+E     - group: 原始记录（排查用） 事件流水号 seq · 完整 detail · 未下发字段 · 身份技术字段
+E     - text: 投影，非权威；判据以服务端 blockers / gates.json 为准
+=========================== short test summary info ============================
+FAILED tests/browser/test_ai_work_panel.py::test_unknown_payload_shape_keeps_raw_access_without_invented_summary
+FAILED tests/browser/test_ai_work_panel.py::test_changed_revision_invalidates_termination_confirmation
+FAILED tests/browser/test_ai_work_panel.py::test_node_details_returns_to_single_agent_panel
+3 failed, 1 passed, 13 deselected in 14.47s

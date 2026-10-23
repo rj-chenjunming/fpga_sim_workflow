@@ -2,7 +2,8 @@
 "use strict";
 window.AgentWindow = (function () {
   var api, target = null, epoch = 0, request = 0, data = null, attempt = "", counter = 0;
-  var pending = Object.create(null), draftRequest = null, sessionSeen = null;
+  var pending = Object.create(null), draftRequest = null, sessionSeen = null, attemptSeen = null;
+  var lastRead = "", resultSignature = "", stopIdentity = null, readError = false;
   var nodes = ["N3", "N6", "N8", "N10", "N11", "N12"];
   function $(id) { return document.getElementById(id); }
   function el(tag, cls, text) {
@@ -11,7 +12,8 @@ window.AgentWindow = (function () {
     if (text !== undefined) node.textContent = String(text);
     return node;
   }
-  function key(live) { return JSON.stringify([target.runId, target.node, live.session_id]); }
+  function key(live) { return JSON.stringify([target.runId, target.node, live.session_id, live.attempt]); }
+  function stopKey(live) { return JSON.stringify([key(live), live.revision]); }
   function error(message) {
     $("awError").replaceChildren();
     if (message) $("awError").appendChild(el("div", "alert bad", message));
@@ -20,7 +22,7 @@ window.AgentWindow = (function () {
   function base() { return "/api/runs/" + encodeURIComponent(target.runId) + "/agents/" + encodeURIComponent(target.node); }
   function controls() {
     var live = data && data.live;
-    var historical = live && attempt && Number(attempt) !== live.attempt;
+    var historical = data && window.AgentResults.historical(data);
     var busy = live && pending[key(live)];
     var actions = live && !historical && !busy ? (live.available_actions || []) : [];
     [["awSteer", "steer"], ["awPause", "pause"], ["awResume", "resume"], ["awTerminate", "terminate"]].forEach(function (pair) {
@@ -29,27 +31,68 @@ window.AgentWindow = (function () {
     $("awSteer").textContent = busy ? "提交中…" : live && live.state === "paused" ? "发送并恢复" : "补充指令并重跑";
     $("awActor").disabled = !!busy;
     $("awMessage").disabled = !!busy;
+    $("awControlForm").hidden = !live || !!historical;
+    $("awCurrent").hidden = !historical;
+    $("awStopApply").disabled = actions.indexOf("terminate") < 0;
+    if (!live || historical || stopIdentity !== stopKey(live) || actions.indexOf("terminate") < 0) cancelStop();
     $("awControlHint").textContent = historical ? "正在查看历史尝试；切回最新后才能干预当前请求。"
       : !live ? "没有活跃请求，历史窗口只读。"
         : busy || !actions.length ? "命令或请求正在收敛，请等待服务端更新。"
           : live.state === "paused" ? "请求已暂停。恢复或发送新指令后，将发起新的调用尝试。"
             : "可向当前请求补充指令、暂停，或终止该节点。";
   }
+  function cancelStop() { stopIdentity = null; $("awStopConfirm").hidden = true; }
+  function results(view) {
+    var presentation = window.AgentResults.present(target.node, view);
+    $("awTitle").textContent = presentation.title;
+    $("awTask").textContent = presentation.task;
+    $("awMode").textContent = "所选记录：" + presentation.mode;
+    $("awValidation").textContent = presentation.validation;
+    var live = view.live, selected = view.selected_attempt;
+    $("awSelection").textContent = target.runId + " · " + target.node + " · " +
+      (selected == null ? "暂无可读取尝试" : "所选成果 #" + selected) +
+      (live ? " · 当前执行 #" + live.attempt : " · 无活跃请求") +
+      (window.AgentResults.historical(view) ? " · 历史只读" : "");
+    var signature = JSON.stringify(presentation.sections);
+    if (resultSignature === signature) return;
+    resultSignature = signature;
+    var host = $("awResults"); host.replaceChildren();
+    presentation.sections.forEach(function (section) {
+      var block = el("section", "aw-result-block");
+      block.appendChild(el("h4", null, section.heading));
+      section.lines.forEach(function (line) { block.appendChild(el("p", "aw-result-text", line)); });
+      section.edits.forEach(function (edit) {
+        var change = el("div", "aw-edit");
+        change.appendChild(el("p", "aw-result-text", "源行：" + edit.line + " · 依据：" + edit.basis));
+        var pair = el("div", "aw-edit-pair");
+        [["原文", edit.old], ["候选替换", edit.next]].forEach(function (entry) {
+          var cell = el("div"); cell.appendChild(el("b", null, entry[0])); cell.appendChild(el("pre", null, entry[1])); pair.appendChild(cell);
+        });
+        change.appendChild(pair); block.appendChild(change);
+      });
+      host.appendChild(block);
+    });
+  }
   function render(view) {
     if (view.run_id !== target.runId || view.node !== target.node) throw new Error("Agent 响应身份与当前窗口不一致，拒绝启用控制。");
     var live = view.live;
-    if (live && sessionSeen && live.session_id !== sessionSeen) {
+    if (live && sessionSeen && (live.session_id !== sessionSeen || live.attempt !== attemptSeen)) {
       epoch++;
       $("awMessage").value = "";
-      $("awReceipt").textContent = "调用会话已切换，旧草稿已清空。";
+      $("awReceipt").textContent = "调用会话或尝试已切换，旧草稿已清空。";
       draftRequest = null;
+      cancelStop();
       error("");
     }
-    if (live) sessionSeen = live.session_id;
+    if (live) { sessionSeen = live.session_id; attemptSeen = live.attempt; }
     data = view;
+    lastRead = new Date().toLocaleTimeString();
+    $("awFreshness").textContent = "最后成功读取：" + lastRead + "（读取时间，非执行完成时间）";
+    if (readError) { error(""); readError = false; }
+    results(view);
     $("awIdentity").textContent = target.runId + " / " + target.node + (live ? " / " + live.session_id : " / 历史记录");
     var capsText = window.Capabilities ? window.Capabilities.line(view.capabilities) : "";
-    $("awCapabilities").textContent = capsText || "能力事实未知（非模型角色节点或服务端未投影）";
+    $("awCapabilities").textContent = "节点级能力（不代表所选历史尝试）：" + (capsText || "能力事实未知（服务端未投影）");
     // 只读展示失败不得阻断基本观察（输入/输出/时间线仍要渲染）。
     try {
       explain(view);
@@ -108,13 +151,30 @@ window.AgentWindow = (function () {
       if (isCurrent(token) && sequence === request) render(view);
     } catch (e) {
       if (isCurrent(token) && sequence === request) {
-        data = null; controls(); $("awStatus").textContent = "读取失败"; error(e.message);
+        data = null; readError = true; controls(); $("awStatus").textContent = "读取失败"; error(e.message);
+        $("awFreshness").textContent = lastRead ? "连接异常 · 旧数据 · 最后成功读取：" + lastRead : "连接异常 · 尚未成功读取";
       }
     }
   }
   function close() {
+    var previous = target;
     epoch++; request++; target = null; data = null;
+    cancelStop();
     if ($("agentWindow").open) $("agentWindow").close();
+    if (previous) {
+      var trigger = previous.trigger;
+      if (!trigger || !trigger.isConnected || !trigger.getClientRects().length) {
+        var attribute = trigger && trigger.hasAttribute("data-agent-node") ? "data-agent-node" : "data-node-chip";
+        var originNode = trigger && trigger.getAttribute(attribute) || previous.node;
+        var candidates = Array.from(document.querySelectorAll("[data-node-chip], [data-agent-node]"));
+        trigger = candidates.find(function (node) {
+          return node.getClientRects().length && node.getAttribute(attribute) === originNode;
+        }) || candidates.find(function (node) {
+          return node.getClientRects().length && (node.dataset.nodeChip === previous.node || node.dataset.agentNode === previous.node);
+        });
+      }
+      if (trigger && trigger.isConnected) trigger.focus();
+    }
   }
   /* F10/F11：只读解释（预算构成/经验原因/尝试摘要/输入差异）；不发请求、不改记录。 */
   function explain(view) {
@@ -177,10 +237,17 @@ window.AgentWindow = (function () {
   }
 
   function reset() {
-    data = null; attempt = ""; draftRequest = null; sessionSeen = null;
+    data = null; attempt = ""; draftRequest = null; sessionSeen = null; attemptSeen = null;
+    lastRead = ""; resultSignature = ""; readError = false; cancelStop();
     $("awActor").value = "human:"; $("awMessage").value = "";
     $("awReceipt").textContent = ""; error("");
     $("awStatus").textContent = "加载中";
+    $("awSelection").textContent = target.runId + " · " + target.node + " · 读取成果身份…";
+    $("awTask").textContent = "正在读取任务…";
+    $("awMode").textContent = "执行方式未记录";
+    $("awValidation").textContent = "系统校验状态未确认";
+    $("awFreshness").textContent = "尚未成功读取";
+    $("awResults").textContent = "正在读取成果…";
     $("awAttempt").value = "";
     $("awModel").textContent = "读取中…";
     $("awCapabilities").textContent = "能力事实读取中…";
@@ -195,10 +262,12 @@ window.AgentWindow = (function () {
   function open(options) {
     epoch++; request++;
     target = {runId: String(options.runId), name: options.name,
-      nodes: options.nodes.filter(function (n) { return nodes.indexOf(n) >= 0; }), node: options.node};
+      nodes: options.nodes.filter(function (n) { return nodes.indexOf(n) >= 0; }), node: options.node,
+      trigger: options.trigger || document.activeElement, onDetails: options.onDetails};
     if (!target.nodes.length) { target = null; return; }
     if (target.nodes.indexOf(target.node) < 0) target.node = target.nodes[0];
     $("awTitle").textContent = options.name || target.node;
+    $("awNodeDetails").hidden = !target.onDetails;
     $("awNode").replaceChildren();
     target.nodes.forEach(function (node) { var option = el("option", null, node); option.value = node; $("awNode").appendChild(option); });
     $("awNode").value = target.node;
@@ -208,9 +277,10 @@ window.AgentWindow = (function () {
   }
   async function submit(action) {
     var live = data && data.live;
-    if (!target || !live || (attempt && Number(attempt) !== live.attempt)) return;
+    if (!target || !live || window.AgentResults.historical(data)) return;
     var identity = key(live);
     if (pending[identity] || (live.available_actions || []).indexOf(action) < 0) return;
+    if (action === "terminate" && (stopIdentity !== stopKey(live) || $("awStopConfirm").hidden)) return;
     var actor = $("awActor").value.trim(), message = $("awMessage").value.trim();
     if (!/^human:.+/.test(actor)) { error("请填写 human:<name> 操作者。"); return; }
     if (action === "steer" && !message) { error("请填写给当前 Agent 的补充指令。"); return; }
@@ -219,6 +289,7 @@ window.AgentWindow = (function () {
     var signature = JSON.stringify(payload);
     if (!draftRequest || draftRequest.signature !== signature) draftRequest = {signature: signature, id: "aw-" + Date.now() + "-" + (++counter)};
     payload.request_id = draftRequest.id;
+    cancelStop();
     var token = epoch, path = base() + "/control";
     pending[identity] = true; error(""); controls();
     try {
@@ -239,11 +310,42 @@ window.AgentWindow = (function () {
     $("awClose").addEventListener("click", close);
     $("agentWindow").addEventListener("cancel", function (event) { event.preventDefault(); close(); });
     $("awRefresh").addEventListener("click", load);
+    $("awCurrent").addEventListener("click", function () {
+      if (!data || !data.live) return;
+      selectAttempt(String(data.live.attempt));
+    });
+    $("awNodeDetails").addEventListener("click", function () {
+      if (!target || !target.onDetails) return;
+      var callback = target.onDetails, node = target.node; close(); callback(node);
+    });
     $("awNode").addEventListener("change", function () { epoch++; request++; target.node = $("awNode").value; reset(); load(); });
-    $("awAttempt").addEventListener("change", function () { attempt = $("awAttempt").value; data = null; controls(); load(); });
-    [["awSteer", "steer"], ["awPause", "pause"], ["awResume", "resume"], ["awTerminate", "terminate"]].forEach(function (pair) {
+    $("awAttempt").addEventListener("change", function () { selectAttempt($("awAttempt").value); });
+    $("awTerminate").addEventListener("click", function () {
+      var live = data && data.live;
+      if (!live || window.AgentResults.historical(data) || $("awTerminate").disabled) return;
+      stopIdentity = stopKey(live);
+      $("awStopTarget").textContent = "确认终止 " + target.node + "（" + target.runId + "，尝试 #" + live.attempt + "）？本轮将按失败收敛。";
+      $("awStopConfirm").hidden = false;
+      $("awStopCancel").focus();
+    });
+    $("awStopCancel").addEventListener("click", function () { cancelStop(); $("awTerminate").focus(); });
+    $("awStopApply").addEventListener("click", function () { submit("terminate"); });
+    [["awSteer", "steer"], ["awPause", "pause"], ["awResume", "resume"]].forEach(function (pair) {
       $(pair[0]).addEventListener("click", function () { submit(pair[1]); });
     });
     setInterval(function () { if (!document.hidden && target && $("agentWindow").open) load(); }, 1500);
   }};
+  function selectAttempt(value) {
+    epoch++; request++; attempt = value; data = null; draftRequest = null;
+    $("awAttempt").value = value; $("awMessage").value = ""; $("awReceipt").textContent = "";
+    cancelStop(); resultSignature = ""; lastRead = ""; readError = false;
+    $("awResults").textContent = "正在读取所选尝试…";
+    $("awSelection").textContent = "正在读取所选尝试…";
+    $("awValidation").textContent = "系统校验状态未确认";
+    $("awMode").textContent = "执行方式未记录";
+    $("awStatus").textContent = "加载中";
+    $("awFreshness").textContent = "尚未成功读取所选尝试";
+    ["awInput", "awPrompt", "awOutput", "awBudget", "awAttempts", "awTimeline", "awModel", "awResultStatus", "awIdentity", "awCapabilities"].forEach(function (id) { $(id).textContent = "读取中…"; });
+    error(""); controls(); load();
+  }
 })();

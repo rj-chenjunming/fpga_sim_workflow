@@ -43,11 +43,12 @@
 ## 2 `spec/` 契约
 
 > **编号**：每份 SPEC 有稳定编号 `SPEC-0X`（文件名不变）。当前修订记录：
+> [SPEC-REV-05](spec/SPEC-REV-05-20261024.md)（DSH/UI 采纳评估与 AI 面板首批契约，实测见 STATUS §55）、
 > [SPEC-REV-04](spec/SPEC-REV-04-20261023.md)（2026-10-23，节点面板 P-01～P-35 已修订、门禁见 STATUS §49）、
 > [SPEC-REV-03](spec/SPEC-REV-03-20261023.md)（AI 工作面板体验设计草案，未实现）、
 > [SPEC-REV-02](spec/SPEC-REV-02-20261023.md)（DSH 执行后端设计草案，未实现）、
 > [SPEC-REV-01](spec/SPEC-REV-01-20261022.md)（2026-10-22，已生效）。
-> 修订记录只增不改；后续依次 `SPEC-REV-05`…
+> 修订记录只增不改；后续依次 `SPEC-REV-06`…
 
 | 编号 | 文件 | 管什么 |
 |---|---|---|
@@ -59,12 +60,14 @@
 | SPEC-06 | [`spec/AGENT_CONTEXT_SPEC.md`](spec/AGENT_CONTEXT_SPEC.md) | Agent 上下文覆盖、逐次调用留痕、人工确认经验及版本/来源失效规则 |
 | SPEC-07 | [Agent 工作窗口](spec/AGENT_WINDOW_SPEC.md) | 逐节点观察、人工补充指令、请求暂停/恢复/终止、控制审计与身份隔离（仅模型节点；Host 节点用 SPEC-04 §4.2.1） |
 | SPEC-08（草案） | [DSH Agent 执行后端](spec/DSH_AGENT_RUNTIME_SPEC.md) | 环境 DSH 核接入、工具与候选目录权限、会话/控制/审计及验收；未实现 |
-| SPEC-09（草案） | [AI 工作面板体验设计](spec/AI_WORK_PANEL_SPEC.md) | 统一 AI 入口、成果阅读、状态化操作、历史与刷新、可访问性及分阶段验收；未实现 |
+| SPEC-09（分期实施） | [AI 工作面板体验设计](spec/AI_WORK_PANEL_SPEC.md) | 首批统一入口与 N3/N6/N8 成果展示；后置能力、验证边界见 STATUS §55 |
 
-DSH 接入阅读入口：[设计草案](spec/DSH_AGENT_RUNTIME_SPEC.md) → [实施切片](plans/2026-10-23-dsh-agent-runtime.md)。先探测内网真实能力，再接 N3 只读分析与 N6 候选编辑。
+DSH 接入阅读入口：[设计草案](spec/DSH_AGENT_RUNTIME_SPEC.md) → [实施切片](plans/2026-10-23-dsh-agent-runtime.md)。保持 Agently 默认，N3 做只读接入探针，N6 做价值对照，按收益决定是否扩展。
 
 AI 界面优化入口：[设计与布局示意](spec/AI_WORK_PANEL_SPEC.md) → [实施切片](plans/2026-10-23-ai-work-panel.md)；
-修订范围见 [SPEC-REV-03](spec/SPEC-REV-03-20261023.md)。第一版复用现有接口，第二版按依赖增加对比、预览与 DSH 动态。
+初版范围见 [SPEC-REV-03](spec/SPEC-REV-03-20261023.md)，当前采纳与分期调整见 [SPEC-REV-05](spec/SPEC-REV-05-20261024.md)。
+第一版保留外壳、先改善成果阅读与反馈；布局、对比、预览与 DSH 动态按验证和依赖推进。
+首批开发见 [实施切片](plans/2026-10-24-ai-work-panel-implementation.md)，不将局部 UI 验证等同于完整方案验收。
 
 ## 3 阅读顺序（新接手）
 

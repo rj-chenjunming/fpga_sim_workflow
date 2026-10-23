@@ -1,0 +1,139 @@
+................................F...........................FFF          [100%]
+=================================== FAILURES ===================================
+______________ test_g2_material_opens_report_overlay_in_one_click ______________
+tests/browser/test_node_detail.py:1212: in test_g2_material_opens_report_overlay_in_one_click
+    pw.expect(page.locator("#viewGate")).to_be_visible()
+E   AssertionError: Locator expected to be visible
+E   Actual value: hidden 
+E   Call log:
+E     - Expect "to_be_visible" locator("#viewGate") with timeout 5000ms
+E     - waiting for locator("#viewGate")
+E       14 × locator resolved to <section id="viewGate" class="hidden" role="tabpanel" aria-labelledby="segGate">…</section>
+E          - unexpected value "hidden"
+E   
+E   Aria snapshot:
+E   - link "跳到工作区":
+E     - /url: "#workspace"
+E   - banner:
+E     - text: FPGA Flow / 仿真工作台 /fixture 插件面齐全 · agently ?
+E     - link "旧版操作台 ↗":
+E       - /url: legacy.html
+E   - complementary:
+E     - text: 当前工作空间
+E     - button "仿真与验证 Simulation workspace"
+E     - button "新建运行"
+E     - text: 工作台 WORKBENCH
+E     - tablist "视图切换":
+E       - tab "环境准备 S0"
+E       - tab "运行配置 01"
+E       - tab "运行监控 02" [selected]
+E       - tab "人工闸门 03"
+E     - text: 最近运行 HISTORY
+E     - button "A drill · 等待人工 · —"
+E     - button "B drill · 等待人工 · —"
+E     - text: TOOL_ROOT · — 数据根 · — 模型 · —
+E   - main:
+E     - text: 工作台 / 运行监控
+E     - heading "运行监控" [level=1]
+E     - text: 跟踪流程进度、Agent 任务与实际运行证据 SIMULATION WORKBENCH 02
+E     - tabpanel "运行监控 02":
+E       - text: A 等待人工 drill 未经 S0 派生（drill 不覆盖 S0） 基线 v1.2-stable 已用 — · 更新于 —
+E       - button "刷新"
+E       - button "取消作业" [disabled]
+E       - heading "流程执行状态" [level=2]
+E       - text: 摄取 → 修订 → 验证 → 决策
+E       - button "1 摄取 N0–N4 1/5 ▸"
+E       - button "2 修订 N5–N8 待开始 ▸"
+E       - button "3 验证 N9–N12 待开始 ▸"
+E       - button "4 决策 N13–N16 等待人工 ▸" [expanded]
+E       - button "节点 N13 闸门2，owner 人，状态 wait；打开任务详情": "! N13 闸门2 人"
+E       - button "节点 N14 闸门3，owner 人，状态 待开始；打开任务详情": N14 闸门3 人
+E       - button "节点 N15 回归，owner TriggerFlow，状态 待开始；打开任务详情": N15 回归 TriggerFlow
+E       - button "节点 N16 晋升，owner Host，状态 待开始；打开任务详情": N16 晋升 Host
+E       - text: 未纳入四段展示的节点（按 node_history 显式列出，不隐藏；全部可点）：
+E       - button "节点 N6_apply（四段外/未知节点）；打开执行详情": N6_apply
+E       - button "节点 N9_submit（四段外/未知节点）；打开执行详情": N9_submit
+E       - button "节点 N15_select（四段外/未知节点）；打开执行详情": N15_select
+E       - button "节点 N15_submit（四段外/未知节点）；打开执行详情": N15_submit
+E       - button "节点 HALT（四段外/未知节点）；打开执行详情": HALT
+E       - button "节点 N_FUTURE（四段外/未知节点）；打开执行详情": N_FUTURE
+E       - heading "Agent 工作状态" [level=2]
+E       - text: 点击角色，查看任务详情与运行记录 析
+E       - button "打开 simenv-analyst 工作窗口": simenv-analyst ↗
+E       - text: N3 · 差异语义总结 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 作
+E       - button "打开 simenv-author 工作窗口": simenv-author ↗
+E       - text: N6 · 用例修订 / 补充 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 检
+E       - button "打开 simenv-checker 工作窗口": simenv-checker ↗
+E       - text: N8 / N10 · 静态复核 / 结果对账 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 守
+E       - button "打开 simenv-guardian 工作窗口": simenv-guardian ↗
+E       - text: N11 · 证据守护 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 报
+E       - button "打开 simenv-reporter 工作窗口": simenv-reporter ↗
+E       - text: N12 · 评估报告 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 Host 确定性侧 N0 / N1 / N2 / N5 / N7 / N9 / N15 / N16 · 确定性步骤 / 长任务看护（不占 agent 卡） N9 全跑由 job_runner 看护：提交 → 停放 → 完成事件 resume 服务端 agents 投影未就绪：上方 agent 卡由 event / node_history 本地派生（非权威）。 以上卡片均为投影，非权威；判据以服务端 blockers / gates.json 为准。
+E       - heading "闸门 2 · 报告验收" [level=2]
+E       - text: 等待人工 · 轮次 0 闸门 G2_report_accept 轮次 0 冲突快照 — 硬阻断 无
+E       - group: N2 差异清单（服务端未下发）
+E       - radio "接受 值 accept"
+E       - text: 接受 值 accept
+E       - radio "返工 值 rework · 必须填写理由"
+E       - text: 返工 值 rework · 必须填写理由
+E       - textbox "actor":
+E         - /placeholder: human:your-name
+E         - text: "human:"
+E       - text: actor 必须以 human 开头（I6）；模型/替身 actor 会被服务端拒绝。
+E       - textbox "裁决理由":
+E         - /placeholder: 裁决理由（ignored / rework / disputed 必填）
+E       - button "提交闸门决策" [disabled]
+E       - heading "双口径计数" [level=2]
+E       - text: 并列同权 · 不换算 无全跑证据：两套口径均无法取数（I3 / E-2）。
+E       - heading "阻断项" [level=2]
+E       - text: 按 severity 分区 · 前端不过滤 服务端未下发阻断项（这不等于判绿；判据仍以服务端 can 字段与 gates.json 为准）。
+E       - heading "长任务" [level=2]
+E       - text: job 状态与日志尾部 当前没有作业记录（N9 全跑尚未提交或未启动）。
+E       - group: 事件流 · 0 条白名单事件（seq 递增 · 只读 · 折叠）
+E     - text: FPGA Flow / 仿真工作台 检查结论与闸门状态以服务端证据为准
+E   - status
+____ test_candidate_content_and_controls_fit_narrow_and_desktop_views[320] _____
+tests/browser/test_ai_work_panel.py:243: in test_candidate_content_and_controls_fit_narrow_and_desktop_views
+    pw.expect(page.locator('#agents [data-agent-node="N6"]')).to_be_focused()
+E   AssertionError: Locator expected to be focused
+E   Actual value: inactive 
+E   Call log:
+E     - Expect "to_be_focused" locator("#agents [data-agent-node=\"N6\"]") with timeout 5000ms
+E     - waiting for locator("#agents [data-agent-node=\"N6\"]")
+E       14 × locator resolved to <button type="button" data-agent-node="N6" class="agent-name agent-open" aria-label="打开 simenv-author 工作窗口">simenv-author ↗</button>
+E          - unexpected value "inactive"
+E   
+E   Aria snapshot:
+E   - button "打开 simenv-author 工作窗口": simenv-author ↗
+____ test_candidate_content_and_controls_fit_narrow_and_desktop_views[768] _____
+tests/browser/test_ai_work_panel.py:243: in test_candidate_content_and_controls_fit_narrow_and_desktop_views
+    pw.expect(page.locator('#agents [data-agent-node="N6"]')).to_be_focused()
+E   AssertionError: Locator expected to be focused
+E   Actual value: inactive 
+E   Call log:
+E     - Expect "to_be_focused" locator("#agents [data-agent-node=\"N6\"]") with timeout 5000ms
+E     - waiting for locator("#agents [data-agent-node=\"N6\"]")
+E       14 × locator resolved to <button type="button" data-agent-node="N6" class="agent-name agent-open" aria-label="打开 simenv-author 工作窗口">simenv-author ↗</button>
+E          - unexpected value "inactive"
+E   
+E   Aria snapshot:
+E   - button "打开 simenv-author 工作窗口": simenv-author ↗
+____ test_candidate_content_and_controls_fit_narrow_and_desktop_views[1440] ____
+tests/browser/test_ai_work_panel.py:243: in test_candidate_content_and_controls_fit_narrow_and_desktop_views
+    pw.expect(page.locator('#agents [data-agent-node="N6"]')).to_be_focused()
+E   AssertionError: Locator expected to be focused
+E   Actual value: inactive 
+E   Call log:
+E     - Expect "to_be_focused" locator("#agents [data-agent-node=\"N6\"]") with timeout 5000ms
+E     - waiting for locator("#agents [data-agent-node=\"N6\"]")
+E       14 × locator resolved to <button type="button" data-agent-node="N6" class="agent-name agent-open" aria-label="打开 simenv-author 工作窗口">simenv-author ↗</button>
+E          - unexpected value "inactive"
+E   
+E   Aria snapshot:
+E   - button "打开 simenv-author 工作窗口": simenv-author ↗
+=========================== short test summary info ============================
+FAILED tests/browser/test_node_detail.py::test_g2_material_opens_report_overlay_in_one_click
+FAILED tests/browser/test_ai_work_panel.py::test_candidate_content_and_controls_fit_narrow_and_desktop_views[320]
+FAILED tests/browser/test_ai_work_panel.py::test_candidate_content_and_controls_fit_narrow_and_desktop_views[768]
+FAILED tests/browser/test_ai_work_panel.py::test_candidate_content_and_controls_fit_narrow_and_desktop_views[1440]
+4 failed, 59 passed in 140.42s (0:02:20)

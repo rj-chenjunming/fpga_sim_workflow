@@ -1425,7 +1425,7 @@
     wrap.setAttribute("data-node-chip", nodeId);
     wrap.setAttribute("aria-haspopup", "dialog");
     wrap.setAttribute("aria-label", "节点 " + nodeId + " " + (meta.name || "") +
-      "，owner " + (meta.owner || "—") + "，状态 " + (st || "待开始") + "；打开执行详情");
+      "，owner " + (meta.owner || "—") + "，状态 " + (st || "待开始") + "；打开任务详情");
     var bubble = h("div", "sb");
     bubble.appendChild(h("span", null, nodeIcon(st)));
     var txt = h("div", "st");
@@ -1440,7 +1440,7 @@
   }
 
   /* 打开节点详情弹层：身份兜底名/owner 仅用于显示，服务端下发优先（节点面板内标注）。 */
-  function openNodeDetail(nodeId, meta, trigger) {
+  function openNodeDetail(nodeId, meta, trigger, forceDetails) {
     if (!state.runId) {
       toast("尚未选择运行");
       return;
@@ -1455,15 +1455,30 @@
         agent = { name: def.name, nodes: (def.nodes || []).slice(), node: nodeId };
       }
     });
+    if (agent && !forceDetails && window.AgentWindow) {
+      openAgentPanel(state.runId, agent.name, agent.nodes, nodeId, trigger);
+      return;
+    }
     window.NodeDetail.open({
       runId: state.runId,
       node: nodeId,
       fallback: meta ? { name: meta.name, owner: meta.owner } : null,
       agent: agent,
+      onAgent: agent ? function () { openAgentPanel(state.runId, agent.name, agent.nodes, nodeId, trigger); } : null,
       gate: !!(meta && meta.gate),
       onGate: function () { showView("gate"); },
       trigger: trigger || null
     });
+  }
+
+  function openAgentPanel(runId, name, nodes, node, trigger) {
+    if (!window.AgentWindow || !runId) return;
+    window.AgentWindow.open({runId: runId, name: name, nodes: nodes, node: node, trigger: trigger,
+      onDetails: function (selected) {
+        if (state.runId !== runId) return;
+        var chip = Array.from(document.querySelectorAll("[data-node-chip]")).find(function (item) { return item.dataset.nodeChip === selected; });
+        openNodeDetail(selected, NODE_META[selected], chip || trigger, true);
+      }});
   }
 
   /* ---------------- Agent 卡 ---------------- */
@@ -1530,8 +1545,8 @@
     var nodes = a && Array.isArray(a.nodes) && a.nodes.length ? a.nodes : (def.nodes || []);
     var runId = state.runId;
     function openWindow() {
-      if (window.AgentWindow && runId) window.AgentWindow.open({runId: runId, name: name, nodes: nodes,
-        node: a && a.active_node && nodes.indexOf(a.active_node) >= 0 ? a.active_node : nodes[0]});
+      openAgentPanel(runId, name, nodes,
+        a && a.active_node && nodes.indexOf(a.active_node) >= 0 ? a.active_node : nodes[0], open);
     }
     open.addEventListener("click", openWindow);
     card.classList.add("agent-clickable");

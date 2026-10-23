@@ -1,0 +1,276 @@
+..............................F.F.F............F.......F..FF............ [ 73%]
+..........................                                               [100%]
+=================================== FAILURES ===================================
+_____ test_gate_node_jumps_to_gate_view_and_model_node_offers_agent_window _____
+tests/browser/test_node_detail.py:546: in test_gate_node_jumps_to_gate_view_and_model_node_offers_agent_window
+    pw.expect(page.locator("#agentWindow")).to_be_visible()
+.venv/lib/python3.12/site-packages/playwright/_impl/_locator.py:822: in _expect
+    return await self._frame._expect(self._selector, expression, options, title)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/playwright/_impl/_frame.py:194: in _expect
+    await self._channel.send(
+.venv/lib/python3.12/site-packages/playwright/_impl/_connection.py:78: in send
+    return await self._connection.wrap_api_call(
+.venv/lib/python3.12/site-packages/playwright/_impl/_connection.py:636: in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+E   KeyError: "LocatorAssertions.to_be_visible: 'N3'"
+----------------------------- Captured stderr call -----------------------------
+Error occurred in event listener
+Traceback (most recent call last):
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_page.py", line 312, in _on_route
+    handled = await route_handler.handle(route)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_helper.py", line 456, in handle
+    raise e
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_helper.py", line 443, in handle
+    return await self._handle_internal(route)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_helper.py", line 479, in _handle_internal
+    await handler_finished_future
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_helper.py", line 470, in _handler
+    self.handler(route, route.request)  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_impl_to_api_mapping.py", line 140, in wrapper_func
+    return handler(
+           ^^^^^^^^
+  File "/workspace/fpga_sim_workflow/loop/tests/browser/test_run_sessions.py", line 86, in route_request
+    body = api["views"][path.rsplit("/", 1)[1]]
+           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+KeyError: 'N3'
+______________ test_status_chips_keep_raw_value_and_add_glossary _______________
+tests/browser/test_node_detail.py:603: in test_status_chips_keep_raw_value_and_add_glossary
+    open_node(page, "N6")
+tests/browser/test_node_detail.py:173: in open_node
+    pw.expect(page.locator("#agentWindow")).to_be_visible()
+.venv/lib/python3.12/site-packages/playwright/_impl/_locator.py:822: in _expect
+    return await self._frame._expect(self._selector, expression, options, title)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/playwright/_impl/_frame.py:194: in _expect
+    await self._channel.send(
+.venv/lib/python3.12/site-packages/playwright/_impl/_connection.py:78: in send
+    return await self._connection.wrap_api_call(
+.venv/lib/python3.12/site-packages/playwright/_impl/_connection.py:636: in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+E   KeyError: "LocatorAssertions.to_be_visible: 'N6'"
+----------------------------- Captured stderr call -----------------------------
+Error occurred in event listener
+Traceback (most recent call last):
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_page.py", line 312, in _on_route
+    handled = await route_handler.handle(route)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_helper.py", line 456, in handle
+    raise e
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_helper.py", line 443, in handle
+    return await self._handle_internal(route)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_helper.py", line 479, in _handle_internal
+    await handler_finished_future
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_helper.py", line 470, in _handler
+    self.handler(route, route.request)  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_impl_to_api_mapping.py", line 140, in wrapper_func
+    return handler(
+           ^^^^^^^^
+  File "/workspace/fpga_sim_workflow/loop/tests/browser/test_run_sessions.py", line 86, in route_request
+    body = api["views"][path.rsplit("/", 1)[1]]
+           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+KeyError: 'N6'
+______ test_evidence_note_points_to_agent_calls_without_claiming_missing _______
+tests/browser/test_node_detail.py:665: in test_evidence_note_points_to_agent_calls_without_claiming_missing
+    open_node(page, "N3")
+tests/browser/test_node_detail.py:173: in open_node
+    pw.expect(page.locator("#agentWindow")).to_be_visible()
+.venv/lib/python3.12/site-packages/playwright/_impl/_locator.py:822: in _expect
+    return await self._frame._expect(self._selector, expression, options, title)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/playwright/_impl/_frame.py:194: in _expect
+    await self._channel.send(
+.venv/lib/python3.12/site-packages/playwright/_impl/_connection.py:78: in send
+    return await self._connection.wrap_api_call(
+.venv/lib/python3.12/site-packages/playwright/_impl/_connection.py:636: in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+E   KeyError: "LocatorAssertions.to_be_visible: 'N3'"
+----------------------------- Captured stderr call -----------------------------
+Error occurred in event listener
+Traceback (most recent call last):
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_page.py", line 312, in _on_route
+    handled = await route_handler.handle(route)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_helper.py", line 456, in handle
+    raise e
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_helper.py", line 443, in handle
+    return await self._handle_internal(route)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_helper.py", line 479, in _handle_internal
+    await handler_finished_future
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_helper.py", line 470, in _handler
+    self.handler(route, route.request)  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_impl_to_api_mapping.py", line 140, in wrapper_func
+    return handler(
+           ^^^^^^^^
+  File "/workspace/fpga_sim_workflow/loop/tests/browser/test_run_sessions.py", line 86, in route_request
+    body = api["views"][path.rsplit("/", 1)[1]]
+           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+KeyError: 'N3'
+___________________ test_report_missing_and_readonly_overlay ___________________
+tests/browser/test_node_detail.py:1023: in test_report_missing_and_readonly_overlay
+    open_node(page, "N12")
+tests/browser/test_node_detail.py:173: in open_node
+    pw.expect(page.locator("#agentWindow")).to_be_visible()
+.venv/lib/python3.12/site-packages/playwright/_impl/_locator.py:822: in _expect
+    return await self._frame._expect(self._selector, expression, options, title)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/playwright/_impl/_frame.py:194: in _expect
+    await self._channel.send(
+.venv/lib/python3.12/site-packages/playwright/_impl/_connection.py:78: in send
+    return await self._connection.wrap_api_call(
+.venv/lib/python3.12/site-packages/playwright/_impl/_connection.py:636: in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+E   KeyError: "LocatorAssertions.to_be_visible: 'N12'"
+----------------------------- Captured stderr call -----------------------------
+Error occurred in event listener
+Traceback (most recent call last):
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_page.py", line 312, in _on_route
+    handled = await route_handler.handle(route)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_helper.py", line 456, in handle
+    raise e
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_helper.py", line 443, in handle
+    return await self._handle_internal(route)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_helper.py", line 479, in _handle_internal
+    await handler_finished_future
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_helper.py", line 470, in _handler
+    self.handler(route, route.request)  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_impl_to_api_mapping.py", line 140, in wrapper_func
+    return handler(
+           ^^^^^^^^
+  File "/workspace/fpga_sim_workflow/loop/tests/browser/test_run_sessions.py", line 86, in route_request
+    body = api["views"][path.rsplit("/", 1)[1]]
+           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+KeyError: 'N12'
+_____________ test_n6_observation_points_three_states_are_distinct _____________
+tests/browser/test_node_detail.py:1299: in test_n6_observation_points_three_states_are_distinct
+    open_node(page, "N6")
+tests/browser/test_node_detail.py:173: in open_node
+    pw.expect(page.locator("#agentWindow")).to_be_visible()
+.venv/lib/python3.12/site-packages/playwright/_impl/_locator.py:822: in _expect
+    return await self._frame._expect(self._selector, expression, options, title)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/playwright/_impl/_frame.py:194: in _expect
+    await self._channel.send(
+.venv/lib/python3.12/site-packages/playwright/_impl/_connection.py:78: in send
+    return await self._connection.wrap_api_call(
+.venv/lib/python3.12/site-packages/playwright/_impl/_connection.py:636: in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+E   KeyError: "LocatorAssertions.to_be_visible: 'N6'"
+----------------------------- Captured stderr call -----------------------------
+Error occurred in event listener
+Traceback (most recent call last):
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_page.py", line 312, in _on_route
+    handled = await route_handler.handle(route)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_helper.py", line 456, in handle
+    raise e
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_helper.py", line 443, in handle
+    return await self._handle_internal(route)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_helper.py", line 479, in _handle_internal
+    await handler_finished_future
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_helper.py", line 470, in _handler
+    self.handler(route, route.request)  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_impl_to_api_mapping.py", line 140, in wrapper_func
+    return handler(
+           ^^^^^^^^
+  File "/workspace/fpga_sim_workflow/loop/tests/browser/test_run_sessions.py", line 86, in route_request
+    body = api["views"][path.rsplit("/", 1)[1]]
+           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+KeyError: 'N6'
+_ test_not_reached_headline_keeps_server_gloss_and_never_asks_to_wait[failed-\u5931\u8d25] _
+tests/browser/test_node_detail.py:1477: in test_not_reached_headline_keeps_server_gloss_and_never_asks_to_wait
+    open_node(page, "N10")
+tests/browser/test_node_detail.py:173: in open_node
+    pw.expect(page.locator("#agentWindow")).to_be_visible()
+.venv/lib/python3.12/site-packages/playwright/_impl/_locator.py:822: in _expect
+    return await self._frame._expect(self._selector, expression, options, title)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/playwright/_impl/_frame.py:194: in _expect
+    await self._channel.send(
+.venv/lib/python3.12/site-packages/playwright/_impl/_connection.py:78: in send
+    return await self._connection.wrap_api_call(
+.venv/lib/python3.12/site-packages/playwright/_impl/_connection.py:636: in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+E   KeyError: "LocatorAssertions.to_be_visible: 'N10'"
+----------------------------- Captured stderr call -----------------------------
+Error occurred in event listener
+Traceback (most recent call last):
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_page.py", line 312, in _on_route
+    handled = await route_handler.handle(route)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_helper.py", line 456, in handle
+    raise e
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_helper.py", line 443, in handle
+    return await self._handle_internal(route)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_helper.py", line 479, in _handle_internal
+    await handler_finished_future
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_helper.py", line 470, in _handler
+    self.handler(route, route.request)  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_impl_to_api_mapping.py", line 140, in wrapper_func
+    return handler(
+           ^^^^^^^^
+  File "/workspace/fpga_sim_workflow/loop/tests/browser/test_run_sessions.py", line 86, in route_request
+    body = api["views"][path.rsplit("/", 1)[1]]
+           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+KeyError: 'N10'
+_ test_not_reached_headline_keeps_server_gloss_and_never_asks_to_wait[finished-\u5df2\u5b8c\u6210] _
+tests/browser/test_node_detail.py:1477: in test_not_reached_headline_keeps_server_gloss_and_never_asks_to_wait
+    open_node(page, "N10")
+tests/browser/test_node_detail.py:173: in open_node
+    pw.expect(page.locator("#agentWindow")).to_be_visible()
+.venv/lib/python3.12/site-packages/playwright/_impl/_locator.py:822: in _expect
+    return await self._frame._expect(self._selector, expression, options, title)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/playwright/_impl/_frame.py:194: in _expect
+    await self._channel.send(
+.venv/lib/python3.12/site-packages/playwright/_impl/_connection.py:78: in send
+    return await self._connection.wrap_api_call(
+.venv/lib/python3.12/site-packages/playwright/_impl/_connection.py:636: in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+E   KeyError: "LocatorAssertions.to_be_visible: 'N10'"
+----------------------------- Captured stderr call -----------------------------
+Error occurred in event listener
+Traceback (most recent call last):
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_page.py", line 312, in _on_route
+    handled = await route_handler.handle(route)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_helper.py", line 456, in handle
+    raise e
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_helper.py", line 443, in handle
+    return await self._handle_internal(route)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_helper.py", line 479, in _handle_internal
+    await handler_finished_future
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_helper.py", line 470, in _handler
+    self.handler(route, route.request)  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_impl_to_api_mapping.py", line 140, in wrapper_func
+    return handler(
+           ^^^^^^^^
+  File "/workspace/fpga_sim_workflow/loop/tests/browser/test_run_sessions.py", line 86, in route_request
+    body = api["views"][path.rsplit("/", 1)[1]]
+           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+KeyError: 'N10'
+=========================== short test summary info ============================
+FAILED tests/browser/test_node_detail.py::test_gate_node_jumps_to_gate_view_and_model_node_offers_agent_window
+FAILED tests/browser/test_node_detail.py::test_status_chips_keep_raw_value_and_add_glossary
+FAILED tests/browser/test_node_detail.py::test_evidence_note_points_to_agent_calls_without_claiming_missing
+FAILED tests/browser/test_node_detail.py::test_report_missing_and_readonly_overlay
+FAILED tests/browser/test_node_detail.py::test_n6_observation_points_three_states_are_distinct
+FAILED tests/browser/test_node_detail.py::test_not_reached_headline_keeps_server_gloss_and_never_asks_to_wait[failed-\u5931\u8d25]
+FAILED tests/browser/test_node_detail.py::test_not_reached_headline_keeps_server_gloss_and_never_asks_to_wait[finished-\u5df2\u5b8c\u6210]
+7 failed, 91 passed in 184.72s (0:03:04)

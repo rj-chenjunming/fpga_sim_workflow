@@ -1,0 +1,1448 @@
+FFFFFFFFFFFFF                                                            [100%]
+=================================== FAILURES ===================================
+___________ test_n3_accepted_result_is_readable_and_raw_is_collapsed ___________
+tests/browser/test_ai_work_panel.py:27: in test_n3_accepted_result_is_readable_and_raw_is_collapsed
+    pw.expect(page.locator('#awResults')).to_contain_text('寄存器位宽从 8 扩为 16', timeout=1200)
+E   AssertionError: Locator expected to contain text '寄存器位宽从 8 扩为 16'
+E   Actual value: None
+E   Error: element(s) not found 
+E   Call log:
+E     - Expect "to_contain_text" locator("#awResults") with timeout 1200ms
+E     - waiting for locator("#awResults")
+E   
+E   Aria snapshot:
+E   - link "跳到工作区":
+E     - /url: "#workspace"
+E   - banner:
+E     - text: FPGA Flow / 仿真工作台 /fixture 插件面齐全 · agently ?
+E     - link "旧版操作台 ↗":
+E       - /url: legacy.html
+E   - complementary:
+E     - text: 当前工作空间
+E     - button "仿真与验证 Simulation workspace"
+E     - button "新建运行"
+E     - text: 工作台 WORKBENCH
+E     - tablist "视图切换":
+E       - tab "环境准备 S0"
+E       - tab "运行配置 01"
+E       - tab "运行监控 02" [selected]
+E       - tab "人工闸门 03"
+E     - text: 最近运行 HISTORY
+E     - button "A drill · 等待人工 · —"
+E     - button "B drill · 等待人工 · —"
+E     - text: TOOL_ROOT · — 数据根 · — 模型 · —
+E   - main:
+E     - text: 工作台 / 运行监控
+E     - heading "运行监控" [level=1]
+E     - text: 跟踪流程进度、Agent 任务与实际运行证据 SIMULATION WORKBENCH 02
+E     - tabpanel "运行监控 02":
+E       - text: A 等待人工 drill 未经 S0 派生（drill 不覆盖 S0） 基线 A-baseline 已用 — · 更新于 —
+E       - button "刷新"
+E       - button "取消作业" [disabled]
+E       - heading "流程执行状态" [level=2]
+E       - text: 摄取 → 修订 → 验证 → 决策
+E       - button "1 摄取 N0–N4 等待人工 ▸" [expanded]
+E       - button "节点 N0 基线，owner Host，状态 待开始；打开执行详情": N0 基线 Host
+E       - button "节点 N1 摄取，owner Host，状态 待开始；打开执行详情": N1 摄取 Host
+E       - button "节点 N2 diff，owner Host，状态 待开始；打开执行详情": N2 diff Host
+E       - button "节点 N3 总结，owner analyst，状态 待开始；打开执行详情": N3 总结 analyst
+E       - button "节点 N4 闸门1，owner 人，状态 wait；打开执行详情": "! N4 闸门1 人"
+E       - button "2 修订 N5–N8 待开始 ▸"
+E       - button "3 验证 N9–N12 待开始 ▸"
+E       - button "4 决策 N13–N16 待开始 ▸"
+E       - heading "Agent 工作状态" [level=2]
+E       - text: 点击角色，查看任务详情与运行记录 析
+E       - button "打开 simenv-analyst 工作窗口": simenv-analyst ↗
+E       - text: N3 · 差异语义总结 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 作
+E       - button "打开 simenv-author 工作窗口": simenv-author ↗
+E       - text: N6 · 用例修订 / 补充 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 检
+E       - button "打开 simenv-checker 工作窗口": simenv-checker ↗
+E       - text: N8 / N10 · 静态复核 / 结果对账 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 守
+E       - button "打开 simenv-guardian 工作窗口": simenv-guardian ↗
+E       - text: N11 · 证据守护 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 报
+E       - button "打开 simenv-reporter 工作窗口": simenv-reporter ↗
+E       - text: N12 · 评估报告 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 Host 确定性侧 N0 / N1 / N2 / N5 / N7 / N9 / N15 / N16 · 确定性步骤 / 长任务看护（不占 agent 卡） N9 全跑由 job_runner 看护：提交 → 停放 → 完成事件 resume 服务端 agents 投影未就绪：上方 agent 卡由 event / node_history 本地派生（非权威）。 以上卡片均为投影，非权威；判据以服务端 blockers / gates.json 为准。
+E       - heading "闸门 1 · 差异确认" [level=2]
+E       - text: 等待人工 · 轮次 0 闸门 G1_diff_confirm 轮次 0 冲突快照 — 硬阻断 无
+E       - group: N2 差异清单（服务端未下发）
+E       - radio "服务端确认 值 confirmed"
+E       - text: 服务端确认 值 confirmed
+E       - radio "服务端忽略 值 ignored · 必须填写理由"
+E       - text: 服务端忽略 值 ignored · 必须填写理由
+E       - textbox "actor":
+E         - /placeholder: human:your-name
+E         - text: "human:"
+E       - text: actor 必须以 human 开头（I6）；模型/替身 actor 会被服务端拒绝。
+E       - textbox "裁决理由":
+E         - /placeholder: 裁决理由（ignored / rework / disputed 必填）
+E       - button "提交闸门决策" [disabled]
+E       - heading "双口径计数" [level=2]
+E       - text: 并列同权 · 不换算 无全跑证据：两套口径均无法取数（I3 / E-2）。
+E       - heading "阻断项" [level=2]
+E       - text: 按 severity 分区 · 前端不过滤 服务端未下发阻断项（这不等于判绿；判据仍以服务端 can 字段与 gates.json 为准）。
+E       - heading "长任务" [level=2]
+E       - text: job 状态与日志尾部 当前没有作业记录（N9 全跑尚未提交或未启动）。
+E       - group: 事件流 · 0 条白名单事件（seq 递增 · 只读 · 折叠）
+E     - text: FPGA Flow / 仿真工作台 检查结论与闸门状态以服务端证据为准
+E   - status
+E   - dialog "simenv-analyst":
+E     - text: AGENT WORKSPACE / 工作窗口
+E     - heading "simenv-analyst" [level=2]
+E     - status: 运行中
+E     - button "关闭 Agent 窗口": 关闭 ×
+E     - text: A / N3 / N3:session-000001 节点
+E     - combobox "Agent 节点":
+E       - option "N3" [selected]
+E     - text: 尝试
+E     - combobox "调用尝试":
+E       - option "跟随最新" [selected]
+E       - option "#1 · incomplete"
+E     - button "刷新"
+E     - heading "运行动态" [level=3]
+E     - text: "test-model · 尝试 #1 能力事实未知（非模型角色节点或服务端未投影）"
+E     - group: ▸ 上下文预算 未知（未测量）
+E     - group: ▸ 尝试摘要与输入差异
+E     - text: 尚无节点事件。输入、输出将在实际调用后出现。
+E     - group: ▸ 任务输入 完整调用输入，只读
+E     - group: ▸ 提示词与约束 调用时快照
+E     - group: "▾ 输出与 Host 校验 validated { \"status\": \"validated\", \"payload\": { \"data\": { \"summary\": \"原始候选\" }, \"standin\": false }, \"validation\": { \"ok\": true, \"problems\": [], \"accepted\": { \"summary\": \"寄存器位宽从 8 扩为 16，影响读写检查\", \"groups\": [ { \"segment\": \"0x1000\", \"kind\": \"位宽\", \"diff_ids\": [ \"D1\" ], \"why\": \"接口同步\" } ], \"risky_points\": [ \"检查高位读回 <img src=x onerror=alert(1)>\" ] } } }"
+E     - paragraph: 这里展示实际输入、执行事件与返回结果，不提供模型隐藏推理或 token 流。
+E     - heading "人工干预" [level=3]
+E     - text: 请求边界
+E     - paragraph: 可向当前请求补充指令、暂停，或终止该节点。
+E     - text: 操作者 流程记录
+E     - textbox "操作者 流程记录":
+E       - /placeholder: human:your-name
+E       - text: "human:"
+E     - text: 补充指令 仅当前任务
+E     - textbox "补充指令 仅当前任务":
+E       - /placeholder: 例如：请重点核对新增端口的位宽，保留现有断言与激励时序。
+E     - button "补充指令并重跑"
+E     - button "暂停请求"
+E     - button "恢复请求" [disabled]
+E     - status
+E     - alert
+E     - text: 补充指令会取消本地旧请求，再发起新的调用尝试；原始事实、Host 校验与人工闸门继续生效。暂停后恢复也会重发请求。
+E     - button "终止当前节点"
+E     - paragraph: 终止后本轮按失败收敛。关闭窗口只收起视图，不停止任务。
+E     - group: 取消与恢复的边界
+__________ test_n6_candidates_show_edits_basis_and_observation_points __________
+tests/browser/test_ai_work_panel.py:43: in test_n6_candidates_show_edits_basis_and_observation_points
+    pw.expect(page.locator('#awResults')).to_contain_text('tc_width', timeout=1200)
+E   AssertionError: Locator expected to contain text 'tc_width'
+E   Actual value: None
+E   Error: element(s) not found 
+E   Call log:
+E     - Expect "to_contain_text" locator("#awResults") with timeout 1200ms
+E     - waiting for locator("#awResults")
+E   
+E   Aria snapshot:
+E   - link "跳到工作区":
+E     - /url: "#workspace"
+E   - banner:
+E     - text: FPGA Flow / 仿真工作台 /fixture 插件面齐全 · agently ?
+E     - link "旧版操作台 ↗":
+E       - /url: legacy.html
+E   - complementary:
+E     - text: 当前工作空间
+E     - button "仿真与验证 Simulation workspace"
+E     - button "新建运行"
+E     - text: 工作台 WORKBENCH
+E     - tablist "视图切换":
+E       - tab "环境准备 S0"
+E       - tab "运行配置 01"
+E       - tab "运行监控 02" [selected]
+E       - tab "人工闸门 03"
+E     - text: 最近运行 HISTORY
+E     - button "A drill · 等待人工 · —"
+E     - button "B drill · 等待人工 · —"
+E     - text: TOOL_ROOT · — 数据根 · — 模型 · —
+E   - main:
+E     - text: 工作台 / 运行监控
+E     - heading "运行监控" [level=1]
+E     - text: 跟踪流程进度、Agent 任务与实际运行证据 SIMULATION WORKBENCH 02
+E     - tabpanel "运行监控 02":
+E       - text: A 等待人工 drill 未经 S0 派生（drill 不覆盖 S0） 基线 A-baseline 已用 — · 更新于 —
+E       - button "刷新"
+E       - button "取消作业" [disabled]
+E       - heading "流程执行状态" [level=2]
+E       - text: 摄取 → 修订 → 验证 → 决策
+E       - button "1 摄取 N0–N4 等待人工 ▸" [expanded]
+E       - button "节点 N0 基线，owner Host，状态 待开始；打开执行详情": N0 基线 Host
+E       - button "节点 N1 摄取，owner Host，状态 待开始；打开执行详情": N1 摄取 Host
+E       - button "节点 N2 diff，owner Host，状态 待开始；打开执行详情": N2 diff Host
+E       - button "节点 N3 总结，owner analyst，状态 待开始；打开执行详情": N3 总结 analyst
+E       - button "节点 N4 闸门1，owner 人，状态 wait；打开执行详情": "! N4 闸门1 人"
+E       - button "2 修订 N5–N8 待开始 ▸"
+E       - button "3 验证 N9–N12 待开始 ▸"
+E       - button "4 决策 N13–N16 待开始 ▸"
+E       - heading "Agent 工作状态" [level=2]
+E       - text: 点击角色，查看任务详情与运行记录 析
+E       - button "打开 simenv-analyst 工作窗口": simenv-analyst ↗
+E       - text: N3 · 差异语义总结 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 作
+E       - button "打开 simenv-author 工作窗口": simenv-author ↗
+E       - text: N6 · 用例修订 / 补充 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 检
+E       - button "打开 simenv-checker 工作窗口": simenv-checker ↗
+E       - text: N8 / N10 · 静态复核 / 结果对账 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 守
+E       - button "打开 simenv-guardian 工作窗口": simenv-guardian ↗
+E       - text: N11 · 证据守护 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 报
+E       - button "打开 simenv-reporter 工作窗口": simenv-reporter ↗
+E       - text: N12 · 评估报告 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 Host 确定性侧 N0 / N1 / N2 / N5 / N7 / N9 / N15 / N16 · 确定性步骤 / 长任务看护（不占 agent 卡） N9 全跑由 job_runner 看护：提交 → 停放 → 完成事件 resume 服务端 agents 投影未就绪：上方 agent 卡由 event / node_history 本地派生（非权威）。 以上卡片均为投影，非权威；判据以服务端 blockers / gates.json 为准。
+E       - heading "闸门 1 · 差异确认" [level=2]
+E       - text: 等待人工 · 轮次 0 闸门 G1_diff_confirm 轮次 0 冲突快照 — 硬阻断 无
+E       - group: N2 差异清单（服务端未下发）
+E       - radio "服务端确认 值 confirmed"
+E       - text: 服务端确认 值 confirmed
+E       - radio "服务端忽略 值 ignored · 必须填写理由"
+E       - text: 服务端忽略 值 ignored · 必须填写理由
+E       - textbox "actor":
+E         - /placeholder: human:your-name
+E         - text: "human:"
+E       - text: actor 必须以 human 开头（I6）；模型/替身 actor 会被服务端拒绝。
+E       - textbox "裁决理由":
+E         - /placeholder: 裁决理由（ignored / rework / disputed 必填）
+E       - button "提交闸门决策" [disabled]
+E       - heading "双口径计数" [level=2]
+E       - text: 并列同权 · 不换算 无全跑证据：两套口径均无法取数（I3 / E-2）。
+E       - heading "阻断项" [level=2]
+E       - text: 按 severity 分区 · 前端不过滤 服务端未下发阻断项（这不等于判绿；判据仍以服务端 can 字段与 gates.json 为准）。
+E       - heading "长任务" [level=2]
+E       - text: job 状态与日志尾部 当前没有作业记录（N9 全跑尚未提交或未启动）。
+E       - group: 事件流 · 0 条白名单事件（seq 递增 · 只读 · 折叠）
+E     - text: FPGA Flow / 仿真工作台 检查结论与闸门状态以服务端证据为准
+E   - status
+E   - dialog "simenv-author":
+E     - text: AGENT WORKSPACE / 工作窗口
+E     - heading "simenv-author" [level=2]
+E     - status: 运行中
+E     - button "关闭 Agent 窗口": 关闭 ×
+E     - text: A / N6 / N6:session-000001 节点
+E     - combobox "Agent 节点":
+E       - option "N6" [selected]
+E     - text: 尝试
+E     - combobox "调用尝试":
+E       - option "跟随最新" [selected]
+E       - option "#1 · incomplete"
+E     - button "刷新"
+E     - heading "运行动态" [level=3]
+E     - text: "test-model · 尝试 #1 能力事实未知（非模型角色节点或服务端未投影）"
+E     - group: ▸ 上下文预算 未知（未测量）
+E     - group: ▸ 尝试摘要与输入差异
+E     - text: 尚无节点事件。输入、输出将在实际调用后出现。
+E     - group: ▸ 任务输入 完整调用输入，只读
+E     - group: ▸ 提示词与约束 调用时快照
+E     - group: "▾ 输出与 Host 校验 validated { \"status\": \"validated\", \"payload\": { \"data\": { \"revisions\": [ { \"case\": \"tc_width\", \"rationale\": \"端口变更 D1\", \"edits\": [ { \"line\": 14, \"old\": \"read(8);\", \"new\": \"read(16);\", \"basis\": \"D1:14\" } ] } ], \"observation_points\": [ { \"case\": \"tc_width\", \"marker\": \"N6_width\", \"addr\": \"0x1000\", \"offset\": \"0x04\", \"expected_value\": \"0x0010\", \"basis\": \"新位定义\" } ], \"notes\": [ \"尚需编译验证\" ], \"rework_resolution\": [ \"补上高位检查\" ] }, \"standin\": false }, \"validation\": { \"ok\": true, \"problems\": [], \"accepted\": { \"revisions\": [ { \"case\": \"tc_width\", \"rationale\": \"端口变更 D1\", \"edits\": [ { \"line\": 14, \"old\": \"read(8);\", \"new\": \"read(16);\", \"basis\": \"D1:14\" } ] } ], \"observation_points\": [ { \"case\": \"tc_width\", \"marker\": \"N6_width\", \"addr\": \"0x1000\", \"offset\": \"0x04\", \"expected_value\": \"0x0010\", \"basis\": \"新位定义\" } ], \"notes\": [ \"尚需编译验证\" ], \"rework_resolution\": [ \"补上高位检查\" ] } } }"
+E     - paragraph: 这里展示实际输入、执行事件与返回结果，不提供模型隐藏推理或 token 流。
+E     - heading "人工干预" [level=3]
+E     - text: 请求边界
+E     - paragraph: 可向当前请求补充指令、暂停，或终止该节点。
+E     - text: 操作者 流程记录
+E     - textbox "操作者 流程记录":
+E       - /placeholder: human:your-name
+E       - text: "human:"
+E     - text: 补充指令 仅当前任务
+E     - textbox "补充指令 仅当前任务":
+E       - /placeholder: 例如：请重点核对新增端口的位宽，保留现有断言与激励时序。
+E     - button "补充指令并重跑"
+E     - button "暂停请求"
+E     - button "恢复请求" [disabled]
+E     - status
+E     - alert
+E     - text: 补充指令会取消本地旧请求，再发起新的调用尝试；原始事实、Host 校验与人工闸门继续生效。暂停后恢复也会重发请求。
+E     - button "终止当前节点"
+E     - paragraph: 终止后本轮按失败收敛。关闭窗口只收起视图，不停止任务。
+E     - group: 取消与恢复的边界
+_______ test_n8_suggestion_and_rejected_candidate_are_distinct_from_host _______
+tests/browser/test_ai_work_panel.py:54: in test_n8_suggestion_and_rejected_candidate_are_distinct_from_host
+    pw.expect(page.locator('#awResults')).to_contain_text('AI 建议：返工', timeout=1200)
+E   AssertionError: Locator expected to contain text 'AI 建议：返工'
+E   Actual value: None
+E   Error: element(s) not found 
+E   Call log:
+E     - Expect "to_contain_text" locator("#awResults") with timeout 1200ms
+E     - waiting for locator("#awResults")
+E   
+E   Aria snapshot:
+E   - link "跳到工作区":
+E     - /url: "#workspace"
+E   - banner:
+E     - text: FPGA Flow / 仿真工作台 /fixture 插件面齐全 · agently ?
+E     - link "旧版操作台 ↗":
+E       - /url: legacy.html
+E   - complementary:
+E     - text: 当前工作空间
+E     - button "仿真与验证 Simulation workspace"
+E     - button "新建运行"
+E     - text: 工作台 WORKBENCH
+E     - tablist "视图切换":
+E       - tab "环境准备 S0"
+E       - tab "运行配置 01"
+E       - tab "运行监控 02" [selected]
+E       - tab "人工闸门 03"
+E     - text: 最近运行 HISTORY
+E     - button "A drill · 等待人工 · —"
+E     - button "B drill · 等待人工 · —"
+E     - text: TOOL_ROOT · — 数据根 · — 模型 · —
+E   - main:
+E     - text: 工作台 / 运行监控
+E     - heading "运行监控" [level=1]
+E     - text: 跟踪流程进度、Agent 任务与实际运行证据 SIMULATION WORKBENCH 02
+E     - tabpanel "运行监控 02":
+E       - text: A 等待人工 drill 未经 S0 派生（drill 不覆盖 S0） 基线 A-baseline 已用 — · 更新于 —
+E       - button "刷新"
+E       - button "取消作业" [disabled]
+E       - heading "流程执行状态" [level=2]
+E       - text: 摄取 → 修订 → 验证 → 决策
+E       - button "1 摄取 N0–N4 等待人工 ▸" [expanded]
+E       - button "节点 N0 基线，owner Host，状态 待开始；打开执行详情": N0 基线 Host
+E       - button "节点 N1 摄取，owner Host，状态 待开始；打开执行详情": N1 摄取 Host
+E       - button "节点 N2 diff，owner Host，状态 待开始；打开执行详情": N2 diff Host
+E       - button "节点 N3 总结，owner analyst，状态 待开始；打开执行详情": N3 总结 analyst
+E       - button "节点 N4 闸门1，owner 人，状态 wait；打开执行详情": "! N4 闸门1 人"
+E       - button "2 修订 N5–N8 待开始 ▸"
+E       - button "3 验证 N9–N12 待开始 ▸"
+E       - button "4 决策 N13–N16 待开始 ▸"
+E       - heading "Agent 工作状态" [level=2]
+E       - text: 点击角色，查看任务详情与运行记录 析
+E       - button "打开 simenv-analyst 工作窗口": simenv-analyst ↗
+E       - text: N3 · 差异语义总结 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 作
+E       - button "打开 simenv-author 工作窗口": simenv-author ↗
+E       - text: N6 · 用例修订 / 补充 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 检
+E       - button "打开 simenv-checker 工作窗口": simenv-checker ↗
+E       - text: N8 / N10 · 静态复核 / 结果对账 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 守
+E       - button "打开 simenv-guardian 工作窗口": simenv-guardian ↗
+E       - text: N11 · 证据守护 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 报
+E       - button "打开 simenv-reporter 工作窗口": simenv-reporter ↗
+E       - text: N12 · 评估报告 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 Host 确定性侧 N0 / N1 / N2 / N5 / N7 / N9 / N15 / N16 · 确定性步骤 / 长任务看护（不占 agent 卡） N9 全跑由 job_runner 看护：提交 → 停放 → 完成事件 resume 服务端 agents 投影未就绪：上方 agent 卡由 event / node_history 本地派生（非权威）。 以上卡片均为投影，非权威；判据以服务端 blockers / gates.json 为准。
+E       - heading "闸门 1 · 差异确认" [level=2]
+E       - text: 等待人工 · 轮次 0 闸门 G1_diff_confirm 轮次 0 冲突快照 — 硬阻断 无
+E       - group: N2 差异清单（服务端未下发）
+E       - radio "服务端确认 值 confirmed"
+E       - text: 服务端确认 值 confirmed
+E       - radio "服务端忽略 值 ignored · 必须填写理由"
+E       - text: 服务端忽略 值 ignored · 必须填写理由
+E       - textbox "actor":
+E         - /placeholder: human:your-name
+E         - text: "human:"
+E       - text: actor 必须以 human 开头（I6）；模型/替身 actor 会被服务端拒绝。
+E       - textbox "裁决理由":
+E         - /placeholder: 裁决理由（ignored / rework / disputed 必填）
+E       - button "提交闸门决策" [disabled]
+E       - heading "双口径计数" [level=2]
+E       - text: 并列同权 · 不换算 无全跑证据：两套口径均无法取数（I3 / E-2）。
+E       - heading "阻断项" [level=2]
+E       - text: 按 severity 分区 · 前端不过滤 服务端未下发阻断项（这不等于判绿；判据仍以服务端 can 字段与 gates.json 为准）。
+E       - heading "长任务" [level=2]
+E       - text: job 状态与日志尾部 当前没有作业记录（N9 全跑尚未提交或未启动）。
+E       - group: 事件流 · 0 条白名单事件（seq 递增 · 只读 · 折叠）
+E     - text: FPGA Flow / 仿真工作台 检查结论与闸门状态以服务端证据为准
+E   - status
+E   - dialog "simenv-checker":
+E     - text: AGENT WORKSPACE / 工作窗口
+E     - heading "simenv-checker" [level=2]
+E     - status: 运行中
+E     - button "关闭 Agent 窗口": 关闭 ×
+E     - text: A / N8 / N8:session-000001 节点
+E     - combobox "Agent 节点":
+E       - option "N8" [selected]
+E       - option "N10"
+E     - text: 尝试
+E     - combobox "调用尝试":
+E       - option "跟随最新" [selected]
+E       - option "#1 · incomplete"
+E     - button "刷新"
+E     - heading "运行动态" [level=3]
+E     - text: "test-model · 尝试 #1 能力事实未知（非模型角色节点或服务端未投影）"
+E     - group: ▸ 上下文预算 未知（未测量）
+E     - group: ▸ 尝试摘要与输入差异
+E     - text: 尚无节点事件。输入、输出将在实际调用后出现。
+E     - group: ▸ 任务输入 完整调用输入，只读
+E     - group: ▸ 提示词与约束 调用时快照
+E     - group: "▾ 输出与 Host 校验 validation_failed { \"status\": \"validation_failed\", \"payload\": { \"data\": { \"verdict\": \"rework\", \"findings\": [ { \"item\": \"高位检查\", \"result\": \"fail\", \"basis\": \"tc_width:14\" } ], \"must_fix\": [ \"补上断言\" ] }, \"standin\": false }, \"validation\": { \"ok\": false, \"problems\": [ \"依据不匹配\" ], \"accepted\": { \"verdict\": \"rework\", \"findings\": [ { \"item\": \"高位检查\", \"result\": \"fail\", \"basis\": \"tc_width:14\" } ], \"must_fix\": [ \"补上断言\" ] } } }"
+E     - paragraph: 这里展示实际输入、执行事件与返回结果，不提供模型隐藏推理或 token 流。
+E     - heading "人工干预" [level=3]
+E     - text: 请求边界
+E     - paragraph: 可向当前请求补充指令、暂停，或终止该节点。
+E     - text: 操作者 流程记录
+E     - textbox "操作者 流程记录":
+E       - /placeholder: human:your-name
+E       - text: "human:"
+E     - text: 补充指令 仅当前任务
+E     - textbox "补充指令 仅当前任务":
+E       - /placeholder: 例如：请重点核对新增端口的位宽，保留现有断言与激励时序。
+E     - button "补充指令并重跑"
+E     - button "暂停请求"
+E     - button "恢复请求" [disabled]
+E     - status
+E     - alert
+E     - text: 补充指令会取消本地旧请求，再发起新的调用尝试；原始事实、Host 校验与人工闸门继续生效。暂停后恢复也会重发请求。
+E     - button "终止当前节点"
+E     - paragraph: 终止后本轮按失败收敛。关闭窗口只收起视图，不停止任务。
+E     - group: 取消与恢复的边界
+_______ test_standin_and_unrecognized_old_records_never_claim_validation _______
+tests/browser/test_ai_work_panel.py:63: in test_standin_and_unrecognized_old_records_never_claim_validation
+    pw.expect(page.locator('#awMode')).to_contain_text('演练替身', timeout=1200)
+E   AssertionError: Locator expected to contain text '演练替身'
+E   Actual value: None
+E   Error: element(s) not found 
+E   Call log:
+E     - Expect "to_contain_text" locator("#awMode") with timeout 1200ms
+E     - waiting for locator("#awMode")
+E   
+E   Aria snapshot:
+E   - link "跳到工作区":
+E     - /url: "#workspace"
+E   - banner:
+E     - text: FPGA Flow / 仿真工作台 /fixture 插件面齐全 · agently ?
+E     - link "旧版操作台 ↗":
+E       - /url: legacy.html
+E   - complementary:
+E     - text: 当前工作空间
+E     - button "仿真与验证 Simulation workspace"
+E     - button "新建运行"
+E     - text: 工作台 WORKBENCH
+E     - tablist "视图切换":
+E       - tab "环境准备 S0"
+E       - tab "运行配置 01"
+E       - tab "运行监控 02" [selected]
+E       - tab "人工闸门 03"
+E     - text: 最近运行 HISTORY
+E     - button "A drill · 等待人工 · —"
+E     - button "B drill · 等待人工 · —"
+E     - text: TOOL_ROOT · — 数据根 · — 模型 · —
+E   - main:
+E     - text: 工作台 / 运行监控
+E     - heading "运行监控" [level=1]
+E     - text: 跟踪流程进度、Agent 任务与实际运行证据 SIMULATION WORKBENCH 02
+E     - tabpanel "运行监控 02":
+E       - text: A 等待人工 drill 未经 S0 派生（drill 不覆盖 S0） 基线 A-baseline 已用 — · 更新于 —
+E       - button "刷新"
+E       - button "取消作业" [disabled]
+E       - heading "流程执行状态" [level=2]
+E       - text: 摄取 → 修订 → 验证 → 决策
+E       - button "1 摄取 N0–N4 等待人工 ▸" [expanded]
+E       - button "节点 N0 基线，owner Host，状态 待开始；打开执行详情": N0 基线 Host
+E       - button "节点 N1 摄取，owner Host，状态 待开始；打开执行详情": N1 摄取 Host
+E       - button "节点 N2 diff，owner Host，状态 待开始；打开执行详情": N2 diff Host
+E       - button "节点 N3 总结，owner analyst，状态 待开始；打开执行详情": N3 总结 analyst
+E       - button "节点 N4 闸门1，owner 人，状态 wait；打开执行详情": "! N4 闸门1 人"
+E       - button "2 修订 N5–N8 待开始 ▸"
+E       - button "3 验证 N9–N12 待开始 ▸"
+E       - button "4 决策 N13–N16 待开始 ▸"
+E       - heading "Agent 工作状态" [level=2]
+E       - text: 点击角色，查看任务详情与运行记录 析
+E       - button "打开 simenv-analyst 工作窗口": simenv-analyst ↗
+E       - text: N3 · 差异语义总结 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 作
+E       - button "打开 simenv-author 工作窗口": simenv-author ↗
+E       - text: N6 · 用例修订 / 补充 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 检
+E       - button "打开 simenv-checker 工作窗口": simenv-checker ↗
+E       - text: N8 / N10 · 静态复核 / 结果对账 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 守
+E       - button "打开 simenv-guardian 工作窗口": simenv-guardian ↗
+E       - text: N11 · 证据守护 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 报
+E       - button "打开 simenv-reporter 工作窗口": simenv-reporter ↗
+E       - text: N12 · 评估报告 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 Host 确定性侧 N0 / N1 / N2 / N5 / N7 / N9 / N15 / N16 · 确定性步骤 / 长任务看护（不占 agent 卡） N9 全跑由 job_runner 看护：提交 → 停放 → 完成事件 resume 服务端 agents 投影未就绪：上方 agent 卡由 event / node_history 本地派生（非权威）。 以上卡片均为投影，非权威；判据以服务端 blockers / gates.json 为准。
+E       - heading "闸门 1 · 差异确认" [level=2]
+E       - text: 等待人工 · 轮次 0 闸门 G1_diff_confirm 轮次 0 冲突快照 — 硬阻断 无
+E       - group: N2 差异清单（服务端未下发）
+E       - radio "服务端确认 值 confirmed"
+E       - text: 服务端确认 值 confirmed
+E       - radio "服务端忽略 值 ignored · 必须填写理由"
+E       - text: 服务端忽略 值 ignored · 必须填写理由
+E       - textbox "actor":
+E         - /placeholder: human:your-name
+E         - text: "human:"
+E       - text: actor 必须以 human 开头（I6）；模型/替身 actor 会被服务端拒绝。
+E       - textbox "裁决理由":
+E         - /placeholder: 裁决理由（ignored / rework / disputed 必填）
+E       - button "提交闸门决策" [disabled]
+E       - heading "双口径计数" [level=2]
+E       - text: 并列同权 · 不换算 无全跑证据：两套口径均无法取数（I3 / E-2）。
+E       - heading "阻断项" [level=2]
+E       - text: 按 severity 分区 · 前端不过滤 服务端未下发阻断项（这不等于判绿；判据仍以服务端 can 字段与 gates.json 为准）。
+E       - heading "长任务" [level=2]
+E       - text: job 状态与日志尾部 当前没有作业记录（N9 全跑尚未提交或未启动）。
+E       - group: 事件流 · 0 条白名单事件（seq 递增 · 只读 · 折叠）
+E     - text: FPGA Flow / 仿真工作台 检查结论与闸门状态以服务端证据为准
+E   - status
+E   - dialog "simenv-analyst":
+E     - text: AGENT WORKSPACE / 工作窗口
+E     - heading "simenv-analyst" [level=2]
+E     - status: 运行中
+E     - button "关闭 Agent 窗口": 关闭 ×
+E     - text: A / N3 / N3:session-000001 节点
+E     - combobox "Agent 节点":
+E       - option "N3" [selected]
+E     - text: 尝试
+E     - combobox "调用尝试":
+E       - option "跟随最新" [selected]
+E       - option "#1 · incomplete"
+E     - button "刷新"
+E     - heading "运行动态" [level=3]
+E     - text: "test-model · 尝试 #1 能力事实未知（非模型角色节点或服务端未投影）"
+E     - group: ▸ 上下文预算 未知（未测量）
+E     - group: ▸ 尝试摘要与输入差异
+E     - text: 尚无节点事件。输入、输出将在实际调用后出现。
+E     - group: ▸ 任务输入 完整调用输入，只读
+E     - group: ▸ 提示词与约束 调用时快照
+E     - group: "▾ 输出与 Host 校验 validated { \"status\": \"validated\", \"payload\": { \"data\": { \"summary\": \"替身摘要\" }, \"standin\": true }, \"validation\": { \"ok\": true, \"problems\": [], \"accepted\": { \"summary\": \"替身摘要\" } } }"
+E     - paragraph: 这里展示实际输入、执行事件与返回结果，不提供模型隐藏推理或 token 流。
+E     - heading "人工干预" [level=3]
+E     - text: 请求边界
+E     - paragraph: 可向当前请求补充指令、暂停，或终止该节点。
+E     - text: 操作者 流程记录
+E     - textbox "操作者 流程记录":
+E       - /placeholder: human:your-name
+E       - text: "human:"
+E     - text: 补充指令 仅当前任务
+E     - textbox "补充指令 仅当前任务":
+E       - /placeholder: 例如：请重点核对新增端口的位宽，保留现有断言与激励时序。
+E     - button "补充指令并重跑"
+E     - button "暂停请求"
+E     - button "恢复请求" [disabled]
+E     - status
+E     - alert
+E     - text: 补充指令会取消本地旧请求，再发起新的调用尝试；原始事实、Host 校验与人工闸门继续生效。暂停后恢复也会重发请求。
+E     - button "终止当前节点"
+E     - paragraph: 终止后本轮按失败收敛。关闭窗口只收起视图，不停止任务。
+E     - group: 取消与恢复的边界
+__________________ test_no_records_does_not_mean_not_started ___________________
+tests/browser/test_ai_work_panel.py:75: in test_no_records_does_not_mean_not_started
+    pw.expect(page.locator('#awResults')).to_contain_text('暂无可读取记录，执行状态未确认', timeout=1200)
+E   AssertionError: Locator expected to contain text '暂无可读取记录，执行状态未确认'
+E   Actual value: None
+E   Error: element(s) not found 
+E   Call log:
+E     - Expect "to_contain_text" locator("#awResults") with timeout 1200ms
+E     - waiting for locator("#awResults")
+E   
+E   Aria snapshot:
+E   - link "跳到工作区":
+E     - /url: "#workspace"
+E   - banner:
+E     - text: FPGA Flow / 仿真工作台 /fixture 插件面齐全 · agently ?
+E     - link "旧版操作台 ↗":
+E       - /url: legacy.html
+E   - complementary:
+E     - text: 当前工作空间
+E     - button "仿真与验证 Simulation workspace"
+E     - button "新建运行"
+E     - text: 工作台 WORKBENCH
+E     - tablist "视图切换":
+E       - tab "环境准备 S0"
+E       - tab "运行配置 01"
+E       - tab "运行监控 02" [selected]
+E       - tab "人工闸门 03"
+E     - text: 最近运行 HISTORY
+E     - button "A drill · 等待人工 · —"
+E     - button "B drill · 等待人工 · —"
+E     - text: TOOL_ROOT · — 数据根 · — 模型 · —
+E   - main:
+E     - text: 工作台 / 运行监控
+E     - heading "运行监控" [level=1]
+E     - text: 跟踪流程进度、Agent 任务与实际运行证据 SIMULATION WORKBENCH 02
+E     - tabpanel "运行监控 02":
+E       - text: A 等待人工 drill 未经 S0 派生（drill 不覆盖 S0） 基线 A-baseline 已用 — · 更新于 —
+E       - button "刷新"
+E       - button "取消作业" [disabled]
+E       - heading "流程执行状态" [level=2]
+E       - text: 摄取 → 修订 → 验证 → 决策
+E       - button "1 摄取 N0–N4 等待人工 ▸" [expanded]
+E       - button "节点 N0 基线，owner Host，状态 待开始；打开执行详情": N0 基线 Host
+E       - button "节点 N1 摄取，owner Host，状态 待开始；打开执行详情": N1 摄取 Host
+E       - button "节点 N2 diff，owner Host，状态 待开始；打开执行详情": N2 diff Host
+E       - button "节点 N3 总结，owner analyst，状态 待开始；打开执行详情": N3 总结 analyst
+E       - button "节点 N4 闸门1，owner 人，状态 wait；打开执行详情": "! N4 闸门1 人"
+E       - button "2 修订 N5–N8 待开始 ▸"
+E       - button "3 验证 N9–N12 待开始 ▸"
+E       - button "4 决策 N13–N16 待开始 ▸"
+E       - heading "Agent 工作状态" [level=2]
+E       - text: 点击角色，查看任务详情与运行记录 析
+E       - button "打开 simenv-analyst 工作窗口": simenv-analyst ↗
+E       - text: N3 · 差异语义总结 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 作
+E       - button "打开 simenv-author 工作窗口": simenv-author ↗
+E       - text: N6 · 用例修订 / 补充 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 检
+E       - button "打开 simenv-checker 工作窗口": simenv-checker ↗
+E       - text: N8 / N10 · 静态复核 / 结果对账 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 守
+E       - button "打开 simenv-guardian 工作窗口": simenv-guardian ↗
+E       - text: N11 · 证据守护 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 报
+E       - button "打开 simenv-reporter 工作窗口": simenv-reporter ↗
+E       - text: N12 · 评估报告 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 Host 确定性侧 N0 / N1 / N2 / N5 / N7 / N9 / N15 / N16 · 确定性步骤 / 长任务看护（不占 agent 卡） N9 全跑由 job_runner 看护：提交 → 停放 → 完成事件 resume 服务端 agents 投影未就绪：上方 agent 卡由 event / node_history 本地派生（非权威）。 以上卡片均为投影，非权威；判据以服务端 blockers / gates.json 为准。
+E       - heading "闸门 1 · 差异确认" [level=2]
+E       - text: 等待人工 · 轮次 0 闸门 G1_diff_confirm 轮次 0 冲突快照 — 硬阻断 无
+E       - group: N2 差异清单（服务端未下发）
+E       - radio "服务端确认 值 confirmed"
+E       - text: 服务端确认 值 confirmed
+E       - radio "服务端忽略 值 ignored · 必须填写理由"
+E       - text: 服务端忽略 值 ignored · 必须填写理由
+E       - textbox "actor":
+E         - /placeholder: human:your-name
+E         - text: "human:"
+E       - text: actor 必须以 human 开头（I6）；模型/替身 actor 会被服务端拒绝。
+E       - textbox "裁决理由":
+E         - /placeholder: 裁决理由（ignored / rework / disputed 必填）
+E       - button "提交闸门决策" [disabled]
+E       - heading "双口径计数" [level=2]
+E       - text: 并列同权 · 不换算 无全跑证据：两套口径均无法取数（I3 / E-2）。
+E       - heading "阻断项" [level=2]
+E       - text: 按 severity 分区 · 前端不过滤 服务端未下发阻断项（这不等于判绿；判据仍以服务端 can 字段与 gates.json 为准）。
+E       - heading "长任务" [level=2]
+E       - text: job 状态与日志尾部 当前没有作业记录（N9 全跑尚未提交或未启动）。
+E       - group: 事件流 · 0 条白名单事件（seq 递增 · 只读 · 折叠）
+E     - text: FPGA Flow / 仿真工作台 检查结论与闸门状态以服务端证据为准
+E   - status
+E   - dialog "simenv-analyst":
+E     - text: AGENT WORKSPACE / 工作窗口
+E     - heading "simenv-analyst" [level=2]
+E     - status: 只读 · 无活跃请求
+E     - button "关闭 Agent 窗口": 关闭 ×
+E     - text: A / N3 / 历史记录 节点
+E     - combobox "Agent 节点":
+E       - option "N3" [selected]
+E     - text: 尝试
+E     - combobox "调用尝试":
+E       - option "跟随最新" [selected]
+E     - button "刷新"
+E     - heading "运行动态" [level=3]
+E     - text: 尚无调用记录 能力事实未知（非模型角色节点或服务端未投影）
+E     - group: ▸ 上下文预算 —
+E     - group: ▸ 尝试摘要与输入差异
+E     - text: 尚无节点事件。输入、输出将在实际调用后出现。
+E     - group: ▸ 任务输入 完整调用输入，只读
+E     - group: ▸ 提示词与约束 调用时快照
+E     - group: ▾ 输出与 Host 校验 尚无结果 输出尚未生成。
+E     - paragraph: 这里展示实际输入、执行事件与返回结果，不提供模型隐藏推理或 token 流。
+E     - heading "人工干预" [level=3]
+E     - text: 请求边界
+E     - paragraph: 没有活跃请求，历史窗口只读。
+E     - text: 操作者 流程记录
+E     - textbox "操作者 流程记录":
+E       - /placeholder: human:your-name
+E       - text: "human:"
+E     - text: 补充指令 仅当前任务
+E     - textbox "补充指令 仅当前任务":
+E       - /placeholder: 例如：请重点核对新增端口的位宽，保留现有断言与激励时序。
+E     - button "补充指令并重跑" [disabled]
+E     - button "暂停请求" [disabled]
+E     - button "恢复请求" [disabled]
+E     - status
+E     - alert
+E     - text: 补充指令会取消本地旧请求，再发起新的调用尝试；原始事实、Host 校验与人工闸门继续生效。暂停后恢复也会重发请求。
+E     - button "终止当前节点" [disabled]
+E     - paragraph: 终止后本轮按失败收敛。关闭窗口只收起视图，不停止任务。
+E     - group: 取消与恢复的边界
+______ test_follow_latest_readable_history_is_readonly_even_with_new_live ______
+tests/browser/test_ai_work_panel.py:85: in test_follow_latest_readable_history_is_readonly_even_with_new_live
+    pw.expect(page.locator('#awSelection')).to_contain_text('历史只读', timeout=1200)
+E   AssertionError: Locator expected to contain text '历史只读'
+E   Actual value: None
+E   Error: element(s) not found 
+E   Call log:
+E     - Expect "to_contain_text" locator("#awSelection") with timeout 1200ms
+E     - waiting for locator("#awSelection")
+E   
+E   Aria snapshot:
+E   - link "跳到工作区":
+E     - /url: "#workspace"
+E   - banner:
+E     - text: FPGA Flow / 仿真工作台 /fixture 插件面齐全 · agently ?
+E     - link "旧版操作台 ↗":
+E       - /url: legacy.html
+E   - complementary:
+E     - text: 当前工作空间
+E     - button "仿真与验证 Simulation workspace"
+E     - button "新建运行"
+E     - text: 工作台 WORKBENCH
+E     - tablist "视图切换":
+E       - tab "环境准备 S0"
+E       - tab "运行配置 01"
+E       - tab "运行监控 02" [selected]
+E       - tab "人工闸门 03"
+E     - text: 最近运行 HISTORY
+E     - button "A drill · 等待人工 · —"
+E     - button "B drill · 等待人工 · —"
+E     - text: TOOL_ROOT · — 数据根 · — 模型 · —
+E   - main:
+E     - text: 工作台 / 运行监控
+E     - heading "运行监控" [level=1]
+E     - text: 跟踪流程进度、Agent 任务与实际运行证据 SIMULATION WORKBENCH 02
+E     - tabpanel "运行监控 02":
+E       - text: A 等待人工 drill 未经 S0 派生（drill 不覆盖 S0） 基线 A-baseline 已用 — · 更新于 —
+E       - button "刷新"
+E       - button "取消作业" [disabled]
+E       - heading "流程执行状态" [level=2]
+E       - text: 摄取 → 修订 → 验证 → 决策
+E       - button "1 摄取 N0–N4 等待人工 ▸" [expanded]
+E       - button "节点 N0 基线，owner Host，状态 待开始；打开执行详情": N0 基线 Host
+E       - button "节点 N1 摄取，owner Host，状态 待开始；打开执行详情": N1 摄取 Host
+E       - button "节点 N2 diff，owner Host，状态 待开始；打开执行详情": N2 diff Host
+E       - button "节点 N3 总结，owner analyst，状态 待开始；打开执行详情": N3 总结 analyst
+E       - button "节点 N4 闸门1，owner 人，状态 wait；打开执行详情": "! N4 闸门1 人"
+E       - button "2 修订 N5–N8 待开始 ▸"
+E       - button "3 验证 N9–N12 待开始 ▸"
+E       - button "4 决策 N13–N16 待开始 ▸"
+E       - heading "Agent 工作状态" [level=2]
+E       - text: 点击角色，查看任务详情与运行记录 析
+E       - button "打开 simenv-analyst 工作窗口": simenv-analyst ↗
+E       - text: N3 · 差异语义总结 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 作
+E       - button "打开 simenv-author 工作窗口": simenv-author ↗
+E       - text: N6 · 用例修订 / 补充 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 检
+E       - button "打开 simenv-checker 工作窗口": simenv-checker ↗
+E       - text: N8 / N10 · 静态复核 / 结果对账 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 守
+E       - button "打开 simenv-guardian 工作窗口": simenv-guardian ↗
+E       - text: N11 · 证据守护 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 报
+E       - button "打开 simenv-reporter 工作窗口": simenv-reporter ↗
+E       - text: N12 · 评估报告 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 Host 确定性侧 N0 / N1 / N2 / N5 / N7 / N9 / N15 / N16 · 确定性步骤 / 长任务看护（不占 agent 卡） N9 全跑由 job_runner 看护：提交 → 停放 → 完成事件 resume 服务端 agents 投影未就绪：上方 agent 卡由 event / node_history 本地派生（非权威）。 以上卡片均为投影，非权威；判据以服务端 blockers / gates.json 为准。
+E       - heading "闸门 1 · 差异确认" [level=2]
+E       - text: 等待人工 · 轮次 0 闸门 G1_diff_confirm 轮次 0 冲突快照 — 硬阻断 无
+E       - group: N2 差异清单（服务端未下发）
+E       - radio "服务端确认 值 confirmed"
+E       - text: 服务端确认 值 confirmed
+E       - radio "服务端忽略 值 ignored · 必须填写理由"
+E       - text: 服务端忽略 值 ignored · 必须填写理由
+E       - textbox "actor":
+E         - /placeholder: human:your-name
+E         - text: "human:"
+E       - text: actor 必须以 human 开头（I6）；模型/替身 actor 会被服务端拒绝。
+E       - textbox "裁决理由":
+E         - /placeholder: 裁决理由（ignored / rework / disputed 必填）
+E       - button "提交闸门决策" [disabled]
+E       - heading "双口径计数" [level=2]
+E       - text: 并列同权 · 不换算 无全跑证据：两套口径均无法取数（I3 / E-2）。
+E       - heading "阻断项" [level=2]
+E       - text: 按 severity 分区 · 前端不过滤 服务端未下发阻断项（这不等于判绿；判据仍以服务端 can 字段与 gates.json 为准）。
+E       - heading "长任务" [level=2]
+E       - text: job 状态与日志尾部 当前没有作业记录（N9 全跑尚未提交或未启动）。
+E       - group: 事件流 · 0 条白名单事件（seq 递增 · 只读 · 折叠）
+E     - text: FPGA Flow / 仿真工作台 检查结论与闸门状态以服务端证据为准
+E   - status
+E   - dialog "simenv-analyst":
+E     - text: AGENT WORKSPACE / 工作窗口
+E     - heading "simenv-analyst" [level=2]
+E     - status: 运行中
+E     - button "关闭 Agent 窗口": 关闭 ×
+E     - text: A / N3 / N3:session-000001 节点
+E     - combobox "Agent 节点":
+E       - option "N3" [selected]
+E     - text: 尝试
+E     - combobox "调用尝试":
+E       - option "跟随最新" [selected]
+E       - option "#1 · incomplete"
+E     - button "刷新"
+E     - heading "运行动态" [level=3]
+E     - text: "test-model · 尝试 #1 能力事实未知（非模型角色节点或服务端未投影）"
+E     - group: ▸ 上下文预算 未知（未测量）
+E     - group: ▸ 尝试摘要与输入差异
+E     - text: 尚无节点事件。输入、输出将在实际调用后出现。
+E     - group: ▸ 任务输入 完整调用输入，只读
+E     - group: ▸ 提示词与约束 调用时快照
+E     - group: "▾ 输出与 Host 校验 validated { \"status\": \"validated\", \"payload\": { \"data\": { \"summary\": \"旧版成果\" }, \"standin\": false }, \"validation\": { \"ok\": true, \"problems\": [], \"accepted\": { \"summary\": \"旧版成果\" } } }"
+E     - paragraph: 这里展示实际输入、执行事件与返回结果，不提供模型隐藏推理或 token 流。
+E     - heading "人工干预" [level=3]
+E     - text: 请求边界
+E     - paragraph: 可向当前请求补充指令、暂停，或终止该节点。
+E     - text: 操作者 流程记录
+E     - textbox "操作者 流程记录":
+E       - /placeholder: human:your-name
+E       - text: "human:"
+E     - text: 补充指令 仅当前任务
+E     - textbox "补充指令 仅当前任务":
+E       - /placeholder: 例如：请重点核对新增端口的位宽，保留现有断言与激励时序。
+E     - button "补充指令并重跑"
+E     - button "暂停请求"
+E     - button "恢复请求" [disabled]
+E     - status
+E     - alert
+E     - text: 补充指令会取消本地旧请求，再发起新的调用尝试；原始事实、Host 校验与人工闸门继续生效。暂停后恢复也会重发请求。
+E     - button "终止当前节点"
+E     - paragraph: 终止后本轮按失败收敛。关闭窗口只收起视图，不停止任务。
+E     - group: 取消与恢复的边界
+______ test_live_attempt_change_clears_old_draft_and_ignores_old_receipt _______
+tests/browser/test_ai_work_panel.py:110: in test_live_attempt_change_clears_old_draft_and_ignores_old_receipt
+    pw.expect(page.locator('#awMessage')).to_have_value('', timeout=1200)
+E   AssertionError: Locator expected to have Value ''
+E   Actual value: 旧尝试 
+E   Call log:
+E     - Expect "to_have_value" locator("#awMessage") with timeout 1200ms
+E     - waiting for locator("#awMessage")
+E       13 × locator resolved to <textarea rows="6" disabled class="input" id="awMessage" maxlength="4000" placeholder="例如：请重点核对新增端口的位宽，保留现有断言与激励时序。"></textarea>
+E          - unexpected value "旧尝试"
+E   
+E   Aria snapshot:
+E   - textbox "补充指令 仅当前任务" [disabled]:
+E     - /placeholder: 例如：请重点核对新增端口的位宽，保留现有断言与激励时序。
+E     - text: 旧尝试
+--------------------------- Captured stdout teardown ---------------------------
+ERROR:    2026-10-23 16:36:26 | Exception in callback Connection.dispatch.<locals>._done_callback(<Task cancell..._page.py:298>>) at /workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_connection.py:546
+handle: <Handle Connection.dispatch.<locals>._done_callback(<Task cancell..._page.py:298>>) at /workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_connection.py:546>
+Traceback (most recent call last):
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/events.py", line 88, in _run
+    self._context.run(self._callback, *self._args)
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_connection.py", line 547, in _done_callback
+    exc = future.exception()
+          ^^^^^^^^^^^^^^^^^^
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_page.py", line 312, in _on_route
+    handled = await route_handler.handle(route)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_helper.py", line 443, in handle
+    return await self._handle_internal(route)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_helper.py", line 485, in _handle_internal
+    return await handled_future
+           ^^^^^^^^^^^^^^^^^^^^
+asyncio.exceptions.CancelledError
+---------------------------- Captured log teardown -----------------------------
+ERROR    asyncio:base_events.py:1833 Exception in callback Connection.dispatch.<locals>._done_callback(<Task cancell..._page.py:298>>) at /workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_connection.py:546
+handle: <Handle Connection.dispatch.<locals>._done_callback(<Task cancell..._page.py:298>>) at /workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_connection.py:546>
+Traceback (most recent call last):
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/events.py", line 88, in _run
+    self._context.run(self._callback, *self._args)
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_connection.py", line 547, in _done_callback
+    exc = future.exception()
+          ^^^^^^^^^^^^^^^^^^
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_page.py", line 312, in _on_route
+    handled = await route_handler.handle(route)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_helper.py", line 443, in handle
+    return await self._handle_internal(route)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_helper.py", line 485, in _handle_internal
+    return await handled_future
+           ^^^^^^^^^^^^^^^^^^^^
+asyncio.exceptions.CancelledError
+_________ test_terminate_requires_explicit_confirmation_and_can_cancel _________
+tests/browser/test_ai_work_panel.py:122: in test_terminate_requires_explicit_confirmation_and_can_cancel
+    assert not api['posts'], 'termination must not be sent before confirmation'
+E   AssertionError: termination must not be sent before confirmation
+E   assert not [('A', 'N3', {'action': 'terminate', 'actor': 'human:reviewer', 'session_id': 'N3:session-000001', 'expected_revision': 1, ...})]
+--------------------------- Captured stdout teardown ---------------------------
+ERROR:    2026-10-23 16:36:28 | Exception in callback Connection.dispatch.<locals>._done_callback(<Task cancell..._page.py:298>>) at /workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_connection.py:546
+handle: <Handle Connection.dispatch.<locals>._done_callback(<Task cancell..._page.py:298>>) at /workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_connection.py:546>
+Traceback (most recent call last):
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/events.py", line 88, in _run
+    self._context.run(self._callback, *self._args)
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_connection.py", line 547, in _done_callback
+    exc = future.exception()
+          ^^^^^^^^^^^^^^^^^^
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_page.py", line 312, in _on_route
+    handled = await route_handler.handle(route)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_helper.py", line 443, in handle
+    return await self._handle_internal(route)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_helper.py", line 485, in _handle_internal
+    return await handled_future
+           ^^^^^^^^^^^^^^^^^^^^
+asyncio.exceptions.CancelledError
+---------------------------- Captured log teardown -----------------------------
+ERROR    asyncio:base_events.py:1833 Exception in callback Connection.dispatch.<locals>._done_callback(<Task cancell..._page.py:298>>) at /workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_connection.py:546
+handle: <Handle Connection.dispatch.<locals>._done_callback(<Task cancell..._page.py:298>>) at /workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_connection.py:546>
+Traceback (most recent call last):
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/events.py", line 88, in _run
+    self._context.run(self._callback, *self._args)
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_connection.py", line 547, in _done_callback
+    exc = future.exception()
+          ^^^^^^^^^^^^^^^^^^
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_page.py", line 312, in _on_route
+    handled = await route_handler.handle(route)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_helper.py", line 443, in handle
+    return await self._handle_internal(route)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/fpga_sim_workflow/loop/.venv/lib/python3.12/site-packages/playwright/_impl/_helper.py", line 485, in _handle_internal
+    return await handled_future
+           ^^^^^^^^^^^^^^^^^^^^
+asyncio.exceptions.CancelledError
+______ test_refresh_failure_keeps_marked_old_results_and_disables_control ______
+tests/browser/test_ai_work_panel.py:138: in test_refresh_failure_keeps_marked_old_results_and_disables_control
+    pw.expect(page.locator('#awResults')).to_contain_text('保留这份成果', timeout=1200)
+E   AssertionError: Locator expected to contain text '保留这份成果'
+E   Actual value: None
+E   Error: element(s) not found 
+E   Call log:
+E     - Expect "to_contain_text" locator("#awResults") with timeout 1200ms
+E     - waiting for locator("#awResults")
+E   
+E   Aria snapshot:
+E   - link "跳到工作区":
+E     - /url: "#workspace"
+E   - banner:
+E     - text: FPGA Flow / 仿真工作台 /fixture 插件面齐全 · agently ?
+E     - link "旧版操作台 ↗":
+E       - /url: legacy.html
+E   - complementary:
+E     - text: 当前工作空间
+E     - button "仿真与验证 Simulation workspace"
+E     - button "新建运行"
+E     - text: 工作台 WORKBENCH
+E     - tablist "视图切换":
+E       - tab "环境准备 S0"
+E       - tab "运行配置 01"
+E       - tab "运行监控 02" [selected]
+E       - tab "人工闸门 03"
+E     - text: 最近运行 HISTORY
+E     - button "A drill · 等待人工 · —"
+E     - button "B drill · 等待人工 · —"
+E     - text: TOOL_ROOT · — 数据根 · — 模型 · —
+E   - main:
+E     - text: 工作台 / 运行监控
+E     - heading "运行监控" [level=1]
+E     - text: 跟踪流程进度、Agent 任务与实际运行证据 SIMULATION WORKBENCH 02
+E     - tabpanel "运行监控 02":
+E       - text: A 等待人工 drill 未经 S0 派生（drill 不覆盖 S0） 基线 A-baseline 已用 — · 更新于 —
+E       - button "刷新"
+E       - button "取消作业" [disabled]
+E       - heading "流程执行状态" [level=2]
+E       - text: 摄取 → 修订 → 验证 → 决策
+E       - button "1 摄取 N0–N4 等待人工 ▸" [expanded]
+E       - button "节点 N0 基线，owner Host，状态 待开始；打开执行详情": N0 基线 Host
+E       - button "节点 N1 摄取，owner Host，状态 待开始；打开执行详情": N1 摄取 Host
+E       - button "节点 N2 diff，owner Host，状态 待开始；打开执行详情": N2 diff Host
+E       - button "节点 N3 总结，owner analyst，状态 待开始；打开执行详情": N3 总结 analyst
+E       - button "节点 N4 闸门1，owner 人，状态 wait；打开执行详情": "! N4 闸门1 人"
+E       - button "2 修订 N5–N8 待开始 ▸"
+E       - button "3 验证 N9–N12 待开始 ▸"
+E       - button "4 决策 N13–N16 待开始 ▸"
+E       - heading "Agent 工作状态" [level=2]
+E       - text: 点击角色，查看任务详情与运行记录 析
+E       - button "打开 simenv-analyst 工作窗口": simenv-analyst ↗
+E       - text: N3 · 差异语义总结 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 作
+E       - button "打开 simenv-author 工作窗口": simenv-author ↗
+E       - text: N6 · 用例修订 / 补充 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 检
+E       - button "打开 simenv-checker 工作窗口": simenv-checker ↗
+E       - text: N8 / N10 · 静态复核 / 结果对账 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 守
+E       - button "打开 simenv-guardian 工作窗口": simenv-guardian ↗
+E       - text: N11 · 证据守护 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 报
+E       - button "打开 simenv-reporter 工作窗口": simenv-reporter ↗
+E       - text: N12 · 评估报告 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 Host 确定性侧 N0 / N1 / N2 / N5 / N7 / N9 / N15 / N16 · 确定性步骤 / 长任务看护（不占 agent 卡） N9 全跑由 job_runner 看护：提交 → 停放 → 完成事件 resume 服务端 agents 投影未就绪：上方 agent 卡由 event / node_history 本地派生（非权威）。 以上卡片均为投影，非权威；判据以服务端 blockers / gates.json 为准。
+E       - heading "闸门 1 · 差异确认" [level=2]
+E       - text: 等待人工 · 轮次 0 闸门 G1_diff_confirm 轮次 0 冲突快照 — 硬阻断 无
+E       - group: N2 差异清单（服务端未下发）
+E       - radio "服务端确认 值 confirmed"
+E       - text: 服务端确认 值 confirmed
+E       - radio "服务端忽略 值 ignored · 必须填写理由"
+E       - text: 服务端忽略 值 ignored · 必须填写理由
+E       - textbox "actor":
+E         - /placeholder: human:your-name
+E         - text: "human:"
+E       - text: actor 必须以 human 开头（I6）；模型/替身 actor 会被服务端拒绝。
+E       - textbox "裁决理由":
+E         - /placeholder: 裁决理由（ignored / rework / disputed 必填）
+E       - button "提交闸门决策" [disabled]
+E       - heading "双口径计数" [level=2]
+E       - text: 并列同权 · 不换算 无全跑证据：两套口径均无法取数（I3 / E-2）。
+E       - heading "阻断项" [level=2]
+E       - text: 按 severity 分区 · 前端不过滤 服务端未下发阻断项（这不等于判绿；判据仍以服务端 can 字段与 gates.json 为准）。
+E       - heading "长任务" [level=2]
+E       - text: job 状态与日志尾部 当前没有作业记录（N9 全跑尚未提交或未启动）。
+E       - group: 事件流 · 0 条白名单事件（seq 递增 · 只读 · 折叠）
+E     - text: FPGA Flow / 仿真工作台 检查结论与闸门状态以服务端证据为准
+E   - status
+E   - dialog "simenv-analyst":
+E     - text: AGENT WORKSPACE / 工作窗口
+E     - heading "simenv-analyst" [level=2]
+E     - status: 运行中
+E     - button "关闭 Agent 窗口": 关闭 ×
+E     - text: A / N3 / N3:session-000001 节点
+E     - combobox "Agent 节点":
+E       - option "N3" [selected]
+E     - text: 尝试
+E     - combobox "调用尝试":
+E       - option "跟随最新" [selected]
+E       - option "#1 · incomplete"
+E     - button "刷新"
+E     - heading "运行动态" [level=3]
+E     - text: "test-model · 尝试 #1 能力事实未知（非模型角色节点或服务端未投影）"
+E     - group: ▸ 上下文预算 未知（未测量）
+E     - group: ▸ 尝试摘要与输入差异
+E     - text: 尚无节点事件。输入、输出将在实际调用后出现。
+E     - group: ▸ 任务输入 完整调用输入，只读
+E     - group: ▸ 提示词与约束 调用时快照
+E     - group: "▾ 输出与 Host 校验 validated { \"status\": \"validated\", \"payload\": { \"data\": { \"summary\": \"保留这份成果\" }, \"standin\": false }, \"validation\": { \"ok\": true, \"problems\": [], \"accepted\": { \"summary\": \"保留这份成果\" } } }"
+E     - paragraph: 这里展示实际输入、执行事件与返回结果，不提供模型隐藏推理或 token 流。
+E     - heading "人工干预" [level=3]
+E     - text: 请求边界
+E     - paragraph: 可向当前请求补充指令、暂停，或终止该节点。
+E     - text: 操作者 流程记录
+E     - textbox "操作者 流程记录":
+E       - /placeholder: human:your-name
+E       - text: "human:"
+E     - text: 补充指令 仅当前任务
+E     - textbox "补充指令 仅当前任务":
+E       - /placeholder: 例如：请重点核对新增端口的位宽，保留现有断言与激励时序。
+E     - button "补充指令并重跑"
+E     - button "暂停请求"
+E     - button "恢复请求" [disabled]
+E     - status
+E     - alert
+E     - text: 补充指令会取消本地旧请求，再发起新的调用尝试；原始事实、Host 校验与人工闸门继续生效。暂停后恢复也会重发请求。
+E     - button "终止当前节点"
+E     - paragraph: 终止后本轮按失败收敛。关闭窗口只收起视图，不停止任务。
+E     - group: 取消与恢复的边界
+____ test_ai_chip_and_role_share_panel_with_secondary_node_details[N3-None] ____
+tests/browser/test_ai_work_panel.py:159: in test_ai_chip_and_role_share_panel_with_secondary_node_details
+    pw.expect(page.locator('#agentWindow')).to_be_visible(timeout=1200)
+E   AssertionError: Locator expected to be visible
+E   Actual value: hidden 
+E   Call log:
+E     - Expect "to_be_visible" locator("#agentWindow") with timeout 1200ms
+E     - waiting for locator("#agentWindow")
+E       12 × locator resolved to <dialog id="agentWindow" class="agent-window" aria-labelledby="awTitle">…</dialog>
+E          - unexpected value "hidden"
+E   
+E   Aria snapshot:
+E   - link "跳到工作区":
+E     - /url: "#workspace"
+E   - banner:
+E     - text: FPGA Flow / 仿真工作台 /fixture 插件面齐全 · agently ?
+E     - link "旧版操作台 ↗":
+E       - /url: legacy.html
+E   - complementary:
+E     - text: 当前工作空间
+E     - button "仿真与验证 Simulation workspace"
+E     - button "新建运行"
+E     - text: 工作台 WORKBENCH
+E     - tablist "视图切换":
+E       - tab "环境准备 S0"
+E       - tab "运行配置 01"
+E       - tab "运行监控 02" [selected]
+E       - tab "人工闸门 03"
+E     - text: 最近运行 HISTORY
+E     - button "A drill · 等待人工 · —"
+E     - button "B drill · 等待人工 · —"
+E     - text: TOOL_ROOT · — 数据根 · — 模型 · —
+E   - main:
+E     - text: 工作台 / 运行监控
+E     - heading "运行监控" [level=1]
+E     - text: 跟踪流程进度、Agent 任务与实际运行证据 SIMULATION WORKBENCH 02
+E     - tabpanel "运行监控 02":
+E       - text: A 等待人工 drill 未经 S0 派生（drill 不覆盖 S0） 基线 A-baseline 已用 — · 更新于 —
+E       - button "刷新"
+E       - button "取消作业" [disabled]
+E       - heading "流程执行状态" [level=2]
+E       - text: 摄取 → 修订 → 验证 → 决策
+E       - button "1 摄取 N0–N4 等待人工 ▸" [expanded]
+E       - button "节点 N0 基线，owner Host，状态 待开始；打开执行详情": N0 基线 Host
+E       - button "节点 N1 摄取，owner Host，状态 待开始；打开执行详情": N1 摄取 Host
+E       - button "节点 N2 diff，owner Host，状态 待开始；打开执行详情": N2 diff Host
+E       - button "节点 N3 总结，owner analyst，状态 待开始；打开执行详情": N3 总结 analyst
+E       - button "节点 N4 闸门1，owner 人，状态 wait；打开执行详情": "! N4 闸门1 人"
+E       - button "2 修订 N5–N8 待开始 ▸"
+E       - button "3 验证 N9–N12 待开始 ▸"
+E       - button "4 决策 N13–N16 待开始 ▸"
+E       - heading "Agent 工作状态" [level=2]
+E       - text: 点击角色，查看任务详情与运行记录 析
+E       - button "打开 simenv-analyst 工作窗口": simenv-analyst ↗
+E       - text: N3 · 差异语义总结 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 作
+E       - button "打开 simenv-author 工作窗口": simenv-author ↗
+E       - text: N6 · 用例修订 / 补充 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 检
+E       - button "打开 simenv-checker 工作窗口": simenv-checker ↗
+E       - text: N8 / N10 · 静态复核 / 结果对账 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 守
+E       - button "打开 simenv-guardian 工作窗口": simenv-guardian ↗
+E       - text: N11 · 证据守护 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 报
+E       - button "打开 simenv-reporter 工作窗口": simenv-reporter ↗
+E       - text: N12 · 评估报告 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 Host 确定性侧 N0 / N1 / N2 / N5 / N7 / N9 / N15 / N16 · 确定性步骤 / 长任务看护（不占 agent 卡） N9 全跑由 job_runner 看护：提交 → 停放 → 完成事件 resume 服务端 agents 投影未就绪：上方 agent 卡由 event / node_history 本地派生（非权威）。 以上卡片均为投影，非权威；判据以服务端 blockers / gates.json 为准。
+E       - heading "闸门 1 · 差异确认" [level=2]
+E       - text: 等待人工 · 轮次 0 闸门 G1_diff_confirm 轮次 0 冲突快照 — 硬阻断 无
+E       - group: N2 差异清单（服务端未下发）
+E       - radio "服务端确认 值 confirmed"
+E       - text: 服务端确认 值 confirmed
+E       - radio "服务端忽略 值 ignored · 必须填写理由"
+E       - text: 服务端忽略 值 ignored · 必须填写理由
+E       - textbox "actor":
+E         - /placeholder: human:your-name
+E         - text: "human:"
+E       - text: actor 必须以 human 开头（I6）；模型/替身 actor 会被服务端拒绝。
+E       - textbox "裁决理由":
+E         - /placeholder: 裁决理由（ignored / rework / disputed 必填）
+E       - button "提交闸门决策" [disabled]
+E       - heading "双口径计数" [level=2]
+E       - text: 并列同权 · 不换算 无全跑证据：两套口径均无法取数（I3 / E-2）。
+E       - heading "阻断项" [level=2]
+E       - text: 按 severity 分区 · 前端不过滤 服务端未下发阻断项（这不等于判绿；判据仍以服务端 can 字段与 gates.json 为准）。
+E       - heading "长任务" [level=2]
+E       - text: job 状态与日志尾部 当前没有作业记录（N9 全跑尚未提交或未启动）。
+E       - group: 事件流 · 0 条白名单事件（seq 递增 · 只读 · 折叠）
+E     - text: FPGA Flow / 仿真工作台 检查结论与闸门状态以服务端证据为准
+E   - status
+E   - dialog "N3 总结":
+E     - text: NODE DETAIL / 节点执行详情
+E     - heading "N3 总结" [level=2]
+E     - text: A / N3 · 只读投影（projection） owner：analyst 执行方式：等节点收尾后下发
+E     - status "服务端 status 原值；中文只是释义，原值逐字保留，不折算成完成/失败。": 未下发
+E     - button "关闭节点详情": 关闭 ×
+E     - text: GET /api/runs/A/nodes/N3
+E     - button "刷新"
+E     - alert: 服务端未登记该节点（known=false）：以下为该节点在事件流中的原始记录与空投影；「未登记」不等于「未执行」，也不据此判定失败。
+E     - region "这一步做什么":
+E       - heading "这一步做什么" [level=3]
+E       - text: 服务端未登记这个节点（known=false），没有一句话用途；下面只展示它的事件记录。
+E       - button "打开 simenv-analyst 工作窗口": 打开 Agent 工作窗口 ↗
+E     - region "结果 一句话结果（服务端 story.headline）；summary 原文在「原始记录」":
+E       - heading "结果 一句话结果（服务端 story.headline）；summary 原文在「原始记录」" [level=3]
+E       - text: 结果一句话未下发（服务端未提供 story.headline；界面不补默认文案）。
+E     - region "关键数字 逐节点精选字段；缺失逐项「未下发」":
+E       - heading "关键数字 逐节点精选字段；缺失逐项「未下发」" [level=3]
+E       - text: 服务端未登记该节点，没有逐节点关键字段；完整 detail 见「原始记录」。
+E     - region "过程 按事件发生顺序；时间取自事件 ts":
+E       - heading "过程 按事件发生顺序；时间取自事件 ts" [level=3]
+E       - list:
+E         - listitem: 服务端未下发这个节点的事件步骤（events 为空）。
+E     - region "证据 refs；点击先探测存在性，不打开正文":
+E       - heading "证据 refs；点击先探测存在性，不打开正文" [level=3]
+E       - text: 证据缺失：服务端未下发 refs（本面板不猜证据位置）。
+E     - group: 原始记录（排查用） 事件流水号 seq · 完整 detail · 未下发字段 · 身份技术字段
+E     - text: 投影，非权威；判据以服务端 blockers / gates.json 为准
+_ test_ai_chip_and_role_share_panel_with_secondary_node_details[N6-\u4fee\u8ba2] _
+tests/browser/test_ai_work_panel.py:159: in test_ai_chip_and_role_share_panel_with_secondary_node_details
+    pw.expect(page.locator('#agentWindow')).to_be_visible(timeout=1200)
+E   AssertionError: Locator expected to be visible
+E   Actual value: hidden 
+E   Call log:
+E     - Expect "to_be_visible" locator("#agentWindow") with timeout 1200ms
+E     - waiting for locator("#agentWindow")
+E       12 × locator resolved to <dialog id="agentWindow" class="agent-window" aria-labelledby="awTitle">…</dialog>
+E          - unexpected value "hidden"
+E   
+E   Aria snapshot:
+E   - link "跳到工作区":
+E     - /url: "#workspace"
+E   - banner:
+E     - text: FPGA Flow / 仿真工作台 /fixture 插件面齐全 · agently ?
+E     - link "旧版操作台 ↗":
+E       - /url: legacy.html
+E   - complementary:
+E     - text: 当前工作空间
+E     - button "仿真与验证 Simulation workspace"
+E     - button "新建运行"
+E     - text: 工作台 WORKBENCH
+E     - tablist "视图切换":
+E       - tab "环境准备 S0"
+E       - tab "运行配置 01"
+E       - tab "运行监控 02" [selected]
+E       - tab "人工闸门 03"
+E     - text: 最近运行 HISTORY
+E     - button "A drill · 等待人工 · —"
+E     - button "B drill · 等待人工 · —"
+E     - text: TOOL_ROOT · — 数据根 · — 模型 · —
+E   - main:
+E     - text: 工作台 / 运行监控
+E     - heading "运行监控" [level=1]
+E     - text: 跟踪流程进度、Agent 任务与实际运行证据 SIMULATION WORKBENCH 02
+E     - tabpanel "运行监控 02":
+E       - text: A 等待人工 drill 未经 S0 派生（drill 不覆盖 S0） 基线 A-baseline 已用 — · 更新于 —
+E       - button "刷新"
+E       - button "取消作业" [disabled]
+E       - heading "流程执行状态" [level=2]
+E       - text: 摄取 → 修订 → 验证 → 决策
+E       - button "1 摄取 N0–N4 等待人工 ▸"
+E       - button "2 修订 N5–N8 待开始 ▸" [expanded]
+E       - button "节点 N5 影响，owner Host，状态 待开始；打开执行详情": N5 影响 Host
+E       - button "节点 N6 修订，owner author，状态 待开始；打开执行详情": N6 修订 author
+E       - button "节点 N7 编译，owner Host，状态 待开始；打开执行详情": N7 编译 Host
+E       - button "节点 N8 复核，owner checker，状态 待开始；打开执行详情": N8 复核 checker
+E       - button "3 验证 N9–N12 待开始 ▸"
+E       - button "4 决策 N13–N16 待开始 ▸"
+E       - heading "Agent 工作状态" [level=2]
+E       - text: 点击角色，查看任务详情与运行记录 析
+E       - button "打开 simenv-analyst 工作窗口": simenv-analyst ↗
+E       - text: N3 · 差异语义总结 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 作
+E       - button "打开 simenv-author 工作窗口": simenv-author ↗
+E       - text: N6 · 用例修订 / 补充 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 检
+E       - button "打开 simenv-checker 工作窗口": simenv-checker ↗
+E       - text: N8 / N10 · 静态复核 / 结果对账 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 守
+E       - button "打开 simenv-guardian 工作窗口": simenv-guardian ↗
+E       - text: N11 · 证据守护 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 报
+E       - button "打开 simenv-reporter 工作窗口": simenv-reporter ↗
+E       - text: N12 · 评估报告 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 Host 确定性侧 N0 / N1 / N2 / N5 / N7 / N9 / N15 / N16 · 确定性步骤 / 长任务看护（不占 agent 卡） N9 全跑由 job_runner 看护：提交 → 停放 → 完成事件 resume 服务端 agents 投影未就绪：上方 agent 卡由 event / node_history 本地派生（非权威）。 以上卡片均为投影，非权威；判据以服务端 blockers / gates.json 为准。
+E       - heading "闸门 1 · 差异确认" [level=2]
+E       - text: 等待人工 · 轮次 0 闸门 G1_diff_confirm 轮次 0 冲突快照 — 硬阻断 无
+E       - group: N2 差异清单（服务端未下发）
+E       - radio "服务端确认 值 confirmed"
+E       - text: 服务端确认 值 confirmed
+E       - radio "服务端忽略 值 ignored · 必须填写理由"
+E       - text: 服务端忽略 值 ignored · 必须填写理由
+E       - textbox "actor":
+E         - /placeholder: human:your-name
+E         - text: "human:"
+E       - text: actor 必须以 human 开头（I6）；模型/替身 actor 会被服务端拒绝。
+E       - textbox "裁决理由":
+E         - /placeholder: 裁决理由（ignored / rework / disputed 必填）
+E       - button "提交闸门决策" [disabled]
+E       - heading "双口径计数" [level=2]
+E       - text: 并列同权 · 不换算 无全跑证据：两套口径均无法取数（I3 / E-2）。
+E       - heading "阻断项" [level=2]
+E       - text: 按 severity 分区 · 前端不过滤 服务端未下发阻断项（这不等于判绿；判据仍以服务端 can 字段与 gates.json 为准）。
+E       - heading "长任务" [level=2]
+E       - text: job 状态与日志尾部 当前没有作业记录（N9 全跑尚未提交或未启动）。
+E       - group: 事件流 · 0 条白名单事件（seq 递增 · 只读 · 折叠）
+E     - text: FPGA Flow / 仿真工作台 检查结论与闸门状态以服务端证据为准
+E   - status
+E   - dialog "N6 修订":
+E     - text: NODE DETAIL / 节点执行详情
+E     - heading "N6 修订" [level=2]
+E     - text: A / N6 · 只读投影（projection） owner：author 执行方式：等节点收尾后下发
+E     - status "服务端 status 原值；中文只是释义，原值逐字保留，不折算成完成/失败。": 未下发
+E     - button "关闭节点详情": 关闭 ×
+E     - text: GET /api/runs/A/nodes/N6
+E     - button "刷新"
+E     - alert: 服务端未登记该节点（known=false）：以下为该节点在事件流中的原始记录与空投影；「未登记」不等于「未执行」，也不据此判定失败。
+E     - region "这一步做什么":
+E       - heading "这一步做什么" [level=3]
+E       - text: 服务端未登记这个节点（known=false），没有一句话用途；下面只展示它的事件记录。
+E       - button "打开 simenv-author 工作窗口": 打开 Agent 工作窗口 ↗
+E     - region "结果 一句话结果（服务端 story.headline）；summary 原文在「原始记录」":
+E       - heading "结果 一句话结果（服务端 story.headline）；summary 原文在「原始记录」" [level=3]
+E       - text: 结果一句话未下发（服务端未提供 story.headline；界面不补默认文案）。
+E     - region "关键数字 逐节点精选字段；缺失逐项「未下发」":
+E       - heading "关键数字 逐节点精选字段；缺失逐项「未下发」" [level=3]
+E       - text: 服务端未登记该节点，没有逐节点关键字段；完整 detail 见「原始记录」。
+E     - region "过程 按事件发生顺序；时间取自事件 ts":
+E       - heading "过程 按事件发生顺序；时间取自事件 ts" [level=3]
+E       - list:
+E         - listitem: 服务端未下发这个节点的事件步骤（events 为空）。
+E     - region "证据 refs；点击先探测存在性，不打开正文":
+E       - heading "证据 refs；点击先探测存在性，不打开正文" [level=3]
+E       - text: 证据缺失：服务端未下发 refs（本面板不猜证据位置）。
+E     - group: 原始记录（排查用） 事件流水号 seq · 完整 detail · 未下发字段 · 身份技术字段
+E     - text: 投影，非权威；判据以服务端 blockers / gates.json 为准
+_ test_ai_chip_and_role_share_panel_with_secondary_node_details[N8-\u4fee\u8ba2] _
+tests/browser/test_ai_work_panel.py:159: in test_ai_chip_and_role_share_panel_with_secondary_node_details
+    pw.expect(page.locator('#agentWindow')).to_be_visible(timeout=1200)
+E   AssertionError: Locator expected to be visible
+E   Actual value: hidden 
+E   Call log:
+E     - Expect "to_be_visible" locator("#agentWindow") with timeout 1200ms
+E     - waiting for locator("#agentWindow")
+E       12 × locator resolved to <dialog id="agentWindow" class="agent-window" aria-labelledby="awTitle">…</dialog>
+E          - unexpected value "hidden"
+E   
+E   Aria snapshot:
+E   - link "跳到工作区":
+E     - /url: "#workspace"
+E   - banner:
+E     - text: FPGA Flow / 仿真工作台 /fixture 插件面齐全 · agently ?
+E     - link "旧版操作台 ↗":
+E       - /url: legacy.html
+E   - complementary:
+E     - text: 当前工作空间
+E     - button "仿真与验证 Simulation workspace"
+E     - button "新建运行"
+E     - text: 工作台 WORKBENCH
+E     - tablist "视图切换":
+E       - tab "环境准备 S0"
+E       - tab "运行配置 01"
+E       - tab "运行监控 02" [selected]
+E       - tab "人工闸门 03"
+E     - text: 最近运行 HISTORY
+E     - button "A drill · 等待人工 · —"
+E     - button "B drill · 等待人工 · —"
+E     - text: TOOL_ROOT · — 数据根 · — 模型 · —
+E   - main:
+E     - text: 工作台 / 运行监控
+E     - heading "运行监控" [level=1]
+E     - text: 跟踪流程进度、Agent 任务与实际运行证据 SIMULATION WORKBENCH 02
+E     - tabpanel "运行监控 02":
+E       - text: A 等待人工 drill 未经 S0 派生（drill 不覆盖 S0） 基线 A-baseline 已用 — · 更新于 —
+E       - button "刷新"
+E       - button "取消作业" [disabled]
+E       - heading "流程执行状态" [level=2]
+E       - text: 摄取 → 修订 → 验证 → 决策
+E       - button "1 摄取 N0–N4 等待人工 ▸"
+E       - button "2 修订 N5–N8 待开始 ▸" [expanded]
+E       - button "节点 N5 影响，owner Host，状态 待开始；打开执行详情": N5 影响 Host
+E       - button "节点 N6 修订，owner author，状态 待开始；打开执行详情": N6 修订 author
+E       - button "节点 N7 编译，owner Host，状态 待开始；打开执行详情": N7 编译 Host
+E       - button "节点 N8 复核，owner checker，状态 待开始；打开执行详情": N8 复核 checker
+E       - button "3 验证 N9–N12 待开始 ▸"
+E       - button "4 决策 N13–N16 待开始 ▸"
+E       - heading "Agent 工作状态" [level=2]
+E       - text: 点击角色，查看任务详情与运行记录 析
+E       - button "打开 simenv-analyst 工作窗口": simenv-analyst ↗
+E       - text: N3 · 差异语义总结 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 作
+E       - button "打开 simenv-author 工作窗口": simenv-author ↗
+E       - text: N6 · 用例修订 / 补充 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 检
+E       - button "打开 simenv-checker 工作窗口": simenv-checker ↗
+E       - text: N8 / N10 · 静态复核 / 结果对账 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 守
+E       - button "打开 simenv-guardian 工作窗口": simenv-guardian ↗
+E       - text: N11 · 证据守护 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 报
+E       - button "打开 simenv-reporter 工作窗口": simenv-reporter ↗
+E       - text: N12 · 评估报告 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 Host 确定性侧 N0 / N1 / N2 / N5 / N7 / N9 / N15 / N16 · 确定性步骤 / 长任务看护（不占 agent 卡） N9 全跑由 job_runner 看护：提交 → 停放 → 完成事件 resume 服务端 agents 投影未就绪：上方 agent 卡由 event / node_history 本地派生（非权威）。 以上卡片均为投影，非权威；判据以服务端 blockers / gates.json 为准。
+E       - heading "闸门 1 · 差异确认" [level=2]
+E       - text: 等待人工 · 轮次 0 闸门 G1_diff_confirm 轮次 0 冲突快照 — 硬阻断 无
+E       - group: N2 差异清单（服务端未下发）
+E       - radio "服务端确认 值 confirmed"
+E       - text: 服务端确认 值 confirmed
+E       - radio "服务端忽略 值 ignored · 必须填写理由"
+E       - text: 服务端忽略 值 ignored · 必须填写理由
+E       - textbox "actor":
+E         - /placeholder: human:your-name
+E         - text: "human:"
+E       - text: actor 必须以 human 开头（I6）；模型/替身 actor 会被服务端拒绝。
+E       - textbox "裁决理由":
+E         - /placeholder: 裁决理由（ignored / rework / disputed 必填）
+E       - button "提交闸门决策" [disabled]
+E       - heading "双口径计数" [level=2]
+E       - text: 并列同权 · 不换算 无全跑证据：两套口径均无法取数（I3 / E-2）。
+E       - heading "阻断项" [level=2]
+E       - text: 按 severity 分区 · 前端不过滤 服务端未下发阻断项（这不等于判绿；判据仍以服务端 can 字段与 gates.json 为准）。
+E       - heading "长任务" [level=2]
+E       - text: job 状态与日志尾部 当前没有作业记录（N9 全跑尚未提交或未启动）。
+E       - group: 事件流 · 0 条白名单事件（seq 递增 · 只读 · 折叠）
+E     - text: FPGA Flow / 仿真工作台 检查结论与闸门状态以服务端证据为准
+E   - status
+E   - dialog "N8 复核":
+E     - text: NODE DETAIL / 节点执行详情
+E     - heading "N8 复核" [level=2]
+E     - text: A / N8 · 只读投影（projection） owner：checker 执行方式：等节点收尾后下发
+E     - status "服务端 status 原值；中文只是释义，原值逐字保留，不折算成完成/失败。": 未下发
+E     - button "关闭节点详情": 关闭 ×
+E     - text: GET /api/runs/A/nodes/N8
+E     - button "刷新"
+E     - alert: 服务端未登记该节点（known=false）：以下为该节点在事件流中的原始记录与空投影；「未登记」不等于「未执行」，也不据此判定失败。
+E     - region "这一步做什么":
+E       - heading "这一步做什么" [level=3]
+E       - text: 服务端未登记这个节点（known=false），没有一句话用途；下面只展示它的事件记录。
+E       - button "打开 simenv-checker 工作窗口": 打开 Agent 工作窗口 ↗
+E     - region "结果 一句话结果（服务端 story.headline）；summary 原文在「原始记录」":
+E       - heading "结果 一句话结果（服务端 story.headline）；summary 原文在「原始记录」" [level=3]
+E       - text: 结果一句话未下发（服务端未提供 story.headline；界面不补默认文案）。
+E     - region "关键数字 逐节点精选字段；缺失逐项「未下发」":
+E       - heading "关键数字 逐节点精选字段；缺失逐项「未下发」" [level=3]
+E       - text: 服务端未登记该节点，没有逐节点关键字段；完整 detail 见「原始记录」。
+E     - region "过程 按事件发生顺序；时间取自事件 ts":
+E       - heading "过程 按事件发生顺序；时间取自事件 ts" [level=3]
+E       - list:
+E         - listitem: 服务端未下发这个节点的事件步骤（events 为空）。
+E     - region "证据 refs；点击先探测存在性，不打开正文":
+E       - heading "证据 refs；点击先探测存在性，不打开正文" [level=3]
+E       - text: 证据缺失：服务端未下发 refs（本面板不猜证据位置）。
+E     - group: 原始记录（排查用） 事件流水号 seq · 完整 detail · 未下发字段 · 身份技术字段
+E     - text: 投影，非权威；判据以服务端 blockers / gates.json 为准
+_ test_ai_chip_and_role_share_panel_with_secondary_node_details[N10-\u9a8c\u8bc1] _
+tests/browser/test_ai_work_panel.py:159: in test_ai_chip_and_role_share_panel_with_secondary_node_details
+    pw.expect(page.locator('#agentWindow')).to_be_visible(timeout=1200)
+E   AssertionError: Locator expected to be visible
+E   Actual value: hidden 
+E   Call log:
+E     - Expect "to_be_visible" locator("#agentWindow") with timeout 1200ms
+E     - waiting for locator("#agentWindow")
+E       12 × locator resolved to <dialog id="agentWindow" class="agent-window" aria-labelledby="awTitle">…</dialog>
+E          - unexpected value "hidden"
+E   
+E   Aria snapshot:
+E   - link "跳到工作区":
+E     - /url: "#workspace"
+E   - banner:
+E     - text: FPGA Flow / 仿真工作台 /fixture 插件面齐全 · agently ?
+E     - link "旧版操作台 ↗":
+E       - /url: legacy.html
+E   - complementary:
+E     - text: 当前工作空间
+E     - button "仿真与验证 Simulation workspace"
+E     - button "新建运行"
+E     - text: 工作台 WORKBENCH
+E     - tablist "视图切换":
+E       - tab "环境准备 S0"
+E       - tab "运行配置 01"
+E       - tab "运行监控 02" [selected]
+E       - tab "人工闸门 03"
+E     - text: 最近运行 HISTORY
+E     - button "A drill · 等待人工 · —"
+E     - button "B drill · 等待人工 · —"
+E     - text: TOOL_ROOT · — 数据根 · — 模型 · —
+E   - main:
+E     - text: 工作台 / 运行监控
+E     - heading "运行监控" [level=1]
+E     - text: 跟踪流程进度、Agent 任务与实际运行证据 SIMULATION WORKBENCH 02
+E     - tabpanel "运行监控 02":
+E       - text: A 等待人工 drill 未经 S0 派生（drill 不覆盖 S0） 基线 A-baseline 已用 — · 更新于 —
+E       - button "刷新"
+E       - button "取消作业" [disabled]
+E       - heading "流程执行状态" [level=2]
+E       - text: 摄取 → 修订 → 验证 → 决策
+E       - button "1 摄取 N0–N4 等待人工 ▸"
+E       - button "2 修订 N5–N8 待开始 ▸"
+E       - button "3 验证 N9–N12 待开始 ▸" [expanded]
+E       - button "节点 N9 全跑，owner Host，状态 待开始；打开执行详情": N9 全跑 Host
+E       - button "节点 N10 对账，owner checker，状态 待开始；打开执行详情": N10 对账 checker
+E       - button "节点 N11 守护，owner guardian，状态 待开始；打开执行详情": N11 守护 guardian
+E       - button "节点 N12 报告，owner reporter，状态 待开始；打开执行详情": N12 报告 reporter
+E       - button "4 决策 N13–N16 待开始 ▸"
+E       - heading "Agent 工作状态" [level=2]
+E       - text: 点击角色，查看任务详情与运行记录 析
+E       - button "打开 simenv-analyst 工作窗口": simenv-analyst ↗
+E       - text: N3 · 差异语义总结 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 作
+E       - button "打开 simenv-author 工作窗口": simenv-author ↗
+E       - text: N6 · 用例修订 / 补充 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 检
+E       - button "打开 simenv-checker 工作窗口": simenv-checker ↗
+E       - text: N8 / N10 · 静态复核 / 结果对账 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 守
+E       - button "打开 simenv-guardian 工作窗口": simenv-guardian ↗
+E       - text: N11 · 证据守护 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 报
+E       - button "打开 simenv-reporter 工作窗口": simenv-reporter ↗
+E       - text: N12 · 评估报告 待命 — 摘要：— 该角色未出现在服务端 agents 投影中：本卡由 event / node_history 本地派生（非权威），能力事实未知。 模式 — 无证据入口 投影，非权威 Host 确定性侧 N0 / N1 / N2 / N5 / N7 / N9 / N15 / N16 · 确定性步骤 / 长任务看护（不占 agent 卡） N9 全跑由 job_runner 看护：提交 → 停放 → 完成事件 resume 服务端 agents 投影未就绪：上方 agent 卡由 event / node_history 本地派生（非权威）。 以上卡片均为投影，非权威；判据以服务端 blockers / gates.json 为准。
+E       - heading "闸门 1 · 差异确认" [level=2]
+E       - text: 等待人工 · 轮次 0 闸门 G1_diff_confirm 轮次 0 冲突快照 — 硬阻断 无
+E       - group: N2 差异清单（服务端未下发）
+E       - radio "服务端确认 值 confirmed"
+E       - text: 服务端确认 值 confirmed
+E       - radio "服务端忽略 值 ignored · 必须填写理由"
+E       - text: 服务端忽略 值 ignored · 必须填写理由
+E       - textbox "actor":
+E         - /placeholder: human:your-name
+E         - text: "human:"
+E       - text: actor 必须以 human 开头（I6）；模型/替身 actor 会被服务端拒绝。
+E       - textbox "裁决理由":
+E         - /placeholder: 裁决理由（ignored / rework / disputed 必填）
+E       - button "提交闸门决策" [disabled]
+E       - heading "双口径计数" [level=2]
+E       - text: 并列同权 · 不换算 无全跑证据：两套口径均无法取数（I3 / E-2）。
+E       - heading "阻断项" [level=2]
+E       - text: 按 severity 分区 · 前端不过滤 服务端未下发阻断项（这不等于判绿；判据仍以服务端 can 字段与 gates.json 为准）。
+E       - heading "长任务" [level=2]
+E       - text: job 状态与日志尾部 当前没有作业记录（N9 全跑尚未提交或未启动）。
+E       - group: 事件流 · 0 条白名单事件（seq 递增 · 只读 · 折叠）
+E     - text: FPGA Flow / 仿真工作台 检查结论与闸门状态以服务端证据为准
+E   - status
+E   - dialog "N10 对账":
+E     - text: NODE DETAIL / 节点执行详情
+E     - heading "N10 对账" [level=2]
+E     - text: A / N10 · 只读投影（projection） owner：checker 执行方式：等节点收尾后下发
+E     - status "服务端 status 原值；中文只是释义，原值逐字保留，不折算成完成/失败。": 未下发
+E     - button "关闭节点详情": 关闭 ×
+E     - text: GET /api/runs/A/nodes/N10
+E     - button "刷新"
+E     - alert: 服务端未登记该节点（known=false）：以下为该节点在事件流中的原始记录与空投影；「未登记」不等于「未执行」，也不据此判定失败。
+E     - region "这一步做什么":
+E       - heading "这一步做什么" [level=3]
+E       - text: 服务端未登记这个节点（known=false），没有一句话用途；下面只展示它的事件记录。
+E       - button "打开 simenv-checker 工作窗口": 打开 Agent 工作窗口 ↗
+E     - region "结果 一句话结果（服务端 story.headline）；summary 原文在「原始记录」":
+E       - heading "结果 一句话结果（服务端 story.headline）；summary 原文在「原始记录」" [level=3]
+E       - text: 结果一句话未下发（服务端未提供 story.headline；界面不补默认文案）。
+E     - region "关键数字 逐节点精选字段；缺失逐项「未下发」":
+E       - heading "关键数字 逐节点精选字段；缺失逐项「未下发」" [level=3]
+E       - text: 服务端未登记该节点，没有逐节点关键字段；完整 detail 见「原始记录」。
+E     - region "过程 按事件发生顺序；时间取自事件 ts":
+E       - heading "过程 按事件发生顺序；时间取自事件 ts" [level=3]
+E       - list:
+E         - listitem: 服务端未下发这个节点的事件步骤（events 为空）。
+E     - region "证据 refs；点击先探测存在性，不打开正文":
+E       - heading "证据 refs；点击先探测存在性，不打开正文" [level=3]
+E       - text: 证据缺失：服务端未下发 refs（本面板不猜证据位置）。
+E     - group: 原始记录（排查用） 事件流水号 seq · 完整 detail · 未下发字段 · 身份技术字段
+E     - text: 投影，非权威；判据以服务端 blockers / gates.json 为准
+=========================== short test summary info ============================
+FAILED tests/browser/test_ai_work_panel.py::test_n3_accepted_result_is_readable_and_raw_is_collapsed
+FAILED tests/browser/test_ai_work_panel.py::test_n6_candidates_show_edits_basis_and_observation_points
+FAILED tests/browser/test_ai_work_panel.py::test_n8_suggestion_and_rejected_candidate_are_distinct_from_host
+FAILED tests/browser/test_ai_work_panel.py::test_standin_and_unrecognized_old_records_never_claim_validation
+FAILED tests/browser/test_ai_work_panel.py::test_no_records_does_not_mean_not_started
+FAILED tests/browser/test_ai_work_panel.py::test_follow_latest_readable_history_is_readonly_even_with_new_live
+FAILED tests/browser/test_ai_work_panel.py::test_live_attempt_change_clears_old_draft_and_ignores_old_receipt
+FAILED tests/browser/test_ai_work_panel.py::test_terminate_requires_explicit_confirmation_and_can_cancel
+FAILED tests/browser/test_ai_work_panel.py::test_refresh_failure_keeps_marked_old_results_and_disables_control
+FAILED tests/browser/test_ai_work_panel.py::test_ai_chip_and_role_share_panel_with_secondary_node_details[N3-None]
+FAILED tests/browser/test_ai_work_panel.py::test_ai_chip_and_role_share_panel_with_secondary_node_details[N6-\u4fee\u8ba2]
+FAILED tests/browser/test_ai_work_panel.py::test_ai_chip_and_role_share_panel_with_secondary_node_details[N8-\u4fee\u8ba2]
+FAILED tests/browser/test_ai_work_panel.py::test_ai_chip_and_role_share_panel_with_secondary_node_details[N10-\u9a8c\u8bc1]
+13 failed in 39.31s

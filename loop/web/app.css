@@ -438,6 +438,20 @@ details.events[open] summary{border-bottom:1px solid var(--line)}
 .aw-intervene .input{width:100%;line-height:1.8}
 
 .aw-intervene textarea{resize:vertical;min-height:118px;margin-bottom:12px}
+.agent-window [hidden]{display:none!important}
+.aw-toolbar{flex-wrap:wrap;gap:8px}
+#awSelection{overflow-wrap:anywhere;min-width:0;flex:1 1 230px}
+#awIdentity{overflow-wrap:anywhere}
+.aw-result-block{margin:14px 0;padding:14px;border:1px solid var(--line);border-radius:8px;min-width:0}
+.aw-result-block h4{margin:0 0 8px}
+.aw-result-text{white-space:pre-wrap;overflow-wrap:anywhere;margin:8px 0;line-height:1.8}
+.aw-edit{margin:12px 0;border-top:1px solid var(--line);padding-top:10px}
+.aw-edit-pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+.aw-edit-pair>div{min-width:0}
+.aw-edit-pair pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:330px;overflow:auto;background:var(--bg);padding:10px;line-height:1.7}
+#awValidation{font-weight:600;overflow-wrap:anywhere}
+#awFreshness{overflow-wrap:anywhere}
+@media(max-width:640px){.aw-edit-pair{grid-template-columns:minmax(0,1fr)}}
 .aw-intervene .s0-label{margin-top:18px}
 
 .aw-action-row{display:flex;gap:9px;margin-top:9px}

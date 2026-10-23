@@ -399,13 +399,14 @@
   </div>
 </dialog>
 
-<!-- 节点执行详情（SPEC-04 §4.2.1）：独立弹层，自带状态，1.5s 轮询重建不影响本面板。 -->
+<!-- 节点执行详情（SPEC-04 §4.2.1；SPEC-REV-02 R1）：独立弹层，人话优先，原始记录默认收起。 -->
 <dialog id="nodeDetail" class="node-detail" aria-labelledby="ndTitle">
   <div class="nd-head">
     <div class="grow">
       <div class="eyebrow">NODE DETAIL / 节点执行详情</div>
       <h2 id="ndTitle">节点</h2>
       <div class="nd-sub mono" id="ndSub">—</div>
+      <div class="nd-meta" id="ndMeta"></div>
     </div>
     <span class="chip" id="ndStatus" role="status" aria-live="polite">加载中</span>
     <button class="btn btn-ghost btn-sm" id="ndClose" type="button" aria-label="关闭节点详情">关闭 ×</button>
@@ -419,32 +420,89 @@
     <div id="ndError" role="alert"></div>
     <div id="ndLoading" class="muted tiny">读取节点投影…</div>
     <div id="ndContent" class="hidden">
-      <section class="nd-block" aria-labelledby="ndIdentityH">
-        <h3 id="ndIdentityH">身份 <span class="tiny muted">节点 / 名称 / owner / 状态原值 / 来源 / 起止时间</span></h3>
-        <dl class="nd-kv" id="ndIdentity"></dl>
+      <section class="nd-block nd-block-first" aria-labelledby="ndPurposeH">
+        <h3 id="ndPurposeH">这一步做什么</h3>
+        <div id="ndPurpose"></div>
+        <div id="ndModeNote"></div>
         <div id="ndAgentJump"></div>
       </section>
-      <section class="nd-block" aria-labelledby="ndEventsH">
-        <h3 id="ndEventsH">执行情况 <span class="tiny muted">该节点事件切片，按 seq；最近一条在前</span></h3>
-        <div class="nd-events" id="ndEvents"></div>
-      </section>
       <section class="nd-block" aria-labelledby="ndResultH">
-        <h3 id="ndResultH">结果 <span class="tiny muted">summary + 结构化 detail；缺失显示「未下发」</span></h3>
-        <div id="ndSummary"></div>
-        <div id="ndDetailBody"></div>
+        <h3 id="ndResultH">结果 <span class="tiny muted">一句话结果（服务端 story.headline）；summary 原文在「原始记录」</span></h3>
+        <div id="ndHeadline"></div>
+        <div id="ndNote"></div>
+        <div id="ndReport" class="nd-report-entry"></div>
+      </section>
+      <section class="nd-block hidden" id="ndGateBlock" aria-labelledby="ndGateH">
+        <h3 id="ndGateH">闸门复核 <span class="tiny muted">清单只读；G1 逐条处置写入共享草稿；提交入口只有闸门视图</span></h3>
+        <div id="ndGate"></div>
+      </section>
+      <section class="nd-block" aria-labelledby="ndKeyH">
+        <h3 id="ndKeyH">关键数字 <span class="tiny muted">逐节点精选字段；缺失逐项「未下发」</span></h3>
+        <div class="nd-key" id="ndKey"></div>
+      </section>
+      <section class="nd-block" aria-labelledby="ndStepsH">
+        <h3 id="ndStepsH">过程 <span class="tiny muted">按事件发生顺序；时间取自事件 ts</span></h3>
+        <ol class="nd-steps" id="ndSteps"></ol>
       </section>
       <section class="nd-block" aria-labelledby="ndRefsH">
         <h3 id="ndRefsH">证据 <span class="tiny muted">refs；点击先探测存在性，不打开正文</span></h3>
         <div id="ndRefs"></div>
       </section>
-      <section class="nd-block" aria-labelledby="ndFailureH">
+      <section class="nd-block" id="ndFailureBlock" aria-labelledby="ndFailureH">
         <h3 id="ndFailureH">失败 <span class="tiny muted">node_failed 时显示 error 原文</span></h3>
         <div id="ndFailure"></div>
       </section>
-      <div id="ndMissing"></div>
+      <section class="nd-block">
+        <details class="nd-raw" id="ndRaw">
+          <summary id="ndRawToggle">原始记录（排查用） <span class="tiny muted">事件流水号 seq · 完整 detail · 未下发字段 · 身份技术字段</span></summary>
+          <div class="nd-raw-note">seq 是同一 run 内的事件流水号，只用于排序和定位（"第几条事件"），不是业务状态；正文不展示 seq。</div>
+          <h4>服务端 summary 原文</h4>
+          <div class="nd-raw-summary mono" id="ndSummaryRaw"></div>
+          <h4>身份技术字段</h4>
+          <dl class="nd-kv" id="ndIdentity"></dl>
+          <h4>事件（按 seq，最近一条在前）</h4>
+          <div class="nd-events" id="ndEvents"></div>
+          <h4>完整 detail</h4>
+          <div id="ndDetailBody"></div>
+          <div id="ndMissing"></div>
+        </details>
+      </section>
     </div>
   </div>
   <div class="nd-foot">投影，非权威；判据以服务端 blockers / gates.json 为准</div>
+  <!-- 浮窗（SPEC-REV-02 §R2 / §4）：节点面板本身是 <dialog>，浮窗用页内 overlay；
+       Esc 只关上层、焦点回到触发按钮；窄屏全屏。 -->
+  <div class="nd-overlay hidden" id="ndDiffOverlay" role="dialog" aria-modal="true" aria-labelledby="ndDiffTitle">
+    <div class="nd-overlay-card" id="ndDiffCard">
+      <div class="nd-overlay-head">
+        <div class="grow">
+          <div class="eyebrow">BEFORE / AFTER 前后对比</div>
+          <h3 id="ndDiffTitle">—</h3>
+          <div class="nd-diff-meta" id="ndDiffMeta"></div>
+        </div>
+        <button class="btn btn-ghost btn-sm nd-overlay-close" id="ndDiffClose" type="button" aria-label="关闭前后对比浮窗">关闭 ×</button>
+      </div>
+      <div class="nd-overlay-body" id="ndDiffBody"></div>
+    </div>
+  </div>
+</dialog>
+<!-- 报告全文只读浮窗（P-28 / 裁决 #8）：独立 <dialog>，N12 面板与 G2 材料共用一次点击入口。
+     DOM id 不变；Esc 只关本浮窗、焦点回触发按钮；节点面板没开时也能独立打开/关闭。 -->
+<dialog id="ndReportOverlay" class="nd-report-dialog" aria-labelledby="ndReportTitle">
+  <div class="nd-overlay-card" id="ndReportCard">
+    <div class="nd-overlay-head">
+      <div class="grow">
+        <div class="eyebrow">REPORT / 报告全文（只读）</div>
+        <h3 id="ndReportTitle">报告</h3>
+        <div class="nd-diff-meta" id="ndReportMeta"></div>
+      </div>
+      <button class="btn btn-ghost btn-sm nd-overlay-close" id="ndReportClose" type="button" aria-label="关闭报告浮窗">关闭 ×</button>
+    </div>
+    <div class="nd-overlay-body">
+      <pre class="nd-report-pre" id="ndReportBody">—</pre>
+      <div class="foot-note" id="ndReportNote"></div>
+    </div>
+  </div>
 </dialog>
 <noscript><div class="banner bad">本界面需要启用 JavaScript。</div></noscript>
 <script src="run-view-state.js"></script>
@@ -453,6 +511,7 @@
 <script src="context-explain.js"></script>
 <script src="s0.js"></script>
 <script src="agent-window.js"></script>
+<script src="report-viewer.js"></script>
 <script src="node-detail.js"></script>
 <script src="app.js"></script>
 </body>

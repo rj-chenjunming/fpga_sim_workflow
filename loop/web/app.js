@@ -925,10 +925,31 @@
   /* ------------------------------------------------------------------ *
    * 提交运行
    * ------------------------------------------------------------------ */
+  /* POST /api/runs 在 real 模式下会**同步**跑 N0–N3（真实模型，几分钟），
+     客户端 15 s 超时 ≠ 服务端没建 run。超时后按运行列表核对并接入，
+     避免把"已启动"显示成"启动失败"（SPEC-04 §7.2，2026-10-23）。 */
+  async function recoverRunAfterTimeout(knownIds) {
+    for (var i = 0; i < 120; i++) {
+      await new Promise(function (resolve) { setTimeout(resolve, 2000); });
+      try {
+        var body = await api("/api/runs");
+        var runs = (body && body.runs) || [];
+        for (var j = 0; j < runs.length; j++) {
+          var id = runs[j] && runs[j].run_id;
+          if (id && knownIds.indexOf(id) < 0) return id;
+        }
+      } catch (e) {
+        /* 轮询失败继续，最终按超时报错 */
+      }
+    }
+    return null;
+  }
+
   async function submitSetup() {
     if (state.setup.submitting || !canStart()) return;
     state.setup.submitting = true;
     state.setup.error = null;
+    var knownIds = (state.runs || []).map(function (r) { return r && r.run_id; });
     renderSetup();
     try {
       var body = {
@@ -939,12 +960,25 @@
       };
       var now = String(state.setup.now || "").trim();
       if (now) body.now = now;
-      var run = await api("/api/runs", { method: "POST", body: body });
+      var run = await api("/api/runs", { method: "POST", body: body }, 20000);
       if (!run || !run.run_id) throw new Error("服务端未返回 run_id");
       toast("已创建运行：" + run.run_id);
       try { await loadRuns(); } catch (eLoad) { /* 列表刷新失败不阻断进入运行视图 */ }
       await openRun(run.run_id);
     } catch (e) {
+      var timedOut = /请求超时/.test(String(e && e.message));
+      if (timedOut) {
+        toast("启动请求超时，正在核对服务端是否已创建运行…");
+        var recovered = await recoverRunAfterTimeout(knownIds);
+        if (recovered) {
+          state.setup.submitting = false;
+          renderSetup();
+          toast("运行已在服务端启动：" + recovered + "（客户端超时，已自动接入）");
+          try { await loadRuns(); } catch (eLoad2) { /* 同上 */ }
+          await openRun(recovered);
+          return;
+        }
+      }
       state.setup.error = errText(e);
       toast("启动失败：" + e.message);
     } finally {
@@ -1147,16 +1181,24 @@
     return STAGE_FALLBACK;
   }
 
+  /* 待处理中断的统一投影。两种类型必须分开（2026-10-23）：
+   *   gate_decision → 有待决策闸门（gate 有值，可提交）；
+   *   job_done      → 在等外部长任务（gate 为空、node=作业节点，**不是闸门**）。
+   * 早先把 job_done 的 id 前缀 `JOB` 当成 gate，导致「人工闸门」渲染出一个
+   * 「服务端未下发决策选项 ⇒ 不可提交」的假表单。gate 只认 payload.gate。 */
   function pendingInfo(v) {
     var raw = v && v.pending_interrupt;
     if (!raw || typeof raw !== "object") return null;
     var payload = raw.payload && typeof raw.payload === "object" ? raw.payload : {};
-    var gate = payload.gate || (typeof raw.id === "string" ? raw.id.split(":")[0] : "");
-    if (!gate) return null;
-    var node = payload.gate_node || nodeOfGate(gate);
+    var kind = raw.type === "job_done" ? "job" : (raw.type === "gate_decision" ? "gate" : "");
+    var gate = payload.gate ? String(payload.gate) : "";
+    var node = payload.gate_node || (gate ? nodeOfGate(gate) : "") || payload.node || "";
+    if (!gate && !node && !kind) return null;
+    if (kind === "gate" && !gate) return null;
     return {
       raw: raw,
-      gate: String(gate),
+      kind: kind || (gate ? "gate" : "job"),
+      gate: gate,
       node: node ? String(node) : "",
       payload: payload,
       cycle: payload.cycle !== undefined && payload.cycle !== null ? payload.cycle : null,
@@ -1655,7 +1697,7 @@
     var body = $("gateCardBody");
     if (!card || !body) return;
     var pending = pendingInfo(v);
-    if (!pending || !pending.gate) {
+    if (!pending || pending.kind !== "gate" || !pending.gate) {
       card.classList.add("hidden");
       clearEl(body);
       body.removeAttribute("data-gate-key");
@@ -1851,9 +1893,13 @@
       return;
     }
     var pending = pendingInfo(v);
+    var isGate = !!(pending && pending.kind === "gate" && pending.gate);
+    var isJob = !!(pending && pending.kind === "job");
     var pill = h("span", "status-pill " + (pending ? "wait" : statusKind(v.status)));
     if (pending) pill.appendChild(h("span", "pulse"));
-    pill.appendChild(document.createTextNode(" " + (pending ? "等待人工 · " + gateTitle(pending.gate) : statusLabel(v.status))));
+    pill.appendChild(document.createTextNode(" " + (isGate
+      ? "等待人工 · " + gateTitle(pending.gate)
+      : (isJob ? "等待外部作业 · " + (pending.node || "长任务") : statusLabel(v.status)))));
     host.appendChild(pill);
     host.appendChild(h("span", "chip", v.mode || "—"));
     host.appendChild(s0SourceChip(v));
@@ -2261,6 +2307,28 @@
     } else {
       extras.appendChild(materialExtraRow("N3 摘要 n3_digest.md", n3));
     }
+    /* P-28 + 裁决 #8：G2 是"人验收报告"，人必须能从材料区**一次点击**打开本 run 的报告全文。
+     * 只读：交给公共 report-viewer.js（独立只读浮窗，GET …/report 白名单），
+     * 不在闸门视图复制第二套取正文逻辑，也不新增任何写动作。 */
+    var reportInfo = payload.report && payload.report.n12_report;
+    if (reportInfo) {
+      var reportRow = materialExtraRow(
+        "N12 报告全文（只读浮窗）",
+        reportInfo.report_path ? { path: String(reportInfo.report_path) } : null
+      );
+      var openReportBtn = h("button", "btn btn-sm", "查看报告全文");
+      openReportBtn.type = "button";
+      openReportBtn.title = "只读：白名单仅本 run 的 n12_report.md（SPEC-04 §6.8）";
+      openReportBtn.addEventListener("click", function () {
+        if (window.ReportViewer) {
+          window.ReportViewer.open(state.runId, api, openReportBtn);
+          return;
+        }
+        toast("报告浮窗模块未加载（report-viewer.js）");
+      });
+      reportRow.appendChild(openReportBtn);
+      extras.appendChild(reportRow);
+    }
     var host2 = payload.host_trace;
     if (!host2) {
       extras.appendChild(materialExtraRow("Host 留痕", null));
@@ -2277,30 +2345,131 @@
     host.appendChild(extras);
   }
 
-  /* 逐条处置通道提示：v1 无逐条输入控件，就显式说"该门需走 API"并给可复制样例，不让人盲签。 */
-  function renderEntryDecisionHint(host, pending, entries) {
-    var payload = pending && pending.payload ? pending.payload : {};
-    if (payload.entry_decisions_required !== true) return;
-    var sample = {
-      decision: "<从上方服务端选项选择>",
-      actor: "human:<name>",
-      reason: "<ignored / disputed 必填>",
-      entry_decisions: {}
-    };
-    entries.forEach(function (entry) {
-      if (!entry || !entry.entry_id) return;
-      sample.entry_decisions[String(entry.entry_id)] =
-        { decision: "<confirmed | ignored | disputed>", reason: "<ignored / disputed 必填>" };
+  /* ---------------- 逐条处置控件（SPEC-04 §4.4，2026-10-23 增补） ----------------
+   * 每个唯一 entry_id 一组处置单选 + 本条理由；选项一律取服务端 decision_options。
+   * 整门决策由逐条处置推导（gate-session.deriveEntryDecision，口径同 gates.py）；
+   * 覆盖不全/取值非法由服务端 I1 最终判定，前端只做提交前提示。
+   * 本段不判定、不排序、不隐藏条目。
+   * ------------------------------------------------------------------------ */
+  function entryDecisionsRequired(pending) {
+    var p = pending && pending.payload ? pending.payload : {};
+    return p.entry_decisions_required === true;
+  }
+
+  function entryRows(pending) {
+    var d = diffPayloadOf(pending);
+    var entries = d && Array.isArray(d.entries) ? d.entries : [];
+    var order = [];
+    var byId = {};
+    entries.forEach(function (e) {
+      if (!e || !e.entry_id) return;
+      var id = String(e.entry_id);
+      if (!byId[id]) { byId[id] = { id: id, kinds: [], unresolved: false }; order.push(byId[id]); }
+      var row = byId[id];
+      if (e.kind && row.kinds.indexOf(String(e.kind)) < 0) row.kinds.push(String(e.kind));
+      if (e.unresolved) row.unresolved = true;
     });
-    var box = h("div", "alert warn");
-    box.appendChild(h("b", null, "该门要求逐条处置（entry_decisions）："));
-    box.appendChild(document.createTextNode(
-      "当前界面 v1 未提供逐条输入控件，不得盲签；请通过 API 提交，且必须覆盖全部差异条目。"));
-    var pre = h("pre", "entry-decisions-sample");
-    pre.textContent = "POST /api/runs/" + state.runId + "/gates/" + String(pending.gate) + "/decision\n" +
-      JSON.stringify(sample, null, 2);
-    box.appendChild(pre);
-    host.appendChild(box);
+    return order;
+  }
+
+  function entryOptionLabel(options, value) {
+    for (var i = 0; i < (options || []).length; i++) {
+      if (options[i] && String(options[i].value) === String(value)) {
+        return String(options[i].label || options[i].value);
+      }
+    }
+    return String(value);
+  }
+
+  function entryDraftOf(id) {
+    if (!state.gateDraft.entryDecisions) state.gateDraft.entryDecisions = {};
+    var cur = state.gateDraft.entryDecisions[id];
+    if (!cur || typeof cur !== "object") cur = { decision: null, reason: "" };
+    if (typeof cur.reason !== "string") cur.reason = cur.reason == null ? "" : String(cur.reason);
+    state.gateDraft.entryDecisions[id] = cur;
+    return cur;
+  }
+
+  function derivedEntryDecision(pending) {
+    var rows = entryRows(pending);
+    return window.GateSession.deriveEntryDecision(rows.map(function (r) {
+      return entryDraftOf(r.id).decision || null;
+    }));
+  }
+
+  function setEntryDecision(id, value) {
+    entryDraftOf(id).decision = value;
+    var derived = derivedEntryDecision(pendingInfo(state.viewData) || {});
+    if (derived) state.gateDraft.decision = derived;
+    syncGateForms();
+  }
+
+  function renderEntryDecisionControls(container, pending, options) {
+    clearEl(container);
+    if (!entryDecisionsRequired(pending)) return;
+    var rows = entryRows(pending);
+    var values = (options || []).map(function (o) { return String(o.value); });
+    if (!rows.length || !values.length) return;  // 无法生成控件：材料区给 API 提示
+    var box = h("div", "gate-entries-box");
+    box.appendChild(h("div", "gate-entries-head", "逐条处置（I1：覆盖全部 " + rows.length + " 个条目）"));
+    box.appendChild(h("div", "muted tiny",
+      "每条选一个处置；ignored / disputed 必须写理由。整门决策由此推导，最终由服务端判定。"));
+    var groupId = container.id || "entries";
+    rows.forEach(function (row) {
+      var line = h("div", "gate-entry");
+      line.setAttribute("data-entry-id", row.id);
+      var head = h("div", "gate-entry-head");
+      head.appendChild(h("b", "mono", row.id));
+      if (row.kinds.length) head.appendChild(h("span", "muted tiny", " · " + row.kinds.join(" + ")));
+      if (row.unresolved) head.appendChild(chipEl("未决", "warn"));
+      line.appendChild(head);
+      var opts = h("div", "gate-entry-options");
+      values.forEach(function (value) {
+        var label = h("label", "option");
+        var input = h("input");
+        input.type = "radio";
+        input.name = "entry-" + groupId + "-" + row.id;
+        input.value = value;
+        input.addEventListener("change", function () { setEntryDecision(row.id, value); });
+        label.appendChild(input);
+        label.appendChild(h("span", "radio"));
+        label.appendChild(h("span", null, entryOptionLabel(options, value)));
+        opts.appendChild(label);
+      });
+      line.appendChild(opts);
+      var reason = h("input", "input mono gate-entry-reason");
+      reason.placeholder = "本条理由（ignored / disputed 必填）";
+      reason.setAttribute("aria-label", "条目理由 " + row.id);
+      reason.addEventListener("input", function () {
+        entryDraftOf(row.id).reason = reason.value;
+        syncGateForms();
+      });
+      line.appendChild(reason);
+      box.appendChild(line);
+    });
+    container.appendChild(box);
+  }
+
+  function syncEntryDecisionControls(container, pending) {
+    if (!entryDecisionsRequired(pending)) return;
+    var d = state.gateDraft;
+    var lines = container.querySelectorAll(".gate-entry");
+    for (var i = 0; i < lines.length; i++) {
+      var id = lines[i].getAttribute("data-entry-id");
+      var cur = (d.entryDecisions && d.entryDecisions[id]) || {};
+      var inputs = lines[i].querySelectorAll('input[type="radio"]');
+      for (var j = 0; j < inputs.length; j++) {
+        var on = String(inputs[j].value) === String(cur.decision || "");
+        inputs[j].checked = on;
+        inputs[j].disabled = d.submitting;
+        if (inputs[j].parentNode) inputs[j].parentNode.classList.toggle("on", on);
+      }
+      var reason = lines[i].querySelector(".gate-entry-reason");
+      if (reason) {
+        if (reason.value !== String(cur.reason || "")) reason.value = String(cur.reason || "");
+        reason.disabled = d.submitting;
+      }
+    }
   }
 
   function renderDiffEntries(host, pending, opts) {
@@ -2364,7 +2533,6 @@
     });
     host.appendChild(list);
     if (d.path) host.appendChild(h("div", "foot-note mono", String(d.path)));
-    renderEntryDecisionHint(host, pending, entries);
     renderMaterialExtras(host, pending);
   }
 
@@ -2381,6 +2549,15 @@
       return;
     }
     var pending = pendingInfo(v);
+    if (pending && pending.kind === "job") {
+      /* 长任务停放（job_done 中断）：不是闸门，不得渲染决策表单。 */
+      addKV(host, "运行状态", statusLabel(v.status));
+      if (pending.node) addKV(host, "作业节点", pending.node);
+      if (pending.payload && pending.payload.job_id) addKV(host, "作业", String(pending.payload.job_id));
+      host.appendChild(h("div", "alert warn",
+        "当前运行在等待外部作业完成（" + (pending.node || "长任务") + "），不是人工闸门；作业结束后会自动继续。"));
+      return;
+    }
     if (!pending) {
       host.appendChild(h("div", "muted tiny", "当前运行没有待决策的闸门。"));
       addKV(host, "运行状态", statusLabel(v.status));
@@ -2480,7 +2657,14 @@
       return;
     }
     var pending = pendingInfo(v);
-    if (!pending || !pending.gate) {
+    if (pending && pending.kind === "job") {
+      clearEl(host);
+      host.removeAttribute("data-gate-key");
+      host.appendChild(h("div", "muted tiny", "当前运行在等待外部作业（" +
+        (pending.node || "长任务") + "），没有待决策闸门。"));
+      return;
+    }
+    if (!pending || pending.kind !== "gate" || !pending.gate) {
       clearEl(host);
       host.removeAttribute("data-gate-key");
       host.appendChild(h("div", "muted tiny", "当前运行没有待决策闸门。"));
@@ -2532,6 +2716,14 @@
     }
 
     var options = gateOptionsFor(pending);
+    /* G1 逐条处置（SPEC-04 §4.4 2026-10-23）：先逐条选，再整门提交。
+       紧凑卡片只放材料摘要，逐条控件放在完整闸门视图，避免两处重复渲染。 */
+    if (!compact) {
+      var entryHost = h("div", "gate-entries-host");
+      entryHost.id = "gateEntries";
+      renderEntryDecisionControls(entryHost, pending, options);
+      if (entryHost.childNodes.length) form.appendChild(entryHost);
+    }
     var list = h("div", "gate-options");
     if (!options.length) {
       list.appendChild(h("div", "alert bad", "服务端未下发决策选项（gate_options / decision_options 缺失）⇒ 不可提交。"));
@@ -2606,7 +2798,9 @@
     var options = gateOptionsFor(pending);
     var d = state.gateDraft;
     d.submitting = window.GateSession.isSubmitting(state.gateSubmissions, d.key);
-    var labels = form.querySelectorAll(".option");
+    /* 只同步整门决策单选；逐条处置单选由 syncEntryDecisionControls 单独同步，
+       避免两套 radio 互相覆盖（SPEC-04 §4.4 2026-10-23）。 */
+    var labels = form.querySelectorAll(".gate-options .option");
     for (var i = 0; i < labels.length; i++) {
       var input = labels[i].querySelector("input");
       var on = !!(input && d.decision === input.value);
@@ -2625,8 +2819,11 @@
     var submit = form.querySelector("[data-gate-submit]");
     if (submit) {
       var offered = options.some(function (o) { return o.value === d.decision; });
-      submit.disabled = !offered || d.submitting;
-      submit.textContent = d.submitting ? "提交中…" : "提交闸门决策";
+      var needEntries = entryDecisionsRequired(pending) && entryRows(pending).length > 0;
+      var entriesReady = !needEntries || !!derivedEntryDecision(pending);
+      submit.disabled = !offered || d.submitting || !entriesReady;
+      submit.textContent = d.submitting ? "提交中…"
+        : (!entriesReady ? "请先逐条处置全部条目" : "提交闸门决策");
     }
     var errorBox = form.querySelector("[data-gate-error]");
     if (errorBox) {
@@ -2649,6 +2846,7 @@
         }
       }
     }
+    syncEntryDecisionControls(form, pending);
   }
 
   function syncGateForms() {
@@ -2673,7 +2871,7 @@
 
   async function submitGate() {
     var pending = pendingInfo(state.viewData);
-    if (!pending || !pending.gate) {
+    if (!pending || pending.kind !== "gate" || !pending.gate) {
       toast("当前没有待决策闸门");
       return;
     }
@@ -2704,6 +2902,40 @@
       syncGateForms();
       return;
     }
+    var requestBody = {
+      decision: d.decision,
+      actor: String(d.actor || "").trim(),
+      reason: String(d.reason || "").trim() || null
+    };
+    /* G1 逐条处置：覆盖全部唯一 entry_id 才提交；覆盖不全/理由缺失就地拦下，
+       仍以服务端 I1 判定为权威（SPEC-04 §4.4 2026-10-23）。 */
+    if (entryDecisionsRequired(pending)) {
+      var entryList = entryRows(pending);
+      if (entryList.length) {
+        var checkedEntries = window.GateSession.validateEntryDecisions(
+          d.entryDecisions,
+          entryList.map(function (r) { return r.id; }),
+          options.map(function (o) { return String(o.value); })
+        );
+        if (!checkedEntries.ok) {
+          d.error = checkedEntries.error;
+          d.blockers = null;
+          d.note = null;
+          syncGateForms();
+          return;
+        }
+        var derivedDecision = derivedEntryDecision(pending);
+        if (derivedDecision && derivedDecision !== d.decision) {
+          d.error = "逐条处置推导出的整门决策是 " + derivedDecision
+            + "，与当前选择 " + d.decision + " 不一致；请调整后重试。";
+          d.blockers = null;
+          d.note = null;
+          syncGateForms();
+          return;
+        }
+        requestBody.entry_decisions = checkedEntries.entry_decisions;
+      }
+    }
     d.submitting = true;
     state.gateSubmissions = window.GateSession.beginSubmission(state.gateSubmissions, d.key).ledger;
     d.error = null;
@@ -2720,11 +2952,7 @@
     try {
       await api("/api/runs/" + enc(runId) + "/gates/" + enc(pending.gate) + "/decision", {
         method: "POST",
-        body: {
-          decision: d.decision,
-          actor: String(d.actor || "").trim(),
-          reason: String(d.reason || "").trim() || null
-        }
+        body: requestBody
       });
       if (!currentSubmission()) return;
       toast("闸门决策已提交：" + pending.gate + " · " + d.decision);
@@ -3112,6 +3340,82 @@
     var btnDirChoose = $("btnDirChoose");
     if (btnDirChoose) btnDirChoose.addEventListener("click", chooseDir);
   }
+
+  /* ---------------- 节点面板 ↔ 闸门草稿桥（SPEC-REV-02 §4，2026-10-23 新增） ----------------
+   * 唯一职责：让节点面板把逐条勾选/理由写进**同一份** state.gateDraft.entryDecisions，
+   * 供闸门视图现有表单提交（提交入口只有那里）。桥本身不判定、不发请求、不复制提交逻辑；
+   * 覆盖与推导复用 GateSession.validateEntryDecisions / deriveEntryDecision（口径同 gates.py）。
+   * 本段只新增，不改动既有闸门逻辑/样式/渲染路径。
+   * ------------------------------------------------------------------------ */
+  function bridgePending() {
+    var pending = pendingInfo(state.viewData);
+    if (!pending || pending.kind !== "gate" || !pending.gate) return null;
+    ensureDraft(pending);
+    return pending;
+  }
+
+  window.GateDraftBridge = {
+    required: function () {
+      var pending = pendingInfo(state.viewData);
+      return !!(pending && pending.kind === "gate" && entryDecisionsRequired(pending));
+    },
+    options: function () {
+      var pending = pendingInfo(state.viewData);
+      if (!pending || pending.kind !== "gate") return [];
+      return gateOptionsFor(pending).map(function (option) {
+        return {
+          value: String(option.value),
+          label: String(option.label || option.value),
+          requires_reason: option.requires_reason === true
+        };
+      });
+    },
+    rows: function () {
+      var pending = pendingInfo(state.viewData);
+      if (!pending || pending.kind !== "gate") return [];
+      return entryRows(pending).map(function (row) {
+        return { id: row.id, kinds: row.kinds.slice(), unresolved: !!row.unresolved };
+      });
+    },
+    get: function (id) {
+      var store = state.gateDraft && state.gateDraft.entryDecisions ? state.gateDraft.entryDecisions : {};
+      var current = store[String(id)];
+      return current && typeof current === "object"
+        ? { decision: current.decision || null, reason: current.reason || "" }
+        : { decision: null, reason: "" };
+    },
+    set: function (id, decision, reason) {
+      var pending = bridgePending();
+      if (!pending) return null;
+      var current = entryDraftOf(String(id));
+      current.decision = decision === null || decision === undefined || decision === "" ? null : String(decision);
+      current.reason = reason === null || reason === undefined ? "" : String(reason);
+      var derived = derivedEntryDecision(pending);
+      if (derived) state.gateDraft.decision = derived;
+      syncGateForms();
+      return window.GateDraftBridge.get(id);
+    },
+    counts: function () {
+      var pending = bridgePending();
+      var store = state.gateDraft && state.gateDraft.entryDecisions ? state.gateDraft.entryDecisions : {};
+      if (!pending) return { entries: 0, disposed: 0, complete: false, error: "当前没有待决策闸门" };
+      var ids = entryRows(pending).map(function (row) { return row.id; });
+      var allowed = gateOptionsFor(pending).map(function (option) { return String(option.value); });
+      var disposed = 0;
+      ids.forEach(function (id) {
+        var current = store[id];
+        if (current && allowed.indexOf(String(current.decision || "")) >= 0) disposed++;
+      });
+      var check = window.GateSession.validateEntryDecisions(store, ids, allowed);
+      return {
+        entries: ids.length,
+        disposed: disposed,
+        complete: !!(check && check.ok),
+        error: check ? check.error : null
+      };
+    },
+    openGateView: function () { showView("gate"); }
+  };
 
   async function init() {
     bindStatic();

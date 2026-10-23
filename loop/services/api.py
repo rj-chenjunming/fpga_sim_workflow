@@ -323,7 +323,7 @@ def get_events(run_id: str, since_seq: int = Query(default=0, ge=0)) -> dict[str
 def get_node_detail(run_id: str, node: str) -> dict[str, Any]:
     """节点执行详情投影（SPEC-02 §10.4 / SPEC-04 §6.7）。
 
-    只读：不写盘、不触发重跑、不返回文件内容。
+    只读：不写盘、不触发重跑、不返回文件内容（唯一例外 = P-28 的报告只读端点）。
     - 未知 run ⇒ 404（`detail.error`）；
     - 未知节点 ⇒ **200** + `known=false` 的空投影（不用 404 冒充"节点不存在"）。
     """
@@ -331,13 +331,133 @@ def get_node_detail(run_id: str, node: str) -> dict[str, Any]:
     doc = manager.docs.get(run_id)
     if doc is None:
         raise HTTPException(status_code=404, detail={"error": f"未知 run_id：{run_id}"})
+    run_dir = getattr(doc, "run_dir", None)
+    events = ProgressLog(P.EVENTS_DIR, run_id).read()
+    # 运行视图只用于三件事：运行态（P-30 未到达）、闸门逐条材料（P-17/P-18）、
+    # 以及闸门权威决策（P-15/P-16）。判定仍只在服务端既有实现里，这里不新算判据。
+    try:
+        view = manager.run_view(run_id)
+    except KeyError:
+        view = None
+    gate = None
+    gate_id = node_view.GATE_ID_BY_NODE.get(node)
+    if gate_id and isinstance(view, dict):
+        from services import contracts
+
+        def _last_terminal_detail(target: str) -> dict[str, Any]:
+            """该节点最后一条 node_finished 的 detail（只读事件流；无 ⇒ 空字典）。"""
+            found: dict[str, Any] = {}
+            for event in events:
+                if event.get("node") == target and event.get("kind") == "node_finished":
+                    detail = event.get("detail")
+                    if isinstance(detail, dict):
+                        found = detail
+            return found
+
+        # 裁决 #2：G2/G3 的只读待确认项来自服务端既有材料（N12 未闭环项 / N15_select 选集）。
+        n12_detail = _last_terminal_detail("N12")
+        select_detail = _last_terminal_detail("N15_select")
+        gate = contracts.gate_entries_view(
+            gate=gate_id,
+            run_dir=Path(run_dir) if run_dir else None,
+            diff=view.get("difference_items"),
+            pending_interrupt=view.get("pending_interrupt"),
+            gate_options=view.get("gate_options"),
+            authority=((view.get("gates_authority") or {}).get("gates") or {}).get(gate_id),
+            node_events=[event for event in events if event.get("node") == node],
+            mode=view.get("mode"),
+            run_status=view.get("status"),
+            case_states=view.get("case_states"),
+            conflicts=view.get("conflicts"),
+            blockers=view.get("blockers"),
+            n12_open_items=n12_detail.get("open_items"),
+            selected_cases=select_detail.get("cases"),
+        )
+    report = _report_block(run_dir) if node == "N12" else None
     return node_view.build_node_detail(
         run_id,
         node,
-        events=ProgressLog(P.EVENTS_DIR, run_id).read(),
+        events=events,
         run_doc={"mode": doc.mode, "s0_record_id": getattr(doc, "s0_record_id", None)},
-        run_dir=getattr(doc, "run_dir", None),
+        run_dir=run_dir,
+        run_view=view,
+        gate=gate,
+        report=report,
     )
+
+
+# ---------------------------------------------------------------- P-28 报告只读视图
+
+#: 报告只读端点的白名单：唯一允许的文件名（不接受任意路径）。
+REPORT_WHITELIST: frozenset[str] = frozenset({"n12_report.md"})
+#: 正文大小上限：超出即截断并标 `truncated=true`（不报 500）。
+REPORT_MAX_BYTES = 512 * 1024
+
+
+def _report_path(run_dir: str | Path | None, name: str) -> Path:
+    """把白名单名解析成 run 目录内的真实路径；越界一律拒绝（防符号链接/`..`）。"""
+    import os
+
+    if name not in REPORT_WHITELIST:
+        raise HTTPException(status_code=403, detail={
+            "error": f"报告路径不在白名单：{name!r}；只允许 {sorted(REPORT_WHITELIST)}",
+        })
+    if run_dir is None:
+        raise HTTPException(status_code=404, detail={"error": "运行目录未下发"})
+    base = os.path.realpath(str(run_dir))
+    target = os.path.realpath(os.path.join(base, name))
+    if target != os.path.join(base, name) or os.path.dirname(target) != base:
+        raise HTTPException(status_code=403, detail={"error": "报告路径越出 run 目录，已拒绝"})
+    return Path(target)
+
+
+def _report_block(run_dir: str | Path | None) -> dict[str, Any] | None:
+    """N12 面板的报告入口（存在性 + 字节数；**不含正文**）。"""
+    if run_dir is None:
+        return None
+    try:
+        target = _report_path(run_dir, "n12_report.md")
+    except HTTPException:
+        return None
+    if not target.is_file():
+        return {"file": "n12_report.md", "available": False, "bytes": None}
+    try:
+        size = target.stat().st_size
+    except OSError:
+        return {"file": "n12_report.md", "available": False, "bytes": None}
+    return {"file": "n12_report.md", "available": True, "bytes": size}
+
+
+@app.get("/api/runs/{run_id}/report")
+def get_run_report(run_id: str, path: str | None = Query(default=None)) -> dict[str, Any]:
+    """本轮报告全文（P-28）：**白名单 + 只读 + 大小上限 + 不越 run 目录**。
+
+    只给本 run 的 `n12_report.md`；`path` 参数只接受白名单值（其余 403），
+    不开放任意路径探测。正文超过上限即截断并标 `truncated=true`。
+    """
+    manager = _manager()
+    doc = manager.docs.get(run_id)
+    if doc is None:
+        raise HTTPException(status_code=404, detail={"error": f"未知 run_id：{run_id}"})
+    name = path or "n12_report.md"
+    target = _report_path(getattr(doc, "run_dir", None), name)
+    if not target.is_file():
+        raise HTTPException(status_code=404, detail={"error": "本轮没有报告文件（n12_report.md）"})
+    try:
+        data = target.read_bytes()
+    except OSError as exc:
+        raise HTTPException(status_code=422, detail={"error": f"报告读取失败：{exc}"}) from exc
+    truncated = len(data) > REPORT_MAX_BYTES
+    text = data[:REPORT_MAX_BYTES].decode("utf-8", errors="replace")
+    return {
+        "run_id": run_id,
+        "file": name,
+        "path": str(target),
+        "bytes": len(data),
+        "truncated": truncated,
+        "content": text,
+        "authority": "projection",
+    }
 
 
 # ---------------------------------------------------------------- gates

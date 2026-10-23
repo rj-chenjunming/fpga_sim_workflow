@@ -19,6 +19,8 @@
 | [`FIX_ACCEPTANCE_20261019.md`](FIX_ACCEPTANCE_20261019.md) | 审计阻断级 22 条 + F-01/F-02 修复轮的门禁证据 | 四道门全绿：pytest **197 passed**、kb 自测 10/9/7/16/13、端到端 **117/117 rc=0**、文档链接 missing=0；含审计项→修复落点→回归测试映射 |
 | [`REAL_RUN_20261022.md`](REAL_RUN_20261022.md) | **真实模式（real）完整轮**：可写环境副本 + live 模型 + UVS 真机编译/全跑；暴露 JobRunner rc 缺陷（已修）与 G2 accept 不可达（登记）；停 G2，N16 不可达 | N9 真机全跑 3 例 rc=0 / 1465s；口径一 1687、UVM_ERROR 0；软件层 533 passed；冻结件 md5 见文内 §6 |
 | [`SPEC_REV_01_IMPL_20261022.md`](SPEC_REV_01_IMPL_20261022.md) | SPEC-REV-01（全节点投影 / G1 可判材料 / 节点面板 / S0 徽标 / N2 GB18030）的实现与实测证据 | 软件层 **523 passed**；浏览器 **55 passed**；kb 自测 37/37、9/9、10/10；文档门 `missing=0`；**端到端未运行**（`ENV_ROOT` 只读）；同会话集成，无独立终验 |
+| [`NODE_PANEL_REVISION_20261023.md`](NODE_PANEL_REVISION_20261023.md) | 节点面板统一修订（SPEC-REV-02 P-01～P-35）的实现与实测证据 | 软件层 **656 passed**；浏览器 **75 passed**；kb 自测 10/0、9/0；端到端 **117/117**；文档门 `missing=0`（数字见 STATUS §47/§48） |
+| [`NODE_PANEL_ROUND3_20261023.md`](NODE_PANEL_ROUND3_20261023.md) | 第三轮补充修订（R3-01～R3-18）实测证据：N6 印记可解析（P0）、闸门 hard_block 落账、story/前端补齐、一致性与清理 | 软件层 **695 passed**；浏览器 **85 passed**；kb 自测 10/0、9/0；端到端 **117/117**；文档门 `missing=0`（数字见 STATUS §50）；真机复核未执行（服务未重启） |
 | [`demo/`](demo/) | 团队演练（**只编译、不仿真**）冻结证据，共 32 件 | `accept/`（验收演练）、`evidence/`（编译/运行前证据）、`review/`（检查）、`guard/`（守护）、`TESTLIB_sandbox/`（沙箱用例）；入口 [`demo/README.md`](demo/README.md) |
 | [`demo/MIGRATION.md`](demo/MIGRATION.md) | 迁移记录：doc/agents/_demo/ → `doc/evidence/demo/` | 目录级 + 关键件级 old→new 映射、内容 md5 未变声明、内部历史路径字符串说明 |
 

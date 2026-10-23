@@ -132,3 +132,37 @@ def test_summary_prefers_conclusion_line(tmp_path: Path) -> None:
               _ev(2, 20, "N8", "node_finished", "ok")]
     agent = _by_role(build_agents(events, run_dir=tmp_path, now=21))["checker"]
     assert "5 通过 / 0 退回" in agent["summary"]
+
+
+def test_job_interrupt_without_gate_does_not_mark_roles_waiting(tmp_path: Path) -> None:
+    """job_done 中断没有 payload.gate：不得把模型角色标成 waiting（2026-10-23）。
+
+    回归：`GATE_NODES.get(非闸门节点) is None` 与 `gate is None` 相等，曾让
+    N3/N6/N8 等角色恒为 "waiting"，阶段标签因此误显示「等待人工」。
+    """
+    events = [
+        _ev(1, 100, "N3", "node_started", "running"),
+        _ev(2, 112, "N3", "node_finished", "ok", {"mode": "live"}),
+        _ev(3, 200, "N9", "node_started", "running"),
+    ]
+    job = {"job_id": "J-1", "phase": "running"}
+    pending = {"id": "JOB:J-1", "type": "job_done",
+               "payload": {"job_id": "J-1", "node": "N9", "wait_reason": "长任务"}}
+    agents = _by_role(build_agents(events, run_dir=tmp_path, pending_interrupt=pending,
+                                   job=job, now=215))
+    assert agents["analyst"]["status"] == "done", "N3 已结束，不得因 job 中断变 waiting"
+    assert agents["author"]["status"] == "idle"
+    assert agents["checker"]["status"] == "idle"
+
+
+def test_real_gate_interrupt_still_marks_gate_role_waiting(tmp_path: Path) -> None:
+    events = [
+        _ev(1, 100, "N3", "node_started", "running"),
+        _ev(2, 112, "N3", "node_finished", "ok"),
+    ]
+    pending = {"id": "G1:0", "type": "gate_decision",
+               "payload": {"gate": "G1_diff_confirm", "gate_node": "N4"}}
+    agents = _by_role(build_agents(events, run_dir=tmp_path, pending_interrupt=pending, now=120))
+    assert agents["analyst"]["status"] == "done"
+    # 闸门节点 N4 不在模型角色里，但真闸门不得把其他角色误标 waiting
+    assert agents["author"]["status"] == "idle"

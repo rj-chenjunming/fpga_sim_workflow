@@ -87,6 +87,16 @@ else
   fi
 fi
 
+# 安静模式：脚本自带 `-q` 只为输出紧凑；但调用方也传 `-q` 时会拼成 `-qq`，
+# pytest 的 `-qq` 会**吞掉 "N passed" 汇总行**（实测见 STATUS §47.3 第 6 条）。
+# 因此只有调用方没给 quiet 参数时才加 `-q`（R3-14）。
+QUIET_ARGS=(-q)
+for _arg in "$@"; do
+  case "$_arg" in
+    -q|--quiet|-qq|-qqq) QUIET_ARGS=(); break ;;
+  esac
+done
+
 LOOP_WORKSPACE="$SHADOW" \
 LOOP_LLM_MODE="${LOOP_LLM_MODE:-standin}" \
-  "$PY" -m pytest -q "${MARK_ARGS[@]}" "$@"
+  "$PY" -m pytest "${QUIET_ARGS[@]}" "${MARK_ARGS[@]}" "$@"

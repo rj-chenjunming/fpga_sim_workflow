@@ -60,3 +60,23 @@ def test_gate_material_script_renders_n2_diff_entries() -> None:
         assert token in js, f"app.js 缺少差异清单渲染：{token}"
     css = _get("/app.css")
     assert ".diff-item" in css, "app.css 缺少差异条目样式"
+
+
+def test_gate_view_has_entry_decision_controls() -> None:
+    """G1 逐条处置必须有界面输入通道（SPEC-04 §4.4，2026-10-23 增补）。
+
+    `entry_decisions_required=true` 时，闸门表单必须为每个唯一 entry_id 渲染控件，
+    提交 payload 必须带 `entry_decisions`；选项一律取服务端下发，前端不得手抄枚举。
+    """
+    js = _get("/app.js")
+    for token in (
+        "entryDecisionsRequired",
+        "renderEntryDecisionControls",
+        "deriveEntryDecision",
+        "validateEntryDecisions",
+        "entry_decisions",
+        "gate-entry",
+    ):
+        assert token in js, f"app.js 缺少逐条处置通道：{token}"
+    css = _get("/app.css")
+    assert ".gate-entry" in css, "app.css 缺少逐条处置控件样式"

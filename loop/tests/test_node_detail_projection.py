@@ -29,7 +29,7 @@ HUMAN = "human:node-detail-test"
 SHAPE_KEYS = {
     "run_id", "node", "known", "name", "owner", "status", "kind",
     "started_at", "finished_at", "source", "summary", "detail",
-    "refs", "events", "missing_fields", "authority",
+    "refs", "events", "missing_fields", "authority", "story",
 }
 
 
@@ -519,3 +519,503 @@ def test_s0_record_id_invalid_is_400_without_side_effects(client: TestClient, ba
     assert "s0_record_id" in r.json()["detail"]["error"]
     # 拒绝发生在建运行之前 ⇒ 不得留下运行目录
     assert not (P.KB_RUNS / "RUN-20261022-080003").exists()
+
+
+# ---------------------------------------------------------------- 闸门二级清单（P-17/P-18/P-29）
+
+def _diff_entry(entry_id: str, kind: str, **over) -> dict[str, Any]:
+    """与 `contracts.diff_entries_view` 同形的差异条目（只给投影字段）。"""
+    base = {
+        "entry_id": entry_id, "kind": kind, "change": "modified", "unresolved": None,
+        "evidence": "baselines/v0/allfiles.md5:L1", "lines": [], "offset": None,
+        "offsets": [], "segment": None, "before": None, "after": None,
+        "diff_hunk": None, "encoding": None, "legacy_drill_fixture": False,
+    }
+    base.update(over)
+    return base
+
+
+def _waiting_material(entries: list[dict[str, Any]]) -> dict[str, Any]:
+    return {
+        "id": "G1_diff_confirm:0", "type": "gate_decision", "status": "pending",
+        "payload": {
+            "gate": "G1_diff_confirm", "cycle": 0, "mode": "drill",
+            "entry_decisions_required": True,
+            "difference_items": {
+                "entries": entries, "count": len(entries),
+                "unresolved_count": len([e for e in entries if e.get("unresolved")]),
+            },
+            "hard_block": [{"code": "I1_UNRESOLVED_ENTRIES", "severity": "blocker",
+                            "title": "N2 有 2 条未决差异条目", "message": "I1：…"}],
+        },
+    }
+
+
+def test_gate_entries_merge_md5_only_into_attached_evidence() -> None:
+    """同一文件的 allfile(md5) + rtl_file(hunk) 合并成 1 条修订点（P-11/P-18）。"""
+    from services import contracts
+
+    path = "RTL/SRC/imports/SRC/pcie_controller/pcie_register.v"
+    diff = {"entries": [
+        _diff_entry(path, "allfile", unresolved="②路无文本 hunk", before="5fcc", after="18fc"),
+        _diff_entry(path, "rtl_file", lines=[171, 172], offset="0xd04",
+                    diff_hunk="@@ -168,7 +168,8 @@", encoding="utf-8"),
+        _diff_entry("RTL/other.v", "rtl_file"),  # 另一个文件的纯行级条目
+    ], "unresolved_count": 1}
+    gate = contracts.gate_entries_view(
+        gate="G1_diff_confirm", diff=diff, pending_interrupt=_waiting_material(diff["entries"]),
+        gate_options={"G1_diff_confirm": [{"value": "confirmed", "label": "差异确认"}]},
+        mode="drill",
+    )
+    assert gate["state"] == "waiting"
+    assert gate["counts"]["revision_points"] == 2, "md5-only 附证据不得计入修订点"
+    assert gate["counts"]["entries"] == 2
+    first = gate["entries"][0]
+    assert first["entry_id"] == path
+    assert first["has_hunk"] is True and first["lines"] == [171, 172]
+    assert first["title"].startswith("内容有改动") and "171–172" in first["title"]
+    assert first["attached"] and first["attached"][0]["redundant_of"] == path
+    assert first["attached"][0]["kind"] == "allfile"
+    assert gate["counts"]["unresolved_points"] == 1, "需人工处置条数按唯一 entry_id 计"
+    assert gate["hard_block"] and gate["hard_block"][0]["code"] == "I1_UNRESOLVED_ENTRIES"
+    assert gate["entries_required"] is True
+
+
+def test_gate_entries_decided_reads_host_ledger(tmp_path: Path) -> None:
+    """已决策态：逐条处置来自 `decisions/<gate>.json`（不从 gates.json 猜）。"""
+    from services import contracts
+
+    path = "RTL/a.v"
+    (tmp_path / "decisions").mkdir()
+    (tmp_path / "decisions" / "G1_diff_confirm.json").write_text(json.dumps({
+        "schema": "loop/gate_entries", "gate": "G1_diff_confirm", "run_id": "RUN-X",
+        "records": [{"cycle": 0, "decided_at": "2026-10-23T10:00:00+08:00",
+                     "decision": "confirmed", "actor": HUMAN, "reason": "已核对",
+                     "entries": {path: {"decision": "confirmed", "reason": None}},
+                     # R3-04：Host 签署时一并落"当时的硬阻断"快照
+                     "hard_block": [{"code": "I1_UNRESOLVED_ENTRIES",
+                                     "title": "N2 有 1 条未决差异条目",
+                                     "message": "I1：有 1 条差异还没逐条处置"}]}],
+    }, ensure_ascii=False), encoding="utf-8")
+    diff = {"entries": [_diff_entry(path, "rtl_file", lines=[9],
+                                    diff_hunk="@@ -9,3 +9,4 @@")],
+            "unresolved_count": 0}
+    gate = contracts.gate_entries_view(
+        gate="G1_diff_confirm", run_dir=tmp_path, diff=diff,
+        authority={"status": "signed", "decision": "confirmed", "actor": HUMAN,
+                   "actor_kind": "human", "human_signed": True,
+                   "signed_at": "2026-10-23T10:00:00+08:00", "note": "已核对", "history_len": 1},
+        gate_options={"G1_diff_confirm": [{"value": "confirmed", "label": "差异确认"}]},
+        mode="real",
+    )
+    assert gate["state"] == "decided"
+    assert gate["decision"]["decision"] == "confirmed"
+    assert gate["decision"]["reason"] == "已核对"
+    assert gate["entries"][0]["disposition"] == {"decision": "confirmed", "reason": None}
+    assert gate["counts"]["disposed"] == 1
+    assert gate["note"] is None
+    # R3-04：已决策态的"当时的硬阻断"只从 ledger 快照读（不拿现在的 blockers 冒充当时）
+    assert gate["hard_block"] == [{"code": "I1_UNRESOLVED_ENTRIES",
+                                   "title": "N2 有 1 条未决差异条目",
+                                   "message": "I1：有 1 条差异还没逐条处置"}]
+    assert gate["counts"]["hard_block"] == 1
+
+
+def test_gate_decided_ledger_without_hard_block_says_not_retained(tmp_path: Path) -> None:
+    """R3-04：早于落账的旧 run（ledger 无 `hard_block` 键）⇒ 明说未留存，不写 0 冒充"没有硬阻断"。"""
+    from services import contracts
+
+    path = "RTL/a.v"
+    (tmp_path / "decisions").mkdir()
+    (tmp_path / "decisions" / "G1_diff_confirm.json").write_text(json.dumps({
+        "schema": "loop/gate_entries", "gate": "G1_diff_confirm", "run_id": "RUN-OLD",
+        "records": [{"cycle": 0, "decided_at": "2026-10-22T10:00:00+08:00",
+                     "decision": "confirmed", "actor": HUMAN, "reason": "旧 run",
+                     "entries": {path: {"decision": "confirmed", "reason": None}}}],
+    }, ensure_ascii=False), encoding="utf-8")
+    gate = contracts.gate_entries_view(
+        gate="G1_diff_confirm", run_dir=tmp_path,
+        diff={"entries": [_diff_entry(path, "rtl_file", diff_hunk="@@ -1 +1 @@")],
+              "unresolved_count": 0},
+        authority={"status": "signed", "decision": "confirmed", "actor": HUMAN},
+        mode="real",
+    )
+    assert gate["state"] == "decided"
+    assert gate["hard_block"] == []
+    assert gate["counts"]["hard_block"] is None, "未留存 ≠ 0 条"
+    assert gate["note"] and "当时的阻断项未留存" in gate["note"]
+    assert "逐条处置未留存" not in gate["note"], "逐条处置已落账，不得误报"
+
+
+def test_gate_entries_decided_without_ledger_says_not_retained(tmp_path: Path) -> None:
+    from services import contracts
+
+    diff = {"entries": [_diff_entry("RTL/a.v", "rtl_file", diff_hunk="@@ -1 +1 @@")],
+            "unresolved_count": 1}
+    gate = contracts.gate_entries_view(
+        gate="G1_diff_confirm", run_dir=tmp_path, diff=diff,
+        authority={"status": "signed", "decision": "confirmed", "actor": HUMAN},
+        mode="real",
+    )
+    assert gate["state"] == "decided"
+    assert gate["note"] and "未留存" in gate["note"]
+    assert gate["entries"][0]["disposition"] is None
+
+
+def test_gate_entries_no_material_is_explicit() -> None:
+    """G1 没材料 ⇒ 明说差异清单未下发；G2 没材料 ⇒ 明说待确认项未下发（口径不同，不混用）。"""
+    from services import contracts
+
+    g1 = contracts.gate_entries_view(gate="G1_diff_confirm", diff={}, mode="drill")
+    assert g1["state"] == "no_material"
+    assert g1["entries"] == [] and g1["counts"]["revision_points"] == 0
+    assert g1["note"] and "差异清单未下发" in g1["note"]
+
+    g2 = contracts.gate_entries_view(gate="G2_report_accept", diff={}, mode="drill")
+    assert g2["state"] == "no_material" and g2["entries"] == [] and g2["items"] == []
+    assert g2["note"] and "待确认项" in g2["note"]
+
+
+def test_node_detail_carries_run_status_and_waiting_gate_block(client: TestClient) -> None:
+    """等待态 N4 面板：run_status + 二级清单 + 硬阻断（P-29 数据面）。"""
+    rid = _start(client)
+    _wait_interrupt(client, rid, "G1_diff_confirm")
+    body = client.get(f"/api/runs/{rid}/nodes/N4").json()
+    assert body["run_status"] == "waiting_gate"
+    assert body["run_terminal"] is False
+    gate = body["gate"]
+    assert gate and gate["state"] == "waiting"
+    assert gate["counts"]["revision_points"] == len(gate["entries"]) >= 1
+    assert gate["decision"] is None
+    # drill 夹具不要求逐条处置（服务端 I1 只在 real 严格）；界面仍可勾选草稿。
+    assert gate["entries_required"] is False
+    assert all(entry.get("disposition") is None for entry in gate["entries"])
+    assert isinstance(gate["hard_block"], list)
+
+
+def test_node_detail_decided_gate_shows_dispositions(client: TestClient) -> None:
+    """已决策态：逐条处置从 `decisions/G1_diff_confirm.json` 回填（Host 落账）。"""
+    rid = _start(client)
+    _wait_interrupt(client, rid, "G1_diff_confirm")
+    _decide(client, rid, "G1_diff_confirm", "confirmed")
+    deadline = time.time() + 30
+    body: dict[str, Any] = {}
+    while time.time() < deadline:
+        body = client.get(f"/api/runs/{rid}/nodes/N4").json()
+        if body.get("gate") and body["gate"]["state"] == "decided":
+            break
+        time.sleep(0.2)
+    gate = body["gate"]
+    assert gate["state"] == "decided", body
+    assert gate["decision"]["decision"] == "confirmed"
+    assert gate["note"] is None, "Host 已落账 ⇒ 不得再报'逐条处置未留存'"
+    assert gate["counts"]["disposed"] == gate["counts"]["entries"] >= 1
+    assert all(entry["disposition"]["decision"] == "confirmed" for entry in gate["entries"])
+
+
+def test_node_started_present_flag(client: TestClient) -> None:
+    """P-33：提交型节点补 node_started 后，面板才能诚实说"有开始/结束区间"。"""
+    rid = _drive_full_chain(client)
+    for node in ("N0", "N9", "N9_submit"):
+        body = client.get(f"/api/runs/{rid}/nodes/{node}").json()
+        assert body["node_started_present"] is True, node
+
+
+def test_unreached_node_in_terminal_run(client: TestClient) -> None:
+    """P-30：运行已终态且节点无事件 ⇒ story.not_reached（不得说"等它跑完"）。"""
+    rid = _start(client)
+    _wait_interrupt(client, rid, "G1_diff_confirm")
+    _decide(client, rid, "G1_diff_confirm", "confirmed")
+    _wait_interrupt(client, rid, "G2_report_accept")
+    _decide(client, rid, "G2_report_accept", "accept")
+    _wait_interrupt(client, rid, "G3_regression_decision")
+    _decide(client, rid, "G3_regression_decision", "defer", "冲突未清零")
+    deadline = time.time() + 30
+    body: dict[str, Any] = {}
+    while time.time() < deadline:
+        body = client.get(f"/api/runs/{rid}/nodes/N15")
+        if body.json()["run_status"] in ("finished", "failed"):
+            break
+        time.sleep(0.2)
+    body = client.get(f"/api/runs/{rid}/nodes/N15").json()
+    assert body["run_status"] in ("finished", "failed")
+    assert body["run_terminal"] is True
+    assert body["story"]["not_reached"] is True
+    assert "等它跑完" not in body["story"]["headline"]
+
+
+# ---------------------------------------------------------------- 报告只读视图（P-28）
+
+def test_report_endpoint_rejects_non_whitelisted_path(client: TestClient) -> None:
+    rid = _start(client)
+    r = client.get(f"/api/runs/{rid}/report", params={"path": "../../etc/passwd"})
+    assert r.status_code == 403, r.text
+    r = client.get(f"/api/runs/{rid}/report", params={"path": "n9_result.json"})
+    assert r.status_code == 403 and "白名单" in r.json()["detail"]["error"]
+
+
+def test_report_endpoint_missing_is_404_and_node_block_says_unavailable(client: TestClient) -> None:
+    rid = _start(client)
+    run_dir = Path(client.get(f"/api/runs/{rid}").json()["run_dir"])
+    # drill 夹具会带一份 n12_report.md；删掉才能测"本轮没有报告"的分支。
+    for name in ("n12_report.md",):
+        target = run_dir / name
+        if target.exists() or target.is_symlink():
+            target.unlink()
+    r = client.get(f"/api/runs/{rid}/report")
+    assert r.status_code == 404
+    body = client.get(f"/api/runs/{rid}/nodes/N12").json()
+    assert body["report"] == {"file": "n12_report.md", "available": False, "bytes": None}
+
+
+def test_report_endpoint_reads_only_this_run_report(client: TestClient) -> None:
+    rid = _drive_full_chain(client)
+    run_dir = Path(client.get(f"/api/runs/{rid}").json()["run_dir"])
+    text = "# 本轮评估报告\n\n结论：未通过。\n"
+    (run_dir / "n12_report.md").write_text(text, encoding="utf-8")
+    body = client.get(f"/api/runs/{rid}/nodes/N12").json()
+    assert body["report"]["available"] is True and body["report"]["bytes"] == len(text.encode())
+    r = client.get(f"/api/runs/{rid}/report")
+    assert r.status_code == 200, r.text
+    got = r.json()
+    assert got["file"] == "n12_report.md" and got["truncated"] is False
+    assert got["content"] == text
+    # 只读：读一次不得改变文件
+    assert (run_dir / "n12_report.md").read_text(encoding="utf-8") == text
+
+
+def test_report_endpoint_truncates_oversized_report(client: TestClient) -> None:
+    from services import api as api_mod
+
+    rid = _drive_full_chain(client)
+    run_dir = Path(client.get(f"/api/runs/{rid}").json()["run_dir"])
+    payload = "x" * (api_mod.REPORT_MAX_BYTES + 1024)
+    (run_dir / "n12_report.md").write_text(payload, encoding="utf-8")
+    got = client.get(f"/api/runs/{rid}/report").json()
+    assert got["truncated"] is True
+    assert len(got["content"]) == api_mod.REPORT_MAX_BYTES
+    assert got["bytes"] == len(payload.encode())
+
+
+def test_report_path_refuses_symlink_escape(client: TestClient, tmp_path: Path) -> None:
+    """白名单名 + 符号链接也不得越出 run 目录（只读端点不能变成任意路径探测器）。"""
+    rid = _drive_full_chain(client)
+    run_dir = Path(client.get(f"/api/runs/{rid}").json()["run_dir"])
+    outside = tmp_path / "outside.md"
+    outside.write_text("secret", encoding="utf-8")
+    target = run_dir / "n12_report.md"
+    if target.exists():
+        target.unlink()
+    target.symlink_to(outside)
+    r = client.get(f"/api/runs/{rid}/report")
+    assert r.status_code == 403, r.text
+
+
+def test_gate_entries_use_the_single_grouping_rule() -> None:
+    """AGENTS 红线 8：G1 清单与 N2 结果必须是**同一套**归并口径（不出现第二份实现）。"""
+    from services import contracts, node_story
+
+    path = "RTL/a.v"
+    entries = [
+        _diff_entry(path, "allfile", unresolved="②路无 hunk"),
+        _diff_entry(path, "rtl_file", lines=[9], diff_hunk="@@ -9 +9 @@"),
+        _diff_entry("RTL/b.v", "rtl_file"),
+    ]
+    story_groups = node_story.group_diff_entries(entries)
+    gate_groups = contracts._group_diff_entries(entries)
+    assert [g["entry_id"] for g in story_groups] == [g["entry_id"] for g in gate_groups]
+    assert len(gate_groups) == len(story_groups) == 2
+    # 归并后每条修订点都带一件附证据（redundant_of 指向主条目）
+    assert gate_groups[0]["attached"][0]["redundant_of"] == path
+
+
+def test_gate_waiting_counts_carry_p29_numbers() -> None:
+    """P-29：等待态关键数字（硬阻断/待验用例/未清冲突）来自服务端材料，不由界面自己数。"""
+    from services import contracts
+
+    entries = [_diff_entry("RTL/a.v", "rtl_file", diff_hunk="@@ -1 +1 @@")]
+    pending = _waiting_material(entries)
+    pending["payload"]["case_states"] = {"pending_own": ["tc_a", "tc_b", "tc_c"]}
+    pending["payload"]["conflicts"] = {"open": 72, "total": 72, "blocks_release": 72}
+    gate = contracts.gate_entries_view(
+        gate="G1_diff_confirm", diff={"entries": entries},
+        pending_interrupt=pending, run_status="waiting_gate", mode="real",
+    )
+    counts = gate["counts"]
+    assert counts["hard_block"] == 1
+    assert counts["pending_cases"] == 3
+    assert counts["conflicts_open"] == 72 and counts["conflicts_total"] == 72
+
+
+def test_gate_decided_counts_without_material_are_null_not_zero() -> None:
+    """缺材料 ⇒ None（不写 0 冒充"没有硬阻断/没有冲突"）。"""
+    from services import contracts
+
+    entries = [_diff_entry("RTL/a.v", "rtl_file", diff_hunk="@@ -1 +1 @@")]
+    gate = contracts.gate_entries_view(
+        gate="G1_diff_confirm", diff={"entries": entries},
+        authority={"status": "signed", "decision": "confirmed", "actor": HUMAN},
+        mode="real",
+    )
+    counts = gate["counts"]
+    assert counts["pending_cases"] is None and counts["conflicts_open"] is None
+
+
+# ---------------------------------------------------------------- G2/G3 只读待确认项（裁决 #2）
+
+def test_g1_has_no_readonly_items_list() -> None:
+    """G1 用 `entries` 做逐条处置；`items` 只属于 G2/G3（不出现第二套处置）。"""
+    from services import contracts
+
+    gate = contracts.gate_entries_view(
+        gate="G1_diff_confirm", diff={"entries": [_diff_entry("RTL/a.v", "rtl_file")]},
+        mode="real",
+    )
+    assert gate["items"] == []
+
+
+def test_g2_items_are_readonly_blockers_and_report_open_items() -> None:
+    from services import contracts
+
+    items = contracts.gate_entries_view(
+        gate="G2_report_accept", diff={}, mode="real",
+        blockers=[{"code": "I2_CASES_PENDING", "severity": "blocker",
+                   "title": "本轮仍有 3 个用例「已修订待验」", "message": "I2：…"},
+                  {"code": "CAPACITY_LONG_TASK", "severity": "info", "title": "槽位", "message": "x"}],
+        n12_open_items=["3 个用例仍『已修订待验』"],
+    )["items"]
+    kinds = [item["kind"] for item in items]
+    assert kinds == ["blocker", "open_item"], kinds
+    assert items[0]["id"] == "blocker:I2_CASES_PENDING"
+    assert items[0]["detail"] == "I2：…"
+    # 只读：不给 disposition 字段（界面不得据此提交逐条处置）
+    assert all("disposition" not in item for item in items)
+
+
+def test_g3_items_carry_conflicts_and_regression_cases() -> None:
+    from services import contracts
+
+    gate = contracts.gate_entries_view(
+        gate="G3_regression_decision", diff={}, mode="real",
+        blockers=[{"code": "I4_CONFLICTS_UNCLEARED", "severity": "blocker",
+                   "title": "冲突未清零", "message": "I4"}],
+        conflicts={"open": 72, "total": 126, "blocks_release": 72},
+        selected_cases=["tc_pcie_rw_02", "tc_rtc_05"],
+    )
+    kinds = [item["kind"] for item in gate["items"]]
+    assert kinds == ["blocker", "conflict", "case", "case"], kinds
+    assert "72/126" in gate["items"][1]["title"]
+    assert gate["items"][2]["title"] == "tc_pcie_rw_02"
+
+
+def test_g2_readonly_items_state_is_read_only() -> None:
+    from services import contracts
+
+    gate = contracts.gate_entries_view(
+        gate="G2_report_accept", diff={}, mode="real",
+        blockers=[{"code": "I2_CASES_PENDING", "severity": "blocker", "title": "t", "message": "m"}],
+    )
+    assert gate["state"] == "read_only" and gate["note"] is None
+    empty = contracts.gate_entries_view(gate="G2_report_accept", diff={}, mode="real")
+    assert empty["state"] == "no_material" and empty["items"] == []
+    assert empty["note"] and "未下发" in empty["note"]
+
+
+def test_n13_waiting_projection_carries_readonly_items(client: TestClient) -> None:
+    """G2 等待态：面板拿到只读待确认项（阻断项白话），且仍然没有 disposition/勾选语义。"""
+    rid = _start(client)
+    _wait_interrupt(client, rid, "G1_diff_confirm")
+    _decide(client, rid, "G1_diff_confirm", "confirmed")
+    _wait_interrupt(client, rid, "G2_report_accept")
+    body = client.get(f"/api/runs/{rid}/nodes/N13").json()
+    gate = body["gate"]
+    assert gate["state"] == "waiting"
+    assert gate["counts"]["hard_block"] >= 1
+    assert gate["items"], "G2 等待态必须给出只读待确认项"
+    assert gate["items"][0]["kind"] == "blocker"
+    assert all("disposition" not in item for item in gate["items"])
+    assert gate["entries"] == [] or gate["entries_required"] is False
+
+
+def test_n14_decided_projection_lists_regression_cases(client: TestClient) -> None:
+    """G3 已决策 + N15_select 已跑 ⇒ 只读清单里能看到回归选集用例。"""
+    rid = _drive_full_chain(client)
+    body = client.get(f"/api/runs/{rid}/nodes/N14").json()
+    gate = body["gate"]
+    assert gate["state"] == "decided"
+    kinds = [item["kind"] for item in gate["items"]]
+    assert "case" in kinds, kinds
+    cases = [item["title"] for item in gate["items"] if item["kind"] == "case"]
+    assert cases and all(isinstance(case, str) and case for case in cases)
+    assert all("disposition" not in item for item in gate["items"])
+
+
+# ---------------------------------------------------------------- R3-11：新 run 可选下限
+#
+# 新 run 才下发的 detail 字段**不得**进 `REQUIRED_FIELDS`（否则旧 run 每个节点都报 missing）；
+# 它们登记为 SPEC-02 §10.4.5 的"可选下限"：新 run 必须下发（显式 `null` 也算下发），
+# 旧 run 缺失不算缺陷（`missing_fields` 不受影响）。
+
+OPTIONAL_NEW_RUN_FIELDS: dict[str, tuple[str, ...]] = {
+    "N3": ("digest_summary", "digest_confirmations", "groups_count", "offered_segments_empty"),
+    "N5": ("to_check_case_count", "to_check_cases"),
+    "N6": ("case_edits", "case_edits_source", "observation_points"),
+    "N6_apply": ("case_edits", "applied_cases"),
+    "N7": ("case_count",),
+    "N8": ("check_count", "must_fix_count", "cycle", "limit"),
+    "N9": ("koutou1_by_case", "example_line", "identity", "cases_detail"),
+    "N9_submit": ("cases",),
+    "N10": ("cases_table", "classification"),
+    "N11": ("identity_table", "unclosed", "rework_requests_count"),
+    "N12": ("refs_parseable_count", "open_items", "cases_summary"),
+    "N15_select": ("will_really_run",),
+    "N15": ("will_really_run", "executed", "failed_cases"),
+    "N16": ("reason_line", "result_artifact"),
+}
+
+
+def test_optional_new_run_fields_are_not_required_lower_bounds() -> None:
+    for node, fields in OPTIONAL_NEW_RUN_FIELDS.items():
+        required = set(node_view.REQUIRED_FIELDS.get(node, node_view.DEFAULT_REQUIRED))
+        for field in fields:
+            assert field not in required, (
+                f"{node}.{field} 是新 run 才下发的可选下限，不得塞进该节点的 REQUIRED_FIELDS"
+                "（否则旧 run 全报 missing）"
+            )
+
+
+def test_new_run_drill_chain_carries_optional_fields(client: TestClient) -> None:
+    """新 drill 全链：可选下限字段必须**存在**（显式 null 也算下发）。"""
+    rid = _drive_full_chain(client)
+    for node, fields in OPTIONAL_NEW_RUN_FIELDS.items():
+        body = client.get(f"/api/runs/{rid}/nodes/{node}").json()
+        detail = body["detail"]
+        for field in fields:
+            assert field in detail, f"{node}.{field} 未下发（新 run 可选下限）"
+        assert body["missing_fields"] == [], (node, body["missing_fields"])
+
+
+def _old_style_detail(node: str) -> dict[str, Any]:
+    """只含 `REQUIRED_FIELDS` 下限的老形状 detail（模拟旧 run：没有可选下限字段）。"""
+    out: dict[str, Any] = {}
+    for dotted in node_view.REQUIRED_FIELDS.get(node, node_view.DEFAULT_REQUIRED):
+        parts = dotted.split(".")
+        cur = out
+        for part in parts[:-1]:
+            cur = cur.setdefault(part, {})
+        cur[parts[-1]] = "x"
+    return out
+
+
+def test_old_run_missing_optional_fields_is_not_flagged_missing() -> None:
+    for node in OPTIONAL_NEW_RUN_FIELDS:
+        detail = _old_style_detail(node)
+        events = [
+            _ev(1, 100.0, "node_started", node, "running"),
+            _ev(2, 100.5, "node_finished", node, "ok", detail),
+        ]
+        body = node_view.build_node_detail("RUN-OLD", node, events=events,
+                                           run_doc={"mode": "drill"})
+        assert body["missing_fields"] == [], (node, body["missing_fields"])
+        for field in OPTIONAL_NEW_RUN_FIELDS[node]:
+            assert field not in body["detail"], (node, field)

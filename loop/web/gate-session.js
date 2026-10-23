@@ -19,6 +19,9 @@
       decision: null,
       actor: "human:",
       reason: "",
+      // 逐条处置（Web UI §4.4 2026-10-23）：{entry_id: {decision, reason}}；只存界面输入，
+      // 是否覆盖全部条目、是否与整门决策一致由服务端（I1）最终判定。
+      entryDecisions: {},
       submitting: false,
       error: null,
       blockers: null,
@@ -77,10 +80,60 @@
     return a.runId === b.runId && a.epoch === b.epoch && a.request === b.request;
   }
 
+  /* 逐条处置 → 整门决策的推导（Web UI §4.4 2026-10-23）。
+   * 口径与服务端 gates.normalize_entry_decisions 一致：有 disputed ⇒ disputed；
+   * 否则有 ignored ⇒ ignored；否则 confirmed。未选完返回 null（不猜）。 */
+  function deriveEntryDecision(values) {
+    var list = Array.isArray(values) ? values : [];
+    if (!list.length) return null;
+    var hasIgnored = false;
+    for (var i = 0; i < list.length; i++) {
+      var v = list[i];
+      if (v === "disputed") return "disputed";
+      if (v === "ignored") hasIgnored = true;
+      if (v !== "confirmed" && v !== "ignored" && v !== "disputed") return null;
+    }
+    return hasIgnored ? "ignored" : "confirmed";
+  }
+
+  /* 逐条处置的界面前置校验（不是权威：服务端 I1 仍会再判一次）。
+   * 返回 {ok, error, entry_decisions}；覆盖全部 ids、取值合法、ignored/disputed 带理由。 */
+  function validateEntryDecisions(entryDecisions, ids, allowed) {
+    var store = entryDecisions && typeof entryDecisions === "object" ? entryDecisions : {};
+    var list = Array.isArray(ids) ? ids : [];
+    var values = Array.isArray(allowed) ? allowed : ["confirmed", "ignored", "disputed"];
+    var out = {};
+    var missing = [];
+    for (var i = 0; i < list.length; i++) {
+      var id = String(list[i]);
+      var raw = store[id];
+      var value = raw && typeof raw === "object" ? String(raw.decision || "") : "";
+      if (!value) { missing.push(id); continue; }
+      if (values.indexOf(value) < 0) {
+        return { ok: false, error: "条目 " + id + " 的处置非法：" + value, entry_decisions: null };
+      }
+      var reason = raw && typeof raw === "object" ? String(raw.reason || "").trim() : "";
+      if ((value === "ignored" || value === "disputed") && !reason) {
+        return { ok: false, error: "条目 " + id + " 判 " + value + " 必须填写理由", entry_decisions: null };
+      }
+      out[id] = { decision: value, reason: reason || null };
+    }
+    if (missing.length) {
+      return {
+        ok: false,
+        error: "逐条处置未覆盖全部条目（缺 " + missing.length + " 条）：" + missing.slice(0, 3).join("、"),
+        entry_decisions: null
+      };
+    }
+    return { ok: true, error: null, entry_decisions: out };
+  }
+
   var api = {
     sessionKey: sessionKey,
     freshDraft: freshDraft,
     reconcile: reconcile,
+    deriveEntryDecision: deriveEntryDecision,
+    validateEntryDecisions: validateEntryDecisions,
     isSubmitting: isSubmitting,
     beginSubmission: beginSubmission,
     endSubmission: endSubmission,

@@ -36,6 +36,33 @@ def artifact(ctx: RunCtx, name: str) -> Path:  # noqa: F821 - 仅类型标注，
     return ctx.run_dir / name
 
 
+def case_edits_from_output(data: dict[str, Any] | None) -> list[dict[str, Any]] | None:
+    """N6 模型输出 → 逐用例修改摘要（P-20/P-21 的**唯一投影实现**）。
+
+    形状（契约 §3）：`[{case, edit_count, edits:[{line, old, new}]}]`。
+    `edits` 逐字取自 Host 已校验的 `revisions[].edits`，**不重算、不猜**；
+    没有模型输出（standin/drill）⇒ `None`（显式"未下发"，不是空列表冒充"0 处修改"）。
+    N6（模型节点）与 N6_apply（Host 落盘）共用本函数 ⇒ 两处清单同源。
+    """
+    if not isinstance(data, dict):
+        return None
+    revisions = data.get("revisions")
+    if not isinstance(revisions, list):
+        return None
+    out: list[dict[str, Any]] = []
+    for rev in revisions:
+        if not isinstance(rev, dict):
+            continue
+        edits = [
+            {"line": e.get("line"), "old": e.get("old"), "new": e.get("new")}
+            for e in (rev.get("edits") or [])
+            if isinstance(e, dict)
+        ]
+        out.append({"case": str(rev.get("case") or ""), "edit_count": len(edits),
+                    "edits": edits})
+    return out
+
+
 def _num(value: Any) -> str:
     """数字缺失一律写"未下发"（不猜、不补 0）。"""
     return "未下发" if value is None else str(value)

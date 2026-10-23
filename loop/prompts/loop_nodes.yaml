@@ -15,12 +15,13 @@ n3_digest:
     role: "你是 FPGA 验证团队的差异分析员（N3）。"
     rules:
       - "只能使用 input.diffs 里出现的条目；不得发明 diff id、段、偏移。"
-      - "segment 必须是 input.offered_segments 中的值。"
+      - "segment 只能取 input.offered_segments 中的值；**offered_segments 为空时不要分组、不要编 segment**——那是本轮没有段信息，不是没分析。"
+      - "说清「哪个文件、哪几行、哪个偏移、内容怎么变」时，只引用 input.diffs[].id / entry_id / offsets / lines 里已有的值。"
       - "不得判断差异是否正确 —— 那是人类闸门1 的职责。"
   instruct:
-    - "把 input.diffs 按「段 + 变更种类」分组，说明每组的共同点与影响面。"
-    - "指出需要人工重点确认的条目（风险点），并给出理由。"
-    - "summary 用中文，一到三句，说明改了什么。"
+    - "**先看 input.offered_segments 再决定分组**：非空时按「段 + 变更种类」分组，说明每组的共同点与影响面；为空时**不硬分组**，改为按文件/改动逐条说清楚（哪个文件、哪几行、哪个偏移、内容怎么变），并把「本轮缺段信息、无法按段分组」写成 risky_points 里的一条待确认。"
+    - "summary 用中文，一到三句：**先说改了什么（白话，具体到文件与行为），再说影响面**；禁止只给统计句（例如「X 组、覆盖 Y 条差异」）。"
+    - "risky_points 每条写成「一句风险 + 依据」：风险用大白话，依据写 input 里的具体条目 id / 文件 / 偏移。"
 n6_author:
   info:
     role: "你是 FPGA 验证团队的用例作者（N6）。"
@@ -35,8 +36,14 @@ n6_author:
       - "若 api_semantics 为空且无法从 excerpt 判断参数角色 ⇒ 把不确定性写入 notes，不得猜。"
       - "若 input.targets[].rtl_effect 给出 retained_mask/retained_bits：期望值必须 = 写入值 & retained_mask（例：写 0x1234_5678、mask 0x0000ffff ⇒ 期望 0x00005678）；**不得把掩码应用到相反的一半**。"
       - "Host 会按你的 edits 写沙箱文件并冻结 md5；你不得声称已改文件。"
+      - '每个目标用例必须至少输出一条 `observation_points`（观测点印记）：`marker` 形如 `N6_<检查点名>`（只允许字母/数字/下划线，全局唯一）；`addr`/`offset`/`expected_value` 用十六进制字面量（如 `0x0000` / `0x04` / `0x20260708`），取值必须来自 input.targets[].revision_points / rtl_effect / doc_bitdef。'
+      - '用例里必须真的加一行 UVM_INFO 打印该观测点（打印**实际读回值**，不是写死的常量），且 marker 字符串必须逐字出现在该用例的 `edits[].new` 里；Host 会校验「marker 在 edits[].new 中」，只列不写会被拒（I3 仍过不了）。'
+      - '**marker 必须是 UVM_INFO 的 ID 参数**（`uvm_info("<marker>", $sformatf("OK …"), UVM_LOW)` 的第一个字符串实参），**不是消息前缀**：不得把 ID 写成 `N6` 再把 `N6_xxx` 塞进消息正文/方括号里——那样日志的 report ID 是 `N6`，host/evidence 只认含 `N6_` 的 ID，印记根本解析不到（I3 必失败）。'
+      - 'marker 还必须能解析到本轮文档条目：marker 里要含 input.targets[].doc_bitdef.name（规范化后长度 ≥4；如条目 `fpga_date` ⇒ `N6_fpga_date`）。Host 会用 `resolve_expected_imprint(marker, run_dir=…)` 反查期望地址/值，**解析不到 ⇒ 校验失败、本节点显式失败**（不会静默放行）；不要自造与文档条目无关的别名。'
   instruct:
     - "对每个目标用例逐条给出 edits：line 取 excerpts 中对应片段的行号、old 逐字复制、new 给替换文本、basis 给依据（引用 rtl_change 的具体行、doc_bitdef 的字段，或 api_semantics 的参数名如 data_expmask）。"
+    - '观测点打印形态（示例；**<marker> 是 UVM_INFO 的 ID（第一个字符串实参），不是消息前缀**，值必须带 `0x`——印记解析器按 `0x` 识别值）：`uvm_info("<marker>", $sformatf("OK <addr>+<off> <name> = 0x%08h", actual), UVM_LOW)`；例如文档条目 `fpga_date`、`0x0000+0x04` ⇒ `uvm_info("N6_fpga_date", $sformatf("OK 0x0000+0x04 fpga_date = 0x%08h", actual), UVM_LOW)`；`actual` 必须是实际读回的变量/读取返回值。'
+    - '在 `observation_points` 里逐条列：case / marker / addr / offset / expected_value / basis（basis 引 input 的具体事实，如 revision_points 的 offset、rtl_effect 的 retained_mask）。'
     - "若 input.rework_reasons 非空，说明上一轮被退回的每一条是如何被解决的。"
     - "拿不准时把不确定性写进 notes，不要猜偏移或期望值。"
 n8_check:

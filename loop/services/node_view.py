@@ -21,6 +21,10 @@ from __future__ import annotations
 
 from typing import Any, Iterable, Sequence
 
+from . import node_story
+#: R3-15：闸门节点 ↔ 闸门 id 只有一份定义（`services/node_registry.py`）；这里只做别名。
+from .node_registry import GATE_ID_BY_NODE
+
 #: `detail.source` 的合法执行路径（§10.4）。drill 夹具与 standin 必须能一眼看出。
 SOURCE_ENUM: tuple[str, ...] = (
     "drill_fixture",
@@ -31,31 +35,60 @@ SOURCE_ENUM: tuple[str, ...] = (
     "framework",
 )
 
-#: 节点目录（name / owner）**由服务端下发**，前端 `NODE_META` 只是兜底，不得成为第二权威。
-#: 名称与 `WEB_UI_SPEC.md` §4.2 的展示契约一致；内部节点与 HALT 见 §10.4。
+# GATE_ID_BY_NODE 的唯一定义在 `services/node_registry.py`（R3-15：同一事实不许两份）；
+# 本模块以同名别名导出，外部 `node_view.GATE_ID_BY_NODE` 的引用保持不变。
+
+#: 运行已终态（P-30）：只有这些状态才允许说"本轮没有走到这个节点"。
+TERMINAL_RUN_STATUSES: frozenset[str] = frozenset({"finished", "failed"})
+
+#: 节点目录（name / owner / purpose）**由服务端下发**，前端 `NODE_META` 只是兜底，不得成为第二权威。
+#: 名称与 `WEB_UI_SPEC.md` §4.2 的展示契约一致；内部节点与 HALT 见 §10.4；
+#: `purpose` 是面板「这一步做什么」的一句话（SPEC-REV-02 R1），**不随数据变化**。
 NODE_CATALOG: dict[str, dict[str, str]] = {
-    "N0": {"name": "基线", "owner": "Host"},
-    "N1": {"name": "摄取", "owner": "Host"},
-    "N2": {"name": "diff", "owner": "Host"},
-    "N3": {"name": "总结", "owner": "analyst"},
-    "N4": {"name": "闸门1", "owner": "人"},
-    "N5": {"name": "影响", "owner": "Host"},
-    "N6": {"name": "修订", "owner": "author"},
-    "N6_apply": {"name": "修订落盘", "owner": "Host"},
-    "N7": {"name": "编译", "owner": "Host"},
-    "N8": {"name": "复核", "owner": "checker"},
-    "N9": {"name": "全跑", "owner": "Host"},
-    "N9_submit": {"name": "全跑提交", "owner": "Host"},
-    "N10": {"name": "对账", "owner": "checker"},
-    "N11": {"name": "守护", "owner": "guardian"},
-    "N12": {"name": "报告", "owner": "reporter"},
-    "N13": {"name": "闸门2", "owner": "人"},
-    "N14": {"name": "闸门3", "owner": "人"},
-    "N15_select": {"name": "回归选集", "owner": "TriggerFlow"},
-    "N15": {"name": "回归", "owner": "TriggerFlow"},
-    "N15_submit": {"name": "回归提交", "owner": "TriggerFlow"},
-    "N16": {"name": "晋升", "owner": "Host"},
-    "HALT": {"name": "终止", "owner": "TriggerFlow"},
+    "N0": {"name": "基线", "owner": "Host",
+           "purpose": "把这次运行要用的工作目录准备好，并把闸门/基线状态初始化。"},
+    "N1": {"name": "摄取", "owner": "Host",
+           "purpose": "给当前代码和文档拍一张快照：多少文件、什么指纹、哪些用例，作为对比起点。"},
+    "N2": {"name": "diff", "owner": "Host",
+           "purpose": "把快照跟基线逐项比对：哪些文件改了、哪些还没对上。"},
+    "N3": {"name": "总结", "owner": "analyst",
+           "purpose": "让分析模型把原始差异翻成一句人话，讲清楚这次改了什么。"},
+    "N4": {"name": "闸门1", "owner": "人",
+           "purpose": "由人确认差异清单没问题；点了确认，流程才往下走。"},
+    "N5": {"name": "影响", "owner": "Host",
+           "purpose": "根据改动算出哪些用例必须改，并检查用例索引全不全。"},
+    "N6": {"name": "修订", "owner": "author",
+           "purpose": "让作者模型按影响清单改/补用例，并检查它的输出格式对不对。"},
+    "N6_apply": {"name": "修订落盘", "owner": "Host",
+                 "purpose": "把模型给的修改真正写进沙箱用例（每条唯一命中，并核对冻结指纹）。"},
+    "N7": {"name": "编译", "owner": "Host",
+           "purpose": "先把改过的用例编译一遍，确认语法和引用没问题。"},
+    "N8": {"name": "复核", "owner": "checker",
+           "purpose": "让检查模型静态看一遍修订后的用例，判断能不能进入全跑。"},
+    "N9": {"name": "全跑", "owner": "Host",
+           "purpose": "把选中的用例全部跑一遍（长作业），收双口径计数和日志证据。"},
+    "N9_submit": {"name": "全跑提交", "owner": "Host",
+                  "purpose": "把全跑作业交出去后先返回，流程停在等待作业完成。"},
+    "N10": {"name": "对账", "owner": "checker",
+            "purpose": "把全跑结果跟预期对账，判通过/失败，列出需要人工裁决的项。"},
+    "N11": {"name": "守护", "owner": "guardian",
+            "purpose": "检查证据链完整、身份一致；发现对不上就要求返工。"},
+    "N12": {"name": "报告", "owner": "reporter",
+            "purpose": "让报告模型写本轮评估报告，并核对它引用的证据都能对上。"},
+    "N13": {"name": "闸门2", "owner": "人",
+            "purpose": "由人验收报告：接受，或打回返工。"},
+    "N14": {"name": "闸门3", "owner": "人",
+            "purpose": "由人决定这轮做不做回归、发不发版。"},
+    "N15_select": {"name": "回归选集", "owner": "TriggerFlow",
+                   "purpose": "从影响面里挑出这轮要跑的回归用例。"},
+    "N15": {"name": "回归", "owner": "TriggerFlow",
+            "purpose": "跑回归作业，确认改动没有引入回退。"},
+    "N15_submit": {"name": "回归提交", "owner": "TriggerFlow",
+                   "purpose": "把回归作业交出去后进入等待。"},
+    "N16": {"name": "晋升", "owner": "Host",
+            "purpose": "把本轮的结论/基线状态晋升落盘（默认 dry-run，不真写）。"},
+    "HALT": {"name": "终止", "owner": "TriggerFlow",
+             "purpose": "流程在这里终止（闸门未放行或出现阻断）——只为记录原因。"},
 }
 
 #: §10.4 逐节点下限（右列"必须补到"）。点号表示 `detail` 内的嵌套键。
@@ -175,15 +208,28 @@ def build_node_detail(
     events: Iterable[dict[str, Any]] = (),
     run_doc: dict[str, Any] | None = None,
     run_dir: str | None = None,
+    run_view: dict[str, Any] | None = None,
+    gate: dict[str, Any] | None = None,
+    report: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """把事件流投影成 §6.7 的节点详情（纯函数；不读盘、不写盘、不取墙钟）。
 
     `events` 是 `ProgressLog.read()` 的原始事件列表（调用方负责读取，本函数不碰文件系统）；
-    `run_doc` 只消费 `mode` 与 `s0_record_id`（环境来源徽标的数据面）。
+    `run_doc` 只消费 `mode` 与 `s0_record_id`（环境来源徽标的数据面）；
+    `run_view` 只消费 `status`（P-30 未到达态）——**本函数仍不读盘**；
+    `gate` / `report` 由调用方（`api.py`）按只读投影算好传入，这里只做形状校验与透传。
     """
     known = node in NODE_CATALOG
     meta = NODE_CATALOG.get(node) or {}
-    node_events = _events_for(events, node)
+    # `events` 可能是一次性可迭代（生成器）⇒ 先实体化，后面既切节点片、也算全量事实。
+    event_list = list(events)
+    node_events = _events_for(event_list, node)
+    # R3-10：本轮是否已提前终止（HALT 收尾事件存在）——只用于"未执行"的归因文案，
+    # 不改事件、不写进投影字段（"停更早闸门时被说成演示模式"是归因错误）。
+    run_halted = any(
+        event.get("node") == "HALT" and event.get("kind") in _TERMINAL_KINDS
+        for event in event_list
+    )
 
     terminal: dict[str, Any] | None = None
     for event in node_events:
@@ -215,6 +261,23 @@ def build_node_detail(
 
     doc = run_doc or {}
     refs, refs_omitted = _split_refs(_refs(node_events), run_dir)
+    run_status = (run_view or {}).get("status") if isinstance(run_view, dict) else None
+    mode = doc.get("mode") if doc.get("mode") is not None else (
+        (run_view or {}).get("mode") if isinstance(run_view, dict) else None)
+    started_present = any(event.get("kind") == "node_started" for event in node_events)
+    # 展示投影（SPEC-REV-02 R1 + P 项）：服务端确定性生成的人话摘要；不改变任何原始字段。
+    story = node_story.build_story(
+        node,
+        events=node_events,
+        detail=detail,
+        purpose=meta.get("purpose"),
+        run_status=run_status,
+        mode=mode,
+        gate=gate,
+        run_halted=run_halted,
+        # R3-06：分组只用面板会展示的 refs（run 目录内），不把目录外路径带进展示投影。
+        refs=refs,
+    )
     return {
         "run_id": run_id,
         "node": node,
@@ -230,6 +293,17 @@ def build_node_detail(
         "source": _text(detail, "source"),
         "summary": _text(detail, "summary"),
         "detail": detail,
+        # 面板的人话展示（purpose / headline / steps / key_results 等）；界面直接渲染，不自行拼装。
+        "story": story,
+        # P-30：运行态（只读投影；未到达态由 story 统一给文案）。
+        "run_status": run_status,
+        "run_terminal": bool(run_status in TERMINAL_RUN_STATUSES),
+        # P-33：该节点是否有 node_started（没有就诚实标注"无开始事件"，不伪造步骤）。
+        "node_started_present": started_present,
+        # P-17/P-18：闸门节点二级差异清单（等待/已决策/无材料三态）；非闸门节点为 None。
+        "gate": gate if isinstance(gate, dict) else None,
+        # P-28：N12 报告只读视图入口（存在性 + 字节数；正文由独立端点给）。
+        "report": report if isinstance(report, dict) else None,
         # `node_history` 投影会丢弃顶层 refs ⇒ 这里合并展示，但不改写任何一类数据。
         "refs": refs,
         # 运行目录外的引用只计数、不给路径（§6.7 安全边界）。
@@ -245,8 +319,10 @@ def build_node_detail(
 
 __all__ = [
     "DEFAULT_REQUIRED",
+    "GATE_ID_BY_NODE",
     "NODE_CATALOG",
     "REQUIRED_FIELDS",
     "SOURCE_ENUM",
+    "TERMINAL_RUN_STATUSES",
     "build_node_detail",
 ]

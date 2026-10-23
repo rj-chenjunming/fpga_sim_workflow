@@ -1254,3 +1254,336 @@ LOOP_WORKSPACE=<verify-e2e-ws> LOOP_LLM_MODE=standin LOOP_PORT=18097 bash spikes
 **未跑完之前，不写"drill 演示已归档"**。
 
 > 诚实边界：本轮**不**声称真实轮"跑通/判绿"——证据不通过（I3 既有缺陷）是事实；N16 不可达是系统正确拒绝放行。
+
+## 44 人工跑通手册（Web UI 2026-10-23 版）与真实浏览器实测
+
+用户要求"人工通过 UI 跑一遍整个流程"，按当前（改版后）工作台重写 [`doc/UI_RUNBOOK.md`](UI_RUNBOOK.md)。
+本轮只改文档与新增截图证据，不改业务代码/判据；截图证据见
+[`evidence/UI_RUNBOOK_20261023/README.md`](evidence/UI_RUNBOOK_20261023/README.md)。
+
+### 44.1 实测环境
+
+| 项 | 值 |
+|---|---|
+| 实例 | `127.0.0.1:18097`（隔离，不碰 8099/18099） |
+| 模型 | `LOOP_LLM_MODE=standin` |
+| 数据根 | `workspaces/manual-20261023/ws`（`v0` `valid=true` + drill 夹具 `RUN-20261015-120626`） |
+| 状态根 | `workspaces/manual-20261023/state3` |
+| 构建 | 测试时工作树（含 S0 工作台、节点详情"人话优先"、Agent 工作窗口、S0 来源徽标）；`/openapi.json` **18** 条路由 |
+
+### 44.2 实测轮 `RUN-20261023-110500`（drill / happy）
+
+| 步骤 | 实际结果 |
+|---|---|
+| S0 演练 | `status=prepared`；copy/rtl/non_rtl/baseline 四项通过，04/05 未完成；`ready_for_execution=false` |
+| G1 | 材料：差异 **2** 条、未决 **1** 条；`doc_entry` before/after `reset 2023_0911→2026_0708`；`sys_reg.v` 未决、无 hunk（drill 历史夹具）；冲突 **72/72/72**；选项 3 个。提交 `confirmed` 成功 |
+| G2 | 口径一 **1687**、口径二 `UVM_INFO=34933 / WARNING=0 / ERROR=0 / FATAL=0`；提交 `accept` 成功 |
+| G3 | 提交 `full_now` 被 **403** 拒绝（`I4：冲突未清零（72 项 blocks_release）…`），闸门仍 pending；改选 `milestone_only` 成功 |
+| N15/N16 | N15_select count=5；N15 `simulated=true`；N16 **`refused`、rc=3、dry-run=true**；run `finished` |
+| 账本 | `gates.json` 三条记录 `actor=human:manual-verify`、`actor_kind=human`、`human_signed=true`；**占位 actor，不构成人工签署证据** |
+
+### 44.3 本轮同时确认的界面差异（已写进手册）
+
+- 旧手册的三视图导航（①②③）已过时：现为左栏四视图「环境准备 S0 / 运行配置 01 / 运行监控 02 / 人工闸门 03」，
+  默认进 S0；无 URL 路由，刷新回 S0。
+- 旧手册「沙箱 `v0` 有效」在当前 8099 的沙箱数据根上为 `valid=false`（manifest 写 `kb/baselines/...`
+  而拷贝出的 workspace 缺 `kb -> .` 别名）；drill 另需夹具 run `RUN-20261015-120626`。手册 §1.2 给处置。
+- 节点详情已改为"人话优先"六块（用途/结果/关键数字/过程/证据/原始记录收起），`seq` 只在原始记录里；
+  历史 run 的新字段显示 `missing_fields`，不回填。
+- 旧手册的 drill 数字（1687/72）仍成立；但实时数值以当次 run 的投影为准。
+
+### 44.4 门禁（本轮为文档任务，未改代码）
+
+| 门 | 命令 | 结果 |
+|---|---|---|
+| 文档 | `python3 doc/audit/check_doc_links.py` | 见 §44.5 |
+| 单元/端到端/kb 自测 | —— | **本轮未运行**（只改文档与截图，未改代码）；不得据本行声称四道门全绿 |
+
+### 44.5 文档门与边界
+
+- 文档门实测（2026-10-23，命令输出复制）：
+  `python3 doc/audit/check_doc_links.py` ⇒
+  `checked=1649 skipped=20678 historical=857 known_missing=10 env_missing=12 missing=0`，退出码 `0`。
+- 未验证：real 真机链路、S0-real、live 模型 15 s 超时、三档桌面宽度视觉验收；
+  截图是 1600×1000 视口 + 弹层元素截图。
+- **不声称合规**：I3/I4 仍需人拍板；F2/F3 见 §43.3；S0-b 未接入；real 轮未闭环。
+- 测试时工作树包含未提交的节点详情实现改动；本手册按该行为描述，提交版本号以实际 `git log` 为准。
+
+## 45 节点面板"人话优先"（SPEC-REV-02 R1，2026-10-23）
+
+用户走查节点详情后提出："每个环节的可读性太差……只要简单描述做了哪几步、每步做什么、结果怎么样，
+用大白话说明就行；seq 不知道干啥的，如果是 log 可以缩起来，需要再展开；我们一个节点一个节点过一遍"。
+本轮按 SpecDD 先改规格再改实现：新增 [`SPEC-REV-02`](spec/SPEC-REV-02-20261023.md)，
+同步 [SPEC-04 §4.2.1/§6.7](spec/WEB_UI_SPEC.md) 与 [SPEC-02 §10.4](spec/LOOP_ORCHESTRATION_SPEC.md)；
+证据与逐节点效果见 [`evidence/NODE_PANEL_READABILITY_20261023.md`](evidence/NODE_PANEL_READABILITY_20261023.md)。
+
+### 45.1 改了什么
+
+| 层 | 落点 | 内容 |
+|---|---|---|
+| 投影 | `loop/services/node_story.py`（新增）、`node_view.py` | `story`：`purpose`（逐节点一句话）+ `steps`（按事件 kind 的人话）+ `key_results`（逐节点关键字段，缺失"未下发"） |
+| 前端 | `loop/web/node-detail.js`、`index.html`、`app.css` | 首屏 = 这一步做什么 → 结果 → 关键数字 → 过程 → 证据；「原始记录（排查用）」默认收起，`seq` 只在这里出现并附解释；失败节点正文不出现"完成" |
+| 测试 | `loop/tests/test_node_story.py`（新增）、`test_node_detail_projection.py`、`tests/browser/test_node_detail.py` | 投影确定性/缺失不补默认值/seq 收起/失败不声称完成 |
+
+**边界不变**：面板只读、不新增写动作；status 原值；缺失逐项"未下发"；`refs` 只探测存在性；
+判据仍在 `blockers/can` 与 `gates.json`。逐节点文案是首版，按用户逐节点走查后再定稿。
+
+### 45.2 门禁实测（本轮工作树，数字为命令输出）
+
+| 门 | 命令 | 结果 |
+|---|---|---|
+| 软件层 | `bash loop/spikes/run_software_checks.sh --ignore=tests/browser --junitxml=…` | **546 tests, failures=0, errors=0, skipped=0**（`testsuite time=108.160`）；3 项 `env_layer` 按脚本默认排除 |
+| 浏览器 | `LOOP_BROWSER_EXECUTABLE=/usr/bin/google-chrome pytest -q tests/browser`（可写 `HOME`） | **56 passed**（75.22s） |
+| 端到端 | 隔离工具副本 + 副本环境：`LOOP_ENV_ROOT=workspaces/real-env-copy LOOP_WORKSPACE=workspaces/real-env-copy/kb LOOP_PORT=18199 bash spikes/accept_v1_run.sh` | **ALL PASS，117/117**（50/27/18/8/8/6，六相全部 `rc=0`） |
+| 文档 | `python3 doc/audit/check_doc_links.py` | `checked=1646 skipped=20640 historical=857 known_missing=10 env_missing=12 missing=0`，`rc=0` |
+
+端到端第一次跑（同一隔离副本）为 36/50：副本带上了仓库的
+`loop/.agently/records/identity/state.json`（`record_store_id` 绑定原工具根），新进程建 RecordStore 报
+`RecordStore identity state belongs to a different RecordStore.`，N0–N4 全 fail。
+删掉副本里的 `loop/.agently` 与 `loop/state` 后 117/117 全过——**复制陷阱，不是流程缺陷**。
+
+### 45.3 未关闭 / 边界
+
+- **服务需重启**：`story` 由 Python 进程内生成，已在跑的服务不重启就仍返回旧形状（浏览器静态资源刷新即可，
+  Python 端不会自动加载）；本轮实机截图来自 11:03 后重启的 drill 服务（见 §44 的 runbook 截图）。
+- **文案未定稿**：逐节点措辞待用户按节点确认；改动只落在 `services/node_story.py` 与 `NODE_CATALOG`，
+  不动事件与 detail。
+- **走查已完成（2026-10-23）**：N0–N16 + `N6_apply`/`N9_submit`/`N15_select`/`N15_submit` + `HALT` 已逐个走完，
+  待修订项 **P-01～P-35** 全部登记在 [`SPEC-REV-02` §C](spec/SPEC-REV-02-20261023.md)（§C.1 进度、§C.2 清单、§C.3 落点）；
+  **P-01～P-35 尚未实现**。集中修订开工包（可直接粘贴的提示词）见
+  [`plans/2026-10-23-node-panel-revision-kickoff.md`](plans/2026-10-23-node-panel-revision-kickoff.md)。
+- **仍未拍板**：P-02（N2 偏移值是否展开）、P-05（模型子事件是否并入父节点）、P-09（是否推广到全部节点）、
+  P-25 系统侧（观测点印记由 N6 提示词/schema 产生，还是基线用例自带）、N13/N14 的"待确认项"数据源。
+- **历史 run**：`story` 请求时生成，旧 run 也能看；旧 detail 缺新字段时关键数字显示"未下发"，不回填。
+- **不声称合规**：本文只证明本轮四道门命令通过；§43.3 的 F2/F3 与 §44 的边界不受本轮影响。
+
+---
+
+## 47 节点面板统一修订（SPEC-REV-02 P-01～P-35，2026-10-23）
+
+> 本节是 **§45.3「P-01～P-35 尚未实现」的后续**：本轮已按
+> [`SPEC-REV-02` §C.2](spec/SPEC-REV-02-20261023.md) 逐条修订；§45 正文保持原样（只追加不回填）。
+> 实现接口契约：[`plans/2026-10-23-node-panel-unified-revision-plan.md`](plans/2026-10-23-node-panel-unified-revision-plan.md)；
+> 证据：[`evidence/NODE_PANEL_REVISION_20261023.md`](evidence/NODE_PANEL_REVISION_20261023.md)。
+> 注：§46 由 Lead 预留给 S0-a 真实派生（本轮未写，编号不占用）。
+
+### 47.1 改了什么（按切片）
+
+| 切片 | 文件 | 内容 |
+|---|---|---|
+| S1 story 投影 | `loop/services/node_story.py`（新增）、`loop/tests/test_node_story.py`（新增） | `headline` / `headline_source` / `note` / `not_reached` / `not_executed` / `evidence_note` / `status_note` / `status_glossary` / `gate` 透传；逐节点大白话模板与关键数字（P-07/P-09/P-10/P-12/P-13/P-15/P-16/P-19/P-20/P-21/P-22/P-23/P-24/P-26/P-27/P-28/P-29/P-30/P-31/P-32/P-33/P-34/P-35 的展示侧） |
+| S2 宿主数据面 | `loop/workflows/chunks/{gates,host_steps,long_jobs,model_steps,model_common,n10_semantics}.py`、`loop/prompts/{loop_nodes.yaml,node_schemas.py}`、`loop/tests/test_flow.py` | N3 digest、N5 待查、N6/N6_apply 逐用例、N8 检查项、N9 逐用例口径、N10 逐用例/分类、N11 身份/未闭环、N12 引用/未闭环、N15* 用例名/真跑、N16 `reason_line`+`n16_result.json`、HALT `reason`、submit 节点 `node_started`、闸门逐条处置落账 `run_dir/decisions/<gate>.json`；P-14 提示词（只影响新 run） |
+| S3 服务端投影 | `loop/services/{node_view,contracts,api}.py`、`loop/tests/test_node_detail_projection.py` | `run_status`/`run_terminal`/`node_started_present`/`gate`（二级清单、`redundant_of`、P-29 数字）/`report` 块；`GET /api/runs/{id}/report`（白名单 + 512 KiB 上限 + 越界 403） |
+| S4 前端 | `loop/web/{node-detail.js,index.html,app.css,app.js}`、`loop/tests/browser/test_node_detail.py` | 结果区 headline + 黄条、状态 chip 释义、未到达/未执行/证据入口、闸门二级清单 + 前后对比浮窗 + 逐条处置共享草稿、N12 报告全文浮窗、G2 材料报告入口、`window.GateDraftBridge` |
+| S5 文档 | `doc/spec/{WEB_UI_SPEC,LOOP_ORCHESTRATION_SPEC,SPEC-REV-02}.md` 等 | SPEC-04 §4.2.1/§4.2.2/§4.4/§6.7/§6.8、SPEC-02 §10.4.1–§10.4.5、SPEC-REV-02 §C.2 状态改为「已修/保留/未定」并写明理由 |
+
+**口径定稿**：`N15.cases` 改用例名列表（旧 run 仍计数，story 两种兼容，另加 `case_count`）；
+N5 新增 `to_check_case_count`（去重用例数）而 `to_check_count` 保留条目数；
+"同一文件多路证据归并"只有一份实现（`node_story.group_diff_entries`，`contracts` 委托它，AGENTS 红线 8）；
+`gate` 节点↔闸门 id 映射只有 `node_view.GATE_ID_BY_NODE` 一处。
+
+### 47.2 门禁实测（数字为命令输出复制）
+
+| 门 | 命令 | 实测 |
+|---|---|---|
+| 软件层（本轮最终代码） | `bash loop/spikes/run_software_checks.sh --ignore=tests/browser` | **646 passed, 3 deselected, 1 warning in 152.54s**（`EXIT=0`；收集 **649**；3 项 `env_layer` 按脚本默认排除并在输出列出） |
+| 软件层（改动前基线） | 同上（18:53，同一工作树） | **551 passed, 3 deselected, 1 warning in 111.96s**（收集 554） |
+| 浏览器 | `cd loop && HOME=$(mktemp -d) LOOP_BROWSER_EXECUTABLE=/usr/bin/google-chrome .venv/bin/python -m pytest -q tests/browser` | **69 passed in 111.16s**（4 文件；基线 56） |
+| kb 自测（schema） | `LOOP_WORKSPACE=<可写影子数据根> loop/.venv/bin/python kb/tools/_selftest_gate_schema.py` | **PASS=10 FAIL=0** |
+| kb 自测（N5 可达性） | `LOOP_WORKSPACE=<可写影子数据根> loop/.venv/bin/python kb/tools/_selftest_n5_reachability.py` | **PASS=9 FAIL=0** |
+| 端到端（隔离副本） | 工具副本（rsync 排除 workspaces/.git/虚拟环境/日志/state/.agently）+ `LOOP_ENV_ROOT=workspaces/real-env-copy LOOP_WORKSPACE=workspaces/real-env-copy/kb LOOP_PORT=18199 bash spikes/accept_v1_run.sh` | **ALL PASS，117/117**（phase 1/2/3/4/4b/5 = 50/27/18/8/8/6，六相 `rc=0`，`EXIT=0`） |
+| 文档 | `python3 doc/audit/check_doc_links.py` | `checked=1725 known_missing=10 env_missing=16 missing=0`，`EXIT=0` |
+
+**环境导致的失败不计入通过**（详见证据 §4.1）：直接 `pytest` 会写只读数据根（`OSError: Errno 30`），
+必须走 `spikes/run_software_checks.sh` 影子数据根；kb 自测需可写 `LOOP_WORKSPACE`；
+浏览器门首次与软件层并行（nice 19）时 `test_withdrawn_option_cannot_be_submitted`（`page.clock` 时序用例）
+失败 1 条，单独/全量重跑均通过（69 passed）——登记为**CPU 竞争下的时序抖动**，不放宽断言、不抹掉。
+
+**真实作业避让**：全程未重启 `:18098`、未 `pkill uvicorn`、未改 `kb/tools/run_guarded.sh`；
+门禁期间真实 run `RUN-20261023-171744` 一直 `waiting_job`（`JOB-63f79d482690` 仍在跑）；
+e2e 用隔离副本 + `:18199`，收尾删除副本与 3 个 `.loop_drill` 测试 run。
+
+### 47.3 未关闭 / 边界
+
+1. **服务需重启**：`story` 在 Python 进程内生成；`:18098` 未重启 ⇒ 界面仍返回旧形状（本轮按约束不重启）。
+2. **P-25 系统侧未拍板**：观测点印记由 N6 提示词/schema 产生 vs 基线用例自带，仍未定；面板只做解释，
+   真实轮仍无法过 I3，**不得**显示成"跑通"。
+3. **N13/N14「待确认项」数据源未定**：面板保留同一骨架（等待态显示硬阻断与材料数字），不接假条目。
+4. **P-02（N2 偏移值展开）/ P-05（模型子事件并入父节点）/ P-09 是否推广"只留 2 个关键数"**：按用户此前指示不做。
+5. **旧 run 不回填**：N3 摘要/N5 待查/N6 逐用例/闸门逐条处置只在**新 run** 有；旧 run 如实写"未下发/未留存"
+   （真实 run `RUN-20261023-171744` 的 N4 即"逐条处置未留存"）。
+6. **`run_software_checks.sh` 重复 `-q`**（自带 + 调用方再传 ⇒ `-qq` 吞掉 "N passed" 汇总行）：
+   既有脚本行为，本轮只登记不修。
+7. **不声称"已合规"**：以上未关闭项与证据 §7 同一份，保持可见；§43.3/§44 的边界不受本轮影响。
+
+---
+
+## 48 二轮：9 项用户裁决落地（2026-10-23，接 §47）
+
+> 用户 2026-10-23 20:05 逐项裁决 9 条，记录见
+> [`plans/2026-10-23-node-panel-unified-revision-plan.md` §8](plans/2026-10-23-node-panel-unified-revision-plan.md)；
+> 本轮证据追加在 [`evidence/NODE_PANEL_REVISION_20261023.md` §8](evidence/NODE_PANEL_REVISION_20261023.md)。
+> §47 的"未关闭项"里 1/2/4 三条按本轮裁决关闭或改写，其余保持。
+
+### 48.1 裁决 → 落地
+
+| # | 裁决 | 落地（代码/文档） |
+|---|---|---|
+| 1 | P-25 **作者模型产出观测点** | `N6Output.observation_points`（marker `^N6_[A-Za-z0-9_]+$`）+ 提示词要求每个改动用例真打 `[N6_<检查点>] OK <addr>+<off> <name> = 0x…`（**实读值**）且该行进 `edits[].new`；Host `_validate` fail-closed（每用例至少一条 / marker 唯一 / 必须在同用例 edits 里），N6 校验不过即 `node_failed`；N6 detail 投影 `observation_points`（standin/drill 显式 null）。**只对新 run 生效**，`host.evidence` 期望解析不变 |
+| 2 | N13/N14 **只读待确认项** | `gate.items`（`{id,kind,title,detail,severity}`，`kind ∈ {blocker,open_item,conflict,case}`）+ `gate.state` 增第四态 `read_only`；G2 = 阻断项 + N12 报告未闭环项，G3 = 阻断项 + 未清冲突摘要 + 回归选集用例；**无勾选/无 disposition/不参与提交**；G2/G3 不再继承 G1 的差异条目 |
+| 3 | P-02 保持条数 | 无改动（headline 已含定位） |
+| 4 | P-05 不并入子事件 | 无改动 |
+| 5 | P-09 保持逐节点精选 | 无改动 |
+| 6 | P-01 双写 + real 隐藏 + 后端改称 | N0 **新 run** 的 summary =「预置数据（夹具）初始化」；drill 说明保留双写、real 不显示 S0 说明行（前端原有行为） |
+| 7 | 重启等作业结束 | 未重启 `:18098`；后台看守记录真实作业终态（见 §48.3） |
+| 8 | G2 报告**一次点击** | 新增 `loop/web/report-viewer.js`（`window.ReportViewer`，`#ndReportOverlay` 改独立 body 级 `<dialog>`）；N12 面板与 G2 材料共用；G2 按钮一次点击直接弹报告全文 |
+| 9 | 暂不提交 | 未 commit；工作树含另一条线未提交改动，等其先落再统一定夺 |
+
+**一处测试夹具修正**：`N6` 现在 fail-closed ⇒ `tests/test_agent_context_memory.py` 的 fake provider 输出必须合法；
+只改夹具（`revisions` 覆盖 targets + 同用例 marker 进 edits + `observation_points`），**断言零放宽**。
+
+**一处验收驱动器竞态修正**：`spikes/accept_v1.py` 的 A51 在 `job_submitted` 后、执行真正 pause 前
+可能读到 `pending_interrupt=None` ⇒ 误判。改为"先等当前中断出现（≤15s），再校验快照里该中断可恢复"，
+判据不变（仍要求"当前停放已落盘且是可恢复的干净快照"），**未放宽断言**。
+
+### 48.2 门禁实测（数字为命令输出复制）
+
+| 门 | 命令 | 实测 |
+|---|---|---|
+| 软件层（最终代码） | `bash loop/spikes/run_software_checks.sh --ignore=tests/browser` | **656 passed, 3 deselected, 1 warning in 171.01s**（`EXIT=0`；收集 659；3 项 `env_layer` 按脚本默认排除） |
+| 浏览器 | `cd loop && HOME=$(mktemp -d) LOOP_BROWSER_EXECUTABLE=/usr/bin/google-chrome .venv/bin/python -m pytest -q tests/browser` | **75 passed in 124.37s**（`EXIT=0`；4 文件，节点面板用例 26→33） |
+| kb 自测 | `_selftest_gate_schema.py` / `_selftest_n5_reachability.py`（可写影子 `LOOP_WORKSPACE`） | **PASS=10 FAIL=0** / **PASS=9 FAIL=0** |
+| 端到端（隔离副本） | 与 §47 同法（隔离工具副本 + 副本环境 + `LOOP_PORT=18199`），驱动器含 A51 竞态修正 | **ALL PASS 117/117**（phase 1/2/3/4/4b/5 = 50/27/18/8/8/6，六相 `rc=0`，`EXIT=0`） |
+| 文档 | `python3 doc/audit/check_doc_links.py` | 见 §48.4（同一命令；`missing=0`） |
+
+**首轮 e2e 观察（未掩盖）**：修正前驱动器在本轮跑出 `phase 1 A51 FAIL`（PASS=49/FAIL=1），
+定位为"job 已出现、执行尚未 pause"的观察窗口；修正后同命令 117/117 全过。判定为**验收脚本竞态**，
+不是业务流程回归；证据两轮都保留。
+
+### 48.3 真实作业避让（未重启）
+
+后台看守每 60s 记录 `GET :18098/api/runs/RUN-20261023-171744`：截至本轮收尾一直 `waiting_job` / `running`
+（`JOB-63f79d482690`）。**未重启 `:18098`、未 `pkill uvicorn`、未改 `kb/tools/run_guarded.sh`**；
+e2e 用隔离副本 + `:18199`，收尾已删除副本与 3 个 `.loop_drill` 测试 run。
+
+### 48.4 未关闭 / 风险
+
+1. **`:18098` 仍未重启**：新 `story` / 新面板要重启才生效；等真实 N9 作业到终态后由人重启
+   （进程在独立 PID 命名空间，Agent 无法按 PID 杀；重启命令见 §48.5）。作业终态前**不得**重启。
+2. **P-25 新 run 风险（预期代价）**：N6 现在 fail-closed——live 模型若不按格式输出观测点，N6 会失败，
+   真实轮会更"早失败"而不是带病通过 I3。首次 real 轮需观察模型是否稳定满足；如长期不满足，
+   需回到裁决 #1 讨论方案 B/C。
+3. **`observation_points` 只进了 detail，未在面板首屏展示**（P-25 面板侧仍是"缺印记"解释）。
+   是否要在 N6 面板显示"观测点 N 条"待后续需求。
+4. **P-25 系统侧仍未验证真机**：drill/standin 无 live 模型输出，`observation_points=null`；
+   真实轮能否过 I3 取决于首次 real 运行。
+5. **未拍板项保持**（与 §47 一致）：P-02/P-05/P-09（裁决 #3/#4/#5 = 保持）、N13/N14 尚无"逐条处置"语义（裁决 #2 只做只读）。
+6. **不声称"已合规"**：以上与证据 §8 同一份，保持可见。
+
+### 48.5 重启命令（等人执行；环境根/数据根取自 `GET /api/health`）
+
+```bash
+cd /home/work/chenjunming/change-impact-loop/loop
+LOOP_ENV_ROOT=/home/work/chenjunming/change-impact-loop/workspaces/s0-work-20261023 \
+LOOP_WORKSPACE=/home/work/chenjunming/change-impact-loop/workspaces/s0-ws-20261023 \
+LOOP_PORT=18098 ./run.sh
+```
+
+重启前请确认 `RUN-20261023-171744` 已不在 `waiting_job/running`；重启后我可用真实 run 复核新面板
+（`story.headline` / N13 只读待确认项 / N12 报告全文）。
+
+---
+
+## 49 真实作业终态与重启前置（2026-10-23 21:25）
+
+- 真实 run `RUN-20261023-171744` 已到终态：`failed`（21:24:53）。作业 `JOB-63f79d482690`
+  `phase=cancelled`、`elapsed_s=12918.7`（约 3h35m）；事件尾部 `#35 cancel_requested → #36 cancelled →
+  #37 lifecycle failed`。**取消由外部发起**（非本 Agent；本 Agent 未对 `:18098` 做任何写操作），
+  按既定契约"取消不得当成功"判失败。
+- 裁决 #7 的**重启前置条件已满足**（run 不再 `waiting_job/running`）。但 uvicorn 进程在独立 PID 命名空间，
+  Agent 沙箱无法按 PID 停止 ⇒ **物理重启需由人执行**，命令见 §48.5。重启后可用该 run 复核新面板
+  （N1–N9 的 `story`、N9 未收尾、N10–N16 未到达、N4 逐条处置未留存）。
+- 本节只追加事实，不改 §48 的门禁数字（§48.2 的四道门仍对应当前工作树）。
+
+---
+
+## 50 第三轮补充修订（R3-01～R3-18，2026-10-23 晚，接 §47/§48/§49）
+
+> **来源**：遗漏审计开工包 [`plans/2026-10-23-node-panel-revision-round3-kickoff.md`](plans/2026-10-23-node-panel-revision-round3-kickoff.md)；
+> 实现契约 [`plans/2026-10-23-node-panel-revision-round3-impl.md`](plans/2026-10-23-node-panel-revision-round3-impl.md)；
+> 证据 [`evidence/NODE_PANEL_ROUND3_20261023.md`](evidence/NODE_PANEL_ROUND3_20261023.md)；
+> 规格状态 [`SPEC-REV-02` §E](spec/SPEC-REV-02-20261023.md)、[`SPEC-02` §10.4.2/§10.4.5](spec/LOOP_ORCHESTRATION_SPEC.md)、
+> [`SPEC-04` §4.2.1/§4.2.2/§6.7](spec/WEB_UI_SPEC.md)。本节**只追加**，不改 §47–§49 的数字与结论。
+
+### 50.1 改了什么（按 R3 分片）
+
+| 片 | 项 | 落点（关键改动） |
+|---|---|---|
+| W1 宿主数据面 | R3-01（P0）、R3-04 写侧、R3-09 | `prompts/loop_nodes.yaml::n6_author` 示例改为 `uvm_info("<marker>", …)`（marker 是 UVM_INFO 的 **ID**，不是消息前缀）；`model_steps._validate` 的 n6 分支**恒执行** `host.evidence.resolve_expected_imprint(marker, run_dir)`，解析不到 ⇒ fail-closed（无"没绑就跳过"旁路，有反向用例锁死）；`gates._resumed` 的 `decisions/<gate>.json` records 增 `hard_block:[{code,title,message}]` 快照；drill `N9_submit.detail.cases=1`、drill `N7.detail.case_count=1` |
+| W2 story 投影 | R3-03、R3-06、R3-08、R3-10、R3-15 | `story.observation_points`（仅 N6 下发 key；null/[]/数组三态）+ N6「观测点」关键数字；`story.evidence_groups` / `evidence_groups_note`（N7/N9 按用例分组，只用面板展示的 run 目录内 refs）；`not_reached` headline 加中文 gloss；`build_story(..., run_halted=…)` 让"drill 早停"不再被误归因为"演示模式不提交"；`GATE_NODES` 改从 `node_registry` 引用 |
+| W3 前端 | R3-03/06/07/08/10/12/13 | 观测点可折叠列表（三态）、证据按用例分组、`example_line` 默认收起、`headline_source` 小字附注、`attached[].note` 在浮窗可见；删除死函数 `app.js::renderEntryDecisionHint` 与唯一调用；前端不再自拼"等它跑完/演示模式" |
+| W4 服务端/清理/文档 | R3-04 读侧、R3-11、R3-14、R3-15、R3-17 | `contracts.gate_entries_view` 已决策态从 ledger 读 `hard_block`（旧 run ⇒ "当时的阻断项未留存"，`counts.hard_block=null` 不写 0）；新增 `services/node_registry.py`（闸门节点↔闸门 id 唯一来源）；`spikes/run_software_checks.sh` 不再叠出 `-qq`（汇总行可见）；新 run 字段登记为 SPEC-02 §10.4.5 **可选下限**；SPEC/STATUS/evidence 收尾 |
+
+**新增/修改的判定用测试**：`tests/test_n6_imprint.py`（新，7）、`tests/test_node_registry.py`（新，3）、
+`tests/test_software_checks_script.py`（新，2）；扩展 `test_node_story.py`（105）、`test_flow.py`、
+`test_node_detail_projection.py`（61）、`tests/browser/test_node_detail.py`（43）。
+**没有放宽或删除任何既有断言**（唯一改写是 R3-08 按新契约收紧 `not_reached` 期望串）。
+
+### 50.2 四道门实测（数字为命令输出复制；同一最终工作树，2026-10-23 22:1x）
+
+| 门 | 命令 | 实测 |
+|---|---|---|
+| 软件层 | `bash loop/spikes/run_software_checks.sh --ignore=tests/browser` | **695 passed, 3 deselected, 1 warning in 154.35s**（`EXIT=0`；收集 698；3 项 `env_layer` 按脚本默认排除并在输出列出；§48 基线 656） |
+| 浏览器 | `cd loop && HOME=$(mktemp -d) LOOP_BROWSER_EXECUTABLE=/usr/bin/google-chrome .venv/bin/python -m pytest -q tests/browser` | **85 passed in 111.88s**（`EXIT=0`；§48 基线 75，+10） |
+| kb 自测（schema） | `LOOP_WORKSPACE=<可写影子> loop/.venv/bin/python kb/tools/_selftest_gate_schema.py` | **PASS=10 FAIL=0**（`EXIT=0`） |
+| kb 自测（N5 可达性） | `LOOP_WORKSPACE=<可写影子> loop/.venv/bin/python kb/tools/_selftest_n5_reachability.py` | **PASS=9 FAIL=0**（`EXIT=0`） |
+| 端到端（隔离副本） | 工具副本 + `LOOP_ENV_ROOT=workspaces/real-env-copy LOOP_WORKSPACE=workspaces/real-env-copy/kb LOOP_PORT=18199 bash spikes/accept_v1_run.sh` | **ALL PASS，117/117**（phase 1/2/3/4/4b/5 = 50/27/18/8/8/6，六相 `rc=0`，`EXIT=0`） |
+| 文档 | `python3 doc/audit/check_doc_links.py` | `checked=1788 skipped=22543 historical=857 known_missing=10 env_missing=19 missing=0`，`EXIT=0` |
+
+- 端到端在**隔离工具副本**上跑，跑完删除副本与 3 个 `.loop_drill` 测试 run；未写 `:18098` 的真实 run 目录。
+- `env_missing` 由 §48 的 16 变为 19：多出的是另一条线本轮改动里的环境侧引用（不在本仓可验证范围），
+  `missing=0`（本仓链接）未变。
+
+### 50.3 未关闭 / 风险（必须与通过结论一起读）
+
+1. **R3-02/R3-05 真机复核未执行**：`:18098` 仍是第一版"人话面板"旧构建（`/openapi.json` 18 条路由、
+   无 `/api/runs/{id}/report`；`nodes/N1` 的 `story` 只有 `purpose/steps/key_results`）。进程在独立 PID
+   命名空间，按红线未重启 ⇒ 新面板**未做**真机复核（N1–N9 story / N4 逐条处置留存 / N13 只读清单 /
+   N12 报告全文等）。重启命令与复核清单见 §50.4。
+2. **R3-16 `doc/UI_RUNBOOK.md` 未改**：该文件仍是另一条线未提交改动（`git status` 未落），按写权互斥不动；
+   过期段落待该线落定后由对应 owner 更新。
+3. **R3-18 真实轮验收未做**：上一轮 real `RUN-20261023-171744` 在 N9 被**外部取消**（21:24:53 `failed`），
+   未到 N16 ⇒ P-13/P-14/P-20/P-21/P-24/P-26 等的真机表现本期无法观测；只登记、不伪造。
+4. **P-25 live 首次真机验证缺口**：可解析性已由 Host fail-closed + 端到端单测证明
+   （`consistent=True`、`verdict.passed=True`），但 live 模型是否稳定按新格式产出观测点要等下一次 real 轮；
+   若长期不满足，需回到裁决 #1 讨论方案 B/C。
+5. **旧 run 不回填**：新 story 字段、新 detail 字段、闸门 `hard_block` 只对新 run 生效；
+   历史 run 如实显示"未下发/未留存"。
+6. **`app.js` 删除区与另一条线改动同 hunk**：删的是死函数 `renderEntryDecisionHint` 及其唯一调用，
+   另一条线的逐条处置控件完整保留；review 时按实体区分。
+7. **"未收尾节点"仍会显示「还没有收尾记录，关键数字等它跑完再看」**：这是 SPEC-REV-02 §R1 对
+   "运行未终态、节点还没跑完"的规定文案，不属于 R3-08 的 `not_reached`；R3-08 只保证**未到达**态
+   不出现该措辞（有断言）。
+8. **不声称"已合规"**：以上与 [`evidence/NODE_PANEL_ROUND3_20261023.md` §8](evidence/NODE_PANEL_ROUND3_20261023.md)
+   同一份，保持可见。
+9. **无独立终验**：本轮由 Lead + 3 个 owner（宿主数据面 / story 投影 / 前端）分片实现，各自跑本片测试，
+   Lead 统一跑四道门；**没有独立验证者复核**（AGENTS §2.5：同一执行者分阶段验证应如实说明）。
+
+### 50.4 重启命令与重启后复核清单（需人执行）
+
+```bash
+cd /home/work/chenjunming/change-impact-loop/loop
+LOOP_ENV_ROOT=/home/work/chenjunming/change-impact-loop/workspaces/s0-work-20261023 \
+LOOP_WORKSPACE=/home/work/chenjunming/change-impact-loop/workspaces/s0-ws-20261023 \
+LOOP_PORT=18098 ./run.sh
+```
+
+重启后（用 `RUN-20261023-171744`，状态 `failed`/终态）复核：
+
+1. `GET /api/runs/RUN-20261023-171744/nodes/N1` ⇒ `story.headline` 出现；N1–N9 的关键数字/状态释义；
+2. `GET …/nodes/N9` ⇒ 未收尾态文案；`GET …/nodes/N10` ⇒ "本轮没有走到这个节点（运行停在 failed，失败）"；
+3. `GET …/nodes/N4` ⇒ "逐条处置未留存（该 run 早于处置落账）" + "当时的阻断项未留存"；
+4. `GET /api/runs/RUN-20261023-171744/report` ⇒ 404（该 run 停在 N9，没有 `n12_report.md`；端点本身存在）；
+5. `GET /api/runs/RUN-20261023-171744/nodes/N13` ⇒ 只读待确认项（G2 未到达时不编条目）。
+
+复核结果按"只增"追加到 [`evidence/NODE_PANEL_ROUND3_20261023.md`](evidence/NODE_PANEL_ROUND3_20261023.md) 或新 §50 子节。

@@ -20,7 +20,7 @@
 | 目录/文件 | 是什么 | 入口 / 主要文件 |
 |---|---|---|
 | [`OVERVIEW.md`](OVERVIEW.md) | **项目总览 + 三张流程图**（架构边界 / 主流程 / 长任务生命周期） | 先读这个 |
-| [`UI_RUNBOOK.md`](UI_RUNBOOK.md) | **人工跑通手册**：起服务、配置一次运行、三道闸门怎么点、终点判读与排障（操作类，非契约） | 要亲手跑一遍时看 |
+| [`UI_RUNBOOK.md`](UI_RUNBOOK.md) | **人工跑通手册（2026-10-23 版）**：起服务与预检、S0 环境准备与演练、运行配置、节点详情/Agent 窗口、三道闸门怎么点、终点判读与排障（操作类，非契约） | 要亲手跑一遍时看；截图见 [`evidence/UI_RUNBOOK_20261023/`](evidence/UI_RUNBOOK_20261023/README.md) |
 | [`spec/`](spec/) | 三份契约：业务篇 / 编排篇 / 环境插件篇 | 见 §2 |
 | [`agents/`](agents/) | 6 个角色定义 + 2 份开工提示词 | [`agents/README.md`](agents/README.md) |
 | [`evidence/`](evidence/) | 验收报告与演练证据（**内容冻结、只增不改**） | [`evidence/README.md`](evidence/README.md) |
@@ -38,10 +38,12 @@
 
 内网浏览器验证：[Rocky 离线包与运行命令](../loop/offline/README.md) → [交付计划](plans/2026-10-22-browser-offline.md)；实际结果与主机系统库限制见 STATUS §36。
 
+节点面板可读性集中修订：[走查记录与 P-01～P-35](spec/SPEC-REV-02-20261023.md#c-逐节点走查记录与待修订项滚动登记集中一次性修订) → [开工交接提示词](plans/2026-10-23-node-panel-revision-kickoff.md) → [实施计划与接口契约](plans/2026-10-23-node-panel-unified-revision-plan.md) → [实测证据](evidence/NODE_PANEL_REVISION_20261023.md) → [第三轮补充修订开工包](plans/2026-10-23-node-panel-revision-round3-kickoff.md)（遗漏审计：N6 印记可解析性是 P0）→ [第三轮实现契约](plans/2026-10-23-node-panel-revision-round3-impl.md) → [第三轮实测证据](evidence/NODE_PANEL_ROUND3_20261023.md)（R3-01～R3-18）。**P-01～P-35 已集中修订（2026-10-23）**，二轮 9 项用户裁决（P-25 观测点输出、N13/N14 只读待确认项、G2 报告一次点击等）已落地，门禁见 STATUS §47/§48；第三轮补充修订的 R3 项与门禁见 STATUS §50；第一版"人话面板"的实测见 STATUS §45。
+
 ## 2 `spec/` 契约
 
-> **编号**：每份 SPEC 有稳定编号 `SPEC-0X`（文件名不变）。当前修订记录：[`SPEC-REV-01`](spec/SPEC-REV-01-20261022.md)（2026-10-22，待验收）。
-> 修订记录只增不改；后续依次 `SPEC-REV-02`…
+> **编号**：每份 SPEC 有稳定编号 `SPEC-0X`（文件名不变）。当前修订记录：[`SPEC-REV-02`](spec/SPEC-REV-02-20261023.md)（2026-10-23，P-01～P-35 已修订、门禁见 STATUS §47；上一份 [`SPEC-REV-01`](spec/SPEC-REV-01-20261022.md) 已生效）。
+> 修订记录只增不改；后续依次 `SPEC-REV-03`…
 
 | 编号 | 文件 | 管什么 |
 |---|---|---|

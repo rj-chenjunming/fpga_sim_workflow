@@ -412,6 +412,29 @@ n9_sim chunk                       park chunk                      job_runner �
 > 因此"只加一个节点详情端点"不足以满足本节——`host_steps.py` / `model_steps.py` / `long_jobs.py` / `gates.py`
 > 的 `node_finished` 调用都必须补 detail（各自 owner 的写权）。
 
+**展示投影 `story`（SPEC-REV-02 R1）**：详情响应在既有字段之外**只增**一个 `story` 对象，
+由服务端确定性生成，供面板"人话优先"展示；界面直接渲染，不自行拼装：
+
+| 字段 | 含义 | 生成规则 |
+|---|---|---|
+| `purpose` | 一句话：这个节点在流程里干什么 | 来自节点目录（`NODE_CATALOG`）；未知节点 `null`；**不随数据变化** |
+| `headline` | 一句话结果（面板「结果」区首屏显示） | 服务端按节点模板从已有 `detail` 字段确定性生成（[SPEC-REV-02](SPEC-REV-02-20261023.md) §1.1/§C.2）；缺数据写"未下发"；**不改写** `summary` 原文（原文移入面板「原始记录」） |
+| `headline_source` | `template` / `summary` / `missing` | 说清 headline 是模板生成、退化为 summary，还是确实未下发 |
+| `note` | 首屏黄条 `{text, level}` 或 `null` | 例：N2「N 条需要你确认，到 G1 逐条处置」；闸门等待态硬阻断白话（P-10/P-29）。`level ∈ {warn, info}` |
+| `not_reached` | 运行已终态且该节点无事件 | 只有 `run_status ∈ {finished, failed}` 才可为真（P-30）；为真时正文不得出现"等它跑完" |
+| `not_executed` | drill/演示下确实没有执行该动作 | 与 `not_reached`、`未下发` 三者互不替代（P-32/P-33） |
+| `evidence_note` | 证据区首行说明 `{text, kind}` 或 `null` | `kind ∈ {agent_calls, not_executed, in_events, artifact}`；`agent_calls` 时界面**不得**显示"证据缺失"（P-20/P-23/P-27） |
+| `status_note` / `status_glossary` | 状态原值的中文释义 | 只作释义：界面显示 `{原值} {释义}`，原值逐字保留、不归一（P-07）；glossary 由服务端下发，前端不手抄 |
+| `steps` | 按事件顺序的人话步骤 | 逐条事件按 `kind` 白名单映射：`node_started`→"开始执行"；`gate_pending`→"等待人工决策（可选 …）"；`gate_decided`→"人工已决策：…（actor）"；`job_submitted`→"提交作业 … 覆盖 N 个用例"；`job_finished`/`node_finished`→"结束，状态 …"；`node_failed`→"失败：<原文>"；`warning`→"警告：…"；`admission_*`→槽位事件。只读事件现有字段，缺字段写"未下发/原因未下发" |
+| `key_results` | 逐节点精选字段 | 按 [SPEC-REV-02](SPEC-REV-02-20261023.md) §R1 的「关键数字」清单取值；缺失项 `missing=true` + `text="未下发"`；不换算、不判绿。P-09/P-12/P-19 起逐节点精简（N1 只留 2 项；N2 用内容维度；md5/路由计数不进关键数字） |
+| `gate` | 闸门节点二级差异清单（见 §10.4.2） | 非闸门节点 `null`；只透传服务端只读投影，界面不自行拼装 |
+
+
+- `steps` 只做**同一事件的事实陈述**，不推断因果、不排序材料、不合并子事件（模型子事件
+  `N3_model` / `N3_request` 仍属各自 `node`，不并入父节点）。
+- `story` 不改变 `summary` / `detail` / `events` / `refs` 的原始语义；`seq` 只随 `events` 下发，
+  正文不展示（[SPEC-04](WEB_UI_SPEC.md) §4.2.1）。
+
 **失败态**：`node_failed` + `message` 原文 + 最后一条事件；界面不得显示"完成"。
 **禁止**把"有输入缺口/子步失败"记成 `node_finished ok`（现存反例见 [SPEC-REV-01](SPEC-REV-01-20261022.md) §D1：N2 的 `rc=3` 被当成功）。
 
@@ -422,6 +445,122 @@ n9_sim chunk                       park chunk                      job_runner �
 
 **端点**：`GET /api/runs/{run_id}/nodes/{node}`（契约见 [SPEC-04](WEB_UI_SPEC.md) §6.7）；覆盖全部节点；
 未实现的节点返回显式空投影（`known=false`），不返回 404 冒充"节点不存在"。
+
+### 10.4.1 节点详情的新增只读字段（SPEC-REV-02 §C 的实现面）
+
+详情投影在原字段之外**只增**下列字段（界面直接渲染；不新增业务写动作、不改事件 kind/status）：
+
+| 字段 | 含义 | 来源 |
+|---|---|---|
+| `run_status` | 运行文档状态（`running` / `waiting_gate` / `waiting_job` / `waiting_slot` / `finished` / `failed`） | 运行视图投影（P-30 未到达态的数据面） |
+| `run_terminal` | 运行是否已终态（`finished`/`failed`） | 同上 |
+| `node_started_present` | 该节点事件里是否有 `node_started` | 事件流（P-33：没有就诚实标注"无开始事件"，不伪造步骤） |
+| `report` | `{file, available, bytes}` 或 `null`（仅 N12） | run 目录 `n12_report.md` 存在性 + 字节数（正文由 §10.4.3 端点给） |
+| `gate` | 闸门节点二级差异清单（仅 N4/N13/N14，见 §10.4.2） | `pending_interrupt.payload` / `n2_diff.json` + `decisions/<gate>.json` |
+
+### 10.4.2 闸门逐条处置：面板投影与 Host 落账（P-17/P-18）
+
+- **材料来源**（只读投影，界面不读盘）：
+  - 待决策：运行视图 `pending_interrupt.payload.difference_items.entries`（已含 `before`/`after`/`diff_hunk`/
+    `encoding`/`lines`/`offsets`）；
+  - 已决策/历史 run：`n2_diff.json` 投影 + `decisions/<gate>.json`（Host 落账）。
+- **归并口径（唯一）**：按 `entry_id` 归并同一文件的**多路证据**（`allfile` 整文件指纹 + `rtl_file` 行级证据）：
+  主条目 = 有 `diff_hunk` 的条目；`allfile`（md5-only、无 hunk）**只作附证据**、`redundant_of=<entry_id>`、
+  **不计入修订点**（`counts.revision_points` = 唯一 `entry_id` 数）。
+  "需要人工处置的条数"（`counts.unresolved_points`）也按唯一 `entry_id` 计——与 `entry_decisions` 的键同一口径。
+- **Host 落账**（唯一写者 = 闸门 chunk，`run_dir` 内只读产物、只增不改）：
+  `run_dir/decisions/<gate>.json`
+
+  ```json
+  {"schema": "loop/gate_entries", "gate": "G1_diff_confirm", "run_id": "RUN-…",
+   "records": [{"cycle": 0, "decided_at": "…", "decision": "confirmed", "actor": "human:…",
+                "reason": "…", "entries": {"<entry_id>": {"decision": "confirmed", "reason": null}},
+                "hard_block": [{"code": "I2_CASES_PENDING", "title": "…", "message": "…"}]}]}
+  ```
+
+  `records` **append-only**；同一闸门多次决策（如 G2 返工回边）逐轮追加。
+  `hard_block` 是**签署当时**的硬阻断快照（取自提交前材料 `gate_material::<gate>`；材料里没有 ⇒ `[]`），
+  已决策态面板只从这份落账读"当时的硬阻断"——**不得**拿运行视图里现在的 `blockers` 冒充当时；
+  ledger 没有该键（早于落账的旧 run）⇒ 面板显示"当时的阻断项未留存"，`counts.hard_block` 为 `null`
+  （不写 0 冒充"没有硬阻断"）。
+  该文件是**面板展示材料**，不是闸门权威：权威仍是 `gates.json` + `gates.sha256`。
+  该文件是**面板展示材料**，不是闸门权威：权威仍是 `gates.json` + `gates.sha256`。
+  `gates.json` 不存逐条处置 ⇒ 没有落账的历史 run，面板只能显示"整门决策 + 逐条处置未留存"，
+  **不得**从 `gates.json` 反推逐条处置（SPEC-REV-02 §C.2 P-18、交接提示词 §0.5 ⑥）。
+- **G2/G3 只读「待确认项」（2026-10-23 裁决 #2）**：闸门节点投影增 `gate.items`，
+  形状 `[{id, kind, title, detail, severity}]`，`kind ∈ {blocker, open_item, conflict, case}`；
+  **不带 disposition、不参与提交**（逐条处置语义只属于 G1/I1）。来源：
+  G2 = `blockers`（blocker/defect）+ N12 `detail.open_items`；G3 = `blockers` + 冲突快照（未清摘要）
+  + `N15_select.detail.cases`（已决策且有选集时才列）。缺材料就少列、不编。
+  与之配套 `gate.state` 四态：`waiting` / `decided` / `read_only`（非 G1 且只有只读清单）/ `no_material`。
+- **提交入口不变**：面板不新增写动作；勾选与理由只进共享 `gate-session` 草稿（会话级、不落盘），
+  提交仍只有闸门视图现有表单（`POST …/gates/{gate}/decision` 的 `entry_decisions` 字段，覆盖全部 `entry_id`）。
+- **逐条处置校验仍是唯一判据**：`chunks/gates.py::normalize_entry_decisions`（覆盖、取值、理由、与整门决策一致）；
+  前端只做提交前提示，不新增判据。
+
+### 10.4.3 报告只读视图（P-28）
+
+面板在 G2 验收一份"人看不到正文"的报告，属能力缺口；补齐方式是一条**只读端点**
+（契约见 [SPEC-04](WEB_UI_SPEC.md) §6.8）：
+
+- 仅允许本 run 的 `n12_report.md`（白名单写死，**不接受任意路径**；越界/符号链接逃逸一律 403）；
+- 只读、不落盘缓存、有大小上限（512 KiB，超出即截断并标 `truncated=true`）；
+- 不返回 run 目录外的任何文件；缺失 ⇒ 404。
+
+### 10.4.4 N16 结果落账（P-34）
+
+N16 每次尝试都必须留下结果件：`run_dir/n16_result.json`（已存在则 `n16_result.<n>.json`，只增不改）。
+它与人触发真实晋升的 `promote_result.json` **分开**（避免 dry-run 与真实晋升互相覆盖）；
+详情投影把两者都列入 `refs`（存在即列，缺失不编造）。
+
+### 10.4.5 逐节点新增 detail 字段（SPEC-REV-02 §C 实现面，只对新 run 生效）
+
+下表字段由各节点 owner 在 `node_finished.detail` 补齐（旧 run 不回填、不删既有字段、不改事件）：
+
+| 节点 | 新增 detail 字段 | 对应 P 项 |
+|---|---|---|
+| N3 | `digest_summary`（模型摘要正文）、`digest_confirmations`（需人工确认的点）、`groups_count`、`offered_segments_empty`；节点 `summary` 改为模型 `summary`（组数降为关键数字） | P-13/P-14 |
+| N5 | `to_check_count`（条目数）、`to_check_case_count`（去重用例数，面板首屏用）、`to_check_cases`（用例名，取自 N5 产物，不解析 stdout） | P-19 |
+| N6 | `case_edits`（逐用例：用例名 + 每处 `{line, old, new}`）、`case_edits_source`（=`n6_output`）、`observation_points`（`[{case, marker, addr, offset, expected_value}]`，裁决 #1） | P-20/P-25 |
+| N6_apply | `case_edits`（与 N6 同源）、`applied_cases` | P-21 |
+| N7 | `case_count`（编译用例数；drill 与 real 同字段名） | P-22 |
+| N8 | `check_count`、`must_fix_count`、`cycle`、`limit` | P-23 |
+| N9 | `koutou1_by_case`、`example_line`、`identity`（`{consistent, mismatches}`）、`cases_detail` | P-24 |
+| N10 | `cases_table`（逐用例：双口径/印记/判定/原因）、`classification`（桶数与三类归并计数） | P-26 |
+| N11 | `identity_table`（逐用例身份四方比对）、`unclosed`、`rework_requests_count` | P-27 |
+| N12 | `refs_parseable_count`、`open_items`、`cases_summary` | P-28 |
+| N15_select | `cases`（用例名）、`will_really_run` | P-31 |
+| N15 | `cases`（用例名）、`executed`、`failed_cases`、`will_really_run` | P-32 |
+| N9_submit / N15_submit | 补自己的 `node_started`；`node_finished.refs` 带作业日志；`cases`（覆盖用例数；drill 也要下发） | P-33 |
+| N16 | `reason_line`（stderr 首行原文）、`result_artifact`；落 §10.4.4 结果件 | P-34 |
+| HALT | `reason`（白话说终止原因；原 `{gate: decision}` 字段保留在 `decisions`） | P-35 |
+| 全部闸门 | `gate_decided.detail.entries`（逐条处置，新 run） | P-15/P-18 |
+| 全部闸门 | `run_dir/decisions/<gate>.json` 的每条 `records[]` 增 `hard_block`（`[{code,title,message}]`，"当时的硬阻断"快照，取自提交前材料；无则 `[]`） | P-15（R3-04） |
+
+- **可选下限的语义（R3-11）**：上表字段**不进入** `node_view.REQUIRED_FIELDS`（那些是**所有 run**
+  都必须有的下限）。上表是"新 run 才下发"的**可选下限**：新 run 必须下发（显式 `null` 也算下发），
+  旧 run 缺它们只按"未下发"展示，**不**进 `missing_fields`、不报错、不回填。
+
+- **P-25（2026-10-23 裁决 #1：作者模型产出观测点）**：`N6Output` 增 `observation_points`，
+  每项 `{case, marker, addr, offset, expected_value, basis}`（Host detail 投影只留前五项），
+  `marker` 匹配 `^N6_[A-Za-z0-9_]+$`；提示词要求每个改动用例**真的**打印
+  `uvm_info("<marker>", $sformatf("OK <addr>+<off> <name> = 0x%08h", actual), UVM_LOW)`——
+  **marker 是 UVM_INFO 的 report ID**（不是消息前缀，见 R3-01），打印**实读值**（不是常量），
+  并把该行写进 `edits[].new`。Host 校验 fail-closed：每个目标用例至少一条、marker 唯一、
+  marker 字符串必须出现在同用例 `edits[].new` 里、且 `host.evidence.resolve_expected_imprint(marker)`
+  必须能解析出非空 address+value（否则"期望不可解析"，I3 永远过不了）；校验不过 ⇒ `node_failed`。
+  N10/`host.evidence` 的期望解析（按文档索引校验 addr/value）不变。只对新 run 生效。
+- **P-01（2026-10-23 裁决 #6）**：N0 新 run 的 `summary` 用「预置数据（夹具）初始化」措辞
+  （旧 run 保持原文，不回填）；drill 首屏说明保留"预置数据（夹具）"双写，real 运行不显示该说明行。
+- **P-14（提示词/schema）**：`n3_digest` 提示词①分组改为**有条件**（`offered_segments` 为空不硬分组，
+  按文件/改动逐条说清楚，并把"缺段信息"写成一条待确认）②`summary` 先写改了什么再写影响
+  ③`risky_points` 每条"一句风险 + 依据"；N3 输入补 `id`/`offsets`（已有数据）。只影响新 run 的模型输出。
+- **P-25 真机验证缺口（2026-10-23 第三轮）**：观测点印记的**可解析性**已由 Host fail-closed 守住
+  （链路：用例打印 → 日志 → `find_imprints`(ID 含 `N6_`) → `parse_report_ids` → 期望解析 → `_verdict`），
+  并有端到端单测证明；但**首次 live 真实轮**尚未跑到 N16（服务未重启 + 上一轮 real run 在 N9 被外部取消），
+  因此"live 模型是否稳定按格式产出观测点"仍待真机观察，结果记 `doc/STATUS.md`；不得预先写成"已通过"。
+
+
 
 ## 11. P0 验收判据（可判定）
 

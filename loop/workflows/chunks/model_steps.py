@@ -29,9 +29,11 @@ from __future__ import annotations
 import json
 import re
 import difflib
+from functools import partial
 from pathlib import Path
 from typing import Any
 
+from host import evidence as EV
 from host import model_provider as MP
 from host import paths as P
 from host import agent_memory as AM
@@ -45,6 +47,11 @@ _KNOWN_KINDS = frozenset({"n3", "n6", "n8", "n10", "n11", "n12"})
 #: I7 缺省上限（权威仍在 case_state 台账；这里只是缺省值，不新增漂移常量）
 DEFAULT_REWORK_LIMIT = 3
 
+#: P-25 方案 A：观测点印记名（与 `host/evidence.py` 的印记解析同前缀 `N6_`，不另写一套解析）。
+_OBS_MARKER_RE = re.compile(r"N6_[A-Za-z0-9_]+")
+#: 十六进制字面量（addr / offset / expected_value）：值必须带 `0x`，否则印记解析不到。
+_HEX_LITERAL_RE = re.compile(r"0x[0-9A-Fa-f]+")
+
 
 
 def _family_reason() -> str:
@@ -55,14 +62,15 @@ def _family_reason() -> str:
 # ---------------------------------------------------------------- 共享小工具（F06 已拆出）
 
 from .model_common import (  # noqa: E402
-    artifact as _artifact, counts_text, load_prompts, read_json as _read_json,
-    write_text as _write_text,
+    artifact as _artifact, case_edits_from_output, counts_text, load_prompts,
+    read_json as _read_json, write_text as _write_text,
 )
 from . import model_request as MR  # noqa: E402
 # F06：节点语义按模块拆分；这里保留兼容导出（消费者与测试不需要改 import）。
 from .n6_facts import _api_semantics_for, build_n6_targets  # noqa: E402,F401
 from .n10_semantics import (  # noqa: E402,F401
-    PENDING_CLASSES, _case_pass_fields, _diffs_for_classification, _per_case_fail_buckets,
+    PENDING_CLASSES, _case_pass_fields, _cases_table, _classification_summary,
+    _diffs_for_classification, _per_case_fail_buckets,
     _persist_pending, _reconcile_markdown,
 )
 from .n11_guard import _host_identity  # noqa: E402,F401
@@ -75,16 +83,23 @@ def _request_contract(prompt_key: str) -> dict[str, Any]:
 
 async def _run_model_attempt(ctx: RunCtx, node: str, *, prompt_key: str,
                              input_data: dict[str, Any], offered: dict[str, Any]) -> dict[str, Any]:
-    """兼容导出：单次 attempt 的机制在 `model_request`，Host 校验器仍由本模块注入。"""
+    """兼容导出：单次 attempt 的机制在 `model_request`，Host 校验器仍由本模块注入。
+
+    校验器绑定**本轮 run_dir**（R3-01：N6 观测点 marker 必须能解析到本 run 的文档条目快照）。
+    """
     return await MR.run_attempt(ctx, node, prompt_key=prompt_key, input_data=input_data,
-                                offered=offered, validate=_validate)
+                                offered=offered, validate=partial(_validate, run_dir=ctx.run_dir))
 
 
 async def run_model_node(ctx: RunCtx, node: str, *, prompt_key: str,
                          input_data: dict[str, Any], offered: dict[str, Any]) -> dict[str, Any]:
-    """人工控制只包围模型请求，消费者在本函数返回后才取得输出（机制见 model_request）。"""
+    """人工控制只包围模型请求，消费者在本函数返回后才取得输出（机制见 model_request）。
+
+    R3-01：把 `ctx.run_dir` 绑进 Host 校验器 —— N6 观测点 marker 的可解析校验**必须**用
+    本 run 冻结的文档条目快照（生产路径恒有 run 上下文，不得退化到跨 run 猜测）。
+    """
     return await MR.run_model_node(ctx, node, prompt_key=prompt_key, input_data=input_data,
-                                   offered=offered, validate=_validate)
+                                   offered=offered, validate=partial(_validate, run_dir=ctx.run_dir))
 
 
 # ---------------------------------------------------------------- 用例态台账（I2）
@@ -234,11 +249,18 @@ def _check_membership(label: str, offered: set[str], claimed: list[Any], problem
     return {str(c) for c in claimed if str(c) in offered}
 
 
-def _validate(kind: str, payload: dict[str, Any], *, offered: dict[str, Any]) -> dict[str, Any]:
+def _validate(kind: str, payload: dict[str, Any], *, offered: dict[str, Any],
+              run_dir: Path | str | None = None) -> dict[str, Any]:
     """Host 的确定性校验。返回 `{ok, problems, accepted}`。
 
     `kind` 由 `prompt_key` 前缀派生（`n12_report` → `n12`）。
     **未知 kind 必须显式报错**（历史上曾因归一化失配导致五个节点"没检查"看起来像"没问题"）。
+
+    `run_dir`（R3-01）：本轮 run 目录，用于「N6 观测点 marker 的期望必须可解析」——
+    解析仍归 `host.evidence.resolve_expected_imprint`（本层不另写判据）。**该检查恒执行**：
+    `run_dir=None` 时由解析器自己的回退链（跨 run 唯一命中 / current-index）解析，仍解析
+    不到 ⇒ problem —— 不存在"调用方没绑 run_dir 就跳过校验"的旁路
+    （"校验未实现/未执行 = 不得判通过"）。生产路径恒以 `ctx.run_dir` 绑定。
     """
     problems: list[str] = []
     data = payload.get("data")
@@ -325,6 +347,84 @@ def _validate(kind: str, payload: dict[str, Any], *, offered: dict[str, Any]) ->
             problems.append(f"缺少目标用例的 revision：{missing}")
         if not ok_revisions:
             problems.append("revisions 为空或全部被拒（必须覆盖全部目标用例）")
+
+        # ---- P-25 方案 A：观测点印记（跨字段约束，Pydantic 做不了 ⇒ Host fail-closed）
+        # ① 每个目标用例至少一条；② marker 唯一；③ marker 必须出现在**同用例**
+        # `edits[].new` 里（防"只列不写"）；④ 格式/字段非法 ⇒ 记 problem（调用方 node_failed）。
+        expected_cases = set(offered_cases) or {str(rev["case"]) for rev in ok_revisions}
+        edits_new_by_case = {
+            str(rev["case"]): [str(e.get("new") or "") for e in rev.get("edits") or []]
+            for rev in ok_revisions
+        }
+        raw_points = [p for p in _as_list(data.get("observation_points")) if isinstance(p, dict)]
+        ok_points: list[dict[str, Any]] = []
+        # 唯一性（跨字段约束）与"最终可接受"分开记账：重复检测不因后续某项不合法而被绕过。
+        seen_markers: dict[str, str] = {}
+        marker_case: dict[str, str] = {}
+        for index, point in enumerate(raw_points):
+            label = f"observation_points[{index}]"
+            case = str(point.get("case") or "")
+            marker = str(point.get("marker") or "").strip()
+            if expected_cases and case not in expected_cases:
+                problems.append(f"{label}.case 不在目标用例中：{case!r}")
+                continue
+            if not _OBS_MARKER_RE.fullmatch(marker):
+                problems.append(
+                    f"{label}.marker 格式非法：{marker!r}（必须匹配 ^N6_[A-Za-z0-9_]+$）")
+                continue
+            if marker in seen_markers:
+                problems.append(
+                    f"{label}.marker 重复：{marker!r}（{seen_markers[marker]} 与 {case}；"
+                    "印记必须唯一）")
+                continue
+            seen_markers[marker] = case
+            bad_fields = [
+                key for key in ("addr", "offset", "expected_value")
+                if not _HEX_LITERAL_RE.fullmatch(str(point.get(key) or ""))
+            ]
+            basis = str(point.get("basis") or "").strip()
+            if not basis:
+                bad_fields.append("basis")
+            if bad_fields:
+                problems.append(
+                    f"{label}（{marker or case}）字段非法/缺失：{bad_fields}"
+                    "（addr/offset/expected_value 需 0x 十六进制字面量，basis 不得空）")
+                continue
+            if not any(marker in text for text in edits_new_by_case.get(case, [])):
+                problems.append(
+                    f"{case}: observation_points.marker {marker!r} 未出现在该用例 edits[].new 里"
+                    "（只列不写 ⇒ 印记不会打印，I3 仍过不了）")
+                continue
+            # ---- R3-01：marker 的期望必须能从文档条目快照/索引解析出来。
+            # 只对 ID 形态正确还不够：解析不到期望地址/值 ⇒ 日志里的印记永远被判
+            # "期望不可解析"/"三向不一致"，I3 必失败 ⇒ 在请求前就 fail-closed（不静默放行）。
+            # **恒执行**：不存在"调用方没绑 run_dir 就跳过校验"的旁路 —— run_dir=None 时由
+            # `host/evidence.py` 自己的回退链（跨 run 唯一命中 / current-index）解析，仍解析
+            # 不到 ⇒ problem。口径唯一：解析判据仍归 `host/evidence.py`。
+            expected = EV.resolve_expected_imprint(marker, run_dir=run_dir)
+            if not (expected.get("address") and expected.get("value")):
+                reason = (
+                    expected.get("value_note")
+                    or f"文档条目快照/索引里没有匹配条目（resolved_by={expected.get('resolved_by') or '未解析'}）"
+                )
+                problems.append(
+                    f"{label}.marker {marker!r} 的期望地址/值不可解析：{reason}"
+                    "；marker 必须含 input.targets[].doc_bitdef.name（如条目 fpga_date ⇒ N6_fpga_date），"
+                    "否则 host/evidence 解析不到、I3 必失败")
+                continue
+            marker_case[marker] = case
+            ok_points.append({
+                "case": case, "marker": marker, "addr": str(point.get("addr")),
+                "offset": str(point.get("offset")),
+                "expected_value": str(point.get("expected_value")), "basis": basis,
+            })
+        missing_points = sorted(
+            c for c in expected_cases if c not in set(marker_case.values()))
+        if missing_points:
+            problems.append(
+                f"缺少目标用例的 observation_points：{missing_points}"
+                "（每个目标用例至少一条观测点印记）")
+        accepted["observation_points"] = ok_points
 
     elif kind == "n8":
         verdict = str(data.get("verdict") or "").strip().lower()
@@ -484,6 +584,37 @@ def _compose_n3_markdown(out: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def _n3_detail(out: dict[str, Any], *, offered_segments_empty: bool) -> dict[str, Any]:
+    """N3 detail 的**投影字段**（P-13/P-14，契约 §3）：只从模型输出取值，不解析 md 正文。
+
+    - `digest_summary` = 模型 `summary` 原文（面板据此显示"模型说了什么"）；
+    - `digest_confirmations` = 模型 `risky_points` 原文列表；
+    - `groups_count` = 模型分组条数（组数降级为关键数字，不再当节点摘要）；
+    - `offered_segments_empty` = 本轮是否**没有段信息**（P-14：空 ⇒ 提示词不要求硬分组）。
+    没有模型输出（standin/drill）⇒ 前三项显式 `None`（不拿夹具正文冒充模型结论）。
+    """
+    data = out.get("data") if isinstance(out.get("data"), dict) else {}
+    live = out.get("mode") == "live"
+    raw_summary = data.get("summary")
+    digest_summary = (
+        str(raw_summary).strip()
+        if live and isinstance(raw_summary, str) and str(raw_summary).strip()
+        else None
+    )
+    raw_conf = data.get("risky_points")
+    digest_confirmations = (
+        [str(x) for x in raw_conf]
+        if live and isinstance(raw_conf, list) else None
+    )
+    groups = data.get("groups")
+    return {
+        "digest_summary": digest_summary,
+        "digest_confirmations": digest_confirmations,
+        "groups_count": len(groups) if live and isinstance(groups, list) else None,
+        "offered_segments_empty": bool(offered_segments_empty),
+    }
+
+
 async def n3_digest(data: Any) -> dict[str, Any]:
     """N3 差异摘要（模型节点）→ 落盘 `run_dir/n3_digest.md`。
 
@@ -509,8 +640,12 @@ async def n3_digest(data: Any) -> dict[str, Any]:
 
     input_data = {
         "run_id": ctx.run_id,
+        # P-14 ④：`id` / `offsets` 是 N2 产物**已有**的字段，显式下发让模型能说清
+        # "是哪个文件、哪个偏移"（不新增取数、不构造证据）。
         "diffs": [
-            {**d, "entry_id": d.get("entry_id") or d.get("id"), "segment": d.get("segment"),
+            {**d, "entry_id": d.get("entry_id") or d.get("id"), "id": d.get("id"),
+             "offsets": d.get("offsets") or ([d["offset"]] if d.get("offset") else []),
+             "segment": d.get("segment"),
              "offset": d.get("offset"), "kind": d.get("kind"),
              "before": str(d.get("before")), "after": str(d.get("after"))}
             for d in diffs
@@ -552,25 +687,48 @@ async def n3_digest(data: Any) -> dict[str, Any]:
     _write_text(digest_path, text)
     out["artifact_path"] = str(digest_path)
     await data.async_set_state("n3_digest", out)
-    # §10.4：模型节点 source 按 live/standin 取；summary 用一行中文 + 该节点已有数字。
+    # §10.4：模型节点 source 按 live/standin 取。
+    # P-13/P-14：节点摘要**改用模型 summary**，组数降级为关键数字（`groups_count`）；
+    # 没有模型输出（standin/drill）时如实说"模型摘要未下发"，不拿夹具正文冒充。
     source = "model_live" if out["mode"] == "live" else "model_standin"
-    groups = (out.get("data") or {}).get("groups") or []
     covered = n2.get("diff_count")
-    if source == "model_live":
-        summary = (f"N3：{len(groups)} 组语义摘要，覆盖 {covered if covered is not None else '未下发'} 条差异"
-                   f"（provider={out.get('provider')}）")
+    detail_fields = _n3_detail(
+        out, offered_segments_empty=not input_data["offered_segments"]
+    )
+    confirmations = detail_fields["digest_confirmations"] or []
+    if detail_fields["digest_summary"]:
+        summary = f"N3：{detail_fields['digest_summary']}"
+        if confirmations:
+            summary += f"（另有 {len(confirmations)} 条需要你确认）"
     else:
-        summary = (f"N3：确定性替身摘要（未接入模型，非模型结论），"
+        summary = (f"N3：模型摘要未下发（{out['mode']} 模式未产出模型结论），"
                    f"覆盖 {covered if covered is not None else '未下发'} 条差异")
     ctx.node_finished("N3", status="ok" if out["mode"] in ("live", "standin") else "failed",
                       detail={"mode": out["mode"], "provider": out.get("provider"),
                               "problems": (out.get("validation") or {}).get("problems", [])[:3],
-                              "source": source, "summary": summary},
+                              "source": source, "summary": summary, **detail_fields},
                       refs=[str(digest_path)])
     return out
 
 
 # ---------------------------------------------------------------- N6
+
+
+def _observation_points(data_out: dict[str, Any] | None) -> list[dict[str, Any]] | None:
+    """N6 detail 的观测点投影（P-25，契约：`[{case, marker, addr, offset, expected_value}]`）。
+
+    只投影契约字段（`basis` 留在模型输出/调用记录里）；没有模型输出（standin/drill）⇒ None
+    （显式"未下发"，不是空列表冒充"0 条观测点"）。
+    """
+    raw = data_out.get("observation_points") if isinstance(data_out, dict) else None
+    if not isinstance(raw, list):
+        return None
+    return [
+        {"case": point.get("case"), "marker": point.get("marker"),
+         "addr": point.get("addr"), "offset": point.get("offset"),
+         "expected_value": point.get("expected_value")}
+        for point in raw if isinstance(point, dict)
+    ]
 
 
 async def n6_author(data: Any) -> dict[str, Any]:
@@ -622,14 +780,28 @@ async def n6_author(data: Any) -> dict[str, Any]:
                                extra={"cycle": cycles + 1,
                                       "targets": [t["case"] for t in targets],
                                       "write_scope": str(ctx.run_dir / "sandbox" / "TESTLIB")})
+    elif (out.get("validation") or {}).get("ok") is not True:
+        # P-25：观测点/edits 的 Host 校验失败必须**立刻显式失败**（不得静默继续到 N6_apply），
+        # 与 N3/N8/N11/N12 的 fail-closed 一致；错误里带缺哪个用例 / 哪个 marker。
+        problems = (out.get("validation") or {}).get("problems") or ["模型输出解析/校验失败"]
+        ctx.node_failed("N6", message=f"N6 修订输出校验失败（fail-closed）：{problems[:3]}")
+        raise RuntimeError(f"N6：修订输出未通过 Host 校验（含观测点约束）：{problems[:5]}")
     await data.async_set_state("n6_author", out)
     validation_ok = (out.get("validation") or {}).get("ok")
     source = "model_live" if out["mode"] == "live" else "model_standin"
+    # P-20：逐用例修改摘要由模型输出**确定性投影**（Host 不猜"改了哪一处"）；
+    # 与 N6_apply 的清单同源（同一函数），没有模型输出时显式 None。
+    case_edits = case_edits_from_output(out.get("data") if isinstance(out.get("data"), dict) else None)
+    observation_points = _observation_points(
+        out.get("data") if isinstance(out.get("data"), dict) else None)
     ctx.node_finished("N6", status=out["mode"],
                       detail={"mode": out["mode"], "cycle": cycles + 1,
                               "targets": len(targets),
                               "validation_ok": validation_ok,
                               "source": source,
+                              "case_edits": case_edits,
+                              "case_edits_source": "n6_output",
+                              "observation_points": observation_points,
                               "summary": (
                                   f"N6：第 {cycles + 1} 轮修订，目标 {len(targets)} 个用例，"
                                   "输出校验"
@@ -935,6 +1107,12 @@ async def n8_check(data: Any) -> dict[str, Any]:
 
     data_out = out.get("data") if isinstance(out.get("data"), dict) else {}
     verdict = str(data_out.get("verdict") or "").strip().lower()
+    # P-23：模型实际检查项数与必须修改项数（Host 只做**计数**，判据仍是模型输出+校验）。
+    # 没有 findings/must_fix（standin/drill 替身）⇒ 显式 None，不拿 0 冒充"检查了 0 项"。
+    findings = data_out.get("findings")
+    must_fix = data_out.get("must_fix")
+    check_count = len(findings) if isinstance(findings, list) else None
+    must_fix_count = len(must_fix) if isinstance(must_fix, list) else None
     if verdict not in ("pass", "rework"):
         # 显式缺失/非法 ⇒ 失败（C3：不得默认 pass）
         ctx.node_failed("N8", message=f"N8 verdict 缺失/非法：{verdict!r}")
@@ -974,6 +1152,8 @@ async def n8_check(data: Any) -> dict[str, Any]:
             ctx.node_finished("N8", status="escalated",
                               detail={"verdict": "rework", "cycle": new_cycles,
                                       "limit": limit, "escalated": True,
+                                      "check_count": check_count,
+                                      "must_fix_count": must_fix_count,
                                       "reason": "N8 返工超限 ⇒ 升级 N13 人工裁决",
                                       "source": n8_source,
                                       "summary": (f"N8：静态复核 rework 第 {new_cycles} 次，"
@@ -983,6 +1163,8 @@ async def n8_check(data: Any) -> dict[str, Any]:
             return out
         ctx.node_finished("N8", status="rework",
                           detail={"verdict": "rework", "cycle": new_cycles, "limit": limit,
+                                  "check_count": check_count,
+                                  "must_fix_count": must_fix_count,
                                   "source": n8_source,
                                   "summary": (f"N8：静态复核 rework（第 {new_cycles} 次，"
                                               f"上限 {limit}）⇒ 回 N6 返工（{out['mode']}）")})
@@ -1003,7 +1185,9 @@ async def n8_check(data: Any) -> dict[str, Any]:
     out["escalated"] = False
     await data.async_set_state("n8_check", out)
     ctx.node_finished("N8", status=out["mode"],
-                      detail={"verdict": "pass", "cycle": cycles,
+                      detail={"verdict": "pass", "cycle": cycles, "limit": limit,
+                              "check_count": check_count,
+                              "must_fix_count": must_fix_count,
                               "source": n8_source,
                               "summary": (f"N8：静态复核 pass（第 {cycles} 轮，上限 {limit}，"
                                           f"{len(cases)} 个用例；{out['mode']}）")})
@@ -1096,6 +1280,9 @@ async def n10_reconcile(data: Any) -> dict[str, Any]:
         await data.async_set_state("n10_reconcile", out)
         ctx.node_finished("N10", status="pass" if out["both_zero"] else "fail",
                           detail={"both_zero": out["both_zero"],
+                                  "cases_table": _cases_table(out.get("cases")),
+                                  "classification": _classification_summary(
+                                      bucket_count=fb.get("bucket_count"), items=None),
                                   "source": ("model_live" if cls_out["mode"] == "live"
                                              else "model_standin"),
                                   "summary": (
@@ -1215,6 +1402,11 @@ async def n10_reconcile(data: Any) -> dict[str, Any]:
                       detail={"cases": len(target_cases),
                               "verdict_passed": (n9.get("verdict") or {}).get("passed"),
                               "pending": len(pending_items),
+                              # P-26：逐用例表与失败分类摘要（只投影既有证据/模型输出）
+                              "cases_table": _cases_table(cases),
+                              "classification": _classification_summary(
+                                  bucket_count=len(fb.get("buckets") or []),
+                                  items=cls_data.get("items")),
                               "source": ("model_live" if cls_out["mode"] == "live"
                                          else "model_standin"),
                               "summary": (
@@ -1241,6 +1433,29 @@ def _ledger_summary(ctx: RunCtx) -> dict[str, Any]:
             "cases": led.get("cases") or [], "state_counts": counts,
             "rework_cycles": led.get("rework_cycles") or {},
             "pending_verified": counts.get("已修订待验", 0)}
+
+
+def _identity_table(host_identity: dict[str, Any]) -> list[dict[str, Any]]:
+    """N11 逐用例身份表（P-27）：只投影 Host 四方同值事实，不重做判定。
+
+    字段映射（契约 §3）：`case_md5` = 跑的身份头里的 case md5（`run_md5` 同值，
+    `host.evidence` 的 `identity.case_md5` 就是 case 文件指纹）；`audit_md5` = 审的 md5
+    （N6 冻结值）；`consistent` = Host 四方同值结论。drill 无真实身份头 ⇒ 空表。
+    """
+    rows: list[dict[str, Any]] = []
+    for item in host_identity.get("cases") or []:
+        if not isinstance(item, dict):
+            continue
+        run_md5 = item.get("run_md5")
+        rows.append({
+            "case": item.get("case"),
+            "run_id": item.get("run_id"),
+            "case_md5": run_md5,
+            "audit_md5": item.get("reviewed_md5"),
+            "run_md5": run_md5,
+            "consistent": item.get("consistent"),
+        })
+    return rows
 
 
 async def n11_review(data: Any) -> dict[str, Any]:
@@ -1335,6 +1550,10 @@ async def n11_review(data: Any) -> dict[str, Any]:
     out["chain_effective"] = chain_effective
     out["model_chain"] = model_chain
     out["rework_requests"] = rework_requests
+    # P-27：逐用例身份表 / 未闭环项 / 返工请求条数（三个分支共用同一投影，不各算一套）
+    identity_table = _identity_table(host_identity)
+    unclosed = [str(x) for x in (data_out.get("caveats") or [])]
+    rework_requests_count = len(rework_requests)
     await data.async_set_state("n11_review", out)
 
     n11_source = "model_live" if out["mode"] == "live" else "model_standin"
@@ -1362,6 +1581,9 @@ async def n11_review(data: Any) -> dict[str, Any]:
                 "N11", status="escalated",
                 detail={"chain": "broken", "cycle": new_cycles, "limit": limit,
                         "escalated": True,
+                        "identity_table": identity_table,
+                        "unclosed": unclosed,
+                        "rework_requests_count": rework_requests_count,
                         "reason": "N11 证据守护返工超限 ⇒ 升级 N13 人工裁决",
                         "source": n11_source,
                         "summary": (f"N11：证据链 broken 第 {new_cycles} 次，已达上限 {limit}"
@@ -1372,7 +1594,11 @@ async def n11_review(data: Any) -> dict[str, Any]:
         ctx.node_finished("N11", status="broken",
                           detail={"chain": "broken", "host_consistent": host_consistent,
                                   "rework": len(rework_requests), "cycle": new_cycles,
-                                  "limit": limit, "source": n11_source,
+                                  "limit": limit,
+                                  "identity_table": identity_table,
+                                  "unclosed": unclosed,
+                                  "rework_requests_count": rework_requests_count,
+                                  "source": n11_source,
                                   "summary": (f"N11：证据链 broken（第 {new_cycles} 次，"
                                               f"上限 {limit}；Host 身份四方同值"
                                               f"{'成立' if host_consistent else '不成立'}）"
@@ -1382,6 +1608,9 @@ async def n11_review(data: Any) -> dict[str, Any]:
         return out
     ctx.node_finished("N11", status="intact",
                       detail={"chain": "intact", "host_consistent": host_consistent,
+                              "identity_table": identity_table,
+                              "unclosed": unclosed,
+                              "rework_requests_count": rework_requests_count,
                               "source": n11_source,
                               "summary": (f"N11：证据链 intact（Host 身份四方同值"
                                           f"{'成立' if host_consistent else '不成立'}，"
@@ -1436,6 +1665,28 @@ def _compose_n12_markdown(out: dict[str, Any]) -> str:
     open_items = data.get("open_items") or []
     lines += ["## 未闭环项", ""] + ([f"- {x}" for x in open_items] or ["(无)"]) + [""]
     return "\n".join(lines)
+
+
+def _n12_detail(data_out: dict[str, Any], *, refs: list[str], unresolved: list[str],
+                ledger_cases: list[dict[str, Any]]) -> dict[str, Any]:
+    """N12 detail 的投影字段（P-28，契约 §3）：引用可解析数 / 未闭环项 / 逐用例状态摘要。
+
+    `refs_parseable_count` = 全部引用 - 不可解析引用（Host 已做过可解析性判定，这里只计数）；
+    `cases_summary` 来自本轮用例态台账（N10 写入），不猜"应该是什么态"。
+    """
+    cases_summary: list[str] = []
+    for item in ledger_cases:
+        if not isinstance(item, dict) or not item.get("case"):
+            continue
+        state = item.get("state")
+        cases_summary.append(
+            f"{item['case']}：{state}" if state else f"{item['case']}：状态未下发"
+        )
+    return {
+        "refs_parseable_count": len(refs) - len(unresolved),
+        "open_items": [str(x) for x in (data_out.get("open_items") or [])],
+        "cases_summary": cases_summary,
+    }
 
 
 async def n12_report(data: Any) -> dict[str, Any]:
@@ -1527,6 +1778,8 @@ async def n12_report(data: Any) -> dict[str, Any]:
                       detail={"mode": out["mode"],
                               "claimed_verdict": data_out.get("claimed_verdict"),
                               "ref_count": len(refs),
+                              **_n12_detail(data_out, refs=refs, unresolved=unresolved,
+                                            ledger_cases=ledger(ctx).get("cases") or []),
                               "source": ("model_live" if out["mode"] == "live"
                                          else "model_standin"),
                               "summary": (f"N12：报告 claimed_verdict="

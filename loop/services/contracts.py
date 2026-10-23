@@ -16,6 +16,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from . import node_story
 from .agent_view import STAGES, build_agents
 
 #: 实测吞吐：wall ≈ sim_time × activity factor，约 3.78–3.80 µs sim / 1 s wall。
@@ -890,6 +891,387 @@ def _gates_authority(run_doc: dict[str, Any]) -> dict[str, Any]:
 
     auth["divergences"] = divergences
     return auth
+
+
+#: 变更种类 → 面板展示名（原值仍保留在条目字段里）。
+CHANGE_LABELS: dict[str, str] = {"modified": "修改", "added": "新增", "deleted": "删除"}
+
+def _lines_text(lines: Any) -> str | None:
+    """行号列表 →「第 171–172 行」；空列表 ⇒ None（不编行号）。"""
+    values: list[int] = []
+    for item in lines or []:
+        if isinstance(item, bool):
+            continue
+        if isinstance(item, (int, float)):
+            values.append(int(item))
+        elif isinstance(item, str) and item.strip().isdigit():
+            values.append(int(item.strip()))
+    if not values:
+        return None
+    if len(values) == 1:
+        return f"第 {values[0]} 行"
+    return f"第 {min(values)}–{max(values)} 行"
+
+
+def _entry_title(item: dict[str, Any], has_hunk: bool) -> str:
+    """一条差异条目的一句话说明（确定性投影，不读文件正文、不猜）。
+
+    P-17 允许"拿不到一句话说明"：这里只用差异条目已有字段，拿不到就明说拿不到。
+    """
+    kind = str(item.get("kind") or "")
+    change = CHANGE_LABELS.get(str(item.get("change")), item.get("change"))
+    line_text = _lines_text(item.get("lines"))
+    offset = item.get("offset")
+    if has_hunk:
+        parts = [part for part in (line_text, f"偏移 {offset}" if offset else None) if part]
+        head = "内容有改动" + (f"（{change}）" if change else "")
+        return head + ("：" + "，".join(parts) if parts else "：有行级差异（行号/偏移未抽取）")
+    if kind == "doc_entry" and (item.get("before") is not None or item.get("after") is not None):
+        return f"字段改动：{item.get('before')} → {item.get('after')}"
+    if kind == "allfile":
+        return "只比到整文件指纹：内容变了（没抓到文本 hunk，原因见原始记录）"
+    return "内容有改动，但没抓到文本 hunk（原因见原始记录）"
+
+
+def _group_diff_entries(entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """按 `entry_id` 归并多路证据（P-11 同一口径）：主条目 + 附证据，不重复计数。
+
+    **口径唯一**（AGENTS 红线 8）：归并本身复用 `node_story.group_diff_entries`（面板 N2
+    结果与 G1 清单是同一判据）；本函数只把分组的展示字段补成闸门清单的形状：
+    `title` / `attached[].redundant_of` / 未决原因 / `offsets` / `encoding` 等。
+    """
+    out: list[dict[str, Any]] = []
+    for group in node_story.group_diff_entries(entries):
+        key = group["entry_id"]
+        main = group["main"]
+        has_hunk = bool(group["has_hunk"])
+        attached: list[dict[str, Any]] = []
+        for item in group["attached"]:
+            md5_only = str(item.get("kind")) == "allfile" and not str(item.get("diff_hunk") or "").strip()
+            attached.append({
+                "kind": item.get("kind"),
+                "change": item.get("change"),
+                "before": item.get("before"),
+                "after": item.get("after"),
+                "evidence": item.get("evidence"),
+                "unresolved": item.get("unresolved"),
+                "redundant_of": key if md5_only else None,
+                "note": ("整文件指纹，不计入修订点（同一文件已有行级证据）" if md5_only
+                         else "同一文件的另一路证据"),
+            })
+        kinds: list[Any] = []
+        for item in [main, *group["attached"]]:
+            if item.get("kind") and item.get("kind") not in kinds:
+                kinds.append(item.get("kind"))
+        offsets = main.get("offsets") if isinstance(main.get("offsets"), list) else []
+        out.append({
+            "entry_id": key,
+            "title": _entry_title(main, has_hunk),
+            "kinds": kinds,
+            "change": main.get("change"),
+            "unresolved": bool(group["unresolved"]),
+            "unresolved_reason": group.get("unresolved_reason"),
+            "lines": list(main.get("lines") or []),
+            "offset": main.get("offset") or (offsets[0] if offsets else None),
+            "offsets": list(offsets),
+            "encoding": main.get("encoding"),
+            "has_hunk": has_hunk,
+            "diff_hunk": main.get("diff_hunk"),
+            "before": main.get("before"),
+            "after": main.get("after"),
+            "evidence": main.get("evidence"),
+            "segment": main.get("segment"),
+            "attached": attached,
+            # 已决策态由 decisions/<gate>.json 回填；等待态为 None（草稿在界面侧）。
+            "disposition": None,
+        })
+    return out
+
+
+def _decision_ledger(run_dir: Path | None, gate: str) -> dict[str, Any] | None:
+    """读 Host 闸门逐条处置落账（`decisions/<gate>.json`，只增不改）。
+
+    缺失/损坏一律返回 None（**不编**逐条处置）；调用方据此显示"未留存"。
+    """
+    if run_dir is None:
+        return None
+    doc, _ = _read_artifact(Path(run_dir) / "decisions" / f"{gate}.json")
+    return doc if isinstance(doc, dict) else None
+
+
+def _gate_pending_items(
+    *,
+    gate: str,
+    waiting: bool,
+    payload: dict[str, Any] | None,
+    blockers: list[dict[str, Any]] | None,
+    conflicts: dict[str, Any],
+    n12_open_items: list[Any] | None,
+    selected_cases: list[Any] | None,
+) -> list[dict[str, Any]]:
+    """G2/G3 的只读待确认项（裁决 #2）：阻断项 / 报告未闭环项 / 未清冲突 / 回归选集用例。
+
+    只读：**不带 disposition**，界面不得据此提交逐条处置（那套语义仍然只属于 G1/I1）。
+    缺材料就少列、不编；G1 返回空列表（G1 用 `entries` 做逐条处置）。
+    """
+    if gate == "G1_diff_confirm":
+        return []
+    out: list[dict[str, Any]] = []
+    seen: set[str] = set()
+
+    def add(item: dict[str, Any]) -> None:
+        key = str(item.get("id") or "")
+        if not key or key in seen:
+            return
+        seen.add(key)
+        out.append(item)
+
+    # ① 阻断项：等待态取材料 hard_block + defects；已决策态取运行视图 blockers（只取 blocker/defect）。
+    source_blockers: list[dict[str, Any]] = []
+    if waiting and isinstance(payload, dict):
+        for bucket in ("hard_block", "defects"):
+            source_blockers.extend(
+                b for b in (payload.get(bucket) or []) if isinstance(b, dict))
+    elif blockers:
+        source_blockers.extend(
+            b for b in blockers
+            if isinstance(b, dict) and b.get("severity") in ("blocker", "defect"))
+    for bump in source_blockers:
+        code = str(bump.get("code") or "")
+        add({
+            "id": f"blocker:{code or len(out)}",
+            "kind": "blocker",
+            "title": str(bump.get("title") or code or "（服务端未下发一句话）"),
+            "detail": bump.get("message"),
+            "severity": bump.get("severity"),
+        })
+
+    if gate == "G2_report_accept":
+        # ② 报告未闭环项（N12 detail.open_items；旧 run 没有 ⇒ 不列，不猜）。
+        for index, text in enumerate(n12_open_items or []):
+            add({
+                "id": f"open_item:{index}",
+                "kind": "open_item",
+                "title": str(text),
+                "detail": None,
+                "severity": "warning",
+            })
+    if gate == "G3_regression_decision":
+        # ③ 未清冲突（I4）：只给摘要，逐条冲突清单仍在闸门材料/冲突快照里。
+        open_count = conflicts.get("open")
+        total = conflicts.get("total")
+        if isinstance(open_count, int) and (open_count or 0) > 0:
+            add({
+                "id": "conflict_summary",
+                "kind": "conflict",
+                "title": f"冲突未清零：{open_count}/{total if total is not None else '未下发'} 条（发版前需逐条裁决）",
+                "detail": "冲突清单原文在闸门材料/冲突快照里；本清单只读。",
+                "severity": "blocker",
+            })
+        # ④ 回归选集用例（N15_select 在 G3 之后才跑；已决策且有选集时才列）。
+        for index, case in enumerate(selected_cases or []):
+            add({
+                "id": f"case:{case}",
+                "kind": "case",
+                "title": str(case),
+                "detail": "本轮回归集用例（只读；选集结果见 N15_select）",
+                "severity": "info",
+            })
+    return out
+
+
+def gate_entries_view(
+    *,
+    gate: str,
+    run_dir: Path | None = None,
+    diff: dict[str, Any] | None = None,
+    pending_interrupt: dict[str, Any] | None = None,
+    gate_options: dict[str, list[dict[str, Any]]] | None = None,
+    authority: dict[str, Any] | None = None,
+    node_events: list[dict[str, Any]] | None = None,
+    mode: str | None = None,
+    run_status: str | None = None,
+    case_states: dict[str, Any] | None = None,
+    conflicts: dict[str, Any] | None = None,
+    blockers: list[dict[str, Any]] | None = None,
+    n12_open_items: list[Any] | None = None,
+    selected_cases: list[Any] | None = None,
+) -> dict[str, Any]:
+    """闸门节点面板的二级差异清单（P-17/P-18/P-29；只读投影）。
+
+    三态：
+
+    - `waiting`：来源 = 运行视图 `pending_interrupt.payload`（材料已含逐条字段）；
+    - `decided`：来源 = `n2_diff.json` 投影 + `decisions/<gate>.json`（逐条处置）；
+      没有落账 ⇒ `note` 明说"逐条处置未留存"，**不从 gates.json 猜**（交接提示词 §0.5 ⑥）；
+    - `no_material`：拿不到差异清单 ⇒ 明说缺什么，不编条目。
+
+    裁决 #2（2026-10-23）：G2/G3 的"待确认项"只做**只读清单**（`items`），
+    不新增逐条处置语义（勾选/提交仍只有 G1/I1）；清单来源全部是服务端既有材料：
+    G2 = 阻断项 + 报告未闭环项；G3 = 阻断项 + 未清冲突 + 回归选集用例（有才列）。
+    """
+    payload: dict[str, Any] | None = None
+    if isinstance(pending_interrupt, dict):
+        candidate = pending_interrupt.get("payload")
+        if isinstance(candidate, dict) and candidate.get("gate") == gate:
+            payload = candidate
+    # 等待态只在运行确实在等待时成立：`pending_interrupt` 可能是 run 文档里的旧载荷
+    # （drill 夹具还自带历史 gates.json），不能凭它把"已经过去的闸门"显示成"正在等你处理"。
+    waiting_run = run_status is None or str(run_status).startswith("waiting")
+    waiting = payload is not None and waiting_run
+
+    source_diff = diff or {}
+    if waiting:
+        waiting_diff = payload.get("difference_items")
+        if isinstance(waiting_diff, dict):
+            source_diff = waiting_diff
+    raw_entries = source_diff.get("entries") if isinstance(source_diff, dict) else None
+    # 只有 G1/I1 有「逐条差异清单 + 逐条处置」；G2/G3 的待确认项走只读 `items`（裁决 #2），
+    # 不能把 G1 的差异条目挂到 G2/G3 面板上（那是另一套材料）。
+    gate_has_entries = gate == "G1_diff_confirm"
+    entries = _group_diff_entries(list(raw_entries or [])) if gate_has_entries else []
+
+    ledger = _decision_ledger(run_dir, gate)
+    latest: dict[str, Any] | None = None
+    if isinstance(ledger, dict):
+        records = ledger.get("records") or []
+        if records and isinstance(records[-1], dict):
+            latest = records[-1]
+    dispositions = (latest or {}).get("entries") if isinstance(latest, dict) else None
+    if isinstance(dispositions, dict):
+        for entry in entries:
+            raw = dispositions.get(entry["entry_id"])
+            if isinstance(raw, dict):
+                entry["disposition"] = {
+                    "decision": raw.get("decision"),
+                    "reason": raw.get("reason"),
+                }
+            elif isinstance(raw, str):
+                entry["disposition"] = {"decision": raw, "reason": None}
+
+    # 事件流里本节点的 gate_decided 是最贴近本节点的记录（reason/signed_at 原文）。
+    decided_event: dict[str, Any] | None = None
+    for event in node_events or []:
+        if isinstance(event, dict) and event.get("kind") == "gate_decided":
+            decided_event = event.get("detail") or {}
+
+    authority = authority if isinstance(authority, dict) else {}
+    signed = authority.get("status") == "signed" or bool(authority.get("decision"))
+    decision: dict[str, Any] | None = None
+    if decided_event or signed:
+        detail = decided_event or {}
+        decision = {
+            "decision": detail.get("decision") or authority.get("decision"),
+            "actor": detail.get("actor") or authority.get("actor"),
+            "actor_kind": authority.get("actor_kind"),
+            "human_signed": authority.get("human_signed"),
+            "signed_at": detail.get("signed_at") or authority.get("signed_at"),
+            "reason": detail.get("reason") if detail.get("reason") is not None
+                      else authority.get("note"),
+            "history_len": authority.get("history_len"),
+        }
+
+    if waiting:
+        # 本 gate 正在等人处置：即便权威里有历史签署记录（drill 夹具会带），也以"等待"为准。
+        decision = None
+    state = "waiting" if waiting else ("decided" if decision is not None else "no_material")
+    # R3-04：已决策态的"当时的硬阻断"只信 `decisions/<gate>.json` 最新 record 里的快照
+    # （Host 签署时落账）。旧 run 没有该键 ⇒ 明说"未留存"，不拿现在的 blockers 冒充当时。
+    hard_block_recorded: bool | None = (
+        ("hard_block" in latest) if (state == "decided" and isinstance(latest, dict)) else None
+    )
+    note: str | None = None
+    if gate == "G1_diff_confirm":
+        if state == "decided" and latest is None:
+            note = "逐条处置未留存（本轮早于处置落账；界面只显示整门决策，不从 gates.json 猜）"
+        elif state == "no_material":
+            note = (source_diff.get("error") or "差异清单未下发") + "（界面不编条目）"
+    else:
+        # 裁决 #2：G2/G3 没有「逐条差异清单」是正常形态（它们的待确认项走 `items`），
+        # 不能因为 entries 为空就报"差异清单未下发"，更不能编逐条处置。
+        if state == "no_material":
+            note = "闸门材料未下发（服务端未给出待确认项；界面不编条目）"
+
+    if state == "decided" and hard_block_recorded is False:
+        legacy_note = "当时的阻断项未留存（该 run 早于落账）"
+        note = f"{note}；{legacy_note}" if note else legacy_note
+
+    options = (gate_options or {}).get(gate) or []
+    entries_required: bool | None = None
+    if waiting:
+        entries_required = bool(payload.get("entry_decisions_required"))
+    elif state == "decided":
+        entries_required = bool(source_diff.get("unresolved_count")) and mode != "drill"
+
+    cycle = payload.get("cycle") if waiting else None
+    if cycle is None and isinstance(latest, dict):
+        cycle = latest.get("cycle")
+    unresolved_points = sum(1 for entry in entries if entry["unresolved"])
+    disposed = sum(1 for entry in entries if entry.get("disposition"))
+    if not gate_has_entries:
+        unresolved = 0
+    else:
+        unresolved = int(source_diff.get("unresolved_count") or 0)
+    # P-29：等待态首屏的关键数字（硬阻断/待验用例/未清冲突）也来自服务端材料，界面不自己数。
+    cases_view = (payload.get("case_states") if waiting else case_states) or {}
+    conflicts_view = (payload.get("conflicts") if waiting else conflicts) or {}
+    pending_cases = cases_view.get("pending_own") if isinstance(cases_view, dict) else None
+    hard_block_list = ([b for b in (payload.get("hard_block") or []) if isinstance(b, dict)]
+                       if waiting else [])
+    if state == "decided" and hard_block_recorded:
+        # R3-04：只投影契约三字段（code/title/message），其余不外泄；顺序保持落账顺序。
+        hard_block_list = [
+            {"code": b.get("code"), "title": b.get("title"), "message": b.get("message")}
+            for b in (latest.get("hard_block") or [])
+            if isinstance(b, dict)
+        ]
+    items = _gate_pending_items(
+        gate=gate,
+        waiting=waiting,
+        payload=payload,
+        blockers=blockers,
+        conflicts=conflicts_view if isinstance(conflicts_view, dict) else {},
+        n12_open_items=n12_open_items,
+        selected_cases=selected_cases,
+    )
+    if items and state == "no_material":
+        # 有只读待确认项 ⇒ 不能再报"材料未下发"（那会自相矛盾）；
+        # 也没有"等待/已决策"归属时给独立状态 `read_only`（界面只读渲染 items，不提供处置）。
+        state = "read_only"
+        note = None
+    return {
+        "gate": gate,
+        "state": state,
+        "cycle": cycle,
+        "entries_required": entries_required,
+        "decision_options": list(options),
+        "counts": {
+            "entries": len(entries),
+            # P-18：md5-only 附证据不计入修订点 ⇒ 修订点 = 唯一 entry_id 数。
+            "revision_points": len(entries),
+            "disposed": disposed,
+            "unresolved": unresolved,
+            # 需要人工处置的"条"= 有未决证据的唯一 entry_id 数（与 entry_decisions 的键同一口径）。
+            "unresolved_points": unresolved_points,
+            # P-29：硬阻断条数 / 待验用例数 / 未清冲突（未下发就 None，不写 0）。
+            # R3-04：已决策态只在落账里有 `hard_block` 时给条数（旧 run = 未下发，不是 0）。
+            "hard_block": (len(hard_block_list) if (waiting or hard_block_recorded) else None),
+            "pending_cases": (len(pending_cases) if isinstance(pending_cases, list) else None),
+            "conflicts_open": (conflicts_view.get("open")
+                               if isinstance(conflicts_view, dict) else None),
+            "conflicts_total": (conflicts_view.get("total")
+                                if isinstance(conflicts_view, dict) else None),
+        },
+        "entries": entries,
+        # 裁决 #2：G2/G3 只读"待确认项"清单（无 disposition、不可勾选）；G1 不用本字段。
+        "items": items,
+        "decision": decision,
+        "hard_block": hard_block_list,
+        "source": ("pending_interrupt" if waiting
+                   else "decisions_ledger" if latest is not None
+                   else "n2_diff" if entries else "none"),
+        "note": note,
+    }
 
 
 def run_view(

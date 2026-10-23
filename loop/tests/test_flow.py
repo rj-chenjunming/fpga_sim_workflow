@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any, Callable
 
 import pytest
@@ -461,8 +462,17 @@ async def test_g3_defer_halts_and_run_converges_to_finished() -> None:
         assert "HALT" in nodes, nodes
         assert "N16" not in nodes, "defer 不得走到 N16（不发版）"
         # 事件流层面也要能判出终止节点
-        for_reached = reached_terminal(m._progress(rid).read())
+        events = m._progress(rid).read()
+        for_reached = reached_terminal(events)
         assert for_reached == "HALT", for_reached
+        # P-35：终止原因必须是**白话字符串** + 逐门决策映射；既有 `{闸门: 决策}` 字段不得删
+        halt = _node_final(events, "HALT")["detail"]
+        assert isinstance(halt["reason"], str) and "闸门3" in halt["reason"], halt["reason"]
+        assert "defer" not in halt["reason"], "白话原因里不得只写原始枚举"
+        assert halt["decisions"] == {"G1_diff_confirm": "confirmed",
+                                     "G2_report_accept": "accept",
+                                     "G3_regression_decision": "defer"}
+        assert halt["G3_regression_decision"] == "defer", "既有逐门字段必须原样保留"
         # 终止后不得再被当成"等一下会继续"的活运行
         assert view["can"]["promote"] is False
     finally:
@@ -575,3 +585,600 @@ async def test_slot_is_released_on_dead_job_failure() -> None:
         assert Admission(P.STATE_DIR).queue() == []
     finally:
         await m.stop_watching()
+
+
+# --------------------------------------------------------------- S2 宿主数据面（契约 §3 / §2.5）
+
+
+def _node_final(events: list[dict[str, Any]], node: str) -> dict[str, Any]:
+    rows = [e for e in events
+            if e.get("node") == node and e.get("kind") in ("node_finished", "node_failed")]
+    assert rows, f"{node} 没有收尾事件"
+    return rows[-1]
+
+
+async def _drive_full_drill(m: RunManager, rid: str) -> None:
+    """drill 全链走到 N16（三闸门都经人类 actor 决策；与既有全链用例同一路径）。"""
+    await _drive_to_interrupt(m, rid, "G1_diff_confirm")
+    await m.decide(run_id=rid, gate="G1_diff_confirm", decision="confirmed",
+                   actor=HUMAN, reason="已逐条核对 2 条差异")
+    await _drive_to_interrupt(m, rid, "G2_report_accept", timeout=25.0)
+    await m.decide(run_id=rid, gate="G2_report_accept", decision="accept",
+                   actor=HUMAN, reason="接受报告")
+    await _drive_to_interrupt(m, rid, "G3_regression_decision", timeout=20.0)
+    await m.decide(run_id=rid, gate="G3_regression_decision", decision="milestone_only",
+                   actor=HUMAN, reason="I4 未清零，只做里程碑")
+    ok = await wait_until(
+        lambda: any(n["node"] == "N16" for n in m.run_view(rid)["node_history"]), timeout=30.0)
+    assert ok, f"未到达 N16：status={m.run_view(rid)['status']}"
+
+
+async def test_s2_detail_fields_and_gate_ledger_on_full_drill_run() -> None:
+    """契约 §3/§2.5：新 detail 字段来自既有产物；闸门逐条处置落账；提交节点有开始事件。
+
+    断言只认事件 detail / run 目录里的真实产物（drill 夹具），不 mock 判据。
+    """
+    m = RunManager()
+    rid = await m.start(baseline="v0", mode="drill")
+    run_dir = P.KB_RUNS / rid
+    try:
+        await _drive_full_drill(m, rid)
+        events = m._progress(rid).read()
+
+        # ---- N3（P-13/P-14）：模型摘要字段 + 空段信息标记
+        n3 = _node_final(events, "N3")["detail"]
+        assert {"digest_summary", "digest_confirmations", "groups_count",
+                "offered_segments_empty"} <= set(n3)
+        assert n3["offered_segments_empty"] is False, "夹具差异带段信息"
+        assert n3["digest_summary"] is None, "standin 不得拿夹具正文冒充模型结论"
+        assert n3["groups_count"] is None, "standin 无模型分组输出 ⇒ 显式未下发（不写 0）"
+        assert "模型摘要未下发" in n3["summary"]
+        # P-14 ④：模型输入带 N2 已有的 id/offsets（不新增取数）
+        request = json.loads(
+            (run_dir / "agent_calls" / "N3" / "attempt-000001" / "request.json")
+            .read_text(encoding="utf-8"))
+        for diff in request["input"]["diffs"]:
+            assert "id" in diff and "offsets" in diff and isinstance(diff["offsets"], list)
+
+        # ---- N5（P-19）：待查数/用例只从 n5 产物 to_check 取
+        n5_product = json.loads((run_dir / "n5_impact.json").read_text(encoding="utf-8"))
+        n5 = _node_final(events, "N5")["detail"]
+        assert n5["to_check_count"] == len(n5_product["to_check"])
+        assert n5["to_check_cases"] == sorted(
+            {str(x["case"]) for x in n5_product["to_check"] if x.get("case")})
+        # P-19：headline 要「另有 N 个待查（用例）」⇒ 去重用例数单列；条目数保留
+        assert n5["to_check_case_count"] == len(n5["to_check_cases"])
+        assert n5["to_check_count"] >= 0 and n5["to_check_case_count"] >= 0
+        assert n5["to_check_case_count"] <= n5["to_check_count"]
+
+        # ---- N0 措辞（裁决 #6 / P-01 A）：新 drill run 说「预置数据（夹具）」
+        n0 = _node_final(events, "N0")["detail"]
+        assert "预置数据（夹具）初始化" in n0["summary"], n0["summary"]
+        assert "drill 夹具初始化" not in n0["summary"], "旧串（drill 夹具初始化）不得再出现"
+
+        # ---- N6 / N6_apply（P-20/P-21/P-25）：逐用例修改摘要与 N6 同源
+        n6 = _node_final(events, "N6")["detail"]
+        assert n6["case_edits"] is None, "standin 无模型 edits ⇒ 显式未下发"
+        assert n6["case_edits_source"] == "n6_output"
+        assert n6["observation_points"] is None, \
+            "standin/drill 无模型观测点输出 ⇒ 显式 null（不是空列表冒充 0 条）"
+        n6a = _node_final(events, "N6_apply")["detail"]
+        assert n6a["case_edits"] is None
+        sandbox_cases = sorted(p.stem for p in (run_dir / "sandbox" / "TESTLIB").glob("*.sv"))
+        assert n6a["applied_cases"] == sandbox_cases
+        assert len(n6a["applied_cases"]) == n6a["cases"]
+
+        # ---- N8（P-23）：检查项/必须修改/轮次/上限
+        n8 = _node_final(events, "N8")["detail"]
+        assert n8["check_count"] is None, "standin 未产出 findings ⇒ 显式未下发（不写 0）"
+        assert n8["must_fix_count"] is None
+        assert isinstance(n8["cycle"], int) and isinstance(n8["limit"], int)
+
+        # ---- N9（P-24）：逐用例计数/示例行/身份/用例明细
+        n9 = _node_final(events, "N9")["detail"]
+        assert n9["koutou1_by_case"] == {"tc_pcie_rw_02": n9["koutou1"]}
+        assert n9["example_line"].startswith("line "), n9["example_line"]
+        assert n9["identity"]["consistent"] is None, "drill 无身份头 ⇒ 不判一致"
+        assert n9["cases_detail"][0]["case"] == "tc_pcie_rw_02"
+        assert {"case", "koutou1", "uvm_error", "uvm_fatal", "passed"} <= set(
+            n9["cases_detail"][0])
+
+        # ---- R3-09：drill 下提交/编译节点也要下发"用例数"（story headline 才有数可说）
+        n9_submit = _node_final(events, "N9_submit")["detail"]
+        assert n9_submit["cases"] == 1, n9_submit
+        assert _node_final(events, "N7")["detail"]["case_count"] == 1, "drill N7 缺 case_count"
+
+        # ---- N10（P-26）：逐用例对账表 + 失败分类摘要
+        n10 = _node_final(events, "N10")["detail"]
+        row = n10["cases_table"][0]
+        assert {"case", "koutou1", "uvm_error", "uvm_fatal", "imprints_ok",
+                "imprints_missing", "passed", "reasons"} <= set(row)
+        assert {"buckets", "既有缺陷", "本轮引入", "待裁决"} <= set(n10["classification"])
+        assert n10["classification"]["buckets"] == 24, "夹具 1687 行归并成 24 个地址区间"
+        assert n10["classification"]["本轮引入"] is None, "standin 无模型分类 ⇒ 显式未下发"
+
+        # ---- N11（P-27）：身份表/未闭环/返工请求条数
+        n11 = _node_final(events, "N11")["detail"]
+        assert n11["identity_table"] == [], "drill 无真实身份头 ⇒ 空表（不是编 3 行）"
+        assert isinstance(n11["unclosed"], list) and n11["unclosed"]
+        assert n11["rework_requests_count"] == 0
+
+        # ---- N12（P-28）：可解析引用数 / 未闭环项 / 用例状态摘要
+        n12 = _node_final(events, "N12")["detail"]
+        assert n12["refs_parseable_count"] == n12["ref_count"] - 0
+        assert isinstance(n12["open_items"], list) and isinstance(n12["cases_summary"], list)
+
+        # ---- N15_select / N15（P-31/P-32）：用例名 + 是否真跑
+        n15s = _node_final(events, "N15_select")["detail"]
+        assert n15s["cases"] and all(isinstance(c, str) for c in n15s["cases"])
+        assert sorted(n15s["cases"]) == n5["must_change_cases"], \
+            "milestone_only 的回归集 = 本轮受影响子集（用例名必须列出）"
+        assert n15s["will_really_run"] is False, "drill 演示不真跑"
+        n15 = _node_final(events, "N15")["detail"]
+        assert n15["cases"] == n15s["cases"]
+        assert n15["executed"] is False and n15["will_really_run"] is False
+        assert n15["failed_cases"] == []
+
+        # ---- N16（P-34）：拒绝原因原文 + 每次尝试的结果件
+        n16 = _node_final(events, "N16")["detail"]
+        assert n16["reason_line"].startswith("[FAIL]"), n16["reason_line"]
+        result_path = Path(n16["result_artifact"])
+        assert result_path.is_file() and result_path.name == "n16_result.json"
+        assert str(result_path) in _node_final(events, "N16")["refs"]
+
+        # ---- P-33：提交型节点有 node_started + 收尾 refs 带作业日志
+        started = [e for e in events if e.get("kind") == "node_started"
+                   and e.get("node") == "N9_submit"]
+        assert started, "N9_submit 缺 node_started"
+        submitted = [e for e in events if e.get("kind") == "job_submitted"
+                     and e.get("node") == "N9"]
+        submit_final = _node_final(events, "N9_submit")
+        assert submitted and submit_final["refs"][:1] == submitted[-1]["refs"][:1], \
+            "N9_submit 收尾 refs 必须与 job_submitted 同源"
+
+        # ---- §2.5：闸门逐条处置落账（append-only，S3 只读消费）
+        diff_ids = {d.get("entry_id") or d.get("id") for d in
+                    json.loads((run_dir / "n2_diff.json").read_text(encoding="utf-8"))["diffs"]}
+        decided_events = {e["detail"]["gate"]: e["detail"] for e in events
+                          if e.get("kind") == "gate_decided"}
+        for gate in ("G1_diff_confirm", "G2_report_accept", "G3_regression_decision"):
+            ledger_path = run_dir / "decisions" / f"{gate}.json"
+            assert ledger_path.is_file(), f"缺 {ledger_path}"
+            ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+            assert ledger["schema"] == "loop/gate_entries"
+            assert ledger["gate"] == gate and ledger["run_id"] == rid
+            latest = ledger["records"][-1]
+            assert {"cycle", "decided_at", "decision", "actor", "reason", "entries"} <= set(latest)
+            assert latest["decided_at"] == decided_events[gate]["signed_at"], \
+                "decided_at 必须取权威签署时间（不新取墙钟）"
+            assert latest["decision"] == decided_events[gate]["decision"]
+        g1 = json.loads((run_dir / "decisions" / "G1_diff_confirm.json")
+                        .read_text(encoding="utf-8"))["records"][-1]
+        assert set(g1["entries"]) == diff_ids, "逐条处置必须覆盖全部差异条目"
+        assert decided_events["G1_diff_confirm"]["entries"] == g1["entries"], \
+            "gate_decided.detail.entries 与落账同源"
+
+        # ---- R3-04（P-15）：签署时"当时的硬阻断"必须落账（材料快照，白名单三字段）
+        pending_codes = {e["node"]: e["detail"]["hard_block"] for e in events
+                         if e.get("kind") == "gate_pending"}
+        for gate, gate_node in (("G1_diff_confirm", "N4"), ("G2_report_accept", "N13"),
+                                ("G3_regression_decision", "N14")):
+            latest_gate = json.loads(
+                (run_dir / "decisions" / f"{gate}.json").read_text(encoding="utf-8")
+            )["records"][-1]
+            assert "hard_block" in latest_gate, f"{gate} 的落账缺 hard_block 快照"
+            blocks = latest_gate["hard_block"]
+            assert isinstance(blocks, list), blocks
+            assert [b["code"] for b in blocks] == pending_codes[gate_node], \
+                f"{gate} 落账的硬阻断必须等于本门开启时材料里的快照"
+            for block in blocks:
+                assert set(block) == {"code", "title", "message"}, block
+    finally:
+        await m.stop_watching()
+
+
+# --------------------------------------------------------------- S2 投影纯函数（真实产物形状驱动）
+
+
+def test_n6_case_edits_projection_is_shared_by_n6_and_n6_apply() -> None:
+    from workflows.chunks.model_common import case_edits_from_output
+
+    accepted = {"revisions": [
+        {"case": "tc_a", "edits": [{"line": 12, "old": "x", "new": "y"},
+                                   {"line": 30, "old": "p", "new": "q"}],
+         "rationale": "模型自述：依据 rtl_change"},
+        {"case": "tc_b", "edits": [{"line": 4, "old": "m", "new": "n"}]},
+    ]}
+    out = case_edits_from_output(accepted)
+    assert [row["case"] for row in out] == ["tc_a", "tc_b"]
+    assert out[0]["edit_count"] == 2
+    assert out[0]["edits"][1] == {"line": 30, "old": "p", "new": "q"}
+    assert "rationale" not in out[0], "摘要只带用例/位置/旧→新，不带模型自述"
+    assert case_edits_from_output(None) is None
+    assert case_edits_from_output({"standin": True}) is None
+
+
+def test_n3_live_detail_projection_uses_model_summary() -> None:
+    from workflows.chunks.model_steps import _n3_detail
+
+    live = {"mode": "live", "data": {
+        "summary": "sys_reg.v 第 171-172 行把 fpga_date 复位值改成 2026_0708，读回期望要跟着改。",
+        "groups": [{"segment": "0x0000", "kind": "rtl_file"}],
+        "risky_points": ["缺段信息无法分组（依据：offered_segments 为空）"],
+    }}
+    detail = _n3_detail(live, offered_segments_empty=True)
+    assert detail["digest_summary"].startswith("sys_reg.v")
+    assert detail["digest_confirmations"] == ["缺段信息无法分组（依据：offered_segments 为空）"]
+    assert detail["groups_count"] == 1
+    assert detail["offered_segments_empty"] is True
+    standin = _n3_detail({"mode": "standin", "data": {"excerpt": "夹具"}},
+                         offered_segments_empty=False)
+    assert standin["digest_summary"] is None and standin["groups_count"] is None
+    assert standin["digest_confirmations"] is None
+    assert standin["offered_segments_empty"] is False
+
+
+def test_n10_cases_table_and_classification_projection() -> None:
+    from workflows.chunks.n10_semantics import _cases_table, _classification_summary
+
+    cases = {
+        "tc_a": {
+            "counts": {"koutou1": {"value": 1687},
+                       "koutou2": {"value": {"UVM_ERROR": 0, "UVM_FATAL": 0}}},
+            "imprints": {"N6_FPGA_DATE_PCIE": {
+                "consistent": True,
+                "expected": {"address": "0x0000+0x04", "value": "0x2026_0708"}}},
+            "verdict": {"passed": False, "reasons": ["口径一 = 1687 ≠ 0"]},
+        },
+        "tc_b": {
+            "counts": {"koutou1": {"value": 0},
+                       "koutou2": {"value": {"UVM_ERROR": 0, "UVM_FATAL": 0}}},
+            "imprints": {"N6_FPGA_DATE_PCIE": {"consistent": False,
+                                               "expected": {"address": "0x0000+0x04"}}},
+            "verdict": {"passed": False, "reasons": ["印记 N6_FPGA_DATE_PCIE 三向不一致"]},
+        },
+    }
+    rows = _cases_table(cases)
+    assert [r["case"] for r in rows] == ["tc_a", "tc_b"]
+    assert rows[0]["imprints_ok"] is True and rows[0]["imprints_missing"] == []
+    assert rows[1]["imprints_ok"] is False
+    assert rows[1]["imprints_missing"] == ["N6_FPGA_DATE_PCIE"]
+    assert rows[0]["koutou1"] == 1687 and rows[0]["uvm_error"] == 0
+    assert rows[1]["reasons"] == ["印记 N6_FPGA_DATE_PCIE 三向不一致"]
+
+    items = [{"classification": "既有缺陷"}, {"classification": "既有缺陷"},
+             {"classification": "待裁决"}]
+    summary = _classification_summary(bucket_count=24, items=items)
+    assert summary["buckets"] == 24
+    assert (summary["既有缺陷"], summary["本轮引入"], summary["待裁决"]) == (2, 0, 1)
+    assert summary["source"] == "n10_output"
+    missing = _classification_summary(bucket_count=24, items=None)
+    assert missing["既有缺陷"] is None and missing["source"] == "not_classified"
+
+
+def test_n11_identity_table_and_n12_detail_projection() -> None:
+    from workflows.chunks.model_steps import _identity_table, _n12_detail
+
+    host_identity = {"cases": [
+        {"case": "tc_a", "run_id": "RUN-1", "reviewed_md5": "a" * 32,
+         "run_md5": "a" * 32, "consistent": True},
+        {"case": "tc_b", "run_id": "RUN-1", "reviewed_md5": "b" * 32,
+         "run_md5": "c" * 32, "consistent": False},
+    ]}
+    rows = _identity_table(host_identity)
+    assert [r["case"] for r in rows] == ["tc_a", "tc_b"]
+    assert rows[1]["audit_md5"] == "b" * 32 and rows[1]["run_md5"] == "c" * 32
+    assert rows[1]["case_md5"] == rows[1]["run_md5"]
+    assert rows[1]["consistent"] is False
+
+    data = {"open_items": ["tc_a 仍『已修订待验』"]}
+    detail = _n12_detail(data, refs=["a/b.md", "c.md"], unresolved=["c.md"],
+                         ledger_cases=[{"case": "tc_a", "state": "已修订待验"},
+                                       {"case": "tc_b"}])
+    assert detail["refs_parseable_count"] == 1
+    assert detail["open_items"] == ["tc_a 仍『已修订待验』"]
+    assert detail["cases_summary"] == ["tc_a：已修订待验", "tc_b：状态未下发"]
+
+
+def test_n9_detail_projection_from_real_aggregate_shape() -> None:
+    from workflows.chunks.long_jobs import _n9_detail
+
+    per_case = {
+        "tc_b": {"counts": {"koutou1": {"value": 0, "refs": []},
+                            "koutou2": {"value": {"UVM_ERROR": 0, "UVM_FATAL": 0}}},
+                 "verdict": {"passed": True}},
+        "tc_a": {"counts": {"koutou1": {"value": 1687,
+                                        "refs": ["line 359: ... *E @ADDR[0x84] ..."]},
+                            "koutou2": {"value": {"UVM_ERROR": 0, "UVM_FATAL": 0}}},
+                 "verdict": {"passed": False, "reasons": ["口径一 = 1687 ≠ 0"]}},
+    }
+    detail = _n9_detail(cases=per_case,
+                        identity={"consistent": True, "mismatches": [],
+                                  "source": "guard_header"})
+    assert detail["koutou1_by_case"] == {"tc_a": 1687, "tc_b": 0}
+    assert detail["example_line"].startswith("line 359"), "示例行只取非零用例的第一条参考"
+    assert [r["case"] for r in detail["cases_detail"]] == ["tc_a", "tc_b"]
+    assert detail["cases_detail"][0]["passed"] is False
+    assert detail["identity"] == {"consistent": True, "mismatches": [],
+                                  "source": "guard_header"}
+    empty = _n9_detail(cases={}, identity={"consistent": None, "mismatches": []})
+    assert empty["example_line"] is None and empty["koutou1_by_case"] == {}
+
+
+def _n6_revision(case: str, marker: str) -> dict[str, Any]:
+    """一条符合 R3-01 口径的 N6 revision：marker 作 UVM_INFO 的 **ID**，写在 edits[].new 里。"""
+    new_text = (
+        f'uvm_info("{marker}", $sformatf("OK 0x0000+0x04 fpga_date = 0x%08h", '
+        'actual), UVM_LOW);'
+    )
+    return {"case": case, "rationale": "按 rtl_change 修订期望值并加观测点",
+            "edits": [{"line": 3, "old": "check(0x0000+0x04, 8'h23);",
+                       "new": new_text, "basis": "input.targets[0].revision_points[0].offset=0x4"}]}
+
+
+def _n6_run_dir(tmp_path: Path) -> Path:
+    """R3-01：给直接调用 `_validate` 的单测一个**显式** run 级文档条目快照。
+
+    `_validate` 的「marker 期望必须可解析」**恒执行**（没有"没绑 run_dir 就跳过"的旁路），
+    所以直接调用必须传 run_dir；形状照 drill 真实产物：`<run>/doc_entries.jsonl`。
+    """
+    run_dir = tmp_path / "n6_run"
+    run_dir.mkdir(parents=True, exist_ok=True)
+    (run_dir / "doc_entries.jsonl").write_text(
+        json.dumps({"entry_id": "0x0000#0x0004", "name": "fpga_date",
+                    "segment": "0x0000", "offset_global": "0x0004",
+                    "reset": "2026_0708"}, ensure_ascii=False) + "\n",
+        encoding="utf-8")
+    return run_dir
+
+
+def _n6_payload(points: list[dict[str, Any]], revision_markers: dict[str, str] | None = None
+                ) -> dict[str, Any]:
+    markers = revision_markers or {p["case"]: p["marker"] for p in points}
+    return {"data": {
+        "revisions": [_n6_revision(case, marker) for case, marker in markers.items()],
+        "observation_points": points,
+        "rework_resolution": [], "notes": [],
+    }}
+
+
+def _observation_point(case: str, marker: str, **overrides: Any) -> dict[str, Any]:
+    point = {"case": case, "marker": marker, "addr": "0x0000", "offset": "0x04",
+             "expected_value": "0x20260708",
+             "basis": "input.targets[0].revision_points[0].offset=0x4；doc_bitdef reset=2026_0708"}
+    point.update(overrides)
+    return point
+
+
+def test_n6_observation_points_schema_accepts_legal_output(tmp_path: Path) -> None:
+    """P-25 方案 A：schema 收合法观测点 + Host 校验把它的契约字段投影出来。"""
+    from prompts.node_schemas import N6ObservationPoint, N6Output, N6Revision
+    from workflows.chunks.model_steps import _observation_points, _validate
+
+    run_dir = _n6_run_dir(tmp_path)
+    point = N6ObservationPoint(**_observation_point("tc_demo", "N6_FPGA_DATE"))
+    output = N6Output(revisions=[N6Revision(**_n6_revision("tc_demo", "N6_FPGA_DATE"))],
+                      observation_points=[point], rework_resolution=[], notes=[])
+    assert output.observation_points[0].marker == "N6_FPGA_DATE"
+
+    result = _validate("n6", _n6_payload([_observation_point("tc_demo", "N6_FPGA_DATE")]),
+                       offered={"cases": {"tc_demo"}}, run_dir=run_dir)
+    assert result["ok"] is True, result["problems"]
+    assert result["accepted"]["observation_points"][0]["marker"] == "N6_FPGA_DATE"
+    assert result["accepted"]["observation_points"][0]["addr"] == "0x0000"
+    # detail 投影只带契约字段（basis 不进 detail），无模型输出 ⇒ None
+    assert _observation_points(result["accepted"]) == [{
+        "case": "tc_demo", "marker": "N6_FPGA_DATE", "addr": "0x0000",
+        "offset": "0x04", "expected_value": "0x20260708"}]
+    assert _observation_points(None) is None
+    assert _observation_points({"standin": True}) is None
+
+    with pytest.raises(ValueError):
+        N6ObservationPoint(**_observation_point("tc_demo", "FPGA_DATE"))
+
+
+def test_n6_observation_points_fail_closed_reasons(tmp_path: Path) -> None:
+    """P-25：缺用例观测点 / marker 只列不写 / marker 格式非法 ⇒ Host 校验必须失败并点名。"""
+    from workflows.chunks.model_steps import _validate
+
+    run_dir = _n6_run_dir(tmp_path)
+    both = {"cases": {"tc_demo", "tc_other"}}
+    # ① 缺某个用例的观测点
+    result = _validate("n6", _n6_payload([_observation_point("tc_demo", "N6_A")]),
+                       offered=both, run_dir=run_dir)
+    assert result["ok"] is False
+    assert any("缺少目标用例的 observation_points" in p and "tc_other" in p
+               for p in result["problems"]), result["problems"]
+    # ② marker 出现在观测点里但没写进同用例 edits[].new（只列不写）
+    payload = _n6_payload(
+        [_observation_point("tc_demo", "N6_A"), _observation_point("tc_other", "N6_B")],
+        revision_markers={"tc_demo": "N6_A", "tc_other": "N6_OTHER"})
+    result = _validate("n6", payload, offered=both, run_dir=run_dir)
+    assert result["ok"] is False
+    assert any("未出现在该用例 edits[].new" in p and "N6_B" in p
+               for p in result["problems"]), result["problems"]
+    # ③ marker 格式非法
+    result = _validate("n6", _n6_payload([_observation_point("tc_demo", "FPGA_DATE")]),
+                       offered={"cases": {"tc_demo"}}, run_dir=run_dir)
+    assert result["ok"] is False
+    assert any("marker 格式非法" in p for p in result["problems"]), result["problems"]
+    # ④ 重复 marker / 非法十六进制值
+    dup = _n6_payload([_observation_point("tc_demo", "N6_A"),
+                       _observation_point("tc_demo", "N6_A")],
+                      revision_markers={"tc_demo": "N6_A"})
+    assert any("marker 重复" in p
+               for p in _validate("n6", dup, offered=both, run_dir=run_dir)["problems"])
+    bad_hex = _n6_payload([_observation_point("tc_demo", "N6_A", expected_value="20260708")])
+    result = _validate("n6", bad_hex, offered={"cases": {"tc_demo"}}, run_dir=run_dir)
+    assert any("expected_value" in p for p in result["problems"]), result["problems"]
+
+
+async def test_n6_author_fails_closed_when_observation_points_invalid(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """P-25：观测点约束失败 ⇒ N6 **立即** node_failed（不得静默继续到 N6_apply）。"""
+    from test_fix_real_chain import FakeData, _n5_n2_for_targets
+    from workflows.chunks import model_steps
+
+    ctx = _real_run_ctx(tmp_path)
+    env = tmp_path / "env"
+    (env / "TESTLIB").mkdir(parents=True)
+    (env / "TESTLIB" / "tc_demo.sv").write_text(
+        "module tc_demo;\n  initial begin\n    check(0x0000+0x04, 8'h23);\n  end\nendmodule\n",
+        encoding="utf-8")
+    _n5_n2_for_targets(ctx)
+
+    async def invalid(*args: Any, **kwargs: Any) -> dict[str, Any]:
+        return {"mode": "live", "standin": False, "provider": "fake",
+                "validation": {"ok": False,
+                               "problems": ["缺少目标用例的 observation_points：['tc_demo']"]},
+                "data": {"revisions": [], "observation_points": []}}
+
+    monkeypatch.setattr(model_steps, "run_model_node", invalid)
+    data = FakeData(resources={"repo_root": env}, input={"baseline": "v0"})
+    with pytest.raises(RuntimeError, match="observation_points"):
+        await model_steps.n6_author(data)
+    failed = [e for e in ctx.progress.read()
+              if e.get("kind") == "node_failed" and e.get("node") == "N6"]
+    assert failed, "观测点校验失败必须留 node_failed（不得静默继续）"
+    assert "observation_points" in failed[-1]["detail"]["message"]
+
+
+def test_p25_n6_prompt_requires_observation_points() -> None:
+    """P-25：提示词必须要求观测点打印实际值、marker 写进 edits，形态带 0x 前缀。"""
+    from workflows.chunks.model_common import load_prompts
+
+    spec = load_prompts()["n6_author"]
+    rules = " ".join(spec["info"]["rules"])
+    instruct = " ".join(spec["instruct"])
+    assert "observation_points" in rules and "至少" in rules, rules
+    assert "edits[].new" in rules and "只列不写" in rules, rules
+    assert "0x%08h" in instruct and "实际读回" in instruct, instruct
+    assert "N6_<检查点名>" in rules
+
+
+def test_n5_to_check_projection_counts_items_and_cases() -> None:
+    """P-19：待查条目数与去重用例数分开下发；产物没有 `to_check` ⇒ 两者显式 None。"""
+    from workflows.chunks.host_steps import _to_check_fields
+
+    doc = {"to_check": [
+        {"case": "tc_a", "entry_id": None},
+        {"case": "tc_a", "entry_id": "0x0000#0x0004"},   # 同一用例的多条待查
+        {"case": "tc_b"},
+        {"entry_id": None},                              # 没有 case 名：只计条目
+    ]}
+    fields = _to_check_fields(doc)
+    assert fields["to_check_count"] == 4, "条目数与产品清单一致（与 must_change_count 同口径）"
+    assert fields["to_check_cases"] == ["tc_a", "tc_b"]
+    assert fields["to_check_case_count"] == 2
+    assert fields["to_check_case_count"] <= fields["to_check_count"]
+
+    absent = _to_check_fields({"must_change": []})
+    assert absent == {"to_check_count": None, "to_check_cases": [],
+                      "to_check_case_count": None}
+    assert _to_check_fields({"to_check": "stdout 里的一行"})["to_check_case_count"] is None
+
+
+def test_n16_result_artifact_numbering(tmp_path: Path) -> None:
+    from workflows.chunks.host_steps import _n16_result_path
+
+    assert _n16_result_path(tmp_path).name == "n16_result.json"
+    (tmp_path / "n16_result.json").write_text("{}", encoding="utf-8")
+    assert _n16_result_path(tmp_path).name == "n16_result.2.json"
+    (tmp_path / "n16_result.2.json").write_text("{}", encoding="utf-8")
+    assert _n16_result_path(tmp_path).name == "n16_result.3.json"
+
+
+def test_p14_prompt_requires_conditional_grouping_and_summary_order() -> None:
+    """P-14 ①–③：提示词与 schema 必须写清「空段不硬分组 / 先说改了什么 / 风险+依据」。"""
+    from prompts.node_schemas import N3Output
+    from workflows.chunks.model_common import load_prompts
+
+    spec = load_prompts()["n3_digest"]
+    instruct = " ".join(spec["instruct"])
+    rules = " ".join(spec["info"]["rules"])
+    assert "offered_segments" in instruct and "不硬分组" in instruct, instruct
+    assert "先说改了什么" in instruct and "影响面" in instruct, instruct
+    assert "一句风险 + 依据" in instruct, instruct
+    assert "offered_segments 为空时不要分组" in rules, rules
+    props = N3Output.model_json_schema()["properties"]
+    assert "offered_segments" in props["groups"]["description"]
+    assert "先说改了什么" in props["summary"]["description"]
+    assert "一句风险 + 依据" in props["risky_points"]["description"]
+
+
+def _real_run_ctx(tmp_path: Path):
+    """构造 real 模式 RunCtx（复用既有 real-chain 测试的 fake admission/runner）。"""
+    from host.progress import ProgressLog
+    from services.contracts import KbSources
+    from test_fix_real_chain import FakeAdmission, FakeRunner, use_ctx
+    from workflows.context import RunCtx
+
+    run_id = "RUN-20261023-191500"
+    run_dir = tmp_path / "runs" / run_id
+    run_dir.mkdir(parents=True)
+    kb_root = tmp_path / "kb"
+    (kb_root / "conflicts").mkdir(parents=True)
+    (kb_root / "conflicts" / "conflicts.json").write_text(
+        json.dumps({"schema": "kb/conflicts", "version": 1, "conflicts": [], "items": []},
+                   ensure_ascii=False), encoding="utf-8")
+    kb = KbSources.from_workspace(kb_root)
+    return use_ctx(RunCtx(run_id=run_id, run_dir=run_dir, mode="real", scenario="happy",
+                          kb=kb, progress=ProgressLog(tmp_path / "events", run_id),
+                          admission=FakeAdmission(), runner=FakeRunner()))
+
+
+async def test_n9_n15_real_detail_fields_and_submit_started(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """P-24/P-32/P-33 的 **real 分支**：执行语义与提交节点开始事件。
+
+    用真实产物形状（沙箱件 + evidence 日志 + Host 聚合契约）驱动，判据仍是真实代码给出。
+    """
+    from test_fix_real_chain import FakeData, _fake_aggregate, _write_case_log
+    from workflows.chunks import long_jobs
+
+    ctx = _real_run_ctx(tmp_path)
+    monkeypatch.setattr(long_jobs, "aggregate_evidence", _fake_aggregate)
+    cases = ["tc_demo", "tc_other"]
+    md5s: dict[str, str] = {}
+    for case in cases:
+        sandbox = ctx.run_dir / "sandbox" / "TESTLIB" / f"{case}.sv"
+        sandbox.parent.mkdir(parents=True, exist_ok=True)
+        sandbox.write_text("module x; endmodule\n", encoding="utf-8")
+        md5s[case] = long_jobs._md5_file(sandbox)
+        _write_case_log(ctx, case)
+    job = {"job_id": "JOB-0001", "node": "N9", "cases": cases, "expected_cases": cases,
+           "md5s": md5s, "seed": "1", "sandbox_root": str(ctx.run_dir / "sandbox"),
+           "evidence_dir": str(ctx.run_dir / "evidence")}
+    resume = FakeData(state={"n9_job": job})
+    resume.is_resume = True
+    resume.resume = SimpleNamespace(value={"job_id": "JOB-0001", "phase": "done", "rc": 0})
+    await long_jobs.n9_park(resume)
+    events = ctx.progress.read()
+    n9 = _node_final(events, "N9")["detail"]
+    assert n9["identity"]["consistent"] is True, "real 分支必须下发身份四方同值结论"
+    assert n9["koutou1_by_case"] == {"tc_demo": 0, "tc_other": 0}
+    assert n9["example_line"] is None, "口径一全 0 ⇒ 无示例行（不编）"
+    assert [r["case"] for r in n9["cases_detail"]] == cases
+
+    env = tmp_path / "env"
+    (env / "TESTLIB").mkdir(parents=True)
+    (env / "TESTLIB" / "tc_demo.sv").write_text("module tc_demo; endmodule\n", encoding="utf-8")
+    state15 = {"n15_set": {"cases": ["tc_demo"], "g3_decision": "milestone_only"}}
+    data = FakeData(resources={"repo_root": env}, state=dict(state15))
+    parked = await long_jobs.n15_run(data)
+    assert parked["status"] == "waiting"
+    resume15 = FakeData(resources={"repo_root": env},
+                        state={**state15, "n15_job": data.get_state("n15_job")})
+    resume15.is_resume = True
+    resume15.resume = SimpleNamespace(value={"job_id": "JOB-0001", "phase": "done", "rc": 0})
+    _write_case_log(ctx, "tc_demo")
+    await long_jobs.n15_run(resume15)
+    events = ctx.progress.read()
+    n15 = _node_final(events, "N15")["detail"]
+    assert n15["executed"] is True and n15["will_really_run"] is True
+    assert n15["cases"] == ["tc_demo"] and n15["failed_cases"] == []
+    assert any(e.get("kind") == "node_started" and e.get("node") == "N15_submit"
+               for e in events), "N15_submit 缺 node_started"
+    submit_final = _node_final(events, "N15_submit")
+    submitted = [e for e in events if e.get("kind") == "job_submitted" and e.get("node") == "N15"]
+    assert submit_final["refs"][:1] == submitted[-1]["refs"][:1]

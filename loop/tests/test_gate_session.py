@@ -123,3 +123,57 @@ def test_frontend_consumes_single_gate_session_module():
     assert "function gateSessionKey" not in app, "app.js 不得保留第二套身份判定"
     assert "window.GateSession" in app
     assert html.index("gate-session.js") < html.index("app.js")
+
+
+# ---------------------------------------------------------------- 逐条处置（SPEC-04 §4.4 2026-10-23）
+# 口径必须与 gates.normalize_entry_decisions 一致：有 disputed ⇒ disputed；
+# 否则有 ignored ⇒ ignored；否则 confirmed；未选完 ⇒ null（不猜）。
+
+def test_derive_entry_decision_follows_authority_order():
+    cases = {
+        '["confirmed","confirmed"]': "confirmed",
+        '["confirmed","ignored"]': "ignored",
+        '["ignored","disputed"]': "disputed",
+        '["disputed"]': "disputed",
+    }
+    for expr, want in cases.items():
+        assert _eval("G.deriveEntryDecision(" + expr + ")") == want
+    # 未选完 / 非法值 ⇒ null，不得用默认值补齐
+    assert _eval("G.deriveEntryDecision(['confirmed', null])") is None
+    assert _eval("G.deriveEntryDecision([])") is None
+    assert _eval("G.deriveEntryDecision(['nope'])") is None
+
+
+def test_validate_entry_decisions_requires_full_coverage_and_reasons():
+    ids = ["a.v", "b.v"]
+    ok = json.loads(_eval(
+        "JSON.stringify(G.validateEntryDecisions("
+        + json.dumps({"a.v": {"decision": "confirmed"}, "b.v": {"decision": "ignored", "reason": "仅注释"}})
+        + "," + json.dumps(ids) + ",['confirmed','ignored','disputed']))"
+    ))
+    assert ok["ok"] is True
+    assert ok["entry_decisions"]["b.v"] == {"decision": "ignored", "reason": "仅注释"}
+
+    missing = json.loads(_eval(
+        "JSON.stringify(G.validateEntryDecisions("
+        + json.dumps({"a.v": {"decision": "confirmed"}})
+        + "," + json.dumps(ids) + ",['confirmed','ignored','disputed']))"
+    ))
+    assert missing["ok"] is False
+    assert "未覆盖" in missing["error"]
+
+    no_reason = json.loads(_eval(
+        "JSON.stringify(G.validateEntryDecisions("
+        + json.dumps({"a.v": {"decision": "disputed"}, "b.v": {"decision": "confirmed"}})
+        + "," + json.dumps(ids) + ",['confirmed','ignored','disputed']))"
+    ))
+    assert no_reason["ok"] is False
+    assert "必须填写理由" in no_reason["error"]
+
+    bad_value = json.loads(_eval(
+        "JSON.stringify(G.validateEntryDecisions("
+        + json.dumps({"a.v": {"decision": "accept"}, "b.v": {"decision": "confirmed"}})
+        + "," + json.dumps(ids) + ",['confirmed','ignored','disputed']))"
+    ))
+    assert bad_value["ok"] is False
+    assert "非法" in bad_value["error"]

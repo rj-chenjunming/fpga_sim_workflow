@@ -117,7 +117,10 @@ def _status(node: str, state: _NodeState | None, pending_interrupt: dict[str, An
     if state.failed:
         return "failed"
     gate = (pending_interrupt or {}).get("payload", {}).get("gate") if pending_interrupt else None
-    if pending_interrupt and GATE_NODES.get(node) == gate:
+    # 只有**真闸门**才把对应节点标成 waiting。job_done 中断没有 payload.gate，
+    # 而 GATE_NODES.get(非闸门节点) 也是 None —— 早先 `None == None` 会把 N3/N6/N8
+    # 等模型角色误标成"等待人工"，连带阶段标签显示"等待人工"、节点 chip 显示"!"。
+    if pending_interrupt and gate and GATE_NODES.get(node) == gate:
         return "waiting"
     if node == "N9" and job and job.get("phase") == "running":
         return "waiting"

@@ -241,6 +241,47 @@ def _identity_summary(aggregate: dict[str, Any], md5s: dict[str, str]) -> dict[s
             "mismatches": mismatches, "source": ident.get("source")}
 
 
+# ---------------------------------------------------------------- N9/N15 detail 投影
+
+
+def _n9_rows(cases: dict[str, Any] | None) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    """N9 逐用例计数投影（P-24）：只读 `host.evidence` 聚合的既有字段，不重算口径。"""
+    k1_by_case: dict[str, Any] = {}
+    rows: list[dict[str, Any]] = []
+    for case in sorted(cases or {}):
+        item = (cases or {}).get(case) or {}
+        counts = item.get("counts") or {}
+        uvm = (counts.get("koutou2") or {}).get("value") or {}
+        k1 = (counts.get("koutou1") or {}).get("value")
+        k1_by_case[str(case)] = k1 if isinstance(k1, int) else None
+        rows.append({"case": str(case), "koutou1": k1,
+                     "uvm_error": uvm.get("UVM_ERROR"),
+                     "uvm_fatal": uvm.get("UVM_FATAL"),
+                     "passed": (item.get("verdict") or {}).get("passed")})
+    return k1_by_case, rows
+
+
+def _koutou1_example(cases: dict[str, Any] | None) -> str | None:
+    """口径一的**一行示例**（P-24 ③）：取第一条非零用例的参考行；没有 ⇒ None（不编）。"""
+    for case in sorted(cases or {}):
+        counts = ((cases or {}).get(case) or {}).get("counts") or {}
+        k1 = (counts.get("koutou1") or {}).get("value")
+        refs = (counts.get("koutou1") or {}).get("refs") or []
+        if isinstance(k1, int) and k1 > 0 and refs:
+            return str(refs[0])
+    return None
+
+
+def _n9_detail(*, cases: dict[str, Any] | None,
+               identity: dict[str, Any]) -> dict[str, Any]:
+    """N9 detail 的投影字段（P-24，契约 §3）。`identity` 由调用方按模式给出事实。"""
+    k1_by_case, rows = _n9_rows(cases)
+    return {"koutou1_by_case": k1_by_case,
+            "example_line": _koutou1_example(cases),
+            "identity": identity,
+            "cases_detail": rows}
+
+
 # ---------------------------------------------------------------- N9 提交
 
 
@@ -312,12 +353,17 @@ async def n9_submit(data: Any) -> dict[str, Any]:
         ctx.pending["n9_job_id"] = record.job_id
         await data.async_set_state("n9_job", payload)
         ctx.event("job_submitted", node="N9", status="running", detail=payload, refs=[record.log_path])
+        # P-33：提交型节点也要有开始事件（面板才有"开始/结束区间"，不再只有一步"结束"）。
+        ctx.node_started("N9_submit")
         ctx.node_finished("N9_submit", detail={
             "job_id": record.job_id, "scenario": ctx.scenario,
+            # R3-09：drill 也下发"覆盖用例数"（= 本轮 drill 目标用例数，与 real 分支同字段名），
+            # 面板/summary 才能说"覆盖 N 个用例"而不是"覆盖用例数未下发"。
+            "cases": len(payload.get("cases") or []),
             "source": "drill_fixture",
             "summary": (f"N9_submit：已提交全跑作业 {record.job_id}"
                         f"（drill 夹具，scenario={ctx.scenario}）⇒ 图转入停放"),
-        })
+        }, refs=[record.log_path])
         return payload
 
     # ---------------------------------------------------------------- real
@@ -360,12 +406,13 @@ async def n9_submit(data: Any) -> dict[str, Any]:
     await data.async_set_state("n9_job", payload)
     ctx.event("job_submitted", node="N9", status="running", detail=payload,
               refs=[record.log_path, str(summary_path)])
+    ctx.node_started("N9_submit")
     ctx.node_finished("N9_submit", detail={
         "job_id": record.job_id, "cases": len(case_names),
         "source": "kb_tool",
         "summary": (f"N9_submit：已提交全跑作业 {record.job_id}，"
                     f"覆盖 {len(case_names)} 个沙箱用例 ⇒ 图转入停放"),
-    })
+    }, refs=[record.log_path, str(summary_path)])
     return payload
 
 
@@ -447,6 +494,13 @@ async def n9_park(data: Any) -> dict[str, Any]:
                                       "koutou2": (counts.get("koutou2") or {}).get("value"),
                                       "cases": len(out["target_cases"]),
                                       "job_id": job_id,
+                                      **_n9_detail(
+                                          cases=out.get("cases"),
+                                          identity={
+                                              "consistent": None, "mismatches": [],
+                                              "source": ("drill_fixture：夹具日志无身份头，"
+                                                         "未做身份四方同值"),
+                                          }),
                                       "source": "drill_fixture",
                                       "summary": (f"N9：全跑作业 {job_id} 完成（drill 夹具），"
                                                   f"{counts_text(counts)}，"
@@ -514,6 +568,7 @@ async def n9_park(data: Any) -> dict[str, Any]:
                                   "koutou1": (counts.get("koutou1") or {}).get("value"),
                                   "koutou2": (counts.get("koutou2") or {}).get("value"),
                                   "job_id": job_id,
+                                  **_n9_detail(cases=per_case, identity=identity),
                                   "source": "kb_tool",
                                   "summary": (f"N9：全跑作业 {job_id} 完成，"
                                               f"{len(case_names)} 个用例，"
@@ -564,6 +619,9 @@ async def n15_select(data: Any) -> list[str]:
                                            "mode": ctx.mode, "g3_decision": g3})
     ctx.node_finished("N15_select", detail={
         "count": len(cases), "g3": g3,
+        # P-31：列出选中的用例名 + 本轮是否会真跑（real 会跑；drill 演示不跑）
+        "cases": [str(c) for c in cases],
+        "will_really_run": ctx.mode != "drill",
         "source": "framework",
         "summary": (f"N15_select：按 G3={g3 or '未签署'} 选出 {len(cases)} 个回归用例"),
     })
@@ -595,6 +653,11 @@ async def n15_run(data: Any) -> dict[str, Any]:
         await data.async_set_state("n15_result", out)
         ctx.node_finished(node, status="ok", detail={
             "simulated": True, "count": len(cases), "job_id": None,
+            # P-32：drill 不真跑 ⇒ executed=False / will_really_run=False（不是"未下发"）
+            "cases": [str(c) for c in cases],
+            "executed": False,
+            "failed_cases": [],
+            "will_really_run": False,
             "source": "framework",
             "summary": (f"N15：drill 显式 no-op（未真跑回归），回归集 {len(cases)} 个用例，"
                         f"G3={g3 or '未签署'}"),
@@ -658,12 +721,14 @@ async def n15_run(data: Any) -> dict[str, Any]:
         await data.async_set_state("n15_job", job_state)
         ctx.event("job_submitted", node=node, status="running", detail=job_state,
                   refs=[record.log_path])
+        # P-33：提交型节点也要有开始事件 + 作业日志 refs（与 job_submitted 同源）。
+        ctx.node_started("N15_submit")
         ctx.node_finished("N15_submit", detail={
             "job_id": record.job_id, "cases": len(cases),
             "source": "kb_tool",
             "summary": (f"N15_submit：已提交回归作业 {record.job_id}，"
                         f"覆盖 {len(cases)} 个用例（G3={g3 or '未签署'}）⇒ 图转入停放"),
-        })
+        }, refs=[record.log_path])
         submitted_here = True
         job_id = record.job_id
 
@@ -721,8 +786,16 @@ async def n15_run(data: Any) -> dict[str, Any]:
                   detail={"job_id": job_id, "cases": len(case_names),
                           "passed": verdict.get("passed")},
                   refs=[out["evidence_paths"][c] for c in case_names][:6])
+        failed_cases = [
+            c for c in case_names
+            if not (((per_case.get(c) or {}).get("verdict") or {}).get("passed"))
+        ]
         ctx.node_finished(node, status=status,
-                          detail={"cases": len(case_names),
+                          detail={"cases": [str(c) for c in case_names],
+                                  "case_count": len(case_names),
+                                  "executed": True,
+                                  "failed_cases": failed_cases,
+                                  "will_really_run": True,
                                   "passed": verdict.get("passed"),
                                   "job_id": job_id,
                                   "source": "kb_tool",

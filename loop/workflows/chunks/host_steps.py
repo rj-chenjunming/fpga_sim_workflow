@@ -29,6 +29,7 @@ from typing import Any
 from host import paths as P
 
 from ..context import RunCtx, ctx_of
+from .model_common import case_edits_from_output
 
 #: 节点 → 落盘产物名
 ARTIFACTS = {
@@ -177,7 +178,8 @@ async def n0_baseline(data: Any) -> dict[str, Any]:
     # §10.4：N0 必须给 baseline + source + summary（drill 必须能看出是夹具）。
     if ctx.mode == "drill":
         source = "drill_fixture"
-        summary = (f"N0：drill 夹具初始化（复制 {len(copied)} 个夹具文件，"
+        # 裁决 #6（P-01 A）：新 run 的 drill 措辞改为「预置数据（夹具）初始化」（旧 run 不回填）。
+        summary = (f"N0：预置数据（夹具）初始化（复制 {len(copied)} 个夹具文件，"
                    f"复制清单 {len(_drill_files())} 项），gate.py init rc={gate_init['rc']}，"
                    f"baseline={baseline_value}")
     else:
@@ -448,6 +450,25 @@ async def n2_diff(data: Any) -> dict[str, Any]:
 # ---------------------------------------------------------------- N5
 
 
+def _to_check_fields(doc: Any) -> dict[str, Any]:
+    """N5 待查条目投影（P-19）：只从产物 `to_check` 取，不解析 stdout、不猜数字。
+
+    - `to_check_count`：产物 `to_check` 的**条目数**（与 `must_change_count` 同口径）；
+    - `to_check_cases`：去重后的**用例名**；
+    - `to_check_case_count`：去重用例数（面板 headline 要的「另有 N 个待查（用例）」）。
+    `to_check` 不是列表（含产物没有该键）⇒ 三个值全显式 None/[]，不写 0 冒充"没有待查"。
+    """
+    to_check = doc.get("to_check") if isinstance(doc, dict) else None
+    if not isinstance(to_check, list):
+        return {"to_check_count": None, "to_check_cases": [], "to_check_case_count": None}
+    cases = sorted({
+        str(item.get("case")) for item in to_check
+        if isinstance(item, dict) and item.get("case")
+    })
+    return {"to_check_count": len(to_check), "to_check_cases": cases,
+            "to_check_case_count": len(cases)}
+
+
 async def n5_impact(data: Any) -> dict[str, Any]:
     """N5 影响分析。**只在闸门1 有权威签署后允许执行。**
 
@@ -484,6 +505,7 @@ async def n5_impact(data: Any) -> dict[str, Any]:
     doc = _load_json(target) or {}
     must_change = doc.get("must_change", []) if isinstance(doc, dict) else []
     index_gaps = doc.get("index_gaps", [])
+    # P-19：待查条目**只从 N5 产物 `to_check` 取**（不解析 stdout、不猜数字）。
     result.update(
         {
             "must_change_count": len(must_change),
@@ -492,6 +514,8 @@ async def n5_impact(data: Any) -> dict[str, Any]:
             "index_gaps": index_gaps,
             # §10.4：索引缺口计数（取自 N5 产物自身，不重算判据）
             "index_gap_count": len(index_gaps) if isinstance(index_gaps, list) else 0,
+            # P-19：待查条目数 / 去重用例数 / 用例名
+            **_to_check_fields(doc),
         }
     )
     gap_count = result["index_gap_count"]
@@ -651,10 +675,15 @@ async def n6_apply(data: Any) -> dict[str, Any]:
             ctx.event("warning", node="N6_apply", status="drill_noop",
                       detail={"note": payload["note"]})
         await data.async_set_state("n6_applied", payload)
+        # P-21：逐用例修改清单与 N6 **同源**（同一投影函数）；drill 无模型输出 ⇒ None。
+        author_out = data.get_state("n6_author") or {}
+        drill_authors = author_out.get("data") if isinstance(author_out.get("data"), dict) else None
         ctx.node_finished("N6_apply", status="ok",
                           detail={
                               "status": payload["status"],
                               "cases": len(copied),
+                              "case_edits": case_edits_from_output(drill_authors),
+                              "applied_cases": [str(c["case"]) for c in copied if c.get("case")],
                               "source": "drill_fixture",
                               "summary": (
                                   f"N6_apply：drill 采用夹具沙箱件 {len(copied)} 个"
@@ -787,6 +816,9 @@ async def n6_apply(data: Any) -> dict[str, Any]:
             "status": "applied",
             "cases": len(applied),
             "edits": edits_total,
+            # P-21：逐用例修改清单（与 N6 同源）+ 实际写入的用例名
+            "case_edits": case_edits_from_output(author_data),
+            "applied_cases": [str(c["case"]) for c in applied if c.get("case")],
             "source": "framework",
             "summary": (
                 f"N6_apply：{len(applied)} 个用例写入沙箱，共施加 {edits_total} 条 edits"
@@ -830,6 +862,9 @@ async def n7_compile(data: Any) -> dict[str, Any]:
                        "cases": [{"case": "drill", "rc": 0, "source": "drill_fixture"}],
                        "all_ok": True,
                        "failed_cases": []})
+        # R3-09：drill 也下发用例数（与 real 分支同字段名 `case_count`；`cases` 形态不动），
+        # 面板/summary 才能说"N 个用例都编译通过"而不是"用例数未下发"。
+        result["case_count"] = len(result["cases"])
         result["summary"] = (
             "N7：drill 编译卡点B 以夹具 check_C.md 代替（未真跑编译；"
             f"check_C.md {'存在' if text else '缺失'}）"
@@ -952,6 +987,27 @@ async def n7_compile(data: Any) -> dict[str, Any]:
 # ---------------------------------------------------------------- N16
 
 
+def _first_stderr_line(text: str) -> str | None:
+    """stderr 首行原文（P-34：拒绝原因取原文，不翻译、不截断成结论）。"""
+    for line in (text or "").splitlines():
+        if line.strip():
+            return line.rstrip()
+    return None
+
+
+def _n16_result_path(run_dir: Path) -> Path:
+    """每次晋升尝试各留一件 `n16_result.json`；已存在 ⇒ `n16_result.<n>.json`。
+
+    刻意与"人触发真实晋升"的 `promote_result.json` 分开：dry-run 与真实晋升不得互相覆盖。
+    """
+    path = Path(run_dir) / "n16_result.json"
+    n = 2
+    while path.exists():
+        path = Path(run_dir) / f"n16_result.{n}.json"
+        n += 1
+    return path
+
+
 async def n16_promote(data: Any) -> dict[str, Any]:
     """N16 晋升新基线（人触发、Host 原子执行）。
 
@@ -1014,13 +1070,20 @@ async def n16_promote(data: Any) -> dict[str, Any]:
               "actor": actor, "actor_kind": actor_kind,
               "stdout_tail": run["stdout_tail"], "stderr_tail": run["stderr_tail"],
               "source": "kb_tool",
+              # P-34：拒绝原因原文（面板据此写"晋升被拒：<原因>"，不靠 stderr 尾巴猜）
+              "reason_line": _first_stderr_line(run["stderr_tail"]),
               "summary": (f"N16：dry-run 晋升 rc={run['rc']}（{status}），"
                           f"actor={actor}，actor_kind={actor_kind}")}
+    # P-34：每次尝试都落结果件（只增不改；已存在则加序号），并把结果件列入 refs。
+    result_path = _n16_result_path(ctx.run_dir)
+    result["result_artifact"] = str(result_path)
+    _write_json(result_path, {"schema": "loop/n16_result", "run_id": ctx.run_id, **result})
     await data.async_set_state("n16_promote", result)
     # §10.4：refs 只列**真实存在**的晋升留痕（不存在就不进 refs，不编造证据）。
     promote_refs = [
         str(path)
-        for path in (ctx.run_dir / ARTIFACTS["n16"], ctx.run_dir / "promote_result.json")
+        for path in (ctx.run_dir / ARTIFACTS["n16"], ctx.run_dir / "promote_result.json",
+                     result_path)
         if path.is_file()
     ]
     ctx.node_finished("N16", status=status, detail=result, refs=promote_refs)

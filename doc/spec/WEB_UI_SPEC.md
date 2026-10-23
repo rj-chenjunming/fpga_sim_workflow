@@ -129,22 +129,52 @@
 
 ### 4.2.1 节点详情面板（节点 chip 可点击）
 
-> 来源：[SPEC-REV-01](SPEC-REV-01-20261022.md) R4。数据契约见 [SPEC-02](LOOP_ORCHESTRATION_SPEC.md) §10.4。
+> 来源：[SPEC-REV-01](SPEC-REV-01-20261022.md) R4、[SPEC-REV-02](SPEC-REV-02-20261023.md) R1。数据契约见 [SPEC-02](LOOP_ORCHESTRATION_SPEC.md) §10.4。
 
 - **范围 = 全部节点**：执行视图里出现的**每一个**节点 chip 都可点击——N0–N16、四段之外/内部的节点
   （`N6_apply` / `N9_submit` / `N15_select` / `N15_submit`）、`HALT`，以及将来新增的节点；
   闸门节点（N4/N13/N14）同样可点。不按白名单裁剪，不因"没有中文名/owner"就不可点。
 - **数据**：`GET /api/runs/{run_id}/nodes/{node}`（§6.7）；内容来自事件流 + `node_finished.detail` + `refs`，**界面不自行拼装**。
 - **状态原值**：节点 status 不只 `ok/failed`（闸门=决策值、N8/N11/N16/HALT 各不相同）；面板显示服务端原值，不得自行归成"完成/失败"。
-- **必须显示**：
+- **可读性优先（SPEC-REV-02 R1）**：面板从上到下固定为
+  ① 头部（节点/名称/owner/状态原值/执行方式）→ ②「这一步做什么」（`story.purpose` 一句话）→
+  ③「结果一句话」（`summary` 原文）→ ④「关键数字」（`story.key_results` 逐项标签+值）→
+  ⑤「过程」（`story.steps` 按事件顺序的人话步骤）→ ⑥「证据 / 失败」→
+  ⑦「原始记录（排查用，默认收起）」。
+  首屏必须能读到 ②–⑤，不必展开。
 
   | 区块 | 内容 |
   |---|---|
-  | 身份 | node / 名称 / owner / 状态（服务端原值）/ 开始与结束时间 / `source`（`kb_tool` / `drill_fixture` / `model_live` / `model_standin` / `human_gate` / `framework`；夹具与 standin 必须醒目） |
-  | 执行情况 | 该节点事件切片（`node_started` / `node_finished` / `warning` / `node_failed`），按 `seq` 排列，最近一条在前 |
-  | 结果 | `summary` 一行 + 结构化 `detail`（原样展示，未知显示"未下发"） |
-  | 证据 | `refs` 列表；点击先 `GET …/evidence/exists` 探测，缺失显式标"证据缺失"，不在页面打开正文 |
-  | 失败 | `node_failed` 时显示 `error` 原文 + 最后事件，**不得**显示"完成" |
+  | ① 头部 | node / 名称 / owner / 状态（服务端原值 + `story.status_note` 中文释义，如 `ok 通过`）/ 执行方式（`source` 原值 + 中文说明；夹具与 standin 必须醒目） |
+  | ② 这一步做什么 | 服务端 `story.purpose`；未知节点显示"服务端未登记用途" |
+  | ③ 结果一句话 | `story.headline`（短结果，服务端模板生成）；`story.headline_source` 不是 `template` 时在其后加小字附注（`summary` ⇒「（原文摘要）」、`missing` ⇒「（未下发）」，`template` 不显示）；`story.note` 非空时在其下渲染一行黄条；`detail.summary` 原文移入 ⑦「原始记录」顶部并注明"服务端 summary 原文" |
+  | ④ 关键数字 | `story.key_results`（逐节点精选字段；缺失逐项"未下发"；`detail` 为空时只显示一行"还没有收尾记录"）；N6 另按 `story.observation_points` 渲染可折叠「观测点（N 条）」列表（每条：用例 / marker / addr+off / 期望值；`null` ⇒「未下发（旧 run 或替身，模型未产出观测点）」） |
+  | ⑤ 过程 | `story.steps`（人话；时间由前端按 `ts` 渲染；**正文不出现 `seq`**；步骤状态 chip 同样带中文释义） |
+  | ⑥ 证据 / 失败 | `refs` 存在性探测；`story.evidence_groups` 为数组时按用例分组展示（组头=用例名；组内 refs 为空 ⇒ 显示服务端 `note`，如「本轮未执行/无证据」，不留空白）；`evidence_groups=[]` ⇒ 显示 `story.evidence_groups_note`；`null` ⇒ 维持平铺 `refs`。N9 显示 `detail.example_line`（默认收起，展开见原文；`null` ⇒ 不渲染）。`story.evidence_note` 非空时置顶显示（`agent_calls` ⇒ 指 Agent 工作窗口，**不得**再显示"证据缺失"；`not_executed` ⇒ "本轮未执行（无证据）"）；`node_failed` 时显示 `error` 原文，**不得**显示"完成" |
+  | ⑦ 原始记录 | **默认收起** `<details>`：原始事件切片（含 `seq` / `kind` / `status` / `ts`）、完整 `detail` JSON、`summary` 原文、`missing_fields`、身份技术字段（`known` / `authority` / `started_at` / `finished_at` / `source` 原值） |
+
+- **状态释义（P-07）**：状态 chip 显示 `{服务端原值} {story.status_note}`；原值逐字保留、不归一
+  （`ok` 不得被改写成"已完成"）。释义表由服务端 `story.status_glossary` 下发，前端不手抄第二份。
+- **未到达 / 未执行 / 未下发三态必须分清（P-30/P-32/P-33）**：
+  - `story.not_reached=true`（运行已终态且该节点无事件）⇒ 显示服务端 `headline`
+    「本轮没有走到这个节点（运行停在 {run_status}，{中文释义}）」——原值保留、中文 gloss 附后
+    （`failed→失败`/`finished→已完成`），**不得**说"还没有收尾记录，等它跑完再看"；
+  - `story.not_executed=true`（drill/演示下确实没执行该动作）⇒ "—（未执行）"，不写成"未下发"；
+    drill 停在更早闸门（运行已被 HALT 终止）时，归因必须是「本轮未执行（没有提交记录）」，
+    **不得**写成"演示模式不提交"（那会把"没走到"误报成"演示不跑"）；
+  - 其余缺字段仍显示"未下发"。
+- **闸门节点（N4/N13/N14）**：②之后新增「差异清单」区（见 §4.2.2）；等待态必须用白话 + 数字列出
+  硬阻断（`gate.hard_block`，如"有 3 个用例改完没验证通过 / 日志错误标记 1687 行 ≠ 0 / 72 条冲突未清零"），
+  内部代号（I2/I3/I4）只能作小字附注或留在原始记录。
+- **N12 报告**：`report.available=true` 时提供「查看报告全文」只读视图（契约见 §6.8）；缺失显示"本轮没有报告文件"。
+
+
+- **`seq` 的定义与位置**：`seq` 是同一 run 内严格递增的**事件流水号**，只用于排序与定位（"第几条事件"），
+  **不是业务状态**。正文不展示；只在 ⑦ 顶部以一句解释 + 逐条事件的形式出现。
+- **drill 说明**：`source=drill_fixture` 显示为「drill 演示数据（不碰真实环境）」，并在首屏加一行
+  「结果来自预置数据（夹具），不碰真实环境，也不验证环境搭建（S0）」；不得用 drill 结果暗示环境就绪。
+- **步骤来源**：`story.steps` 由服务端按事件 `kind` 白名单确定性生成（[SPEC-02](LOOP_ORCHESTRATION_SPEC.md) §10.4）；
+  界面不做语义拼装、不做状态归一、不补默认文案。
 
 - **逐节点字段下限**：见 [SPEC-02](LOOP_ORCHESTRATION_SPEC.md) §10.4 的逐节点表（N0–N16 + 内部节点 + HALT）；
   缺失字段显示"未下发"并进 `missing_fields`，不得用前端默认值补齐。
@@ -154,6 +184,43 @@
 - **轮询不丢**：执行视图流程条约 1.5 s 全量重建，面板必须是**独立弹层/抽屉**（自带状态），不能做成 chip 内联展开块。
 - **历史 run**：旧 run 的 detail 可能缺新字段，面板显示"未下发"并列出 `missing_fields`；**不回填**历史事件与既有 run。
 - **诚实标注**：面板底部固定一句「投影，非权威；判据以服务端 blockers / gates.json 为准」。
+
+### 4.2.2 闸门节点的二级差异清单（N4/N13/N14；P-17/P-18/P-29）
+
+> 来源：[SPEC-REV-02](SPEC-REV-02-20261023.md) §R2（设计已定）。数据面见 [SPEC-02](LOOP_ORCHESTRATION_SPEC.md) §10.4.2。
+
+- **位置**：闸门节点面板在「结果」之后新增「差异清单」区，标题行 `共 N 条修订点，已处置 M 条`
+  （`N = gate.counts.revision_points`；等待态 `M` 由共享草稿算，已决策态取 `gate.counts.disposed`）。
+- **每条一行（一级，紧凑）**：勾选框（处置状态）+ 一句话（`gate.entries[].title`）+ 元信息
+  （文件名 · 行号/偏移 · 变更种类 · 未决徽标）+ 「查看前后对比 ↗」入口。
+  `gate.entries[].attached` 是同一文件的**附证据**（md5-only，`redundant_of` 指向主条目），
+  只作"另有整文件指纹 1 条（不计入）"显示，**不清单行、不计入 N 条**；附证据的 `note`
+  （如"整文件指纹，不计入修订点"）必须在条目展开/浮窗的附证据区可见（不得只显示条数）。
+- **前后对比用浮窗，不在行内展开（P-18）**：宽 ≥ 80% 视口、可滚动、代码自动换行；左右两栏
+  before/after（全宽），`diff_hunk` 按 `@@ -a,b +c,d @@` 解析成两栏并标行号；`doc_entry` 先列变化字段
+  （before→after）；无 hunk 必须显示**原因**（旧版正文缺失 / 非 UTF-8 / 二进制）与可替代证据
+  （行号、md5），不得留空；元信息含 `offset` / `encoding` / `evidence` / 夹具徽标。
+- **逐条处置**：每条可选 `confirmed`（已确认）/ `ignored`（忽略，理由必填）/ `disputed`（有疑义，理由必填）；
+  取值一律用服务端 `gate.decision_options`（不手抄枚举）。整门决策由逐条处置推导
+  （有 `disputed` ⇒ `disputed`；否则有 `ignored` ⇒ `ignored`；否则 `confirmed`），
+  推导复用 `GateSession.deriveEntryDecision`；**最终以服务端 `normalize_entry_decisions` 判定为准**。
+- **提交入口唯一**：面板**不新增写动作**，勾选与理由只写进共享 `gate-session` 草稿
+  （`run_id + gate + cycle` 身份，刷新保留、不落盘）；底部只给「已处置 M / N」+「去闸门视图确认并提交 →」，
+  真正提交仍走 §4.4 的闸门视图现有表单（`entry_decisions` 覆盖全部 `entry_id`）。
+- **已决策态只读**：显示当时的逐条处置（`gate.entries[].disposition`，来自 `decisions/<gate>.json`）、
+  整门决策（含人工理由原文与签署时间）；无落账 ⇒ 明说"逐条处置未留存"，**不从 `gates.json` 猜**。
+- **浮窗嵌套**：节点面板本身是 `<dialog>`，浮窗用 dialog 栈或页内 overlay；Esc 只关上层、焦点回触发按钮；
+  窄屏浮窗改全屏。勾选框与「查看前后对比」是两个独立命中区。
+- **N13/N14 的"待确认项"（2026-10-23 裁决 #2：只读清单，不新增逐条处置）**：闸门区在 G2/G3 渲染
+  `gate.items` 只读清单（标题「待确认项（只读，N 条）」），每条一行：`kind` 徽标 + 一句话 + 补充说明；
+  **没有勾选框、没有 disposition、不参与提交**（逐条处置语义仍只属于 G1/I1）。
+  - G2（N13）：`kind=blocker`（当前阻断项，白话）+ `kind=open_item`（N12 报告未闭环项）；
+  - G3（N14）：`kind=blocker` + `kind=conflict`（未清冲突摘要，如 "72/126 条"）+ `kind=case`（回归选集用例；
+    `N15_select` 在 G3 之后才跑，已决策且选集已落地时才列）。
+  - `gate.state` 四态：`waiting`（等待人）/ `decided`（已决策）/ `read_only`（非 G1、只有只读清单，
+    无可处置项 ⇒ 不显示"去闸门视图确认并提交"）/ `no_material`（连清单都没有，明说"服务端未下发待确认项"）。
+  - 清单来源全部是服务端既有材料（`blockers` / `N12.open_items` / `N15_select.cases` / 冲突快照），
+    缺材料就少列、**不编**。
 
 ### 4.3 Agent 工作状态（6 张简洁角色卡）
 
@@ -209,8 +276,19 @@
    （编码 / 二进制 / 夹具）与可替代的行号证据。非 UTF-8 源文件必须显示 `encoding`（如 `gbk`）与
    "解码后对比"标注。drill / 夹具条目必须带 `drill_fixture` 徽标。材料另需给出 `n3_digest.md`
    与 Host 留痕（如夹具的 `mock_change_applied.json`）入口（存在性探测）。
-   逐条处置（`entry_decisions`）必须有界面输入通道；v1 若未实现，必须显式提示"该门需走 API"
-   并给出可复制样例，**不得让人盲签**。
+   **逐条处置界面输入通道（2026-10-23 增补，取代 v1 的"走 API"兜底）**：当
+   `pending_interrupt.payload.entry_decisions_required === true` 时，闸门视图必须为**每个唯一
+   `entry_id`** 渲染一组处置控件（选项一律取服务端下发的 `decision_options`，前端不得手抄枚举）
+   与理由输入（`ignored` / `disputed` 必填）；提交 payload 必须带 `entry_decisions` 覆盖**全部**
+   条目。整门决策由逐条处置**推导**：存在 `disputed` ⇒ `disputed`；否则存在 `ignored` ⇒ `ignored`；
+   否则 `confirmed`。推导值与手选值不一致时必须就地提示，最终以服务端拒绝为准。
+   材料不足以生成控件时，仍须显式提示"该门需走 API"并给出可复制样例，**不得让人盲签**。
+   **与节点面板共用草稿（2026-10-23 增补）**：闸门节点面板的二级差异清单（§4.2.2）与本卡使用**同一份**
+   `gate-session` 草稿（同一 `run_id + gate + cycle` 身份）；面板只写草稿、不发 POST，
+   提交入口仍只有本卡的提交按钮——避免两套提交与两套判据。
+   **G2 报告全文一次点击（2026-10-23 裁决 #8）**：材料区的「查看报告全文」直接打开**公共报告浮窗**
+   （`window.ReportViewer`，与 N12 面板同一实现、同一白名单端点 §6.8），不再先跳 N12 面板再点一次。
+   G2/G3 的"待确认项"是只读清单（§4.2.2），不进入本卡的逐条处置控件。
 2. **双口径计数**：口径一 / 口径二**并列同权**，原值显示，不换算；附「两者都归零才可判绿」说明。
 3. **阻断项**：按 `severity` 分区（hard / info），code + 一句话说明；不做前端过滤。
 4. **证据概况 / 长任务**：job 状态、log_tail（折叠、等宽、只读）；证据入口先探测存在性。
@@ -233,6 +311,9 @@
 - 触发：`pending_interrupt` 存在，或用户手动进入。
 - 内容：闸门材料（差异清单/冲突快照/报告+用例态/评估结论，按闸门不同）、权威枚举、当前轮次、未决计数。
 - 操作：选择决策 → 填 actor（必须 `human` 前缀）→ 理由（`ignored/rework/disputed` 必填）→ 提交。
+- **G1 逐条处置（2026-10-23 增补）**：`entry_decisions_required=true` 时先逐条选择
+  （每个唯一 `entry_id` 一组控件），再提交；整门决策由逐条处置推导（§4.4），界面不得用一句
+  attestation 代替逐条核对。
 - 提交路径：`POST /api/runs/{run_id}/gates/{gate_id}/decision`；成功后回到运行视图并刷新。
 - 被拒（403）：显示服务端 `detail.error` + `blockers`，**不消耗中断**的说明如实展示。
 - 执行停放说明：顶部固定一句「执行处于 interrupt，可安全重启；闸门态权威在 `gates.json`」。
@@ -364,16 +445,76 @@
   "refs_omitted": 0,
   "events": [{"seq": 4, "kind": "node_started", "status": "running", "ts": 1792650932.891}],
   "missing_fields": ["manifest_entries"],
-  "authority": "projection"
+  "authority": "projection",
+  "run_status": "finished", "run_terminal": true, "node_started_present": true,
+  "report": null,
+  "gate": null,
+  "story": {
+    "purpose": "给当前代码和文档拍一张快照：多少文件、什么指纹、哪些用例，作为对比起点。",
+    "headline": "快照完成：3374 个文件，冻结 162 个用例。",
+    "headline_source": "template",
+    "note": null,
+    "not_reached": false,
+    "not_executed": false,
+    "evidence_note": null,
+    "status_note": "通过",
+    "status_glossary": {"ok": "通过", "fail": "未通过", "live": "真实模型调用"},
+    "gate": null,
+    "observation_points": null,
+    "evidence_groups": null,
+    "evidence_groups_note": null,
+    "steps": [
+      {"seq": 4, "at": 1792650932.891, "kind": "node_started", "status": "running", "text": "开始执行"},
+      {"seq": 5, "at": 1792650932.892, "kind": "node_finished", "status": "ok", "text": "结束，状态 ok"}
+    ],
+    "key_results": [
+      {"field": "manifest.allfiles_entries", "label": "快照文件数", "value": 3374, "text": "3374", "missing": false},
+      {"field": "manifest.cases_frozen", "label": "冻结用例数", "value": 162, "text": "162", "missing": false}
+    ]
+  }
 }
 ```
 
-- 未知 node：返回 200 + `{"known": false, …}` 空投影，**不**用 404 冒充"节点不存在"。
-- 只读：不写盘；`refs` 只给 run 目录内路径；**不返回文件内容**。`refs` 取自事件流顶层
+- **`story` 是展示投影（SPEC-REV-02 R1）**：`purpose` 来自服务端节点目录；`headline` 由服务端按节点模板
+  从已有 `detail` 字段确定性生成（`summary` 原文移入面板「原始记录」）；`note` 是首屏黄条；`steps` 由该节点
+  事件按 `kind` 白名单确定性生成（缺字段写"未下发/原因未下发"，不推断）；`key_results` 按 §4.2.1 逐节点清单
+  取值（缺失项 `missing=true`、`text="未下发"`）。**界面直接渲染，不自行拼装**；`story` 不含业务判定，
+  不改变 `summary` / `detail` / `events` 的原始语义。
+- **`story` 第三轮新增字段（2026-10-23，只增不改）**：
+  - `observation_points`（仅 N6）：`detail.observation_points` 的确定性透传，
+    `[{case, marker, addr, offset, expected_value}]`；`null` = 未下发（旧 run / drill / standin）；
+    `[]` = 下发了但 0 条（不冒充未下发）。
+  - `evidence_groups` / `evidence_groups_note`（N7/N9）：证据按用例分组，
+    `[{case, refs, note}]`；组内 `refs` 为空 ⇒ `note` 说明（如"本轮未执行/无证据"）；
+    用例名不可知或没有一条 ref 可归属 ⇒ `[]` + `evidence_groups_note` 说明原因；
+    其余节点为 `null`（前端维持平铺 `refs`）。分组只用服务端已下发的用例名，**不推断、不补名字**。
+  - `headline_source` 必须有授权消费者：`summary`/`missing` ⇒ 结果标题后小字附注（见 §4.2.1）。
+- **新增只读字段**：`run_status` / `run_terminal`（P-30 未到达态）、`node_started_present`（P-33）、
+  `report`（仅 N12，P-28）、`gate`（仅 N4/N13/N14，P-17/P-18，形状见 [SPEC-02](LOOP_ORCHESTRATION_SPEC.md) §10.4.2：
+  G1 用 `entries` 逐条处置；G2/G3 用 `items` 只读清单，`gate.state` 含 `read_only`）。
+  只增不改；历史 run 为新字段缺失时按"未下发/不适用"显示，**不回填**。
+- 未知 node：返回 200 + `{"known": false, …}` 空投影（`story.purpose=null`、`key_results=[]`），**不**用 404 冒充"节点不存在"。
+- 只读：不写盘；`refs` 只给 run 目录内路径；**不返回文件内容**（唯一例外 = §6.8 的报告只读端点）。`refs` 取自事件流顶层
   （`node_history` 不含 `refs`），由本端点合并展示；目录外引用（如作业日志）只以
   `refs_omitted` 计数呈现，**不给路径**。
 - 字段缺失必须列进 `missing_fields`；前端显示"未下发"，不猜、不补默认值；历史 run 不回填。
 - 端点实现前，前端可先从 `GET /api/runs/{run_id}` 的 `node_history` + `/events` 拼同一投影，但契约字段一致。
+
+### 6.8 `GET /api/runs/{run_id}/report`（报告全文，只读；P-28）
+
+> 用途：G2 验收报告时，人必须能读到**本 run 的**报告正文（此前材料只给路径+存在性）。
+
+```json
+{"run_id": "RUN-…", "file": "n12_report.md", "path": "…/RUN-…/n12_report.md",
+ "bytes": 12345, "truncated": false, "content": "# 本轮评估报告\n…", "authority": "projection"}
+```
+
+- **白名单写死**：只允许 `n12_report.md`；`?path=` 只接受该值，其余一律 403（**不开放任意路径**）。
+- **不越出 run 目录**：解析后必须落在该 run 的目录内（符号链接逃逸一律 403）。
+- **大小上限**：512 KiB；超出即截断并标 `truncated=true`（不报 500、不落盘缓存）。
+- 缺失 ⇒ 404；未知 run ⇒ 404；只读、不写盘、不改 run 状态。
+- 节点详情里的 `report` 块只给 `{file, available, bytes}`，**不给正文**（正文只在本端点）。
+
 
 ## 7 状态、刷新与错误
 
@@ -425,6 +566,10 @@
 2. **不重建表单**：重新读取只更新数据与提示，不重建闸门表单、不丢草稿、不移动焦点（沿用 §7.1 草稿身份）。
 3. **可重试**：首次失败与陈旧失败都必须提供可达的「重新读取」入口；恢复后入口消失。
 4. **不得伪装**：没有成功数据时不得出现「最近一次成功的数据」「上次成功」措辞；有成功数据时不得让失败看起来像加载中。
+5. **启动请求超时 ≠ 未创建（2026-10-23 增补）**：`POST /api/runs` 在 `real` 模式下同步执行
+   N0–N3（真实模型，可能数分钟），客户端超时只表示**客户端先断开**。超时后界面必须按
+   `GET /api/runs` 核对是否已有新建 run：有则直接接入并提示「已在服务端启动（客户端超时，已自动接入）」，
+   无（或核对窗口内始终没有）才显示启动失败；**不得**把已创建的 run 报成失败、也不得重复提交同一个启动。
 
 
 ---

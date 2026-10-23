@@ -289,16 +289,28 @@ def phase1(c: httpx.Client) -> None:
     # 停机前必须确认"当前停放已落盘、且是一张**可恢复的干净快照**"。
     # 否则第 2 代恢复的是上一张快照，测到的就不是"重附着到在跑作业"而是"回退到上一个停车点"
     # —— 那是另一个场景（F-V1-06b 有单测覆盖），不该在这里碰运气。
-    parked_id = (v.get("pending_interrupt") or {}).get("id")
+    #
+    # 观察窗口（2026-10-23 二次修订实测）：`wait_for(job is not None)` 在 **job_submitted 之后、
+    # 执行真正 pause 之前** 就可能返回（job 已出现但 `pending_interrupt` 尚未写入）⇒
+    # `parked_id=None` 会让 A51 直接误判。这里先等"当前中断"出现（最多 15s），仍以
+    # 「快照里当前中断可恢复」为判据，**不放宽断言**。
+    def _current_interrupt() -> str | None:
+        body = c.get(f"/api/runs/{run_id}").json()
+        return (body.get("pending_interrupt") or {}).get("id")
+
     snap_path = P.LOOP_DIR / "state" / "recovery" / f"{run_id}.json"
+    parked_id = (v.get("pending_interrupt") or {}).get("id")
+    deadline = time.time() + 15.0
+    while parked_id is None and time.time() < deadline:
+        time.sleep(0.2)
+        parked_id = _current_interrupt()
     ok = wait_clean_snapshot(snap_path, parked_id, seconds=10.0)
     current_id = parked_id
     if not ok:
-        # happy 的 drill 作业瞬间完成并立即投递：`wait_for(job)` 返回时 JOB 中断可能已被
-        # 消费，执行已推进到下一道闸门（G2）。此时「停机前干净停放」应对**当前**中断校验，
-        # 而不是对已经消失的 JOB 中断（否则是观察窗口竞态，不是恢复能力缺陷）。
-        cur = c.get(f"/api/runs/{run_id}").json()
-        current_id = (cur.get("pending_interrupt") or {}).get("id")
+        # happy 的 drill 作业瞬间完成并立即投递：观察时 JOB 中断可能已被消费，执行已推进到
+        # 下一道闸门（G2）。此时「停机前干净停放」应对**当前**中断校验，而不是对已经消失的
+        # JOB 中断（否则是观察窗口竞态，不是恢复能力缺陷）。
+        current_id = _current_interrupt()
         if current_id and current_id != parked_id:
             ok = wait_clean_snapshot(snap_path, current_id, seconds=15.0)
     ck("A51 当前停放已落盘且是可恢复的干净快照", ok,

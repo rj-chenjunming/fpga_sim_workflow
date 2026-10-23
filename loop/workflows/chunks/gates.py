@@ -69,6 +69,88 @@ REASON_REQUIRED = frozenset({"ignored", "disputed", "rework"})
 #: 条目级处置的合法值（与闸门单选分支同名，便于与 BRANCH_EVENTS 对齐）。
 ENTRY_DECISIONS = frozenset({"confirmed", "ignored", "disputed"})
 
+#: 逐条处置落账目录（实施计划 §2.5；S3 只读消费，路径 `run_dir/decisions/<gate>.json`）。
+DECISIONS_DIR = "decisions"
+
+#: 闸门 → 白话名称（只用于 HALT 终止原因；决策中文仍取自权威 `human_readable`）。
+GATE_LABEL_CN = {
+    "G1_diff_confirm": "闸门1（差异确认）",
+    "G2_report_accept": "闸门2（报告验收）",
+    "G3_regression_decision": "闸门3（回归决策）",
+}
+
+
+def _ledger_entries(entries: dict[str, Any] | None) -> dict[str, dict[str, Any]]:
+    """落账只写契约字段（decision / reason），不把内部附加键（source 等）写进账本。"""
+    out: dict[str, dict[str, Any]] = {}
+    for entry_id, value in (entries or {}).items():
+        item = value if isinstance(value, dict) else {"decision": value, "reason": None}
+        out[str(entry_id)] = {"decision": item.get("decision"),
+                              "reason": item.get("reason")}
+    return out
+
+
+def _ledger_hard_block(blocks: Any) -> list[dict[str, Any]]:
+    """落账白名单：只写 `code/title/message` 三个契约字段（R3-04，不多写内部键）。"""
+    out: list[dict[str, Any]] = []
+    for block in (blocks or []):
+        if isinstance(block, dict):
+            out.append({"code": block.get("code"), "title": block.get("title"),
+                        "message": block.get("message")})
+    return out
+
+
+def _material_hard_block(data: Any, gate: str) -> list[dict[str, Any]]:
+    """本门**开启时**材料里的硬阻断快照（`gate_material::<gate>`，R3-04）。
+
+    只取契约三字段。材料缺失/不可读 ⇒ `[]`（"材料里没有"就是空列表）；
+    绝不拿**现在**的 blockers 冒充"当时的阻断项"（那是两回事）。
+    """
+    try:
+        material = data.get_state(f"gate_material::{gate}")
+    except Exception:  # pragma: no cover - state 读取本身失败也不得编造
+        return []
+    if not isinstance(material, dict):
+        return []
+    return _ledger_hard_block(material.get("hard_block"))
+
+
+def append_decision_ledger(ctx: RunCtx, gate: str, record: dict[str, Any]) -> Path:
+    """把本次闸门的**逐条处置**追加到 `run_dir/decisions/<gate>.json`（只增不改）。
+
+    形状见实施计划 §2.5；`decided_at` 取权威 `gates.json` 的 `signed_at`（**不新取墙钟**，
+    时间仍是单一注入入口）。落账件是 S3「已决策态逐条处置」的唯一来源：
+    损坏/形状不对必须**显式失败**，不得静默覆盖（那会抹掉已签闸门的处置记录）。
+    """
+    path = ctx.run_dir / DECISIONS_DIR / f"{gate}.json"
+    records: list[dict[str, Any]] = []
+    if path.is_file():
+        try:
+            doc = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            raise RuntimeError(f"闸门处置落账不可解析：{path}（{exc}）") from exc
+        if not isinstance(doc, dict) or not isinstance(doc.get("records"), list):
+            raise RuntimeError(f"闸门处置落账形状非法：{path}（缺 records 列表）")
+        records = list(doc["records"])
+    records.append({
+        "cycle": record.get("cycle"),
+        "decided_at": record.get("signed_at"),
+        "decision": record.get("decision"),
+        "actor": record.get("actor"),
+        "reason": record.get("reason"),
+        "entries": _ledger_entries(record.get("entries")),
+        # R3-04（P-15）：把"签署时**当时**的硬阻断"快照进落账 —— 已决策态面板只能信这份，
+        # 旧 run 没有该键 ⇒ 读侧明说"未留存"，不拿现在的 blockers 冒充当时。
+        "hard_block": _ledger_hard_block(record.get("hard_block")),
+    })
+    payload = {"schema": "loop/gate_entries", "gate": gate,
+               "run_id": ctx.run_id, "records": records}
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    tmp.replace(path)
+    return path
+
 
 def validate_branches() -> dict[str, list[str]]:
     """自检：本层的事件表必须与权威的可提交决策**逐值一致**。
@@ -487,6 +569,9 @@ async def _resumed(ctx: RunCtx, data: Any, gate: str) -> dict[str, Any]:
         await data.async_set_state("n6_n8_cycles", cycles["n6_n8_cycles"])
 
     auth = authority_record(ctx, gate)
+    # R3-04：签署时材料里的硬阻断快照（提交前材料 `gate_material::<gate>`；缺失 ⇒ []）。
+    # 只进 `decisions/<gate>.json` 落账（读侧唯一来源），不改 `gate_decisions` 既有形状。
+    hard_block_snapshot = _material_hard_block(data, gate)
     record = {
         "decision": decision,
         "actor": actor,
@@ -503,7 +588,12 @@ async def _resumed(ctx: RunCtx, data: Any, gate: str) -> dict[str, Any]:
     await data.async_set_state("gate_actor", actor)
     ctx.event("gate_decided", node=node, status=decision,
               detail={"gate": gate, "decision": decision, "actor": actor, "reason": reason,
-                      "signed_at": record["signed_at"], "artifacts": record["artifacts"]})
+                      "signed_at": record["signed_at"], "artifacts": record["artifacts"],
+                      # P-15/P-18：逐条处置随事件下发（新 run）；S3 另从 decisions/ 落账读
+                      "entries": record["entries"]})
+    # §2.5 落账：record 组装后、node_finished 前（append-only）。S3 的已决策态逐条处置只信这份。
+    # R3-04：落账额外带"当时的硬阻断"快照（`hard_block`），不改 record 在 state/事件里的既有形状。
+    append_decision_ledger(ctx, gate, {**record, "hard_block": hard_block_snapshot})
 
     branch = (BRANCH_EVENTS.get(gate) or {}).get(decision)
     if not branch:
@@ -560,18 +650,27 @@ async def halt(data: Any) -> dict[str, Any]:
     """闸门要求裁决 / 忽略 / 暂缓时，闭环**显式终止**，不假装收敛。"""
     ctx = ctx_of(data)
     decisions = data.get_state("gate_decisions") or {}
-    reason = {g: d.get("decision") for g, d in decisions.items()}
+    decision_map = {g: d.get("decision") for g, d in decisions.items()}
+    # P-35：终止原因写**白话**（原值仍原样留在 `decisions` 与既有 `{闸门: 决策}` 字段里）。
+    parts = [
+        f"{GATE_LABEL_CN.get(gate, gate)}选了「{GA.human_readable(gate, str(decision))}」"
+        for gate, decision in decision_map.items() if decision
+    ]
+    reason_text = ("本轮在 " + "；".join(parts) + " 处终止，所以不继续往下走"
+                   if parts else "闸门未放行，所以本轮不继续往下走")
     ctx.event("warning", node="HALT", status="halted",
-              detail={"reason": "闸门未放行 ⇒ 本轮不继续", "decisions": reason})
+              detail={"reason": reason_text, "decisions": decision_map})
     # §10.4：HALT 的 summary 用终止原因原文；detail 原有的 `{闸门: 决策}` 字段原样保留。
     decisions_text = "；".join(f"{gate}={item.get('decision')}" for gate, item in decisions.items())
     ctx.node_finished("HALT", status="halted", detail={
-        **reason,
+        **decision_map,
+        "reason": reason_text,
+        "decisions": decision_map,
         "source": "framework",
-        "summary": ("HALT：闸门未放行 ⇒ 本轮不继续"
+        "summary": ("HALT：" + reason_text
                     + (f"（{decisions_text}）" if decisions_text else "（无闸门决策）")),
     })
-    return {"halted": True, "decisions": reason}
+    return {"halted": True, "decisions": decision_map}
 
 
 #: 闸门 id 列表（取自权威，仅暴露用）

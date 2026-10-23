@@ -25,16 +25,27 @@ from pydantic import BaseModel, Field
 
 
 class N3Group(BaseModel):
-    segment: str = Field(description="段基址，必须是 input.offered_segments 中的值")
+    segment: str = Field(
+        description=("段基址，必须是 input.offered_segments 中的值；"
+                     "offered_segments 为空时留空字符串（不要编段）")
+    )
     kind: str = Field(description="变更种类")
     diff_ids: list[str] = Field(description="本组包含的 diff 条目 id，只能取自 input.diffs")
     why: str = Field(description="为什么归为一组")
 
 
 class N3Output(BaseModel):
-    summary: str = Field(description="一到三句中文摘要：本轮差异改了什么")
-    groups: list[N3Group] = Field(description="按 段 + 变更种类 分组")
-    risky_points: list[str] = Field(description="需要人工重点确认的点，逐条给理由")
+    summary: str = Field(
+        description=("一到三句中文：**先说改了什么（白话，具体到文件与行为），再说影响面**；"
+                     "不得只写统计句")
+    )
+    groups: list[N3Group] = Field(
+        description=("分组结果；input.offered_segments 为空时返回空列表"
+                     "（本轮没有段信息，不硬分组）")
+    )
+    risky_points: list[str] = Field(
+        description="需要人工重点确认的点，逐条「一句风险 + 依据」（不得只写技术名词）"
+    )
 
 
 # ---------------------------------------------------------------- N6
@@ -59,8 +70,47 @@ class N6Revision(BaseModel):
     rationale: str = Field(description="这批修订为什么能满足新 RTL/文档；引用 input 中的具体事实")
 
 
+class N6ObservationPoint(BaseModel):
+    """一条**观测点印记**声明（P-25 方案 A：作者让用例自己打印实际读回值）。
+
+    为什么要有：真实轮 N10 的 I3 要求「期望观测点留下通过印记」，而基线用例本身不打印
+    `[N6_...] OK ...` ⇒ 真实轮必然过不了。改为由作者在用例里加一行 UVM_INFO 打印**实际值**，
+    Host/N10 仍按文档索引校验（不信任模型给的值）。
+
+    Host 的跨字段校验（`workflows/chunks/model_steps.py::_validate`，fail-closed）：
+    每个 `input.targets[].case` 至少一条；`marker` 全局唯一；`marker` 字符串必须出现在
+    **同用例** `revisions[].edits[].new` 里（防"只列不写"）。
+    """
+
+    case: str = Field(description="目标用例名，必须取自 input.targets[].case")
+    marker: str = Field(
+        pattern=r"^N6_[A-Za-z0-9_]+$",
+        description=("印记名，形如 N6_<检查点名>；只允许字母/数字/下划线，"
+                     "且必须逐字出现在该用例 edits[].new 的 UVM_INFO 行里"),
+    )
+    addr: str = Field(
+        pattern=r"^0x[0-9A-Fa-f]+$",
+        description="十六进制字面量（如 0x0000），取自 input.targets[].revision_points 的 segment",
+    )
+    offset: str = Field(
+        pattern=r"^0x[0-9A-Fa-f]+$",
+        description="十六进制字面量（如 0x04），取自 input.targets[].revision_points 的 offset",
+    )
+    expected_value: str = Field(
+        pattern=r"^0x[0-9A-Fa-f]+$",
+        description="期望读回值的十六进制字面量（如 0x20260708），取自 rtl_change/doc_bitdef",
+    )
+    basis: str = Field(
+        description="依据：引 input 的 revision_points / rtl_change / doc_bitdef 具体事实；不得空泛"
+    )
+
+
 class N6Output(BaseModel):
     revisions: list[N6Revision] = Field(description="每个目标用例恰好一条")
+    observation_points: list[N6ObservationPoint] = Field(
+        description=("每个目标用例**至少一条**观测点印记（P-25）：用例里必须真的打印它，"
+                     "且 marker 必须出现在该用例 edits[].new 里；Host 逐条校验，缺/非法即拒")
+    )
     rework_resolution: list[str] = Field(description="上一轮每条退回意见如何处理；无返工则空列表")
     notes: list[str] = Field(description="其他限制或不确定性")
 
@@ -148,7 +198,7 @@ SCHEMAS: dict[str, type[BaseModel]] = {
 __all__ = [
     "SCHEMAS",
     "N3Output", "N3Group",
-    "N6Output", "N6Revision", "N6Edit",
+    "N6Output", "N6Revision", "N6Edit", "N6ObservationPoint",
     "N8Output", "N8Finding",
     "N11Output", "N11ReworkRequest",
     "N12Output", "N12Section",

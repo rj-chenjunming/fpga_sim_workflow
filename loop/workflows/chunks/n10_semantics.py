@@ -44,6 +44,70 @@ def _per_case_fail_buckets(ctx: RunCtx, cases: dict[str, Any],
             "merged_note": merged_notes or None}
 
 
+def _imprints_state(item: dict[str, Any]) -> tuple[bool, list[str]]:
+    """单用例印记是否可判通过 + 哪些 marker 不一致（只读 evidence 聚合的既有字段）。
+
+    不新造判据：`consistent` / `expected.address|value` 都由 `host.evidence` 给出，
+    这里只做**展示口径的合取**（"印记齐且三向一致"），供 P-26 的逐用例表使用。
+    """
+    imprints = (item or {}).get("imprints") or {}
+    ok = bool(imprints)
+    missing: list[str] = []
+    for marker, res in imprints.items():
+        res = res or {}
+        expected = res.get("expected") or {}
+        consistent = res.get("consistent") is True
+        resolved = bool(expected.get("address")) and bool(expected.get("value"))
+        if not (consistent and resolved):
+            missing.append(str(marker))
+            ok = False
+    return ok, sorted(missing)
+
+
+def _cases_table(cases: dict[str, Any] | None) -> list[dict[str, Any]]:
+    """N10 逐用例对账表（P-26）：只投影 `n9_result.cases` 的既有字段，不重算判据。"""
+    rows: list[dict[str, Any]] = []
+    for case in sorted(cases or {}):
+        item = (cases or {}).get(case) or {}
+        counts = item.get("counts") or {}
+        uvm = (counts.get("koutou2") or {}).get("value") or {}
+        verdict = item.get("verdict") or {}
+        imprints_ok, imprints_missing = _imprints_state(item)
+        rows.append({
+            "case": str(case),
+            "koutou1": (counts.get("koutou1") or {}).get("value"),
+            "uvm_error": uvm.get("UVM_ERROR"),
+            "uvm_fatal": uvm.get("UVM_FATAL"),
+            "imprints_ok": imprints_ok,
+            "imprints_missing": imprints_missing,
+            "passed": verdict.get("passed"),
+            "reasons": [str(x) for x in (verdict.get("reasons") or [])],
+        })
+    return rows
+
+
+def _classification_summary(*, bucket_count: int | None,
+                            items: list[dict[str, Any]] | None) -> dict[str, Any]:
+    """N10 失败分类摘要（P-26）：桶数 + 各分类**桶数**（不是行数，避免两套口径）。
+
+    分类结果只来自模型输出（Host 已校验）；没有分类输出（standin/drill）⇒ 三个计数显式
+    `None`（不写 0 冒充"本轮引入 0"）。
+    """
+    out: dict[str, Any] = {"buckets": bucket_count, "既有缺陷": None,
+                           "本轮引入": None, "待裁决": None,
+                           "source": "not_classified"}
+    if not isinstance(items, list):
+        return out
+    tally = {"既有缺陷": 0, "本轮引入": 0, "待裁决": 0}
+    for item in items:
+        cls = str((item or {}).get("classification") or "")
+        if cls in tally:
+            tally[cls] += 1
+    out.update(tally)
+    out["source"] = "n10_output"
+    return out
+
+
 def _reconcile_markdown(out: dict[str, Any]) -> str:
     counts = out.get("counts") or {}
     k1 = (counts.get("koutou1") or {}).get("value")

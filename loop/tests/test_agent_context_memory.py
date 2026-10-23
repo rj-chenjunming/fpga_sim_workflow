@@ -43,12 +43,54 @@ class Data:
         self.emitted.append(key)
 
 
+# ---------------------------------------------------------------- N6 合法输出夹具（P-25 方案 A）
+#
+# 背景：`n6_author` 现在对模型输出做 fail-closed 校验（每个目标用例至少一条观测点、
+# marker 唯一、必须出现在同用例 `edits[].new` 里，且 marker 的期望必须能从**本 run** 的
+# 文档条目快照解析出来 —— R3-01）。下面这些 characterization 用例检验的是
+# **上下文刷新/远端修订点是否进入请求**，所以只把 provider 响应换成合法形状，
+# **不放宽任何断言**。
+
+#: 观测点 marker：必须是 UVM_INFO 的 **ID**，且含文档条目名（`fpga_date`）才能解析到期望。
+#: （`fpga_date` 条目由下面 `ctx` 夹具写进 run 级 `doc_entries.jsonl`。）
+N6_MARKER = "N6_FPGA_DATE"
+
+
+def n6_new_text(marker: str = N6_MARKER) -> str:
+    """一条合法的观测点打印（marker 是 UVM_INFO 的 ID；打印实际读回值；值带 `0x`）。"""
+    return ('uvm_info("' + marker + '", $sformatf("OK 0x0000+0x04 fpga_date = 0x%08h", '
+            'actual), UVM_LOW);')
+
+
+def n6_observation_point(case: str, marker: str = N6_MARKER) -> dict:
+    return {"case": case, "marker": marker, "addr": "0x0000", "offset": "0x04",
+            "expected_value": "0x20260708", "basis": "doc_bitdef bits=31:0"}
+
+
+def n6_response(case: str, *, old: str, line: int = 1,
+                rework_resolution: list[str] | None = None) -> dict:
+    """合法 N6 输出：revisions 覆盖 case、edits[].new 含同用例 marker、observation_points 对齐。"""
+    return {"revisions": [{"case": case, "rationale": "按 doc_bitdef 修订并加观测点",
+                           "edits": [{"line": line, "old": old, "new": n6_new_text(),
+                                      "basis": "doc_bitdef bits=31:0"}]}],
+            "observation_points": [n6_observation_point(case)],
+            "rework_resolution": list(rework_resolution or []), "notes": []}
+
+
 @pytest.fixture
 def ctx(tmp_path):
     root = tmp_path / "workspace"
     run = root / "runs" / "RUN-20300101-010101"
     run.mkdir(parents=True)
     write_json(run / "view.json", {"baseline": "v0"})
+    # R3-01：N6 观测点 marker 的期望必须能从**本 run** 的文档条目快照解析出来
+    # （`host.evidence.resolve_expected_imprint(marker, run_dir=…)`）；解析不到 ⇒ fail-closed。
+    # 这里给 run 级快照一条 `fpga_date`，让 `N6_FPGA_DATE` 可解析（不靠跨 run 猜测）。
+    (run / "doc_entries.jsonl").write_text(
+        json.dumps({"entry_id": "0x0000#0x0004", "name": "fpga_date",
+                    "segment": "0x0000", "offset_global": "0x0004",
+                    "reset": "2026_0708"}, ensure_ascii=False) + "\n",
+        encoding="utf-8")
     return RunCtx(run.name, run, "real", "happy", KbSources.from_workspace(root),
                   ProgressLog(tmp_path / "events", run.name))
 
@@ -182,9 +224,7 @@ async def test_n8_full_request_stays_within_context_budget(ctx, provider, monkey
 
 async def test_characterization_author_receives_last_rework(ctx, provider, monkeypatch):
     monkeypatch.setattr(M, "build_n6_targets", lambda *args: [{"case": "demo", "excerpt": {"text": "old"}}])
-    provider["response"] = {"revisions": [{"case": "demo", "edits": [
-        {"line": 1, "old": "old", "new": "new", "basis": "doc"}], "rationale": "doc"}],
-        "rework_resolution": ["fixed"], "notes": []}
+    provider["response"] = n6_response("demo", old="old", rework_resolution=["fixed"])
     await M.n6_author(Data(ctx, {"n8_check": {"data": {"must_fix": ["fix mask"]}},
                                "n11_review": {"rework_requests": [{"case": "demo", "what": "check evidence", "basis": "md5"}]}}))
     reasons = provider["inputs"][0]["rework_reasons"]
@@ -210,9 +250,7 @@ async def test_author_sees_distant_revision_points_in_same_case(ctx, provider, m
          "entry_id": f"entry-{line}", "segment": "s", "offset": str(line)} for line in (3, 190)]})
     write_json(ctx.run_dir / "n2_diff.json", {"diffs": []})
     monkeypatch.setattr(N6, "_doc_bitdef_for", lambda *args: {"bits": "31:0"})
-    provider["response"] = {"revisions": [{"case": "demo", "edits": [
-        {"line": 3, "old": "unique_line_3", "new": "new", "basis": "doc"}], "rationale": "doc"}],
-        "rework_resolution": [], "notes": []}
+    provider["response"] = n6_response("demo", old="unique_line_3", line=3)
     await M.n6_author(Data(ctx, root=root))
     target = provider["inputs"][0]["targets"][0]
     assert len(target["excerpts"]) == 2
@@ -246,7 +284,7 @@ async def test_author_api_facts_refresh_between_calls(ctx, provider, monkeypatch
          "entry_id": "entry", "segment": "s", "offset": "1"}]})
     write_json(ctx.run_dir / "n2_diff.json", {"diffs": []})
     monkeypatch.setattr(N6, "_doc_bitdef_for", lambda *args: {"bits": "31:0"})
-    provider["response"] = {"revisions": [], "rework_resolution": [], "notes": []}
+    provider["response"] = n6_response("demo", old="api_demo(1);", line=1)
     await M.n6_author(Data(ctx, root=root))
     api.write_text("task api_demo(input int data);\nNEW_RULE;\nendtask\n")
     await M.n6_author(Data(ctx, root=root))

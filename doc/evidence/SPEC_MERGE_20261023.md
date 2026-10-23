@@ -3,8 +3,9 @@
 基线：`origin/main` = `47893ce`（含 `356dc7c` 引用边界修复、`d1b5ae9` SPEC-08 DSH 草案、
 `47893ce` SPEC-09 AI 面板草案）；本地 `33d8530` + 未提交 WIP。同一执行者实施与验证，**无独立终验**。
 
-集成在独立 worktree `.tmp/integration-20261023`（分支 `integration/20261023-specmerge`）完成；
-`main` 工作树、`18098`/`8099` 服务实例和停在 `waiting_gate` 的 `RUN-20261023-213737` 均未触碰。
+集成先在独立 worktree/分支完成，随后按用户要求**直接快进合入 `main`**：`main` 从 `33d8530`
+快进到合并点 `317df8c`（后续 `ae7e24c` 仅补本文档记录），工作树干净；合并用的 worktree/分支已删除。`18098`/`8099` 服务实例与停在
+`waiting_gate` 的 `RUN-20261023-213737` 未重启、未改写。
 
 ## 1 同步事实
 
@@ -52,13 +53,19 @@
 | `pytest -q tests/test_api_ui_contract.py` | 7 passed, **2 failed**：同因只读数据根 |
 | `python3 doc/audit/check_doc_links.py` | `checked=1791 skipped=22621 historical=857 known_missing=10 env_missing=19 missing=22`，exit=1；22 条全部为 worktree 缺少的数据根路径（workspaces 运行目录与工具缓存），**无本仓文档断链** |
 | `git diff --check` | 通过 |
+| **合入 main 后复跑**：定向单测 | **113 passed**, 1 warning, 1.12s |
+| **合入 main 后复跑**：节点详情浏览器 | **43 passed**, 55.29s |
+| **合入 main 后**：`python3 doc/audit/check_doc_links.py` | `checked=1807 skipped=22704 historical=857 known_missing=10 env_missing=19 missing=0`，exit=0 |
 
 未运行：完整软件层、kb gate schema/N5 自测、端到端、真实模型/仿真、真 DSH 接入。
-`main` 工作树仍保留原 33 改 + 17 未跟踪；分支未推送、环境未发布。
+未推送远端、环境未发布。
 
-## 6 合回 main 的条件
+## 6 落地结果与剩余事项
 
-真实 run `RUN-20261023-213737` 仍 `waiting_gate`，且 `.tmp/restart_watch.log` 在监控代码变化。
-待 run 收尾/看门脚本停止后，在 `main` 执行：先备份或丢弃当前未提交 WIP（其内容已含在分支
-`e7528fe`），再 `git merge --ff-only integration/20261023-specmerge`。合并后按仓库惯例重跑四道门
-（内网数据根就绪时）并在 STATUS 只追加回填实测数字。
+- 已直接快进合入：`main` = `317df8c`（`e7528fe` 保全 WIP → `4b3995c` 编号归一 → `f59be22` 合入
+  `47893ce` → `317df8c` 接线+证据）。合并前核对：33 个已跟踪修改与 31 个未跟踪文件逐文件哈希一致；
+  原 WIP 完整在 main 历史中。
+- 合并用的临时 worktree `.tmp/integration-20261023` 与分支 `integration/20261023-specmerge` 已删除；
+  `.tmp/restart_watch.log` 在合并后仍写 `new_code=NO`，服务端口未变化，run 仍 `waiting_gate`。
+- 仍待补：完整软件层、kb 自测、端到端、真实模型/仿真与真 DSH 接入（内网数据根就绪时），
+  以及推送远端——本轮未 push。

@@ -41,7 +41,7 @@
 ## 2 `spec/` 契约
 
 > **编号**：每份 SPEC 有稳定编号 `SPEC-0X`（文件名不变）。当前修订记录：[`SPEC-REV-01`](spec/SPEC-REV-01-20261022.md)（2026-10-22，待验收）。
-> 修订记录只增不改；后续依次 `SPEC-REV-02`…
+> 修订记录只增不改；新增 [SPEC-REV-02](spec/SPEC-REV-02-20261023.md) 为 DSH 核接入设计草案，未实现、未验收，不替代现行能力说明。
 
 | 编号 | 文件 | 管什么 |
 |---|---|---|
@@ -52,6 +52,9 @@
 | SPEC-05 | [S0 环境准备](spec/S0_ENVIRONMENT_SPEC.md) | 修订稿 S0 双段、基线零写、派生校验、TB 授权及三库准出边界；S0 与 drill/N0–N16 的关系与两级验收（§6/§7） |
 | SPEC-06 | [`spec/AGENT_CONTEXT_SPEC.md`](spec/AGENT_CONTEXT_SPEC.md) | Agent 上下文覆盖、逐次调用留痕、人工确认经验及版本/来源失效规则 |
 | SPEC-07 | [Agent 工作窗口](spec/AGENT_WINDOW_SPEC.md) | 逐节点观察、人工补充指令、请求暂停/恢复/终止、控制审计与身份隔离（仅模型节点；Host 节点用 SPEC-04 §4.2.1） |
+| SPEC-08（草案） | [DSH Agent 执行后端](spec/DSH_AGENT_RUNTIME_SPEC.md) | 环境 DSH 核接入、工具与候选目录权限、会话/控制/审计及验收；未实现 |
+
+DSH 接入阅读入口：[设计草案](spec/DSH_AGENT_RUNTIME_SPEC.md) → [实施切片](plans/2026-10-23-dsh-agent-runtime.md)。先探测内网真实能力，再接 N3 只读分析与 N6 候选编辑。
 
 ## 3 阅读顺序（新接手）
 

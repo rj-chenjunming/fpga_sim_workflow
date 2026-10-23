@@ -4,6 +4,8 @@
 
 ## 范围和 owner
 
+DSH 核接入的拟议能力与验收见 [SPEC-08 草案](DSH_AGENT_RUNTIME_SPEC.md)；该设计尚未实现，下述现行范围不因此扩大。
+
 从 Agent 卡片进入工作窗口，绑定 run/node/session/attempt，查看实际输入、模型/替身、结果、Host 校验与节点事件。当前角色为 N3/N6/N8/N10/N11/N12 模型调用，不声称具备 DSH 独立终端、并行调度或持久聊天。没有模型隐藏推理或 token 流，输出返回后显示，等待时显示真实状态和事件。
 
 Host `loop/host/agent_control.py` 唯一管理活跃请求、命令去重、取消及重发。`agent_memory.py` 继续独占原请求/结果记录。干预仅发生在 `run_model_node` 请求边界；业务副作用、仿真和闸门仍由现有 owner 管理。无活跃调用的历史窗口只读，不重放任务。checker 的 N8/N10 分别选择。

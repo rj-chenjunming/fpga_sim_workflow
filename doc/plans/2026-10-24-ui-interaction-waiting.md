@@ -100,3 +100,37 @@ DOM id 与结构不变（browser 特征测试的选择器不变）。
 现状 `job.log_tail`（12 行）已随 §6.9 的 run_view 推送（§6.9 注明的口径）。仅当长作业盯屏的
 真实使用需求被登记后（采纳门：先有使用证据）再立项：`event: job_log` 增量帧（日志文件
 offset + 行）、投影字段与游标语义，先修订 §6.9 再实现；在此之前不得以「可能有用」立项。
+
+### §E UX 走查修复落地顺序（SPEC-REV-08，2026-10-24；U7–U10）
+
+来源：体验用户浏览器走查实证（SPEC-REV-08 表格）。全部纯前端；每片独立红→绿，
+验证门相同：node 纯函数断言（红先行）→ `node --check`/`py_compile` → 契约演示桩浏览器实证。
+
+1. **U7 会话恢复**：新 `web/session-url.js`（`encode(runId,view)→hash|null`、
+   `decode(hash)→{runId,view}`，view 白名单 s0/setup/run/gate，乱码容错返回空）；
+   app.js 接线三点——`openRun`/`showView` 末尾 `history.replaceState` 同步
+   （非 run/gate 视图不带 run 段）、`init()` 在 `loadRuns` 后按深链恢复
+   （`view=gate` 且运行非等待时仍落闸门视图）、`hashchange` 与当前状态比对后执行
+   （防回环）。浏览器验证门：打开运行→reload→运行与视图恢复；等闸门运行 reload→落闸门视图。
+2. **U8-a 缺项提示**：`updateGateForm` 在 `needEntries && !entriesReady` 时调
+   `validateEntryDecisions` 取 error，渲染到表单内 `data-gate-entry-hint` 行
+   （warn 样式；就绪即清空）。判定零新增——只是把既有纯函数结果接到 DOM。
+3. **U8-b 理由复用**：`gate-session.js` 增 `reusableReason(entryDecisions, derived, options)`
+   （纯函数：derived 需理由且 store 内有同判据非空理由时，按 entry_id 排序取首个；否则 null）；
+   `setEntryDecision`/`GateDraftBridge.set` 在推导成功且整门理由为空时预填。不为空不覆盖=用户编辑优先。
+4. **U8-c 紧凑卡引导**：`ensureGateForm` compact 分支在 `entry_decisions_required` 时
+   加提示行 + 按钮去 `showView("gate")`。U4 完整引导流不变（§B），本条只是可达性最小修复。
+5. **U9 作业终态**：新 `web/job-status.js`（`emptyHint(events)`→none/finished/dead + node/rc/jobId，
+   `emptyText(events)`→文案或 null）；`renderJob` 空态优先消费之。展示推导，不写判据。
+6. **U10 微修**：`renderGateMaterial` 闸门行显示 `gateTitle()`、原始 id 入 `title`；
+   `agent-window.js` 会话切换提示追加（保留最近回执）。
+
+回退：全部为展示层增量，逐片 revert 即可；U7 深链解析失败时回落既有默认 S0 行为。
+
+### §F U11 提案（不实施）：默认落地与徽标构成
+
+- **默认落地视图**：现 `init()` 恒落 S0。候选策略（需产品决策）：(a) 无深链且存在
+  waiting_gate/failed 运行 → 落运行监控并自动选中待办运行；(b) 保持 S0（新用户教育优先）。
+  判定在 `wait-center.deriveActions`（既有纯函数），接入点 `init()`；采纳门=与 SPEC-REV-07 §5 相同。
+- **标题徽标构成**：`badgeTitle` 现为 `(N)`。候选：`(N 待)`/`(N 待·M 败)`（等宽、≤8 字符），
+  仅 `document.hidden` 时闪烁语义不变；需真实通知环境联调后定稿。

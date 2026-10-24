@@ -267,6 +267,8 @@
             <div class="card-head">
               <h2>流程执行状态</h2>
               <span class="sub">摄取 → 修订 → 验证 → 决策</span>
+              <!-- U2-a（SPEC-REV-07 / SPEC-04 §7.3）：传输状态徽标，非业务状态 -->
+              <span class="chip" id="streamState" title="实时=SSE 推送；轮询回退=断线后回到既有轮询（自动重试建流）">—</span>
             </div>
             <div class="stages" id="stages"></div>
           </div>
@@ -535,6 +537,7 @@
 <script src="context-explain.js"></script>
 <script src="wait-center.js"></script>
 <script src="operator.js"></script>
+<script src="run-stream.js"></script>
 <script src="s0.js"></script>
 <script src="agent-results.js"></script>
 <script src="agent-window.js"></script>

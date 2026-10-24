@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import Body, FastAPI, HTTPException, Query
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import JSONResponse, FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 from host import paths as P
@@ -312,6 +312,30 @@ def get_run(run_id: str) -> dict[str, Any]:
         return view
     except KeyError as exc:
         raise HTTPException(status_code=404, detail={"error": str(exc)}) from exc
+
+
+@app.get("/api/runs/{run_id}/stream")
+async def stream_run(run_id: str):
+    """SSE 运行投影流（SPEC-04 §6.9 / SPEC-REV-07 U2-a）：只读传输，仅变化时推送。
+
+    推送内容 = 既有 run_view 投影（与 GET /api/runs/{run_id} 同源）；本路由不构造
+    第二份判据、不新增事件 kind、不写文件。run_view 是同步读盘，放线程池避免阻塞事件循环。
+    客户端断开由 Starlette 关闭生成器；断线回退轮询由客户端承担（SPEC-04 §7.3）。
+    """
+    from services import run_stream
+
+    manager = _manager()
+    if run_id not in manager.docs:
+        raise HTTPException(status_code=404, detail={"error": f"未知 run_id：{run_id}"})
+
+    async def fetch_view() -> dict[str, Any]:
+        return await asyncio.to_thread(manager.run_view, run_id)
+
+    return StreamingResponse(
+        run_stream.run_view_stream(fetch_view),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @app.get("/api/runs/{run_id}/events")

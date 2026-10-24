@@ -103,6 +103,8 @@
     /* F13：当前选择的「上次成功时间」与在途标记；切换运行必须同时清空成功时间。 */
     viewLastOkAt: null,
     viewRequesting: false,
+    /* U2-a（SPEC-04 §7.3）：当前选择的 SSE 流状态；非业务状态，判定/草稿/提交不读它。 */
+    streamState: "stopped",
     view: "s0",
     baselines: [],
     baselinesLoading: false,
@@ -527,7 +529,8 @@
         state.runsError = errText(e1);
         firstErr = firstErr || e1;
       }
-      if (state.runId) {
+      /* U2-a（§7.3）：流处于 open 时详情由推送驱动，主轮询跳过（不双通道并发写）。 */
+      if (state.runId && state.streamState !== "open") {
         try {
           await fetchRunView();
         } catch (e2) {
@@ -589,6 +592,7 @@
     state.stageOverride = "auto";
     resetGateDraft();
     showView("run");
+    restartRunStream();
     try {
       if (!await fetchRunView()) return;
     } catch (e) {
@@ -791,6 +795,47 @@
     btn.textContent = p === "granted" ? "通知 已开启"
       : p === "denied" ? "通知 已拒绝" : "开启等待通知";
     btn.disabled = p === "denied";
+  }
+
+  /* ---------------- U2-a SSE 传输（SPEC-REV-07 / SPEC-04 §7.3，2026-10-24） ----------------
+   * 当前选择的运行详情优先走流；状态机在 web/run-stream.js（计时器注入的纯模块）。
+   * open 态主轮询跳过详情请求（列表/健康照常轮询）；回退态回到既有轮询路径——
+   * 不双通道并发写（§7.3）。每次选择运行重建控制器（stop 为终态）。 */
+  var runStream = null;
+
+  function streamStateText(s) {
+    return { connecting: "连接中", open: "实时", fallback: "轮询回退", stopped: "—" }[s] || "—";
+  }
+
+  function renderStreamState() {
+    setText("streamState", state.runId ? streamStateText(state.streamState) : "—");
+  }
+
+  function restartRunStream() {
+    if (runStream) { runStream.stop(); runStream = null; }
+    state.streamState = "stopped";
+    renderStreamState();
+    /* 浏览器不支持 EventSource ⇒ 直接轮询（§7.3），不报错、不建流。 */
+    if (!state.runId || !window.RunStream || typeof window.EventSource !== "function") return;
+    runStream = window.RunStream.createRunStream({
+      url: "/api/runs/" + enc(state.runId) + "/stream",
+      EventSource: window.EventSource,
+      onEvent: function (name, view) {
+        if (name !== "run_view" || !view) return;
+        /* §7.2 代次判定思想：旧推送不得覆盖新选择（与 fetchRunView 同一守卫）。 */
+        if (!state.runId || view.run_id !== state.runId) return;
+        state.viewData = view;
+        state.viewError = null;
+        state.viewLastOkAt = Date.now();
+        renderLive();
+      },
+      onStateChange: function (s) {
+        state.streamState = s;
+        renderStreamState();
+      },
+      retryMs: 15000
+    });
+    runStream.start();
   }
 
   function renderSetup() {
@@ -3391,6 +3436,7 @@
     renderRun();
     renderGate();
     renderBanners();
+    renderStreamState();
   }
 
   /* ------------------------------------------------------------------ *

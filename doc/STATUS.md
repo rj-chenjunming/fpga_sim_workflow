@@ -1857,3 +1857,33 @@ U1-b 的 S0 阻断聚合按提案标注的范围未含（行动条当前只聚�
 
 **边界声明**：提醒/预填均为投影消费者与输入便利，不参与任何判定；权威仍以
 `gates.json` + `human_signed` 与服务端投影为准；通知被拒绝时降级为标题徽标+后台闪烁。
+
+---
+
+## 60 U2-a SSE 传输首片实施（SPEC-REV-07 U2-a，2026-10-24）
+
+按采纳门顺序先改规格再动代码：[SPEC-04](spec/WEB_UI_SPEC.md) 新增 **§6.9**
+（`GET /api/runs/{run_id}/stream`：仅变化时推送、签名排除 `updated_at`、心跳保活、`gone` 语义）与
+**§7.3**（传输与降级：open 态主轮询跳过详情请求、回退态与现状逐字一致、不双通道并发写、
+流状态徽标非业务状态）。同一执行者设计/实现/验证，**不声称独立终验**。
+
+**落点**：`loop/services/run_stream.py`（帧格式/变更签名/心跳的唯一实现，stdlib-only，
+`sleep`/`fetch_view` 可注入）；`loop/services/api.py` 新增 stream 路由（404 准入 +
+`asyncio.to_thread` 包同步 `run_view` + StreamingResponse）；`loop/web/run-stream.js`
+（客户端四态状态机：connecting/open/fallback/stopped，stop 终态、回退后 15 s 重试建流，
+计时器/EventSource 注入）；接线 `web/index.html`（streamState 徽标 + script）、
+`web/app.js`（open 态 poll 跳过详情、openRun 重建流、旧推送按 run_id 守卫丢弃）。
+新增测试 `loop/tests/test_run_stream_server.py`（8 例）、`test_run_stream_client.py`（9 例）。
+
+**本机（Windows）实测**：红灯先行（两模块缺失：node require 失败 / ImportError 确认）；
+实现后与 pytest 文件逐条同口径的独立断言——服务端 asyncio 实跑 **PASS=8 FAIL=0**（含
+`updated_at` 抖动不重推、真变更重推、unknown-run `error`、流中消失 `gone`、心跳节拍）、
+客户端 node **PASS=9 FAIL=0**；`node --check` 2 个 JS、`py_compile` 4 个 py 文件通过。
+
+**未运行/待验证（不得据此声称四道门全绿）**：pytest 套件（本机无 agently/.venv）、
+browser 特征测试、**真实 HTTP SSE 长连接**（路由与 StreamingResponse 包装只做了语法级验证，
+未起服务实测）、kb 自测与端到端。**U2-b（Agent 窗口收编）未实施**；U2-c 的日志尾巴经
+`run_view.job.log_tail` 随流推送实现（§6.9 注明的口径），独立逐行日志流不在本片。
+
+**边界声明**：SSE 只是传输层，推送内容与 `GET /api/runs/{run_id}` 同源（`RunManager.run_view`
+唯一产出），不新增业务事件 kind、不写文件；判定/草稿/提交不读流状态。

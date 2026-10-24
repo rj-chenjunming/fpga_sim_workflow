@@ -1935,3 +1935,50 @@ TypeError、客户端 eventName 不派发，均已确认）；实现后 node 断
 - [SPEC-REV-07](spec/SPEC-REV-07-20261024.md) §3 的 U3/U4/U6 补全契约级边界与验收，并指向计划详案。
 
 状态：U3/U4/U6/U2-c 仍为**提案、未实施、未排期**；本节仅登记设计文档补全，无代码变更、无新增数字。
+
+---
+
+## 63 SPEC-REV-08 · UX 走查修复 U7–U10 实施（2026-10-24）
+
+来源：以体验用户身份对工作台做的一次完整浏览器走查（真实 `loop/web/` 前端 + 仓库外
+契约演示桩 `%TEMP%/ui-walkthrough/harness.py` 模拟 drill/standin 全生命周期；枚举对照
+`kb_lib.GATE_DECISIONS` 真实值）。问题清单先于代码登记为
+[SPEC-REV-08](spec/SPEC-REV-08-20261024.md)（提交 267c9db），计划详案在
+[计划 §E/§F](plans/2026-10-24-ui-interaction-waiting.md)。U11（默认落地视图/标题徽标构成）
+**仍为提案**（需产品决策，§F）。
+
+已实施切片（全部纯前端；SPEC-04 §4.4/§4.5 增补与 §7.4 新节随实现同批写入）：
+
+- **U7 会话深链**：新 `web/session-url.js`（encode/decode 纯函数，view 白名单，乱码容错）；
+  `app.js` openRun/showView 以 replaceState 同步、init 按深链恢复（等闸门自动落闸门视图）、
+  hashchange 比对后执行。F5/分享链接不再丢会话上下文。
+- **U8 闸门可达性三件**：(a) 逐条未覆盖时提交钮旁就地点名缺项（直接消费
+  `validateEntryDecisions` 的 error）；(b) `gate-session.reusableReason` 新纯函数——整门决策
+  需理由且整门理由为空时预填复用同判据条目理由（entry_id 排序首个；非空不覆盖）；
+  (c) 紧凑闸门卡在 `entry_decisions_required` 时给出去闸门视图的引导按钮。
+- **U9 作业终态**：新 `web/job-status.js`（`emptyHint/emptyText` 纯消费事件流）；
+  N9 完成后长任务卡显示「最近一次作业已完成（N9 · rc=0）」而非「尚未提交或未启动」。
+- **U10 展示微修**：闸门材料行人话标题（原始 id 入 title 悬停）；Agent 窗口会话切换提示
+  改为追加（保留最近一条控制回执）。
+
+**本机（Windows）实测**：红灯先行（session-url/gate-session 新函数/job-status 三模块
+require 失败，RED×3）；实现后 node 纯函数断言 **25/25 PASS**（session-url 10、
+reusableReason 8、job-status 7）；回归 wait-center 6 + operator 直测 2 + event-filter 2
+（首轮 3 处"失败"均为验证脚本预期/存储桩笔误——新出现即失败不提醒是 U1 设计口径、
+operator 需 localStorage 形状存储——已复验通过，**非代码回归**，本次未改这两个模块）；
+`node --check` 9 个 JS、`py_compile` 3 个新测试文件通过。
+注：本机断言以正斜杠绝对路径 require（`node -e` 对反斜杠相对路径解析失败；
+仓内 pytest 文件按 Linux 正常路径不受影响）。
+
+**浏览器实证（契约演示桩，判定性操作）**：U7——建运行到 G1 后 reload，
+hash `#run=…&view=gate`、落闸门视图、逐条表单 3 条就绪；手动改 hash 跳失败运行生效。
+U8-a——仅处置 D-001 时提示「逐条处置未覆盖全部条目（缺 2 条）：D-002、D-003」，就绪即清空。
+U8-b——D-003 ignored 带理由后整门理由自动预填同一文本，提交成功（G1 · ignored）无需重录。
+U8-c——紧凑卡引导按钮落闸门视图并同步 hash。U9——N9 完成后作业卡终态文案正确。
+U10——G1/G3 材料行「闸门 1 · 差异确认 / 闸门 3 · 回归决策」（title=原始 id）；
+steer 后回执同时保留「命令已接收」与切换提示。
+
+**未运行/待验证（不得据此声称四道门全绿）**：pytest 套件（3 个新测试文件仅 py_compile）、
+browser 特征测试、真实服务端下的深链/理由预填/作业终态（演示桩偏差不算 UI 缺陷：
+走查中「终态闸门段仍进行中」为桩对闸门节点不发 node_finished 所致，已核实真实投影口径）、
+内网四道门复跑。

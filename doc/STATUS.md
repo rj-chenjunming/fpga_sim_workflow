@@ -1919,3 +1919,19 @@ TypeError、客户端 eventName 不派发，均已确认）；实现后 node 断
 
 **边界声明**：两条流推送的都是既有 GET 投影（装配/判据同源），不新增业务事件 kind、不写文件；
 窗口控制命令不经流上行；事件过滤是纯客户端展示便利。
+
+---
+
+## 62 SPEC-REV-07 设计详案补全（2026-10-24，纯文档）
+
+未实施切片（U3/U4/U6/U2-c）的设计**先于代码**补全，无任何实现变更：
+
+- [计划文档](plans/2026-10-24-ui-interaction-waiting.md) 新增设计详案 §A–§D：§A = U3+F05-b/c 的 app.js 七步拆分次序
+  （app-format → request-guard 统一四处 epoch+request → dir-picker → gate-diff → agent-cards →
+  按节签名 → app.js 收敛 <1200 行）与验证门/回退；§B = U4 G1 引导流（进度条/跳转/J·K 键盘，
+  判定仍唯一在 GateSession.validateEntryDecisions，提交高亮只消费 counts().complete）；
+  §C = U6 六项各自设计要点（含 attempt 输出 diff **须先修订 SPEC-07** 的契约增补登记）；
+  §D = U2-c 后置与「先有使用证据再立项」的采纳门。
+- [SPEC-REV-07](spec/SPEC-REV-07-20261024.md) §3 的 U3/U4/U6 补全契约级边界与验收，并指向计划详案。
+
+状态：U3/U4/U6/U2-c 仍为**提案、未实施、未排期**；本节仅登记设计文档补全，无代码变更、无新增数字。

@@ -35,10 +35,12 @@ async def run_view_stream(
     interval_s: float = 1.0,
     heartbeat_s: float = 15.0,
     sleep: Callable[[float], Awaitable[None]] | None = None,
+    event_name: str = "run_view",
 ) -> AsyncIterator[str]:
-    """SSE 生成器：首拍必推；此后仅签名变化时推 `run_view`，节拍到点发 `: ping`。
+    """SSE 生成器：首拍必推；此后仅签名变化时推数据事件，节拍到点发 `: ping`。
 
-    - `fetch_view` 首拍即抛 `KeyError` ⇒ 推 `error` 后结束（路由层应先 404，此处为纵深防御）；
+    - `event_name` 区分数据事件（§6.9 `run_view` / §6.10 `agent_view`），传输口径唯一；
+    - `fetch_view` 首拍即抛 `KeyError` ⇒ 推 `error` 后结束（路由层应先 4xx，此处为纵深防御）；
     - 流建立后 run 消失（后续抛 `KeyError`）⇒ 推 `gone` 后正常结束，不伪装存活；
     - 客户端断开由 Starlette 关闭生成器（GeneratorExit），无泄漏路径。
     """
@@ -58,7 +60,7 @@ async def run_view_stream(
         sig = payload_signature(view)
         if sig != last_sig:
             last_sig = sig
-            yield sse_frame("run_view", json.dumps(view, ensure_ascii=False, default=str))
+            yield sse_frame(event_name, json.dumps(view, ensure_ascii=False, default=str))
         beats += 1
         if beats >= beats_per_ping:
             beats = 0

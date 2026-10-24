@@ -147,3 +147,15 @@ def test_state_change_notifications_fire():
         "c.start();f.esInstances[0].fire('open');f.esInstances[0].fire('error',{});c.stop();return states;})()"
     )
     assert out == ["connecting", "open", "fallback", "stopped"]
+
+
+def test_custom_event_name_for_agent_stream():
+    """U2-b（§6.10）：agent 流按事件名 agent_view 订阅并派发。"""
+    out = _eval(
+        "(function(){const f=fakes();const seen=[];"
+        "const c=RS.createRunStream({url:'/s',EventSource:f.FakeES,eventName:'agent_view',"
+        "onEvent:(n,d)=>seen.push([n,d.node]),onStateChange:()=>{},"
+        "setTimeout:f.api.setTimeout,clearTimeout:f.api.clearTimeout});"
+        "c.start();f.esInstances[0].fire('agent_view',{run_id:'A',node:'N6'});return seen;})()"
+    )
+    assert out == [["agent_view", "N6"]]

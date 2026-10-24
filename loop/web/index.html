@@ -311,6 +311,8 @@
 
               <details class="card events" id="eventsCard">
                 <summary id="eventsSummary">事件流（折叠 · seq 递增 · 只读）</summary>
+                <!-- U5（SPEC-REV-07）：客户端 kind 过滤;清除过滤即还原全量 -->
+                <div class="ev-filter" id="eventFilter"></div>
                 <div class="ev-list" id="eventList"></div>
               </details>
             </div>
@@ -538,6 +540,7 @@
 <script src="wait-center.js"></script>
 <script src="operator.js"></script>
 <script src="run-stream.js"></script>
+<script src="event-filter.js"></script>
 <script src="s0.js"></script>
 <script src="agent-results.js"></script>
 <script src="agent-window.js"></script>

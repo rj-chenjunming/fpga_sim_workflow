@@ -17,6 +17,8 @@
     var onEvent = typeof opts.onEvent === "function" ? opts.onEvent : function () {};
     var onStateChange = typeof opts.onStateChange === "function" ? opts.onStateChange : function () {};
     var retryMs = typeof opts.retryMs === "number" && opts.retryMs > 0 ? opts.retryMs : RETRY_MS_DEFAULT;
+    /* U2-b（§6.10）：数据事件名可参数化（run_view / agent_view）；传输状态机不变。 */
+    var eventName = opts.eventName && typeof opts.eventName === "string" ? opts.eventName : "run_view";
     var setTimeoutFn = opts.setTimeout || function (fn, ms) { return root.setTimeout(fn, ms); };
     var clearTimeoutFn = opts.clearTimeout || function (id) { root.clearTimeout(id); };
 
@@ -55,7 +57,7 @@
     function connect() {
       es = new ESCtor(url);
       es.addEventListener("open", function () { clearRetry(); setState("open"); });
-      es.addEventListener("run_view", function (e) { dispatch("run_view", e.data); });
+      es.addEventListener(eventName, function (e) { dispatch(eventName, e.data); });
       es.addEventListener("gone", function (e) {
         dispatch("gone", e.data);
         degrade();

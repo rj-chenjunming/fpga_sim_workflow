@@ -105,6 +105,8 @@
     viewRequesting: false,
     /* U2-a（SPEC-04 §7.3）：当前选择的 SSE 流状态；非业务状态，判定/草稿/提交不读它。 */
     streamState: "stopped",
+    /* U5（SPEC-REV-07）：事件流客户端过滤；null = 不过滤（全部）。 */
+    eventFilter: null,
     view: "s0",
     baselines: [],
     baselinesLoading: false,
@@ -1978,19 +1980,53 @@
     var list = $("eventList");
     if (!list) return;
     clearEl(list);
+    renderEventFilter(v);
     if (!v) {
       setText("eventsSummary", "事件流 · " + panelHint());
       return;
     }
     var all = ((v && v.events) || []).filter(function (e) { return e && EVENT_WHITELIST[e.kind]; });
-    setText("eventsSummary", "事件流 · " + all.length + " 条白名单事件（seq 递增 · 只读 · 折叠）");
-    var shown = all.slice(-60).reverse();
+    var filtered = window.EventFilter
+      ? window.EventFilter.applyFilter(all, state.eventFilter) : all;
+    setText("eventsSummary", "事件流 · " + (filtered.length === all.length
+      ? all.length + " 条白名单事件"
+      : filtered.length + " / " + all.length + " 条（已按 kind 过滤）")
+      + "（seq 递增 · 只读 · 折叠）");
+    var shown = filtered.slice(-60).reverse();
     shown.forEach(function (e) {
       var row = h("div", "ev-row");
       row.appendChild(h("span", "k", "#" + (e.seq !== undefined && e.seq !== null ? pad(e.seq, 3) : "?")));
       row.appendChild(h("span", "n", e.node || "—"));
       row.appendChild(h("span", "d", eventText(e)));
       list.appendChild(row);
+    });
+  }
+
+  /* U5：kind 过滤 chips（纯客户端；判定在 web/event-filter.js，这里只渲染与转发点击）。 */
+  function renderEventFilter(v) {
+    var host = $("eventFilter");
+    if (!host || !window.EventFilter) return;
+    clearEl(host);
+    var all = ((v && v.events) || []).filter(function (e) { return e && EVENT_WHITELIST[e.kind]; });
+    if (!all.length) return;
+    var kinds = window.EventFilter.kindsOf(all);
+    var active = state.eventFilter;
+    var allChip = h("button", "chip ev-chip" + (active ? "" : " on"), "全部");
+    allChip.type = "button";
+    allChip.addEventListener("click", function () {
+      state.eventFilter = null;
+      renderEvents(v);
+    });
+    host.appendChild(allChip);
+    kinds.forEach(function (kind) {
+      var on = !!active && active.indexOf(kind) >= 0;
+      var chip = h("button", "chip ev-chip" + (on ? " on" : ""), kind);
+      chip.type = "button";
+      chip.addEventListener("click", function () {
+        state.eventFilter = window.EventFilter.toggleKind(state.eventFilter, kind);
+        renderEvents(v);
+      });
+      host.appendChild(chip);
     });
   }
 

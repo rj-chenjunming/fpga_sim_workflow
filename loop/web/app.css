@@ -1102,3 +1102,10 @@ button.chip:hover{border-color:var(--primary-line);color:var(--primary)}
 .action-label{padding-bottom:8px}
 #btnNotify:disabled{opacity:.55;cursor:not-allowed}
 @media(max-width:760px){.action-bar{padding:0 10px 10px}}
+
+/* ---------- U5 事件流客户端过滤（SPEC-REV-07，2026-10-24） ---------- */
+.ev-filter{display:flex;flex-wrap:wrap;gap:6px;padding:10px 18px 0}
+.ev-filter:empty{display:none}
+.ev-chip{cursor:pointer;font-size:11px;height:24px;padding:0 10px;border-radius:999px;
+  border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
+.ev-chip.on{background:var(--primary-weak);border-color:var(--primary-line);color:var(--primary)}

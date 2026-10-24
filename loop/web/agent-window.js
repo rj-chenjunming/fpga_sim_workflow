@@ -2,6 +2,8 @@
 "use strict";
 window.AgentWindow = (function () {
   var api, target = null, epoch = 0, request = 0, data = null, attempt = "", counter = 0;
+  /* U2-b（SPEC-04 §6.10/§7.3）：流优先、轮询兜底；open 态停轮询（不双通道并发写）。 */
+  var pollTimer = null, stream = null;
   var pending = Object.create(null), draftRequest = null, sessionSeen = null, attemptSeen = null;
   var lastRead = "", resultSignature = "", stopIdentity = null, readError = false;
   var nodes = ["N3", "N6", "N8", "N10", "N11", "N12"];
@@ -20,6 +22,45 @@ window.AgentWindow = (function () {
   }
   function isCurrent(token) { return target && $("agentWindow").open && epoch === token; }
   function base() { return "/api/runs/" + encodeURIComponent(target.runId) + "/agents/" + encodeURIComponent(target.node); }
+
+  function ensurePoll() {
+    if (pollTimer) return;
+    pollTimer = setInterval(function () {
+      if (!document.hidden && target && $("agentWindow").open) load();
+    }, 1500);
+  }
+  function stopPoll() {
+    if (!pollTimer) return;
+    clearInterval(pollTimer);
+    pollTimer = null;
+  }
+  /* 按当前 target/attempt 重建传输：流事件经 run_id/node 身份守卫后才进 render；
+     connecting/fallback 态保持既有 1.5 s 轮询，open 态停轮询（§7.3 同口径）。 */
+  function syncTransport() {
+    if (stream) { stream.stop(); stream = null; }
+    if (!target) { ensurePoll(); return; }
+    if (!window.RunStream || typeof window.EventSource !== "function") { ensurePoll(); return; }
+    var token = epoch, node = target.node, runId = target.runId;
+    stream = window.RunStream.createRunStream({
+      url: base() + "/stream" + (attempt ? "?attempt=" + encodeURIComponent(attempt) : ""),
+      EventSource: window.EventSource,
+      eventName: "agent_view",
+      onEvent: function (name, view) {
+        if (name !== "agent_view" || !view) return;
+        if (!target || !$("agentWindow").open || epoch !== token) return;
+        if (String(view.run_id) !== String(runId) || String(view.node) !== String(node)) return;
+        render(view);
+      },
+      onStateChange: function (s) { if (s === "open") stopPoll(); else ensurePoll(); },
+      retryMs: 15000
+    });
+    stream.start();
+    ensurePoll(); /* connecting 态照常轮询；open 后由 onStateChange 停掉 */
+  }
+  function stopTransport() {
+    if (stream) { stream.stop(); stream = null; }
+    stopPoll();
+  }
   function controls() {
     var live = data && data.live;
     var historical = data && window.AgentResults.historical(data);
@@ -159,6 +200,7 @@ window.AgentWindow = (function () {
   function close() {
     var previous = target;
     epoch++; request++; target = null; data = null;
+    stopTransport();
     cancelStop();
     if ($("agentWindow").open) $("agentWindow").close();
     if (previous) {
@@ -277,6 +319,7 @@ window.AgentWindow = (function () {
     reset();
     if (!$("agentWindow").open) $("agentWindow").showModal();
     load();
+    syncTransport();
   }
   async function submit(action) {
     var live = data && data.live;
@@ -322,7 +365,7 @@ window.AgentWindow = (function () {
       if (!target || !target.onDetails) return;
       var callback = target.onDetails, node = target.node; close(); callback(node);
     });
-    $("awNode").addEventListener("change", function () { epoch++; request++; target.node = $("awNode").value; reset(); load(); });
+    $("awNode").addEventListener("change", function () { epoch++; request++; target.node = $("awNode").value; reset(); load(); syncTransport(); });
     $("awAttempt").addEventListener("change", function () { selectAttempt($("awAttempt").value); });
     $("awTerminate").addEventListener("click", function () {
       var live = data && data.live;
@@ -337,7 +380,7 @@ window.AgentWindow = (function () {
     [["awSteer", "steer"], ["awPause", "pause"], ["awResume", "resume"]].forEach(function (pair) {
       $(pair[0]).addEventListener("click", function () { submit(pair[1]); });
     });
-    setInterval(function () { if (!document.hidden && target && $("agentWindow").open) load(); }, 1500);
+    /* U2-b：固定轮询已由 syncTransport 的流优先/轮询兜底取代（§7.3）。 */
   }};
   function selectAttempt(value) {
     epoch++; request++; attempt = value; data = null; draftRequest = null;
@@ -351,5 +394,6 @@ window.AgentWindow = (function () {
     $("awFreshness").textContent = "尚未成功读取所选尝试";
     ["awInput", "awPrompt", "awOutput", "awBudget", "awAttempts", "awTimeline", "awModel", "awResultStatus", "awIdentity", "awCapabilities"].forEach(function (id) { $(id).textContent = "读取中…"; });
     error(""); controls(); load();
+    syncTransport(); /* attempt 变化 ⇒ 按新 URL 重建流（§6.10：流内不切换 attempt） */
   }
 })();

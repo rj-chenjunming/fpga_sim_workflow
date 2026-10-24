@@ -1887,3 +1887,35 @@ browser 特征测试、**真实 HTTP SSE 长连接**（路由与 StreamingRespon
 
 **边界声明**：SSE 只是传输层，推送内容与 `GET /api/runs/{run_id}` 同源（`RunManager.run_view`
 唯一产出），不新增业务事件 kind、不写文件；判定/草稿/提交不读流状态。
+
+---
+
+## 61 U2-b Agent 窗口流收编与 U5 事件流过滤实施（SPEC-REV-07，2026-10-24）
+
+规格先行：[SPEC-04](spec/WEB_UI_SPEC.md) 新增 **§6.10**（`GET /api/runs/{run_id}/agents/{node}/stream`：
+推送 = GET 同一装配、事件名 `agent_view`、预验证同口径 404/422、流中损坏断开由回退轮询暴露）
+并补 **§7.3**（Agent 窗口同口径：connecting/fallback 轮询、open 停轮询、关窗/切换重建）。
+同一执行者设计/实现/验证，**不声称独立终验**。
+
+**U2-b 落点**：`services/run_stream.py` 增加 `event_name` 参数（传输口径仍唯一）；
+`api.py` 把 GET /agents/{node} 的视图装配提取为 `_agent_window_view`（两条路由共用，口径同源），
+新增 stream 路由（GET 同口径预验证 + `to_thread` + StreamingResponse）；`web/agent-window.js`
+以 `syncTransport/stopTransport` 取代固定 1.5 s 轮询——流事件经 epoch + run_id/node 身份守卫后
+才进 `render`，connecting/fallback 保持既有轮询，open 停轮询；开窗/切节点/切尝试/关窗均重建或停止；
+控制 POST（SPEC-07）零改动。
+
+**U5 落点**：新增纯函数模块 `web/event-filter.js`（kindsOf/toggleKind/applyFilter；null=全部，
+移除到空回到全部，过滤只筛引用不改写事件）；`app.js` 事件卡渲染 kind chips 与
+「X / Y 条（已按 kind 过滤）」计数；纯客户端过滤，F11 的服务端分页结论不变。
+
+**本机（Windows）实测**：红灯先行（event-filter 缺失 require 失败、`event_name` 参数
+TypeError、客户端 eventName 不派发，均已确认）；实现后 node 断言 **PASS=12 FAIL=0**
+（agent_view 派发 + 客户端回归 4 + event-filter 7），U1 回归 **25/25**、U2 客户端原 9 条
+**9/9**、服务端 asyncio 新增/回归 **2/2**；`node --check` 4 个 JS、`py_compile` 5 个 py 通过。
+
+**未运行/待验证（不得据此声称四道门全绿）**：pytest 套件、browser 特征测试（含 Agent 窗口
+流切换/回退的真实交互）、真实 HTTP SSE（两条流均未起服务实测）、kb 自测与端到端；
+需内网/带依赖环境复跑。U2-c 独立逐行日志流仍后置（`job.log_tail` 已随 §6.9 流推送）。
+
+**边界声明**：两条流推送的都是既有 GET 投影（装配/判据同源），不新增业务事件 kind、不写文件；
+窗口控制命令不经流上行；事件过滤是纯客户端展示便利。

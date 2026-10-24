@@ -137,3 +137,16 @@ async def test_heartbeat_pings_between_changes():
         ": ping\n\n",
         ": ping\n\n",
     ]
+
+
+async def test_custom_event_name_for_agent_stream():
+    """U2-b（§6.10）：agent 流复用同一生成器，仅事件名不同（agent_view）。"""
+    view = {"run_id": "A", "node": "N6", "status": "validated"}
+    frames = await _collect(
+        RS.run_view_stream(_views_fetch([view]), interval_s=1.0, heartbeat_s=15.0,
+                           sleep=_fake_sleep(1), event_name="agent_view"),
+        limit=1,
+    )
+    assert frames == [
+        'event: agent_view\ndata: ' + json.dumps(view, ensure_ascii=False) + "\n\n"
+    ]

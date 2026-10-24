@@ -494,26 +494,64 @@ def _agent_root(run_id: str, node: str):
     return Path(manager.docs[run_id].run_dir)
 
 
+def _agent_window_view(root: Path, run_id: str, node: str, attempt: int | None) -> dict[str, Any]:
+    """GET /agents/{node} 与其 SSE 流（§6.10）共用的**唯一**视图装配（口径同源，红线 8）。
+
+    抛错口径也一致：KeyError ⇒ 404 语义、OSError/ValueError ⇒ 422 语义，由两条路由各自映射。
+    """
+    from host import agent_control as control
+    from host import agent_memory as AM
+    from services import agent_view
+
+    view = control.read_view(root, node, attempt=attempt)
+    events = _manager()._progress(run_id).read()
+    view['events'] = [event for event in events
+                      if event.get('node') == node or str(event.get('node', '')).startswith(node + '_')]
+    # F02-c：窗口与角色卡消费同一来源的能力事实（未知维度保持 None，不在此另算）。
+    view['capabilities'] = agent_view.node_capabilities(node, events)
+    # F10/R5：预算事实由 Host 唯一测量（总量与 AM.check_budget 同一实现），前端只消费。
+    view['context_budget'] = AM.context_budget(view.get('request'), attempt=view.get('selected_attempt'))
+    return view
+
+
 @app.get('/api/runs/{run_id}/agents/{node}')
 async def agent_window(run_id: str, node: str, attempt: int | None = Query(default=None, ge=1)):
-    from host import agent_control as control
     root = _agent_root(run_id, node)
     try:
-        view = control.read_view(root, node, attempt=attempt)
-        events = _manager()._progress(run_id).read()
-        view['events'] = [event for event in events
-                          if event.get('node') == node or str(event.get('node', '')).startswith(node + '_')]
-        # F02-c：窗口与角色卡消费同一来源的能力事实（未知维度保持 None，不在此另算）。
-        from services import agent_view
-        from host import agent_memory as AM
-        view['capabilities'] = agent_view.node_capabilities(node, events)
-        # F10/R5：预算事实由 Host 唯一测量（总量与 AM.check_budget 同一实现），前端只消费。
-        view['context_budget'] = AM.context_budget(view.get('request'), attempt=view.get('selected_attempt'))
-        return view
+        return _agent_window_view(root, run_id, node, attempt)
     except KeyError as exc:
         raise HTTPException(404, detail={'error': str(exc)}) from exc
     except (OSError, ValueError) as exc:
         raise HTTPException(422, detail={'error': str(exc)}) from exc
+
+
+@app.get('/api/runs/{run_id}/agents/{node}/stream')
+async def agent_window_stream(run_id: str, node: str, attempt: int | None = Query(default=None, ge=1)):
+    """SSE Agent 窗口流（SPEC-04 §6.10 / SPEC-REV-07 U2-b）：推送 = GET 同一装配。
+
+    建立连接前按 GET 同口径预验证一次（404/422）；此后传输/心跳/变更检测复用
+    §6.9 的唯一实现（事件名 agent_view）。流中记录损坏 ⇒ 生成器异常结束、连接断开，
+    客户端回退轮询并由 GET 的 422 暴露真实错误；控制 POST（SPEC-07）不经流上行。
+    """
+    from services import run_stream
+
+    root = _agent_root(run_id, node)
+    try:
+        _agent_window_view(root, run_id, node, attempt)
+    except KeyError as exc:
+        raise HTTPException(404, detail={'error': str(exc)}) from exc
+    except (OSError, ValueError) as exc:
+        raise HTTPException(422, detail={'error': str(exc)}) from exc
+
+    async def fetch_view() -> dict[str, Any]:
+        return await asyncio.to_thread(_agent_window_view, root, run_id, node, attempt)
+
+    return StreamingResponse(
+        run_stream.run_view_stream(fetch_view, interval_s=1.5, heartbeat_s=15.0,
+                                   event_name="agent_view"),
+        media_type='text/event-stream',
+        headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'},
+    )
 
 
 @app.post('/api/runs/{run_id}/agents/{node}/control')

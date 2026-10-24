@@ -558,6 +558,19 @@
   /* ------------------------------------------------------------------ *
    * 视图切换
    * ------------------------------------------------------------------ */
+  /* U7（SPEC-REV-08 / SPEC-04 §7.4）：会话深链同步。
+   * 纯编解码在 web/session-url.js；这里只做 replaceState 同步（不产生历史项）。
+   * run/gate 视图携带 run 段；其余视图不带（深链恢复时不自动重开运行）。 */
+  function syncLocationHash() {
+    if (!window.RunSessionUrl || !window.history) return;
+    var runId = (state.view === "run" || state.view === "gate") ? state.runId : null;
+    var hash = window.RunSessionUrl.encode(runId, state.view);
+    if (location.hash === (hash || "")) return;
+    try {
+      history.replaceState(null, "", location.pathname + location.search + (hash || ""));
+    } catch (e) { /* 老浏览器/隐私模式：深链不可用不影响功能 */ }
+  }
+
   function showView(v) {
     if (!VIEW_META[v]) v = "setup";
     state.view = v;
@@ -578,6 +591,7 @@
     renderLive();
     if (v === "setup") renderSetup();
     try { window.scrollTo({ top: 0 }); } catch (e) { /* 老浏览器忽略 */ }
+    syncLocationHash();
   }
 
   async function openRun(id) {
@@ -1957,7 +1971,10 @@
     }
     var job = v && v.job;
     if (!job) {
-      host.appendChild(h("div", "muted tiny", "当前没有作业记录（N9 全跑尚未提交或未启动）。"));
+      /* U9（SPEC-REV-08）：空态区分「无作业记录」与「已完成/死亡归档」——
+       * 判定在 web/job-status.js（纯消费事件流），不新增判据。 */
+      var jobHint = window.JobStatus ? window.JobStatus.emptyText((v && v.events) || []) : null;
+      host.appendChild(h("div", "muted tiny", jobHint || "当前没有作业记录（N9 全跑尚未提交或未启动）。"));
       return;
     }
     addKV(host, "job_id", job.job_id || "—");
@@ -2593,10 +2610,22 @@
     }));
   }
 
+  /* U8-b（SPEC-REV-08）：整门理由复用预填——判定在 gate-session.reusableReason；
+   * 这里只在整门理由为空时预填，用户已输入（含输入到一半）不覆盖。 */
+  function maybePrefillGateReason(pending, derived) {
+    if (!derived || !window.GateSession || !window.GateSession.reusableReason) return;
+    if (String(state.gateDraft.reason || "").trim()) return;
+    var reuse = window.GateSession.reusableReason(
+      state.gateDraft.entryDecisions, derived, gateOptionsFor(pending));
+    if (reuse) state.gateDraft.reason = reuse;
+  }
+
   function setEntryDecision(id, value) {
     entryDraftOf(id).decision = value;
-    var derived = derivedEntryDecision(pendingInfo(state.viewData) || {});
+    var pending = pendingInfo(state.viewData) || {};
+    var derived = derivedEntryDecision(pending);
     if (derived) state.gateDraft.decision = derived;
+    maybePrefillGateReason(pending, derived);
     syncGateForms();
   }
 
@@ -2638,6 +2667,9 @@
       reason.setAttribute("aria-label", "条目理由 " + row.id);
       reason.addEventListener("input", function () {
         entryDraftOf(row.id).reason = reason.value;
+        /* U8-b：条目理由补齐时，整门理由仍为空则预填复用（判定在 reusableReason）。 */
+        var pendingNow = pendingInfo(state.viewData) || {};
+        maybePrefillGateReason(pendingNow, derivedEntryDecision(pendingNow));
         syncGateForms();
       });
       line.appendChild(reason);
@@ -2771,7 +2803,9 @@
       return;
     }
     var m = pending.payload || {};
-    addKV(host, "闸门", pending.gate);
+    /* U10-a（SPEC-REV-08）：材料行显示人话标题（与头部 pill 同口径），原始 id 移入悬停提示。 */
+    var gateRow = addKV(host, "闸门", gateTitle(pending.gate));
+    gateRow.title = pending.gate;
     addKV(host, "节点", m.gate_node || pending.node || "—");
     addKV(host, "轮次", pending.cycle !== null ? String(pending.cycle) : "—");
     addKV(host, "冲突快照", conflictsText(m.conflicts));
@@ -2909,6 +2943,18 @@
       diffDet.appendChild(h("summary", null, diffSummaryText(pending)));
       renderDiffEntries(diffDet, pending, { hideHead: true });
       form.appendChild(diffDet);
+      /* U8-c（SPEC-REV-08）：逐条处置控件只在闸门视图——紧凑卡必须给出去处，
+       * 否则用户在此提交只会收到「未覆盖全部条目」的无去向错误。 */
+      if (entryDecisionsRequired(pending)) {
+        var guide = h("div");
+        guide.style.marginTop = "8px";
+        guide.appendChild(h("div", "muted tiny", "本闸门需逐条处置全部差异条目（I1）；逐条控件在「人工闸门」视图。"));
+        var go = h("button", "btn btn-sm", "去人工闸门视图逐条处置 →");
+        go.type = "button";
+        go.addEventListener("click", function () { showView("gate"); });
+        guide.appendChild(go);
+        form.appendChild(guide);
+      }
     }
 
     var options = gateOptionsFor(pending);
@@ -2992,6 +3038,12 @@
     submit.addEventListener("click", function () { submitGate(); });
     form.appendChild(submit);
 
+    /* U8-a（SPEC-REV-08）：缺项就地提示挂载点（内容在 updateGateForm 实时刷新）。 */
+    var entryHint = h("div");
+    entryHint.setAttribute("data-gate-entry-hint", "1");
+    entryHint.style.marginTop = "6px";
+    form.appendChild(entryHint);
+
     container.appendChild(form);
   }
 
@@ -3020,13 +3072,25 @@
     if (actor) actor.disabled = d.submitting;
     if (reason) reason.disabled = d.submitting;
     var submit = form.querySelector("[data-gate-submit]");
+    var needEntries = entryDecisionsRequired(pending) && entryRows(pending).length > 0;
+    var entriesReady = !needEntries || !!derivedEntryDecision(pending);
     if (submit) {
       var offered = options.some(function (o) { return o.value === d.decision; });
-      var needEntries = entryDecisionsRequired(pending) && entryRows(pending).length > 0;
-      var entriesReady = !needEntries || !!derivedEntryDecision(pending);
       submit.disabled = !offered || d.submitting || !entriesReady;
       submit.textContent = d.submitting ? "提交中…"
         : (!entriesReady ? "请先逐条处置全部条目" : "提交闸门决策");
+    }
+    /* U8-a（SPEC-REV-08）：未就绪时把缺项说清楚——直接消费 validateEntryDecisions
+     * 的 error（含缺失 entry_id 清单）；判定零新增，就绪即清空。 */
+    var entryHintEl = form.querySelector("[data-gate-entry-hint]");
+    if (entryHintEl) {
+      clearEl(entryHintEl);
+      if (needEntries && !entriesReady) {
+        var missingIds = entryRows(pending).map(function (r) { return r.id; });
+        var allowedValues = options.map(function (o) { return String(o.value); });
+        var check = window.GateSession.validateEntryDecisions(d.entryDecisions, missingIds, allowedValues);
+        if (!check.ok) entryHintEl.appendChild(h("div", "alert warn", check.error));
+      }
     }
     var errorBox = form.querySelector("[data-gate-error]");
     if (errorBox) {
@@ -3610,6 +3674,7 @@
       current.reason = reason === null || reason === undefined ? "" : String(reason);
       var derived = derivedEntryDecision(pending);
       if (derived) state.gateDraft.decision = derived;
+      maybePrefillGateReason(pending, derived); /* U8-b：桥写入同样参与理由复用 */
       syncGateForms();
       return window.GateDraftBridge.get(id);
     },
@@ -3636,6 +3701,8 @@
   };
 
   async function init() {
+    /* U7（SPEC-REV-08）：先取深链，再让 showView 用 replaceState 改写 hash。 */
+    var deep = window.RunSessionUrl ? window.RunSessionUrl.decode(location.hash) : { runId: null, view: null };
     bindStatic();
     renderAll();
     showView("s0");
@@ -3650,6 +3717,13 @@
       state.connError = errText(e);
     }
     if (state.setup.project) await checkProject(true);
+    /* U7：深链恢复——openRun 会在等闸门时自动落闸门视图；深链显式 view=gate 则强制之。 */
+    if (deep.runId) {
+      await openRun(deep.runId);
+      if (deep.view === "gate") showView("gate");
+    } else if (deep.view && VIEW_META[deep.view] && deep.view !== "s0") {
+      showView(deep.view);
+    }
     renderAll();
     poll();
     setInterval(function () {
@@ -3659,6 +3733,13 @@
         poll();
       }
     }, POLL_MS);
+    /* U7：手动改 hash / 外部跳深链时与当前状态比对后执行（replaceState 不触发本事件，无回环）。 */
+    window.addEventListener("hashchange", function () {
+      if (!window.RunSessionUrl) return;
+      var d = window.RunSessionUrl.decode(location.hash);
+      if (d.runId && d.runId !== state.runId) { openRun(d.runId); return; }
+      if (d.view && d.view !== state.view) showView(d.view);
+    });
     document.addEventListener("visibilitychange", function () {
       if (!document.hidden) { stopFlash(); poll(); }
     });

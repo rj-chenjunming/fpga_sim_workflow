@@ -120,7 +120,10 @@ window.AgentWindow = (function () {
     if (live && sessionSeen && (live.session_id !== sessionSeen || live.attempt !== attemptSeen)) {
       epoch++;
       $("awMessage").value = "";
-      $("awReceipt").textContent = "调用会话或尝试已切换，旧草稿已清空。";
+      /* U10-b（SPEC-REV-08）：切换提示追加而非覆盖——保留最近一条控制回执（如「命令已接收」）。 */
+      var previousReceipt = $("awReceipt").textContent;
+      $("awReceipt").textContent = (previousReceipt ? previousReceipt + "；" : "")
+        + "调用会话或尝试已切换，旧草稿已清空。";
       draftRequest = null;
       cancelStop();
       error("");

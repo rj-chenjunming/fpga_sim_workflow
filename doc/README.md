@@ -43,7 +43,7 @@
 ## 2 `spec/` 契约
 
 > **编号**：每份 SPEC 有稳定编号 `SPEC-0X`（文件名不变）。当前修订记录：
-> [SPEC-REV-07](spec/SPEC-REV-07-20261024.md)（UI 交互与等待期体验提案，**未评审未实施**）、
+> [SPEC-REV-07](spec/SPEC-REV-07-20261024.md)（UI 交互与等待期体验提案；U1 已实施首片，见 STATUS §59；U2–U6 未评审）、
 > [SPEC-REV-06](spec/SPEC-REV-06-20261024.md)（DSH D1 后端边界首片，实测见 STATUS §56）、
 > [SPEC-REV-05](spec/SPEC-REV-05-20261024.md)（DSH/UI 采纳评估与 AI 面板首批契约，实测见 STATUS §55）、
 > [SPEC-REV-04](spec/SPEC-REV-04-20261023.md)（2026-10-23，节点面板 P-01～P-35 已修订、门禁见 STATUS §49）、
@@ -73,8 +73,9 @@ AI 界面优化入口：[设计与布局示意](spec/AI_WORK_PANEL_SPEC.md) → 
 第一版保留外壳、先改善成果阅读与反馈；布局、对比、预览与 DSH 动态按验证和依赖推进。
 首批开发见 [实施切片](plans/2026-10-24-ai-work-panel-implementation.md)，不将局部 UI 验证等同于完整方案验收。
 
-UI 交互与等待期体验提案（**未评审、未实施**）：[提案记录 SPEC-REV-07](spec/SPEC-REV-07-20261024.md) → [实施计划](plans/2026-10-24-ui-interaction-waiting.md)。
+UI 交互与等待期体验提案：[提案记录 SPEC-REV-07](spec/SPEC-REV-07-20261024.md) → [实施计划](plans/2026-10-24-ui-interaction-waiting.md)。
 切片：等待送达（通知/行动条/操作者预填）、SSE 传输、渲染分段签名（并入 F05-b/c）、G1 引导流、事件流过滤、既有后置项收口；采纳门见提案 §5。
+**U1（等待送达三项）已实施首片**（2026-10-24，软件层 node 断言 25/25，浏览器/内网终验待做），实测见 STATUS §59；U2–U6 仍为提案。
 
 ## 3 阅读顺序（新接手）
 

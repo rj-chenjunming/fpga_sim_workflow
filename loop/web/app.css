@@ -1088,3 +1088,17 @@ button.chip:hover{border-color:var(--primary-line);color:var(--primary)}
 @media(max-width:760px){
   .nd-obs-row{grid-template-columns:minmax(0,1fr)}
 }
+
+/* ---------- U1 等待送达（SPEC-REV-07，2026-10-24）：在等我行动条 / 通知开关 ---------- */
+.action-bar{display:flex;flex-direction:column;gap:6px;padding:0 14px 14px}
+.action-item{display:flex;align-items:center;gap:9px;width:100%;text-align:left;font:inherit;
+  cursor:pointer;border:1px solid #3a5a4a;border-radius:9px;padding:8px 10px;
+  background:var(--rail-hover);color:var(--rail-text)}
+.action-item:hover{border-color:var(--primary-line)}
+.action-item .action-text{display:flex;flex-direction:column;min-width:0}
+.action-item .action-text b{font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.action-item .action-text small{color:var(--rail-muted);font-size:10.5px}
+.action-empty{color:var(--rail-muted);font-size:11px;line-height:1.5;padding:2px 2px 0}
+.action-label{padding-bottom:8px}
+#btnNotify:disabled{opacity:.55;cursor:not-allowed}
+@media(max-width:760px){.action-bar{padding:0 10px 10px}}

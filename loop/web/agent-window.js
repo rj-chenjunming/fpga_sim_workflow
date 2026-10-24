@@ -239,7 +239,10 @@ window.AgentWindow = (function () {
   function reset() {
     data = null; attempt = ""; draftRequest = null; sessionSeen = null; attemptSeen = null;
     lastRead = ""; resultSignature = ""; readError = false; cancelStop();
-    $("awActor").value = "human:"; $("awMessage").value = "";
+    /* U1-c（SPEC-REV-07）：默认前缀时预填上一次的合规操作者；不合规记忆不召回。 */
+    $("awActor").value = window.Operator
+      ? window.Operator.apply("human:", window.Operator.recall()) : "human:";
+    $("awMessage").value = "";
     $("awReceipt").textContent = ""; error("");
     $("awStatus").textContent = "加载中";
     $("awSelection").textContent = target.runId + " · " + target.node + " · 读取成果身份…";
@@ -283,6 +286,7 @@ window.AgentWindow = (function () {
     if (action === "terminate" && (stopIdentity !== stopKey(live) || $("awStopConfirm").hidden)) return;
     var actor = $("awActor").value.trim(), message = $("awMessage").value.trim();
     if (!/^human:.+/.test(actor)) { error("请填写 human:<name> 操作者。"); return; }
+    if (window.Operator) window.Operator.remember(actor);
     if (action === "steer" && !message) { error("请填写给当前 Agent 的补充指令。"); return; }
     var payload = {action: action, actor: actor, session_id: live.session_id, expected_revision: live.revision};
     if (action === "steer") payload.message = message;

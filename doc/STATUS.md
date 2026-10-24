@@ -1830,3 +1830,30 @@ SDK 没有逐 prompt 取消/逐 session 关闭；messageId 仅是入队身份；
 - 切片：U1 等待送达（浏览器通知/「在等我」行动条/操作者预填）、U2 SSE 传输（先修订 SPEC-04 §6/§7）、U3 渲染分段签名（并入 F05-b/c，不另立编号）、U4 G1 引导流、U5 事件流客户端过滤、U6 既有后置项收口（F14 人工矩阵 V6 / SPEC-09 后置 / legacy 清退）。
 
 **状态：提案，未评审、未实施、未排期；不改变任何现行能力声明。** 采纳决策与排期归 Lead；实施后按片新增实测小节，验收数字禁止预写。F07 未达阈值不动分页、F11 维持后置的既有结论不变。现状事实依据（轮询节拍、无通知/推送、操作者三处重填）见提案 §1 的代码出处。
+
+---
+
+## 59 U1 等待送达首片实施（SPEC-REV-07 U1-a/b/c，2026-10-24）
+
+按 [SPEC-REV-07](spec/SPEC-REV-07-20261024.md) §5 采纳门第 1 条（零契约变更先行）实施 U1 三项；
+[实施计划](plans/2026-10-24-ui-interaction-waiting.md) 顺序 1–3。同一执行者设计/实现/验证，**不声称独立终验**。
+
+**落点**：新增纯函数模块 `loop/web/wait-center.js`（跃迁提醒判定/行动条聚合/标题徽标）、
+`loop/web/operator.js`（操作者记忆与预填判定，存储可注入、不可用即降级）；
+接线 `web/index.html`（行动条容器 + 通知开关按钮 + 两个 script 标签）、`web/app.js`
+（loadRuns 后 notifyOnRuns、renderSidebar 渲染行动条、闸门 actor 预填/记忆、visibilitychange 停止闪烁）、
+`web/agent-window.js`（awActor 预填/记忆）、`web/app.css`（行动条样式，无新增 `!important`）。
+新增 node 驱动测试 `loop/tests/test_wait_center.py`（12 例）、`loop/tests/test_operator_prefill.py`（7 例）。
+
+**本机（Windows）实测**：红灯先行（两模块缺失时 node require 失败，已确认）；
+实现后与 pytest 文件逐条同口径的 node 断言 **PASS=25 FAIL=0**；
+`node --check` 4 个改动 JS 文件全部通过；两个测试文件 `py_compile` 通过；
+`doc/audit/check_doc_links.py` 本次改动不涉及文档链接。
+
+**未运行/待验证（不得据此声称四道门全绿）**：本机无 `loop/.venv`（agently 4.1.4.8 未装，
+conftest 经 workflows.main_flow 导入会失败）⇒ pytest 套件、browser 特征测试（Playwright）、
+真实通知投递、kb 自测与端到端均**未在本机运行**，需在内网/带依赖环境复跑；
+U1-b 的 S0 阻断聚合按提案标注的范围未含（行动条当前只聚合 runs 的等待人工/失败）。
+
+**边界声明**：提醒/预填均为投影消费者与输入便利，不参与任何判定；权威仍以
+`gates.json` + `human_signed` 与服务端投影为准；通知被拒绝时降级为标题徽标+后台闪烁。

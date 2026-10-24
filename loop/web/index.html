@@ -19,6 +19,9 @@
     <span class="pill mono tiny" id="hdrAddr">—</span>
     <span class="pill tiny" id="hdrHealth">健康检查中…</span>
     <a class="btn btn-ghost btn-sm" id="lnkLegacy" href="legacy.html">旧版操作台 ↗</a>
+    <!-- U1-a（SPEC-REV-07）：等待送达通知开关；不支持 Notification 的浏览器隐藏，降级为标题徽标/闪烁 -->
+    <button class="btn btn-ghost btn-sm hidden" id="btnNotify" type="button"
+            title="运行进入等待人工/失败/作业结束时浏览器通知；被拒绝时降级为标题闪烁">通知</button>
   </header>
 
   <div class="shell">
@@ -37,6 +40,9 @@
         <button id="segRun" data-view="run" role="tab" aria-selected="false" aria-controls="viewRun"><span class="nav-icon" aria-hidden="true">◴</span><span>运行监控</span><small>02</small></button>
         <button id="segGate" data-view="gate" role="tab" aria-selected="false" aria-controls="viewGate"><span class="nav-icon" aria-hidden="true">◇</span><span>人工闸门</span><small>03</small></button>
       </div>
+      <!-- U1-b（SPEC-REV-07）：「在等我」行动条 —— 只读聚合等待人工/失败的运行；点击直达 -->
+      <div class="rail-label action-label">在等我 <span>ATTENTION</span></div>
+      <div class="action-bar" id="actionBar"></div>
       <div class="rail-label history-label">最近运行 <span>HISTORY</span></div>
       <div class="run-list" id="runList"></div>
       <div class="rail-foot">
@@ -527,6 +533,8 @@
 <script src="gate-session.js"></script>
 <script src="capabilities.js"></script>
 <script src="context-explain.js"></script>
+<script src="wait-center.js"></script>
+<script src="operator.js"></script>
 <script src="s0.js"></script>
 <script src="agent-results.js"></script>
 <script src="agent-window.js"></script>

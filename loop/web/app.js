@@ -411,6 +411,7 @@
     var body = await api("/api/runs");
     state.runs = Array.isArray(body.runs) ? body.runs : [];
     state.runsError = null;
+    notifyOnRuns();
     renderSidebar();
   }
 
@@ -658,6 +659,7 @@
   }
 
   function renderSidebar() {
+    renderWaitCenter();
     var host = $("runList");
     if (!host) return;
     clearEl(host);
@@ -691,6 +693,104 @@
     if (state.runsError && state.runs.length) {
       host.appendChild(h("div", "run-empty", "连接异常，列表可能过期：" + state.runsError));
     }
+  }
+
+  /* ---------------- U1 等待送达（SPEC-REV-07，2026-10-24） ----------------
+   * 提醒是投影的又一个消费者：判定口径在 web/wait-center.js（纯函数），
+   * 这里只承担 DOM / Notification / 标题三路呈现与计时器；不携带判定、不可回放。
+   * 通知被拒绝或浏览器不支持 Notification ⇒ 标题徽标 + 后台闪烁兜底（始终可用）。 */
+  var BASE_TITLE = document.title;
+  var waitPrev = null; /* 上一拍 runs 数组；null = 首拍不提醒（没有「从什么跃迁」） */
+  var flashTimer = null;
+
+  function notifyOnRuns() {
+    if (!window.WaitCenter) return;
+    var alerts = window.WaitCenter.deriveAlerts(waitPrev, state.runs);
+    if (!flashTimer) {
+      document.title = window.WaitCenter.badgeTitle(
+        BASE_TITLE, window.WaitCenter.attentionCount(state.runs));
+    }
+    waitPrev = state.runs;
+    alerts.forEach(fireAlert);
+  }
+
+  var ALERT_TEXT = {
+    gate: { label: "等待人工决策", body: "闸门等待签署；打开人工闸门视图处理。" },
+    failed: { label: "运行失败", body: "运行已失败；查看失败原因与事件流。" },
+    job_done: { label: "作业已结束", body: "长作业已结束，流程继续推进。" }
+  };
+
+  function fireAlert(alert) {
+    var text = ALERT_TEXT[alert.kind] || { label: String(alert.to || ""), body: "" };
+    if (window.Notification && Notification.permission === "granted") {
+      try {
+        var n = new Notification(alert.run_id + " · " + text.label, {
+          body: text.body, tag: alert.run_id + ":" + alert.kind
+        });
+        n.onclick = function () {
+          window.focus();
+          openRun(alert.run_id);
+          try { n.close(); } catch (e) { /* 已关 */ }
+        };
+        setTimeout(function () { try { n.close(); } catch (e) { /* 已关 */ } }, 10000);
+      } catch (e) { /* 通知构造失败：标题徽标仍在 */ }
+    }
+    if (document.hidden) startFlash();
+  }
+
+  function startFlash() {
+    if (flashTimer || !window.WaitCenter) return;
+    var on = false;
+    flashTimer = setInterval(function () {
+      on = !on;
+      var count = window.WaitCenter.attentionCount(state.runs);
+      document.title = on
+        ? "● " + window.WaitCenter.badgeTitle(BASE_TITLE, count)
+        : window.WaitCenter.badgeTitle(BASE_TITLE, count);
+    }, 1000);
+  }
+
+  function stopFlash() {
+    if (!flashTimer) return;
+    clearInterval(flashTimer);
+    flashTimer = null;
+    document.title = window.WaitCenter
+      ? window.WaitCenter.badgeTitle(BASE_TITLE, window.WaitCenter.attentionCount(state.runs))
+      : BASE_TITLE;
+  }
+
+  /* U1-b：「在等我」行动条（只读聚合，点击直达；条目判定在 wait-center.js）。 */
+  function renderWaitCenter() {
+    var host = $("actionBar");
+    if (!host || !window.WaitCenter) return;
+    clearEl(host);
+    var actions = window.WaitCenter.deriveActions(state.runs);
+    if (!actions.length) {
+      host.appendChild(h("div", "action-empty", "无待办"));
+      return;
+    }
+    actions.forEach(function (a) {
+      var btn = h("button", "action-item");
+      btn.type = "button";
+      btn.appendChild(h("span", "dot " + (a.kind === "gate" ? "warn" : "bad")));
+      var box = h("span", "action-text");
+      box.appendChild(h("b", "mono", a.run_id));
+      box.appendChild(h("small", null, a.kind === "gate" ? "等待人工决策" : "运行失败"));
+      btn.appendChild(box);
+      btn.title = a.run_id + " · " + (a.kind === "gate" ? "等待人工决策" : "运行失败");
+      btn.addEventListener("click", function () { openRun(a.run_id); });
+      host.appendChild(btn);
+    });
+  }
+
+  /* U1-a：通知开关（只请求权限；被拒绝 ⇒ 禁用并显示已拒绝，标题兜底不受影响）。 */
+  function renderNotifyButton() {
+    var btn = $("btnNotify");
+    if (!btn || !window.Notification) return;
+    var p = Notification.permission;
+    btn.textContent = p === "granted" ? "通知 已开启"
+      : p === "denied" ? "通知 已拒绝" : "开启等待通知";
+    btn.disabled = p === "denied";
   }
 
   function renderSetup() {
@@ -2770,11 +2870,18 @@
     actorRow.style.marginTop = "10px";
     var actorInput = h("input", "input mono");
     actorInput.placeholder = "human:your-name";
+    /* U1-c：仅在空/默认前缀时预填上一次的合规操作者；已填值（含输入到一半）原样保留。 */
+    if (window.Operator) {
+      var prefilled = window.Operator.apply(state.gateDraft.actor, window.Operator.recall());
+      if (prefilled !== state.gateDraft.actor) state.gateDraft.actor = prefilled;
+    }
     actorInput.value = state.gateDraft.actor;
     actorInput.setAttribute("aria-label", "actor");
     actorInput.style.maxWidth = "220px";
     actorInput.addEventListener("input", function () {
       state.gateDraft.actor = actorInput.value;
+      /* 记忆只存合规 human:<name>；不合规输入不记（判定在 operator.js）。 */
+      if (window.Operator) window.Operator.remember(actorInput.value);
       syncGateForms();
     });
     actorRow.appendChild(actorInput);
@@ -3354,6 +3461,20 @@
     if (btnDirClose) btnDirClose.addEventListener("click", closeDirPicker);
     var btnDirChoose = $("btnDirChoose");
     if (btnDirChoose) btnDirChoose.addEventListener("click", chooseDir);
+
+    /* U1-a：通知开关（浏览器不支持时保持隐藏，标题徽标/闪烁兜底不受影响）。 */
+    var btnNotify = $("btnNotify");
+    if (btnNotify && window.Notification) {
+      btnNotify.classList.remove("hidden");
+      btnNotify.addEventListener("click", function () {
+        if (Notification.permission === "granted") return;
+        try {
+          var result = Notification.requestPermission();
+          if (result && typeof result.then === "function") result.then(renderNotifyButton);
+        } catch (e) { renderNotifyButton(); }
+      });
+      renderNotifyButton();
+    }
   }
 
   /* ---------------- 节点面板 ↔ 闸门草稿桥（SPEC-REV-04 §4，2026-10-23 新增） ----------------
@@ -3457,7 +3578,7 @@
       }
     }, POLL_MS);
     document.addEventListener("visibilitychange", function () {
-      if (!document.hidden) poll();
+      if (!document.hidden) { stopFlash(); poll(); }
     });
   }
 

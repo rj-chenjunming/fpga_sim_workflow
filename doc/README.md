@@ -65,6 +65,7 @@
 
 DSH 接入阅读入口：[设计草案](spec/DSH_AGENT_RUNTIME_SPEC.md) → [实施切片](plans/2026-10-23-dsh-agent-runtime.md)。保持 Agently 默认，N3 做只读接入探针，N6 做价值对照，按收益决定是否扩展。
 当前开发：[D1 后端边界首片](plans/2026-10-24-dsh-backend-boundary.md)；不把后端抽象或受控测试等同于真实 DSH 接通。
+原生进展：[npm 运行时与 SDK 接口核验](plans/2026-10-24-dsh-native-interface.md)，安装后的实际映射与下一片门槛见 STATUS §57。
 
 AI 界面优化入口：[设计与布局示意](spec/AI_WORK_PANEL_SPEC.md) → [实施切片](plans/2026-10-23-ai-work-panel.md)；
 初版范围见 [SPEC-REV-03](spec/SPEC-REV-03-20261023.md)，当前采纳与分期调整见 [SPEC-REV-05](spec/SPEC-REV-05-20261024.md)。

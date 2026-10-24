@@ -1780,3 +1780,42 @@ SETTINGS 解析。显式 DSH 在 provider 解析前失败，无 standin/Agently 
 
 **提交保护缺口仍在**：原任务 `080c60f7076427f8dd5e083d4cd082a010de9177` 对象和
 `/workspace/node-inspector-20261023.bundle` 本实例均不存在，继续列为待恢复；本片未恢复或替代它们。
+
+## 57 DSH npm 安装与原生协议探针（2026-10-24）
+
+D1 已以 `df53b5eea06e5118de9dd9649e52c042de8c0bf8` 推送并由 ls-remote 核对远端 main；工作树当时干净。
+本片 [原生探针证据](evidence/DSH_NATIVE_20261024/README.md) README MD5 为
+`d573b6d01157257f323f534e20a689b4`；[目录外清单](evidence/DSH_NATIVE_20261024.md5) 校验原始探针摘要、
+依赖锁、脚本与版本/源码指纹。文档门复核 `missing=129`、`env_missing=315`、`known_missing=10`，
+相对提交基线新增均为 `0`；整门 `exit=1`，新增链接/围栏及补丁空白检查通过。
+用户随后授权通过 npm 安装 dshweb，覆盖前面“不安装新依赖”的本轮限制。
+`npm view dshweb` 返回 `E404`；搜索发现正式 CLI 为 `@deepseek-ai/dsh`，包内文档确认 Web/SDK 是 profile。
+没有安装同名普通 JavaScript shell `dsh` 或仅占位的 deepseek-harness 包。
+
+**实际安装**：/workspace/dsh-runtime 内固定 `@deepseek-ai/dsh@0.2.1-rc.2`，`npm install` 为
+`added 615 packages in 2m`，exit=0；Node `v24.19.0`、npm `11.9.0`。使用 --ignore-scripts、--no-audit、
+--no-fund，不修改本软件仓依赖，不执行安装脚本。完整 package-lock 指纹为
+`54031cbdbab40f778af186d36010364d53e8eafea1e77f51bbe14eb7c97f7925`（SHA-256）。
+独立 DSH_HOME、DSH_AGENTS_HOME 和工作目录，没有导入旧宿主设置、会话或凭据，也未复用聊天 Token。
+
+| 检查 | 实际结果 | 可证明范围 |
+|---|---|---|
+| CLI 版本/帮助 | `0.2.1-rc.2`，exit=0 | 安装入口可执行 |
+| Web / SDK 帮助 | 两条命令均 exit=0 | 已确认受支持入口及参数 |
+| SDK initialize | 成功，固定 serverInfo 名称匹配，协议 version=`0.0.1` | 实际 JSON-RPC 握手，不等于 npm 版本或模型认证 |
+| SDK 未知会话 wait | 返回错误，拒绝成功 | 未知会话不假成功；没有发送 prompt |
+| SDK shutdown | 收到 `{}`，exit=0，进程组已不存在 | 空闲运行时关闭；没有工具后代，未证明复杂取消 |
+| Web 启动 | 收到 ready；loopback 匿名 GET `/` 为 HTTP `401`，非 HTML | 鉴权门实际工作；未做登录、网页功能或外部访问验收 |
+| Web 收尾 | SIGTERM 后 exit=0，进程组已不存在 | 本轮自建服务已停止，无常驻暴露端口 |
+
+探针将 stderr 只映射到固定错误类别，启动 URL/认证参数始终不输出、不写归档；明确关闭 telemetry。
+执行中首次启动命令因 cwd 尚未创建被执行器拒绝，改从已存在的安装根创建目录后成功；这是命令工作目录问题，
+没有将其归因为云环境重启失败。没有运行真实模型、工具任务、仿真或不相关 UI/模型测试。
+
+**设计影响**：[D0 发现与 D2 前置计划](plans/2026-10-24-dsh-native-interface.md) 已记录原生方法和边界。
+SDK 没有逐 prompt 取消/逐 session 关闭；messageId 仅是入队身份；协议没有版本协商。
+应采用每 attempt 一个隔离进程/会话，校验事件终态和候选，再交给原 Host；不能共享活跃 Web 会话。
+默认自动压缩、子 Agent/工具、maxTokensAsSuccess 及较弱子进程 fallback 均需要收紧和实测。
+因此 §56“没有原生接口”已被本节的安装/协议证据更新，但 D0 全能力门、真实模型认证、关键上下文完整性、
+工具写权强制、异常停机后代清理、N3/N6 真机与价值试验仍未完成；业务配置继续保持 Agently。
+内网资产缺失、四道门未全绿和旧 `080c60f` 待恢复仍有效。

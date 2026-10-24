@@ -4,6 +4,9 @@
 [SPEC-REV-02](../spec/SPEC-REV-02-20261023.md)。初版交付设计。
 2026-10-24 开始 [D1 首片](2026-10-24-dsh-backend-boundary.md)：后端边界与 Agently 适配，
 实测见 STATUS §56；完整投影及 D2–D5 未交付，原生 DSH 仍未接通。
+随后用户授权 npm 安装，已取得公开发行版的 SDK 协议与无模型启动证据；
+见 [D0 发现与后续计划](2026-10-24-dsh-native-interface.md) 及 STATUS §57。
+这不构成业务后端接通或 D0 全部能力门通过。
 
 采纳评估已按 [SPEC-REV-05](../spec/SPEC-REV-05-20261024.md) 调整：保留 Agently 默认；
 N3 验证接入可行性，N6 对照验证价值；后续扩展是条件式选择，不是预定全量迁移。

@@ -64,7 +64,8 @@ GATE_NODE = {"G1_diff_confirm": "N4", "G2_report_accept": "N13", "G3_regression_
 GATE_STAGE = contracts.GATE_STAGE
 
 #: 这些决策必须给出理由（A2：忽略/有疑义/返工不能无理由落账）。
-REASON_REQUIRED = frozenset({"ignored", "disputed", "rework"})
+#: 集合本体在 `services.contracts`（与选项下发同源，红线 8）；此处仅保留旧名做别名。
+REASON_REQUIRED = contracts.REASON_REQUIRED_DECISIONS
 
 #: 条目级处置的合法值（与闸门单选分支同名，便于与 BRANCH_EVENTS 对齐）。
 ENTRY_DECISIONS = frozenset({"confirmed", "ignored", "disputed"})
@@ -236,16 +237,15 @@ def _cycle(data: Any, gate: str, ctx: RunCtx | None = None) -> int | str:
     return f"{n6}-{g2}"
 
 
-def decision_options(gate: str) -> list[dict[str, Any]]:
-    """操作台的决策按钮**由服务端给出**，来源是权威 —— 前端因此无从漂移。"""
-    return [
-        {
-            "value": d,
-            "label": GA.human_readable(gate, d),
-            "requires_reason": d in REASON_REQUIRED,
-        }
-        for d in GA.actionable_decisions(gate)
-    ]
+def decision_options(
+    gate: str, *, claimed_verdict: str | None = None
+) -> list[dict[str, Any]]:
+    """操作台的决策按钮**由服务端给出**，来源是权威 —— 前端因此无从漂移。
+
+    R3（2026-10-26）：实现委托给 `contracts.gate_decision_options()`，与运行视图的
+    `gate_options` 及 `precheck_decision` 共用同一理由判据（红线 8）。
+    """
+    return contracts.gate_decision_options(gate, claimed_verdict=claimed_verdict)
 
 
 def authority_record(ctx: RunCtx, gate: str) -> dict[str, Any]:
@@ -428,8 +428,9 @@ def precheck_decision(
         cases = contracts.case_states_view(run_dir, created_at=contracts.run_created_at(run_dir))
         pending = cases.get("pending_own") or []
         verdict = contracts.report_claimed_verdict(run_dir)
-        if verdict == "not_passed":
-            # SPEC-REV-05 R1 方案 D：失败报告允许接受，但**必须显式理由**；
+        # 与下发选项**同一判据**（红线 8）：选项说"必须理由" ⇔ 这里拒绝无理由的 accept。
+        if contracts.decision_requires_reason(gate, decision, verdict):
+            # SPEC-REV-12 R1 方案 D：失败报告允许接受，但**必须显式理由**；
             # accept 只表示"接受这份未通过的报告"，不等于判据通过（N16 仍受 I3/I4 阻断）。
             if not (isinstance(reason, str) and reason.strip()):
                 raise GatePreconditionFailed(
@@ -516,7 +517,11 @@ async def _enter(ctx: RunCtx, data: Any, gate: str) -> dict[str, Any]:
     )
     material["run_id"] = ctx.run_id
     material["cycle"] = _cycle(data, gate, ctx)
-    material["decision_options"] = decision_options(gate)
+    # R3：选项里的理由前置必须反映**本轮**报告结论（not_passed ⇒ accept 必须理由），
+    # 否则中断载荷里下发的还是静态表，界面无法预检。
+    material["decision_options"] = decision_options(
+        gate, claimed_verdict=contracts.report_claimed_verdict(ctx.run_dir)
+    )
     material["gate_node"] = node
     material["authority_enums"] = {g: list(GA.decisions().get(g, ())) for g in GA.gate_ids()}
     ctx.event("gate_pending", node=node, status="waiting",

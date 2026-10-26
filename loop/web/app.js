@@ -2963,12 +2963,20 @@
       }
     }
 
-    var n12 = (((pending.payload || {}).report || {}).n12_report || {});
-    if (pending.gate === "G2_report_accept" && n12.claimed_verdict === "not_passed") {
-      form.appendChild(h("div", "alert warn",
-        "本轮报告结论：未通过（not_passed）。接受失败报告必须填写理由；接受不等于判据通过，N16 仍被 I3/I4 阻断。"));
-    }
     var options = gateOptionsFor(pending);
+    /* 「接受失败报告必须理由」的判据**只在服务端**（contracts.decision_requires_reason →
+       选项 requires_reason=true）。这里只读该 flag 决定是否提示，不自己判「本轮是否
+       not_passed」，否则又是一套前置（红线 8）。结论值在文案里只用于说明是哪一轮。 */
+    var acceptOption = null;
+    for (var ai = 0; ai < options.length; ai++) {
+      if (options[ai] && options[ai].value === "accept") { acceptOption = options[ai]; break; }
+    }
+    if (acceptOption && acceptOption.requires_reason === true) {
+      var n12 = (((pending.payload || {}).report || {}).n12_report || {});
+      form.appendChild(h("div", "alert warn",
+        (n12.claimed_verdict ? "本轮报告结论：" + String(n12.claimed_verdict) + "。" : "") +
+        "接受失败报告必须填写理由；接受不等于判据通过，N16 仍被 I3/I4 阻断。"));
+    }
     /* G1 逐条处置（SPEC-04 §4.4 2026-10-23）：先逐条选，再整门提交。
        紧凑卡片只放材料摘要，逐条控件放在完整闸门视图，避免两处重复渲染。 */
     if (!compact) {
@@ -3178,16 +3186,9 @@
       syncGateForms();
       return;
     }
-    var acceptVerdict = ((pending.payload || {}).report || {}).n12_report || {};
-    if (pending.gate === "G2_report_accept" && d.decision === "accept"
-        && acceptVerdict.claimed_verdict === "not_passed"
-        && !String(d.reason || "").trim()) {
-      d.error = "本轮报告结论为未通过（not_passed）：接受失败报告必须填写理由。";
-      d.blockers = null;
-      d.note = null;
-      syncGateForms();
-      return;
-    }
+    /* R3（2026-10-26）：原先这里还有一段「G2 accept + not_passed ⇒ 必须理由」的自写前置，
+       现已删除——该规则由服务端选项的 requires_reason 承载（上一条检查即可覆盖），
+       避免界面与服务端各判一套（红线 8）。 */
     if (!String(d.actor || "").trim()) {
       d.error = "必须填写 actor（且以 human 开头）。";
       syncGateForms();

@@ -2384,3 +2384,71 @@ passed 数 +5 = 新增 2 条用例 + 上述 worktree 假差异 1 条 + 原本 sk
 - `gate_entries_view` 的 `entries_required` 仍无前端消费者（§68.5 观察项，未删）。
 - `test_web_smoke` 对"前端不得自判"的断言仍是**符号名**级；补行为级断言需要可跑浏览器的环境
   （本机 playwright Chromium 未安装，104 个 ERROR 即此），已如实保留而非写成已覆盖。
+
+---
+
+## 70 R3+R4 收口：理由前置随选项下发 + 报告结论单一读取（2026-10-26）
+
+接 §68.5/§69.4 未关闭项。**同一执行者实施与验证；独立复核另行安排。**
+
+### 70.1 契约先行
+
+- [SPEC-01 §1 I2 增补](spec/CHANGE_IMPACT_LOOP_SPEC.md)：规则必须体现在服务端下发的
+  `decision_options[].requires_reason`（`not_passed` ⇒ `accept` 置 true），使界面提交前可预检；
+  选项与 `precheck_decision` 的拒绝**必须由同一判据函数产生**，前端只消费 flag。
+- [WEB_UI_SPEC §5](spec/WEB_UI_SPEC.md)：理由前置只看所选决策项的 `requires_reason`，
+  前端不得再按 `gate`/`claimed_verdict` 自写一套。
+- [WEB_UI_SPEC §4.4](spec/WEB_UI_SPEC.md)：`report.n12_report.claimed_verdict` 由单一函数产生，
+  带 `claimed_verdict_source` / `claimed_verdict_diverged`；**判据口径只认落盘报告**，执行记录只作展示回落。
+- [SPEC-REV-12](spec/SPEC-REV-12-20261026.md) 追加「实现补充」节（R3/R4 契约完备性，不改 R1 语义）。
+
+### 70.2 R3：`requires_reason` 动态化
+
+| 落点 | 改动 |
+|---|---|
+| `services/contracts.py` | 新增 `REASON_REQUIRED_DECISIONS` 与 `decision_requires_reason(gate, decision, claimed_verdict)`（**唯一判据**）；新增 `gate_decision_options(gate, claimed_verdict=)`（**唯一选项实现**） |
+| 同上 | `_gate_options(claimed_verdict)` 与运行视图改为调用唯一实现；`gate_options` 现在随本轮报告结论变化 |
+| `workflows/chunks/gates.py` | `REASON_REQUIRED` 改为 `contracts.REASON_REQUIRED_DECISIONS` 别名（消灭第二份字面量）；`decision_options()` 委托 `contracts.gate_decision_options()`；中断载荷 `_enter` 传入 `report_claimed_verdict(ctx.run_dir)`；G2 分支的拒绝条件改用同一函数（异常文案不变） |
+| `web/app.js` | **删除**自写的「G2 accept + not_passed ⇒ 必须理由」前置（由 `selected.requires_reason` 一条覆盖）；告警条改为读 accept 选项的 `requires_reason`，结论值只用于文案说明 |
+
+效果：界面改前是"显示无需理由、点提交才 403"，现在选项直接标"必须填写理由"，可预检。
+
+### 70.3 R4：`claimed_verdict` 单一读取入口
+
+- 新增 `contracts.n12_claimed_verdict(run_dir, state_facts)`，返回五个字段：
+  `decision_verdict`（判据口径，**只认落盘 `n12_report.md`**，缺失即 None）、
+  `display_verdict`（展示口径，报告缺失时回落到执行记录）、
+  `source`（`report_md` / `state_facts` / `none`）、`facts_verdict`、`diverged`。
+- `report_claimed_verdict(run_dir)` 变成取 `decision_verdict` 的薄包装（`precheck` 与理由前置用它）。
+- `_n12_conclusion(state_facts, run_dir)` 改走同一入口：`claimed_verdict` 取展示值（**旧行为不退化**），
+  并新增 `claimed_verdict_source` / `claimed_verdict_diverged` / `claimed_verdict_facts` /
+  `claimed_verdict_decision` 四个投影字段 —— 分歧可见，不再静默择一。
+- 边角补齐：执行记录里没有 N12 产出但落盘报告存在时，仍投影结论（否则"服务端按报告判定、
+  界面看不到结论"又是一处分叉）。
+
+设计取舍（必须写清）：**判据口径不采用执行记录回落**。若报告缺失而执行记录有结论，
+界面会显示该结论（`source=state_facts`），但不因此要求理由、也不因此放行——服务端仍按 I2 原规则处理，
+避免"界面拦、服务端放"或反之。
+
+### 70.4 TDD 红→绿
+
+新增 6 条断言，**在 `17d1042` 上实测 6 failed**（同一命令），实现后全绿：
+选项声明（not_passed/passed 两态）、选项与 precheck 同判据、运行视图 `gate_options` 反映本轮结论、
+结论单一读取且优先落盘报告并标记分歧、执行记录只作展示回落、材料暴露来源与分歧。
+
+### 70.5 实测（数字为命令输出复制）
+
+| 门 | 本轮 | 基线 `17d1042` |
+|---|---|---|
+| 单测全量（最终代码） | **71 failed / 879 passed / 6 skipped / 104 errors**（73.68 s） | 72 failed / 870 passed / 8 skipped / 104 errors（68.31 s） |
+| 失败/错误集合差异 | **0 条**。唯一差异 `test_test_layers.py::test_software_entry_excludes_env_layer_at_collection` 系基线在 git worktree 中缺 `loop/.venv` 的环境假象 | — |
+| 定向 9 文件（fix_lifecycle / node_detail_projection / node_story / web_smoke / gate_session / gate_reason_reuse / gate_projection / api / api_ui_contract） | 47 failed / **212 passed** | 47 failed / 206 passed（**失败集合逐条一致**） |
+
+定向 +6 passed 即 6 条新用例；全量 +9 = 6 条新用例 + 1 条 worktree 假差异 + 2 条由 skip 转正常执行（8→6 skip）。
+
+### 70.6 仍未关闭
+
+- `gate_entries_view` 的 `entries_required` 仍无前端消费者（§68.5 观察项）。
+- `test_web_smoke` 的「前端不得自判」仍是符号名级断言（行为级需可跑浏览器环境）。
+- R3 之后前端不再自判理由，但**决策项文案**（如"接受"在失败轮次是否该改叫"接受未通过报告"）
+  属产品文案，未改；如需调整另开切片。

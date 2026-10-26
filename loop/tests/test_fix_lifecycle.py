@@ -1208,3 +1208,121 @@ def test_g2_accept_without_report_keeps_i2(tmp_path: Path) -> None:
         precheck_decision(gate="G2_report_accept", decision="accept", run_dir=rd,
                           mode="real", reason="x", kb=kb)
     assert "I2" in str(exc.value)
+
+
+# ------------------------------------------------- R3/R4：选项下发同源 + 结论单一读取（2026-10-26）
+
+
+def test_g2_accept_option_declares_requires_reason_for_failed_report(tmp_path: Path) -> None:
+    """R3：理由前置必须体现在**服务端下发的选项**上，界面才能提交前预检。
+
+    旧行为：选项 `accept.requires_reason` 恒 false（静态枚举），而服务端在 not_passed 时
+    硬拒绝 ⇒ 界面显示"无需理由"、点提交才 403，无法预检（红线 8 相邻：同一规则两处判）。
+    """
+    from services import contracts
+
+    rd = _write_run_dir(tmp_path)
+    _write_report(rd, "not_passed")
+    failed = {o["value"]: o for o in contracts.gate_decision_options(
+        "G2_report_accept", claimed_verdict=contracts.report_claimed_verdict(rd))}
+    assert failed["accept"]["requires_reason"] is True, "not_passed ⇒ accept 必须声明要理由"
+    assert failed["rework"]["requires_reason"] is True, "固定集不因动态规则改变"
+
+    _write_report(rd, "passed")
+    passed = {o["value"]: o for o in contracts.gate_decision_options(
+        "G2_report_accept", claimed_verdict=contracts.report_claimed_verdict(rd))}
+    assert passed["accept"]["requires_reason"] is False, "通过的轮次回到原语义"
+
+
+def test_option_requires_reason_and_precheck_are_same_judgement(tmp_path: Path) -> None:
+    """红线 8 自证：选项说"要理由"⇔ 服务端无理由时拒绝；两者必须同源。"""
+    from services import contracts
+    from workflows.chunks.gates import GatePreconditionFailed, precheck_decision
+
+    rd = _write_run_dir(tmp_path)
+    kb = _kb(tmp_path)
+    _write_report(rd, "not_passed")
+    flag = {o["value"]: o["requires_reason"] for o in contracts.gate_decision_options(
+        "G2_report_accept", claimed_verdict=contracts.report_claimed_verdict(rd))}
+    assert flag["accept"] is True
+    with pytest.raises(GatePreconditionFailed) as exc:
+        precheck_decision(gate="G2_report_accept", decision="accept", run_dir=rd,
+                          mode="real", reason=None, kb=kb)
+    assert "理由" in str(exc.value), "选项声明要理由，服务端就必须因缺理由而拒"
+
+
+def test_run_view_gate_options_reflect_failed_report(tmp_path: Path) -> None:
+    """R3 行为级：运行视图下发的 gate_options 必须已反映本轮报告结论（不是静态表）。"""
+    from services import contracts
+
+    rd = _write_run_dir(tmp_path)
+    _write_report(rd, "not_passed")
+    view = contracts.run_view(
+        run_doc={"run_id": "RUN-T", "run_dir": str(rd), "status": "waiting_gate", "mode": "real"},
+        kb=_kb(tmp_path), slot_status={}, job=None, evidence=None, events=[],
+    )
+    accept = {o["value"]: o for o in view["gate_options"]["G2_report_accept"]}["accept"]
+    assert accept["requires_reason"] is True
+
+    _write_report(rd, "passed")
+    view2 = contracts.run_view(
+        run_doc={"run_id": "RUN-T", "run_dir": str(rd), "status": "waiting_gate", "mode": "real"},
+        kb=_kb(tmp_path), slot_status={}, job=None, evidence=None, events=[],
+    )
+    accept2 = {o["value"]: o for o in view2["gate_options"]["G2_report_accept"]}["accept"]
+    assert accept2["requires_reason"] is False
+
+
+def test_n12_claimed_verdict_single_reader_prefers_artifact_and_flags_divergence(
+    tmp_path: Path,
+) -> None:
+    """R4：落盘报告优先；与执行记录不一致时**不静默择一**，必须暴露分歧。"""
+    from services import contracts
+
+    rd = _write_run_dir(tmp_path)
+    _write_report(rd, "not_passed")
+    facts = {"n12_report": {"mode": "live", "data": {"claimed_verdict": "passed"}}}
+
+    info = contracts.n12_claimed_verdict(rd, facts)
+    assert info["decision_verdict"] == "not_passed", "判据口径只认落盘报告"
+    assert info["display_verdict"] == "not_passed"
+    assert info["source"] == "report_md"
+    assert info["facts_verdict"] == "passed"
+    assert info["diverged"] is True, "两个来源不一致必须显式暴露，不得静默择一"
+
+
+def test_n12_claimed_verdict_falls_back_to_facts_for_display_only(tmp_path: Path) -> None:
+    """R4：报告缺失时，执行记录只作**展示**回落，不升格为判据（不猜）。"""
+    from services import contracts
+
+    rd = _write_run_dir(tmp_path)  # 本就不写 n12_report.md
+    facts = {"n12_report": {"mode": "live", "data": {"claimed_verdict": "not_passed"}}}
+
+    info = contracts.n12_claimed_verdict(rd, facts)
+    assert info["decision_verdict"] is None, "缺报告 ⇒ 判据口径为 None（回到 I2 原规则）"
+    assert info["display_verdict"] == "not_passed"
+    assert info["source"] == "state_facts"
+    assert info["diverged"] is False, "只有一个来源时不构成分歧"
+
+
+def test_gate_material_exposes_verdict_source_and_divergence(tmp_path: Path) -> None:
+    """R4：材料里必须能看出结论来自哪里，分歧要可见（否则人无法判断该信哪条）。"""
+    from services import contracts
+
+    rd = _write_run_dir(tmp_path)
+    facts = {"n12_report": {"mode": "live", "data": {"claimed_verdict": "not_passed"}}}
+    g2 = contracts.gate_material(
+        gate="G2_report_accept", run_dir=rd, counts=None, kb=_kb(tmp_path),
+        pending_interrupt=None, mode="drill", state_facts=facts,
+    )
+    n12 = g2["report"]["n12_report"]
+    assert n12["claimed_verdict"] == "not_passed", "缺报告时按执行记录展示（原有行为不退化）"
+    assert n12["claimed_verdict_source"] == "state_facts"
+    assert n12["claimed_verdict_diverged"] is False
+
+    _write_report(rd, "not_passed")
+    g2b = contracts.gate_material(
+        gate="G2_report_accept", run_dir=rd, counts=None, kb=_kb(tmp_path),
+        pending_interrupt=None, mode="drill", state_facts=facts,
+    )
+    assert g2b["report"]["n12_report"]["claimed_verdict_source"] == "report_md"

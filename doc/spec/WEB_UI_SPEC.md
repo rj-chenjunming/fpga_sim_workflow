@@ -306,6 +306,13 @@
    **G2 报告全文一次点击（2026-10-23 裁决 #8）**：材料区的「查看报告全文」直接打开**公共报告浮窗**
    （`window.ReportViewer`，与 N12 面板同一实现、同一白名单端点 §6.8），不再先跳 N12 面板再点一次。
    G2/G3 的"待确认项"是只读清单（§4.2.2），不进入本卡的逐条处置控件。
+   **报告结论单一读取入口（2026-10-26 增补，R4）**：`report.n12_report.claimed_verdict` 必须由
+   **一个**函数产生（`contracts.n12_claimed_verdict`）：落盘报告 `n12_report.md` 的字面声明优先，
+   缺失时回落到执行记录 `n12_report.data.claimed_verdict`；两者都有且不一致时**不静默择一**，
+   必须带 `claimed_verdict_source`（`report_md` / `state_facts` / `none`）与
+   `claimed_verdict_diverged=true` 暴露分歧。**判据口径只认落盘报告**
+   （`precheck_decision` 与 `requires_reason` 都用它），执行记录只作展示回落——避免"界面拦、
+   服务端放"或反之。
    **闸门可达性三件（2026-10-24 增补，[SPEC-REV-08](SPEC-REV-08-20261024.md) U8）**：
    (a) 逐条处置未覆盖全部条目时，提交按钮旁**就地显示缺项清单**（直接消费
    `gate-session.validateEntryDecisions` 的 error，含缺失 `entry_id`；就绪即清空；判定零新增）；
@@ -340,6 +347,11 @@
 - 触发：`pending_interrupt` 存在，或用户手动进入。
 - 内容：闸门材料（差异清单/冲突快照/报告+用例态/评估结论，按闸门不同）、权威枚举、当前轮次、未决计数。
 - 操作：选择决策 → 填 actor（必须 `human` 前缀）→ 理由（`ignored/rework/disputed` 必填）→ 提交。
+- **理由前置由服务端选项声明（2026-10-26 增补）**：是否需要理由**只看**所选决策项下发的
+  `requires_reason`（固定集 `ignored/rework/disputed`；G2 的 `accept` 在本轮报告结论为
+  `not_passed` 时也为 true，见 [SPEC-01 §1 I2 增补](CHANGE_IMPACT_LOOP_SPEC.md)）。前端不得再按
+  `gate`/`claimed_verdict` 自写一套理由校验（红线 8）；服务端 `precheck_decision` 与选项下发
+  必须由同一判据函数产生，保证「界面能预检、提交即通过判据」。
 - **G1 逐条处置（2026-10-23 增补）**：服务端下发 `entry_decisions_required=true` 时先逐条选择
   （每个唯一 `entry_id` 一组控件），再提交；整门决策由逐条处置推导（§4.4），界面不得用一句
   attestation 代替逐条核对。该 flag 只对 G1 为真（判据归服务端，见 §4.4「判据归属」），

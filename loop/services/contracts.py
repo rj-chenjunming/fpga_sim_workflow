@@ -161,13 +161,34 @@ def run_created_at(run_dir: Path | None) -> str | None:
 #: 报告结论的合法值（与 `loop/prompts/node_schemas.py` 的 `claimed_verdict` 同一枚举）。
 REPORT_VERDICTS: tuple[str, ...] = ("passed", "not_passed", "undetermined")
 
+#: 恒需理由的决策值（A2）：忽略 / 有疑义 / 返工必须说明理由。
+REASON_REQUIRED_DECISIONS: frozenset[str] = frozenset({"ignored", "disputed", "rework"})
 
-def report_claimed_verdict(run_dir: Path | None) -> str | None:
-    """从 `n12_report.md` 读报告自报结论（SPEC-REV-05 R1：失败报告的 accept 通道依据）。
 
-    只认产物里的字面声明；文件缺失/无该行 ⇒ `None`（不猜、不按目录名推断）。
-    该值只用于**是否要求理由**这一条前置，不参与判据（判据仍是 I2/I3/I4）。
+def decision_requires_reason(
+    gate: str, decision: str, claimed_verdict: str | None
+) -> bool:
+    """某个决策是否**必须**填写理由 —— 唯一判据（下发选项与 precheck 都用它）。
+
+    固定集（A2）：`ignored` / `disputed` / `rework`。
+    动态补充（SPEC-REV-12 R1 方案 D）：G2 的 `accept` 在本轮报告结论为 `not_passed` 时也必须
+    给理由 ——「接受一份未通过的报告」本身需要说清为什么接受；它只表示接受报告，
+    不等于判据通过（N16 仍受 I3/I4 阻断）。
+
+    前端只消费下发选项里的 `requires_reason`，不得再按 gate/结论自写一套理由前置
+    （红线 8「口径唯一」），否则界面显示"无需理由"、提交才被拒，无法预检。
     """
+    if decision in REASON_REQUIRED_DECISIONS:
+        return True
+    return (
+        gate == "G2_report_accept"
+        and decision == "accept"
+        and claimed_verdict == "not_passed"
+    )
+
+
+def _artifact_claimed_verdict(run_dir: Path | None) -> str | None:
+    """从 `n12_report.md` 读字面声明；文件缺失/无该行 ⇒ `None`（不猜、不按目录名推断）。"""
     if run_dir is None:
         return None
     path = Path(run_dir) / "n12_report.md"
@@ -180,6 +201,57 @@ def report_claimed_verdict(run_dir: Path | None) -> str | None:
         text,
     )
     return match.group(1) if match else None
+
+
+def n12_claimed_verdict(
+    run_dir: Path | None, state_facts: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    """N12 报告自报结论的**唯一**读取入口（A20 + SPEC-REV-12「实现补充」R4 收口）。
+
+    此前有两个读者：`_n12_conclusion`（读执行记录）与 `report_claimed_verdict`（读落盘报告），
+    drill 回放或报告缺失时两边会分叉，出现"界面拦、服务端放"或反之。现统一到本函数：
+
+    - `decision_verdict`：**判据口径**，只认落盘报告；缺失即 `None`（`precheck_decision` 与
+      `decision_requires_reason` 都用它 —— 判据绝不按执行记录猜）。
+    - `display_verdict`：**展示口径**，报告缺失时回落到执行记录 `n12_report.data.claimed_verdict`
+      （旧 run / drill 回放仍能看到结论）；仍无则 `None`。
+    - `source`：展示值来源 —— `report_md` / `state_facts` / `none`。
+    - `facts_verdict`：执行记录里的结论（无论是否被采用）。
+    - `diverged`：两来源都有且不同 ⇒ True。**不静默择一**，由视图显式暴露。
+    """
+    artifact = _artifact_claimed_verdict(run_dir)
+    report_facts = (state_facts or {}).get("n12_report")
+    raw_facts = None
+    if isinstance(report_facts, dict):
+        data = report_facts.get("data")
+        if isinstance(data, dict):
+            raw_facts = data.get("claimed_verdict")
+    facts_verdict = raw_facts if isinstance(raw_facts, str) and raw_facts.strip() else None
+
+    if artifact is not None:
+        source, display = "report_md", artifact
+    elif facts_verdict is not None:
+        source, display = "state_facts", facts_verdict
+    else:
+        source, display = "none", None
+    return {
+        "decision_verdict": artifact,
+        "display_verdict": display,
+        "source": source,
+        "facts_verdict": facts_verdict,
+        "diverged": bool(
+            artifact is not None and facts_verdict is not None and artifact != facts_verdict
+        ),
+    }
+
+
+def report_claimed_verdict(run_dir: Path | None) -> str | None:
+    """报告自报结论的**判据口径**（只认落盘产物；供 precheck 与理由前置）。
+
+    文件缺失/无该行 ⇒ `None`（不猜）。该值只用于「是否要求理由」这一条前置，
+    不参与判据（判据仍是 I2/I3/I4）。
+    """
+    return n12_claimed_verdict(run_dir)["decision_verdict"]
 
 
 def diff_entries_view(run_dir: Path | None, *, mode: str | None = None) -> dict[str, Any]:
@@ -677,17 +749,34 @@ def _n8_conclusion(state_facts: dict[str, Any]) -> dict[str, Any] | None:
     }
 
 
-def _n12_conclusion(state_facts: dict[str, Any]) -> dict[str, Any] | None:
-    """N12 报告结论（旧 verdict_statement 容错；新 claimed_verdict 优先）。"""
+def _n12_conclusion(
+    state_facts: dict[str, Any], run_dir: Path | None = None
+) -> dict[str, Any] | None:
+    """N12 报告结论（旧 verdict_statement 容错；新 claimed_verdict 优先）。
+
+    结论值一律走 `n12_claimed_verdict()` 这**一个**入口（R4 收口）：落盘报告优先、执行记录
+    回落用于展示；两来源不一致时把 `source` 与 `diverged` 一并投影出来，禁止"界面一条、
+    判据另一条"的静默分叉。
+    """
     doc = state_facts.get("n12_report")
     if not isinstance(doc, dict):
-        return None
+        # 执行记录里没有 N12 产出，但落盘报告可能存在（回放/外部写入）⇒ 仍投影结论，
+        # 否则会出现"服务端按报告判定、界面却看不到结论"的又一处静默分叉。
+        if _artifact_claimed_verdict(run_dir) is None:
+            return None
+        doc = {}
     data = doc.get("data") if isinstance(doc.get("data"), dict) else {}
-    claimed = data.get("claimed_verdict")
+    verdict = n12_claimed_verdict(run_dir, state_facts)
     legacy = data.get("verdict_statement")
     return {
         "mode": doc.get("mode"),
-        "claimed_verdict": claimed if claimed is not None else None,
+        "claimed_verdict": verdict["display_verdict"],
+        # R4（2026-10-26）：来源与分歧显式化。
+        "claimed_verdict_source": verdict["source"],
+        "claimed_verdict_diverged": verdict["diverged"],
+        "claimed_verdict_facts": verdict["facts_verdict"],
+        # 判据口径（预检与 precheck 用这条）：缺报告时为 None，不回落到执行记录。
+        "claimed_verdict_decision": verdict["decision_verdict"],
         "legacy_verdict_statement": legacy,
         # 报告文件（A20：报告必须落盘；材料给的是路径 + 存在性，不把正文塞进协议）
         "report_path": doc.get("report_path") or data.get("report_path"),
@@ -813,7 +902,7 @@ def gate_material(
             "n3_digest": str(rd / "n3_digest.md") if rd is not None else None,
             "n9_evidence": str(evidence_path) if evidence_path is not None else None,
             "n11_guardian": _n11_conclusion(facts),
-            "n12_report": _n12_conclusion(facts),
+            "n12_report": _n12_conclusion(facts, rd),
             "n8_check": _n8_conclusion(facts),
             "n10_reconcile": _model_node_view(facts, "n10_reconcile"),
         },
@@ -1432,7 +1521,8 @@ def run_view(
         ),
         "stage_map": STAGES,
         "agents_authority": "projection",
-        "gate_options": _gate_options(),
+        # R3：选项里的 requires_reason 必须反映本轮报告结论（否则界面无法预检）。
+        "gate_options": _gate_options(report_claimed_verdict(run_dir)),
         "rework": rework,
         # I1/I2 的**放行前置**也必须在看板上可见（材料与判定同一口径）。
         "difference_items": diff,
@@ -1443,23 +1533,38 @@ def run_view(
     }
 
 
-def _gate_options() -> dict[str, list[dict[str, Any]]]:
+def gate_decision_options(
+    gate: str, *, claimed_verdict: str | None = None
+) -> list[dict[str, Any]]:
+    """某闸门下发给界面的决策选项 —— **唯一实现**（services 与 workflows 都调它）。
+
+    值来自权威枚举（`kb_lib.GATE_DECISIONS`，前端无从漂移）；`requires_reason` 由
+    `decision_requires_reason()` 算出，与服务端 `precheck_decision` 的拒绝同源（红线 8）。
+    """
+    from host import gate_authority as GA
+
+    return [
+        {
+            "value": d,
+            "label": GA.human_readable(gate, d),
+            "requires_reason": decision_requires_reason(gate, d, claimed_verdict),
+        }
+        for d in GA.actionable_decisions(gate)
+    ]
+
+
+def _gate_options(claimed_verdict: str | None = None) -> dict[str, list[dict[str, Any]]]:
     """把权威枚举投影给界面，使前端**无从**自造决策值。
 
     实测教训：本层与前端曾各自写死一份 `full_regression`，
     而权威（`kb_lib.GATE_DECISIONS`）是 `full_now`。
     现在按钮由服务端下发，前端只渲染。
+
+    `claimed_verdict` 用于让 G2 的 `accept` 在报告未通过时声明"必须理由"（R3）。
     """
     from host import gate_authority as GA
 
     out: dict[str, list[dict[str, Any]]] = {}
     for gate in GA.gate_ids():
-        out[gate] = [
-            {
-                "value": d,
-                "label": GA.human_readable(gate, d),
-                "requires_reason": d in ("ignored", "rework", "disputed"),
-            }
-            for d in GA.actionable_decisions(gate)
-        ]
+        out[gate] = gate_decision_options(gate, claimed_verdict=claimed_verdict)
     return out

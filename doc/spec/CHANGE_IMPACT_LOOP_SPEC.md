@@ -44,6 +44,10 @@
 当 `n12_report.md` 的 `claimed_verdict = not_passed` 时，闸门 2 的 `accept` **允许**，但**必须给出理由**；
 它只表示「接受这份未通过的报告」，**不等于判据通过**——I2 仍成立（不得称跑通），N16 仍受 I3/I4 阻断。
 报告缺失或结论为 `passed`/`undetermined` 时，按原规则：本轮「待验」≠ 0 不得 `accept`。
+**下发与判据同源（2026-10-26 增补）**：该规则必须体现在服务端下发的决策选项上
+（`decision_options[].requires_reason`：`not_passed` 时 `accept` 置 true），使界面**提交前**即可预检；
+选项的 `requires_reason` 与 `precheck_decision` 的拒绝必须由**同一判据函数**产生，前端只消费
+该 flag、不得再按 `claimed_verdict` 自写一套理由前置（红线 8「口径唯一」）。
 
 ## 2. 总拓扑（先看这张图）
 

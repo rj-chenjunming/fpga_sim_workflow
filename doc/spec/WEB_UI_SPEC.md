@@ -216,7 +216,10 @@
   （`run_id + gate + cycle` 身份，刷新保留、不落盘）；底部只给「已处置 M / N」+「去闸门视图确认并提交 →」，
   真正提交仍走 §4.4 的闸门视图现有表单（`entry_decisions` 覆盖全部 `entry_id`）。
 - **已决策态只读**：显示当时的逐条处置（`gate.entries[].disposition`，来自 `decisions/<gate>.json`）、
-  整门决策（含人工理由原文与签署时间）；无落账 ⇒ 明说"逐条处置未留存"，**不从 `gates.json` 猜**。
+  整门决策（含人工理由原文与签署时间）；无落账 ⇒ **区分「文件不存在 / 不可解析（损坏）/ 有文件无记录」
+  三种情形**并明说具体是哪一种（2026-10-26 A1；不合并成一句"未留存"、不猜原因），
+  **不从 `gates.json` 猜**。口径由 `LOOP_ORCHESTRATION_SPEC §10.4.2` 定义，文案唯一出口
+  `contracts._ledger_absent_note()`。
 - **浮窗嵌套**：节点面板本身是 `<dialog>`，浮窗用 dialog 栈或页内 overlay；Esc 只关上层、焦点回触发按钮；
   窄屏浮窗改全屏。勾选框与「查看前后对比」是两个独立命中区。
 - **N13/N14 的"待确认项"（2026-10-23 裁决 #2：只读清单，不新增逐条处置）**：闸门区在 G2/G3 渲染
@@ -363,6 +366,11 @@
 - **中断载荷里的选项只是快照**：`pending_interrupt.payload.decision_options` 是中断创建时写下的，
   会随快照恢复保留旧值 ⇒ 界面**不得**用它做理由前置判断，必须消费运行视图每次重算的
   `gate_options`（`contracts.gate_decision_options`）。
+  **两个前端同一口径（2026-10-26 A3）**：新界面（`app.js`）与旧界面（`legacy.html`）都只认
+  `gate_options`；服务端没下发 ⇒ 不渲染任何决策按钮、明说"不可提交"、提交按钮保持禁用。
+  旧界面原先的"快照优先 + 手抄枚举兜底表"已删除——兜底表属前端手抄 `kb_lib.GATE_DECISIONS`
+  （红线 4），快照优先则构成第二套判据（红线 8）。回归钉子：
+  `loop/tests/browser/test_legacy_gate_options.py`。
 - **G1 逐条处置（2026-10-23 增补）**：服务端下发 `entry_decisions_required=true` 时先逐条选择
   （每个唯一 `entry_id` 一组控件），再提交；整门决策由逐条处置推导（§4.4），界面不得用一句
   attestation 代替逐条核对。该 flag 只对 G1 为真（判据归服务端，见 §4.4「判据归属」），

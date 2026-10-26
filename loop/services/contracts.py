@@ -1168,15 +1168,40 @@ def _group_diff_entries(entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return out
 
 
-def _decision_ledger(run_dir: Path | None, gate: str) -> dict[str, Any] | None:
+def _decision_ledger(run_dir: Path | None, gate: str) -> tuple[dict[str, Any] | None, str]:
     """读 Host 闸门逐条处置落账（`decisions/<gate>.json`，只增不改）。
 
-    缺失/损坏一律返回 None（**不编**逐条处置）；调用方据此显示"未留存"。
+    返回 `(doc, status)`，`status ∈ {ok, missing, corrupt, no_run_dir}`。**不编**逐条处置。
+
+    为什么必须区分 `missing` 与 `corrupt`（2026-10-26，A1）：两者对使用者的含义不同——
+    `missing` = 这一轮没留下账本（例如签署后恢复失败、本轮未走到落账）；`corrupt` =
+    账本在，但读不出来（形状不符 / 不可解析），需要人去查现场文件。早先两者都折成
+    `None`，面板只能笼统说"未留存"，还会把原因猜成"本轮早于落账"——对
+    「有签名但没落账」的轮次（`RUN-20261024-002609`）是错误归因。
     """
     if run_dir is None:
-        return None
-    doc, _ = _read_artifact(Path(run_dir) / "decisions" / f"{gate}.json")
-    return doc if isinstance(doc, dict) else None
+        return None, "no_run_dir"
+    doc, error = _read_artifact(Path(run_dir) / "decisions" / f"{gate}.json")
+    if isinstance(doc, dict):
+        return doc, "ok"
+    if doc is not None:
+        return None, "corrupt"  # 解析成功但不是对象 ⇒ 形状不符，按损坏处理
+    if error and error.startswith("不可解析"):
+        return None, "corrupt"
+    return None, "missing"
+
+
+def _ledger_absent_note(gate: str, status: str) -> str:
+    """账本读不到时面板怎么说（只陈述事实，不猜原因）。"""
+    where = f"decisions/{gate}.json"
+    if status == "corrupt":
+        return (f"逐条处置落账不可解析（{where} 损坏或形状不符）：界面不猜，"
+                "请以现场文件为准")
+    if status == "ok":
+        return f"逐条处置落账没有记录（{where} 的 records 为空）：界面不猜"
+    if status == "no_run_dir":
+        return "逐条处置未落账（定位不到运行目录）：界面只显示整门决策，不从 gates.json 猜"
+    return (f"逐条处置未落账（{where} 不存在）：界面只显示整门决策，不从 gates.json 猜")
 
 
 def _gate_pending_items(
@@ -1283,7 +1308,9 @@ def gate_entries_view(
 
     - `waiting`：来源 = 运行视图 `pending_interrupt.payload`（材料已含逐条字段）；
     - `decided`：来源 = `n2_diff.json` 投影 + `decisions/<gate>.json`（逐条处置）；
-      没有落账 ⇒ `note` 明说"逐条处置未留存"，**不从 gates.json 猜**（交接提示词 §0.5 ⑥）；
+      没有落账 ⇒ `note` 明说"逐条处置未落账（哪份文件缺失）"，并区分「不存在 / 不可解析」
+      两种情形（2026-10-26 A1）——**不猜原因**（不写"本轮早于落账"这类断言），
+      **不从 gates.json 猜**（交接提示词 §0.5 ⑥）；
     - `no_material`：拿不到差异清单 ⇒ 明说缺什么，不编条目。
 
     裁决 #2（2026-10-23）：G2/G3 的"待确认项"只做**只读清单**（`items`），
@@ -1311,7 +1338,7 @@ def gate_entries_view(
     gate_has_entries = gate == "G1_diff_confirm"
     entries = _group_diff_entries(list(raw_entries or [])) if gate_has_entries else []
 
-    ledger = _decision_ledger(run_dir, gate)
+    ledger, ledger_status = _decision_ledger(run_dir, gate)
     latest: dict[str, Any] | None = None
     if isinstance(ledger, dict):
         records = ledger.get("records") or []
@@ -1363,7 +1390,7 @@ def gate_entries_view(
     note: str | None = None
     if gate == "G1_diff_confirm":
         if state == "decided" and latest is None:
-            note = "逐条处置未留存（本轮早于处置落账；界面只显示整门决策，不从 gates.json 猜）"
+            note = _ledger_absent_note(gate, ledger_status)
         elif state == "no_material":
             note = (source_diff.get("error") or "差异清单未下发") + "（界面不编条目）"
     else:
@@ -1373,7 +1400,9 @@ def gate_entries_view(
             note = "闸门材料未下发（服务端未给出待确认项；界面不编条目）"
 
     if state == "decided" and hard_block_recorded is False:
-        legacy_note = "当时的阻断项未留存（该 run 早于落账）"
+        # 账本在、但该条记录没有 `hard_block` 键 = 该轮早于 R3-04 的快照字段。
+        # 只陈述「文件里没有这个字段」，不再声称是"run 早于落账"（那是另一件事）。
+        legacy_note = f"当时的阻断项未留存（decisions/{gate}.json 的该条记录没有该字段）"
         note = f"{note}；{legacy_note}" if note else legacy_note
 
     options = (gate_options or {}).get(gate) or []

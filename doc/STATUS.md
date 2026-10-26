@@ -3099,8 +3099,12 @@ G1 中断，断言**中断载荷**里的 `decision_options.confirmed.requires_re
    损坏账本与「早于落账的旧 run」在面板上不可区分；写侧却是 fail-closed。
    现状与 `_decision_ledger` 的 docstring 一致（「缺失/损坏一律返回 None」），属**已声明的降级**；
    要增强得同时改投影文案与契约，属独立切片 ⇒ 登记不改。
+   **已关闭（2026-10-26，§81.1）**：`_decision_ledger` 改返回 `(doc, status)`，
+   `missing` / `corrupt` / `ok 但 records 空` 三态在面板文案里分开，判据与钉子见 §81.1。
 2. **「签署成功但恢复失败」会留下 signed 但无账本的形态**（`main_flow` 的 sign→resume 路径）：
    此时面板措辞会把它误归因为「本轮早于处置落账」。属措辞精度问题，登记待后续。
+   **已关闭（2026-10-26，§81.1）**：note 只陈述事实（哪份文件不存在 / 不可解析），
+   不再声称版本先后；`RUN-20261024-002609` 那类形态不再被错误归因。
 3. 复核的破坏性反证用的是**运行时 monkeypatch**（测试文件原样、未改仓库），它证明钉子对相应回归会红，
    但不等价于「真实改坏生产代码也会红」——该差别如实记录。
 
@@ -3240,3 +3244,71 @@ hard_block = ['I4_CONFLICTS_UNCLEARED']
   md5 与身份已在 tracked 证据里，可判定是否漂移。
 - §78.6-2 的「有签名无落账」**归因措辞**仍未改（对周末那轮会显示"本轮早于处置落账"，不准确）；
   本轮只做夹具，不动产品代码。要改属 `contracts` 投影措辞 + 测试的小切片。
+  **该项已于 2026-10-26 关闭**（§81.1：`contracts` 投影区分「不存在 / 不可解析」并去掉
+  「本轮早于处置落账」的猜测性归因，新增 2 条钉子用例）。
+
+---
+
+## 81 A 组收尾：账本归因、旧界面选项来源、数据根脚本去重（2026-10-26）
+
+上游：§80 之后仍开的 A 组待办（本会话盘点清单），由人指定「先把 A 组做了」。
+计划：[`doc/plans/2026-10-26-a-group-cleanup.md`](plans/2026-10-26-a-group-cleanup.md)。
+写权：本轮**由 Lead 本人实现**（实现者 ≠ 独立验证者，见 §81.7）。
+
+### 81.1 A1 账本「缺失 / 损坏」可分，归因只说事实
+
+| 项 | 内容 |
+|---|---|
+| 问题 | `contracts._decision_ledger()` 把「文件不存在」与「文件损坏」都折成 `None`，面板只能笼统说"逐条处置未留存"，并把原因写死成「本轮早于处置落账」。对 `RUN-20261024-002609`（签名成功、`async_load` 恢复失败 ⇒ 账本没写成）是**错误归因**（§78.6-1/-2 登记项） |
+| 实现 | 返回值改 `(doc, status)`，`status ∈ {ok, missing, corrupt, no_run_dir}`；文案唯一出口 `_ledger_absent_note(gate, status)`（红线 8：一处判据）；`hard_block` 旧记录改说"`decisions/<gate>.json` 的该条记录没有该字段"，不再声称 run 早于落账 |
+| 判据 | ①不存在 ⇒ note 含"未落账"+文件路径+"不存在"，**不含**"早于"/"不可解析"；②不可解析**或**形状不是对象 ⇒ 含"不可解析"+"损坏"，**不含**"不存在"；③有文件但 `records` 空 ⇒ 说"没有记录"；三种情形 `entries[].disposition` 全 `null`（不编） |
+| 钉子 | `loop/tests/test_node_detail_projection.py`：改写 `test_gate_entries_decided_without_ledger_says_not_retained`；新增 `test_gate_entries_corrupt_ledger_is_not_reported_as_missing`、`test_gate_entries_ledger_without_records_is_explicit`（后者与前者互为"必须区分"的反证） |
+| 规格 | `LOOP_ORCHESTRATION_SPEC §10.4.2` 增「读不到时必须区分三种情形」+ 实测反例；`WEB_UI_SPEC §4.2 已决策态只读` 同步改判据文字 |
+
+### 81.2 A3 旧界面（`legacy.html`）不再消费中断快照选项
+
+| 项 | 内容 |
+|---|---|
+| 问题 | `gateDecisionOptions()` 的取值顺序是「`payload.decision_options`（中断快照）→ `run_view.gate_options` → 手抄枚举兜底表」。快照恢复后旧选项会盖掉服务端重算值（第二套判据，红线 8）；兜底表是前端手抄 `kb_lib.GATE_DECISIONS`（红线 4） |
+| 实现 | 只读 `run_view.gate_options`；没有 ⇒ 返回空、面板明说「服务端未下发决策选项（`run_view.gate_options` 缺失）：本界面不写死枚举 ⇒ 不可提交」，`#btnSubmit` 保持禁用；删除 `GATE_DECISIONS_FALLBACK` |
+| 钉子 | 新增 `loop/tests/browser/test_legacy_gate_options.py`（受控替身：中断载荷有选项、`gate_options` 缺失 ⇒ **零按钮** + 不可提交 + 不出现快照文案；服务端下发重算值后才出现按钮）。判别性：旧实现会渲染快照选项、且兜底表会让按钮出现 |
+| 规格 | `WEB_UI_SPEC §4.4` 「中断载荷里的选项只是快照」补两个前端同一口径 |
+
+### 81.3 A2 可写数据根构造只剩一份实现
+
+| 项 | 内容 |
+|---|---|
+| 问题 | `spikes/provision_dev_workspace.sh`（持久副本，复制 733 MB）与 `spikes/run_software_checks.sh`（一次性影子，符号链接）各写一遍"带哪些目录、夹具在不在"，两份口径会漂；后者另用 `host.paths` 解析数据根，与前者用 `kb_lib` 不是同一入口 |
+| 实现 | `provision_dev_workspace.sh` 成为唯一实现，新增 `--link-fixture` / `--quiet` / `--tolerate-missing-fixture`；`run_software_checks.sh` 删除自带的 `mkdir/cp/ln` 段与 `host.paths` 解析，改为委托 `DEST=$SHADOW provision ... --force --link-fixture --quiet --tolerate-missing-fixture`（缺夹具仍是 warn + 继续，保持旧入口行为） |
+| 实测 | 一次性影子：本轮软件层全套跑通（§81.5）；持久副本：`DEST=<repo>/.dev-ws-copytest provision --force --quiet` → rc=0，`runs/RUN-20261015-120626` + `baselines/` + `index/conflicts/adjudication` + `FIXTURE_IDENTITY.md` 齐（自检项全过），`--cleanup` 后目录消失 |
+| 钉住 | `tests/test_software_checks_script.py`（既有："N passed" 汇总行不被吞）在委托后仍 2 passed |
+
+### 81.4 A4 浏览器门：**不并入**全量单测门（裁决，不是缺陷）
+
+裁决：保持单独执行，登记为**第五道补充门**，四道门定义不变。理由三条：
+① 依赖 Chromium + 可写 `HOME`/`TMPDIR`，并入会把"软件层可跑"绑到"本机能起浏览器"（缺件属环境缺件，不能算通过）；
+② 实测成本：软件层 162 s + 浏览器 115 s，串行化并加上浏览器启动抖动 ⇒ 单门 5 min+，失败定位混在一个退出码里；
+③ 判据不同（浏览器门验界面行为，单测门验软件行为）。
+落点：`AGENTS.md §4` 表格后新增该段（含命令、`tests/browser` 期望 0 failed、"改 `loop/web/**` 或界面投影字段必须单独跑并记 STATUS"）。
+
+### 81.5 本轮门（整改后重跑，数字从命令输出复制）
+
+| 门 | 结果 | 说明 |
+| --- | --- | --- |
+| 软件层单测 | **967 passed / 3 deselected / 0 failed**（162.46 s） | 走 `bash spikes/run_software_checks.sh --ignore=tests/browser`（影子根由 `provision --link-fixture` 造）；较 §78.7 的 965 多 2 条 = 本轮 A1 新增用例。3 条 deselected 仍是 `@pytest.mark.env_layer`（`test_archive_e2` ×2、`test_projection_and_frozen` ×1，需可写 `ENV_ROOT`） |
+| 浏览器门 | **111 passed**（115.39 s） | `PLAYWRIGHT_BROWSERS_PATH=<repo>/.pw-browsers HOME=<repo>/.chrome-home TMPDIR=<repo>/.chrome-tmp pytest -q tests/browser`；较 §75 的 110 多 1 条 = 本轮 A3 新增用例 |
+| 端到端 | **ALL PASS，117 断言 / 0 FAIL**（相位 1/2/3/4/4b/5 全部 `rc=0`；分部 PASS=50/27/18/8/8/6） | 先 `provision_dev_workspace.sh --force` 造可写数据根，再 `LOOP_WORKSPACE=<repo>/.dev-ws bash spikes/accept_v1_run.sh`；跑完 `--cleanup` 删除。断言总数与 §73 的 117 同值 ⇒ 本轮改动未改端到端可观察行为 |
+| kb 自测 | 未重跑 | 本轮未改 `kb/**`；上次实测 §75.6（`_selftest_gate_schema.py` PASS=10、`_selftest_n5_reachability.py` PASS=9） |
+| 文档 | **missing=0**（checked=1944 skipped=24560 historical=857 known_missing=10 env_missing=19） | `python3 doc/audit/check_doc_links.py`；跑前已 `provision --cleanup` 删除仓内临时数据根（否则拷贝来的环境文档会被算成 missing，口径见 §79.6） |
+
+### 81.6 未关闭（本轮明确不做）
+
+- 决策项文案（失败轮次的 `accept` 是否改名）属产品文案，需人裁决。
+- 残留 2（drill + API 直给 `entry_decisions` 时选项声明"不需要理由"而 precheck 收下）方向是**更严**，维持登记。
+- 演示夹具"通过形态"仍缺（需一次真实通过轮或 `ENV_ROOT` 写授权，红线 11）。
+- 两轮历史复核报告仍不在 `doc/audit/`（无法从对话复原原文；不复原 = 不伪造证据）。本轮改由 §81.7 的新复核落档补位。
+
+### 81.7 待独立复核
+
+本轮 A1–A4 **由实现者本人完成验证**，不构成独立验证。复核范围为：A1 三种情形的判据与文案、
+A3 旧界面判据来源、A2 委托后脚本行为一致、A4 的 AGENTS 段落与四道门口径、以及 §81.5 数字可复现性。

@@ -355,33 +355,21 @@ input[type=text]:focus,textarea:focus,select:focus{outline:1px solid #2f6fbf;bor
     ['N16', '人触发 → Host 原子晋升新基线']
   ];
 
-  /* 闸门决策按钮：**一律由服务端下发**（material.decision_options / run_view.gate_options）。
-     前端不再写死枚举 —— 曾写死的 full_regression / escalate_to_human 都是自造值，
-     权威（kb_lib.GATE_DECISIONS）实际是 full_now / subset_only / disputed / defer。
-     这里只保留一份"服务端字段缺失时的原样枚举"兜底，不做任何改值。 */
-  var GATE_DECISIONS_FALLBACK = {
-    G1_diff_confirm: [['confirmed', 'confirmed'], ['ignored', 'ignored'], ['disputed', 'disputed']],
-    G2_report_accept: [['accept', 'accept'], ['rework', 'rework']],
-    G3_regression_decision: [['full_now', 'full_now'], ['subset_only', 'subset_only'],
-                             ['milestone_only', 'milestone_only'], ['defer', 'defer']]
-  };
-
-  /* 取服务端的决策按钮；优先 material.decision_options，其次 run_view.gate_options，
-     最后才用兜底表。任何情况下都只渲染服务端给的值。 */
-  function gateDecisionOptions(gid, material, view) {
-    var opts = null;
-    if (material && Object.prototype.toString.call(material.decision_options) === '[object Array]') {
-      opts = material.decision_options;
-    } else if (view && view.gate_options && view.gate_options[gid]) {
-      opts = view.gate_options[gid];
+  /* 闸门决策按钮：**一律由服务端下发**（run_view.gate_options，即
+     `contracts.gate_decision_options` 每次重算的结果）。
+     前端不写死枚举（红线 4：权威 = kb_lib.GATE_DECISIONS），也不读中断载荷里的
+     `payload.decision_options` —— 那是中断创建时的快照，会随快照恢复保留旧值
+     （WEB_UI_SPEC §4.4「中断载荷里的选项只是快照」）。服务端没下发 ⇒ 不给按钮、
+     提交按钮保持禁用，明确说"不可提交"；**降级为快照或自造枚举都不允许**。 */
+  function gateDecisionOptions(gid, view) {
+    var opts = (view && view.gate_options && view.gate_options[gid]) || null;
+    if (Object.prototype.toString.call(opts) !== '[object Array]' || !opts.length) {
+      return [];
     }
-    if (opts && opts.length) {
-      return opts.map(function (o) {
-        if (Object.prototype.toString.call(o) === '[object Array]') return [o[0], o[1]];
-        return [o.value, (o.label || o.value) + ' ' + o.value];
-      });
-    }
-    return GATE_DECISIONS_FALLBACK[gid] || [];
+    return opts.map(function (o) {
+      if (Object.prototype.toString.call(o) === '[object Array]') return [o[0], o[1]];
+      return [o.value, (o.label || o.value) + ' ' + o.value];
+    });
   }
 
   var SEV_ORDER = ['blocker', 'defect', 'warning', 'info'];
@@ -1087,9 +1075,9 @@ input[type=text]:focus,textarea:focus,select:focus{outline:1px solid #2f6fbf;bor
       updateSubmitState();
       return;
     }
-    var defs = gateDecisionOptions(gid, material, state.view);
+    var defs = gateDecisionOptions(gid, state.view);
     if (!defs || !defs.length) {
-      box.appendChild(h('span', { cls: 'msg msg-warn tiny', text: '未知闸门 id「' + gid + '」：本界面不提供决策枚举，请以后端合法枚举为准。' }));
+      box.appendChild(h('span', { cls: 'msg msg-warn tiny', text: '服务端未下发决策选项（run_view.gate_options 缺失）：本界面不写死枚举 ⇒ 不可提交。' }));
       box.appendChild(jsonBlock(gid, '原始闸门 id'));
       updateSubmitState();
       return;
@@ -1134,7 +1122,7 @@ input[type=text]:focus,textarea:focus,select:focus{outline:1px solid #2f6fbf;bor
     var gid = gateId();
     var actor = (q('fActor').value || '').trim();
     var reason = (q('fReason').value || '').trim();
-    var ok = !!(gid && gateDecisionOptions(gid, null, state.view).length && state.decision && actor && reason);
+    var ok = !!(gid && gateDecisionOptions(gid, state.view).length && state.decision && actor && reason);
     btn.disabled = !ok;
     btn.textContent = ok
       ? '提交闸门决策：' + gid + ' / ' + state.decision

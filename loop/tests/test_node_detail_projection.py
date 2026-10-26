@@ -670,6 +670,7 @@ def test_gate_decided_ledger_without_hard_block_says_not_retained(tmp_path: Path
 
 
 def test_gate_entries_decided_without_ledger_says_not_retained(tmp_path: Path) -> None:
+    """账本不存在 ⇒ 只说「未落账 + 哪份文件不存在」，**不猜原因**（不写"本轮早于落账"）。"""
     from services import contracts
 
     diff = {"entries": [_diff_entry("RTL/a.v", "rtl_file", diff_hunk="@@ -1 +1 @@")],
@@ -680,8 +681,58 @@ def test_gate_entries_decided_without_ledger_says_not_retained(tmp_path: Path) -
         mode="real",
     )
     assert gate["state"] == "decided"
-    assert gate["note"] and "未留存" in gate["note"]
+    note = gate["note"]
+    assert note and "未落账" in note
+    # A1：区分「不存在」与「不可解析」，且不把原因猜成版本先后。
+    assert "decisions/G1_diff_confirm.json" in note and "不存在" in note
+    assert "不可解析" not in note
+    assert "早于" not in note, "不得声称'本轮早于落账'：有签名无落账的轮次也走这条路径"
     assert gate["entries"][0]["disposition"] is None
+
+
+def test_gate_entries_corrupt_ledger_is_not_reported_as_missing(tmp_path: Path) -> None:
+    """A1：账本损坏（不可解析 / 形状不符）不得混同为「不存在」——要让人去看现场文件。"""
+    from services import contracts
+
+    diff = {"entries": [_diff_entry("RTL/a.v", "rtl_file", diff_hunk="@@ -1 +1 @@")],
+            "unresolved_count": 1}
+    authority = {"status": "signed", "decision": "confirmed", "actor": HUMAN}
+    (tmp_path / "decisions").mkdir()
+
+    # ① 不可解析
+    (tmp_path / "decisions" / "G1_diff_confirm.json").write_text("{not json", encoding="utf-8")
+    broken = contracts.gate_entries_view(
+        gate="G1_diff_confirm", run_dir=tmp_path, diff=diff, authority=authority, mode="real")
+    assert broken["state"] == "decided"
+    assert "不可解析" in broken["note"] and "损坏" in broken["note"]
+    assert "不存在" not in broken["note"], "损坏不得说成不存在"
+    assert broken["entries"][0]["disposition"] is None
+
+    # ② 形状不符（能解析，但不是对象）
+    (tmp_path / "decisions" / "G1_diff_confirm.json").write_text("[]", encoding="utf-8")
+    wrong_shape = contracts.gate_entries_view(
+        gate="G1_diff_confirm", run_dir=tmp_path, diff=diff, authority=authority, mode="real")
+    assert "不可解析" in wrong_shape["note"] and "不存在" not in wrong_shape["note"]
+    assert wrong_shape["entries"][0]["disposition"] is None
+
+
+def test_gate_entries_ledger_without_records_is_explicit(tmp_path: Path) -> None:
+    """A1：账本在但 `records` 为空 ⇒ 说"没有记录"，不冒充"文件不存在"。"""
+    from services import contracts
+
+    (tmp_path / "decisions").mkdir()
+    (tmp_path / "decisions" / "G1_diff_confirm.json").write_text(
+        json.dumps({"gate": "G1_diff_confirm", "records": []}), encoding="utf-8")
+    gate = contracts.gate_entries_view(
+        gate="G1_diff_confirm", run_dir=tmp_path,
+        diff={"entries": [_diff_entry("RTL/a.v", "rtl_file", diff_hunk="@@ -1 +1 @@")],
+              "unresolved_count": 1},
+        authority={"status": "signed", "decision": "confirmed", "actor": HUMAN},
+        mode="real",
+    )
+    assert gate["state"] == "decided" and gate["counts"]["disposed"] == 0
+    assert "没有记录" in gate["note"] and "records" in gate["note"]
+    assert "不存在" not in gate["note"]
 
 
 def test_gate_entries_no_material_is_explicit() -> None:

@@ -2796,7 +2796,8 @@ G1 中断，断言**中断载荷**里的 `decision_options.confirmed.requires_re
 
 | 门 | 本轮 | 说明 |
 |---|---|---|
-| 单测（可写数据根） | **3 failed / 957 passed / 0 skipped**（301.15 s） | `--ignore=tests/browser`；3 条仍是既存 `env_layer`（`test_archive_e2` ×2 + `test_projection_and_frozen` ×1），与 §73 同集合 ⇒ **无回归** |
+| 单测（**文档化软件层入口**） | **957 passed / 3 deselected / 0 failed**（352.46 s） | `bash spikes/run_software_checks.sh --ignore=tests/browser`；入口在**收集期**用 `-m "not env_layer"` 排除那 3 条并打印清单（不是 skip）⇒ **软件层无红** |
+| 单测（plain pytest，含环境层） | 3 failed / 957 passed / 0 skipped（301.15 s） | `-m` 未过滤时会**如实执行** 3 条 `env_layer`：`test_archive_e2` ×2 + `test_projection_and_frozen` ×1，它们在只读 `ENV_ROOT` 本机只能失败，属环境层而非软件缺陷（`pytest.ini` 已声明该标记语义） |
 | kb 自测 | `_selftest_gate_schema.py` **PASS=10 FAIL=0**；`_selftest_n5_reachability.py` **PASS=9 FAIL=0** | 两者都需 `LOOP_WORKSPACE` 指可写数据根 |
 | 端到端 | **本轮未重跑** | 改动仅 CSS / 浏览器用例 / 文档 / 一个 shell 脚本的导入路径，e2e 不触达 UI 渲染；沿用 §73 实测（ALL PASS、117 断言）。要最新证据按 §73.1 重跑 |
 | 文档 | **missing=0**（checked=2165 / known_missing=10 / env_missing=26，exit=0） | 须在**未预置 `.dev-ws`** 时跑；预置后须先 `provision_dev_workspace.sh --cleanup` |

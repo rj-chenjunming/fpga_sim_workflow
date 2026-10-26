@@ -97,6 +97,16 @@ cd loop
 [`会话可靠性计划`](../doc/plans/2026-10-21-ui-session-reliability.md)；整体优化顺序见
 [`工作流优化评估`](../doc/audit/AUDIT-20261021-workflow-priorities.md)。
 
+**只读沙箱 / 无 `~/.cache` 时的实测要点（2026-10-26）**：
+- 浏览器下载目录不在仓外：`PLAYWRIGHT_BROWSERS_PATH=<repo>/.pw-browsers`；
+  直连下载被代理掐断时加 `PLAYWRIGHT_DOWNLOAD_HOST=https://cdn.npmmirror.com/binaries/playwright`。
+- 系统 Chrome 需要**可写 HOME/TMPDIR**（只读 HOME 会让 Chrome 启动即退）：
+  `HOME=<repo>/.chrome-home TMPDIR=<repo>/.chrome-tmp LOOP_BROWSER_EXECUTABLE=/usr/bin/google-chrome`。
+- **当前浏览器门在本机仍红**（`tests/browser/test_web_layout.py`：4 failed / 5 passed）：
+  替身原先没给上游 U2-a/U2-b 的两条 SSE 端点打桩，已补显式 404 桩使其 degrade 到轮询回退
+  （失败数 8→4）；剩余 4 条是运行列表周期性重渲染与点击竞争（元素持续 detach），
+  在 `origin/main` 上同样复现，属既有问题，详见 `doc/STATUS.md` §72.4。**不得据此声称 UI 已验证。**
+
 内网无法连接 PyPI 时，仓库提供 [Rocky Linux 浏览器离线包](offline/README.md)：
 
 ```bash
@@ -314,6 +324,21 @@ drill 与 real 的差别**只在节点数据来源**，运行目录两者都是 
 `$LOOP_ENV_ROOT` / `$LOOP_WORKSPACE` 或 `environments.json` 注册表决定，见 `doc/spec/ENV_PLUGIN_SPEC.md` §1）。
 
 drill 运行目录带 `.loop_drill` 标记，测试据此清理**自己创建的**目录，绝不触碰归档。
+
+**本地需要可写数据根时**（本机 `WORKSPACE_ROOT` 常常就是只读的 `ENV_ROOT/kb`，而软件层测试要写
+`runs/`、slot、events）：
+
+```bash
+cd loop
+bash spikes/provision_dev_workspace.sh        # 复制 drill 夹具 + baselines/index/conflicts/adjudication
+                                              # 到 <repo>/.dev-ws（约 738 MB，不入库）
+LOOP_WORKSPACE=<repo>/.dev-ws LOOP_LLM_MODE=standin .venv/bin/python -m pytest -q
+bash spikes/provision_dev_workspace.sh --cleanup   # 跑文档门前必须清理
+```
+
+不预置数据根时，drill/基线相关用例会因「夹具不完整 / 基线为空」失败 —— 那是环境缺件，
+不是代码缺陷（口径差异见 `doc/STATUS.md` §71.5）。数据根出现在仓库内时，
+`doc/audit/check_doc_links.py` 会把拷贝来的环境文档一并扫入，故**文档门要在清理之后跑**。
 
 **drill 情景**：`happy`（拷夹具全跑日志）/ `dead_job`（`kill -9 $$`，无 rc ⇒ 必须判死）/
 `cancel`（`sleep 120`，从界面取消）。

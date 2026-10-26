@@ -2504,7 +2504,7 @@ conflicts/ adjudication/`，全部从只读 `ENV_ROOT/kb` 复制，约 738 MB，
 
 | 数据根 | 结果 |
 |---|---|
-| 空（此前各轮） | 71 failed / 879 passed / 6 skipped / 104 errors |
+| 空（此前各轮，`62bd0b5` 口径；`4129cb2` 新增 4 条用例后为 883 passed） | 71 failed / 879 passed / 6 skipped / 104 errors |
 | 仅 drill 夹具 | 10 failed / 946 passed / 0 skipped / 104 errors |
 | 夹具 + 小数据（本轮口径） | **3 failed / 957 passed / 0 skipped / 104 errors**（306.46 s） |
 
@@ -2524,3 +2524,59 @@ conflicts/ adjudication/`，全部从只读 `ENV_ROOT/kb` 复制，约 738 MB，
   `baselines/ index/ conflicts/ adjudication/` 到可写数据根，再用 `LOOP_WORKSPACE` 指过去。
 - 端到端 `accept_v1_run.sh` 仍需可写 `ENV_ROOT`（或 S0 派生副本），未跑。
 - §70.6 其余项不变（`entries_required` 无前端消费者、`web_smoke` 仍含符号名断言）。
+
+---
+
+## 72 测试环境固化：可写数据根脚本 + 浏览器门可用性（2026-10-26）
+
+§71.6 的首项"环境整备未固化"。**同一执行者实施与验证；独立复核另行安排。**
+
+### 72.1 可写数据根脚本
+
+新增 [`loop/spikes/provision_dev_workspace.sh`](../loop/spikes/provision_dev_workspace.sh)：
+从只读 `ENV_ROOT/kb` **复制**（绝不写入环境仓，红线 11）到可写派生目录，带 `--cleanup` / `--force`。
+数据根与环境根解析**复用 `kb_lib`**（唯一解析器，脚本内不另写路径规则），复制后自检夹具关键件。
+
+实测：`bash spikes/provision_dev_workspace.sh` → 就绪；随后
+`LOOP_WORKSPACE=<repo>/.dev-ws pytest -q tests/test_node_detail_projection.py tests/test_fix_lifecycle.py`
+⇒ **113 passed**（2 分 20 秒），证明"预置即绿"可复现，不再依赖手工复制。
+
+用法与"文档门须在清理后跑"的约束已写进 [loop/README.md §6](../loop/README.md)。
+
+### 72.2 浏览器门：从"跑不起来"到"跑得起来但仍有既有失败"
+
+| 阶段 | 结果 |
+|---|---|
+| 起点（无 Chromium） | 104 个浏览器用例全部 `ERROR`（setup 失败） |
+| 系统 Chrome + 可写 HOME/TMPDIR | 8 failed / 1 passed（`tests/browser/test_web_layout.py`） |
+| 补 SSE 替身桩后（本轮改动） | **4 failed / 5 passed** |
+| 仓库自带离线包（`spikes/browser_offline.py install/run`） | 安装自检 PASS（version 152.0.7977.75）；`run` 仍全红，说明问题不在浏览器 |
+
+环境要点（已写进 README）：`~/.cache` 与 `~` 在只读沙箱里不可写 ⇒ 浏览器与 Chrome 的用户目录放仓库内
+（`PLAYWRIGHT_BROWSERS_PATH` / `HOME` / `TMPDIR`）；直连下载被代理掐断（EPROTO）时用
+`PLAYWRIGHT_DOWNLOAD_HOST=https://cdn.npmmirror.com/binaries/playwright`（120 MiB 下载成功）。
+
+### 72.3 本轮修复：浏览器替身漏掉上游新增的 SSE 端点
+
+`tests/browser/test_run_sessions.py` 的 `route_request` 只按 run_id 返回视图，上游 U2-a/U2-b
+新增的 `GET /api/runs/{id}/stream` 与 `.../agents/{node}/stream` 会落到该分支 ⇒ EventSource 拿到
+JSON、持续重连，页面反复重渲染、点击目标被 detach（Playwright 报 `element was detached from the DOM`）。
+已补显式 `404` 桩，让前端按 [WEB_UI_SPEC §7.3](spec/WEB_UI_SPEC.md) degrade 到「轮询回退」：
+失败数 **8 → 4**。
+
+### 72.4 未关闭：剩余 4 条浏览器用例（既有问题）
+
+`test_web_layout.py` 剩 4 条 —— `test_compatibility_console_has_return_path_and_fits_browser[1280/1440/1920]`
+与 `test_agent_cards_show_server_capability_facts` —— 仍报 `element was detached from the DOM`：
+运行列表按 `POLL_MS=1500` 周期性重建与点击竞争。
+
+**已确认非本轮引入**：在 `62bd0b5`（R3+R4 之前）用同一浏览器与同一命令复跑
+`test_agent_cards_show_server_capability_facts` 同样失败（32.88 s 超时）；
+且换用仓库离线包自带的 Chrome 152 亦全红 ⇒ 与浏览器版本、与本轮改动均无关。
+**未修**：需要定位"谁在高频重建运行列表"（可能涉及 `page.clock.install()` 与轮询/重渲染的交互），
+属独立的 UI 稳定性切片，本轮不凭猜测改应用代码。
+
+### 72.5 未关闭（其余）
+
+- 端到端 `accept_v1_run.sh` 仍需**可写 ENV_ROOT**（或 S0 派生副本），本机只读，未跑。
+- 数据根脚本复制 738 MB 且不能出仓（仓外只读），每次验证前后需 `--cleanup`，属已知不便。

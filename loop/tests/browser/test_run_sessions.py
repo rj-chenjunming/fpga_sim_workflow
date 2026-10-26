@@ -63,6 +63,13 @@ def ui(static_url):
             if api["hold"] and api["hold"](path):
                 api["pending"].append(route)
                 return
+            if path.endswith("/stream"):
+                # 上游 U2-a/U2-b（SPEC-REV-07）新增两条 SSE 端点，本替身**不模拟流**。
+                # 必须显式回一个非 SSE 响应让前端 degrade 到「轮询回退」（WEB_UI_SPEC §7.3）：
+                # 若落到下面按 run_id 取视图的分支，EventSource 会拿到 JSON 并持续重连，
+                # 页面反复重渲染、交互元素被 detach —— 实测（2026-10-26）浏览器用例因此全红。
+                route.fulfill(status=404, json={"detail": {"error": "stream not stubbed"}})
+                return
             if path == "/api/health":
                 body = {"ok": True, "env_root": "/fixture", "plugin_missing": [], "workspace_missing": []}
             elif path == "/api/baselines":

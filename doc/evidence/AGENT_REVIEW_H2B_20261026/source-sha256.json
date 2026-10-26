@@ -1,0 +1,16 @@
+{
+  "loop/host/agent_handoff.py": "d00d6179ddb2d08c024e614213882cf5fdf9ce39e080666a0ff5887c6a10f743",
+  "loop/host/agent_review.py": "77f02e3790323b5a81011d0cb52e076763c607dbee82744f0b3687caa98445d5",
+  "loop/workflows/chunks/model_steps.py": "b2ec705749c2f7ef7338706fd7dbd0c27d034bb6f6cf0fe7d28aae84c70fa727",
+  "loop/prompts/loop_nodes.yaml": "a7099a019730ab8dd5ec227758dba7e103627fa7ca478be8b8ae2331d3bf4366",
+  "loop/prompts/node_schemas.py": "3a9f8463bb4286479cd05b19392ec6dfd00595ef9d69392484390a79f3fda71a",
+  "loop/tests/test_agent_backends.py": "8c3c44157dba642969f9248cc43183bcb6f768e86a984538b5c110baebc0646f",
+  "loop/tests/test_agent_backend_characterization.py": "a5515c5896018c28241a21a22f115dc5e3e4c631208959cf161f7967b4b46712",
+  "loop/tests/test_agent_context_memory.py": "eb506d6d16dd62c80b2954366e75f1c5559e3ff22c85811587afb7c07766dc67",
+  "loop/tests/test_agent_control.py": "b06621b65a911279f3b8701af1910ff7580a24046398a9c7f88ee2fa8b553df9",
+  "loop/tests/test_agent_handoff.py": "050909d46d83c90222557a09ab17ce9cb71b56adc37d1bd12c3fade2510c637f",
+  "loop/tests/test_agent_responses.py": "a4d6a656e0690a3dc975fbdd5632788950eb52de84ad66077cb119abec4d4c57",
+  "loop/tests/test_agent_review.py": "4c90fb6c554e37286ca5c80cb6787c49046b6f9e46de58b486eea2c1f374aca7",
+  "loop/tests/test_agent_review_raw_feedback.py": "4271eeea783dd21648a149f2e7c3d1adb0e89eba4be2651aa4fd0fcc5e719536",
+  "loop/tests/test_agent_view.py": "6a28c34370d89c5d03ed3e0637f48f5bfdc037b8ecd4c34733abd3ded8198c3a"
+}

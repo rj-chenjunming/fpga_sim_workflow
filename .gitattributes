@@ -1,3 +1,8 @@
 # Offline archives must remain byte-identical for SHA-256 verification.
 loop/offline/**/wheels/*.whl binary
 loop/offline/**/browser/*.part* binary
+# Preserve this frozen recovery evidence exactly across Windows/Linux checkouts.
+doc/evidence/AGENT_REVIEW_H2B_20261026/** -text whitespace=cr-at-eol
+# Raw console logs retain their original spacing as evidence.
+doc/evidence/AGENT_REVIEW_H2B_20261026/*.txt -whitespace
+doc/evidence/AGENT_REVIEW_H2B_20261026.md5 -text whitespace=cr-at-eol

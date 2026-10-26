@@ -1982,3 +1982,44 @@ steer 后回执同时保留「命令已接收」与切换提示。
 browser 特征测试、真实服务端下的深链/理由预填/作业终态（演示桩偏差不算 UI 缺陷：
 走查中「终态闸门段仍进行中」为桩对闸门节点不发 node_finished 所致，已核实真实投影口径）、
 内网四道门复跑。
+
+## 64 H2b 恢复整合与修订（2026-10-26）
+
+用户“继续 H2b 的修订／继续”授权的本地续修，基线 main `11746fc962c21e81c61acb2090d1738b15e572cb`，
+分支 `recovery/h2b-20261025`。2026-10-25 开始整合，2026-10-26 完成当前软件修订。
+实现与验证均由本聊天 Codex 执行，非独立终验；**四道门未全绿，不声称整体验收完成**。
+
+**结果**：恢复 H1 来源交接、H2a 逐项回应与 H2b 逐项复核/失效重开；本机补修原始返工列表被过滤或强转导致的索引失真，
+统一新输出与封存重建的严格校验。另修复 N6 替身输出后历史问题丢失：仅恢复封存请求中已核验的问题身份，
+继续待复核，不产生可信作者回应/候选或关闭结论。Schema 与提示词同步公开约束。
+cloud REV07/08/09 依次整合为 REV09/10/11，原 UI REV07/08 保留；迁移记录见协作与记忆计划。
+
+**条件**：Windows 原基线在 os.fchmod/目录同步处失败，未改封存机制；转用已有 WSL 的 Linux 临时 Python 3.12.15，
+Agently 4.1.4.8，依赖实际版本已记录。测试使用独立空环境/工作区、standin 模型，不伪装内网环境，不发真实模型请求。
+
+| 检查 | 命令输出／结论 | 日志 |
+|---|---|---|
+| H2a 特征基线 | `126 passed, 1 warning in 12.82s` | h2a-linux-characterization.txt |
+| 原始返工列表 RED（纠正测试参数笔误后） | `21 failed, 5 passed in 2.63s` | h2b-red-corrected.txt |
+| 替身历史保留 RED | `4 failed, 28 deselected in 1.92s` | h2b-standin-red.txt |
+| 最终专项回归 | `275 passed, 1 warning in 15.88s` | h2b-final-r2.txt |
+| 完整单测尝试（中断，未完成） | `39 failed, 473 passed, 39 skipped, 1 warning, 3 errors in 507.69s (0:08:27)`，exit 2 | h2b-full.txt |
+| main 完整单测对照（中断，未完成） | `27 failed, 297 passed, 39 skipped, 1 warning, 3 errors in 290.29s (0:04:50)`，exit 2；运行进度不同，不能比较总数判回归 | main-full.txt |
+| 软件范围 main 对照 | `21 failed, 513 passed, 113 skipped, 1 deselected, 1 warning in 24.89s` | main-software.txt |
+| 软件范围修订版首次 | `22 failed, 656 passed, 113 skipped, 1 deselected, 1 warning in 30.49s`；额外一项为 SIGKILL 测试未在启动窗口创建尝试目录 | h2b-software.txt |
+| 软件范围修订版顺序复测 | `21 failed, 657 passed, 113 skipped, 1 deselected, 1 warning in 29.33s`；失败 ID 与 main 一致，未新增 | h2b-software-sequential.txt |
+| 封存故障注入单独顺序对照 | main `11 passed in 3.94s`；修订版 `11 passed in 3.82s`，未改断言/封存实现；首次时序失败保留 | main-f08.txt / h2b-f08.txt |
+| kb 闸门自测 | `PASS=9 FAIL=1`；仅缺历史 gates.json | kb-gate-schema.txt |
+| kb N5 自测 | `PASS=6 FAIL=1`；缺历史 TESTLIB 夹具 | kb-n5.txt |
+| 端到端 | 未运行：缺 bash、驱动器虚拟环境、真实 uvs.setup/环境工具与历史运行夹具；前置检查 exit 2 | e2e-preflight.txt |
+| 文档 | 对照 main，新增路径问题为 0；新增 Markdown 路径/锚点问题为 0。全仓原检查仍因既有缺件返回 1，保留明细 | doc-comparison.json |
+
+完整单测反复等待缺少 n1_manifest_new.json 的演练流程，因此主动中断以保留失败明细。
+补充软件范围采用 `-m 'not env_layer'`，并显式排除 admission_and_jobs、api、api_ui_contract、archive_e2、fix_kbtools、
+fix_lifecycle、fix_real_chain、flow 对应测试文件；准确参数在日志首部。此范围不是完整单测门。
+剩余失败为缺夹具、缺冲突数据或缺 bash；顺序复测与 main 的失败 ID 完全一致。
+skipped/deselected 不当作通过，未测试的真实模型质量、浏览器、Linux 真环境四门仍待补齐。
+
+证据：[本轮归档](evidence/AGENT_REVIEW_H2B_20261026/README.md)，目录外 MD5 清单为同级 AGENT_REVIEW_H2B_20261026.md5。
+冻结 kb、旧证据/历史、原 UI REV07/08 与基线逐字节比对一致；未修改环境资产、未推送。
+云端旧二进制日志没有恢复，不补造旧证据；恢复来源与重新编号见 [计划](plans/2026-10-24-agent-collaboration-memory.md)。

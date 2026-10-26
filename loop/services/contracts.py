@@ -11,6 +11,7 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -155,6 +156,30 @@ def run_created_at(run_dir: Path | None) -> str | None:
         return None
     doc, _ = _read_artifact(Path(run_dir) / "view.json")
     return str((doc or {}).get("created_at") or "") or None
+
+
+#: 报告结论的合法值（与 `loop/prompts/node_schemas.py` 的 `claimed_verdict` 同一枚举）。
+REPORT_VERDICTS: tuple[str, ...] = ("passed", "not_passed", "undetermined")
+
+
+def report_claimed_verdict(run_dir: Path | None) -> str | None:
+    """从 `n12_report.md` 读报告自报结论（SPEC-REV-05 R1：失败报告的 accept 通道依据）。
+
+    只认产物里的字面声明；文件缺失/无该行 ⇒ `None`（不猜、不按目录名推断）。
+    该值只用于**是否要求理由**这一条前置，不参与判据（判据仍是 I2/I3/I4）。
+    """
+    if run_dir is None:
+        return None
+    path = Path(run_dir) / "n12_report.md"
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+    match = re.search(
+        r"claimed_verdict\s*[：:]\s*`?(" + "|".join(REPORT_VERDICTS) + r")`?",
+        text,
+    )
+    return match.group(1) if match else None
 
 
 def diff_entries_view(run_dir: Path | None, *, mode: str | None = None) -> dict[str, Any]:
@@ -379,7 +404,12 @@ def compute_blockers(
                 "code": "I2_CASES_PENDING",
                 "severity": "blocker",
                 "title": f"本轮仍有 {len(cases['pending_own'])} 个用例「已修订待验」",
-                "message": "I2：存在「待验」不得称跑通/接受报告；先完成全跑并写入「已验证通过」。",
+                "message": (
+                    "I2：存在「待验」不得称跑通。本轮报告结论为 not_passed ⇒ 允许「接受报告」"
+                    "作为失败收口，但必须填写理由（SPEC-REV-05 R1）；N16 仍受 I3/I4 阻断。"
+                    if report_claimed_verdict(rd) == "not_passed"
+                    else "I2：存在「待验」不得称跑通/接受报告；先完成全跑并写入「已验证通过」。"
+                ),
                 "refs": [cases.get("path")] if cases.get("path") else [],
                 "items": cases.get("pending_own")[:12],
             }

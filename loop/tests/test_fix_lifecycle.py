@@ -1067,3 +1067,58 @@ async def test_start_quarantines_stale_events_of_reused_identity() -> None:
         for leftover in P.EVENTS_DIR.glob(f"{rid}.jsonl.stale-*"):
             leftover.unlink()
         await m.stop_watching()
+
+
+# ------------------------------------------------- SPEC-REV-05 R1：失败报告收口（方案 D）
+
+def _write_report(rd: Path, verdict: str) -> None:
+    (rd / "n12_report.md").write_text(
+        "# 报告\n\n- 模型模式：`live`\n- claimed_verdict：`" + verdict + "`\n",
+        encoding="utf-8",
+    )
+
+
+def test_g2_accept_failed_report_requires_reason(tmp_path: Path) -> None:
+    """D：报告 not_passed ⇒ accept 允许，但必须给理由；accept ≠ 判据通过。"""
+    from workflows.chunks.gates import GatePreconditionFailed, precheck_decision
+
+    rd = _write_run_dir(tmp_path)
+    kb = _kb(tmp_path)
+    _write_report(rd, "not_passed")
+    assert contracts.report_claimed_verdict(rd) == "not_passed"
+
+    with pytest.raises(GatePreconditionFailed) as exc:
+        precheck_decision(gate="G2_report_accept", decision="accept", run_dir=rd,
+                          mode="real", reason=None, kb=kb)
+    assert "not_passed" in str(exc.value)
+
+    out = precheck_decision(gate="G2_report_accept", decision="accept", run_dir=rd,
+                            mode="real", reason="已阅失败报告：口径一 1716≠0，接受未通过结论", kb=kb)
+    assert out["warnings"], "接受失败报告必须留下告警（不得静默）"
+    assert "not_passed" in out["warnings"][0]
+
+
+def test_g2_accept_passed_report_still_blocked_by_i2(tmp_path: Path) -> None:
+    """通过的轮次仍按 I2：待验≠0 不得接受（方案 D 没有削弱原语义）。"""
+    from workflows.chunks.gates import GatePreconditionFailed, precheck_decision
+
+    rd = _write_run_dir(tmp_path)
+    kb = _kb(tmp_path)
+    _write_report(rd, "passed")
+    with pytest.raises(GatePreconditionFailed) as exc:
+        precheck_decision(gate="G2_report_accept", decision="accept", run_dir=rd,
+                          mode="real", reason="看起来没问题", kb=kb)
+    assert "I2" in str(exc.value)
+
+
+def test_g2_accept_without_report_keeps_i2(tmp_path: Path) -> None:
+    """没有报告产物 ⇒ 不推断结论，回到原 I2 规则（不猜）。"""
+    from workflows.chunks.gates import GatePreconditionFailed, precheck_decision
+
+    rd = _write_run_dir(tmp_path)
+    kb = _kb(tmp_path)
+    assert contracts.report_claimed_verdict(rd) is None
+    with pytest.raises(GatePreconditionFailed) as exc:
+        precheck_decision(gate="G2_report_accept", decision="accept", run_dir=rd,
+                          mode="real", reason="x", kb=kb)
+    assert "I2" in str(exc.value)

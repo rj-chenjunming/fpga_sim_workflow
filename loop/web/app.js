@@ -2723,6 +2723,11 @@
       form.appendChild(diffDet);
     }
 
+    var n12 = (((pending.payload || {}).report || {}).n12_report || {});
+    if (pending.gate === "G2_report_accept" && n12.claimed_verdict === "not_passed") {
+      form.appendChild(h("div", "alert warn",
+        "本轮报告结论：未通过（not_passed）。接受失败报告必须填写理由；接受不等于判据通过，N16 仍被 I3/I4 阻断。"));
+    }
     var options = gateOptionsFor(pending);
     /* G1 逐条处置（SPEC-04 §4.4 2026-10-23）：先逐条选，再整门提交。
        紧凑卡片只放材料摘要，逐条控件放在完整闸门视图，避免两处重复渲染。 */
@@ -2900,6 +2905,16 @@
     }
     if (selected && selected.requires_reason && !String(d.reason || "").trim()) {
       d.error = "该决策必须填写理由（" + d.decision + "）。";
+      d.blockers = null;
+      d.note = null;
+      syncGateForms();
+      return;
+    }
+    var acceptVerdict = ((pending.payload || {}).report || {}).n12_report || {};
+    if (pending.gate === "G2_report_accept" && d.decision === "accept"
+        && acceptVerdict.claimed_verdict === "not_passed"
+        && !String(d.reason || "").trim()) {
+      d.error = "本轮报告结论为未通过（not_passed）：接受失败报告必须填写理由。";
       d.blockers = null;
       d.note = null;
       syncGateForms();

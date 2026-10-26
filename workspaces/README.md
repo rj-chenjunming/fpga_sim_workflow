@@ -18,6 +18,13 @@
                   # 例：<WORKSPACE_ROOT>/runs/<run_id>/**（N16 与闸门状态也在此）
 ```
 
+**演示/回放夹具**：`<环境>/fixtures/<夹具名>/` 存放**冻结的运行片段**（自带 `md5.txt` 与 `README.md`），
+用于演示或 drill 回放；它们与 `runs/` 同样**不入 git**，身份另记在 `doc/evidence/`。
+当前有：`s0-ws-20261023/fixtures/drill-real-20261024/`（真实轮回放，见
+[SPEC-REV-12 验证](../doc/evidence/SPEC_REV05_VERIFY_20261026.md)）与
+`s0-ws-20261023/fixtures/demo-20261026/`（可完整演示三道闸门 + G1 逐条处置，见
+[演示夹具身份档案](../doc/evidence/DEMO_FIXTURE_20261026.md)）。
+
 **为什么按环境分而不是按软件分**：`index`/`conflicts`/`baselines`/`runs` 都是**关于某个环境
 某一修订**的事实。换一个环境（甚至同一个环境的另一个基线），这些内容必须另起一份，
 绝不能互相覆盖 —— 所以第一键是环境，第二键才是修订。

@@ -3178,3 +3178,65 @@ S3/S6 转为登记项；S5（冻结 schema 引用补 md5）已在 §78.1 落地�
 
 冻结夹具 `RUN-20261015-120626` 早于落账 ⇒ P-18 无法在夹具上演示（补夹具需写 `ENV_ROOT/kb` 的环境侧授权，
 红线 11）；B/C/D 组其余项与移动端维持原登记。
+
+## 80 演示夹具冻结：`RUN-20261026-135835`（2026-10-26）
+
+用户要求「至少有一套可以演示的真实夹具」。核实结论：**不需要重跑**，本机已有一轮现成可用的
+drill 运行；周末那轮真实轮不能用于演示逐条处置，原因是**落账未发生**而非质量不佳。
+
+### 80.1 为什么不用周末那轮（`RUN-20261024-002609`）
+
+- `gates.json`：G1 `signed confirmed @ 2026-10-24T00:29:11+0800`，G2/G3 仍 `pending`；
+- `view.json`：`status=failed`，`error=恢复失败：async_load 异常 ValueError: Can not load
+  TriggerFlow execution snapshot … flow definition fingerprint mismatch`；
+- 无 `decisions/`：逐条处置在**恢复后**的闸门 chunk 里落账（`chunks/gates.py::append_decision_ledger`），
+  恢复失败 ⇒ 一条未写；G2/G3 从未走到。
+- 归档演练轮 `RUN-20261015-120626` 同样没有降账，但原因是**早于落账功能**（`e7528fe`，2026-10-24 才进仓）。
+
+### 80.2 冻结的夹具
+
+| 项 | 值 |
+|---|---|
+| 源 run | `workspaces/s0-ws-20261023/runs/RUN-20261026-135835`（= SPEC-REV-12 验证那轮，`finished`/`drill`） |
+| 夹具目录 | `workspaces/s0-ws-20261023/fixtures/demo-20261026/`（`runs/RUN-20261026-135835/**` + `md5.txt` 103 行 + `README.md`） |
+| 体量 | 14 MB；**不入 git**（沿用 `workspaces/**` 约定） |
+| 内容 | G1 `confirmed`（**4 条逐条处置全部落账**）/ G2 `accept` / G3 `milestone_only`；三门各带签署当时的硬阻断快照 |
+| 校验 | `md5sum -c md5.txt --quiet` → 103 个文件全部通过 |
+
+身份档案落 `doc/evidence/DEMO_FIXTURE_20261026.md`（tracked）：含关键件 md5、演示步骤与
+**丢失后的重建步骤**（跑一轮 drill + 用闸门 API 显式提交覆盖全部 `entry_id` 的 `entry_decisions`）。
+`workspaces/README.md` 增 `fixtures/` 索引。
+
+### 80.3 演示路径实测（命令输出复制）
+
+把夹具复制成独立数据根 → 起服务 → 查面板：
+
+```
+/api/runs   -> [('RUN-20261026-135835', 'finished', 'drill')]
+run_status = finished | run_terminal = True
+state      = decided | decision = confirmed | note = None      # note=None ⇒ 不再报"未留存"
+counts     = {'entries': 4, 'revision_points': 4, 'disposed': 4, 'unresolved': 7,
+              'unresolved_points': 4, 'hard_block': 1, 'pending_cases': 0,
+              'conflicts_open': 0, 'conflicts_total': 0}
+逐条处置   = [('TCS9620_MAC_TOP.v', 'confirmed'), ('dom_engine_top.v', 'confirmed'),
+              ('pcie_register.v', 'confirmed'), ('uart_top.v', 'confirmed')]
+hard_block = ['I4_CONFLICTS_UNCLEARED']
+```
+
+⇒ 面板「共 4 条修订点，已处置 4 条」的数据来自 `decisions/G1_diff_confirm.json`（落账），
+不是 `gates.json`。四屏可演：运行监控 / 人工闸门 / **N4 节点面板（逐条处置重建）** / N13·N14。
+
+### 80.4 本轮门
+
+| 门 | 结果 | 说明 |
+|---|---|---|
+| 文档 | **missing=0**（checked=1932，仓内无数据根；新增 1 份 evidence + README 索引；数字在 §80 落盘后测得） | — |
+| 软件层 / 浏览器 / kb / 端到端 | 未重跑 | 本轮**未改**产品代码与测试，只新增夹具与文档 |
+| 演示路径 | 上述 §80.3 实测 | 起真实 uvicorn + 两个只读端点 |
+
+### 80.5 未关闭
+
+- 夹具**不入 git**：若 `workspaces/` 被清理，按 `doc/evidence/DEMO_FIXTURE_20261026.md` §4 重建；
+  md5 与身份已在 tracked 证据里，可判定是否漂移。
+- §78.6-2 的「有签名无落账」**归因措辞**仍未改（对周末那轮会显示"本轮早于处置落账"，不准确）；
+  本轮只做夹具，不动产品代码。要改属 `contracts` 投影措辞 + 测试的小切片。

@@ -1824,3 +1824,47 @@ G2 `pending_interrupt.payload.hard_block` 三条：`I2_CASES_PENDING`（5 例「
 3. `I4` 72 条冲突仍未清零（阻断 full_now 与晋升）。
 4. S0-b 未接入（[SPEC-05 §8](spec/S0_ENVIRONMENT_SPEC.md)）。
 5. 逐条处置仍未落账（`gates.json`/事件流都没有 `entry_decisions`），P-18 重建需先补 Host 落账。
+
+## 56 阶段收尾与「周末再跑」排期（2026-10-26）
+
+### 56.1 本轮收尾动作
+
+- 停止本仓唯一的**变更影响闭环**服务实例：`127.0.0.1:18098`（live 模式、`s0-work`/`s0-ws`）。
+  停止前确认：无运行中的 `N9` 作业、无 `run_guarded`/`UVS_tc_*` 残留、无待投递 `job_done` 中断。
+- 未触碰：其它用户的仿真进程（`/home/work/WAVE/**`）；`8099` 实例已不在运行。
+- 数据与证据**全部保留**（不清理）：
+  - 数据根 `workspaces/s0-ws-20261023`（含真实轮 `RUN-20261024-002609` 的 5 份 run.log 与台账）；
+  - drill 夹具 `workspaces/s0-ws-20261023/fixtures/drill-real-20261024`（14 MB，含 `md5.txt`）；
+  - 工作副本 `workspaces/s0-work-20261023`、基线 `v0`、`RTL_test`（4 处测试改动）。
+- 代码已提交：`d89ebca`（R1 失败报告收口）、`a860b5f`（R2 drill 夹具 + 多例回放）。
+
+### 56.2 周末再跑一轮真实 run（补「真实轮 accept 收口」证据）
+
+**目标**：在真实环境副本上再跑一轮 `real/happy`，走到 G2 用方案 D 收口，补齐"真实轮 accept"的 UI 证据。
+
+前置检查（起跑前逐条确认）：
+
+1. 无 parked run：`GET /api/runs` 里没有 `waiting_gate` 的旧 run（避免再次踩"重启指纹失配"）；
+2. 服务以 live 模式起在 `18098`，`ENV_ROOT=s0-work-20261023`、`WORKSPACE=s0-ws-20261023`；
+3. **跑起来之后不要再改 `loop/workflows/**` 或 `loop/services/**`，也不要重启服务**——一旦快照指纹变了，
+   停在 G2 的 run 会被判 `failed`（实测见 §55.3 与 [REAL_N9](evidence/REAL_N9_20261024.md)）；
+4. 预算：N9 实测 **21.56 h**（≈3.8 µs 仿真/秒），按整夜 + 半天安排。
+
+流程要点：G1 需人在 UI 逐条处置（real 模式 4 个唯一 `entry_id`）；N9 预计整夜；
+G2 若报告 `not_passed` ⇒ 用方案 D「接受报告 + 理由」收口（无理由会被 403）；
+G3 只能 `milestone_only`（`I4` 72 条冲突未清零）；N16 预期 `refused`。
+
+起跑命令（周末用，路径与端口与本次一致）：
+
+```bash
+cd /home/work/chenjunming/change-impact-loop/loop
+LOOP_ENV_ROOT=/home/work/chenjunming/change-impact-loop/workspaces/s0-work-20261023 \
+LOOP_WORKSPACE=/home/work/chenjunming/change-impact-loop/workspaces/s0-ws-20261023 \
+LOOP_STATE_ROOT=/home/work/chenjunming/change-impact-loop/workspaces/s0-ws-20261023/state \
+LOOP_PORT=18098 \
+LOOP_DRILL_FIXTURE=fixtures/drill-real-20261024 \
+bash remote/serve.sh
+```
+
+跑完后按 §54/§55 的同一模板落证据（新 run_id、逐例两套口径、G2 决策原文、N16 结果），
+只追加不改写；并关闭服务。

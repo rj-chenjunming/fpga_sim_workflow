@@ -273,10 +273,16 @@
 - 未决条目必须提供**逐条处置途径**（界面输入，或等价 API），处置结果必须**落账留证**，不得只靠一句随意的 reason 糊过去。
   **落账位置（2026-10-26 订正口径）**：`run_dir/decisions/<gate>.json`（`schema=loop/gate_entries`，Host 写、append-only）
   与 `gate_decided.detail.entries`，二者同源；契约见
-  [编排规格 §10.4.2](LOOP_ORCHESTRATION_SPEC.md)。**不落 `gates.json`**：该文件是闸门权威 + `gates.sha256` 锚，
-  其字段集由冻结的 `kb/schema/gate_state.schema.json` 的 `required` 界定（不含 `entry_decisions`），
-  且规格明确禁止从 `gates.json` 反推逐条处置。本节此前写的"落 `gates.json`"与上述机制契约冲突，
-  以本节订正后的表述为准（红线 8「口径唯一」）。
+  [编排规格 §10.4.2](LOOP_ORCHESTRATION_SPEC.md)。**不落 `gates.json`**，依据是两条实质理由：
+  ① `gates.json` 是闸门权威且参与 `gates.sha256` 锚，再把同一份逐条处置写进去会形成**第二个来源**
+  （红线 8「口径唯一」），锚也会随处置内容漂移；
+  ② 编排规格 §10.4.2 明文规定 `gates.json` 不存逐条处置、**不得**从它反推。
+  （`kb/schema/gate_state.schema.json`，md5 `b3d8c0cac0d56599e83879aec0921fb2`，其 `gate.required` 只列 11 个字段、
+  `additionalProperties: true` ⇒ 技术上**允许**额外字段，所以"不落 `gates.json`"是**设计选择**，不是 schema 禁止。）
+  本节此前写的"落 `gates.json`"与机制契约冲突，以本节订正后的表述为准。
+  **边界说明**：该落账件是逐条处置的**单一存储位置**，但**不是防篡改证据**——它不参与 `gates.sha256` 锚，
+  append-only 靠 Host 约定（写入走 `append_decision_ledger`，损坏即显式失败）。闸门授权的权威仍是
+  `gates.json` + `gates.sha256`。
 - 材料里必须给出 N3 摘要（`n3_digest.md`）与 Host 留痕（如夹具的 `mock_change_applied.json`）的入口；入口只做存在性探测，缺失显式标注。
 
 **禁止**：用"路径字符串 + md5 变化"代替变更本体；把"无 hunk"呈现为"无变化"；把夹具数据当作真实变更呈现；材料不足以判断时仍诱导签署。

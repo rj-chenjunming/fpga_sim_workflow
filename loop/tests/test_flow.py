@@ -763,8 +763,12 @@ async def test_s2_detail_fields_and_gate_ledger_on_full_drill_run() -> None:
         # `gates.json` 是权威 + sha256 锚，其字段由冻结 schema 界定，**不得**再存一份副本
         # （两个来源 ⇒ 红线 8；且锚会随内容变化）。写入不变量见 tests/test_gate_ledger.py。
         authority = json.loads((run_dir / "gates.json").read_text(encoding="utf-8"))
-        assert "entry_decisions" not in json.dumps(authority), \
-            "逐条处置不得进 gates.json（唯一来源是 decisions/<gate>.json）"
+        # 结构化判定（不用全文子串：人工理由原文里出现这个词也不该假红）
+        gates_obj = authority.get("gates") if isinstance(authority, dict) else None
+        offending = [gid for gid, gate in (gates_obj or {}).items()
+                     if isinstance(gate, dict) and "entry_decisions" in gate]
+        assert not offending, \
+            f"逐条处置不得进 gates.json（唯一来源是 decisions/<gate>.json）：{offending}"
 
         # ---- R3-04（P-15）：签署时"当时的硬阻断"必须落账（材料快照，白名单三字段）
         pending_codes = {e["node"]: e["detail"]["hard_block"] for e in events

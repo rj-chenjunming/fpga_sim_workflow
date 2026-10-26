@@ -55,7 +55,8 @@ def test_ledger_is_append_only_and_only_writes_contract_fields(tmp_path: Path) -
     assert first["gate"] == GATE and first["run_id"] == ctx.run_id
     assert len(first["records"]) == 1
 
-    # 第二轮（如 G2 返工回边）追加：旧记录**逐字节等价**，不是被重写
+    # 第二轮（如 G2 返工回边）追加：旧记录**逐值等价**（append-only 的语义不变量；
+    # 整文件按同值不同格式重排不在本用例约束内）
     second_path = G.append_decision_ledger(
         ctx, GATE, _record(signed_at="2026-10-26T13:00:00+08:00", decision="rework"))
     second = _read(second_path)

@@ -2911,7 +2911,9 @@ G1 中断，断言**中断载荷**里的 `decision_options.confirmed.requires_re
 
 ### 76.6 未关闭（A 组已清空，余下按原分组）
 
-- **B 契约/产品层**：逐条处置未落账（`entry_decisions` 不进 `gates.json`/事件流 ⇒ P-18 重建做不到）；
+- **B 契约/产品层**：~~逐条处置未落账（`entry_decisions` 不进 `gates.json`/事件流 ⇒ P-18 重建做不到）~~
+  **已解决（2026-10-26，见 §77.1）**：落账由 P-15/P-17/P-18 实现（`decisions/<gate>.json` + `gate_decided.detail.entries`），
+  本节当初的登记是过期信息；P-18 在**冻结夹具**上仍无法演示，但那属夹具早于落账，见 §77.7。其余项：
   残留 2（drill + API 直接给 `entry_decisions` 时选项声明要理由而 precheck 放行，方向更严）；
   残留 4（`legacy.html` 仍消费载荷快照 `decision_options`，不渲染 `requires_reason`）；
   决策项文案（失败轮次「接受」是否改名，§70.6）。
@@ -2934,7 +2936,7 @@ G1 中断，断言**中断载荷**里的 `decision_options.confirmed.requires_re
 |---|---|---|
 | 写入 | `workflows/chunks/gates.py::append_decision_ledger` | `run_dir/decisions/<gate>.json`，`schema=loop/gate_entries`，`records` **append-only**；`decided_at` 取权威 `gates.json` 的 `signed_at`（时间仍是单一注入入口）；记录含 `cycle/decided_at/decision/actor/reason/entries/hard_block` |
 | 同源下发 | 同文件 `ctx.event("gate_decided", …, detail={"entries": record["entries"]})` | 逐条处置随事件下发 |
-| 读侧 | `services/contracts.py::gate_entries_view` + `_decisions_ledger` | 已决策态**只**从落账回填；缺失/损坏 ⇒ `None`，面板明说「逐条处置未留存」，不编、不猜 |
+| 读侧 | `services/contracts.py::gate_entries_view` + `_decision_ledger` | 已决策态**只**从落账回填；缺失/损坏 ⇒ `None`，面板明说「逐条处置未留存」，不编、不猜 |
 | 字段白名单 | `_ledger_entries` / `_ledger_hard_block` | 只写契约字段（`decision/reason`；`code/title/message`），内部键（如 `source`）不进账本 |
 
 **实测证据**（命令输出复制）：
@@ -2959,9 +2961,10 @@ G1 中断，断言**中断载荷**里的 `decision_options.confirmed.requires_re
 |---|---|---|
 | `CHANGE_IMPACT_LOOP_SPEC` §7 | 「处置结果落 `gates.json`（`entry_decisions`）」 | 与右列冲突 |
 | `LOOP_ORCHESTRATION_SPEC` §10.4.2 | 「`gates.json` 不存逐条处置 ⇒ …**不得**从 `gates.json` 反推」+ 落 `decisions/<gate>.json` | 机制契约 |
-| `kb/schema/gate_state.schema.json`（**冻结**） | `required` 字段**不含** `entry_decisions` | 左列那句不可满足（改它属冻结目录的单独变更） |
+| `kb/schema/gate_state.schema.json`（**冻结**） | `gate` 定义 `required` 列 11 个字段，但 `additionalProperties: true`（:42）⇒ 技术上**允许**额外字段 | 所以左列那句**可满足**，订正依据**不是** schema 禁止，而是下面两条实质理由 |
 
-⇒ 按机制规格订正业务规格（红线 8「口径唯一」）：业务规格 §7 改为
+⇒ 订正业务规格（红线 8「口径唯一」）。**实质依据（不含 schema 语义）**：
+① `gates.json` 是闸门权威且参与 `gates.sha256` 锚，再把逐条处置写进去 = 第二来源、且锚随处置内容漂移；② `LOOP_ORCHESTRATION_SPEC` §10.4.2 明文「不存逐条处置、**不得**从 `gates.json` 反推」。业务规格 §7 改为
 「落 `run_dir/decisions/<gate>.json` + `gate_decided.detail.entries`，二者同源；**不落** `gates.json`」，
 并写明依据；编排规格 §10.4.2 增反向交叉引用与订正日期。顺带删掉 §10.4.2 里**重复的一行**
 （"该文件是面板展示材料，不是闸门权威…"连写两遍）。
@@ -2997,7 +3000,7 @@ G1 中断，断言**中断载荷**里的 `decision_options.confirmed.requires_re
 | 软件层单测（文档化入口） | **965 passed / 3 deselected / 0 failed**（343.31 s） | `run_software_checks.sh --ignore=tests/browser`；+5 为新增落账钉子 |
 | kb 自测 | 未重跑 | 本轮未改 `kb/**`（只读引用其冻结 schema 作依据） |
 | 端到端 | 未重跑 | 本轮无 `loop/workflows/**` 产品代码改动（落账写入路径未动），沿用 §73；全链路落账断言已由上面的 drill 用例覆盖 |
-| 文档 | **missing=0**（checked=2177 / known_missing=10 / env_missing=26，exit=0） | 须在**无仓内数据根**时跑（`.tmp-shadow/` 在仓内会引入 2 条假断链，实测） |
+| 文档 | **missing=0**（checked=1917 / known_missing=10 / env_missing=19，exit=0） | 口径固定为「仓内**无任何**数据根/影子树」时测量；仓内留有数据根时 `checked`/`env_missing` 都会变（§78.4） |
 | 浏览器 | **110 passed**（110.91 s） | 本轮无 `loop/web/**` 改动，重跑只为把门留成可复现记录 |
 
 ### 77.7 未关闭
@@ -3009,3 +3012,89 @@ G1 中断，断言**中断载荷**里的 `decision_options.confirmed.requires_re
   残留 4（`legacy.html` 仍消费载荷快照 `decision_options`）、决策项文案 —— 维持原登记。
 - C / D 组（S0-b、I4/N16、真实通过形态夹具、取消不可续跑、运行入口不消费 S0、e2e 未重跑、
   浏览器门未并入、提交未推送、双数据根入口冗余）不变。
+
+## 78 独立复核整改：落账切片（2026-10-26）
+
+复核由**独立 agent**（fresh context，只读只报、未改工作树；复核前后 `git status` 均空）执行，
+对象是 `fac52dd`。**实施者与复核者分离，本节整改由实施者完成、尚待二次复核。**
+
+复核总裁决：**有条件通过** —— 无代码/契约阻断项（落账闭环、`gates.json` 不含逐条处置、
+钉子经破坏性反证有效、写权与红线 11 合规），问题全部集中在**文档事实性与登记一致性**。
+下面逐条落地；每条先自己复核事实，再改。
+
+### 78.1 事实错误：我给的 schema 依据是错的（复核 M2，已订正）
+
+我在 §77.2 写「`kb/schema/gate_state.schema.json` 的 `required` 界定字段集 ⇒ 业务规格那句
+**不可满足**」。**这是错的**：该 schema 的 `gate.additionalProperties` 为 `true`，实测带
+`entry_decisions` 的 gate 对象**能通过校验**。已订正三处：
+
+| 位置 | 订正后 |
+|---|---|
+| `CHANGE_IMPACT_LOOP_SPEC` §7 | 依据改为两条实质理由：① 第二来源（红线 8）+ `gates.sha256` 锚会随处置内容漂移；② 编排规格明文禁止从 `gates.json` 反推。并写明「schema 技术上允许额外字段 ⇒ 这是**设计选择**，不是 schema 禁止」，附 schema md5 `b3d8c0cac0d56599e83879aec0921fb2`（红线 10） |
+| `LOOP_ORCHESTRATION_SPEC` §10.4.2 | 同样改写依据 + 补「本文件是单一存储位置，但**不是防篡改证据**（无锚，append-only 靠 Host 约定）」 |
+| 本节上方 §77.2 表格 | 该行改为「`required` 列 11 字段但 `additionalProperties: true` ⇒ 允许额外字段」，结论列改为「订正依据是两条实质理由，不是 schema 禁止」 |
+
+### 78.2 唯一数字源里的矛盾登记已作废（复核 M1，红线 8）
+
+`§76.6` 第一条仍写着「逐条处置未落账（…P-18 重建做不到）」，与 §77.1 的「已实现」并存 ⇒
+同文件两种口径。已就地加删除线并标注「**已解决（2026-10-26，见 §77.1）**」。
+`§54.5` 第 2 条与 `§65.4` 第 5 条的原文按「只增不改」保留，作废声明集中在 §77.1（复核建议 2/3
+属可读性改进，不阻断；本轮只在 §77.1 明示，不回改历史小节）。
+
+### 78.3 其余过期文档已订正（复核 M5，红线 12）
+
+复核指出我在 §77.5 只改了 `UI_RUNBOOK` §14 第 1 条，同类说法还有 4 处、且 kickoff 计划的
+**源头段**没加横幅。已订正：
+
+| 位置 | 原说法 | 现状 |
+|---|---|---|
+| `UI_RUNBOOK` §5 材料区 | 「v1 未提供输入控件，请通过 API 提交」 | 改为「按 `entry_decisions_required` 渲染逐条控件 + 理由输入，与节点面板共用草稿」 |
+| `UI_RUNBOOK` §6.1 坑 2（real） | 「v1 界面没有逐条输入控件 ⇒ UI 提交会被 403 拒绝，只能走 API」 | 改为「界面已支持；未处置完提交按钮保持禁用是有意的；仅脚本/API 场景需自建 payload」 |
+| `UI_RUNBOOK` §9 对比表 G1 行 | 「可能要求 `entry_decisions` ⇒ 用 API 脚本」 | 改为「在闸门视图逐条处置后提交（界面已支持）」 |
+| `UI_RUNBOOK` §11 排障表 | 「real 有未决条目、UI 没逐条输入 ⇒ 用 API 脚本」 | 改为「本次提交未覆盖全部 `entry_id` ⇒ 回闸门视图逐条处置」 |
+| `plans/2026-10-23-…-kickoff.md` §0.5 ⑥（**源头段**） | 「事件流 jsonl 里也没有；须先补 Host 落账」 | 加**已过期**横幅（红线 12）：落账已实现、事件流现在有 `entries` |
+| `spec/SPEC-REV-01-20261022.md` | 「v1 界面缺逐条输入」（未决项） | 两处加「已关闭：P-17（2026-10-23）实现」指针 |
+
+### 78.4 数字口径订正（复核 M3，红线 2）
+
+`§77.6` 原文记 `checked=2177`，但在 `fac52dd` 树上实测是 **2181** —— 差 4 恰好等于 §77 自身新增、
+会被文档门计数的 4 个路径 token ⇒ 该数字取自 **§77 落盘之前**，属红线 2「数字必须从（最终树的）
+命令输出复制」。同一提交的 commit message 又写 2181，自相矛盾。
+
+更根本的是**测量口径没写清**：`env_missing`/`checked` 会随仓内是否存在数据根而变。
+本轮把口径固定为「**仓内无任何数据根/影子树**」，并清掉上一轮遗留的 `.wsp-r3r4`
+（1.2 MB 数据根副本，7 个 md，无任何文档引用；清理后 `checked` 由约 2181 降到 1916）。
+订正后数字见 §77.6，测量条件写进该行说明。
+
+### 78.5 钉子措辞与断言强度（复核 S1/S2，已改）
+
+- `tests/test_gate_ledger.py` 注释「旧记录**逐字节**等价」→ 改为「**逐值**等价」，并注明
+  「整文件按同值不同格式重排不在本用例约束内」。复核实测：字节级重排不会让用例变红，
+  原措辞把断言强度说大了。
+- `tests/test_flow.py` 的「`gates.json` 不含 `entry_decisions`」由**全文子串**判定改为
+  **结构化判定**（检查每个 gate 对象的键集合），避免将来人工理由原文里出现该词导致假红。
+
+### 78.6 复核提出、本轮不修的项（已登记）
+
+1. **读侧把「损坏」并入「缺失」**：`contracts._decision_ledger` 丢弃 `_read_artifact` 的错误串，
+   损坏账本与「早于落账的旧 run」在面板上不可区分；写侧却是 fail-closed。
+   现状与 `_decision_ledger` 的 docstring 一致（「缺失/损坏一律返回 None」），属**已声明的降级**；
+   要增强得同时改投影文案与契约，属独立切片 ⇒ 登记不改。
+2. **「签署成功但恢复失败」会留下 signed 但无账本的形态**（`main_flow` 的 sign→resume 路径）：
+   此时面板措辞会把它误归因为「本轮早于处置落账」。属措辞精度问题，登记待后续。
+3. 复核的破坏性反证用的是**运行时 monkeypatch**（测试文件原样、未改仓库），它证明钉子对相应回归会红，
+   但不等价于「真实改坏生产代码也会红」——该差别如实记录。
+
+### 78.7 本轮门（整改后重跑）
+
+| 门 | 结果 | 说明 |
+|---|---|---|
+| 软件层单测 | **965 passed / 3 deselected / 0 failed**（330.29 s） | 测试文件有改动（S1/S2），已重跑；与 §77.6 同值 |
+| 文档 | **missing=0**（checked=1917，仓内无数据根） | 见 §77.6 同一口径 |
+| 浏览器 / kb 自测 / 端到端 | 未重跑 | 本轮整改不触达 `loop/web/**`、`kb/**`、产品代码 |
+
+### 78.8 待二次复核
+
+本节的订正**由实施者自己完成**，不构成独立验证。复核者当时列出的 M1–M5 与 S1/S2 已全部落地，
+S3/S6 转为登记项；S5（冻结 schema 引用补 md5）已在 §78.1 落地。二次复核应只核**文档一致性**
+（尤其 §76.6/§54.5/§65.4 的作废可读性）与**数字可复现性**。

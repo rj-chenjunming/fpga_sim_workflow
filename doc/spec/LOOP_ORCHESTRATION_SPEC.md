@@ -488,9 +488,14 @@ n9_sim chunk                       park chunk                      job_runner �
   **不得**从 `gates.json` 反推逐条处置（SPEC-REV-04 §C.2 P-18、交接提示词 §0.5 ⑥）。
   **口径订正（2026-10-26）**：[业务规格 §7](CHANGE_IMPACT_LOOP_SPEC.md) 原写"处置结果落
   `gates.json`（`entry_decisions`）"，与本节冲突；业务规格已按本节订正为
-  `run_dir/decisions/<gate>.json` + `gate_decided.detail.entries`。依据：冻结的
-  `kb/schema/gate_state.schema.json` 的 `required` 不含该字段（改它属冻结目录的单独变更），
-  且两处并存会形成第二个来源（红线 8）。回归钉子：`loop/tests/test_gate_ledger.py`。
+  `run_dir/decisions/<gate>.json` + `gate_decided.detail.entries`。依据两条：
+  ① 两处并存会形成第二个来源（红线 8），且 `gates.json` 参与 `gates.sha256` 锚、锚会随处置内容漂移；
+  ② 本节明文"不存逐条处置、不得从 `gates.json` 反推"。
+  **注意**：`kb/schema/gate_state.schema.json`（md5 `b3d8c0cac0d56599e83879aec0921fb2`）的
+  `gate.additionalProperties` 为 `true` ⇒ 技术上允许额外字段，故这是**设计选择**而非 schema 禁止。
+  **层次说明**：本文件是逐条处置的单一存储位置，但**不是防篡改证据**（无 `sha256` 锚，append-only 由
+  Host 写入约定保证）；把它与上文"面板展示材料、不是闸门权威"合起来读才完整。
+  回归钉子：`loop/tests/test_gate_ledger.py`。
 - **G2/G3 只读「待确认项」（2026-10-23 裁决 #2）**：闸门节点投影增 `gate.items`，
   形状 `[{id, kind, title, detail, severity}]`，`kind ∈ {blocker, open_item, conflict, case}`；
   **不带 disposition、不参与提交**（逐条处置语义只属于 G1/I1）。来源：

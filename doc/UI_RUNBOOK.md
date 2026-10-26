@@ -530,8 +530,10 @@ curl -s http://127.0.0.1:8099/openapi.json | python3 -c 'import json,sys;print("
   - `evidence` 原文。
 - 下方「材料入口」：`N3 摘要 n3_digest.md`、`Host 留痕`，可点「探测存在性」（只探测，不打开正文）。
 - `doc_entry` 会先列「变化字段」表（优先服务端 `changed_fields`），其余字段折叠为「未变」。
-- 若 `entry_decisions_required=true`，界面会显式提示「该门要求逐条处置，v1 未提供输入控件，
-  不得盲签；请通过 API 提交」，并给出可复制样例。
+- 若 `entry_decisions_required=true`，界面会为**每个唯一 `entry_id`** 渲染一组处置控件
+  （确认 / 忽略 / 有疑义，选项取服务端 `decision_options`）+ 理由输入，勾完再提交；
+  节点面板（N4）与这里共用同一份草稿。**2026-10-26 追记**：旧的「v1 未提供输入控件、请通过 API 提交」
+  已不成立（P-17，2026-10-23 实现，[WEB_UI_SPEC §4.4](spec/WEB_UI_SPEC.md)）。
 
 ![G1 差异材料：before/after 双栏、无 hunk 原因、未决与 Host 留痕](evidence/UI_RUNBOOK_20261023/screens/06-g1-diff.png)
 
@@ -549,9 +551,10 @@ curl -s http://127.0.0.1:8099/openapi.json | python3 -c 'import json,sys;print("
 > `I1：N2 有未决差异条目。drill 模式须给出非空 reason（作为「已逐条核对」的证明），或提交覆盖全部条目的 entry_decisions。`
 
 **坑 2（real）**：当 `entry_decisions_required=true` 时，`confirmed` 必须提交覆盖**全部**条目的
-`entry_decisions`；而 v1 界面没有逐条输入控件。这时 UI 提交会被 403 拒绝，只能走 API
-（材料区有可复制样例，脚本见附录 A）。**不要为了过闸门把有疑义的条目一律写 `confirmed`**；
-逐条处置正是闸门要你做的判断。
+`entry_decisions`。**2026-10-26 追记**：界面已有逐条处置控件（见上一条），提交时会自动带上
+`entry_decisions`；未处置完时提交按钮保持禁用，这是有意的。只有绕开界面（脚本/API）时才需自己
+构造覆盖全部条目的 `entry_decisions`（脚本见附录 A）。**不要为了过闸门把有疑义的条目一律写
+`confirmed`**；逐条处置正是闸门要你做的判断。
 
 ### 6.2 闸门 2（N13）：报告验收
 
@@ -803,7 +806,7 @@ rm -f loop/state/recovery/"$RUN".json loop/state/events/"$RUN".jsonl
 |---|---|---|
 | 前提 | 可读环境 + 可写 `WORKSPACE_ROOT` + 夹具 run | **`ENV_ROOT` 可写**（`SIMLIB_RUN`、`uvs.setup` 自愈）+ 可写数据根 + 空单槽 |
 | 模型 | 可用 standin | **必须 live**：N3/N8/N10/N11/N12 缺 live 即 fail-closed；N6 standin 只产出显式空 |
-| G1 | 未决条目可用 reason attestation | 可能要求 `entry_decisions` ⇒ 用 API 脚本 |
+| G1 | 未决条目可用 reason attestation | 可能要求 `entry_decisions` ⇒ 在闸门视图逐条处置后提交（界面已支持；脚本见附录 A） |
 | N7 | 不真编译 | 真编译（走单槽） |
 | N9 | 夹具作业瞬间完成（约 0.2 s） | 真实全跑，**单用例约 19 min 起** |
 | N15 | 显式 no-op（`simulated=true`） | 真实串行回归 |
@@ -925,7 +928,7 @@ curl -s http://127.0.0.1:8099/api/health \
 | 启动 500 | 数据根不可写（建 run 目录失败） | 换沙箱/可写 `WORKSPACE_ROOT` |
 | 启动超时 15 s | live 模型建 run 慢 | 先查 `/api/runs`；已建好就不要再点 |
 | 新 run 在 N1 失败 `夹具缺 n1_manifest_new.json` | 数据根缺 drill 夹具 run | 补 `<WS>/runs/RUN-20261015-120626/`（§1.2） |
-| 闸门提交 403 含 `I1…entry_decisions` | real 有未决条目、UI 没逐条输入 | 用附录 A 的 API 脚本 |
+| 闸门提交 403 含 `I1…entry_decisions` | real 有未决条目，而本次提交未覆盖全部 `entry_id` | 回到闸门视图逐条处置（控件已在；每个唯一 `entry_id` 都要有处置）；脚本场景见附录 A |
 | 闸门提交 403 `I2…已修订待验` | G2 accept 前置不满足 | 选 rework（写理由）或先归零用例态 |
 | 闸门提交 403 `I4…blocks_release` | G3 选了 full/subset 且冲突未清零 | 改选 milestone_only / defer |
 | 闸门提交 403 `I6…human` | actor 没以 human 开头 | 改成 `human:你的名字` |

@@ -69,6 +69,12 @@
 **补落账**（软件层新增 run 内只读产物，例如 `decisions/G1.json`），否则界面只能显示"整门决策 +
 逐条处置未留存"，不得从 `gates.json` 猜。
 
+> **已过期（2026-10-26）**：上述"补落账"已由 P-15/P-17/P-18 实施完毕 —— Host 把逐条处置写
+> `run_dir/decisions/<gate>.json`（append-only）并随 `gate_decided.detail.entries` 下发，
+> 已决策态面板从落账读；**事件流里现在有** `entries`。`gates.json` 按设计仍不存逐条处置
+> （口径见 [业务规格 §7](../spec/CHANGE_IMPACT_LOOP_SPEC.md) 与
+> [编排规格 §10.4.2](../spec/LOOP_ORCHESTRATION_SPEC.md)）。仅"早于落账"的旧 run 显示"未留存"。
+
 ---
 
 ## 1 开工提示词（复制整段）

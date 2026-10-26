@@ -879,7 +879,9 @@ def test_p07_unknown_status_gets_no_note_but_glossary_is_still_served() -> None:
 
 WAITING_GATE = {
     "gate": "G2_report_accept", "state": "waiting", "cycle": 0,
-    "entries_required": True,
+    # G2 不接受逐条处置 ⇒ 服务端只会下发 false（WEB_UI_SPEC §4.4「判据归属」）。
+    # 夹具按可达状态构造：`drill/G2 + entries_required=true` 是产不出来的组合。
+    "entries_required": False,
     "decision_options": [{"value": "accept", "label": "接受", "requires_reason": False},
                          {"value": "rework", "label": "返工", "requires_reason": True}],
     "counts": {"entries": 2, "revision_points": 2, "disposed": 0, "unresolved": 1,

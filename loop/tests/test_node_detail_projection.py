@@ -536,10 +536,12 @@ def _diff_entry(entry_id: str, kind: str, **over) -> dict[str, Any]:
 
 
 def _waiting_material(entries: list[dict[str, Any]]) -> dict[str, Any]:
+    # mode 必须是 real：drill 下服务端不会要求逐条处置（`entry_decisions_required` 为假），
+    # 「drill + flag=true」是产不出来的状态；夹具按可达状态构造（2026-10-26 复核 O2 同类）。
     return {
         "id": "G1_diff_confirm:0", "type": "gate_decision", "status": "pending",
         "payload": {
-            "gate": "G1_diff_confirm", "cycle": 0, "mode": "drill",
+            "gate": "G1_diff_confirm", "cycle": 0, "mode": "real",
             "entry_decisions_required": True,
             "difference_items": {
                 "entries": entries, "count": len(entries),
@@ -565,7 +567,7 @@ def test_gate_entries_merge_md5_only_into_attached_evidence() -> None:
     gate = contracts.gate_entries_view(
         gate="G1_diff_confirm", diff=diff, pending_interrupt=_waiting_material(diff["entries"]),
         gate_options={"G1_diff_confirm": [{"value": "confirmed", "label": "差异确认"}]},
-        mode="drill",
+        mode="real",
     )
     assert gate["state"] == "waiting"
     assert gate["counts"]["revision_points"] == 2, "md5-only 附证据不得计入修订点"

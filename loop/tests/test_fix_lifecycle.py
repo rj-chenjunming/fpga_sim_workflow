@@ -421,6 +421,70 @@ def test_entry_decisions_required_is_g1_only(tmp_path: Path) -> None:
     assert flag("G1_diff_confirm", "drill") is False, "drill 夹具历史件只作展示"
 
 
+def _stale_interrupt(gate: str, *, flag: bool, unresolved: int) -> dict[str, Any]:
+    """模拟**升级前落账 / 快照恢复**的中断载荷：flag 是旧版本写的，已不可信。"""
+    return {
+        "id": f"{gate}:0", "type": "gate_decision", "status": "pending",
+        "payload": {
+            "gate": gate, "cycle": 0, "mode": "real",
+            "entry_decisions_required": flag,
+            "difference_items": {"entries": [], "count": 0, "unresolved_count": unresolved},
+        },
+    }
+
+
+def test_gate_entries_waiting_recomputes_stale_flag(tmp_path: Path) -> None:
+    """C1（2026-10-26 独立复核）：等待态必须重算，不能透传落账旧值。
+
+    旧 payload 真实存在（升级前排队的 run、快照恢复）：G2 带着 `true` 时若原样透传，
+    节点面板会渲染逐条控件，而选项是 accept/rework、推导只认 confirmed/ignored/disputed
+    ⇒ 提交永久禁用。反向同理：G1 的旧 `false` 也必须被纠正。
+    """
+    from services import contracts
+
+    g2 = contracts.gate_entries_view(
+        gate="G2_report_accept", run_dir=tmp_path,
+        diff={"entries": [], "unresolved_count": 2},
+        pending_interrupt=_stale_interrupt("G2_report_accept", flag=True, unresolved=2),
+        run_status="waiting_gate", mode="real",
+    )
+    assert g2["state"] == "waiting"
+    assert g2["entries_required"] is False, "G2 旧 payload 的 true 必须被重算掉"
+
+    g1 = contracts.gate_entries_view(
+        gate="G1_diff_confirm", run_dir=tmp_path,
+        diff={"entries": [], "unresolved_count": 2},
+        pending_interrupt=_stale_interrupt("G1_diff_confirm", flag=False, unresolved=2),
+        run_status="waiting_gate", mode="real",
+    )
+    assert g1["entries_required"] is True, "G1 旧 payload 的 false 也必须被纠正（真重算，非夹紧）"
+
+
+def test_run_view_normalizes_stale_entry_flag_without_rewriting_ledger(tmp_path: Path) -> None:
+    """C1：运行视图投影前归一化；且**不改写** run 文档（投影不是权威）。"""
+    from services import contracts
+
+    rd = tmp_path / "run" / "RUN-TEST-0002"
+    rd.mkdir(parents=True)
+    stale = _stale_interrupt("G2_report_accept", flag=True, unresolved=3)
+    run_doc = {
+        "run_id": "RUN-TEST-0002", "run_dir": str(rd), "status": "waiting_gate",
+        "mode": "real", "pending_interrupt": stale,
+    }
+    view = contracts.run_view(run_doc=run_doc, kb=_kb(tmp_path), slot_status={},
+                              job=None, evidence=None, events=[])
+
+    assert view["pending_interrupt"]["payload"]["entry_decisions_required"] is False, (
+        "G2 的旧 true 不得透传到界面（否则渲染出没有配套选项的逐条控件）"
+    )
+    assert run_doc["pending_interrupt"]["payload"]["entry_decisions_required"] is True, (
+        "投影只做归一化，不得回写落账的 run 文档"
+    )
+    assert view["pending_interrupt"]["payload"]["difference_items"]["unresolved_count"] == 3, (
+        "归一化只改 flag，其余载荷原样保留"
+    )
+
+
 def test_rework_counts_separate_n6n8_and_g2(tmp_path: Path) -> None:
     """C6/I7：两个计数独立；各自 >= limit 都进 blocker。"""
     rd = _write_run_dir(tmp_path, own_pending=False)

@@ -620,6 +620,10 @@ window.NodeDetail = (function () {
    * `gate.items` 由服务端给（G2=报告未闭环项+当前阻断项；G3=回归选集用例+未清冲突摘要）。 */
   var ITEM_KIND_LABELS = { blocker: "阻断", open_item: "未闭环", case: "用例", conflict: "冲突" };
 
+  /* **展示形态选择**（不是判据）：决定面板显示「G1 修订点清单」还是「G2/G3 只读待确认项」。
+   * 服务端只有 G1 下发 entries（`gate_entries_view` 的 gate_has_entries），故这里按闸门 id 选形态，
+   * 属 WEB_UI_SPEC §4.4「判据归属」的**明示例外**；但「是否需要逐条处置/是否已就绪」一律只看
+   * 服务端下发的 flag，前端不得自判（那条判据唯一在 contracts.entry_decisions_required）。 */
   function gateIsG1(gate) {
     return !!gate && String(gate.gate || "") === "G1_diff_confirm";
   }

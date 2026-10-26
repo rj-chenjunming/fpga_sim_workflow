@@ -2328,3 +2328,59 @@ passed 数 +5 = 新增 2 条用例 + 上述 worktree 假差异 1 条 + 原本 sk
 - **观察（未改）**：`gate_entries_view` 的 `entries_required` 在 `loop/web/**` 内**零消费者**
   （仅测试断言），按红线 4「模型输出必须有授权消费者」精神属可疑投影；本轮只把它对齐到同一判据，
   未删除该字段（删除属单独契约变更，需连带改 browser 夹具）。
+
+---
+
+## 69 独立复核整改：旧载荷归一化与夹具可达性（2026-10-26）
+
+对 §68（R1+R2）的独立只读复核结论为**有条件通过**：判据生产者唯一、四组合行为正确、六处前端语义正确、
+范围无越界；但发现 **C1（必办）** 等待态会把持久化旧 payload 的 flag 原样透传，以及 C2/O1–O4 若干项。
+本节记录整改。**复核者只报告不改；整改由实现者完成，因此本节结论仍非独立验证。**
+
+### 69.1 C1（必办）：旧载荷归一化
+
+- **缺陷**：中断载荷会落进 run 文档并可能由快照恢复；升级前生成的 G2/G3 载荷里
+  `entry_decisions_required` 仍是 `true`。等待态此前"原样消费/原样透传"，前端删掉自判守卫后，
+  这类 run 会重演原始死锁：渲染逐条控件（选项是 accept/rework）→ 整门决策推导只认
+  confirmed/ignored/disputed → 提交按钮永久禁用，紧凑卡还给出"去逐条处置"的死引导。
+- **旧 payload 真实存在**（复核者举证）：[REAL_RUN_20261022/view.json](evidence/REAL_RUN_20261022/view.json)
+  中 G2 的 flag 为 `true`；`workspaces/real-ws/state/recovery/RUN-20261022-181700.json` 的
+  `gate_material::G2` 亦为 `true`，该 run 状态 `waiting_gate`。
+- **整改**：
+  - 新增 `contracts.normalize_pending_interrupt()`：投影前按唯一判据重算 payload 的 flag，
+    返回**浅拷贝**，不改写 run 文档（投影不是权威）。
+  - `run_view` 用归一化结果同时供 `pending_interrupt` 与 `build_agents`（此前两处都直接读落账值）。
+  - `gate_entries_view` 等待态由"原样消费 payload"改为**同一判据重算**（节点面板一路）。
+- 方向是"重算"而非"夹紧为 false"：G1 的旧 `false` 同样会被纠正（用例已断言）。
+
+### 69.2 C2 / 夹具可达性 / O1–O3
+
+| 项 | 处理 |
+|---|---|
+| C2 补回归 | 新增 `test_gate_entries_waiting_recomputes_stale_flag`（含 G1 反向纠正）与 `test_run_view_normalizes_stale_entry_flag_without_rewriting_ledger`（同时断言**不回写** run 文档） |
+| O2 不可达夹具 | `test_node_detail_projection._waiting_material`（drill + flag=true）、`test_node_story.WAITING_GATE`（G2 + entries_required=true）改为服务端可达状态，并注明原因 |
+| O1 前端自判 | `node-detail.js` 的 `gateIsG1` 定性为**展示形态选择**（选 G1 修订清单还是 G2/G3 只读项），在 WEB_UI_SPEC §4.4 写明**例外**；"是否需要逐条处置/是否已就绪/是否给引导"仍只认服务端 flag，未扩大例外 |
+| O3 注释失真 | 等待态注释改为"必须重算"，并说明旧载荷来源 |
+| O4 口径补记 | §68.4 的"定向"一行只覆盖 6 个文件、不含本轮两个测试文件；本节给出更准确的 4 文件口径（见 69.3） |
+
+### 69.3 实测（数字为命令输出复制）
+
+**修复前红**：在 `fda3629` 上跑新增两条 C1 用例 ⇒ **2 failed / 1 passed**（`G2 旧 payload 的 true 必须被重算掉`、
+`G2 的旧 true 不得透传到界面`）；修复后 5 条（含 §68 的三条）全绿。
+
+| 门 | 整改后 | 整改前基线 `fda3629` |
+|---|---|---|
+| 单测全量 | **71 failed / 873 passed / 6 skipped / 104 errors**（75.25 s） | 72 failed / 868 passed / 8 skipped / 104 errors（67.06 s） |
+| 失败/错误集合差异 | **0 条**。唯一差异 `test_test_layers.py::test_software_entry_excludes_env_layer_at_collection` 是基线在 git worktree 中缺 `loop/.venv` 的环境假象（该用例在主工作树连跑 2 次均 `6 passed`） | — |
+| 定向 4 文件（node_story / node_detail_projection / fix_lifecycle / web_smoke） | 34 failed / **180 passed** | 34 failed / 178 passed（**失败集合逐条一致**） |
+| 文档门 `check_doc_links.py` | `missing=0` | missing=0 |
+
+定向 +2 passed 即新增的两条 C1 断言；全量 +5 passed = 2 条新用例 + 1 条 worktree 假差异 + 2 条由 skip 转正常执行（8→6 skip）。
+
+### 69.4 仍未关闭
+
+- **R3 / R4 未做**（同 §68.5）：`accept` 的 `requires_reason` 仍是静态枚举、界面无法预检 `not_passed`；
+  `claimed_verdict` 仍是两个读者。
+- `gate_entries_view` 的 `entries_required` 仍无前端消费者（§68.5 观察项，未删）。
+- `test_web_smoke` 对"前端不得自判"的断言仍是**符号名**级；补行为级断言需要可跑浏览器的环境
+  （本机 playwright Chromium 未安装，104 个 ERROR 即此），已如实保留而非写成已覆盖。

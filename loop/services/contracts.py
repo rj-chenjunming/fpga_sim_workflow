@@ -724,6 +724,35 @@ def entry_decisions_required(
     )
 
 
+def normalize_pending_interrupt(
+    pending_interrupt: dict[str, Any] | None, mode: str | None
+) -> dict[str, Any] | None:
+    """投影边界归一化：**不信任**持久化 payload 里已存的 `entry_decisions_required`。
+
+    为什么必须重算：中断载荷生成后会被写进 run 文档并可能由快照恢复（`main_flow` 的
+    `_restore`），升级前排队/被恢复的 run 里，G2/G3 的分支上仍可能留着 `true`。若原样透传，
+    前端会为 G2/G3 渲染逐条控件（选项是 accept/rework），而整门决策推导只认
+    confirmed/ignored/disputed ⇒ 提交按钮永久禁用，紧凑卡还会给出"去逐条处置"的死引导。
+
+    重算只读既有事实（闸门 × 未决条目数 × mode），不改任何权威账本，也不改写 run 文档；
+    返回浅拷贝，调用方拿到的是投影而非落账值。
+    """
+    if not isinstance(pending_interrupt, dict):
+        return pending_interrupt
+    payload = pending_interrupt.get("payload")
+    if not isinstance(payload, dict):
+        return pending_interrupt
+    diff = payload.get("difference_items")
+    unresolved = diff.get("unresolved_count") if isinstance(diff, dict) else None
+    normalized_payload = dict(payload)
+    normalized_payload["entry_decisions_required"] = entry_decisions_required(
+        payload.get("gate"), unresolved, mode
+    )
+    normalized = dict(pending_interrupt)
+    normalized["payload"] = normalized_payload
+    return normalized
+
+
 def gate_material(
     *,
     gate: str,
@@ -1251,8 +1280,11 @@ def gate_entries_view(
     options = (gate_options or {}).get(gate) or []
     entries_required: bool | None = None
     if waiting:
-        # 等待态：payload 里的值已是 gate_material() 用同一判据算出的，原样消费。
-        entries_required = bool(payload.get("entry_decisions_required"))
+        # 等待态：**重算**而不原样消费 payload 里的落账值——升级前排队的 run（或快照恢复的
+        # 旧载荷）里 G2/G3 仍可能带着 `true`，透传会让节点面板渲染出没有配套选项的逐条控件。
+        entries_required = entry_decisions_required(
+            gate, source_diff.get("unresolved_count"), mode
+        )
     elif state == "decided":
         # 已决策态：走同一判据（只 G1），不另写一套（WEB_UI_SPEC §4.4「判据归属」）。
         entries_required = entry_decisions_required(
@@ -1344,6 +1376,9 @@ def run_view(
     run_dir = Path(run_doc["run_dir"]) if run_doc.get("run_dir") else None
     counts = (evidence or {}).get("counts")
     mode = run_doc.get("mode")
+    # 中断载荷是**落账值**，可能来自升级前或快照恢复 ⇒ 投影前按唯一判据重算 flag
+    # （否则 G2/G3 的旧 payload 会让界面渲染出没有配套选项的逐条控件）。
+    pending = normalize_pending_interrupt(run_doc.get("pending_interrupt"), mode)
     created = run_created_at(run_dir) or run_doc.get("created_at")
     diff = diff_entries_view(run_dir, mode=mode)
     cases = case_states_view(run_dir, created_at=created)
@@ -1371,7 +1406,7 @@ def run_view(
         "gate_history": run_doc.get("gate_history", []),
         # 权威闸门态（gates.json + gates.sha256 锚）：界面据此回答"谁签的、改没改过"。
         "gates_authority": _gates_authority(run_doc),
-        "pending_interrupt": run_doc.get("pending_interrupt"),
+        "pending_interrupt": pending,
         "counts": counts,
         "evidence": evidence,
         "job": job,
@@ -1392,7 +1427,7 @@ def run_view(
         "agents": build_agents(
             events,
             run_dir=run_dir,
-            pending_interrupt=run_doc.get("pending_interrupt"),
+            pending_interrupt=pending,
             job=job,
         ),
         "stage_map": STAGES,

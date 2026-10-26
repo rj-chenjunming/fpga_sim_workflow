@@ -43,6 +43,7 @@
 ## 2 `spec/` 契约
 
 > **编号**：每份 SPEC 有稳定编号 `SPEC-0X`（文件名不变）。当前修订记录：
+> [SPEC-REV-13](spec/SPEC-REV-13-20261026.md)（云端 DSH 接入与 M1/M2/M3 记忆优化实施规格，**未实现**；[详细设计](plans/2026-10-26-cloud-dsh-memory-design.md)，本轮见 STATUS §75）、
 > [SPEC-REV-12](spec/SPEC-REV-12-20261026.md)（2026-10-26，**已实现**：R1 失败报告收口（方案 D）+ R2 真实轮冻结为 drill 夹具；验证见 [SPEC_REV05_VERIFY](evidence/SPEC_REV05_VERIFY_20261026.md)、依据 [REAL_N9_20261024](evidence/REAL_N9_20261024.md)，门禁见 STATUS §65）、
 > [SPEC-REV-11](spec/SPEC-REV-11-20261025.md)（H2b 逐问题复核与候选版本失效，恢复续修），
 > [SPEC-REV-10](spec/SPEC-REV-10-20261025.md)（H2a 逐项作者回应，恢复整合），
@@ -55,7 +56,7 @@
 > [SPEC-REV-03](spec/SPEC-REV-03-20261023.md)（AI 工作面板体验设计草案，未实现）、
 > [SPEC-REV-02](spec/SPEC-REV-02-20261023.md)（DSH 执行后端设计草案，未实现）、
 > [SPEC-REV-01](spec/SPEC-REV-01-20261022.md)（2026-10-22，已生效）。
-> 修订记录只增不改；后续依次 `SPEC-REV-13`…
+> 修订记录只增不改；后续依次 `SPEC-REV-14`…
 
 | 编号 | 文件 | 管什么 |
 |---|---|---|

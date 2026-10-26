@@ -51,7 +51,8 @@ from .chunks.host_steps import (
 )
 from .chunks.long_jobs import n9_park, n9_submit, n15_run, n15_select
 from .chunks.model_steps import n10_reconcile, n11_review, n12_report, n3_digest, n6_author, n8_check
-from .context import RESOURCE_KEY, RunCtx, prepare_run_dir, runtime_resources
+from .context import (RESOURCE_KEY, RunCtx, drill_fixture_run, prepare_run_dir,
+                      runtime_resources, validate_drill_fixture)
 
 # I17：**启动自检**。权威枚举与本层事件表漂移时立即炸，不带漂移启动。
 gate_chunks.assert_topology_matches_authority()
@@ -497,6 +498,16 @@ class RunManager:
                     f"run 身份 {run_id} 的残留投影 {stale} 无法隔离（{exc}）⇒ 拒绝复用该身份。"
                 ) from exc
             quarantined.append(str(target))
+        if mode == "drill":
+            # SPEC-REV-05 R2：夹具缺件必须**启动期显式失败**（不得静默回退旧夹具，
+            # 否则 drill 会拿旧形态冒充新夹具）。
+            fixture_dir = drill_fixture_run()
+            missing = validate_drill_fixture(fixture_dir)
+            if missing:
+                raise ValueError(
+                    f"drill 夹具不完整：{fixture_dir} 缺 {missing}；"
+                    "设置 LOOP_DRILL_FIXTURE 指向完整夹具，或补齐缺件后再跑。"
+                )
         run_dir = prepare_run_dir(run_id, mode=mode)
         progress = self._progress(run_id)
         ctx = RunCtx(

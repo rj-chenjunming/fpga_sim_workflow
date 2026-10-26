@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+import os
 import shutil
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -40,9 +41,49 @@ _FRAMEWORK_NODES: frozenset[str] = frozenset({"N6_apply", "N15_select", "N15", "
 #: drill 夹具：归档演练轮。选它的原因——一个目录同时覆盖
 #: 双计数分歧（1687 vs 0）、死任务、印记 1/1/1、闸门拒绝、篡改检测、staging 残留，
 #: 而真实全跑单用例 ≈19 min、修订后可达 22.8 h，不能作为交互开发循环。
-FIXTURE_RUN = P.KB_RUNS / "RUN-20261015-120626"
+DEFAULT_DRILL_FIXTURE = "RUN-20261015-120626"
 
-#: 夹具里的全跑证据（含 UVM Report Summary 与 1687 条 `*E`）。
+
+def drill_fixture_run() -> Path:
+    """选定 drill 夹具目录（SPEC-REV-05 R2：可参数化，缺省保持旧夹具）。
+
+    `LOOP_DRILL_FIXTURE` 的取值规则：
+    - 空 / 未设 ⇒ `WORKSPACE/runs/RUN-20261015-120626`（legacy，端到端断言依赖它）；
+    - 绝对路径 ⇒ 原样使用；
+    - 含 `/` 的相对值 ⇒ 相对 `WORKSPACE_ROOT`（如 `fixtures/drill-real-20261024`）；
+    - 纯名字 ⇒ `WORKSPACE/runs/<名字>`。
+    """
+    raw = (os.environ.get("LOOP_DRILL_FIXTURE") or "").strip()
+    if not raw:
+        return P.KB_RUNS / DEFAULT_DRILL_FIXTURE
+    candidate = Path(raw).expanduser()
+    if candidate.is_absolute():
+        return candidate
+    if "/" in raw:
+        return Path(P.WORKSPACE_ROOT) / candidate
+    return P.KB_RUNS / raw
+
+
+#: 夹具的必需输入（缺任一 ⇒ 启动期显式失败，不静默回退到旧夹具）。
+DRILL_REQUIRED_FILES: tuple[str, ...] = (
+    "n1_manifest_new.json",
+    "n2_diff.json",
+    "n5_impact.json",
+    "n12_report.md",
+)
+
+
+def validate_drill_fixture(path: Path) -> list[str]:
+    """返回缺失项（空列表 = 通过）。只做存在性/目录判断，不解释内容。"""
+    missing = [name for name in DRILL_REQUIRED_FILES if not (Path(path) / name).is_file()]
+    if not (Path(path) / "evidence").is_dir():
+        missing.append("evidence/")
+    return missing
+
+
+FIXTURE_RUN = drill_fixture_run()
+
+#: 夹具里的全跑证据（含 UVM Report Summary 与 1687 条 `*E`）；legacy 单例路径使用。
 FIXTURE_EVIDENCE_LOG = FIXTURE_RUN / "evidence" / "20261015-125305_tc_pcie_rw_02_1_run.log"
 
 DRILL_FILES = (
@@ -82,7 +123,7 @@ class RunCtx:
     progress: ProgressLog
     admission: Admission | None = None
     runner: JobRunner | None = None
-    fixture: Path = FIXTURE_RUN
+    fixture: Path = field(default_factory=drill_fixture_run)
     pending: dict[str, Any] = field(default_factory=dict)
     notes: list[str] = field(default_factory=list)
 
@@ -228,6 +269,6 @@ def prepare_run_dir(run_id: str, *, mode: str) -> Path:
     if mode == "drill":
         # 标记只读来源 + 供测试/清理识别"本层创建的运行目录"，避免误伤归档。
         (run_dir / ".loop_drill").write_text(
-            f"created_by=loop\ndrill_fixture={FIXTURE_RUN}\n", encoding="utf-8"
+            f"created_by=loop\ndrill_fixture={drill_fixture_run()}\n", encoding="utf-8"
         )
     return run_dir

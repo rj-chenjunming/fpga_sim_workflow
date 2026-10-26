@@ -25,6 +25,7 @@ from pathlib import Path
 from typing import Any
 
 from host import paths as P
+from host.evidence import evidence_view
 
 from ..context import RunCtx, ctx_of
 from .model_common import counts_text
@@ -37,6 +38,180 @@ SCENARIOS = ("happy", "dead_job", "cancel")
 
 #: drill 分支种子（与既有夹具/断言一致）
 _SEED = "1"
+
+#: drill 多例夹具清单（SPEC-REV-05 R2）：存在则按清单**回放全部用例**；
+#: 缺省（旧夹具没有该文件）保持单例 drill 分支，accept_v1 的断言不受影响。
+DRILL_CASES_FILE = "drill_cases.json"
+
+
+def _drill_case_spec(ctx: RunCtx) -> list[dict[str, Any]] | None:
+    """读夹具的多例清单；不存在/不完整 ⇒ None（回退 legacy 单例路径）。"""
+    path = Path(ctx.fixture) / DRILL_CASES_FILE
+    try:
+        doc = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    items = doc.get("cases") if isinstance(doc, dict) else None
+    if not isinstance(items, list) or not items:
+        return None
+    out: list[dict[str, Any]] = []
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        case = str(item.get("case") or "").strip()
+        run_log = str(item.get("run_log") or "").strip()
+        if not case or not run_log:
+            continue
+        out.append({
+            "case": case,
+            "run_log": run_log,
+            "rc": int(item.get("rc") or 0),
+            "compile_logs": dict(item.get("compile_logs") or {}),
+        })
+    return out or None
+
+
+def _drill_replay_command(spec: list[dict[str, Any]], *, fixture_dir: Path,
+                          evidence_dir: Path, summary_path: Path) -> str:
+    """把夹具证据**复制**成 run 证据目录（只回放，不重跑仿真）。
+
+    产物形状刻意与 `run_guarded.sh` 一致（`<case>_<seed>_run.log` +
+    `<case>_<seed>_c_{rtl,tb,uvs}.log` + `n9_run_summary.tsv`），
+    这样下游聚合/面板不需要第二套口径。
+    """
+    parts = [
+        "( set -e;",
+        f" mkdir -p {shlex.quote(str(evidence_dir))};",
+        f" : > {shlex.quote(str(summary_path))};",
+    ]
+    for item in spec:
+        case = item["case"]
+        source = Path(fixture_dir) / "evidence" / item["run_log"]
+        # 命名必须满足 `_collect_case_logs` 的约定 `*_<case>_<seed>_run.log`：
+        # 真实件带时间戳前缀；回放件用固定 `fixture` 前缀（不能省，否则聚合找不到）。
+        dest = Path(evidence_dir) / f"fixture_{case}_{_SEED}_run.log"
+        parts.append(f" rm -f {shlex.quote(str(dest))};"
+                     f" cp {shlex.quote(str(source))} {shlex.quote(str(dest))};")
+        for kind, name in (item.get("compile_logs") or {}).items():
+            compile_src = Path(fixture_dir) / "evidence" / str(name)
+            compile_dest = Path(evidence_dir) / f"fixture_{case}_{_SEED}_{kind}.log"
+            parts.append(f" rm -f {shlex.quote(str(compile_dest))};"
+                         f" cp {shlex.quote(str(compile_src))} {shlex.quote(str(compile_dest))};")
+        parts.append(f" printf '%s|%s\\n' {shlex.quote(case)} {int(item['rc'])}"
+                     f" >> {shlex.quote(str(summary_path))};")
+    parts.append(" )")
+    return "".join(parts)
+
+
+async def _submit_drill_replay(data: Any, ctx: RunCtx, spec: list[dict[str, Any]], *,
+                               run_dir: Path, evidence_dir: Path) -> dict[str, Any]:
+    """drill 多例回放：一次作业覆盖清单里的全部用例（停止点/单槽语义与 real 相同）。"""
+    case_names = [item["case"] for item in spec]
+    summary_path = run_dir / "sandbox" / "n9_run_summary.tsv"
+    summary_path.parent.mkdir(parents=True, exist_ok=True)
+    gate = await _acquire_slot(data, ctx, job_id=_slot_job_id(ctx),
+                               tc=",".join(case_names), seed=_SEED)
+    if gate.get("retry"):
+        return {"status": "slot_retry"}
+    command = _drill_replay_command(spec, fixture_dir=Path(ctx.fixture),
+                                    evidence_dir=evidence_dir, summary_path=summary_path)
+    try:
+        record = ctx.runner.submit(
+            run_id=ctx.run_id, node="N9", command=command,
+            cwd=Path(data.require_resource("repo_root")),
+            tc=",".join(case_names), seed=_SEED,
+            note=f"mode=drill cases={len(case_names)} fixture_replay",
+        )
+    except BaseException:
+        if ctx.admission is not None:
+            ctx.admission.release(job_id=_slot_job_id(ctx))
+        raise
+    payload = {
+        "job_id": record.job_id, "node": "N9", "phase": "running",
+        "tc": ",".join(case_names), "seed": _SEED, "cases": case_names,
+        "expected_cases": case_names, "md5s": {}, "target_set": "drill_fixture_replay",
+        "started_at": record.started_at, "log_path": record.log_path,
+        "mode": ctx.mode, "scenario": ctx.scenario,
+        "sandbox_root": str(run_dir / "sandbox"), "evidence_dir": str(evidence_dir),
+        "summary_path": str(summary_path),
+        "fixture": str(ctx.fixture),
+        "pre_md5s": True,
+    }
+    ctx.pending["n9_job_id"] = record.job_id
+    await data.async_set_state("n9_job", payload)
+    ctx.event("job_submitted", node="N9", status="running", detail=payload,
+              refs=[record.log_path, str(summary_path)])
+    ctx.node_started("N9_submit")
+    ctx.node_finished("N9_submit", detail={
+        "job_id": record.job_id, "cases": len(case_names),
+        "source": "drill_fixture",
+        "summary": (f"N9_submit：已提交全跑作业 {record.job_id}（drill 夹具回放，"
+                    f"覆盖 {len(case_names)} 个用例）⇒ 图转入停放"),
+    }, refs=[record.log_path, str(summary_path)])
+    return payload
+
+
+async def _drill_replay_done(ctx: RunCtx, data: Any, job: dict[str, Any], job_id: str,
+                             payload: dict[str, Any], spec: list[dict[str, Any]]) -> dict[str, Any]:
+    """drill 多例回放完成：逐例重新抽数（不信任载荷），口径合并后判 pass/fail。"""
+    case_names = [item["case"] for item in spec]
+    evidence_dir = Path(str(job.get("evidence_dir") or (ctx.run_dir / "evidence")))
+    logs = _collect_case_logs(evidence_dir, case_names)
+    missing = [c for c in case_names if c not in logs]
+    if missing:
+        ctx.node_failed("N9", message=f"缺 {len(missing)} 例证据日志：{missing}")
+        raise RuntimeError(f"N9：以下用例没有 run.log（{missing}）⇒ 不得把'没跑出证据'当通过")
+    per_case: dict[str, Any] = {}
+    for case, path in logs.items():
+        view = evidence_view(path)
+        per_case[case] = {
+            "present": view.get("present"),
+            "counts": view.get("counts") or {},
+            "verdict": view.get("verdict") or {},
+            "path": str(path),
+        }
+    not_present = [c for c in case_names if not (per_case.get(c) or {}).get("present")]
+    if not_present:
+        ctx.node_failed("N9", message=f"证据不可用（present=false）：{not_present}")
+        raise RuntimeError(f"N9：证据不可用 {not_present} ⇒ 不得继续")
+    counts = _combine_counts(per_case)
+    out = {
+        "job_id": job_id,
+        "resume_payload": payload,
+        "target_cases": case_names,
+        "cases": per_case,
+        "evidence": {"per_case": per_case, "source": "drill_fixture_replay"},
+        "counts": counts,
+        "verdict": {"passed": bool(counts.get("both_zero"))},
+        "identity": {"consistent": None, "mismatches": [],
+                     "source": "drill_fixture_replay：夹具日志无身份头，未做身份四方同值"},
+        "authority_note": "drill 回放：口径由日志重新抽取；不重跑仿真。",
+    }
+    ctx.pending["n9_result"] = out
+    await data.async_set_state("n9_result", out)
+    status = "pass" if counts.get("both_zero") else "fail"
+    ctx.event("job_finished", node="N9", status=status,
+              detail={"job_id": job_id, "rc": payload.get("rc"),
+                      "koutou1": (counts.get("koutou1") or {}).get("value"),
+                      "koutou2": (counts.get("koutou2") or {}).get("value"),
+                      "replay": True},
+              refs=[str(p) for p in logs.values()])
+    ctx.node_finished("N9", status=status,
+                      detail={"koutou1": (counts.get("koutou1") or {}).get("value"),
+                              "koutou2": (counts.get("koutou2") or {}).get("value"),
+                              "cases": len(case_names),
+                              "job_id": job_id,
+                              "replay": True,
+                              **_n9_detail(cases=per_case,
+                                           identity={"consistent": None, "mismatches": [],
+                                                     "source": "drill_fixture_replay"}),
+                              "source": "drill_fixture",
+                              "summary": (f"N9：全跑作业 {job_id} 完成（drill 夹具回放，"
+                                          f"{len(case_names)} 例），{counts_text(counts)}，"
+                                          f"both_zero={counts.get('both_zero')}")},
+                      refs=[str(p) for p in logs.values()])
+    return out
+
 
 
 def _slot_job_id(ctx: RunCtx) -> str:
@@ -298,6 +473,11 @@ async def n9_submit(data: Any) -> dict[str, Any]:
     evidence_dir = run_dir / "evidence"
 
     if ctx.mode == "drill":
+        # SPEC-REV-05 R2：夹具带多例清单 ⇒ 回放全部用例；否则保持 legacy 单例分支。
+        spec = _drill_case_spec(ctx)
+        if spec:
+            return await _submit_drill_replay(data, ctx, spec, run_dir=run_dir,
+                                              evidence_dir=evidence_dir)
         gate = await _acquire_slot(data, ctx, job_id=_slot_job_id(ctx), tc=_REAL_CASE)
         if gate.get("retry"):
             return {"status": "slot_retry"}
@@ -467,6 +647,9 @@ async def n9_park(data: Any) -> dict[str, Any]:
             )
 
         if ctx.mode == "drill":
+            spec = _drill_case_spec(ctx)
+            if spec:
+                return await _drill_replay_done(ctx, data, job, job_id, payload, spec)
             ev = ctx.evidence()
             counts = ev.get("counts") or {}
             out = {

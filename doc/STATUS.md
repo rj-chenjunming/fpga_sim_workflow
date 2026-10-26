@@ -1758,3 +1758,69 @@ G2 `pending_interrupt.payload.hard_block` 三条：`I2_CASES_PENDING`（5 例「
 ### 54.6 文档门
 
 `python3 doc/audit/check_doc_links.py` → 见本节提交后的实测（下同）：`missing=0`、`rc=0`。
+
+## 55 SPEC-REV-05 落地：失败报告收口（D）+ 真实轮冻结为 drill 夹具（2026-10-26）
+
+接 §54：§54.3 登记的"失败报告无法收口"已按用户在 [SPEC-REV-05](spec/SPEC-REV-05-20261026.md)
+中的裁决（Q1 选 **D**、Q3 选 **新增第二套夹具**）实现并验证。
+
+### 55.1 R1（方案 D）：失败报告可接受，但必须给理由
+
+- 落点：`chunks/gates.py` G2 `accept` 分支（`claimed_verdict=not_passed` ⇒ 强制 reason；
+  其余仍按 I2）、`contracts.report_claimed_verdict()`（读 `n12_report.md`，缺报告不猜）、
+  `web/app.js`（G2 提示 + 提交前本地校验）、`SPEC-01` §1 I2 增补 + §11 第 7 项标记已收口。
+- 验证（drill run `RUN-20261026-135835` 的 G2）：
+
+| 动作 | 结果 |
+|---|---|
+| `accept` 无 reason | **403**：`D：报告结论为 not_passed ⇒ 接受失败报告必须给出理由` |
+| `accept` 带 reason | **200**，`warnings=["报告结论 not_passed：accept 作为失败收口（已给理由）；…不得称跑通"]` |
+| G2 后 N16 | 仍 `refused`（I3/I4 未被放松） |
+
+- 测试：`tests/test_fix_lifecycle.py` 新增 3 条（无理由拒 / passed 仍被 I2 拒 / 无报告不推断），
+  **39 passed**。
+
+### 55.2 R2：真实轮冻结为 drill 夹具（`LOOP_DRILL_FIXTURE`）
+
+- 夹具：`workspaces/s0-ws-20261023/fixtures/drill-real-20261024/`（14 MB / 35 文件 /
+  `md5.txt` / `drill_cases.json`），来源 run `RUN-20261024-002609`。
+- 代码：`context.drill_fixture_run()` 参数化（缺省 legacy `RUN-20261015-120626`，`accept_v1` 不受影响）、
+  `validate_drill_fixture()` 启动期缺件即失败、`long_jobs` 新增多例回放
+  （`_drill_case_spec/_drill_replay_command/_submit_drill_replay/_drill_replay_done`）。
+- 验证（drill `RUN-20261026-135835` vs 真实 `RUN-20261024-002609`）：
+
+| 项 | 真实轮 | drill 回放 |
+|---|---|---|
+| 用例数 | 5 | **5** |
+| 口径一逐例 | 29 / 1687 / 0 / 0 / 0 | **29 / 1687 / 0 / 0 / 0** |
+| 口径一合计 | 1716 | **1716** |
+| 口径二 UVM_ERROR/FATAL | 0 / 0 | **0 / 0** |
+| N9 / N12 | `fail` / `not_passed` | **`fail` / `not_passed`** |
+| 耗时 | 21.56 h | **秒级（只回放）** |
+
+- drill 全流程：N9 `fail` → N10 `fail` → N11 `intact` → N12 `standin(not_passed)` →
+  G2 `accept`（有理由）→ G3 先试 `full_now` 被 **403 I4（72 条）** 拒、改 `milestone_only` →
+  N15 no-op → **N16 `refused`**，run `finished`。
+
+### 55.3 本轮发现的运维风险（必须写进操作手册）
+
+**改 `loop/workflows/**` 后重启服务，会让停在闸门的 run 恢复失败并被标记 `failed`**
+（`Can not load TriggerFlow execution snapshot … flow definition fingerprint mismatch`）：
+
+| run | 重启前 | 重启后 |
+|---|---|---|
+| `RUN-20261024-002609`（真实轮停 G2） | `waiting_gate` | **`failed`**（数据与 5 份 run.log 未丢） |
+| `RUN-20261023-213737`（drill 停 G1） | `waiting_gate` | **`failed`**（同因） |
+
+数据未损坏：`n9_run_summary.tsv`、`case_states.json`、`n12_report.md`、证据日志全在，
+快照仍留在 `state/recovery/`。但**结论是**：改工作流代码前，先把停着的 run 处理/接受完；
+或改用 drill 夹具复现（本节的 R2 正是为此）。
+
+### 55.4 未关闭项
+
+1. 真实轮 `RUN-20261024-002609` 的 run 文档现为 `failed`（重启副作用），其结论已由 drill 复现；
+   如需"UI 上真实轮 accept"的证据，只能在下一轮真实 run 里重做（N9 约 21.5 h）。
+2. 夹具目前只有**失败形态**（`not_passed`）；"通过形态"的 drill 夹具需等一次真实通过轮。
+3. `I4` 72 条冲突仍未清零（阻断 full_now 与晋升）。
+4. S0-b 未接入（[SPEC-05 §8](spec/S0_ENVIRONMENT_SPEC.md)）。
+5. 逐条处置仍未落账（`gates.json`/事件流都没有 `entry_decisions`），P-18 重建需先补 Host 落账。

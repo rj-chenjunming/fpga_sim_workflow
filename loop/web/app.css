@@ -491,7 +491,10 @@ header .pill{height:28px;background:var(--surface);border:1px solid var(--line);
 #hdrAddr{background:none;border:0;color:var(--muted);max-width:160px}
 header #lnkLegacy{font-size:12px;padding:0 8px}
 .shell{min-height:calc(100vh - 72px);align-items:stretch}
-aside{width:244px;flex:0 0 244px;background:var(--rail);color:var(--rail-text);border:0;position:sticky;top:72px;height:calc(100vh - 72px);align-self:flex-start}
+/* 侧栏是 sticky 视口高容器：内容超过可用高度时必须由**侧栏自身**滚动（WEB_UI_SPEC §14
+ * 侧栏可达性 / A10）。页面对 sticky 元素滚动无效，`overflow` 若留 `visible`，矮视口下
+ * 「最近运行」等下级条目会被画在盒外且永久不可点击（2026-10-26 实测）。 */
+aside{width:244px;flex:0 0 244px;background:var(--rail);color:var(--rail-text);border:0;position:sticky;top:72px;height:calc(100vh - 72px);align-self:flex-start;overflow:hidden auto}
 .rail-top{padding:25px 18px 10px}
 .rail-kicker{font-size:11px;letter-spacing:.6px;color:var(--rail-muted);margin:0 10px 12px}
 .rail-entry{height:auto;min-height:64px;justify-content:flex-start;gap:10px;padding:10px;background:#ffffff06;border-color:#ffffff17;color:var(--rail-text);text-align:left;margin-bottom:20px;border-radius:9px}

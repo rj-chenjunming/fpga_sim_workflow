@@ -86,6 +86,11 @@ UI 交互与等待期体验提案：[提案记录 SPEC-REV-07](spec/SPEC-REV-07-
 **U1（等待送达三项）已实施首片**（2026-10-24，软件层 node 断言 25/25，浏览器/内网终验待做），实测见 STATUS §59；**U2-a（SSE 运行投影流）已实施**（先修订 SPEC-04 §6.9/§7.3；断言 8/8+9/9，真实长连接待内网实测），见 STATUS §60；**U2-b（Agent 窗口流，§6.10）与 U5（事件流客户端过滤）已实施**（断言 12/12 + 回归，见 STATUS §61）；U3（并入 F05-b/c）、U4、U6 仍为提案。
 UX 走查修复（SPEC-REV-08，2026-10-24）：**U7–U10 已实施**（会话深链/闸门可达性三件/作业终态文案/展示微修；node 断言 25/25 + 契约桩浏览器实证，SPEC-04 §4.4/§4.5/§7.4 同批增补），见 STATUS §63；U11 提案在计划 §F。
 
+桌面布局可达性（2026-10-26）：[侧栏可达性缺陷修复计划](plans/2026-10-26-sidebar-reachability.md) →
+[WEB_UI_SPEC §14 / §10 A10](spec/WEB_UI_SPEC.md)。根因是 `aside` 为 sticky 视口高容器却
+`overflow:visible`，矮视口下「最近运行」条目落在视口外且不可滚达；**已修复**，浏览器门
+`test_web_layout.py` 由 4 failed/5 passed 转 12 passed，实测见 STATUS §75。
+
 ## 3 阅读顺序（新接手）
 
 1. [`../README.md`](../README.md) §2「三个根」+ [`../AGENTS.md`](../AGENTS.md)（组织与纪律）。

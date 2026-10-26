@@ -2700,3 +2700,111 @@ G1 中断，断言**中断载荷**里的 `decision_options.confirmed.requires_re
 - 侧栏布局：`.run-item` 在 1280/1440/1920 视口外（新暴露，未修，需单独定位）。
 - 残留 2 / 4（§74.5，登记不改）。
 - 端到端与 kb 自测未在本轮重跑（代码路径未变；如需最新证据请按 §73.1 命令重跑）。
+
+## 75 侧栏可达性（WEB_UI_SPEC §14 / A10）：缺陷修复与浏览器门转绿（2026-10-26）
+
+§74.7 唯一明确的代码未关闭项，本轮关闭；并订正 §74.4 的归因。**同一执行者实施与验证。**
+
+### 75.1 归因订正：变量是**视口高度**，不是宽度
+
+§74.4 记「侧栏 `.run-item` 在 1280/1440/1920 视口外，滚动也无法进入」。实测这个归因不准确：
+
+- `test_workspace_views_and_agent_controls_fit_browser` 的三个用例把**高度写死 1000**，
+  此时 `.run-item` 在 y≈734、`aside` 到 y=1000，装得下，**它们一直是通过的**；
+- 真正暴露缺陷的是 `test_agent_cards_show_server_capability_facts`——它**没有设视口**，
+  用的 Playwright `new_page()` 默认 **1280×720**；
+- 该文件那 4 条红里另有 3 条与布局完全无关（见 §75.3）。
+
+### 75.2 根因 1：sticky 视口高侧栏 + 内容溢出 + 无自身滚动（产品缺陷）
+
+`loop/web/app.css` 把 `aside` 钉成 `position:sticky; top:72px; height:calc(100vh - 72px)`，
+内部条目高度却是自适应的。短视口下 `.rail-top` + `#btnNew` + 4 个视图 tab + 「在等我」+
+「最近运行」+ `.rail-foot` 已超过可用高度，而 `overflow` 是默认 `visible` ⇒ 溢出内容被
+**画在 sticky 盒之外**；sticky 又让页面滚动无法把它带回视口 ⇒ 下级条目**永久不可点击**。
+
+实测（1440×720，`scrollY=0`，数字为命令输出复制）：
+
+| 量 | 修复前 | 修复后 |
+|---|---|---|
+| `aside` clientHeight / scrollHeight | 648 / **838** | 648 / 838 |
+| `.run-item`（A）包围盒 top–bottom | 734–801 | 653–720 |
+| `rail-foot` 包围盒 top–bottom | 810–910 | 落回视口内 |
+| `scrollIntoView` 之后 A 的 top | **734（一分不动）** | 653 |
+| `.run-item` 的 `locator.click()` | 30 s 超时「outside of the viewport」 | 成功 |
+
+红证据（撤掉修复那一行、只保留新用例）：
+
+- 1280×720 ⇒ `run-item top=734 bottom=801`、`run-item top=743 bottom=810`、
+  `rail-foot top=810 bottom=910`，视口高 720；
+- 1440×900 ⇒ `rail-foot top=810 bottom=910`，视口高 900（被切 10 px）；
+- 1920×1080 ⇒ 通过（1008 ≥ 838，本来就装得下）。
+
+修复：`aside{… overflow:hidden auto}`（一行属性）。`overflow-x` 取 `hidden` 是为了规避
+「一个轴 `auto`、另一轴 `visible` 会被计算成 `auto`」的横向串味；侧栏内无绝对定位浮层
+（`#btnS0` 只切视图、`#viewSeg .on:before` 在按钮内），无裁剪风险；`legacy.html` 不加载 `app.css`。
+
+契约先行：`WEB_UI_SPEC` §14 增「侧栏可达性」条款，§10 新增判据 **A10**（验收视口
+1280×720 / 1440×900 / 1920×1080，`scrollIntoView` 后包围盒须完整落在视口内）。
+回归用例：`test_web_layout.py::test_sidebar_entries_are_reachable_at_acceptance_viewports`。
+
+### 75.3 根因 2：`page.url` 拼接把文件名拼到 hash 后面（测试缺陷，非产品缺陷）
+
+`test_compatibility_console_has_return_path_and_fits_browser` 原写
+`page.goto(page.url + 'legacy.html')`。前端把当前视图同步进 URL，实测
+`page.url == "http://127.0.0.1:37051/#view=s0"` ⇒ 拼成 `"…/#view=s0legacy.html"`，
+变成**同页 hash 跳转、根本没导航**，`.back-workspace` 永远找不到（Aria 快照里仍是主工作台）。
+产品侧无缺陷：`legacy.html` 的 `<a href="legacy.html">` 与主页 `#lnkLegacy` 都是相对链接，
+点击会替换整个 path+hash。改用 `urljoin(page.url, 'legacy.html')` 后 3 条用例转绿。
+
+### 75.4 顺带查明的两条既存失败（A/B 对照，非本轮引入）
+
+用「临时只撤掉 CSS 那一行」做对照：撤掉后反而**更红**（`test_ai_work_panel` 的 320/768/1440
+三条全红 + draft 一条红）⇒ 下面两条既存，且 768/1440 两条是本轮修复顺带救回的：
+
+1. **`test_cross_run_draft_is_cleared`——与 U1-c 冲突的陈旧用例**：它断言切运行后 actor
+   回到 `human:`；但 `fill()` 打过 `human:reviewer`，`operator.js` 已 `remember` 到
+   localStorage，切运行后草稿归零到默认前缀再被**预填**，这正是
+   [SPEC-REV-07 U1-c](spec/SPEC-REV-07-20261024.md)「应用级当前操作者，三处预填」的行为。
+   已按契约对齐断言并注明来源；用例真正的语义（理由清空、提交禁用）不变且通过。
+   **产品代码未改。**
+2. **`test_ai_work_panel[…[320]]`——移动端窄屏 header 横向溢出**：
+   `documentElement.scrollWidth=369 > innerWidth=320`，最宽者是 header 里的
+   `#btnNotify`（right=369），`header` 在 ≤760 px 不换行。320 px 属移动端，
+   WEB_UI_SPEC §14 明示「移动端不作为本轮设计和验收目标」⇒ **登记不改**（见 §75.7）。
+
+### 75.5 改动清单
+
+| 文件 | 改动 | 性质 |
+|---|---|---|
+| `doc/spec/WEB_UI_SPEC.md` | §14 增「侧栏可达性」；§10 增 A10 | 契约 |
+| `doc/plans/2026-10-26-sidebar-reachability.md` | 新增：根因、切片、验证门、回退 | 计划 |
+| `loop/web/app.css` | `aside` 增 `overflow:hidden auto` + 说明注释 | **产品（唯一一行）** |
+| `loop/tests/browser/test_web_layout.py` | 新增 `assert_reachable` / `ACCEPTANCE_VIEWPORTS` / `RAIL_ENTRIES` 与 A10 用例；legacy 改用 `urljoin` | 测试 |
+| `loop/tests/browser/test_run_sessions.py` | `test_cross_run_draft_is_cleared` 对齐 U1-c | 测试 |
+| `loop/spikes/provision_dev_workspace.sh` | `kb_lib` 导入改用**脚本所在仓根**（原相对路径 `kb/tools` 使文件头的用法在 `loop/` 下直接失败，本机 2026-10-26 实测） | 测试环境 |
+
+### 75.6 四道门实测
+
+| 门 | 本轮 | 说明 |
+|---|---|---|
+| 单测（可写数据根） | **3 failed / 957 passed / 0 skipped**（301.15 s） | `--ignore=tests/browser`；3 条仍是既存 `env_layer`（`test_archive_e2` ×2 + `test_projection_and_frozen` ×1），与 §73 同集合 ⇒ **无回归** |
+| kb 自测 | `_selftest_gate_schema.py` **PASS=10 FAIL=0**；`_selftest_n5_reachability.py` **PASS=9 FAIL=0** | 两者都需 `LOOP_WORKSPACE` 指可写数据根 |
+| 端到端 | **本轮未重跑** | 改动仅 CSS / 浏览器用例 / 文档 / 一个 shell 脚本的导入路径，e2e 不触达 UI 渲染；沿用 §73 实测（ALL PASS、117 断言）。要最新证据按 §73.1 重跑 |
+| 文档 | **missing=0**（checked=2156 / known_missing=10 / env_missing=26，exit=0） | 须在**未预置 `.dev-ws`** 时跑；预置后须先 `provision_dev_workspace.sh --cleanup` |
+
+浏览器门（需 Chromium，`PLAYWRIGHT_BROWSERS_PATH` + 可写 `HOME`/`TMPDIR`）：
+
+| 范围 | 修复前 | 修复后 |
+|---|---|---|
+| `tests/browser/test_web_layout.py` | **4 failed / 5 passed**（61.51 s） | **12 passed**（15.72 s） |
+| `tests/browser/` 全量 | 本文件此前未记录全量基线（§74 只记单文件） | **1 failed / 107 passed**（136.74 s）；唯一红为移动端 320（§75.4 第 2 条） |
+
+时长下降来自 30 s 点击超时消失，**不是跳过或缩小断言**；A10 反而新增 3 条参数化用例
+（含 `rail-foot`，比规格下限更严）。
+
+### 75.7 未关闭
+
+- `test_ai_work_panel[…[320]]`：移动端窄屏 header 横向溢出（§75.4 第 2 条）。未修；
+  修它要先改 §14「移动端范围」的契约，属独立切片。
+- 浏览器用例仍未并入全量单测门（单跑 137 s，且并入后 30 s 超时会叠乘，见 §72）。
+- §74.5 的残留 2 / 4 维持「登记不改」。

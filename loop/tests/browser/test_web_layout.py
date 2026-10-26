@@ -1,11 +1,18 @@
 """Browser layout acceptance using controlled responses, without simulation assets."""
 import os
 from pathlib import Path
+from urllib.parse import urljoin
 
 import pytest
 
 from test_run_sessions import ui, static_url, select, release, pw  # noqa: F401
 from test_agent_window import agent_view
+
+# WEB_UI_SPEC §14「桌面布局」/ A10 的验收视口（宽×高）。高度是关键变量：
+# 侧栏是 sticky 视口高容器，短视口下内容会溢出。
+ACCEPTANCE_VIEWPORTS = [(1280, 720), (1440, 900), (1920, 1080)]
+RAIL_ENTRIES = ('aside .rail-entry, aside #btnNew, aside #viewSeg button, '
+                'aside .action-item, aside .run-item, aside .rail-foot')
 
 
 def capture(page, name):
@@ -30,6 +37,22 @@ def assert_fits(page, selector):
     })''')
     assert not issues, issues
     assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+
+
+def assert_reachable(page, selector):
+    """A10：侧栏入口必须「滚达得到」。sticky 视口高容器让页面滚动无法把它们带回视口，
+    因此这里按用户真实手段（滚动最近的可滚动祖先）判定，而不是只看横向是否溢出。
+    失败信息带实测包围盒与视口高，便于区分「布局缺陷」与「环境缺件」。"""
+    issues = page.locator(selector).evaluate_all('''elements => elements.flatMap(el => {
+        if (!el.getClientRects().length) return [];
+        el.scrollIntoView({block: 'nearest', inline: 'nearest'});
+        const box = el.getBoundingClientRect();
+        const inside = box.top >= -1 && box.bottom <= innerHeight + 1 &&
+            box.left >= -1 && box.right <= innerWidth + 1;
+        return inside ? [] : [(el.id || el.className) + ' top=' + Math.round(box.top) +
+            ' bottom=' + Math.round(box.bottom) + ' 视口高=' + innerHeight];
+    })''')
+    assert not issues, issues
 
 
 def populate(api):
@@ -148,12 +171,36 @@ def test_sidebar_keyboard_navigation_and_skip_link_keep_focus(ui):
     assert not api['posts']
 
 
+@pytest.mark.parametrize('width,height', ACCEPTANCE_VIEWPORTS)
+def test_sidebar_entries_are_reachable_at_acceptance_viewports(ui, width, height):
+    """A10：验收视口下侧栏每个入口都要可滚达且可点击。
+
+    回归的是实测缺陷（2026-10-26）：`aside` 是 `position:sticky; height:calc(100vh-72px)`
+    的视口高容器、内容却按内容撑高，`overflow` 为 `visible` ⇒ 短视口下「最近运行」条目被画在
+    盒外，页面滚动因 sticky 无效，`scrollIntoView` 一分不动，条目永久不可点击。
+    """
+    page, api = ui
+    page.set_viewport_size({'width': width, 'height': height})
+    populate(api)
+    pw.expect(page.locator('#actionBar .action-item')).to_have_count(2)
+    pw.expect(page.locator('#runList .run-item')).to_have_count(2)
+    assert_reachable(page, RAIL_ENTRIES)
+    assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+    capture(page, f'{width}x{height}-sidebar')
+    # 可达 ⇒ 真能操作：点击运行 A（`populate` 填充的就是 A），闸门材料随之出现
+    page.locator('#runList .run-item').first.click()
+    pw.expect(page.locator('#gateMaterial')).to_contain_text('transfer_length')
+    assert not api['posts']
+
+
 @pytest.mark.parametrize('width', [1280, 1440, 1920])
 def test_compatibility_console_has_return_path_and_fits_browser(ui, width):
     page, _ = ui
     page.set_viewport_size({'width': width, 'height': 1000})
     page.route('**/api/runs/*/events**', lambda route: route.fulfill(json={'events': [], 'last_seq': 0}))
-    page.goto(page.url + 'legacy.html')
+    # 前端把当前视图同步进 URL（`#view=s0`），直接拼 `page.url + 'legacy.html'` 会把文件名
+    # 拼到 hash 后面变成同页跳转（实测 2026-10-26）。按相对 URL 解析才是用户点链接的语义。
+    page.goto(urljoin(page.url, 'legacy.html'))
     pw.expect(page.locator('.back-workspace')).to_be_visible()
     assert_fits(page, 'input, select, textarea, .btn')
     capture(page, f'{width}-legacy')

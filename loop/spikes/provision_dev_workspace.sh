@@ -19,6 +19,7 @@
 #   bash spikes/provision_dev_workspace.sh --force            # 已存在也重建
 #   DEST=$(mktemp -d) bash spikes/provision_dev_workspace.sh --link-fixture --force --quiet
 #   DEST=/some/path bash spikes/provision_dev_workspace.sh
+#   ... --require-source        # 解析出的数据根必须存在（不存在 ⇒ exit 2，供门禁入口用）
 #
 # 之后跑测试：
 #   LOOP_WORKSPACE=<DEST> LOOP_LLM_MODE=standin .venv/bin/python -m pytest -q
@@ -40,6 +41,7 @@ CLEANUP=0
 LINK_FIXTURE=0
 QUIET=0
 TOLERATE_MISSING=0
+REQUIRE_SOURCE=0
 for arg in "$@"; do
   case "$arg" in
     --cleanup) CLEANUP=1 ;;
@@ -47,6 +49,7 @@ for arg in "$@"; do
     --link-fixture) LINK_FIXTURE=1 ;;
     --quiet) QUIET=1 ;;
     --tolerate-missing-fixture) TOLERATE_MISSING=1 ;;
+    --require-source) REQUIRE_SOURCE=1 ;;
     -h|--help) sed -n '2,33p' "$0"; exit 0 ;;
     *) echo "[FAIL] 未知参数：$arg（用 --help）" >&2; exit 2 ;;
   esac
@@ -54,6 +57,8 @@ done
 
 say () { [ "$QUIET" = "1" ] || echo "$@"; }
 note () { [ "$QUIET" = "1" ] || echo "$@" >&2; }
+# 告警**不受 --quiet 抑制**（复核 R1）：环境缺件必须始终可见，否则门禁会静默变绿。
+warn () { echo "$@" >&2; }
 
 if [ "$CLEANUP" = "1" ]; then
   if [ -d "$DEST" ]; then
@@ -75,15 +80,20 @@ fi
 # 导入路径按**本脚本所在的仓库根**解析：脚本既可从 `loop/` 也能从仓根执行，
 # 不能依赖调用者 cwd（2026-10-26 实测：在 `loop/` 下按文件头用法执行会因相对路径
 # `kb/tools` 找不到 `kb_lib` 而直接失败）。
-read -r ENV_ROOT SRC_ROOT < <(REPO0="$REPO" "$PY" - <<'PYEOF'
+read -r ENV_ROOT SRC_ROOT < <(REPO0="$REPO" PYTHONDONTWRITEBYTECODE=1 "$PY" -B - <<'PYEOF'
 import os
 import sys
+sys.dont_write_bytecode = True   # 不往冻结的 kb/tools 写 __pycache__（红线 11）
 sys.path.insert(0, os.path.join(os.environ["REPO0"], "kb", "tools"))
 import kb_lib as K
 print(K.ENV_ROOT, K.WORKSPACE_ROOT)
 PYEOF
 ) || { echo "[FAIL] kb_lib 解析失败" >&2; exit 2; }
 [ -n "${ENV_ROOT:-}" ] && [ -n "${SRC_ROOT:-}" ] || { echo "[FAIL] 空解析结果" >&2; exit 2; }
+if [ "$REQUIRE_SOURCE" = "1" ] && [ ! -d "$SRC_ROOT" ]; then
+  echo "[FAIL] 数据根不存在：$SRC_ROOT（LOOP_WORKSPACE / environments.json 指错了？）" >&2
+  exit 2
+fi
 
 if [ -d "$DEST" ] && [ "$FORCE" != "1" ]; then
   say "[OK] 已存在：$DEST（重建用 --force）"
@@ -96,7 +106,7 @@ FIXTURE_RUN="RUN-20261015-120626"
 FIXTURE="$SRC_ROOT/runs/$FIXTURE_RUN"
 if [ ! -d "$FIXTURE" ]; then
   if [ "$TOLERATE_MISSING" = "1" ]; then
-    note "[warn] 缺 drill 夹具轮 $FIXTURE_RUN；依赖它的用例会失败（不是软件层缺陷）"
+    warn "[warn] 缺 drill 夹具轮 $FIXTURE_RUN；依赖它的用例会失败（不是软件层缺陷）"
   else
     echo "[FAIL] 只读数据根里没有 drill 夹具：$FIXTURE" >&2
     exit 1
@@ -134,7 +144,7 @@ for f in n1_manifest_new.json n2_diff.json n5_impact.json n12_report.md evidence
 done
 if [ ${#MISSING[@]} -gt 0 ]; then
   if [ "$TOLERATE_MISSING" = "1" ]; then
-    note "[warn] 夹具缺件：${MISSING[*]}（依赖这些材料的用例会失败）"
+    warn "[warn] 夹具缺件：${MISSING[*]}（依赖这些材料的用例会失败）"
   else
     echo "[FAIL] 夹具缺件：${MISSING[*]}" >&2
     exit 1

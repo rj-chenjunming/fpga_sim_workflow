@@ -359,7 +359,7 @@ input[type=text]:focus,textarea:focus,select:focus{outline:1px solid #2f6fbf;bor
      `contracts.gate_decision_options` 每次重算的结果）。
      前端不写死枚举（红线 4：权威 = kb_lib.GATE_DECISIONS），也不读中断载荷里的
      `payload.decision_options` —— 那是中断创建时的快照，会随快照恢复保留旧值
-     （WEB_UI_SPEC §4.4「中断载荷里的选项只是快照」）。服务端没下发 ⇒ 不给按钮、
+     （WEB_UI_SPEC §5「中断载荷里的选项只是快照」）。服务端没下发 ⇒ 不给按钮、
      提交按钮保持禁用，明确说"不可提交"；**降级为快照或自造枚举都不允许**。 */
   function gateDecisionOptions(gid, view) {
     var opts = (view && view.gate_options && view.gate_options[gid]) || null;
@@ -1056,7 +1056,7 @@ input[type=text]:focus,textarea:focus,select:focus{outline:1px solid #2f6fbf;bor
       box.appendChild(mm);
       box.appendChild(jsonBlock(mat, 'gate_material 原始 JSON'));
     } else {
-      box.appendChild(h('div', { cls: 'msg msg-warn', text: 'pending_interrupt.payload 为空或缺省；材料不可得，仍可提交决策（以后端为准）。' }));
+      box.appendChild(h('div', { cls: 'msg msg-warn', text: 'pending_interrupt.payload 为空或缺省；材料不可得 ⇒ 本界面不据此判定可提交：决策按钮只由 run_view.gate_options 下发，缺选项时按钮区显示"不可提交"且提交键禁用' }));
     }
 
     renderGateButtons(gid, mat);

@@ -1656,6 +1656,8 @@ LOOP_PORT=18098 ./run.sh
 1. `GET /api/runs/RUN-20261023-171744/nodes/N1` ⇒ `story.headline` 出现；N1–N9 的关键数字/状态释义；
 2. `GET …/nodes/N9` ⇒ 未收尾态文案；`GET …/nodes/N10` ⇒ "本轮没有走到这个节点（运行停在 failed，失败）"；
 3. `GET …/nodes/N4` ⇒ "逐条处置未留存（该 run 早于处置落账）" + "当时的阻断项未留存"；
+   （**已过期（2026-10-26）**：这两句文案已作废，现按 `missing`/`corrupt`/`records` 为空分开陈述，
+   见 §81.1；原句按历史记录保留。）
 4. `GET /api/runs/RUN-20261023-171744/report` ⇒ 404（该 run 停在 N9，没有 `n12_report.md`；端点本身存在）；
 5. `GET /api/runs/RUN-20261023-171744/nodes/N13` ⇒ 只读待确认项（G2 未到达时不编条目）。
 
@@ -3272,7 +3274,7 @@ hard_block = ['I4_CONFLICTS_UNCLEARED']
 | 问题 | `gateDecisionOptions()` 的取值顺序是「`payload.decision_options`（中断快照）→ `run_view.gate_options` → 手抄枚举兜底表」。快照恢复后旧选项会盖掉服务端重算值（第二套判据，红线 8）；兜底表是前端手抄 `kb_lib.GATE_DECISIONS`（红线 4） |
 | 实现 | 只读 `run_view.gate_options`；没有 ⇒ 返回空、面板明说「服务端未下发决策选项（`run_view.gate_options` 缺失）：本界面不写死枚举 ⇒ 不可提交」，`#btnSubmit` 保持禁用；删除 `GATE_DECISIONS_FALLBACK` |
 | 钉子 | 新增 `loop/tests/browser/test_legacy_gate_options.py`（受控替身：中断载荷有选项、`gate_options` 缺失 ⇒ **零按钮** + 不可提交 + 不出现快照文案；服务端下发重算值后才出现按钮）。判别性：旧实现会渲染快照选项、且兜底表会让按钮出现 |
-| 规格 | `WEB_UI_SPEC §4.4` 「中断载荷里的选项只是快照」补两个前端同一口径 |
+| 规格 | `WEB_UI_SPEC §5`（闸门视图）「中断载荷里的选项只是快照」补两个前端同一口径 |
 
 ### 81.3 A2 可写数据根构造只剩一份实现
 
@@ -3291,22 +3293,62 @@ hard_block = ['I4_CONFLICTS_UNCLEARED']
 ③ 判据不同（浏览器门验界面行为，单测门验软件行为）。
 落点：`AGENTS.md §4` 表格后新增该段（含命令、`tests/browser` 期望 0 failed、"改 `loop/web/**` 或界面投影字段必须单独跑并记 STATUS"）。
 
-### 81.5 本轮门（整改后重跑，数字从命令输出复制）
+### 81.5 本轮门（**复核前**那一轮，数字从命令输出复制；整改后见 §81.9）
 
 | 门 | 结果 | 说明 |
 | --- | --- | --- |
 | 软件层单测 | **967 passed / 3 deselected / 0 failed**（162.46 s） | 走 `bash spikes/run_software_checks.sh --ignore=tests/browser`（影子根由 `provision --link-fixture` 造）；较 §78.7 的 965 多 2 条 = 本轮 A1 新增用例。3 条 deselected 仍是 `@pytest.mark.env_layer`（`test_archive_e2` ×2、`test_projection_and_frozen` ×1，需可写 `ENV_ROOT`） |
-| 浏览器门 | **111 passed**（115.39 s） | `PLAYWRIGHT_BROWSERS_PATH=<repo>/.pw-browsers HOME=<repo>/.chrome-home TMPDIR=<repo>/.chrome-tmp pytest -q tests/browser`；较 §75 的 110 多 1 条 = 本轮 A3 新增用例 |
+| 浏览器门 | **111 passed**（115.39 s） | `PLAYWRIGHT_BROWSERS_PATH=<repo>/.pw-browsers HOME=<repo>/.chrome-home TMPDIR=<repo>/.chrome-tmp pytest -q tests/browser`；较 §77.6 的 110 多 1 条 = 本轮 A3 新增用例 |
 | 端到端 | **ALL PASS，117 断言 / 0 FAIL**（相位 1/2/3/4/4b/5 全部 `rc=0`；分部 PASS=50/27/18/8/8/6） | 先 `provision_dev_workspace.sh --force` 造可写数据根，再 `LOOP_WORKSPACE=<repo>/.dev-ws bash spikes/accept_v1_run.sh`；跑完 `--cleanup` 删除。断言总数与 §73 的 117 同值 ⇒ 本轮改动未改端到端可观察行为 |
 | kb 自测 | 未重跑 | 本轮未改 `kb/**`；上次实测 §75.6（`_selftest_gate_schema.py` PASS=10、`_selftest_n5_reachability.py` PASS=9） |
-| 文档 | **missing=0**（checked=1944 skipped=24560 historical=857 known_missing=10 env_missing=19） | `python3 doc/audit/check_doc_links.py`；跑前已 `provision --cleanup` 删除仓内临时数据根（否则拷贝来的环境文档会被算成 missing，口径见 §79.6） |
+| 文档 | **missing=0**（checked=1944 skipped=24560 historical=857 known_missing=10 env_missing=19；**checked/skipped 是诊断值、随树漂移**——§19 已登记「记录本身会改变被扫跨度」） | `python3 doc/audit/check_doc_links.py`；跑前已 `provision --cleanup` 删除仓内临时数据根（否则拷贝来的环境文档会被算成 missing，口径见 §79.6） |
 
 ### 81.6 未关闭（本轮明确不做）
 
 - 决策项文案（失败轮次的 `accept` 是否改名）属产品文案，需人裁决。
 - 残留 2（drill + API 直给 `entry_decisions` 时选项声明"不需要理由"而 precheck 收下）方向是**更严**，维持登记。
 - 演示夹具"通过形态"仍缺（需一次真实通过轮或 `ENV_ROOT` 写授权，红线 11）。
-- 两轮历史复核报告仍不在 `doc/audit/`（无法从对话复原原文；不复原 = 不伪造证据）。本轮改由 §81.7 的新复核落档补位。
+- 两轮历史复核报告（§78、§79 那两轮）仍不在 `doc/audit/`：对话里没有原文，**复原等于伪造证据**，故不复原。本轮起改为每轮复核即落档——本轮报告见 [`AUDIT-20261026-a-group.md`](audit/AUDIT-20261026-a-group.md)（§81.8）。
+
+
+### 81.8 独立复核（2026-10-26）与整改
+
+复核者：**独立 agent**（非实现者），报告 [`doc/audit/AUDIT-20261026-a-group.md`](audit/AUDIT-20261026-a-group.md)
+（报告头注明"本轮是否修复：否，只登记"）。结论：**阻断 0**，应修 3 组、建议 6 条；
+复核者自己复现了当时点的四道门（软件层 967 / 浏览器 111 / 端到端 117 断言 /
+文档 missing=0），并做了运行时 monkeypatch 的破坏性反证（三条 A1 回归分别 1 红 / 3 红 / 1 红，基线 3 绿），
+还实测出"旧 `legacy.html` + 新用例 → 红（渲染出快照选项）"。
+
+整改（**Lead 实施，不构成独立验证**）：
+
+| 编号 | 复核意见 | 处置 | 落点 |
+|---|---|---|---|
+| R1 | 委托后丢了「数据根不存在 ⇒ exit 2」，且 `--quiet` 吞掉缺夹具 warn | 已修：provision 增 `--require-source`（数据根不是目录 ⇒ exit 2）；新增 `warn()` **不受 `--quiet` 抑制** | `spikes/provision_dev_workspace.sh`、`run_software_checks.sh` |
+| R2 | `AGENTS.md` 那句「~5.5 min → 20 min+」无命令输出支撑（红线 2） | 已改：用实测 168.26 s + 114.79 s 表述，删掉倍数说法 | `AGENTS.md` §4 |
+| R3 | 小节号/出处错引 3 处 | 已改：快照口径在 **§5**（不是 §4.4，3 处）、「§75 的 110」→ **§77.6 的 110**、计划里「§10 A10 有门命令」拆成「跑法在 AGENTS §4 / A10 只有视口判据」；另把 §10.4.2 的「两种事实」改为三种（+`no_run_dir`） | 多处 |
+| S1 | 字面 `null`/非对象账本报"不存在"、`records` 形状不符报"为空"、非 UTF-8 或路径是目录直接抛异常 | 已修：`_decision_ledger` 收敛 `OSError`/`UnicodeDecodeError` 到 `corrupt`，`解析成功但不是对象 ⇒ corrupt`；`records` 非 list 或末条非对象 ⇒ `corrupt`。新增 7 条参数化用例（`null`/字符串/数组、`records` 为 str/dict/list-of-str、非 UTF-8、路径是目录） | `contracts.py`、`test_node_detail_projection.py` |
+| S2 | `legacy.html` 同屏"仍可提交决策"与"不可提交"矛盾；`app.js` 仍写 `decision_options` | 已修两处文案 | `legacy.html`、`app.js` |
+| S3 | 旧界面钉子只覆盖 G1 | 已参数化 **G1/G2/G3**，每道门配独立快照文案（任一道门回退"快照优先"都会红） | `tests/browser/test_legacy_gate_options.py` |
+| S4 | 解析片段 `import kb_lib` 未禁字节码，会往冻结的 `kb/tools/` 写 `__pycache__` | 已修：`python -B` + `sys.dont_write_bytecode = True`。**如实登记**：仓库 `kb/tools/__pycache__/` 内确有 2026-10-15 留下的旧 `.pyc`（`kb_lib.cpython-38.pyc` 等）；删除它们属**写 `ENV_ROOT`**（红线 11），本轮不动，只保证新入口不再新增 | `provision_dev_workspace.sh` |
+| S5 | 「第五道补充门」与「不是第六道必备门」第一眼矛盾 | 已改：统一为"**四道必备门之外的补充门**"，三条理由按实测重写 | `AGENTS.md` §4、计划 A4 |
+| S6 | STATUS 记的 `checked/skipped` 是随树漂移的诊断值 | 已加"诊断值、随树漂移（§19）"标注（见 §81.5/§81.9） | `doc/STATUS.md` |
+
+**历史文档的过期登记点**（复核 §6-2；按「只增不改」只加指针、不回填原文）：
+`STATUS` §52 复核清单第 3 条加内联"已过期"；4 份 `doc/plans/2026-10-23-node-panel-*` 顶部各加过期横幅
+（指向本节 §81.1）。
+
+**未处理（超出本轮写权/产品范围）**：`workspaces/real-env-copy/loop/web/index.html` 是 ignored 派生副本，
+仍含旧 `GATE_DECISIONS_FALLBACK`，不在产品路径；是否清理归该副本 owner。
+
+### 81.9 整改后门（复核意见落地后重跑）
+
+| 门 | 结果 | 说明 |
+|---|---|---|
+| 软件层单测 | **974 passed / 3 deselected / 0 failed**（167.06 s） | 较 §81.5 的 967 多 7 条 = S1 新增参数化用例；3 条 deselected 仍是 `@pytest.mark.env_layer` |
+| 浏览器门 | **113 passed**（125.93 s） | 较 §81.5 的 111 多 2 条 = A3 用例参数化到三道门 |
+| 端到端 | **ALL PASS，117 断言 / 0 FAIL**（6 个 phase 全 `rc=0`，PASS=50/27/18/8/8/6） | 复核意见落地后重跑；先 `provision_dev_workspace.sh --force`、跑完 `--cleanup` |
+| 文档 | **missing=0、exit=0** | 含本轮新增的复核报告 `doc/audit/AUDIT-20261026-a-group.md`（复核者改路径断链后复测亦 missing=0）。**只记 missing 与退出码**：`checked/skipped` 属诊断值、记录动作本身就会改变被扫跨度（§19），写死一个数只会立刻漂移——故本节不回填 |
+| kb 自测 | 未重跑 | 本轮未改 `kb/**`；上次实测 §75.6 |
 
 ### 81.7 待独立复核
 

@@ -644,7 +644,7 @@ def test_gate_entries_decided_reads_host_ledger(tmp_path: Path) -> None:
 
 
 def test_gate_decided_ledger_without_hard_block_says_not_retained(tmp_path: Path) -> None:
-    """R3-04：早于落账的旧 run（ledger 无 `hard_block` 键）⇒ 明说未留存，不写 0 冒充"没有硬阻断"。"""
+    """R3-04：旧记录没有 `hard_block` 字段（早于 R3-04 快照字段，**不是**"早于落账"）⇒ 明说未留存，不写 0 冒充"没有硬阻断"。"""
     from services import contracts
 
     path = "RTL/a.v"
@@ -733,6 +733,75 @@ def test_gate_entries_ledger_without_records_is_explicit(tmp_path: Path) -> None
     assert gate["state"] == "decided" and gate["counts"]["disposed"] == 0
     assert "没有记录" in gate["note"] and "records" in gate["note"]
     assert "不存在" not in gate["note"]
+
+
+@pytest.mark.parametrize("content", ["null", '"oops"', "[]"], ids=["null", "str", "list"])
+def test_gate_entries_non_object_ledger_is_corrupt_not_missing(
+        tmp_path: Path, content: str) -> None:
+    """A1/S1：文件在但形状不是对象（含 JSON 字面 `null`）⇒ 损坏，**不得**报"不存在"。"""
+    from services import contracts
+
+    (tmp_path / "decisions").mkdir()
+    (tmp_path / "decisions" / "G1_diff_confirm.json").write_text(content, encoding="utf-8")
+    gate = contracts.gate_entries_view(
+        gate="G1_diff_confirm", run_dir=tmp_path,
+        diff={"entries": [_diff_entry("RTL/a.v", "rtl_file", diff_hunk="@@ -1 +1 @@")],
+              "unresolved_count": 1},
+        authority={"status": "signed", "decision": "confirmed", "actor": HUMAN},
+        mode="real",
+    )
+    assert "不可解析" in gate["note"] and "损坏" in gate["note"]
+    assert "不存在" not in gate["note"]
+
+
+@pytest.mark.parametrize("records", ["oops", {"a": 1}, ["not-an-object"]],
+                         ids=["str", "dict", "list-of-str"])
+def test_gate_entries_malformed_records_is_corrupt_not_dropped(
+        tmp_path: Path, records: Any) -> None:
+    """A1/S1：`records` 形状不符 ⇒ 损坏（不索引成 KeyError/TypeError，也不说"为空"）。"""
+    from services import contracts
+
+    (tmp_path / "decisions").mkdir()
+    (tmp_path / "decisions" / "G1_diff_confirm.json").write_text(
+        json.dumps({"gate": "G1_diff_confirm", "records": records}), encoding="utf-8")
+    gate = contracts.gate_entries_view(
+        gate="G1_diff_confirm", run_dir=tmp_path,
+        diff={"entries": [_diff_entry("RTL/a.v", "rtl_file", diff_hunk="@@ -1 +1 @@")],
+              "unresolved_count": 1},
+        authority={"status": "signed", "decision": "confirmed", "actor": HUMAN},
+        mode="real",
+    )
+    assert gate["state"] == "decided"
+    assert "不可解析" in gate["note"] and "损坏" in gate["note"]
+    assert "为空" not in gate["note"], "形状不符不得说成 records 为空"
+    assert gate["entries"][0]["disposition"] is None
+
+
+def test_gate_entries_undecodable_ledger_is_corrupt_not_missing(tmp_path: Path) -> None:
+    """A1/S1：非 UTF-8 字节 / 路径是目录 ⇒ 损坏（旧实现会抛 UnicodeDecodeError/IsADirectoryError）。"""
+    from services import contracts
+
+    (tmp_path / "decisions").mkdir()
+    (tmp_path / "decisions" / "G1_diff_confirm.json").write_bytes(b"\xff\xfe\x00not-utf8")
+    broken = contracts.gate_entries_view(
+        gate="G1_diff_confirm", run_dir=tmp_path,
+        diff={"entries": [_diff_entry("RTL/a.v", "rtl_file", diff_hunk="@@ -1 +1 @@")],
+              "unresolved_count": 1},
+        authority={"status": "signed", "decision": "confirmed", "actor": HUMAN},
+        mode="real",
+    )
+    assert "不可解析" in broken["note"] and "损坏" in broken["note"]
+
+    as_dir = tmp_path / "as-dir"
+    (as_dir / "decisions" / "G1_diff_confirm.json").mkdir(parents=True)
+    dir_case = contracts.gate_entries_view(
+        gate="G1_diff_confirm", run_dir=as_dir,
+        diff={"entries": [_diff_entry("RTL/a.v", "rtl_file", diff_hunk="@@ -1 +1 @@")],
+              "unresolved_count": 1},
+        authority={"status": "signed", "decision": "confirmed", "actor": HUMAN},
+        mode="real",
+    )
+    assert "不可解析" in dir_case["note"] and "损坏" in dir_case["note"]
 
 
 def test_gate_entries_no_material_is_explicit() -> None:

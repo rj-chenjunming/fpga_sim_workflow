@@ -3011,7 +3011,7 @@
     }
     var list = h("div", "gate-options");
     if (!options.length) {
-      list.appendChild(h("div", "alert bad", "服务端未下发决策选项（gate_options / decision_options 缺失）⇒ 不可提交。"));
+      list.appendChild(h("div", "alert bad", "服务端未下发决策选项（run_view.gate_options 缺失）⇒ 不可提交。"));
     } else {
       var groupName = "gate-decision-" + (container.id || "x");
       options.forEach(function (opt) {

@@ -485,7 +485,8 @@ n9_sim chunk                       park chunk                      job_runner �
   + **具体是哪份文件的该条记录没有这个字段**，`counts.hard_block` 为 `null`
   （不写 0 冒充"没有硬阻断"）。
   **读不到时必须区分三种情形（2026-10-26 A1）**：投影对账本返回
-  `status ∈ {ok, missing, corrupt, no_run_dir}`，面板文案据它在两种事实之间分开：
+  `status ∈ {ok, missing, corrupt, no_run_dir}`，面板文案据它在下列三种情形之间分开
+（另有 `no_run_dir` = 连运行目录都定位不到）：
   - `missing`（`decisions/<gate>.json` 不存在）⇒「逐条处置未落账（该文件不存在）」；
   - `corrupt`（不可解析 / 形状不符）⇒「落账不可解析（文件损坏或形状不符）」，提示以现场文件为准；
   - `ok` 但 `records` 为空 ⇒「落账没有记录」。

@@ -1,5 +1,11 @@
 # 第三轮补充修订 · 实现契约与写权（2026-10-23 晚，接 round3-kickoff）
 
+> **已过期（2026-10-26，由 [`doc/STATUS.md` §81.1](../STATUS.md) 取代）**：本文中"逐条处置未留存
+> （该 run 早于处置落账）"、"当时的阻断项未留存（该 run 早于落账）"这类表述已**作废**——
+> 投影现按 `missing`（文件不存在）/ `corrupt`（不可解析或形状不符）/ `records` 为空三种事实分开
+> 陈述，且**不再猜原因**。本文其余部分按历史记录保留、不回填。
+
+
 > **上游**：[`2026-10-23-node-panel-revision-round3-kickoff.md`](2026-10-23-node-panel-revision-round3-kickoff.md)
 > （R3-01～R3-18 唯一清单）、[`2026-10-23-node-panel-unified-revision-plan.md`](2026-10-23-node-panel-unified-revision-plan.md)
 > （§1–§8 既有接口契约，**不改**）、[`SPEC-REV-04` §C.2](../spec/SPEC-REV-04-20261023.md)、

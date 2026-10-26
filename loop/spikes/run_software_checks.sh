@@ -44,7 +44,7 @@ trap cleanup EXIT
 # 这里只声明「一次性影子」这一形态：夹具与 baselines 用符号链接（不复制 733 MB），
 # 缺夹具时降级为 warn（依赖它的用例会失败，但不是软件层缺陷）。
 DEST="$SHADOW" bash "$SPIKES_DIR/provision_dev_workspace.sh" \
-  --force --link-fixture --quiet --tolerate-missing-fixture \
+  --force --link-fixture --quiet --tolerate-missing-fixture --require-source \
   || { echo "[FAIL] 影子数据根构造失败" >&2; exit 2; }
 
 echo "[info] 软件层数据根：$SHADOW（drill 夹具与 baselines → 真实只读源）" >&2

@@ -1,6 +1,6 @@
 """旧界面（`legacy.html`）的闸门决策按钮只认服务端**每次重算**的 `run_view.gate_options`。
 
-回归背景（2026-10-26 A3 / WEB_UI_SPEC §4.4「中断载荷里的选项只是快照」、红线 4/8）：
+回归背景（2026-10-26 A3 / WEB_UI_SPEC §5「中断载荷里的选项只是快照」、红线 4/8）：
 `legacy.html` 曾经按「先 `payload.decision_options`（中断快照）→ 再 `run_view.gate_options`
 → 最后一张手抄枚举兜底表」取按钮。前两者顺序颠倒 ⇒ 快照恢复出来的旧选项会盖掉服务端重算值
 （第二套判据，红线 8）；兜底表则是前端手抄 `kb_lib.GATE_DECISIONS`（红线 4）。
@@ -22,17 +22,22 @@ import pytest
 
 pw = pytest.importorskip("playwright.sync_api", reason="安装 requirements-ui.txt 运行浏览器验收")
 
-GATE = "G1_diff_confirm"
+GATES = ("G1_diff_confirm", "G2_report_accept", "G3_regression_decision")
 # 中断载荷里的**快照**选项：界面不得据它渲染（只有 run_view.gate_options 才是判据）。
-SNAPSHOT = [{"value": "confirmed", "label": "快照里的确认"}]
+# 三道门各用不同文案，任何一道门回退成"快照优先"都会被抓到（2026-10-26 复核 S3）。
+SNAPSHOT = {
+    "G1_diff_confirm": [{"value": "confirmed", "label": "快照里的确认"}],
+    "G2_report_accept": [{"value": "accept", "label": "快照里的接受"}],
+    "G3_regression_decision": [{"value": "defer", "label": "快照里的缓期"}],
+}
 
 
-def _view(gate_options):
+def _view(gate, gate_options):
     return {
         "run_id": "A", "status": "waiting_gate", "mode": "drill", "node_history": [],
         "pending_interrupt": {
-            "id": GATE + ":0", "type": "gate_decision",
-            "payload": {"gate": GATE, "cycle": 0, "decision_options": SNAPSHOT},
+            "id": gate + ":0", "type": "gate_decision",
+            "payload": {"gate": gate, "cycle": 0, "decision_options": SNAPSHOT[gate]},
         },
         "gate_options": dict(gate_options),
     }
@@ -61,7 +66,7 @@ def legacy(static_url):
         executable = os.environ.get("LOOP_BROWSER_EXECUTABLE")
         browser = driver.chromium.launch(**({"executable_path": executable} if executable else {}))
         page = browser.new_page()
-        api = {"gate_options": {}, "errors": []}
+        api = {"gate": GATES[0], "gate_options": {}, "errors": []}
         page.on("pageerror", lambda error: api["errors"].append(str(error)))
 
         def route_request(route):
@@ -76,7 +81,7 @@ def legacy(static_url):
             elif path.endswith("/events"):
                 body = {"events": []}
             elif path == "/api/runs/A":
-                body = _view(api["gate_options"])
+                body = _view(api["gate"], api["gate_options"])
             else:
                 body = {"ok": False}
             route.fulfill(json=body)
@@ -88,18 +93,24 @@ def legacy(static_url):
         browser.close()
 
 
-def test_legacy_does_not_render_snapshot_decision_options(legacy):
+@pytest.mark.parametrize("gate", GATES)
+def test_legacy_does_not_render_snapshot_decision_options(legacy, gate):
     page, api = legacy
+    api["gate"] = gate
+    snapshot_label = SNAPSHOT[gate][0]["label"]
     buttons = page.locator("#fButtons")
+    # 首屏固定按 G1 渲染；等轮询重取到本道门的视图（原始闸门 id 会显示 gid），
+    # 否则 G2/G3 的断言会在还没切换到该门时就"碰巧通过"。
+    pw.expect(buttons).to_contain_text(gate, timeout=8000)
     # 服务端没下发重算值 ⇒ 不渲染任何决策按钮，且明确说"不可提交"（快照不算数）。
     pw.expect(buttons).to_contain_text("服务端未下发决策选项")
     assert buttons.locator(".dec-btn").count() == 0
-    assert "快照里的确认" not in buttons.inner_text()
+    assert snapshot_label not in buttons.inner_text()
     assert page.eval_on_selector("#btnSubmit", "el => el.disabled") is True
 
     # 服务端下发重算值后才出现按钮（来源唯一 = run_view.gate_options）。
-    api["gate_options"] = {GATE: [{"value": "confirmed", "label": "服务端确认"},
-                                 {"value": "ignored", "label": "服务端忽略"}]}
+    api["gate_options"] = {gate: [{"value": "x1", "label": "服务端选项一"},
+                                 {"value": "x2", "label": "服务端选项二"}]}
     pw.expect(buttons.locator(".dec-btn")).to_have_count(2)
-    pw.expect(buttons).to_contain_text("服务端确认")
-    assert "快照里的确认" not in buttons.inner_text()
+    pw.expect(buttons).to_contain_text("服务端选项一")
+    assert snapshot_label not in buttons.inner_text()

@@ -1175,19 +1175,24 @@ def _decision_ledger(run_dir: Path | None, gate: str) -> tuple[dict[str, Any] | 
 
     为什么必须区分 `missing` 与 `corrupt`（2026-10-26，A1）：两者对使用者的含义不同——
     `missing` = 这一轮没留下账本（例如签署后恢复失败、本轮未走到落账）；`corrupt` =
-    账本在，但读不出来（形状不符 / 不可解析），需要人去查现场文件。早先两者都折成
-    `None`，面板只能笼统说"未留存"，还会把原因猜成"本轮早于落账"——对
+    账本在，但读不出来（形状不符 / 不可解析 / 非 UTF-8 / 路径是目录），需要人去查现场文件。
+    早先两者都折成 `None`，面板只能笼统说"未留存"，还会把原因猜成"本轮早于落账"——对
     「有签名但没落账」的轮次（`RUN-20261024-002609`）是错误归因。
+
+    「文件在但形状不是对象」一律算 `corrupt`：JSON 字面 `null`、数组、字符串都属此类
+    （`_read_artifact` 对合法 `null` 返回 `(None, None)`，不能当成"不存在"）。
     """
     if run_dir is None:
         return None, "no_run_dir"
-    doc, error = _read_artifact(Path(run_dir) / "decisions" / f"{gate}.json")
+    try:
+        doc, error = _read_artifact(Path(run_dir) / "decisions" / f"{gate}.json")
+    except (OSError, UnicodeDecodeError):
+        # 路径是目录 / 无读权限 / 非 UTF-8 字节：都是"文件在但读不出来"，不是"没有账本"。
+        return None, "corrupt"
     if isinstance(doc, dict):
         return doc, "ok"
-    if doc is not None:
-        return None, "corrupt"  # 解析成功但不是对象 ⇒ 形状不符，按损坏处理
-    if error and error.startswith("不可解析"):
-        return None, "corrupt"
+    if doc is not None or not error or not error.startswith("缺失"):
+        return None, "corrupt"  # 解析成功但不是对象 / 不可解析 ⇒ 形状或内容损坏
     return None, "missing"
 
 
@@ -1341,8 +1346,14 @@ def gate_entries_view(
     ledger, ledger_status = _decision_ledger(run_dir, gate)
     latest: dict[str, Any] | None = None
     if isinstance(ledger, dict):
-        records = ledger.get("records") or []
-        if records and isinstance(records[-1], dict):
+        records = ledger.get("records")
+        # 形状兜底：`records` 不是列表时不能索引（否则 KeyError/TypeError 冒到界面），
+        # 且要按"损坏"说，不能报成"records 为空"（2026-10-26 复核 S1）。
+        if records is not None and not isinstance(records, list):
+            ledger_status = "corrupt"
+        elif isinstance(records, list) and records and not isinstance(records[-1], dict):
+            ledger_status = "corrupt"  # 有记录但末条不是对象 ⇒ 形状坏，不能说"为空"
+        if isinstance(records, list) and records and isinstance(records[-1], dict):
             latest = records[-1]
     dispositions = (latest or {}).get("entries") if isinstance(latest, dict) else None
     if isinstance(dispositions, dict):

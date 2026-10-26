@@ -89,11 +89,13 @@
 | 端到端 | `cd loop && bash spikes/accept_v1_run.sh` | 退出成功且断言完整执行，实测见 STATUS。**2026-10-26 实测更正**：全部 phase 走 `mode=drill`，只需**可写数据根**（`bash spikes/provision_dev_workspace.sh` 后指 `LOOP_WORKSPACE`），**不需要**可写 `ENV_ROOT`；跑完 `ENV_ROOT/kb` 零写入（见 STATUS §73） |
 | 文档 | 路径引用存在性 + 移动件有 MIGRATION/横幅 + 数字与 `doc/STATUS.md` 一致 | 零断链 |
 
-> **浏览器（Playwright）门是第五道补充门，默认不并入上表**（2026-10-26 裁决，见
+> **浏览器（Playwright）门是四道必备门之外的补充门，默认不并入上表**（2026-10-26 裁决，见
 > [A 组计划](doc/plans/2026-10-26-a-group-cleanup.md) A4）：`cd loop && PLAYWRIGHT_BROWSERS_PATH=<repo>/.pw-browsers
 > HOME=<repo>/.chrome-home TMPDIR=<repo>/.chrome-tmp .venv/bin/python -m pytest -q tests/browser`，
-> 期望 0 failed。它是补充门而不是第六道必备门，理由是：依赖 Chromium 与可写 `HOME`（缺件属环境缺件，
-> 不能算通过）、并入后全量门从 ~5.5 min 拖到 20 min+、且与单测门的失败定位不同。
+> 期望 0 failed。**不并入**的三条理由：① 它依赖 Chromium 与可写 `HOME`/`TMPDIR`，缺件属环境缺件、不能算通过，
+> 与上表"缺一不算完成"混进同一个退出码会把两种失败混淆；② 成本可测但非零——实测软件层 168.26 s +
+> 浏览器 114.79 s（数字见 STATUS §81.8 复核，`doc/STATUS.md`），并入后单门变 5 min 级、浏览器启动抖动更大；
+> ③ 判据不同（浏览器门验界面行为，单测门验软件行为），失败定位在一个退出码里会变差。
 > **界面（`loop/web/**`）或视图投影（`services/contracts.py` 的界面字段）有改动时必须单独跑它并记入 STATUS。**
 
 > **不得声称「已合规」**：审计发现但未修复的阻断项，必须在 `doc/STATUS.md` 与审计报告中保持可见。

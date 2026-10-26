@@ -2452,3 +2452,75 @@ passed 数 +5 = 新增 2 条用例 + 上述 worktree 假差异 1 条 + 原本 sk
 - `test_web_smoke` 的「前端不得自判」仍是符号名级断言（行为级需可跑浏览器环境）。
 - R3 之后前端不再自判理由，但**决策项文案**（如"接受"在失败轮次是否该改叫"接受未通过报告"）
   属产品文案，未改；如需调整另开切片。
+
+---
+
+## 71 独立复核（R3+R4）整改 + 测试数据根口径订正（2026-10-26）
+
+对 `62bd0b5` 的独立复核结论为**有条件通过**：判据唯一性、四路径对照、6 条新用例真红、
+范围 8 文件、数字精确复现，均确认；但提出 **条件 1（必办）** 与建议 A/B。本节整改。
+**复核者只报告不改；整改由实现者完成，因此本节仍非独立验证。**
+
+### 71.1 条件 1（必办）：drill G1 的理由前置未进唯一判据
+
+- **缺陷**：G1 + **drill** + `confirmed` + 未决>0 时，`precheck_decision` 要求非空 `reason`
+  作为「已逐条核对」的 attestation；而该模式下 `entry_decisions_required=false`（无逐条通道），
+  选项 `requires_reason` 也是 false ⇒ 与 R3 修的完全同类死角（界面显示"无需理由"、提交才 403）。
+- **整改**：`decision_requires_reason()` 增加**第三类来源**（drill G1 `confirmed` + 未决>0），
+  签名扩展为 `(gate, decision, claimed_verdict=None, *, mode=None, unresolved_count=None)`；
+  `gate_decision_options` / `_gate_options` / `run_view` / `gates.decision_options` /
+  中断载荷 `_enter` 全部透传 `mode` 与 `unresolved_count`；`precheck_decision` 的 drill 分支
+  改用同一函数判定（异常文案不变）。
+- **契约**：[WEB_UI_SPEC §5](spec/WEB_UI_SPEC.md) 明列**三类**理由来源（固定集 / G2 失败报告 /
+  drill G1 attestation）。
+
+### 71.2 建议 A：结论来源与分歧必须可见
+
+drill 夹具的 `n12_report.md` 常没有 `claimed_verdict` 行（判据口径为 `None`），此前界面只显示
+执行记录里的"未通过"且旧告警条会消失，人无法解释"为什么选项说无需理由"。
+现在 `web/app.js` 在 `claimed_verdict_source === "state_facts"` 时标注
+「（来源：执行记录；报告未落盘，不作为判据依据）」，在 `claimed_verdict_diverged` 时并排列出
+报告值与记录值。
+
+### 71.3 建议 B：中断载荷里的选项不再是界面判据
+
+`pending_interrupt.payload.decision_options` 是中断创建时的**快照**（会随快照恢复保留旧值），
+`web/app.js::gateOptionsFor` 的 payload 兜底已删除，只消费运行视图每次重算的 `gate_options`；
+[WEB_UI_SPEC §5](spec/WEB_UI_SPEC.md) 同时写明该字段仅为快照。
+
+### 71.4 TDD 红→绿
+
+新增 4 条断言（3 条服务端 + 1 条前端双断言），实现前实测：
+`test_drill_g1_confirmed_option_requires_reason`、`test_drill_g1_attestation_and_option_agree`、
+`test_run_view_gate_options_cover_drill_g1_attestation` **3 failed**；
+`test_gate_reason_preflight_consumes_server_flags_only` 亦为红（缺 `claimed_verdict_source`
+且仍含 `payload.decision_options`）。实现后全绿。
+
+### 71.5 测试数据根口径订正（重要，影响此前所有"失败数"的解读）
+
+此前各轮用的是**空数据根**（`LOOP_WORKSPACE` 指向空目录），因此把环境缺失计成了测试失败。
+本轮起改用**预置数据根**（`<ws>/runs/RUN-20261015-120626` drill 夹具 + `baselines/ index/
+conflicts/ adjudication/`，全部从只读 `ENV_ROOT/kb` 复制，约 738 MB，不入库）。同一份代码：
+
+| 数据根 | 结果 |
+|---|---|
+| 空（此前各轮） | 71 failed / 879 passed / 6 skipped / 104 errors |
+| 仅 drill 夹具 | 10 failed / 946 passed / 0 skipped / 104 errors |
+| 夹具 + 小数据（本轮口径） | **3 failed / 957 passed / 0 skipped / 104 errors**（306.46 s） |
+
+那 3 条**全部带 `@pytest.mark.env_layer`**（`test_archive_e2.py:85,109`、
+`test_projection_and_frozen.py:103`），语义就是"需要可写 ENV_ROOT / 内网冻结见证"；
+在**改动前**的 `62bd0b5` 上以同一数据根复跑同样 3 failed / 24 passed ⇒ **零回归**。
+104 个 `ERROR` 仍全部是 browser 用例（playwright Chromium 未安装）。
+
+⇒ 结论订正：此前记的"71 个既有失败"绝大部分是**环境未预置**，不是代码缺陷；
+§68–§70 里的失败集合比对方法仍然有效（两侧同数据根），但绝对数字需按数据根口径读。
+
+### 71.6 仍未关闭
+
+- 环境整备未固化：本轮预置数据根是**临时目录**（验完即删，未入库），未写成脚本/文档；
+  浏览器门需安装 playwright Chromium 才能跑（网络可达）。
+  重跑本节数字需先按下表复制 `ENV_ROOT/kb` 的 `runs/RUN-20261015-120626` 与
+  `baselines/ index/ conflicts/ adjudication/` 到可写数据根，再用 `LOOP_WORKSPACE` 指过去。
+- 端到端 `accept_v1_run.sh` 仍需可写 `ENV_ROOT`（或 S0 派生副本），未跑。
+- §70.6 其余项不变（`entries_required` 无前端消费者、`web_smoke` 仍含符号名断言）。

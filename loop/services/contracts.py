@@ -166,25 +166,35 @@ REASON_REQUIRED_DECISIONS: frozenset[str] = frozenset({"ignored", "disputed", "r
 
 
 def decision_requires_reason(
-    gate: str, decision: str, claimed_verdict: str | None
+    gate: str,
+    decision: str,
+    claimed_verdict: str | None = None,
+    *,
+    mode: str | None = None,
+    unresolved_count: Any = None,
 ) -> bool:
     """某个决策是否**必须**填写理由 —— 唯一判据（下发选项与 precheck 都用它）。
 
-    固定集（A2）：`ignored` / `disputed` / `rework`。
-    动态补充（SPEC-REV-12 R1 方案 D）：G2 的 `accept` 在本轮报告结论为 `not_passed` 时也必须
-    给理由 ——「接受一份未通过的报告」本身需要说清为什么接受；它只表示接受报告，
-    不等于判据通过（N16 仍受 I3/I4 阻断）。
+    三类来源：
+    1. 固定集（A2）：`ignored` / `disputed` / `rework`；
+    2. 动态（SPEC-REV-12 R1 方案 D）：G2 的 `accept` 在本轮报告结论为 `not_passed` 时 ——
+       「接受一份未通过的报告」本身需要说清为什么接受；它只表示接受报告，
+       不等于判据通过（N16 仍受 I3/I4 阻断）；
+    3. 动态（drill G1 attestation）：G1 的 `confirmed` 在 **drill** 模式且存在未决条目时 ——
+       drill 没有逐条处置通道（`entry_decisions_required=false`），此时非空 reason 就是
+       「已逐条核对」的凭据（`gates.precheck_decision` 的 drill 分支）。
+       real 模式走 `entry_decisions` 逐条处置，不要求整门理由。
 
     前端只消费下发选项里的 `requires_reason`，不得再按 gate/结论自写一套理由前置
     （红线 8「口径唯一」），否则界面显示"无需理由"、提交才被拒，无法预检。
     """
     if decision in REASON_REQUIRED_DECISIONS:
         return True
-    return (
-        gate == "G2_report_accept"
-        and decision == "accept"
-        and claimed_verdict == "not_passed"
-    )
+    if gate == "G2_report_accept" and decision == "accept":
+        return claimed_verdict == "not_passed"
+    if gate == "G1_diff_confirm" and decision == "confirmed":
+        return mode == "drill" and bool(unresolved_count)
+    return False
 
 
 def _artifact_claimed_verdict(run_dir: Path | None) -> str | None:
@@ -1521,8 +1531,13 @@ def run_view(
         ),
         "stage_map": STAGES,
         "agents_authority": "projection",
-        # R3：选项里的 requires_reason 必须反映本轮报告结论（否则界面无法预检）。
-        "gate_options": _gate_options(report_claimed_verdict(run_dir)),
+        # R3：选项里的 requires_reason 必须反映本轮报告结论（G2 失败报告）与 drill G1
+        # attestation（否则界面无法预检，只能提交后被拒）。
+        "gate_options": _gate_options(
+            report_claimed_verdict(run_dir),
+            mode=mode,
+            unresolved_count=diff.get("unresolved_count"),
+        ),
         "rework": rework,
         # I1/I2 的**放行前置**也必须在看板上可见（材料与判定同一口径）。
         "difference_items": diff,
@@ -1534,12 +1549,17 @@ def run_view(
 
 
 def gate_decision_options(
-    gate: str, *, claimed_verdict: str | None = None
+    gate: str,
+    *,
+    claimed_verdict: str | None = None,
+    mode: str | None = None,
+    unresolved_count: Any = None,
 ) -> list[dict[str, Any]]:
     """某闸门下发给界面的决策选项 —— **唯一实现**（services 与 workflows 都调它）。
 
     值来自权威枚举（`kb_lib.GATE_DECISIONS`，前端无从漂移）；`requires_reason` 由
     `decision_requires_reason()` 算出，与服务端 `precheck_decision` 的拒绝同源（红线 8）。
+    `mode` / `unresolved_count` 供 drill G1 attestation 那条规则使用。
     """
     from host import gate_authority as GA
 
@@ -1547,24 +1567,34 @@ def gate_decision_options(
         {
             "value": d,
             "label": GA.human_readable(gate, d),
-            "requires_reason": decision_requires_reason(gate, d, claimed_verdict),
+            "requires_reason": decision_requires_reason(
+                gate, d, claimed_verdict, mode=mode, unresolved_count=unresolved_count
+            ),
         }
         for d in GA.actionable_decisions(gate)
     ]
 
 
-def _gate_options(claimed_verdict: str | None = None) -> dict[str, list[dict[str, Any]]]:
+def _gate_options(
+    claimed_verdict: str | None = None,
+    *,
+    mode: str | None = None,
+    unresolved_count: Any = None,
+) -> dict[str, list[dict[str, Any]]]:
     """把权威枚举投影给界面，使前端**无从**自造决策值。
 
     实测教训：本层与前端曾各自写死一份 `full_regression`，
     而权威（`kb_lib.GATE_DECISIONS`）是 `full_now`。
     现在按钮由服务端下发，前端只渲染。
 
-    `claimed_verdict` 用于让 G2 的 `accept` 在报告未通过时声明"必须理由"（R3）。
+    `claimed_verdict` 让 G2 的 `accept` 在报告未通过时声明"必须理由"；
+    `mode` / `unresolved_count` 让 drill 下 G1 `confirmed` 的 attestation 也被声明出来。
     """
     from host import gate_authority as GA
 
     out: dict[str, list[dict[str, Any]]] = {}
     for gate in GA.gate_ids():
-        out[gate] = gate_decision_options(gate, claimed_verdict=claimed_verdict)
+        out[gate] = gate_decision_options(
+            gate, claimed_verdict=claimed_verdict, mode=mode, unresolved_count=unresolved_count
+        )
     return out

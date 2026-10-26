@@ -1326,3 +1326,61 @@ def test_gate_material_exposes_verdict_source_and_divergence(tmp_path: Path) -> 
         pending_interrupt=None, mode="drill", state_facts=facts,
     )
     assert g2b["report"]["n12_report"]["claimed_verdict_source"] == "report_md"
+
+
+# ------------------------------------- 条件 1（独立复核）：drill G1 的理由前置也要进唯一判据
+
+
+def test_drill_g1_confirmed_option_requires_reason() -> None:
+    """drill 下 G1 `confirmed` 的理由 attestation 必须体现在选项上。
+
+    该模式下没有逐条处置通道（`entry_decisions_required=false`），服务端却要求非空 reason
+    作为「已逐条核对」的证明 ⇒ 选项若不声明 `requires_reason`，界面就会"显示无需理由、
+    提交才被拒"（与 R3 修的是同一类死角，只差走了 drill 分支）。
+    """
+    from services import contracts
+
+    def flag(mode: str, unresolved: int) -> bool:
+        opts = {o["value"]: o for o in contracts.gate_decision_options(
+            "G1_diff_confirm", mode=mode, unresolved_count=unresolved)}
+        return opts["confirmed"]["requires_reason"]
+
+    assert flag("drill", 2) is True, "drill + 未决条目 ⇒ 选项必须声明要理由"
+    assert flag("real", 2) is False, "real 走 entry_decisions 逐条处置，不要求整门理由"
+    assert flag("drill", 0) is False, "没有未决条目就不需要 attestation"
+
+
+def test_drill_g1_attestation_and_option_agree(tmp_path: Path) -> None:
+    """红线 8 自证：drill G1 选项说"要理由" ⇔ 服务端无理由时拒绝。"""
+    from services import contracts
+    from workflows.chunks.gates import GatePreconditionFailed, precheck_decision
+
+    rd = _write_run_dir(tmp_path)
+    kb = _kb(tmp_path)
+    unresolved = contracts.diff_entries_view(rd, mode="drill").get("unresolved_count")
+    assert unresolved, "夹具必须带未决条目（否则本用例无意义）"
+    flag = {o["value"]: o["requires_reason"] for o in contracts.gate_decision_options(
+        "G1_diff_confirm", mode="drill", unresolved_count=unresolved)}
+    assert flag["confirmed"] is True
+
+    with pytest.raises(GatePreconditionFailed) as exc:
+        precheck_decision(gate="G1_diff_confirm", decision="confirmed", run_dir=rd,
+                          mode="drill", reason=None, kb=kb)
+    assert "reason" in str(exc.value) or "drill" in str(exc.value)
+
+    out = precheck_decision(gate="G1_diff_confirm", decision="confirmed", run_dir=rd,
+                            mode="drill", reason="已逐条核对夹具 2 条历史未决", kb=kb)
+    assert out["entries"], "drill attestation 必须落到 entries（不是静默放行）"
+
+
+def test_run_view_gate_options_cover_drill_g1_attestation(tmp_path: Path) -> None:
+    """运行视图下发的选项在 drill 模式也必须声明 G1 confirmed 要理由（行为级）。"""
+    from services import contracts
+
+    rd = _write_run_dir(tmp_path)
+    view = contracts.run_view(
+        run_doc={"run_id": "RUN-T", "run_dir": str(rd), "status": "waiting_gate", "mode": "drill"},
+        kb=_kb(tmp_path), slot_status={}, job=None, evidence=None, events=[],
+    )
+    confirmed = {o["value"]: o for o in view["gate_options"]["G1_diff_confirm"]}["confirmed"]
+    assert confirmed["requires_reason"] is True

@@ -87,3 +87,18 @@ def test_gate_view_has_entry_decision_controls() -> None:
     )
     css = _get("/app.css")
     assert ".gate-entry" in css, "app.css 缺少逐条处置控件样式"
+
+
+def test_gate_reason_preflight_consumes_server_flags_only() -> None:
+    """复核建议 A/B（2026-10-26）：
+
+    A：报告结论的来源必须可见 —— 否则 drill 夹具（报告无 claimed_verdict 行）会出现
+       "界面显示未通过、选项说无需理由"而无任何解释。
+    B：中断载荷里的 decision_options 只是快照，界面不得拿它做前置判断（视图每次重算）。
+    """
+    js = _get("/app.js")
+    assert "claimed_verdict_source" in js, "报告结论来源未在界面暴露（建议 A）"
+    assert "payload.decision_options" not in js, (
+        "界面不得消费中断载荷里的 decision_options 快照（建议 B）："
+        "应以运行视图重算的 gate_options 为准"
+    )

@@ -238,14 +238,21 @@ def _cycle(data: Any, gate: str, ctx: RunCtx | None = None) -> int | str:
 
 
 def decision_options(
-    gate: str, *, claimed_verdict: str | None = None
+    gate: str,
+    *,
+    claimed_verdict: str | None = None,
+    mode: str | None = None,
+    unresolved_count: Any = None,
 ) -> list[dict[str, Any]]:
     """操作台的决策按钮**由服务端给出**，来源是权威 —— 前端因此无从漂移。
 
     R3（2026-10-26）：实现委托给 `contracts.gate_decision_options()`，与运行视图的
     `gate_options` 及 `precheck_decision` 共用同一理由判据（红线 8）。
+    `mode` / `unresolved_count` 承载 drill G1 attestation 那条规则（独立复核条件 1）。
     """
-    return contracts.gate_decision_options(gate, claimed_verdict=claimed_verdict)
+    return contracts.gate_decision_options(
+        gate, claimed_verdict=claimed_verdict, mode=mode, unresolved_count=unresolved_count
+    )
 
 
 def authority_record(ctx: RunCtx, gate: str) -> dict[str, Any]:
@@ -397,7 +404,12 @@ def precheck_decision(
             elif mode == "drill":
                 # drill 夹具的 N2 产出于修 F-02 之前（旧编码判定）⇒ 历史未决条目
                 # 不能阻断人工闸门；把「已逐条核对」的 attestation（非空 reason）作为处置凭据。
-                if not (isinstance(reason, str) and reason.strip()):
+                # 与下发选项**同一判据**（红线 8 / 独立复核条件 1）：该情形选项的
+                # requires_reason 也为 true，界面因此能预检。
+                if contracts.decision_requires_reason(
+                    gate, decision, mode=mode,
+                    unresolved_count=diff.get("unresolved_count"),
+                ) and not (isinstance(reason, str) and reason.strip()):
                     raise GatePreconditionFailed(
                         "I1：N2 有未决差异条目。drill 模式须给出非空 reason（作为"
                         "「已逐条核对」的证明），或提交覆盖全部条目的 entry_decisions。"
@@ -517,10 +529,14 @@ async def _enter(ctx: RunCtx, data: Any, gate: str) -> dict[str, Any]:
     )
     material["run_id"] = ctx.run_id
     material["cycle"] = _cycle(data, gate, ctx)
-    # R3：选项里的理由前置必须反映**本轮**报告结论（not_passed ⇒ accept 必须理由），
+    # R3：选项里的理由前置必须反映**本轮**事实（G2 失败报告 / drill G1 attestation），
     # 否则中断载荷里下发的还是静态表，界面无法预检。
+    diff_view = material.get("difference_items") or {}
     material["decision_options"] = decision_options(
-        gate, claimed_verdict=contracts.report_claimed_verdict(ctx.run_dir)
+        gate,
+        claimed_verdict=contracts.report_claimed_verdict(ctx.run_dir),
+        mode=ctx.mode,
+        unresolved_count=diff_view.get("unresolved_count"),
     )
     material["gate_node"] = node
     material["authority_enums"] = {g: list(GA.decisions().get(g, ())) for g in GA.gate_ids()}

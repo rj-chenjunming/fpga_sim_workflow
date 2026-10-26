@@ -348,10 +348,17 @@
 - 内容：闸门材料（差异清单/冲突快照/报告+用例态/评估结论，按闸门不同）、权威枚举、当前轮次、未决计数。
 - 操作：选择决策 → 填 actor（必须 `human` 前缀）→ 理由（`ignored/rework/disputed` 必填）→ 提交。
 - **理由前置由服务端选项声明（2026-10-26 增补）**：是否需要理由**只看**所选决策项下发的
-  `requires_reason`（固定集 `ignored/rework/disputed`；G2 的 `accept` 在本轮报告结论为
-  `not_passed` 时也为 true，见 [SPEC-01 §1 I2 增补](CHANGE_IMPACT_LOOP_SPEC.md)）。前端不得再按
-  `gate`/`claimed_verdict` 自写一套理由校验（红线 8）；服务端 `precheck_decision` 与选项下发
-  必须由同一判据函数产生，保证「界面能预检、提交即通过判据」。
+  `requires_reason`，共三类来源，全部由同一判据函数产生（前端不得再按 `gate`/`claimed_verdict`
+  自写一套，红线 8）：
+  ① 固定集 `ignored/rework/disputed`；
+  ② G2 的 `accept` 在本轮报告结论为 `not_passed` 时（见 [SPEC-01 §1 I2 增补](CHANGE_IMPACT_LOOP_SPEC.md)）；
+  ③ **G1 的 `confirmed` 在 drill 模式且存在未决条目时**——drill 无逐条处置通道
+  （`entry_decisions_required=false`），此时非空 `requires_reason` 要求代表"非空 reason 即
+  『已逐条核对』的 attestation"（[SPEC-01](CHANGE_IMPACT_LOOP_SPEC.md) §5 的 drill 例外）。
+  服务端 `precheck_decision` 的拒绝条件与选项下发必须同源，保证「界面能预检、提交即通过判据」。
+- **中断载荷里的选项只是快照**：`pending_interrupt.payload.decision_options` 是中断创建时写下的，
+  会随快照恢复保留旧值 ⇒ 界面**不得**用它做理由前置判断，必须消费运行视图每次重算的
+  `gate_options`（`contracts.gate_decision_options`）。
 - **G1 逐条处置（2026-10-23 增补）**：服务端下发 `entry_decisions_required=true` 时先逐条选择
   （每个唯一 `entry_id` 一组控件），再提交；整门决策由逐条处置推导（§4.4），界面不得用一句
   attestation 代替逐条核对。该 flag 只对 G1 为真（判据归服务端，见 §4.4「判据归属」），

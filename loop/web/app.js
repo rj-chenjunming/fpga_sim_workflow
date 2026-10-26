@@ -2869,10 +2869,10 @@
   function gateOptionsFor(pending) {
     if (!pending) return [];
     var v = state.viewData;
+    /* 只认运行视图**每次重算**的 gate_options（判据随本轮事实变化：G2 报告结论、
+       drill G1 attestation）。中断载荷里的 decision_options 是中断创建时的快照，
+       可能来自升级前或快照恢复 ⇒ 不得作为界面判据（WEB_UI_SPEC §5）。 */
     var options = (v && v.gate_options && v.gate_options[pending.gate]) || null;
-    if (!options && pending.payload && pending.payload.decision_options) {
-      options = pending.payload.decision_options;
-    }
     if (!Array.isArray(options)) return [];
     return options.filter(function (o) { return o && o.value !== undefined && o.value !== null; });
   }
@@ -2966,16 +2966,30 @@
     var options = gateOptionsFor(pending);
     /* 「接受失败报告必须理由」的判据**只在服务端**（contracts.decision_requires_reason →
        选项 requires_reason=true）。这里只读该 flag 决定是否提示，不自己判「本轮是否
-       not_passed」，否则又是一套前置（红线 8）。结论值在文案里只用于说明是哪一轮。 */
+       not_passed」，否则又是一套前置（红线 8）。 */
     var acceptOption = null;
     for (var ai = 0; ai < options.length; ai++) {
       if (options[ai] && options[ai].value === "accept") { acceptOption = options[ai]; break; }
     }
+    var n12 = (((pending.payload || {}).report || {}).n12_report || {});
     if (acceptOption && acceptOption.requires_reason === true) {
-      var n12 = (((pending.payload || {}).report || {}).n12_report || {});
       form.appendChild(h("div", "alert warn",
-        (n12.claimed_verdict ? "本轮报告结论：" + String(n12.claimed_verdict) + "。" : "") +
         "接受失败报告必须填写理由；接受不等于判据通过，N16 仍被 I3/I4 阻断。"));
+    }
+    /* 复核建议 A（2026-10-26）：结论**来源**必须可见。drill 夹具的报告常没有
+       claimed_verdict 行（判据口径为 None），界面若不标来源，人会看到"未通过"却
+       不知道为什么选项说无需理由；两来源冲突时也要摆出来，不得静默择一。 */
+    if (n12.claimed_verdict) {
+      var srcText = n12.claimed_verdict_source === "state_facts"
+        ? "（来源：执行记录；报告未落盘，不作为判据依据）" : "";
+      if (srcText || n12.claimed_verdict_diverged === true) {
+        var divergeText = n12.claimed_verdict_diverged === true
+          ? "报告与执行记录结论不一致：报告=" + String(n12.claimed_verdict_decision) +
+            "，记录=" + String(n12.claimed_verdict_facts) + "。"
+          : "";
+        form.appendChild(h("div", "alert info",
+          "本轮报告结论：" + String(n12.claimed_verdict) + srcText + "。" + divergeText));
+      }
     }
     /* G1 逐条处置（SPEC-04 §4.4 2026-10-23）：先逐条选，再整门提交。
        紧凑卡片只放材料摘要，逐条控件放在完整闸门视图，避免两处重复渲染。 */

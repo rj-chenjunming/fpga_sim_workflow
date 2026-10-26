@@ -55,9 +55,13 @@ if [ ! -x "$PY" ]; then
 fi
 
 # 数据根/环境根的唯一解析器是 kb_lib（不在这里重复实现路径规则）。
-read -r ENV_ROOT SRC_ROOT < <("$PY" - <<'PYEOF'
+# 导入路径按**本脚本所在的仓库根**解析：脚本既可从 `loop/` 也能从仓根执行，
+# 不能依赖调用者 cwd（2026-10-26 实测：在 `loop/` 下按文件头用法执行会因相对路径
+# `kb/tools` 找不到 `kb_lib` 而直接失败）。
+read -r ENV_ROOT SRC_ROOT < <(REPO0="$REPO" "$PY" - <<'PYEOF'
+import os
 import sys
-sys.path.insert(0, "kb/tools")
+sys.path.insert(0, os.path.join(os.environ["REPO0"], "kb", "tools"))
 import kb_lib as K
 print(K.ENV_ROOT, K.WORKSPACE_ROOT)
 PYEOF

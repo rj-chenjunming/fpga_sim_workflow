@@ -257,7 +257,11 @@ def test_cross_run_draft_is_cleared(ui):
     fill(page)
     select(page, "B")
     pw.expect(page.locator("#gateHead")).to_contain_text("B")
-    pw.expect(page.locator('#gatePanel [aria-label="actor"]')).to_have_value("human:")
+    # 操作者**不是草稿**：它是 SPEC-REV-07 U1-c 的应用级会话记忆（localStorage，
+    # 闸门/Agent 控制/S0 三处预填），切运行后草稿归零到默认前缀 `human:`，随即被重新预填，
+    # 因此这里保留 human:reviewer 属设计行为（`operator.js` 的 apply 只填空/默认前缀）。
+    # 本用例回归的真正语义是「草稿不跨运行泄漏」——即下列理由与提交态。
+    pw.expect(page.locator('#gatePanel [aria-label="actor"]')).to_have_value("human:reviewer")
     pw.expect(page.locator('#gatePanel [aria-label="裁决理由"]')).to_have_value("")
     pw.expect(page.locator('#gatePanel [data-gate-submit]')).to_be_disabled()
 

@@ -1,8 +1,10 @@
 """Host 闸门逐条处置落账（`run_dir/decisions/<gate>.json`）的写入不变量。
 
 契约：`LOOP_ORCHESTRATION_SPEC` §10.4.2 —— 该文件是「已决策 run 逐条处置」的**唯一**来源，
-append-only、只增不改；`gates.json` 是闸门权威 + `gates.sha256` 锚，**不存**逐条处置
-（冻结的 `kb/schema/gate_state.schema.json` 的 required 不含该字段，且规格禁止从它反推）。
+append-only、只增不改；`gates.json` 是闸门权威 + `gates.sha256` 锚，**不存**逐条处置。
+依据两条（**不是** schema 禁止）：① 再存一份会形成第二来源（红线 8），且锚随处置内容漂移；
+② 编排规格明文「不得从 `gates.json` 反推」。事实上 `kb/schema/gate_state.schema.json` 的
+`gate.additionalProperties` 为 `true` ⇒ 技术上允许额外字段，故这是**设计选择**。
 
 本文件是 2026-10-26 补的**回归钉子**：这些不变量此前只有散落在 `test_flow.py` 全链路里的
 存在性断言，缺"只增不改 / 不碰权威文件 / 损坏不静默覆盖"三条容易被顺手破坏的约束。
@@ -84,7 +86,10 @@ def test_ledger_write_never_touches_the_authority_file(tmp_path: Path) -> None:
 
     assert hashlib.md5(gates_json.read_bytes()).hexdigest() == before, "落账改写了 gates.json"
     body = json.loads(gates_json.read_text(encoding="utf-8"))
-    assert "entry_decisions" not in json.dumps(body), "逐条处置不得进权威文件（唯一来源是 decisions/）"
+    assert "entry_decisions" not in body, "逐条处置不得进权威文件（唯一来源是 decisions/）"
+    gates_obj = body.get("gates") if isinstance(body, dict) else None
+    assert all("entry_decisions" not in gate for gate in (gates_obj or {}).values()
+               if isinstance(gate, dict)), "逐条处置不得出现在任何 gate 对象里"
 
 
 @pytest.mark.parametrize("corrupt", [

@@ -760,9 +760,13 @@ async def test_s2_detail_fields_and_gate_ledger_on_full_drill_run() -> None:
 
         # ---- 唯一存储位置（2026-10-26，CHANGE_IMPACT_LOOP_SPEC §7 口径订正）
         # 逐条处置只落 `decisions/<gate>.json` + `gate_decided.detail.entries`；
-        # `gates.json` 是权威 + sha256 锚，其字段由冻结 schema 界定，**不得**再存一份副本
-        # （两个来源 ⇒ 红线 8；且锚会随内容变化）。写入不变量见 tests/test_gate_ledger.py。
+        # `gates.json` 是权威 + sha256 锚，**不得**再存一份副本（两个来源 ⇒ 红线 8；
+        # 且锚会随内容变化）。这不是 schema 禁止（`gate.additionalProperties` 为 true），
+        # 而是设计选择 + 编排规格明文禁止反推。写入不变量见 tests/test_gate_ledger.py。
         authority = json.loads((run_dir / "gates.json").read_text(encoding="utf-8"))
+        # 顶层键也算（结构化判定的补集：恢复旧版全文子串能覆盖到的顶部形态）
+        assert "entry_decisions" not in authority, \
+            "逐条处置不得进 gates.json 顶层（唯一来源是 decisions/<gate>.json）"
         # 结构化判定（不用全文子串：人工理由原文里出现这个词也不该假红）
         gates_obj = authority.get("gates") if isinstance(authority, dict) else None
         offending = [gid for gid, gate in (gates_obj or {}).items()

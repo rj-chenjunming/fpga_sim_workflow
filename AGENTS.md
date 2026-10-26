@@ -84,9 +84,9 @@
 
 | 门 | 命令 | 期望 |
 |---|---|---|
-| 单测 | `cd loop && LOOP_LLM_MODE=standin .venv/bin/python -m pytest -q` | 收集/通过/失败/跳过分别记录于 STATUS；无回归 |
+| 单测 | `cd loop && LOOP_LLM_MODE=standin .venv/bin/python -m pytest -q` | 收集/通过/失败/跳过分别记录于 STATUS；无回归。**需可写数据根**（见下一行），否则 drill/基线类用例会因缺件失败——那是环境缺件，不是代码缺陷 |
 | kb 自测 | `loop/.venv/bin/python kb/tools/_selftest_gate_schema.py` / `_selftest_n5_reachability.py` | 全部断言通过；需要可写 `WORKSPACE_ROOT` 与历史夹具 |
-| 端到端 | `cd loop && bash spikes/accept_v1_run.sh` | 退出成功且断言完整执行，实测见 STATUS；需要可写 `ENV_ROOT` |
+| 端到端 | `cd loop && bash spikes/accept_v1_run.sh` | 退出成功且断言完整执行，实测见 STATUS。**2026-10-26 实测更正**：全部 phase 走 `mode=drill`，只需**可写数据根**（`bash spikes/provision_dev_workspace.sh` 后指 `LOOP_WORKSPACE`），**不需要**可写 `ENV_ROOT`；跑完 `ENV_ROOT/kb` 零写入（见 STATUS §73） |
 | 文档 | 路径引用存在性 + 移动件有 MIGRATION/横幅 + 数字与 `doc/STATUS.md` 一致 | 零断链 |
 
 > **不得声称「已合规」**：审计发现但未修复的阻断项，必须在 `doc/STATUS.md` 与审计报告中保持可见。

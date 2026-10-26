@@ -2580,3 +2580,63 @@ JSON、持续重连，页面反复重渲染、点击目标被 detach（Playwrigh
 
 - 端到端 `accept_v1_run.sh` 仍需**可写 ENV_ROOT**（或 S0 派生副本），本机只读，未跑。
 - 数据根脚本复制 738 MB 且不能出仓（仓外只读），每次验证前后需 `--cleanup`，属已知不便。
+
+---
+
+## 73 端到端实测通过 + 四道门统一记录（2026-10-26）
+
+§72.5 的"端到端仍需可写 ENV_ROOT"被实测推翻。**同一执行者实施与验证；无独立终验。**
+
+### 73.1 端到端：ALL PASS（117 条断言）
+
+命令（先 `bash spikes/provision_dev_workspace.sh`，再）：
+
+```bash
+cd loop && LOOP_WORKSPACE=<repo>/.dev-ws LOOP_LLM_MODE=standin bash spikes/accept_v1_run.sh
+```
+
+驱动汇总 `=> ALL PASS`，6 个 phase 全 `rc=0`：
+
+| phase | 1 | 2 | 3 | 4 | 4b | 5 |
+|---|---|---|---|---|---|---|
+| 断言 | PASS=50 | PASS=27 | PASS=18 | PASS=8 | PASS=8 | PASS=6 |
+| FAIL | 0 | 0 | 0 | 0 | 0 | 0 |
+
+合计 **117 条断言全 PASS**，无 `[FAIL]`、无 skip、无 Traceback；脚本自起自停 4 代服务进程（真重启）。
+覆盖面：建 run / 签 G1 / 作业投递与终态、真重启后重附着与收敛、长任务停放与取消、死任务判 `failed` 且单槽释放。
+
+### 73.2 更正：端到端**不需要**可写 `ENV_ROOT`
+
+- 全部 phase 走 `mode=drill`；drill 的 N9 用夹具日志，不执行环境。
+- 跑完检查 `ENV_ROOT/kb/runs`：`find -newermt '-30 minutes'` **为空** ⇒ 环境根零写入（红线 11 守住）。
+- 唯一前提是**可写数据根**（`spikes/provision_dev_workspace.sh` + `LOOP_WORKSPACE`）。
+- [AGENTS.md §4](../AGENTS.md) 的端到端行已按实测更正（原文写"需要可写 `ENV_ROOT`"，与实际不符）。
+
+### 73.3 四道门（本轮 HEAD，同机同一环境）
+
+| 门 | 命令 | 结果 |
+|---|---|---|
+| 单测 | `LOOP_WORKSPACE=<可写数据根> LOOP_LLM_MODE=standin pytest -q` | **3 failed / 957 passed / 0 skipped / 104 errors**（322.23 s） |
+| kb 自测 | `_selftest_gate_schema.py` / `_selftest_n5_reachability.py` | **PASS=10 FAIL=0** / **PASS=9 FAIL=0** |
+| 端到端 | `bash spikes/accept_v1_run.sh` | **ALL PASS**（117 断言，见 §73.1） |
+| 文档 | `python3 doc/audit/check_doc_links.py` | **missing=0** |
+
+- 3 条 failed 全带 `@pytest.mark.env_layer`（需可写 `ENV_ROOT`，本机只读）；在改动前 `62bd0b5` 上同样失败（§71.5）。
+- 104 条 errors 全部是 browser 用例的 setup 失败（本机默认路径没有 Chromium）。
+
+### 73.4 浏览器门：装了 Chromium 反而不能并入全量（重要）
+
+装 Chromium 后单独跑 `tests/browser/test_web_layout.py` 为 **4 failed / 5 passed**（§72.4 的既有渲染竞争）。
+把 `PLAYWRIGHT_BROWSERS_PATH` 带进**全量**后，浏览器用例真正执行、但每条失败都要等 30 s 超时：
+实测 **20 分钟仍未跑完**（中断前已累积 39 个 F）。因此本轮 DoD 记为：
+
+- **单测门**：不设 `PLAYWRIGHT_BROWSERS_PATH`（浏览器用例以 setup 错误计入，软件层结论不受影响）；
+- **浏览器门**：单独跑、单独记录，当前 4 failed / 5 passed（既有问题，非本轮引入，见 §72.4）；
+- 待 UI 稳定性切片修好后，再把浏览器门并回全量。该取舍已写进 [loop/README.md §7](../loop/README.md)。
+
+### 73.5 证据与限制
+
+- 本轮数字均为命令输出复制；数据根为临时目录（738 MB），跑完已删除；浏览器装在仓库内
+  `.pw-browsers/`（本地忽略，不入库）。
+- 未跑：真实模型（`LOOP_LLM_MODE=live`）、真 DSH、内网冻结见证；这些不是本轮范围。
+- 未落独立证据包（`doc/evidence/**` 只增不改，需单独整理）；原始日志为临时文件，已删除。

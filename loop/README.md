@@ -98,7 +98,10 @@ cd loop
 [`工作流优化评估`](../doc/audit/AUDIT-20261021-workflow-priorities.md)。
 
 **只读沙箱 / 无 `~/.cache` 时的实测要点（2026-10-26）**：
-- 浏览器下载目录不在仓外：`PLAYWRIGHT_BROWSERS_PATH=<repo>/.pw-browsers`；
+- 浏览器下载目录不在仓外：`PLAYWRIGHT_BROWSERS_PATH=<repo>/.pw-browsers`。
+  **当前建议不要把它带进全量单测**：未装 Chromium 时 browser 用例以 setup 错误计入（快，不影响软件层结论）；
+  装上后用例会真正执行，而浏览器门存在既有的渲染/点击竞争问题（STATUS §72.4），失败用例每次要等
+  30 s 超时 —— 实测全量因此 20 分钟仍未跑完。浏览器门请**单独**跑并如实记录，等 UI 稳定性修好再并入全量。
   直连下载被代理掐断时加 `PLAYWRIGHT_DOWNLOAD_HOST=https://cdn.npmmirror.com/binaries/playwright`。
 - 系统 Chrome 需要**可写 HOME/TMPDIR**（只读 HOME 会让 Chrome 启动即退）：
   `HOME=<repo>/.chrome-home TMPDIR=<repo>/.chrome-tmp LOOP_BROWSER_EXECUTABLE=/usr/bin/google-chrome`。

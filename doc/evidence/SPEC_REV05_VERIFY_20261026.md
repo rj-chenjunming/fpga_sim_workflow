@@ -1,4 +1,8 @@
-# SPEC-REV-05 实现与验证（R1 失败报告收口 / R2 真实轮冻结为 drill 夹具）· 2026-10-26
+# SPEC-REV-12 实现与验证（R1 失败报告收口 / R2 真实轮冻结为 drill 夹具）· 2026-10-26
+
+> **编号变更说明（2026-10-26，合并上游前补记）**：本份证据所验证的规格原编号 `SPEC-REV-05`，
+> 因上游已占用该编号而顺延为 `SPEC-REV-12`；证据正文与实测内容零改动，文件名保持
+> `SPEC_REV05_VERIFY_20261026.md` 不变（证据只增不改，不以改名重写历史）。
 
 > **这份证据证明什么**：
 > ① R1（方案 D）在真实服务进程上生效——失败报告 `accept` 无理由被 403、有理由 200；
@@ -91,4 +95,4 @@ run 最终 `status=finished`（合法终点）。
 | drill run 文档 | `workspaces/s0-ws-20261023/runs/RUN-20261026-135835/` |
 | drill 夹具 | `workspaces/s0-ws-20261023/fixtures/drill-real-20261024/`（含 `md5.txt`、`drill_cases.json`） |
 | 真实轮证据（保留） | `workspaces/s0-ws-20261023/runs/RUN-20261024-002609/`（run 文档现为 failed，数据件齐） |
-| 契约 | [SPEC-REV-05](../spec/SPEC-REV-05-20261026.md)、[SPEC-01 §1 I2 增补](../spec/CHANGE_IMPACT_LOOP_SPEC.md) |
+| 契约 | [SPEC-REV-12](../spec/SPEC-REV-12-20261026.md)、[SPEC-01 §1 I2 增补](../spec/CHANGE_IMPACT_LOOP_SPEC.md) |

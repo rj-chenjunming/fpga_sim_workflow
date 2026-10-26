@@ -1759,9 +1759,9 @@ G2 `pending_interrupt.payload.hard_block` 三条：`I2_CASES_PENDING`（5 例「
 
 `python3 doc/audit/check_doc_links.py` → 见本节提交后的实测（下同）：`missing=0`、`rc=0`。
 
-## 55 SPEC-REV-05 落地：失败报告收口（D）+ 真实轮冻结为 drill 夹具（2026-10-26）
+## 55 SPEC-REV-12 落地：失败报告收口（D）+ 真实轮冻结为 drill 夹具（2026-10-26）
 
-接 §54：§54.3 登记的"失败报告无法收口"已按用户在 [SPEC-REV-05](spec/SPEC-REV-05-20261026.md)
+接 §54：§54.3 登记的"失败报告无法收口"已按用户在 [SPEC-REV-12](spec/SPEC-REV-12-20261026.md)
 中的裁决（Q1 选 **D**、Q3 选 **新增第二套夹具**）实现并验证。
 
 ### 55.1 R1（方案 D）：失败报告可接受，但必须给理由

@@ -183,6 +183,11 @@ P-17/P-18：见 §R2.1–R2.4（设计已定）。实现顺序建议：
   1) 服务端：材料投影补 `redundant_of`（只读）；已决策/历史 run 的清单+逐条处置从 `n2_diff.json + gates.json` 重建（只读投影）。
      **实测更正**：`gates.json` 与事件流都没有 `entry_decisions`（§0.5 ⑥），重建前须先补 Host 落账，
      否则只能显示"整门决策 + 逐条处置未留存"。
+     > **已过期（2026-10-26）**：Host 落账已由 P-15/P-17/P-18 实现 —— 逐条处置写
+     > `run_dir/decisions/<gate>.json`（append-only）并随 `gate_decided.detail.entries` 下发，
+     > 已决策态面板从落账读；`gates.json` 按设计**不**存逐条处置（口径见
+     > [业务规格 §7](../spec/CHANGE_IMPACT_LOOP_SPEC.md) 订正 + [编排规格 §10.4.2](../spec/LOOP_ORCHESTRATION_SPEC.md)）。
+     > 仅"早于落账"的旧 run（如 `RUN-20261015-120626` 夹具）仍显示"未留存"，那是有意的降级形态。
      覆盖/推导必须复用 `GateSession.validateEntryDecisions` / `deriveEntryDecision`（§0.5 ⑤）。
   2) 前端：列表（勾选 + 一句话 + 元信息 + 「查看前后对比」）；浮窗（两栏 before/after、行号、无 hunk 原因）；
      勾选/忽略/有疑义写入共享 gate-session 草稿；底部"已处置 M/N + 去闸门视图确认并提交 →"。

@@ -962,7 +962,7 @@ mv loop/state loop/state.bak-$(date +%Y%m%d-%H%M%S)   # 先改名保留，确认
 
 | # | 限制 | 影响 | 现状/出处 |
 |---|---|---|---|
-| 1 | **UI 没有 `entry_decisions` 逐条输入** | real 模式下 G1 有未决条目时无法在 UI 完成 | 界面会显式提示「该门需走 API」并给样例；用附录 A 脚本 |
+| 1 | ~~**UI 没有 `entry_decisions` 逐条输入**~~ → **已不成立（2026-10-26 追记）** | 旧限制：real 模式下 G1 有未决条目时无法在 UI 完成 | **已实现（2026-10-23 P-17）**：闸门视图按服务端 `entry_decisions_required` 渲染逐条处置控件（选项取服务端 `decision_options`），节点面板共用同一份草稿；处置结果落 `run_dir/decisions/<gate>.json` + `gate_decided.detail.entries`（[WEB_UI_SPEC §4.4](spec/WEB_UI_SPEC.md)、[编排规格 §10.4.2](spec/LOOP_ORCHESTRATION_SPEC.md)）。附录 A 的 API 脚本仍可用于非界面场景 |
 | 2 | **UI 没有晋升按钮** | N16/I8 只能走 `POST …/promote` | §7.5；当前通常被 I3/I4/台账阻断 |
 | 3 | **S0 未被运行配置消费** | UI 建的 run 始终显示「未经 S0 派生」 | S0 页底部有说明；API 支持 `s0_record_id` 但界面不发 |
 | 4 | **S0-b 未接入** | 接口核对/TB 登记/三库冒烟不可用；`ready_for_execution` 恒 false | `capabilities.tb_adapt/smoke=false` |

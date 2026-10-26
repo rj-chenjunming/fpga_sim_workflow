@@ -484,9 +484,13 @@ n9_sim chunk                       park chunk                      job_runner �
   ledger 没有该键（早于落账的旧 run）⇒ 面板显示"当时的阻断项未留存"，`counts.hard_block` 为 `null`
   （不写 0 冒充"没有硬阻断"）。
   该文件是**面板展示材料**，不是闸门权威：权威仍是 `gates.json` + `gates.sha256`。
-  该文件是**面板展示材料**，不是闸门权威：权威仍是 `gates.json` + `gates.sha256`。
   `gates.json` 不存逐条处置 ⇒ 没有落账的历史 run，面板只能显示"整门决策 + 逐条处置未留存"，
   **不得**从 `gates.json` 反推逐条处置（SPEC-REV-04 §C.2 P-18、交接提示词 §0.5 ⑥）。
+  **口径订正（2026-10-26）**：[业务规格 §7](CHANGE_IMPACT_LOOP_SPEC.md) 原写"处置结果落
+  `gates.json`（`entry_decisions`）"，与本节冲突；业务规格已按本节订正为
+  `run_dir/decisions/<gate>.json` + `gate_decided.detail.entries`。依据：冻结的
+  `kb/schema/gate_state.schema.json` 的 `required` 不含该字段（改它属冻结目录的单独变更），
+  且两处并存会形成第二个来源（红线 8）。回归钉子：`loop/tests/test_gate_ledger.py`。
 - **G2/G3 只读「待确认项」（2026-10-23 裁决 #2）**：闸门节点投影增 `gate.items`，
   形状 `[{id, kind, title, detail, severity}]`，`kind ∈ {blocker, open_item, conflict, case}`；
   **不带 disposition、不参与提交**（逐条处置语义只属于 G1/I1）。来源：

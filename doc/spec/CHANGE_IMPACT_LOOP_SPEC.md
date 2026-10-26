@@ -270,7 +270,13 @@
 
 - `doc_entry`：必须列出**变化字段**（before→after），其余字段折叠为"未变（N 项）"，并给源文档行号。
 - `rtl_file`：尽量下行级 hunk；确实无文本时，必须同时给出**可替代的行号证据**（如 Host 留痕记录的行号与片段）。
-- 未决条目必须提供**逐条处置途径**（界面输入，或等价 API），处置结果落 `gates.json`（`entry_decisions`），不得只靠一句随意的 reason 糊过去。
+- 未决条目必须提供**逐条处置途径**（界面输入，或等价 API），处置结果必须**落账留证**，不得只靠一句随意的 reason 糊过去。
+  **落账位置（2026-10-26 订正口径）**：`run_dir/decisions/<gate>.json`（`schema=loop/gate_entries`，Host 写、append-only）
+  与 `gate_decided.detail.entries`，二者同源；契约见
+  [编排规格 §10.4.2](LOOP_ORCHESTRATION_SPEC.md)。**不落 `gates.json`**：该文件是闸门权威 + `gates.sha256` 锚，
+  其字段集由冻结的 `kb/schema/gate_state.schema.json` 的 `required` 界定（不含 `entry_decisions`），
+  且规格明确禁止从 `gates.json` 反推逐条处置。本节此前写的"落 `gates.json`"与上述机制契约冲突，
+  以本节订正后的表述为准（红线 8「口径唯一」）。
 - 材料里必须给出 N3 摘要（`n3_digest.md`）与 Host 留痕（如夹具的 `mock_change_applied.json`）的入口；入口只做存在性探测，缺失显式标注。
 
 **禁止**：用"路径字符串 + md5 变化"代替变更本体；把"无 hunk"呈现为"无变化"；把夹具数据当作真实变更呈现；材料不足以判断时仍诱导签署。

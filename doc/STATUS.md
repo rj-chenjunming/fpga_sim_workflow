@@ -2922,3 +2922,90 @@ G1 中断，断言**中断载荷**里的 `decision_options.confirmed.requires_re
   两个可写数据根入口并存（`provision_dev_workspace.sh` 复制 733 MB vs `run_software_checks.sh`
   符号链接 + 一次性影子根），建议后续让前者退化或改符号链接。
 - **移动端**：不做适配（§75.4 第 2 条，用户 2026-10-26 裁决）。
+
+## 77 逐条处置落账：结论订正 + 口径统一 + 回归钉子（2026-10-26）
+
+用户裁决「一块做完落账」。**先说结论：Host 落账此前已实现**，过期的是登记；本轮做的是
+**订正口径矛盾、补回归钉子、作废过期未关闭项**。**同一执行者实施与验证。**
+
+### 77.1 结论：落账已实现（`decisions/<gate>.json` + 事件同源）
+
+| 环节 | 实现位置 | 内容 |
+|---|---|---|
+| 写入 | `workflows/chunks/gates.py::append_decision_ledger` | `run_dir/decisions/<gate>.json`，`schema=loop/gate_entries`，`records` **append-only**；`decided_at` 取权威 `gates.json` 的 `signed_at`（时间仍是单一注入入口）；记录含 `cycle/decided_at/decision/actor/reason/entries/hard_block` |
+| 同源下发 | 同文件 `ctx.event("gate_decided", …, detail={"entries": record["entries"]})` | 逐条处置随事件下发 |
+| 读侧 | `services/contracts.py::gate_entries_view` + `_decisions_ledger` | 已决策态**只**从落账回填；缺失/损坏 ⇒ `None`，面板明说「逐条处置未留存」，不编、不猜 |
+| 字段白名单 | `_ledger_entries` / `_ledger_hard_block` | 只写契约字段（`decision/reason`；`code/title/message`），内部键（如 `source`）不进账本 |
+
+**实测证据**（命令输出复制）：
+
+- `bash spikes/run_software_checks.sh tests/test_flow.py::test_s2_detail_fields_and_gate_ledger_on_full_drill_run`
+  ⇒ **1 passed**（9.05 s）：该用例跑完整 drill 全链路后断言三门 `decisions/<gate>.json` 存在、
+  `G1` 的 `entries` **覆盖全部差异条目**、`gate_decided.detail.entries` 与落账**同源**、
+  `decided_at == 权威 signed_at`、`hard_block` 快照等于本门开启时材料。
+
+**作废登记（原文保留作历史，本节起失效）**：
+
+- §54.5 第 2 条「逐条处置未落账…P-18 重建需先补 Host 落账」；
+- §65.4 第 5 条「逐条处置仍未落账（`gates.json`/事件流都没有 `entry_decisions`）」。
+
+两者描述的是 P-15/P-17/P-18 落地**之前**的状态，之后再未更新。另一个让人误判的来源是
+**冻结夹具 `RUN-20261015-120626` 没有 `decisions/`**（它早于落账）⇒ 面板显示"未留存"，
+那是规格**有意设计**的降级形态（`LOOP_ORCHESTRATION_SPEC` §10.4.2），不是缺陷。
+
+### 77.2 真正的代码层问题：两份规格口径互相矛盾（已修）
+
+| 规格 | 原文 | 冲突 |
+|---|---|---|
+| `CHANGE_IMPACT_LOOP_SPEC` §7 | 「处置结果落 `gates.json`（`entry_decisions`）」 | 与右列冲突 |
+| `LOOP_ORCHESTRATION_SPEC` §10.4.2 | 「`gates.json` 不存逐条处置 ⇒ …**不得**从 `gates.json` 反推」+ 落 `decisions/<gate>.json` | 机制契约 |
+| `kb/schema/gate_state.schema.json`（**冻结**） | `required` 字段**不含** `entry_decisions` | 左列那句不可满足（改它属冻结目录的单独变更） |
+
+⇒ 按机制规格订正业务规格（红线 8「口径唯一」）：业务规格 §7 改为
+「落 `run_dir/decisions/<gate>.json` + `gate_decided.detail.entries`，二者同源；**不落** `gates.json`」，
+并写明依据；编排规格 §10.4.2 增反向交叉引用与订正日期。顺带删掉 §10.4.2 里**重复的一行**
+（"该文件是面板展示材料，不是闸门权威…"连写两遍）。
+
+### 77.3 回归钉子：`loop/tests/test_gate_ledger.py`（新增 5 条）
+
+此前这些不变量只有散落在全链路用例里的**存在性**断言，缺"容易被顺手破坏"的三类约束：
+
+| 用例 | 钉住什么 |
+|---|---|
+| `test_ledger_is_append_only_and_only_writes_contract_fields` | 二次追加后第一条记录**逐值不变**；`decided_at` 取权威签署时间；账本只含契约字段（内部 `source` 不进） |
+| `test_ledger_write_never_touches_the_authority_file` | 落账前后 `gates.json` **md5 不变**；权威文件里不得出现 `entry_decisions` |
+| `test_corrupt_ledger_fails_closed_and_is_not_overwritten`（3 参数） | 不可解析 / 缺 `records` / `records` 非列表 ⇒ `RuntimeError`，且**失败路径不改写**文件 |
+
+这些是**特征钉子**（characterization pin），不是红-绿：它们防回归，不驱动新行为。
+
+### 77.4 全链路断言补一条（唯一存储位置）
+
+`test_s2_detail_fields_and_gate_ledger_on_full_drill_run` 增：`run_dir/gates.json` 里**不得**出现
+`entry_decisions` —— 防止将来有人"顺手"在权威文件里再存一份副本（两个来源 ⇒ 红线 8，且锚失效）。
+
+### 77.5 顺带订正的两处过期文档
+
+- `doc/UI_RUNBOOK.md` §14 第 1 条「UI 没有 `entry_decisions` 逐条输入」**已不成立**（P-17 于
+  2026-10-23 实现了闸门视图逐条控件 + 节点面板共享草稿）⇒ 加删除线 + 追记现状；
+- `doc/plans/2026-10-23-node-panel-revision-kickoff.md` 的「实测更正：重建前须先补 Host 落账」
+  加**已过期**横幅（红线 12），并指明现行口径。
+
+### 77.6 四道门实测
+
+| 门 | 本轮 | 说明 |
+|---|---|---|
+| 软件层单测（文档化入口） | **965 passed / 3 deselected / 0 failed**（343.31 s） | `run_software_checks.sh --ignore=tests/browser`；+5 为新增落账钉子 |
+| kb 自测 | 未重跑 | 本轮未改 `kb/**`（只读引用其冻结 schema 作依据） |
+| 端到端 | 未重跑 | 本轮无 `loop/workflows/**` 产品代码改动（落账写入路径未动），沿用 §73；全链路落账断言已由上面的 drill 用例覆盖 |
+| 文档 | **missing=0**（checked=2177 / known_missing=10 / env_missing=26，exit=0） | 须在**无仓内数据根**时跑（`.tmp-shadow/` 在仓内会引入 2 条假断链，实测） |
+| 浏览器 | **110 passed**（110.91 s） | 本轮无 `loop/web/**` 改动，重跑只为把门留成可复现记录 |
+
+### 77.7 未关闭
+
+- **冻结夹具早于落账**：`RUN-20261015-120626` 无 `decisions/`，故 P-18「已决策 run 逐条处置重建」
+  **无法在该夹具上演示**。要补只能跑一轮新的 drill/真实轮再冻结，而写 `ENV_ROOT/kb` 需环境侧授权
+  （红线 11）⇒ 挂起待授权，不以回填伪造。
+- B 组其余：残留 2（drill + API 直接给 `entry_decisions` 时选项声明要理由而 precheck 放行，方向更严）、
+  残留 4（`legacy.html` 仍消费载荷快照 `decision_options`）、决策项文案 —— 维持原登记。
+- C / D 组（S0-b、I4/N16、真实通过形态夹具、取消不可续跑、运行入口不消费 S0、e2e 未重跑、
+  浏览器门未并入、提交未推送、双数据根入口冗余）不变。

@@ -3002,7 +3002,7 @@ G1 中断，断言**中断载荷**里的 `decision_options.confirmed.requires_re
 | 软件层单测（文档化入口） | **965 passed / 3 deselected / 0 failed**（343.31 s） | `run_software_checks.sh --ignore=tests/browser`；+5 为新增落账钉子 |
 | kb 自测 | 未重跑 | 本轮未改 `kb/**`（只读引用其冻结 schema 作依据） |
 | 端到端 | 未重跑 | 本轮无 `loop/workflows/**` 产品代码改动（落账写入路径未动），沿用 §73；全链路落账断言已由上面的 drill 用例覆盖 |
-| 文档 | **missing=0**（`9a4548f` 树 checked=1917 / known_missing=10 / env_missing=19，exit=0） | 口径固定为「仓内**无任何**数据根/影子树」；留数据根时 `checked`/`env_missing` 都会变（§78.4）。**最终值见 §79.6** |
+| 文档 | **missing=0**（`9a4548f` 树 checked=1917 / known_missing=10 / env_missing=19，exit=0） | 口径见下条说明（**不是**「仓内无任何数据根」——`workspaces/` 与 `loop/state` 由扫描器跳过，故它们在不在都不影响数字）。**最终值见 §80.4** |
 | 浏览器 | **110 passed**（110.91 s） | 本轮无 `loop/web/**` 改动，重跑只为把门留成可复现记录 |
 
 ### 77.7 未关闭
@@ -3109,7 +3109,7 @@ G1 中断，断言**中断载荷**里的 `decision_options.confirmed.requires_re
 | 门 | 结果 | 说明 |
 |---|---|---|
 | 软件层单测 | **965 passed / 3 deselected / 0 failed**（330.29 s） | 测试文件有改动（S1/S2），已重跑；与 §77.6 同值 |
-| 文档 | **missing=0**（`9a4548f` 树 checked=1917，仓内无数据根） | 见 §77.6 同一口径；**最终值见 §79.6** |
+| 文档 | **missing=0**（`9a4548f` 树 checked=1917） | 见 §77.6 同一口径；**最终值见 §80.4** |
 | 浏览器 / kb 自测 / 端到端 | 未重跑 | 本轮整改不触达 `loop/web/**`、`kb/**`、产品代码 |
 
 ### 78.8 待二次复核
@@ -3164,7 +3164,7 @@ S3/S6 转为登记项；S5（冻结 schema 引用补 md5）已在 §78.1 落地�
 | 门 | 结果 | 说明 |
 |---|---|---|
 | 软件层单测 | **965 passed / 3 deselected / 0 failed**（334.88 s） | 二次整改动了两个测试文件的注释与断言，必须重跑 |
-| 文档 | **missing=0**（checked=1920 / known_missing=10 / env_missing=19，exit=0） | 仓内**无任何**数据根/影子树；数字写入后复测同值 |
+| 文档 | **missing=0**（checked=1920 / known_missing=10 / env_missing=19，exit=0） | 数字写入后复测同值。**口径更正（2026-10-26 收尾）**：此前写的「仓内无任何数据根」不准确 —— 扫描器本身会跳过 `workspaces/`、`loop/state`、`loop/.venv`、`.git/` 等（见 `doc/audit/check_doc_links.py` 的 skip 列表），所以它们存在与否都不改数字；真正会改数字的是**扫描器不跳过的临时目录残留**（如上一轮的 `.wsp-r3r4`）。本表各值均在「无此类残留」的树上测得 |
 | 浏览器 / kb 自测 / 端到端 | 未重跑 | 本轮不触达 `loop/web/**`、`kb/**`、产品代码；§78.7 已记同理由 |
 
 ### 79.7 复核者明确「未能验证」的两点（保持可见）
@@ -3230,7 +3230,7 @@ hard_block = ['I4_CONFLICTS_UNCLEARED']
 
 | 门 | 结果 | 说明 |
 |---|---|---|
-| 文档 | **missing=0**（checked=1932，仓内无数据根；新增 1 份 evidence + README 索引；数字在 §80 落盘后测得） | — |
+| 文档 | **missing=0**（checked=1935；新增 1 份 evidence + README 索引；数字在 §80 落盘后测得，口径见 §79.6 的更正） | — |
 | 软件层 / 浏览器 / kb / 端到端 | 未重跑 | 本轮**未改**产品代码与测试，只新增夹具与文档 |
 | 演示路径 | 上述 §80.3 实测 | 起真实 uvicorn + 两个只读端点 |
 

@@ -1,6 +1,6 @@
 # 侧栏可达性缺陷：实施计划（2026-10-26）
 
-状态：**计划 + 已定位根因；实施按 SpecDD 顺序执行**。依据
+状态：**已实施（2026-10-26，切片 1–5 全部完成）**；实测与四道门记录见 [STATUS §75](../STATUS.md)，契约见 [WEB_UI_SPEC §14](../spec/WEB_UI_SPEC.md)。依据
 [WEB_UI_SPEC §14 侧栏可达性](../spec/WEB_UI_SPEC.md)。
 写权：`loop/web/app.css`、`loop/tests/browser/test_web_layout.py`（实现 owner，同一时刻一人）；
 `doc/spec/WEB_UI_SPEC.md` 与 `doc/STATUS.md` 属 Lead 契约/数字写权。

@@ -341,6 +341,41 @@ def test_both_gate_forms_show_shared_inputs(ui):
     pw.expect(page.locator('#gateCardBody [aria-label="裁决理由"]')).to_have_value("reviewed")
 
 
+G2 = "G2_report_accept"
+
+
+def test_gate_option_flags_come_from_run_view_not_interrupt_snapshot(ui):
+    """WEB_UI_SPEC §5 / §4.4：选项与 `requires_reason` 只有服务端一处判据，中断载荷里的
+    `decision_options` 只是**创建时的快照**，界面不得拿它当判据。
+
+    行为级判据（`test_web_smoke` 那条只能查源码符号名）。**可判别点**：运行视图没下发
+    `gate_options` 而快照里有时，界面必须报「未下发选项 ⇒ 不可提交」，而不是拿快照顶上。
+    """
+    page, api = ui
+    view = api["views"]["A"]
+    snapshot = [{"value": "accept", "label": "接受", "requires_reason": True},
+                {"value": "rework", "label": "返工", "requires_reason": True}]
+    view["pending_interrupt"]["payload"].update(gate=G2, decision_options=snapshot)
+    view["gate_options"] = {}                      # 未下发重算值，只剩快照
+    open_gate(page)
+    pw.expect(page.locator("#gatePanel .alert.bad")).to_contain_text("服务端未下发决策选项")
+    pw.expect(page.locator("#gatePanel .gate-options input[type=radio]")).to_have_count(0)
+    pw.expect(page.locator("#gatePanel .alert.warn")).to_have_count(0)
+    pw.expect(page.locator("#gatePanel [data-gate-submit]")).to_be_disabled()
+
+    # 下发重算值后选项与提示才出现（且理由口径取自 gate_options，不是快照）
+    view["gate_options"] = {G2: snapshot}
+    tick(page)
+    pw.expect(page.locator("#gatePanel .gate-options input[type=radio]")).not_to_have_count(0)
+    pw.expect(page.locator("#gatePanel .alert.warn")).to_contain_text("接受失败报告必须填写理由")
+    # 反向：重算值说不需要理由（快照说要）⇒ 不得提示
+    view["gate_options"] = {G2: [{"value": "accept", "label": "接受", "requires_reason": False},
+                                 {"value": "rework", "label": "返工", "requires_reason": True}]}
+    tick(page)
+    pw.expect(page.locator("#gatePanel .alert.warn")).to_have_count(0)
+    assert not api["posts"]
+
+
 def test_withdrawn_option_cannot_be_submitted(ui):
     page, api = ui
     open_gate(page)

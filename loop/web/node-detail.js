@@ -622,10 +622,19 @@ window.NodeDetail = (function () {
 
   /* **展示形态选择**（不是判据）：决定面板显示「G1 修订点清单」还是「G2/G3 只读待确认项」。
    * 服务端只有 G1 下发 entries（`gate_entries_view` 的 gate_has_entries），故这里按闸门 id 选形态，
-   * 属 WEB_UI_SPEC §4.4「判据归属」的**明示例外**；但「是否需要逐条处置/是否已就绪」一律只看
-   * 服务端下发的 flag，前端不得自判（那条判据唯一在 contracts.entry_decisions_required）。 */
+   * 属 WEB_UI_SPEC §4.4「判据归属」的**明示例外**；「是否需要逐条处置/是否已就绪/是否给引导」
+   * 一律只看服务端 flag（`gateNeedsEntries`），前端不得自判（判据唯一在
+   * contracts.entry_decisions_required）。 */
   function gateIsG1(gate) {
     return !!gate && String(gate.gate || "") === "G1_diff_confirm";
+  }
+
+  /* 「本门是否需要逐条处置」= 服务端下发的 `entries_required`（WEB_UI_SPEC §4.4 判据归属）。
+   * 与 `gateIsG1` **不等价**：G1 在 drill 模式或没有未决条目时服务端下发 false
+   * （contracts.entry_decisions_required），此时修订点仍要展示，但不得给可写控件/处置引导 ——
+   * 闸门表单那边也同样不会渲染逐条控件，否则就是把人引到一个没有入口的操作上（§54 同类死角）。 */
+  function gateNeedsEntries(gate) {
+    return !!gate && gate.entries_required === true;
   }
 
   function expectsReadOnlyItems() {
@@ -860,7 +869,13 @@ window.NodeDetail = (function () {
     }
     foot.appendChild(el("div", "nd-gate-progress", "已处置 " + counts.disposed + " / " + counts.total));
     var ready = bridgeReady();
-    if (!ready) {
+    if (!gateNeedsEntries(gate)) {
+      /* 服务端判本门不需要逐条处置（drill 或没有未决条目）⇒ 不得给「去逐条处置」的引导，
+       * 闸门视图那边也不会渲染逐条控件（WEB_UI_SPEC §4.4 判据归属）。 */
+      foot.appendChild(el("div", "nd-gate-hint",
+        "本门不需要逐条处置（服务端 entry_decisions_required=false）：修订点只作说明；" +
+        "需要决策/提交时到闸门视图表单。"));
+    } else if (!ready) {
       foot.appendChild(el("div", "nd-gate-hint warn",
         "当前运行没有待决策闸门：勾选与理由无法写入共享草稿；到闸门视图再处置。"));
     } else if (counts.total === 0) {
@@ -925,7 +940,8 @@ window.NodeDetail = (function () {
         host.appendChild(el("div", "nd-empty", "服务端未下发修订点条目（gate.entries 为空）；不编条目。"));
       } else {
         entries.forEach(function (entry) {
-          renderGateRow(host, view, gate, entry, state === "waiting");
+          /* 能不能改看服务端 flag；G1 在 drill / 无未决条目时是只读（§4.4 判据归属）。 */
+          renderGateRow(host, view, gate, entry, gateNeedsEntries(gate) && state === "waiting");
         });
       }
     }
@@ -986,7 +1002,7 @@ window.NodeDetail = (function () {
   function syncGateRowStates(view, gate) {
     var host = $("ndGate");
     if (!host) return;
-    var editable = gateIsG1(gate) && gate.state === "waiting";
+    var editable = gateNeedsEntries(gate) && gate.state === "waiting";
     var rows = host.querySelectorAll(".nd-gate-row");
     for (var i = 0; i < rows.length; i++) {
       var id = rows[i].getAttribute("data-entry-id");
@@ -1339,7 +1355,7 @@ window.NodeDetail = (function () {
     var gate = gateOf(s.data);
     if (!gate) return;
     if (!openOverlay("ndDiffOverlay", trigger)) return;
-    var editable = gate.state === "waiting";
+    var editable = gateNeedsEntries(gate) && gate.state === "waiting";
     setText("ndDiffTitle", entry.title ? String(entry.title) : String(entry.entry_id || "条目"));
     renderDiffMeta($("ndDiffMeta"), entry);
     var body = $("ndDiffBody");

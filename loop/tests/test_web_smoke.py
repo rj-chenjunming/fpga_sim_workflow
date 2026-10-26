@@ -95,6 +95,12 @@ def test_gate_reason_preflight_consumes_server_flags_only() -> None:
     A：报告结论的来源必须可见 —— 否则 drill 夹具（报告无 claimed_verdict 行）会出现
        "界面显示未通过、选项说无需理由"而无任何解释。
     B：中断载荷里的 decision_options 只是快照，界面不得拿它做前置判断（视图每次重算）。
+
+    本用例是**源码符号级**的廉价前置守卫（不需要浏览器）。**行为级**判据另由浏览器用例固定：
+      · `tests/browser/test_run_sessions.py::test_gate_option_flags_come_from_run_view_not_interrupt_snapshot`
+        —— 运行视图不下发 `gate_options` 而快照里有时，界面必须报「未下发选项 ⇒ 不可提交」；
+      · `tests/browser/test_node_detail.py::test_gate_entry_controls_follow_server_flag_not_gate_id`
+        —— 节点面板「是否需要逐条处置」只看服务端 `entries_required`，不按闸门 id 自判。
     """
     js = _get("/app.js")
     assert "claimed_verdict_source" in js, "报告结论来源未在界面暴露（建议 A）"

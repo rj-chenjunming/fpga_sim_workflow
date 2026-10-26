@@ -2820,3 +2820,105 @@ G1 中断，断言**中断载荷**里的 `decision_options.confirmed.requires_re
   须先改 WEB_UI_SPEC §1/§12/§14 与 SPEC-REV-07 §1 的范围声明。
 - 浏览器用例仍未并入全量单测门（单跑 120 s，且并入后 30 s 超时会叠乘，见 §72）。
 - §74.5 的残留 2 / 4 维持「登记不改」。
+
+## 76 复核遗留 A 组收口：判据落实 + 行为级断言 + SSE 路由覆盖（2026-10-26）
+
+§75 之后按「A 组（代码/口径层）」逐项收口。**同一执行者实施与验证。**
+
+### 76.1 A1：`entries_required` 不是「没人用」，而是**该用没用**（§68.5 结论订正）
+
+§68.5 / §69.4 / §70.6 / §71.6 一直登记「`gate_entries_view.entries_required` 在
+`loop/web/**` 零消费者，按红线 4 精神属可疑投影，倾向删除」。本轮复核结论相反：
+
+- [WEB_UI_SPEC §4.4 判据归属](spec/WEB_UI_SPEC.md)已明写「**是否需要逐条处置 / 是否已就绪 /
+  是否给引导**一律只看服务端 flag」，明示例外**只**覆盖「显示 G1 修订点清单还是
+  G2/G3 只读待确认项」这个展示形态选择；
+- 而 `loop/web/node-detail.js` 的 `editable` 用的是 `gateIsG1(gate)`（按闸门 id 自判）；
+- 两者**不等价**：`contracts.entry_decisions_required = G1 && unresolved_count && mode != drill`。
+  于是 drill 模式（或没有未决条目）下服务端下发 `false`，节点面板却仍渲染可写勾选框，
+  页脚还给出「还有 N 条未处置：闸门视图的提交按钮会保持禁用，处置完再提交」——**闸门表单那边
+  根本不会渲染逐条控件**，这正是 §54 修过的「把人引到没有入口的地方」死角。
+
+**修复（不改契约，代码本就违反现有规格）**：新增 `gateNeedsEntries(gate)` 读服务端
+`gate.entries_required`，四处判定改用它 —— `renderGate` 的行渲染、`syncGateRowStates`、
+`openDiff`（浮窗处置区）、`fillGateFoot`（引导语）；`gateIsG1` 只留展示形态（规格明示）。
+**结论：字段有授权消费者了，不删除** —— 删除会让复核 C1 要求的「等待态必须重算」
+（`test_gate_entries_waiting_recomputes_stale_flag`）失去对象，也丢掉「面板与闸门表单同口径」的载体。
+
+夹具同步：`gate_block` / `setup_gate_node` 增 `entries_required` 参数。原夹具写死
+`gate == GATE`，与基线 `mode="drill"` 叠加后是**服务端产不出的组合**（drill 下恒假）。
+
+回归用例 `test_gate_entry_controls_follow_server_flag_not_gate_id`：先红
+（实测标题仍是「勾选 = 已确认；忽略 / 有疑义请点「查看前后对比」逐条处置」）→ 修复后绿；
+`tests/browser/test_node_detail.py` 全文件 **44 passed**。
+
+### 76.2 A2：「前端不得自判」从符号名级升到行为级
+
+`test_web_smoke::test_gate_reason_preflight_consumes_server_flags_only` 只查源码字符串
+（`assert "payload.decision_options" not in js`），是本轮之前的**唯一**守卫。保留该廉价守卫，
+另加两条行为级用例，并在该用例 docstring 里互相指路：
+
+| 用例 | 可判别点 |
+|---|---|
+| `test_run_sessions::test_gate_option_flags_come_from_run_view_not_interrupt_snapshot` | 运行视图**不下发** `gate_options`、只有中断快照里有选项时，界面必须报「服务端未下发决策选项 ⇒ 不可提交」，不得拿快照顶上；下发后才出现选项与「接受失败报告必须填写理由」 |
+| `test_node_detail::test_gate_entry_controls_follow_server_flag_not_gate_id` | 见 §76.1 |
+
+**A/B 验证用例自身有效**（这条要如实记）：第一版 A2 用例把 `gate_options` 与快照**都**给了值，
+只在两者内容上做区分 —— 临时把「快照回退」加回 `gateOptionsFor` 后用例**仍然绿** ⇒ 该写法
+**不判别**（回退分支只在 `gate_options[gate]` 缺失时生效）。改为「只留快照」后重跑 A/B：
+加回回退 ⇒ **红**（`AssertionError: Locator expected to contain text '服务端未下发决策选项'`），
+复原 ⇒ 绿。
+
+### 76.3 A3：两条 SSE 路由补 HTTP 级覆盖（§67.5 遗留建议）
+
+新增 `loop/tests/test_api_stream_routes.py`（3 条）。分层：`test_run_stream_server.py` 断的是
+生成器内部（帧格式/心跳/变更检测），本文件只固定**路由层**：
+
+1. 未知 run ⇒ **404**（两条路由都是；不是「200 然后推 error 帧」）；
+2. 成功响应 `Content-Type: text/event-stream` 前缀 + `Cache-Control: no-cache`；
+3. 首帧事件名正确：`/stream` ⇒ `event: run_view`，`/agents/{node}/stream` ⇒ `event: agent_view`
+   （SPEC-04 §6.9/§6.10 两个事件名不得混用）；
+4. 该帧 `data:` 是**单行**且可 `json.loads`（多行会被 SSE 拆碎，前端解析会坏）；
+5. run 消失 ⇒ 显式 `event: gone` 后结束，不伪装存活。
+
+替身只替换数据来源（`api._manager` / `api._agent_root` / `api._agent_window_view`），
+传输仍是真实 `StreamingResponse` + `services.run_stream`，故帧格式与结束语义走生产代码路径。
+
+### 76.4 改动清单
+
+| 文件 | 改动 | 性质 |
+|---|---|---|
+| `loop/web/node-detail.js` | 新增 `gateNeedsEntries`；四处判定从 `gateIsG1`/`state` 切到服务端 `entries_required`；页脚引导按同一判据分支 | **产品** |
+| `loop/tests/browser/test_node_detail.py` | 夹具增 `entries_required` 参数（消除不可达组合）；新增 A1 行为级用例 | 测试 |
+| `loop/tests/browser/test_run_sessions.py` | 新增 A2 行为级用例（含被 A/B 推翻后重写的判别点） | 测试 |
+| `loop/tests/test_api_stream_routes.py` | 新增：两条 SSE 路由的 HTTP 级契约 | 测试（新文件） |
+| `loop/tests/test_web_smoke.py` | 符号级守卫加注释，指向两条行为级用例（断言未改） | 测试 |
+
+### 76.5 四道门实测
+
+| 门 | 本轮 | 说明 |
+|---|---|---|
+| 软件层单测（文档化入口） | **960 passed / 3 deselected / 0 failed**（356.02 s） | `bash spikes/run_software_checks.sh --ignore=tests/browser`；+3 相对 §75.6 的 957（新增 SSE 路由 3 条） |
+| kb 自测 | 未重跑 | 本轮未改 `kb/` 与闸门判据代码路径（改动为前端 JS 与测试）；沿用 §75.6 的 PASS=10 / PASS=9 |
+| 端到端 | 未重跑 | 不触达工作流/API 路径；沿用 §73 |
+| 文档 | 见本节落盘后实测 | — |
+
+浏览器门（需 Chromium）：
+
+| 范围 | 上一版 | 本轮 |
+|---|---|---|
+| `tests/browser/` 全量 | 108 passed | **110 passed**（117.15 s，+2 条行为级用例） |
+
+### 76.6 未关闭（A 组已清空，余下按原分组）
+
+- **B 契约/产品层**：逐条处置未落账（`entry_decisions` 不进 `gates.json`/事件流 ⇒ P-18 重建做不到）；
+  残留 2（drill + API 直接给 `entry_decisions` 时选项声明要理由而 precheck 放行，方向更严）；
+  残留 4（`legacy.html` 仍消费载荷快照 `decision_options`，不渲染 `requires_reason`）；
+  决策项文案（失败轮次「接受」是否改名，§70.6）。
+- **C 环境/规模层**：S0-b 未接入；I4 72 条冲突未清零 ⇒ G3 只能 `milestone_only`、N16 仍 `refused`；
+  夹具只有 `not_passed` 形态（真实通过轮需 ~21.5 h）；取消作业 = 整轮 `failed` 不可续跑；
+  运行入口不消费 S0；3 条 `env_layer` 用例在只读 `ENV_ROOT` 本机不可跑。
+- **D 流程/证据层**：端到端本轮未重跑；浏览器门未并入全量门（时长/可移植性理由）；提交未推送；
+  两个可写数据根入口并存（`provision_dev_workspace.sh` 复制 733 MB vs `run_software_checks.sh`
+  符号链接 + 一次性影子根），建议后续让前者退化或改符号链接。
+- **移动端**：不做适配（§75.4 第 2 条，用户 2026-10-26 裁决）。

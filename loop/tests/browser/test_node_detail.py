@@ -228,12 +228,14 @@ GATE_OPTIONS = {
 
 
 def gate_block(*, gate=GATE, state="waiting", entries=None, disposed=0, decision=None,
-               hard_block=None, note=None, items=None):
+               hard_block=None, note=None, items=None, entries_required=None):
     if entries is None:
         entries = gate_detail_entries(disposed=(state == "decided")) if gate == GATE else []
+    if entries_required is None:
+        entries_required = gate == GATE
     return {
         "gate": gate, "state": state, "cycle": 0,
-        "entries_required": gate == GATE,
+        "entries_required": entries_required,
         "decision_options": GATE_OPTIONS.get(gate, []),
         "counts": {"entries": len(entries), "revision_points": len(entries),
                    "disposed": disposed, "unresolved": 1 if gate == GATE else 0},
@@ -311,12 +313,13 @@ def setup_items_gate_node(api, *, node="N14", gate_name=G3, state="decided",
     return v
 
 
-def setup_gate_node(api, *, state="waiting", entries=None, hard_block=None, note=None):
+def setup_gate_node(api, *, state="waiting", entries=None, hard_block=None, note=None,
+                    entries_required=True):
     v = setup_run(api)
     entries = entries if entries is not None else gate_detail_entries(disposed=(state == "decided"))
     payload = v["pending_interrupt"]["payload"]
     payload["gate"] = GATE
-    payload["entry_decisions_required"] = True
+    payload["entry_decisions_required"] = entries_required
     payload["difference_items"] = {
         "present": True, "count": len(entries), "unresolved_count": 1,
         "entries": [{"entry_id": e["entry_id"], "kind": e["kinds"][0],
@@ -352,7 +355,8 @@ def setup_gate_node(api, *, state="waiting", entries=None, hard_block=None, note
         gate=gate_block(state=state, entries=entries,
                         disposed=len(entries) if decided else 0,
                         decision=DECIDED if decided else None,
-                        hard_block=hard_block, note=note),
+                        hard_block=hard_block, note=note,
+                        entries_required=entries_required),
         run_status="waiting_gate", run_terminal=False)
     return v
 
@@ -730,6 +734,41 @@ def test_gate_lists_revision_points_with_compact_rows(ui):
     pw.expect(page.locator("#ndDiffOverlay")).to_be_visible()
     pw.expect(page.locator("#ndDiffTitle")).to_contain_text("内容有改动")
     page.keyboard.press("Escape")
+
+
+def test_gate_entry_controls_follow_server_flag_not_gate_id(ui):
+    """WEB_UI_SPEC §4.4「判据归属」：节点面板「是否需要逐条处置 / 是否给引导」只能看服务端
+    `gate.entries_required`，**不得按闸门 id 自判**（`gateIsG1`）——明示例外只覆盖
+    「选哪种展示形态」，不覆盖判据。
+
+    `G1 + entries_required=false` 是**服务端可达**组合（`contracts.entry_decisions_required`
+    对 drill 模式一律返回假）：此时修订点仍要展示，但不得渲染可写控件、不得写共享草稿 ——
+    否则会把人引到「闸门表单里没有逐条控件」的死角（§54 修过的同一类问题）。
+    """
+    page, api = ui
+    setup_gate_node(api, entries_required=False)
+    select(page, "A")
+    open_run_view(page)
+    open_node(page, "N4")
+
+    # 条目照常展示（展示形态不受影响）
+    pw.expect(page.locator("#ndGate .nd-gate-row")).to_have_count(2)
+    pw.expect(page.locator("#ndGateSummaryLine")).to_have_text("共 2 条修订点，已处置 0 条")
+    # 但控件必须是只读形态：勾选框标题走「已决策/只读」分支，且真正 disabled
+    titles = page.locator("#ndGate .nd-gate-check").evaluate_all("els => els.map(e => e.title)")
+    assert len(titles) == 2, titles
+    assert all("只读" in title for title in titles), titles
+    boxes = page.locator("#ndGate .nd-gate-row input[type=checkbox]")
+    pw.expect(boxes).to_have_count(2)
+    for index in range(2):
+        pw.expect(boxes.nth(index)).to_be_disabled()
+    # 浮窗里的处置区同理只能只读（可编辑形态才会渲染 radio）
+    page.locator("#ndGate .nd-gate-row").first.locator(".nd-gate-open").click()
+    pw.expect(page.locator("#ndDiffOverlay .nd-dispose-head")).to_contain_text("只读")
+    pw.expect(page.locator("#ndDiffOverlay input[type=radio]")).to_have_count(0)
+    page.keyboard.press("Escape")
+    # 全程不得写共享草稿：否则等于在没有逐条通道的闸门上伪造处置
+    assert page.evaluate("() => window.GateDraftBridge.counts().disposed") == 0
 
 
 def test_diff_overlay_renders_two_columns_with_hunk_line_numbers(ui):

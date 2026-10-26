@@ -67,11 +67,13 @@ def test_gate_view_has_entry_decision_controls() -> None:
 
     `entry_decisions_required=true` 时，闸门表单必须为每个唯一 entry_id 渲染控件，
     提交 payload 必须带 `entry_decisions`；选项一律取服务端下发，前端不得手抄枚举。
+    **2026-10-26（R1+R2）**：该 flag 的判据唯一在服务端（WEB_UI_SPEC §4.4「判据归属」），
+    前端只消费 flag，不得再按 `pending.gate` 自判——否则控件渲染/就绪判定/紧凑卡引导/
+    节点面板 bridge 会各写一套判据，并出现"引导用户去没有控件的地方"的死角。
     """
     js = _get("/app.js")
     for token in (
         "entryDecisionsRequired",
-        "entryGateRequires",
         "renderEntryDecisionControls",
         "deriveEntryDecision",
         "validateEntryDecisions",
@@ -79,5 +81,9 @@ def test_gate_view_has_entry_decision_controls() -> None:
         "gate-entry",
     ):
         assert token in js, f"app.js 缺少逐条处置通道：{token}"
+    assert "entryGateRequires" not in js, (
+        "前端不得自判「哪道门要逐条处置」——判据归服务端 entry_decisions_required"
+        "（WEB_UI_SPEC §4.4 判据归属；红线 8 口径唯一）"
+    )
     css = _get("/app.css")
     assert ".gate-entry" in css, "app.css 缺少逐条处置控件样式"

@@ -287,6 +287,12 @@
    条目。整门决策由逐条处置**推导**：存在 `disputed` ⇒ `disputed`；否则存在 `ignored` ⇒ `ignored`；
    否则 `confirmed`。推导值与手选值不一致时必须就地提示，最终以服务端拒绝为准。
    材料不足以生成控件时，仍须显式提示"该门需走 API"并给出可复制样例，**不得让人盲签**。
+    **判据归属（2026-10-26 增补，R1+R2 收口）**：`entry_decisions_required` 由**服务端**按
+   「本闸门是否有逐条处置通道 × 未决条目数 × mode」判定，当前**只对 `G1_diff_confirm` 为真**
+   （G2/G3 的待确认项是只读 `items`，不参与 `entry_decisions`；drill 模式一律为假）。
+   前端**只消费该 flag**，不得再按 `pending.gate` 自判——否则「渲染控件」「就绪判定」「紧凑卡引导」
+   「节点面板 bridge」会各写一套判据（红线 8「口径唯一」），并出现"引导用户去没有控件的地方"的死角。
+   权威判定仍在 `chunks/gates.py::precheck_decision` 的 G1 分支（`entry_decisions` 只在该分支被消费）。
    **与节点面板共用草稿（2026-10-23 增补）**：闸门节点面板的二级差异清单（§4.2.2）与本卡使用**同一份**
    `gate-session` 草稿（同一 `run_id + gate + cycle` 身份）；面板只写草稿、不发 POST，
    提交入口仍只有本卡的提交按钮——避免两套提交与两套判据。
@@ -299,7 +305,8 @@
    (b) 推导出的整门决策需要理由而整门理由为空时，**预填复用**逐条处置中同判据的非空理由
    （`gate-session.reusableReason`，entry_id 排序首个；用户已输入/非空不覆盖）；
    (c) 运行视图右列紧凑闸门卡在 `entry_decisions_required` 时显示提示与「去人工闸门视图」按钮
-   （逐条控件只在闸门视图；完整引导流仍归 SPEC-REV-07 U4）。
+   （逐条控件只在闸门视图；完整引导流仍归 SPEC-REV-07 U4）。该 flag 只对 G1 为真（§4.4
+   「判据归属」），故 G2/G3 不会出现该引导。
    材料行标题与头部 pill 同口径显示人话闸门名，原始 gate id 移入悬停提示（U10-a）。
 2. **双口径计数**：口径一 / 口径二**并列同权**，原值显示，不换算；附「两者都归零才可判绿」说明。
 3. **阻断项**：按 `severity` 分区（hard / info），code + 一句话说明；不做前端过滤。
@@ -326,9 +333,10 @@
 - 触发：`pending_interrupt` 存在，或用户手动进入。
 - 内容：闸门材料（差异清单/冲突快照/报告+用例态/评估结论，按闸门不同）、权威枚举、当前轮次、未决计数。
 - 操作：选择决策 → 填 actor（必须 `human` 前缀）→ 理由（`ignored/rework/disputed` 必填）→ 提交。
-- **G1 逐条处置（2026-10-23 增补）**：`entry_decisions_required=true` 时先逐条选择
+- **G1 逐条处置（2026-10-23 增补）**：服务端下发 `entry_decisions_required=true` 时先逐条选择
   （每个唯一 `entry_id` 一组控件），再提交；整门决策由逐条处置推导（§4.4），界面不得用一句
-  attestation 代替逐条核对。
+  attestation 代替逐条核对。该 flag 只对 G1 为真（判据归服务端，见 §4.4「判据归属」），
+  前端不得按 gate 自判。
 - 提交路径：`POST /api/runs/{run_id}/gates/{gate_id}/decision`；成功后回到运行视图并刷新。
 - 被拒（403）：显示服务端 `detail.error` + `blockers`，**不消耗中断**的说明如实展示。
 - 执行停放说明：顶部固定一句「执行处于 interrupt，可安全重启；闸门态权威在 `gates.json`」。

@@ -2274,3 +2274,57 @@ bash remote/serve.sh
 
 另：`GateDraftBridge.required` 仍用旧判据（同 R1 同源）；两条 SSE 路由无 HTTP 级自动化覆盖，
 建议补 TestClient 冒烟（未知 run⇒404、`Content-Type: text/event-stream`、首帧事件名）。
+
+---
+
+## 68 R1+R2 收口：逐条处置判据下沉服务端（2026-10-26）
+
+接 §67.5 的 R1（引导指向没有控件的死角）与 R2（两套判据）。**同一执行者实施与验证；独立复核另行安排。**
+
+### 68.1 契约先行
+
+[WEB_UI_SPEC](spec/WEB_UI_SPEC.md) §4.4 新增「判据归属（2026-10-26 增补）」：`entry_decisions_required`
+由**服务端**按「本闸门有无逐条处置通道 × 未决条目数 × mode」判定，**只对 `G1_diff_confirm` 为真**
+（G2/G3 的待确认项是只读 `items`；drill 一律为假）；前端**只消费该 flag**，不得按 `pending.gate` 自判。
+§5 与 §4.2.2(c) 同步注明该 flag 只对 G1 为真，故 G2/G3 不会出现该引导。
+顺序：改契约 → 写失败用例 → 改实现。
+
+### 68.2 实现
+
+- `services/contracts.py` 新增 `entry_decisions_required(gate, unresolved_count, mode)` —— **唯一判据**；
+  `gate_material`（下发 flag）与 `gate_entries_view`（节点面板 `entries_required`：等待态原样消费、
+  已决策态用同一判据）共用它，不再各算一套。
+- `web/app.js` 删除自判函数 `entryGateRequires()`，4 处调用改为只消费 `entryDecisionsRequired(pending)`
+  （控件渲染早退 ×2、就绪判定、提交前逐条校验）。
+- **顺带消除两处同源死角**：U8-c 紧凑卡引导与 `GateDraftBridge.required` 消费的正是服务端 flag，
+  改后天然只对 G1 生效 —— G2/G3 不再出现"引导用户去没有控件的地方"（即 R1 的原始症状）。
+
+### 68.3 TDD 红→绿
+
+新增 3 条断言，**实现前实测均红、实现后绿**：
+- `test_fix_lifecycle.py::test_entry_decisions_required_is_g1_only`：同一份含未决条目的材料，
+  只换闸门/换 mode 看服务端 flag（G1 real=True；G2/G3 real=False；G1 drill=False）。
+- `test_node_detail_projection.py::test_gate_entries_decided_g2_never_requires_entries`：
+  已决策态 `unresolved_count=3` + `mode=real` 的最易误判组合，`entries_required` 必须为假。
+- `test_web_smoke.py`：静态断言由「必须含 `entryGateRequires`」反转为**不得含**（前端不得自判判据）。
+
+### 68.4 实测（数字为命令输出复制）
+
+| 门 | 本轮 | 改前基线 `43163d7` |
+|---|---|---|
+| 单测全量 | **71 failed / 871 passed / 6 skipped / 104 errors**（74.14 s） | 72 failed / 866 passed / 8 skipped / 104 errors（65.44 s） |
+| 失败/错误集合差异 | **0 条**。唯一差异 `test_test_layers.py::test_software_entry_excludes_env_layer_at_collection` 是基线在 git worktree 里缺 `loop/.venv` 的环境假象（该用例主工作树连跑 2 次均 `6 passed`） | — |
+| 定向（web_smoke / gate_session / gate_reason_reuse / gate_projection / node_story / api_ui_contract） | 8 failed / 135 passed | 8 failed / 135 passed（**同集合**） |
+| 文档门 `check_doc_links.py` | `missing=0`（`checked=1876`） | missing=0 |
+
+passed 数 +5 = 新增 2 条用例 + 上述 worktree 假差异 1 条 + 原本 skip 的 2 条在正式数据根下正常执行（8→6 skip）。
+两组全量的 104 个 `ERROR` 全部是 browser 用例（playwright Chromium 未安装），与该改动无关。
+
+### 68.5 未关闭
+
+- **R3 / R4 未做**：`decision_options[].requires_reason` 仍是静态枚举（`accept` 恒 false），
+  `not_passed` 时"必须理由"仍只有服务端硬前置、界面无法预检；`claimed_verdict` 仍有
+  `_n12_conclusion`（state facts）与 `report_claimed_verdict`（读 `n12_report.md`）两个读者。
+- **观察（未改）**：`gate_entries_view` 的 `entries_required` 在 `loop/web/**` 内**零消费者**
+  （仅测试断言），按红线 4「模型输出必须有授权消费者」精神属可疑投影；本轮只把它对齐到同一判据，
+  未删除该字段（删除属单独契约变更，需连带改 browser 夹具）。

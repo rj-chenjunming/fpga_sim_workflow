@@ -581,6 +581,26 @@ def test_gate_entries_merge_md5_only_into_attached_evidence() -> None:
     assert gate["entries_required"] is True
 
 
+def test_gate_entries_decided_g2_never_requires_entries(tmp_path: Path) -> None:
+    """R1+R2：已决策态也不得按"未决条目数"给 G2/G3 置 entries_required。
+
+    与等待态同一判据（WEB_UI_SPEC §4.4「判据归属」）：只有 G1 有逐条处置通道。
+    这里 `unresolved_count=3` 且 `mode=real`（最容易被误判成"要逐条处置"的组合）。
+    """
+    from services import contracts
+
+    gate = contracts.gate_entries_view(
+        gate="G2_report_accept", run_dir=tmp_path,
+        diff={"entries": [_diff_entry("RTL/a.v", "rtl_file", diff_hunk="@@ -1 +1 @@")],
+              "unresolved_count": 3},
+        authority={"status": "signed", "decision": "accept", "actor": HUMAN,
+                   "actor_kind": "human", "human_signed": True},
+        mode="real",
+    )
+    assert gate["state"] == "decided"
+    assert gate["entries_required"] is False, "G2 不收逐条处置 ⇒ 已决策态同样必须为假"
+
+
 def test_gate_entries_decided_reads_host_ledger(tmp_path: Path) -> None:
     """已决策态：逐条处置来自 `decisions/<gate>.json`（不从 gates.json 猜）。"""
     from services import contracts

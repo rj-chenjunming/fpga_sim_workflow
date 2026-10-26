@@ -705,6 +705,25 @@ def _latest_signing(state_facts: dict[str, Any], gate: str) -> dict[str, Any] | 
     return dict(item) if isinstance(item, dict) else None
 
 
+def entry_decisions_required(
+    gate: str | None, unresolved_count: Any, mode: str | None
+) -> bool:
+    """「本闸门是否需要逐条处置」的**唯一**判据（WEB_UI_SPEC §4.4「判据归属」）。
+
+    只有 G1 有逐条处置通道：G2/G3 的待确认项是只读 `items`，不参与 `entry_decisions`，
+    `workflows/chunks/gates.py::precheck_decision` 也只在 G1 分支消费 `entry_decisions`。
+    real 严格；drill 夹具的历史未决条目只作展示，不要求逐条处置。
+
+    前端只消费本判据下发的 `entry_decisions_required` flag，**不得按 `pending.gate` 自判**——
+    否则控件渲染/就绪判定/紧凑卡引导/节点面板 bridge 会各写一套判据（红线 8「口径唯一」）。
+    """
+    return (
+        gate == "G1_diff_confirm"
+        and bool(unresolved_count)
+        and mode != "drill"
+    )
+
+
 def gate_material(
     *,
     gate: str,
@@ -786,8 +805,11 @@ def gate_material(
         "model_modes": modes,
         "standin_model_nodes": (bool(standin_nodes) if standin_nodes is not None else None),
         "standin_nodes": standin_nodes,
-        # I1：未决条目需要逐条处置（real 严格，drill 夹具历史件只作展示）
-        "entry_decisions_required": bool(diff.get("unresolved_count")) and mode != "drill",
+        # I1：未决条目需要逐条处置。判据唯一在 entry_decisions_required()（只 G1），
+        # 前端只消费本 flag 不自判（WEB_UI_SPEC §4.4「判据归属」）。
+        "entry_decisions_required": entry_decisions_required(
+            gate, diff.get("unresolved_count"), mode
+        ),
         "unresolved_entries": diff.get("unresolved_ids", []),
         # 本闸门的决策记录（N16 消费 signed_at/reason/artifacts/entries）
         "decision_record": _latest_signing(facts, gate),
@@ -1229,9 +1251,13 @@ def gate_entries_view(
     options = (gate_options or {}).get(gate) or []
     entries_required: bool | None = None
     if waiting:
+        # 等待态：payload 里的值已是 gate_material() 用同一判据算出的，原样消费。
         entries_required = bool(payload.get("entry_decisions_required"))
     elif state == "decided":
-        entries_required = bool(source_diff.get("unresolved_count")) and mode != "drill"
+        # 已决策态：走同一判据（只 G1），不另写一套（WEB_UI_SPEC §4.4「判据归属」）。
+        entries_required = entry_decisions_required(
+            gate, source_diff.get("unresolved_count"), mode
+        )
 
     cycle = payload.get("cycle") if waiting else None
     if cycle is None and isinstance(latest, dict):

@@ -2569,13 +2569,11 @@
     return p.entry_decisions_required === true;
   }
 
-  /* 逐条处置只在 **G1** 出现：服务端 gates.precheck_decision 仅对 G1_diff_confirm 评估
-     entry_decisions；G2/G3 即使差异清单里还有未决条目，也不接受逐条处置。
-     2026-10-26 实测：G2 曾被误渲染逐条控件（选项还是 accept/rework），导致提交按钮
-     永远禁用 —— 因为 deriveEntryDecision 只认 confirmed/ignored/disputed。 */
-  function entryGateRequires(pending) {
-    return entryDecisionsRequired(pending) && pending && pending.gate === "G1_diff_confirm";
-  }
+  /* 「哪道门要逐条处置」的判据**唯一在服务端**（WEB_UI_SPEC §4.4「判据归属」）：
+     服务端只对 G1 置 `entry_decisions_required=true`，real 严格、drill 为假。
+     2026-10-26（R1+R2）：前端曾自判 `pending.gate === "G1_diff_confirm"`，结果控件渲染、
+     就绪判定、紧凑卡引导、节点面板 bridge 各写一套判据，还出现"引导用户去没有控件的地方"
+     的死角 —— 现已删除，只消费上面这个 flag（红线 8 口径唯一）。 */
 
   function entryRows(pending) {
     var d = diffPayloadOf(pending);
@@ -2639,7 +2637,7 @@
 
   function renderEntryDecisionControls(container, pending, options) {
     clearEl(container);
-    if (!entryGateRequires(pending)) return;
+    if (!entryDecisionsRequired(pending)) return;
     var rows = entryRows(pending);
     var values = (options || []).map(function (o) { return String(o.value); });
     if (!rows.length || !values.length) return;  // 无法生成控件：材料区给 API 提示
@@ -2687,7 +2685,7 @@
   }
 
   function syncEntryDecisionControls(container, pending) {
-    if (!entryGateRequires(pending)) return;
+    if (!entryDecisionsRequired(pending)) return;
     var d = state.gateDraft;
     var lines = container.querySelectorAll(".gate-entry");
     for (var i = 0; i < lines.length; i++) {
@@ -3085,11 +3083,10 @@
     if (actor) actor.disabled = d.submitting;
     if (reason) reason.disabled = d.submitting;
     var submit = form.querySelector("[data-gate-submit]");
-    /* 逐条处置只在 G1 出现（entryGateRequires）：服务端 precheck 仅 G1 消费
-       entry_decisions，G2/G3 不接受逐条处置 ⇒ 就绪判定必须与渲染判据同一口径。
-       上游（SPEC-REV-08 U8-a）把这两行上提到 if (submit) 之外供缺项提示复用；
-       本行判据由 entryDecisionsRequired 收敛为 entryGateRequires。 */
-    var needEntries = entryGateRequires(pending) && entryRows(pending).length > 0;
+    /* 就绪判定与控件渲染必须同一口径：都只看服务端下发的 entry_decisions_required
+       （判据唯一在服务端，只对 G1 为真；WEB_UI_SPEC §4.4「判据归属」）。
+       上游（SPEC-REV-08 U8-a）把这两行上提到 if (submit) 之外，供缺项提示块复用。 */
+    var needEntries = entryDecisionsRequired(pending) && entryRows(pending).length > 0;
     var entriesReady = !needEntries || !!derivedEntryDecision(pending);
     if (submit) {
       var offered = options.some(function (o) { return o.value === d.decision; });
@@ -3203,7 +3200,7 @@
     };
     /* G1 逐条处置：覆盖全部唯一 entry_id 才提交；覆盖不全/理由缺失就地拦下，
        仍以服务端 I1 判定为权威（SPEC-04 §4.4 2026-10-23）。 */
-    if (entryGateRequires(pending)) {
+    if (entryDecisionsRequired(pending)) {
       var entryList = entryRows(pending);
       if (entryList.length) {
         var checkedEntries = window.GateSession.validateEntryDecisions(

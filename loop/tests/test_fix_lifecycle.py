@@ -399,6 +399,28 @@ def test_gate_material_stage_aware_blockers(tmp_path: Path) -> None:
     assert "I2_CASES_PENDING" in codes2, "本轮待验必须阻断 G2（I2）"
 
 
+def test_entry_decisions_required_is_g1_only(tmp_path: Path) -> None:
+    """R1+R2（WEB_UI_SPEC §4.4「判据归属」）：逐条处置判据唯一在服务端，且只对 G1 为真。
+
+    不读源码也能判定：**同一份含未决条目的材料**，只换闸门/换 mode，看服务端下发的 flag。
+    为什么必须为假：G2/G3 的待确认项是只读 items，服务端 precheck 只在 G1 分支消费
+    `entry_decisions`；若这里为真，界面会渲染控件、紧凑卡会引导用户去「逐条处置」，
+    而那个视图对 G2/G3 根本没有控件（2026-10-26 实测的死角）。
+    """
+    rd = _write_run_dir(tmp_path)
+    kb = _kb(tmp_path, blocks_release=1)
+
+    def flag(gate: str, mode: str) -> bool:
+        return contracts.gate_material(gate=gate, run_dir=rd, counts=None, kb=kb,
+                                       pending_interrupt=None,
+                                       mode=mode)["entry_decisions_required"]
+
+    assert flag("G1_diff_confirm", "real") is True, "G1 有未决条目 ⇒ 必须逐条处置"
+    for gate in ("G2_report_accept", "G3_regression_decision"):
+        assert flag(gate, "real") is False, f"{gate} 不接受逐条处置 ⇒ flag 必须为假"
+    assert flag("G1_diff_confirm", "drill") is False, "drill 夹具历史件只作展示"
+
+
 def test_rework_counts_separate_n6n8_and_g2(tmp_path: Path) -> None:
     """C6/I7：两个计数独立；各自 >= limit 都进 blocker。"""
     rd = _write_run_dir(tmp_path, own_pending=False)

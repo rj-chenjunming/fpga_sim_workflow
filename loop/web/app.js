@@ -2356,6 +2356,14 @@
     return p.entry_decisions_required === true;
   }
 
+  /* 逐条处置只在 **G1** 出现：服务端 gates.precheck_decision 仅对 G1_diff_confirm 评估
+     entry_decisions；G2/G3 即使差异清单里还有未决条目，也不接受逐条处置。
+     2026-10-26 实测：G2 曾被误渲染逐条控件（选项还是 accept/rework），导致提交按钮
+     永远禁用 —— 因为 deriveEntryDecision 只认 confirmed/ignored/disputed。 */
+  function entryGateRequires(pending) {
+    return entryDecisionsRequired(pending) && pending && pending.gate === "G1_diff_confirm";
+  }
+
   function entryRows(pending) {
     var d = diffPayloadOf(pending);
     var entries = d && Array.isArray(d.entries) ? d.entries : [];
@@ -2406,7 +2414,7 @@
 
   function renderEntryDecisionControls(container, pending, options) {
     clearEl(container);
-    if (!entryDecisionsRequired(pending)) return;
+    if (!entryGateRequires(pending)) return;
     var rows = entryRows(pending);
     var values = (options || []).map(function (o) { return String(o.value); });
     if (!rows.length || !values.length) return;  // 无法生成控件：材料区给 API 提示
@@ -2451,7 +2459,7 @@
   }
 
   function syncEntryDecisionControls(container, pending) {
-    if (!entryDecisionsRequired(pending)) return;
+    if (!entryGateRequires(pending)) return;
     var d = state.gateDraft;
     var lines = container.querySelectorAll(".gate-entry");
     for (var i = 0; i < lines.length; i++) {
@@ -2819,7 +2827,7 @@
     var submit = form.querySelector("[data-gate-submit]");
     if (submit) {
       var offered = options.some(function (o) { return o.value === d.decision; });
-      var needEntries = entryDecisionsRequired(pending) && entryRows(pending).length > 0;
+      var needEntries = entryGateRequires(pending) && entryRows(pending).length > 0;
       var entriesReady = !needEntries || !!derivedEntryDecision(pending);
       submit.disabled = !offered || d.submitting || !entriesReady;
       submit.textContent = d.submitting ? "提交中…"
@@ -2909,7 +2917,7 @@
     };
     /* G1 逐条处置：覆盖全部唯一 entry_id 才提交；覆盖不全/理由缺失就地拦下，
        仍以服务端 I1 判定为权威（SPEC-04 §4.4 2026-10-23）。 */
-    if (entryDecisionsRequired(pending)) {
+    if (entryGateRequires(pending)) {
       var entryList = entryRows(pending);
       if (entryList.length) {
         var checkedEntries = window.GateSession.validateEntryDecisions(

@@ -1689,3 +1689,72 @@ AI 面板草案），与本地节点面板 R3 未提交工作合并后**直接�
 
 **未运行/未完成**：完整软件层、kb 自测、端到端、真实模型/仿真与真 DSH 接入；已推送 `origin/main`（合并点 `317df8c`），环境未发布；
 合并用的临时 worktree/分支已删除。剩余补测与边界见 [证据 §6](evidence/SPEC_MERGE_20261023.md)。
+
+## 54 真实 S0-a 派生 + 真实 N9 五用例全跑 + G2 被 I2 阻断（2026-10-23～26）
+
+本节接 §51/§53，记录"用户亲手在 Web UI 走一遍真实流程"这一轮的实际结果。**同一执行者实施与验证，
+无独立终验。**
+
+### 54.1 S0-a 真实派生（2026-10-23 17:06）
+
+| 项 | 实测 |
+|---|---|
+| 记录 | `S0-20261023T085921660208-0531c605aa`，`status=prepared` |
+| checks | `copy/rtl/non_rtl/baseline = passed`；`ports/smoke = waiting`（S0-b 未接入，见 [SPEC-05 §8](spec/S0_ENVIRONMENT_SPEC.md)） |
+| 基线零写入 | 派生前后全量清单 **15579 条逐条相同** |
+| RTL 整体替换 | 副本 `RTL/` 1467 文件 vs `RTL_test` 1467 文件，**逐文件 md5 全等、差异 0** |
+| 副本 | `workspaces/s0-work-20261023`（无符号链接） |
+| `ready_for_execution` | `false`（S0-b 阻断不变） |
+
+### 54.2 真实 N9：5 个用例全部跑完（21.56 h）
+
+run `RUN-20261024-002609`（`real/happy`，基线 `v0`，ENV_ROOT=`s0-work-20261023`，
+G1 由 `human:chenjunming` 于 00:29:11 签署，`human_signed=true`）。作业 `JOB-aa53540696a1`
+从 00:33:40 跑到 22:05 前后，**21.56 h**，逐例 rc 全 0（仿真正常收尾）。
+
+| 用例 | 口径一 | 口径二 UVM_ERROR/FATAL | 判定 |
+|---|---:|---|---|
+| `tc_pcie_rw_02` | 1687 | 0 / 0 | 未通过 |
+| `tc_cpu_i2c_03` | 29 | 0 / 0 | 未通过 |
+| `tc_pcie_rw_smoke` | 0 | 0 / 0 | 未通过（印记不一致） |
+| `tc_rtc_05` | 0 | 0 / 0 | 未通过（印记不一致） |
+| `tc_rtc_10` | 0 | 0 / 0 | 未通过（印记不一致） |
+| **合计** | **1716** | **0 / 0** | **整轮未通过** |
+
+节点链：N9 `fail` → N10 `fail`（`verdict_passed=False`、待裁决 0）→ N11 `intact`（身份四方同值）
+→ N12 `live`（`claimed_verdict=not_passed`）。证据见
+[REAL_N9_20261024](evidence/REAL_N9_20261024.md)。
+
+### 54.3 G2 的真实阻断：accept 被 I2 拒绝，N16 不可达
+
+G2 `pending_interrupt.payload.hard_block` 三条：`I2_CASES_PENDING`（5 例「已修订待验」）、
+`I3_KOUTOU1_NONZERO`（1716≠0）、`I4_CONFLICTS_UNCLEARED`（72/72）。用户 2026-10-26 11:31 在界面
+点「接受报告」被 403 拒绝（未消耗中断）。
+
+**契约级死循环**：失败报告不允许 `accept`（I2），而用例状态只能从"通过"变成"已验证通过"，
+于是失败轮永远无法收口。已登记为 [SPEC-01 §11](spec/CHANGE_IMPACT_LOOP_SPEC.md) 第 7 项。
+选择 `rework` 会重跑 N6→N12（含又一个 21 h 的 N9），本轮未采用。
+
+### 54.4 本轮顺带修复
+
+| 缺陷 | 落点 | 验证 |
+|---|---|---|
+| G2 误渲染「逐条处置」且复用闸门选项（`accept/rework`），提交按钮永远禁用 | `loop/web/app.js` `entryGateRequires()` 仅对 `G1_diff_confirm` 启用 | `test_web_smoke.py` + `test_gate_session.py` **14 passed**；`node --check` 通过 |
+| `POST /api/runs` 15 s 超时被误报为启动失败 | `loop/web/app.js` 超时后按运行列表核对并接入 | 同套测试；真实启动实测（10-23 17:17 那次即此问题） |
+| `job_done` 中断把模型角色标成 `waiting`（阶段"等待人工"/chip `!`） | `loop/services/agent_view.py` 要求 `gate` 非空 | `test_agent_view.py` **12 passed** |
+
+### 54.5 未关闭项（保持可见）
+
+1. **S0-b 未接入**：`ports/smoke` 恒 `waiting`，`ready_for_execution` 恒 `false`。开发项 D1–D5 见
+   [SPEC-05 §8](spec/S0_ENVIRONMENT_SPEC.md)。
+2. **逐条处置未落账**：`entry_decisions` 不在 `gates.json`、不在事件流；只在提交响应与流程分支载荷里。
+   P-18「已决策 run 逐条处置重建」需先补 Host 落账。
+3. **运行视图口径只取单个证据文件**：本 run 界面显示口径一 = 29（单例），N9/N10/N12 汇总为 1716。
+4. **N16 不可达**（见 54.3）；`I4` 72 条冲突未清零。
+5. **环境吞吐**：≈3.8 µs 仿真/秒；5 例真实全跑 21.56 h。真实回归排期必须按此折算。
+6. 取消作业 = 整轮 `failed` 且不可续跑（实测：`RUN-20261023-171744`，`deliver_failed`、执行关闭）。
+7. 运行入口不消费 S0：`s0_record_id=null`，徽标显示"未经 S0 派生"。
+
+### 54.6 文档门
+
+`python3 doc/audit/check_doc_links.py` → 见本节提交后的实测（下同）：`missing=0`、`rc=0`。

@@ -71,6 +71,7 @@ def test_gate_view_has_entry_decision_controls() -> None:
     js = _get("/app.js")
     for token in (
         "entryDecisionsRequired",
+        "entryGateRequires",
         "renderEntryDecisionControls",
         "deriveEntryDecision",
         "validateEntryDecisions",

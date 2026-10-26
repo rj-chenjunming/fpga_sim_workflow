@@ -2767,10 +2767,18 @@ G1 中断，断言**中断载荷**里的 `decision_options.confirmed.requires_re
    [SPEC-REV-07 U1-c](spec/SPEC-REV-07-20261024.md)「应用级当前操作者，三处预填」的行为。
    已按契约对齐断言并注明来源；用例真正的语义（理由清空、提交禁用）不变且通过。
    **产品代码未改。**
-2. **`test_ai_work_panel[…[320]]`——移动端窄屏 header 横向溢出**：
-   `documentElement.scrollWidth=369 > innerWidth=320`，最宽者是 header 里的
-   `#btnNotify`（right=369），`header` 在 ≤760 px 不换行。320 px 属移动端，
-   WEB_UI_SPEC §14 明示「移动端不作为本轮设计和验收目标」⇒ **登记不改**（见 §75.7）。
+2. **`test_ai_work_panel[…[320]]`——320 px 属契约外，用例口径越界**：该参数下
+   `documentElement.scrollWidth=369 > innerWidth=320`，最宽者是 header 的 `#btnNotify`
+   （right=369）；`header` 在 ≤760 px 分支固定 60 px 高、内容不换行。实测溢出边界
+   （数字为命令输出复制）：**320 ⇒ docSW 369（溢出 49）／360 ⇒ 369（溢出 9）／
+   390 ⇒ 390（正常）／768 ⇒ 768（正常）**，即任何窄于 ≈371 px 的窗口都会整页横向溢出。
+   移动端在契约里被**四处**排除：WEB_UI_SPEC §1「不做移动端适配」、§12「v1 不做：移动端」、
+   §14「移动端不作为本轮设计和验收目标」，[SPEC-REV-07](spec/SPEC-REV-07-20261024.md) §1
+   范围冻结「浏览器工作台（1280/1440/1920）；不做…移动端」。且全仓其余窄屏用例一律取 390
+   （`test_run_sessions` / `test_agent_window` / `test_node_detail`），320 是孤例。
+   ⇒ **用户 2026-10-26 明确「移动端不在功能开发范围内」**：产品代码不动（不做移动端适配），
+   把该用例的窄屏口径对齐到 390，其余断言（容器内不溢出、无注入节点、焦点保持、Escape 关闭）
+   在 390 照常生效。**这是口径纠正，不是修好了那个溢出**——该限制原样保留在 §75.7。
 
 ### 75.5 改动清单
 
@@ -2781,6 +2789,7 @@ G1 中断，断言**中断载荷**里的 `decision_options.confirmed.requires_re
 | `loop/web/app.css` | `aside` 增 `overflow:hidden auto` + 说明注释 | **产品（唯一一行）** |
 | `loop/tests/browser/test_web_layout.py` | 新增 `assert_reachable` / `ACCEPTANCE_VIEWPORTS` / `RAIL_ENTRIES` 与 A10 用例；legacy 改用 `urljoin` | 测试 |
 | `loop/tests/browser/test_run_sessions.py` | `test_cross_run_draft_is_cleared` 对齐 U1-c | 测试 |
+| `loop/tests/browser/test_ai_work_panel.py` | 窄屏参数 320 → 390（契约外口径纠正，见 §75.4 第 2 条） | 测试 |
 | `loop/spikes/provision_dev_workspace.sh` | `kb_lib` 导入改用**脚本所在仓根**（原相对路径 `kb/tools` 使文件头的用法在 `loop/` 下直接失败，本机 2026-10-26 实测） | 测试环境 |
 
 ### 75.6 四道门实测
@@ -2790,21 +2799,23 @@ G1 中断，断言**中断载荷**里的 `decision_options.confirmed.requires_re
 | 单测（可写数据根） | **3 failed / 957 passed / 0 skipped**（301.15 s） | `--ignore=tests/browser`；3 条仍是既存 `env_layer`（`test_archive_e2` ×2 + `test_projection_and_frozen` ×1），与 §73 同集合 ⇒ **无回归** |
 | kb 自测 | `_selftest_gate_schema.py` **PASS=10 FAIL=0**；`_selftest_n5_reachability.py` **PASS=9 FAIL=0** | 两者都需 `LOOP_WORKSPACE` 指可写数据根 |
 | 端到端 | **本轮未重跑** | 改动仅 CSS / 浏览器用例 / 文档 / 一个 shell 脚本的导入路径，e2e 不触达 UI 渲染；沿用 §73 实测（ALL PASS、117 断言）。要最新证据按 §73.1 重跑 |
-| 文档 | **missing=0**（checked=2156 / known_missing=10 / env_missing=26，exit=0） | 须在**未预置 `.dev-ws`** 时跑；预置后须先 `provision_dev_workspace.sh --cleanup` |
+| 文档 | **missing=0**（checked=2165 / known_missing=10 / env_missing=26，exit=0） | 须在**未预置 `.dev-ws`** 时跑；预置后须先 `provision_dev_workspace.sh --cleanup` |
 
 浏览器门（需 Chromium，`PLAYWRIGHT_BROWSERS_PATH` + 可写 `HOME`/`TMPDIR`）：
 
 | 范围 | 修复前 | 修复后 |
 |---|---|---|
 | `tests/browser/test_web_layout.py` | **4 failed / 5 passed**（61.51 s） | **12 passed**（15.72 s） |
-| `tests/browser/` 全量 | 本文件此前未记录全量基线（§74 只记单文件） | **1 failed / 107 passed**（136.74 s）；唯一红为移动端 320（§75.4 第 2 条） |
+| `tests/browser/` 全量 | 本文件此前未记录全量基线（§74 只记单文件） | **108 passed / 0 failed**（119.96 s） |
 
 时长下降来自 30 s 点击超时消失，**不是跳过或缩小断言**；A10 反而新增 3 条参数化用例
-（含 `rail-foot`，比规格下限更严）。
+（含 `rail-foot`，比规格下限更严）。全量转 0 failed 的一步是 §75.4 第 2 条的**口径纠正**
+（320 → 390），该宽度的真实限制并未修复，见 §75.7。
 
 ### 75.7 未关闭
 
-- `test_ai_work_panel[…[320]]`：移动端窄屏 header 横向溢出（§75.4 第 2 条）。未修；
-  修它要先改 §14「移动端范围」的契约，属独立切片。
-- 浏览器用例仍未并入全量单测门（单跑 137 s，且并入后 30 s 超时会叠乘，见 §72）。
+- **移动端（窄于 ≈371 px）header 横向溢出**：产品不做移动端适配（契约四处排除，
+  见 §75.4 第 2 条），该限制保留。若日后要做移动端，属**契约变更 + 独立切片**，
+  须先改 WEB_UI_SPEC §1/§12/§14 与 SPEC-REV-07 §1 的范围声明。
+- 浏览器用例仍未并入全量单测门（单跑 120 s，且并入后 30 s 超时会叠乘，见 §72）。
 - §74.5 的残留 2 / 4 维持「登记不改」。

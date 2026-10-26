@@ -99,16 +99,20 @@ cd loop
 
 **只读沙箱 / 无 `~/.cache` 时的实测要点（2026-10-26）**：
 - 浏览器下载目录不在仓外：`PLAYWRIGHT_BROWSERS_PATH=<repo>/.pw-browsers`。
-  **当前建议不要把它带进全量单测**：未装 Chromium 时 browser 用例以 setup 错误计入（快，不影响软件层结论）；
-  装上后用例会真正执行，而浏览器门存在既有的渲染/点击竞争问题（STATUS §72.4），失败用例每次要等
-  30 s 超时 —— 实测全量因此 20 分钟仍未跑完。浏览器门请**单独**跑并如实记录，等 UI 稳定性修好再并入全量。
+  **当前仍建议单独跑浏览器门、不并入全量单测**，但理由已从「稳定性未修」变成「时长与口径」：
+  未装 Chromium 时 browser 用例以 setup 错误计入（快，不影响软件层结论）；装上后全量执行约
+  120 s（2026-10-26 实测 108 passed），叠加在单测 301 s 之上会让门变慢，且仍需可写
+  `HOME`/`TMPDIR` 与浏览器二进制，不适合作为软件层门的硬前置。
   直连下载被代理掐断时加 `PLAYWRIGHT_DOWNLOAD_HOST=https://cdn.npmmirror.com/binaries/playwright`。
 - 系统 Chrome 需要**可写 HOME/TMPDIR**（只读 HOME 会让 Chrome 启动即退）：
   `HOME=<repo>/.chrome-home TMPDIR=<repo>/.chrome-tmp LOOP_BROWSER_EXECUTABLE=/usr/bin/google-chrome`。
-- **当前浏览器门在本机仍红**（`tests/browser/test_web_layout.py`：4 failed / 5 passed）：
-  替身原先没给上游 U2-a/U2-b 的两条 SSE 端点打桩，已补显式 404 桩使其 degrade 到轮询回退
-  （失败数 8→4）；剩余 4 条是运行列表周期性重渲染与点击竞争（元素持续 detach），
-  在 `origin/main` 上同样复现，属既有问题，详见 `doc/STATUS.md` §72.4。**不得据此声称 UI 已验证。**
+- **浏览器门现状（2026-10-26 更新，数字见 `doc/STATUS.md` §75.6）**：
+  `tests/browser/test_web_layout.py` **12 passed**、`tests/browser/` 全量 **108 passed / 0 failed**。
+  此前两条根因已闭合：①替身没给上游 U2-a/U2-b 的两条 SSE 端点打桩（已补显式 404 桩，degrade 到轮询回退）；
+  ②`aside` 是 sticky 视口高容器却 `overflow:visible`，矮视口下「最近运行」条目落在视口外且
+  **页面滚动无法救回**（已改为侧栏自身滚动，契约见 [WEB_UI_SPEC §14](../doc/spec/WEB_UI_SPEC.md)、
+  判据 A10）。**仍不等于 UI 已全面验证**：浏览器用例只覆盖受控替身下的布局与交互，
+  真实后端长连接与视觉核对仍需人工；移动端（窄于 ≈371 px）不做适配，属契约外（§1/§12/§14）。
 
 内网无法连接 PyPI 时，仓库提供 [Rocky Linux 浏览器离线包](offline/README.md)：
 

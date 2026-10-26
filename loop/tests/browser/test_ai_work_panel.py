@@ -216,7 +216,13 @@ def test_node_details_returns_to_single_agent_panel(ui):
     pw.expect(page.locator('#nodeDetail')).not_to_be_visible(timeout=1200)
 
 
-@pytest.mark.parametrize('width', [320, 768, 1440])
+# 窄屏口径取 390（与 test_run_sessions / test_agent_window / test_node_detail 的窄屏用例一致）。
+# 原参数 320 属**契约外**：WEB_UI_SPEC §1「不做移动端适配」、§12「v1 不做：移动端」、
+# §14「移动端不作为本轮设计和验收目标」，SPEC-REV-07 §1 范围冻结亦只认 1280/1440/1920。
+# 2026-10-26 实测该宽度下整页横向溢出 49 px（documentElement.scrollWidth=369，header 内容
+# 需 ≈369 px，且 ≤760 px 分支固定 60 px 高、不换行）——已知的移动端限制，见 STATUS §75.4/§75.7。
+# 本用例的其余断言（容器内不溢出、无注入节点、焦点保持、Escape 关闭）在 390 照常生效。
+@pytest.mark.parametrize('width', [390, 768, 1440])
 def test_candidate_content_and_controls_fit_narrow_and_desktop_views(ui, width):
     from test_web_layout import assert_fits, capture
     page, api = setup_window(ui)

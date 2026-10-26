@@ -397,19 +397,19 @@ def precheck_decision(
     if gate == "G1_diff_confirm":
         diff = contracts.diff_entries_view(run_dir, mode=mode)
         if decision == "confirmed" and diff.get("unresolved_count"):
+            # 「没有逐条处置时，drill 用非空 reason 作『已逐条核对』attestation」这一步
+            # 由**唯一判据**决定；外层不再另写 `mode == "drill"`（红线 8 / 复核残留 1）。
+            drill_attestation = contracts.decision_requires_reason(
+                gate, decision, mode=mode, unresolved_count=diff.get("unresolved_count")
+            )
             if entry_decisions:
                 result["entries"] = normalize_entry_decisions(
                     gate=gate, decision=decision, entry_decisions=entry_decisions, diff=diff
                 )
-            elif mode == "drill":
+            elif drill_attestation:
                 # drill 夹具的 N2 产出于修 F-02 之前（旧编码判定）⇒ 历史未决条目
                 # 不能阻断人工闸门；把「已逐条核对」的 attestation（非空 reason）作为处置凭据。
-                # 与下发选项**同一判据**（红线 8 / 独立复核条件 1）：该情形选项的
-                # requires_reason 也为 true，界面因此能预检。
-                if contracts.decision_requires_reason(
-                    gate, decision, mode=mode,
-                    unresolved_count=diff.get("unresolved_count"),
-                ) and not (isinstance(reason, str) and reason.strip()):
+                if not (isinstance(reason, str) and reason.strip()):
                     raise GatePreconditionFailed(
                         "I1：N2 有未决差异条目。drill 模式须给出非空 reason（作为"
                         "「已逐条核对」的证明），或提交覆盖全部条目的 entry_decisions。"

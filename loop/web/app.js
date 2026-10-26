@@ -678,10 +678,19 @@
     }
   }
 
+  /* 列表重建守卫（WEB_UI_SPEC §2「重建策略」2026-10-26）：轮询 1.5 s 一拍，
+     内容没变就别重建 DOM —— 每拍 clearEl + 重建会让点击目标反复被替换，
+     真实浏览器里表现为 `element was detached from the DOM`（UI 竞态用例超时）。
+     签名只覆盖列表实际渲染所用的状态：运行数组、选中项、错误串。 */
+  var sidebarSig = null;
+
   function renderSidebar() {
     renderWaitCenter();
     var host = $("runList");
     if (!host) return;
+    var sig = JSON.stringify([state.runId, state.runsError, state.runs]);
+    if (sig === sidebarSig) return;
+    sidebarSig = sig;
     clearEl(host);
     if (!state.runs.length) {
       if (state.runsError) {
@@ -2974,22 +2983,23 @@
     var n12 = (((pending.payload || {}).report || {}).n12_report || {});
     if (acceptOption && acceptOption.requires_reason === true) {
       form.appendChild(h("div", "alert warn",
+        (n12.claimed_verdict ? "本轮报告结论：" + String(n12.claimed_verdict) + "。" : "") +
         "接受失败报告必须填写理由；接受不等于判据通过，N16 仍被 I3/I4 阻断。"));
     }
     /* 复核建议 A（2026-10-26）：结论**来源**必须可见。drill 夹具的报告常没有
        claimed_verdict 行（判据口径为 None），界面若不标来源，人会看到"未通过"却
-       不知道为什么选项说无需理由；两来源冲突时也要摆出来，不得静默择一。 */
-    if (n12.claimed_verdict) {
+       不知道为什么选项说无需理由；两来源冲突时也要摆出来，不得静默择一。
+       本行只在异常来源/分歧时出现，正常（报告落盘且一致）不额外渲染，避免噪音。 */
+    if (n12.claimed_verdict
+        && (n12.claimed_verdict_source === "state_facts"
+            || n12.claimed_verdict_diverged === true)) {
       var srcText = n12.claimed_verdict_source === "state_facts"
-        ? "（来源：执行记录；报告未落盘，不作为判据依据）" : "";
-      if (srcText || n12.claimed_verdict_diverged === true) {
-        var divergeText = n12.claimed_verdict_diverged === true
-          ? "报告与执行记录结论不一致：报告=" + String(n12.claimed_verdict_decision) +
-            "，记录=" + String(n12.claimed_verdict_facts) + "。"
-          : "";
-        form.appendChild(h("div", "alert info",
-          "本轮报告结论：" + String(n12.claimed_verdict) + srcText + "。" + divergeText));
-      }
+        ? "结论来自执行记录；报告未落盘，不作为判据依据。" : "";
+      var divergeText = n12.claimed_verdict_diverged === true
+        ? "报告与执行记录结论不一致：报告=" + String(n12.claimed_verdict_decision) +
+          "，记录=" + String(n12.claimed_verdict_facts) + "。"
+        : "";
+      form.appendChild(h("div", "alert info", srcText + divergeText));
     }
     /* G1 逐条处置（SPEC-04 §4.4 2026-10-23）：先逐条选，再整门提交。
        紧凑卡片只放材料摘要，逐条控件放在完整闸门视图，避免两处重复渲染。 */

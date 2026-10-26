@@ -2640,3 +2640,63 @@ cd loop && LOOP_WORKSPACE=<repo>/.dev-ws LOOP_LLM_MODE=standin bash spikes/accep
   `.pw-browsers/`（本地忽略，不入库）。
 - 未跑：真实模型（`LOOP_LLM_MODE=live`）、真 DSH、内网冻结见证；这些不是本轮范围。
 - 未落独立证据包（`doc/evidence/**` 只增不改，需单独整理）；原始日志为临时文件，已删除。
+
+---
+
+## 74 收尾：复核残留整改 + 浏览器门根因推进（2026-10-26）
+
+§71.6 / §73.4 留下的两项：复核的 5 条非阻断残留、以及浏览器门。**同一执行者实施与验证。**
+
+### 74.1 残留 1：precheck 内的隐式谓词副本 → 已消除
+
+原 `precheck_decision` 的 G1 分支外层写 `elif mode == "drill"`，分支内又调
+`decision_requires_reason()`（该情形下恒真）⇒ 同一判据两处表达。
+现改为：先算 `drill_attestation = contracts.decision_requires_reason(gate, decision, mode=…,
+unresolved_count=…)`，**由它**选择「drill attestation 路径」还是「real 必须给 entry_decisions」，
+外层不再出现 `mode == "drill"` 判断。行为等价（异常文案不变）。
+
+### 74.2 残留 3：正常 G2 告警文案回退 → 已修
+
+恢复 warn 行的「本轮报告结论：X。」前缀；把"来源/分歧"独立成一条 `alert info`，且**只在**
+`source == state_facts` 或 `diverged == true` 时渲染 ⇒ 正常路径（报告落盘且一致）无噪音、无重复。
+
+### 74.3 残留 5：补 `_enter` 接线用例 → 已补
+
+新增 `test_interrupt_payload_options_carry_drill_attestation_reason`：经 `RunManager` 真跑到
+G1 中断，断言**中断载荷**里的 `decision_options.confirmed.requires_reason == true`。
+在 `62bd0b5` 上实测**红**（`drill G1 没有逐条通道 ⇒ 载荷里的 confirmed 必须声明要理由`），
+修复后绿 —— 覆盖了"只有 contracts 纯函数用例、`_enter` 传参错位发现不了"的缺口。
+
+### 74.4 浏览器门：定位并修掉一半根因（重要）
+
+- **根因 1（已修）**：`loadRuns()` 每 1.5 s 轮询后**无条件** `renderSidebar()` 全量 `clearEl` 重建
+  ⇒ 点击目标被反复替换。现按签名（选中项 / runs / 错误串）跳过无变化重建；契约写入
+  [WEB_UI_SPEC §2 重建策略](spec/WEB_UI_SPEC.md)。等待提醒等其余投影仍每拍更新。
+- **效果**：失败模式由 `element was detached from the DOM` 变为 `element is outside of the
+  viewport` ⇒ **detach 类已消除**，暴露出**第二个独立缺陷**（侧栏 `.run-item` 在 1280/1440/1920
+  视口外，滚动也无法进入）。
+- **现状**：`tests/browser/test_web_layout.py` = **4 failed / 5 passed**（与本轮之前同为 4 条，
+  但**失败原因已不同**）。布局缺陷未修：属独立的 UI 布局切片，本轮不凭猜测改 CSS。
+
+### 74.5 残留 2 / 4：不改，登记理由
+
+- 残留 2：drill + API 调用方**直接给** `entry_decisions` 时，选项声明"要理由"而 precheck 放行。
+  仅 API 路径可达（drill 界面不渲染逐条控件），且方向是**更严**，不构成静默放行 ⇒ 登记不改。
+- 残留 4：`legacy.html`（旧版操作台）仍优先消费中断载荷的快照 `decision_options`；
+  它只取 `value/label`、从不渲染 `requires_reason`，不扩大理由误判面 ⇒ 登记不改。
+
+### 74.6 实测（数字为命令输出复制）
+
+| 门 | 本轮 | 说明 |
+|---|---|---|
+| 单测（预置数据根） | **3 failed / 958 passed / 0 skipped / 104 errors**（330.87 s） | 3 条仍为 `env_layer`；104 errors 为 browser setup（未设浏览器路径） |
+| 浏览器（单跑 `test_web_layout.py`） | **4 failed / 5 passed**（58.11 s） | 原因已从 detach 变为视口外（§74.4） |
+| kb 自测 / 端到端 / 文档门 | 见 §73（本轮未改动这些路径） | 本轮改动仅 gates 判据结构、app.js 渲染守卫与告警文案、测试 |
+
+新增 1 条用例（+1 passed 相对 §73 的 957）。
+
+### 74.7 未关闭
+
+- 侧栏布局：`.run-item` 在 1280/1440/1920 视口外（新暴露，未修，需单独定位）。
+- 残留 2 / 4（§74.5，登记不改）。
+- 端到端与 kb 自测未在本轮重跑（代码路径未变；如需最新证据请按 §73.1 命令重跑）。

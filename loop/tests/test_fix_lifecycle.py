@@ -1384,3 +1384,28 @@ def test_run_view_gate_options_cover_drill_g1_attestation(tmp_path: Path) -> Non
     )
     confirmed = {o["value"]: o for o in view["gate_options"]["G1_diff_confirm"]}["confirmed"]
     assert confirmed["requires_reason"] is True
+
+
+async def test_interrupt_payload_options_carry_drill_attestation_reason() -> None:
+    """复核残留 5：**中断载荷**下发的 decision_options 必须已带 drill G1 的 requires_reason。
+
+    覆盖 `chunks/gates._enter` 的接线：选项由 `gates.decision_options` 用 `ctx.mode` 与
+    **现算** 的 diff 生成（不是复算一份静态表）。此前只有 contracts 层纯函数用例，
+    `_enter` 传参错位不会被发现。
+    """
+    m = _new_manager()
+    rid = await _start(m)
+    try:
+        view = await _drive(m, rid, "G1_diff_confirm")
+        payload = (view.get("pending_interrupt") or {}).get("payload") or {}
+        opts = {o["value"]: o for o in (payload.get("decision_options") or [])}
+        assert opts, "中断载荷必须带 decision_options（否则界面无从渲染）"
+        assert payload.get("mode") == "drill", payload.get("mode")
+        assert (payload.get("difference_items") or {}).get("unresolved_count"), (
+            "夹具应带未决条目，否则本用例不构成对 attestation 规则的检验"
+        )
+        assert opts["confirmed"]["requires_reason"] is True, (
+            "drill G1 没有逐条通道 ⇒ 载荷里的 confirmed 必须声明要理由，界面才能预检"
+        )
+    finally:
+        await m.stop_watching()

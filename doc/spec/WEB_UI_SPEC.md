@@ -53,6 +53,10 @@
 ```
 
 - **左栏**：新建入口 + 运行列表（`run_id / status / mode / updated_at / current_node`），选中高亮；底部显示 `TOOL_ROOT / WORKSPACE_ROOT / 模型`。
+  **重建策略（2026-10-26 增补）**：轮询（1.5 s）只在列表内容（id/status/current_node/updated_at/选中项/错误）
+  **实际变化时**才重建列表 DOM；不变则跳过。否则每拍重建会把点击目标反复替换，真实浏览器里表现为
+  「element was detached from the DOM」，UI 特征/竞态用例因此超时（实测见 STATUS §74）。
+  等待提醒徽标等其余投影不受此守卫影响，仍每拍更新。
 - **右区视图切换**：由运行状态驱动（`waiting_gate` 默认进闸门视图），也允许手动切换用于预览（样张里用 ①②③ 开关）。
 - **响应式**：宽度 < 1100px 时右列（闸门/证据）下移为整行；左栏不折叠（单机单用户）。
 

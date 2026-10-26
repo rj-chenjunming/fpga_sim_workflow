@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 # ---------------------------------------------------------------- N3
@@ -105,6 +105,21 @@ class N6ObservationPoint(BaseModel):
     )
 
 
+class N6EditRef(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    case: str
+    edit_index: int = Field(ge=0, strict=True, description="本次 revisions 同 case 的 edits 索引，从 0 起")
+
+
+class N6IssueResponse(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    issue_id: str = Field(description="逐字引用 rework_assignment.issues[].issue_id，每项恰好一次")
+    target_sha256: str = Field(description="逐字引用 rework_assignment.target_sha256")
+    disposition: Literal['addressed', 'blocked', 'not_applicable']
+    explanation: str = Field(min_length=1, description="处理依据、阻塞或不适用理由；作者不能关闭问题")
+    edit_refs: list[N6EditRef] = Field(description="addressed 必须引用本次候选修改；其余为空")
+
+
 class N6Output(BaseModel):
     revisions: list[N6Revision] = Field(description="每个目标用例恰好一条")
     observation_points: list[N6ObservationPoint] = Field(
@@ -112,6 +127,8 @@ class N6Output(BaseModel):
                      "且 marker 必须出现在该用例 edits[].new 里；Host 逐条校验，缺/非法即拒")
     )
     rework_resolution: list[str] = Field(description="上一轮每条退回意见如何处理；无返工则空列表")
+    issue_responses: list[N6IssueResponse] = Field(
+        default_factory=list, description="对 rework_assignment 每个问题逐项回应；无问题为空")
     notes: list[str] = Field(description="其他限制或不确定性")
 
 
@@ -124,10 +141,21 @@ class N8Finding(BaseModel):
     basis: str = Field(description="可核依据（文件:行 或 具体规则）；不得空泛")
 
 
+class IssueReview(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    issue_id: str = Field(description="本节点 review_assignment.issues 中的 ID，每项恰好一条")
+    review_context_sha256: str = Field(description="逐字引用本次 review_assignment.review_context_sha256")
+    outcome: Literal['closed', 'open']
+    rationale: str = Field(min_length=1, description="依据 acceptance 的具体核验理由，不以作者声明代替复核")
+    evidence_refs: list[str] = Field(min_length=1, description="当前输入事实的非重复 JSON Pointer，必须存在且值非空；closed 须引用本节点主材料")
+    rework_index: int | None = Field(ge=0, strict=True, description="open 对应原始 must_fix/rework_requests 列表的有效整数索引，不能为布尔值；closed 为 null")
+
+
 class N8Output(BaseModel):
     verdict: Literal["pass", "rework"] = Field(description="全部通过=pass；有必须修复项=rework")
     findings: list[N8Finding] = Field(description="逐项复核结果")
     must_fix: list[str] = Field(description="必须修复项；pass 时为空列表")
+    issue_reviews: list[IssueReview] = Field(default_factory=list, description="逐项复核 review_assignment；无问题为空")
 
 
 # ---------------------------------------------------------------- N11
@@ -146,6 +174,7 @@ class N11Output(BaseModel):
     reasons: list[str] = Field(description="逐条引用 input.identity / input.evidence / input.case_states 的事实")
     rework_requests: list[N11ReworkRequest] = Field(description="不成链时的返工请求；intact 时为空列表")
     caveats: list[str] = Field(description="不确定性与未闭环项")
+    issue_reviews: list[IssueReview] = Field(default_factory=list, description="逐项复核 review_assignment；无问题为空")
 
 
 # ---------------------------------------------------------------- N12

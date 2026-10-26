@@ -37,6 +37,8 @@ from host import evidence as EV
 from host import model_provider as MP
 from host import paths as P
 from host import agent_memory as AM
+from host import agent_handoff as AH
+from host import agent_review as AR
 
 from ..context import RunCtx, ctx_of
 from .host_steps import md5_file, run_kb_tool
@@ -425,6 +427,12 @@ def _validate(kind: str, payload: dict[str, Any], *, offered: dict[str, Any],
                 f"缺少目标用例的 observation_points：{missing_points}"
                 "（每个目标用例至少一条观测点印记）")
         accepted["observation_points"] = ok_points
+        try:
+            accepted["issue_responses"] = AH.validate_responses(
+                {**accepted, 'issue_responses': data.get('issue_responses', [])},
+                offered.get('rework_assignment'))
+        except ValueError as exc:
+            problems.append(str(exc))
 
     elif kind == "n8":
         verdict = str(data.get("verdict") or "").strip().lower()
@@ -543,6 +551,13 @@ def _validate(kind: str, payload: dict[str, Any], *, offered: dict[str, Any],
             "open_items": [str(x) for x in _as_list(data.get("open_items"))],
         })
 
+    if kind in ('n8', 'n11'):
+        try:
+            accepted['issue_reviews'] = AR.validate(
+                kind.upper(), data,
+                offered.get('review_context'))
+        except ValueError as exc:
+            problems.append(str(exc))
     return {"ok": not problems, "problems": problems, "accepted": accepted}
 
 
@@ -745,15 +760,15 @@ async def n6_author(data: Any) -> dict[str, Any]:
     n11 = data.get_state("n11_review") or {}
     cases = list(n5.get("must_change_cases") or [])
 
-    rework_reasons = [str(f) for f in (n8.get("data") or {}).get("must_fix", [])] \
-        if isinstance(n8.get("data"), dict) else []
-    # N11 证据守护判 broken 时的返工请求也是 N6 的返工输入（否则回边后作者看不到原因）
-    for req in n11.get("rework_requests") or []:
-        if isinstance(req, dict):
-            rework_reasons.append(
-                f"{req.get('case')}: {req.get('what')}（依据：{req.get('basis')}）")
+    try:
+        rework_handoff = AR.for_author(ctx, data.get_state('n6_author') or {}, n8, n11)
+    except (ValueError, OSError) as exc:
+        ctx.node_failed("N6", message="返工交接来源核验失败", source="framework")
+        raise ValueError("N6 handoff provenance rejected") from exc
+    rework_reasons = [item['text'] for item in rework_handoff['issues']]
 
     targets = build_n6_targets(ctx, data)
+    rework_assignment = AH.assignment(rework_handoff, targets)
     await data.async_set_state("n6_targets", {
         "targets": targets,
         "count": len(targets),
@@ -766,6 +781,8 @@ async def n6_author(data: Any) -> dict[str, Any]:
         "cycle": cycles + 1,
         "targets": targets,
         "rework_reasons": rework_reasons,
+        "rework_handoff": rework_handoff,
+        "rework_assignment": rework_assignment,
         "must_change_count": n5.get("must_change_count"),
         "rule": ("只针对 targets 的用例；edits.old 必须逐字取自 targets[].excerpt.text 并且唯一；"
                  "拿不准写进 notes，不要猜。"),
@@ -773,7 +790,8 @@ async def n6_author(data: Any) -> dict[str, Any]:
     }
     out = await run_model_node(
         ctx, "N6", prompt_key="n6_author", input_data=input_data,
-        offered={"cases": set(cases) | {t["case"] for t in targets}},
+        offered={"cases": set(cases) | {t["case"] for t in targets},
+                 "rework_assignment": rework_assignment},
     )
     if out["mode"] == "standin":
         out["data"] = _standin(ctx, "N6", "N6_author_note.md",
@@ -1044,6 +1062,14 @@ def _sandbox_code(ctx: RunCtx, source_root: Path | None = None,
     )
 
 
+def _author_handoff(ctx, data, node):
+    try:
+        return AH.for_reviewer(ctx, data.get_state('n6_author') or {}, node)
+    except (ValueError, OSError) as exc:
+        ctx.node_failed(node, message="作者回应来源核验失败", source="framework")
+        raise ValueError('author handoff rejected') from exc
+
+
 async def n8_check(data: Any) -> dict[str, Any]:
     """N8 静态复核（模型节点）→ 显式分叉到 N6（回边）/ N9 / N13（升级）。
 
@@ -1078,6 +1104,7 @@ async def n8_check(data: Any) -> dict[str, Any]:
         "coverage_summary": sandbox_coverage,
         "revision_points": revision_points,
         "applied_edits": applied_edits,
+        "author_handoff": _author_handoff(ctx, data, 'N8'),
         "checklist": _CHECKLIST,
         "rework_reasons": [str(f) for f in (n8_prev.get("data") or {}).get("must_fix", [])]
         if isinstance(n8_prev.get("data"), dict) else [],
@@ -1085,9 +1112,10 @@ async def n8_check(data: Any) -> dict[str, Any]:
                  "sandbox_cases[].coverage.mode=changed_regions 时只对这些变更区域内的 touched 行负责，"
                  "coverage_summary 说明全文/片段各多少件。"),
     }
+    input_data['review_assignment'] = AR.prepare('N8', input_data)
     out = await run_model_node(ctx, "N8", prompt_key="n8_check",
                                input_data=input_data,
-                               offered={"cases": set(sandbox_names)})
+                               offered={"cases": set(sandbox_names), 'review_context': input_data})
     if out["mode"] == "standin":
         if ctx.mode == "real":
             ctx.node_failed("N8", message="real 模式下 N8 无真实模型输出 ⇒ 静态复核不得跳过")
@@ -1129,6 +1157,15 @@ async def n8_check(data: Any) -> dict[str, Any]:
     else:
         ctx.event("warning", node="N8", status="drill_ledger_skipped",
                   detail={"rule": "drill 替身复核不写用例态台账；I2 以 real 证据为准"})
+    if verdict == 'rework' and not write_ledger:
+        out.update(cycle=cycles, limit=limit, escalated=True)
+        await data.async_set_state('n8_check', out)
+        ctx.node_finished('N8', status='escalated', detail={
+            'verdict': 'rework', 'cycle': cycles, 'limit': limit, 'source': n8_source,
+            'escalated': True,
+            'summary': 'N8：drill 静态复核退回，升级人工裁决；无真实返工计数，不自动回环'})
+        await data.async_emit('N8_ESCALATE', out)
+        return out
     if verdict == "rework" and write_ledger:
         new_cycles = cycles + 1
         ledger_cycles = min(new_cycles, limit)  # case_state 拒绝 > limit；==limit 合法（记录已到上限）
@@ -1485,6 +1522,7 @@ async def n11_review(data: Any) -> dict[str, Any]:
     input_data = {
         "run_id": ctx.run_id,
         "identity": host_identity,
+        "author_handoff": _author_handoff(ctx, data, 'N11'),
         "counts": counts,
         "verdict": n10.get("verdict") or n9.get("verdict"),
         "evidence": {
@@ -1506,8 +1544,9 @@ async def n11_review(data: Any) -> dict[str, Any]:
         "rule": ("只判证据链是否成链：身份四方同值且证据可解析=intact；任一缺失/不一致=broken。"
                  "任何一项缺失不得判 intact。"),
     }
+    input_data['review_assignment'] = AR.prepare('N11', input_data)
     out = await run_model_node(ctx, "N11", prompt_key="n11_review", input_data=input_data,
-                               offered={"counts": counts})
+                               offered={"counts": counts, 'review_context': input_data})
     if out["mode"] == "standin":
         if ctx.mode == "real":
             ctx.node_failed("N11", message="real 模式下 N11 无真实模型输出 ⇒ 证据守护不得跳过")

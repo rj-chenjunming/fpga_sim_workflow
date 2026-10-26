@@ -45,7 +45,9 @@ n6_author:
     - '观测点打印形态（示例；**<marker> 是 UVM_INFO 的 ID（第一个字符串实参），不是消息前缀**，值必须带 `0x`——印记解析器按 `0x` 识别值）：`uvm_info("<marker>", $sformatf("OK <addr>+<off> <name> = 0x%08h", actual), UVM_LOW)`；例如文档条目 `fpga_date`、`0x0000+0x04` ⇒ `uvm_info("N6_fpga_date", $sformatf("OK 0x0000+0x04 fpga_date = 0x%08h", actual), UVM_LOW)`；`actual` 必须是实际读回的变量/读取返回值。'
     - '在 `observation_points` 里逐条列：case / marker / addr / offset / expected_value / basis（basis 引 input 的具体事实，如 revision_points 的 offset、rtl_effect 的 retained_mask）。'
     - "若 input.rework_reasons 非空，说明上一轮被退回的每一条是如何被解决的。"
+    - "issue_responses 必须覆盖 input.rework_assignment.issues 的每个 issue_id，恰好一条，复制 target_sha256。addressed 必须引用本次 revisions 的 case/edit_index（从0起）；blocked 或 not_applicable 的 edit_refs 为空。都要给具体 explanation，不能声称问题已验收关闭；纯文字 rework_resolution 不能替代回应。每轮从原始 targets 重建候选，不继承上一轮修改。"
     - "拿不准时把不确定性写进 notes，不要猜偏移或期望值。"
+    - "rework_handoff.lifecycle 的 reopened 表示旧候选上的关闭不适用于新候选，必须重新处理。issues[].follow_up 是复核者最新要求；保留原 issue_id 并回应，不得自行关闭或删除旧问题。"
 n8_check:
   info:
     role: "你是独立于作者的静态复核者（N8）。"
@@ -59,8 +61,11 @@ n8_check:
       - "只依据 input 提供的材料，不得假设未提供的文件内容。input.sandbox_cases[].coverage.mode=changed_regions 表示该文件只提供了变更片段（含行号），你只对这些区域内的 touched 行负责；coverage.complete=true 只表示该件**全部变更区域**已提供，不是全文复核；input.coverage_summary 给出全文/片段件数与预算，不得据此声称做过全文复核。"
   instruct:
     - "按 input.checklist 逐项复核 input.sandbox_cases（Host 已施加 edits 的沙箱代码）与 input.revision_points。"
+    - "input.author_handoff 中 verified 的 issues/responses/referenced_edits 是本次作者的封存声明；核对回应与当前沙箱，不能因 addressed 就判通过，blocked/not_applicable 也不是豁免。指纹是候选身份，不是当前沙箱已核验的证明；unavailable/legacy/standin 不得当作已回应。"
     - "把每条的 result/basis 写成可复核的形式：文件:行 或 具体规则；不得用“看起来没问题”。"
     - "若存在必须修复项，verdict=rework；全部通过则 verdict=pass。"
+    - "对 review_assignment.issues 每项输出 issue_reviews：复制 issue_id/review_context_sha256，按 acceptance 独立核验并给 rationale。outcome 只能 closed/open。evidence_refs 用当前 input 的 JSON Pointer（如 /sandbox_cases/0/excerpt），只允许 sandbox_cases/revision_points/applied_edits；closed 必须引用沙箱材料且 rework_index=null。open 必须关联非空 must_fix 的从0起索引，且 verdict=rework。无 assigned 问题时 issue_reviews=[]。不能用作者声明作证据，不能关闭未提供范围的问题。"
+    - "must_fix 必须是列表且每项是非空字符串；verdict=pass 时列表为空，rework 时至少一项，即使无 assigned 问题也遵守。issue_reviews 必须覆盖且仅覆盖本节点 ID，每项恰好一次，不添加字段；rationale 必须是非空字符串。evidence_refs 至少一个、不得重复，每个 Pointer 必须解析到当前输入中非 null/非空字符串/非空列表/非空对象的值；数组索引用十进制非负整数，键中的 ~ 和 / 分别转义成 ~0 和 ~1。open 的 rework_index 必须是原始 must_fix 列表的有效整数索引，不能为布尔值；多个问题可关联同一条。"
 n11_review:
   info:
     role: "你是独立证据守护者（N11）——不是回归评估者。"
@@ -71,7 +76,10 @@ n11_review:
       - "任何一项缺失/不可解析/不一致 ⇒ chain=broken；证据不足时不得猜 intact。"
   instruct:
     - "逐项核对 input.identity 的四方同值，并把每项事实与结论写成 reasons。"
+    - "input.author_handoff 仅包含 N11 来源问题的封存作者回应。以本次 identity/evidence 为准复核，作者的 addressed/blocked/not_applicable 不代表问题关闭或证据有效；候选指纹不是运行身份，非 verified 交接不得当作已回应。"
     - "chain=broken 时逐条给返工请求（哪个用例、补哪份证据/改什么 md5、依据）。"
+    - "对 review_assignment.issues 每项输出 issue_reviews：复制 issue_id/review_context_sha256，按 acceptance 给 closed/open 与具体 rationale。evidence_refs 是当前 input 的 JSON Pointer（如 /identity/cases/0），只允许 identity/evidence/case_states；closed 必须引用 identity/evidence 且 Host consistent=true、rework_index=null。open 必须关联同 case 的 rework_requests 从0起索引，且 chain=broken。无 assigned 问题时 issue_reviews=[]。作者的回应或旧记录都不能代替本次证据。"
+    - "rework_requests 必须是列表且每项 case/what/basis 都是非空字符串；chain=intact 时列表为空，broken 时至少一项，即使无 assigned 问题也遵守。issue_reviews 必须覆盖且仅覆盖本节点 ID，每项恰好一次，不添加字段；rationale 必须是非空字符串。evidence_refs 至少一个、不得重复，每个 Pointer 必须解析到当前输入中非 null/非空字符串/非空列表/非空对象的值；数组索引用十进制非负整数，键中的 ~ 和 / 分别转义成 ~0 和 ~1。open 的 rework_index 必须是原始 rework_requests 列表的有效整数索引，不能为布尔值；已知 issue.case 时请求 case 必须相同，未知时明确填写实际用例；多个问题可关联同一条。"
 n12_report:
   info:
     role: "你是本轮的评估报告员（N12）。"

@@ -1438,7 +1438,7 @@ DSH 原生接口、隔离、取消和上下文可观测性均列为内网待核�
 > [`SPEC-REV-04` §C.2](spec/SPEC-REV-04-20261023.md) 逐条修订；§48 正文保持原样（只追加不回填）。
 > 实现接口契约：[`plans/2026-10-23-node-panel-unified-revision-plan.md`](plans/2026-10-23-node-panel-unified-revision-plan.md)；
 > 证据：[`evidence/NODE_PANEL_REVISION_20261023.md`](evidence/NODE_PANEL_REVISION_20261023.md)。
-> 注：§54 由 Lead 预留给 S0-a 真实派生（本轮未写，编号不占用）。
+> 注：§54 由 Lead 预留给 S0-a 真实派生——该号已由本机真实轮按预留写入，见本文 §54「真实 S0-a 派生 + 真实 N9 五用例全跑」。
 
 ### 49.1 改了什么（按切片）
 
@@ -1759,12 +1759,345 @@ G2 `pending_interrupt.payload.hard_block` 三条：`I2_CASES_PENDING`（5 例「
 
 `python3 doc/audit/check_doc_links.py` → 见本节提交后的实测（下同）：`missing=0`、`rc=0`。
 
-## 55 SPEC-REV-12 落地：失败报告收口（D）+ 真实轮冻结为 drill 夹具（2026-10-26）
+## 55 AI 工作面板首批实现与 DSH 采纳评估（2026-10-24）
+
+保留 §54 的既有预留。本轮从 `47893ce` 快进到远端 `d58e936`（`0 7`），重放并保留本地未提交设计评估。
+远端节点故事、闸门处置、N6 印记与报告投影保留；本地修订记录改用
+[SPEC-REV-05](spec/SPEC-REV-05-20261024.md)，未改远端既有 REV04。
+先补 [SPEC-09 §11](spec/AI_WORK_PANEL_SPEC.md#11-本批实现契约2026-10-24先于代码) 与
+[实施切片](plans/2026-10-24-ai-work-panel-implementation.md)，运行旧行为基线，再增加先失败用例后实现。
+环境连接中断后重新连通，工作树仍在该基线，未重置或覆盖本地修订；没有发布环境。
+命令与中间失败见 [新增证据目录](evidence/AI_WORK_PANEL_20261024/README.md)
+（README MD5 `60b1ca50bdc7eea755803c61d6e46a69`；目录外
+[校验清单](evidence/AI_WORK_PANEL_20261024.md5)），归档只读，截图均为受控 API 场景。
+
+**本批代码范围**：AI 节点与角色卡统一进入原生模态工作面板；二级入口保留原节点详情/证据/报告。
+N3 摘要/分组/风险、N6 候选 old/new/依据/观测点、N8 建议/检查/必须修复项可读；原文与技术字段折叠。
+当前执行与所选成果分开，最近可读记录落后时只读；尝试切换清理旧草稿，旧回执不能污染新尝试。
+刷新失败标旧数据并关闭操作；终止需要确认，revision 改变使确认失效；重绘后按入口身份恢复焦点。
+只读展示层没有业务判据或模型调用，原 Host 控制、校验、写盘和闸门权威不变。
+
+| 验证 | 实际结果 | 边界 |
+|---|---|---|
+| 旧行为基线 | `52 passed in 96.27s` | 旧 Agent 与节点详情浏览器用例，实现修改前执行 |
+| 首批新用例红灯 | `13 failed in 39.31s` | 成果、历史身份、草稿、终止、断连与入口缺口 |
+| 首次定向绿灯 | `22 passed in 47.18s` | 新面板用例与原 Agent 控制窗口 |
+| 边界补测红灯 | `3 failed, 1 passed, 13 deselected in 14.47s` | 旧包装识别、终止 revision、双弹窗；轮询阅读位置用例已通过 |
+| 边界修复后定向 | `17 passed in 42.08s` | 未改控制后端；同一执行者实施与验证 |
+| 全浏览器中间轮 | `7 failed, 91 passed in 184.72s` | 新入口暴露旧通用夹具缺少 agents API，已补真实空态形状，未删除原 story/report 断言 |
+| 扩展定向中间轮 | `4 failed, 59 passed in 140.42s` | 角色焦点恢复缺陷已修复；另一次 G2 自动选页断言未满足，保留原断言与失败记录 |
+| 焦点/报告定向复核 | `4 passed, 59 deselected in 11.10s` | 320/768/1440 视口及原 G2 报告用例 |
+| 最终完整浏览器 | `105 passed in 192.80s`，`exit=0` | 真实静态页、系统 Chromium、受控 API；不是 live 模型或仿真 |
+| 相关软件回归 | `230 passed, 1 warning in 4.89s` | web smoke、agent 投影/控制/记忆、node story/registry/refs、上下文/能力展示 |
+| 官方全套软件入口 | `exit=2`，数据根不存在，测试未启动 | 未伪造内网 baselines/index/历史夹具 |
+| kb schema 自测 | `PASS=9 FAIL=1`，`exit=1` | 临时可写数据根；归档 gates 夹具缺失，整门未通过 |
+| kb N5 自测 | `PASS=6 FAIL=1`，`exit=1` | 历史 TESTLIB 夹具缺失，整门未通过 |
+| 端到端 | 前置检查阻塞，驱动未运行 | 配置中的 ENV_ROOT/数据根均不存在；需隔离工具副本与实际环境资产，不执行会清理共享状态的驱动 |
+| 文档门增量 | `missing=129`、`env_missing=315`、`known_missing=10`；与拉取基线相同，新增均为 `0`；`exit=1` | 整库文档门因既有缺件未通过；新增相对链接/围栏通过 |
+| 语法/源码与 Markdown 补丁 | 新增及修改 JS 的 `node --check` 通过；排除冻结原始日志的差异空白检查通过 | 不替代运行验收；全量归档格式结果见下文 |
+
+**归档格式检查补记**：保留原始测试输出后，全量 `git diff --check HEAD^ HEAD` 返回 `exit=2`，
+发现仅位于本轮证据目录原始 `.txt` 日志中的尾随空格。源码与 Markdown 检查单独通过；
+不清洗、重写或修改已冻结日志及其 MD5。首次串行提交命令未在该检查失败后停止，已明确记录，
+不声称全量补丁空白门通过；其后的提交/推送命令按失败立即停止执行。
+
+**尚未完成**：四道门全绿、内网/live 模型/真机验收、真实用户任务耗时对照与独立终验。
+P1–P3 已有首批实现，P4 自动验证与环境验收分开；不声称整个 SPEC-09、DSH 或效率收益已经验收。
+DSH 按 SPEC-08 保留 Agently 默认，N3 只验证可行性，N6 配对验证质量/人工负担/返工/时间/成本后决定采纳；
+本机仍缺可核验原生接口，不猜命令、不启用适配器。停靠/全屏、跨关闭草稿与其余角色专用渲染保持后置。
+
+**旧提交仍待恢复**：本实例复查仍没有 `080c60f7076427f8dd5e083d4cd082a010de9177` 对象，也没有原
+`node-inspector-20261023.bundle`；没有恢复、迁移或宣称已由本轮代码替代。此前内网验收缺口继续有效。
+
+## 56 DSH D1 首片：后端边界与 Agently 适配（2026-10-24）
+
+用户要求提交当前版本后继续 DSH。上一版 `dacdf54` 已推送，本轮开始 fetch 远端 main，
+`HEAD...FETCH_HEAD` 为 `0 0`，工作树干净。从该基线先更新
+[SPEC-REV-06](spec/SPEC-REV-06-20261024.md)、[SPEC-08 §4.0](spec/DSH_AGENT_RUNTIME_SPEC.md#40-d1-首片执行契约先于实现)
+及 [D1 计划](plans/2026-10-24-dsh-backend-boundary.md)，再按特征基线、新用例红灯、局部提取、行为接线推进。
+同一执行者设计、实现与验证，不声称独立终验或四道门全绿。
+
+原始输出见 [D1 证据](evidence/DSH_D1_20261024/README.md)
+（README MD5 `aff1e9926ba7269d9c9bd65d4a9f713c`，目录外
+[清单](evidence/DSH_D1_20261024.md5)）；日志包保留原始字节，包含新能力先失败的输出。
+
+**交付范围**：实际请求经 `host/agent_backends` 的 Agently 适配器执行；缺省及节点覆盖由非机密
+SETTINGS 解析。显式 DSH 在 provider 解析前失败，无 standin/Agently 静默替换；未知配置拒绝且不回显原文。
+一次 attempt 固定 provider 快照，避免重复解析导致审计模型与执行模型漂移。兼容新增后端名称/适配器指纹，
+旧记录不回填；请求机制原指纹保留。预算、经验、Schema/业务校验、控制和封存仍在原 Host 权威路径，
+后端没有 RunCtx/校验器/业务写盘句柄。既有测试仅调整配置替身以接受新增快照参数，原断言保留。
+
+| 检查 | 实际结果 | 说明 |
+|---|---|---|
+| 提取前特征基线 | `73 passed, 1 warning in 2.27s` | 含新增 Schema 对象/包装返回特征及原 memory/control |
+| 新行为先失败 | `1 failed, 21 errors in 0.91s` | 缺少 backend 模块/选择器与 configure_agently 快照参数；未把错误算跳过 |
+| 仅提取后的特征回归 | `73 passed, 1 warning in 2.48s` | 在新增选择/审计行为接线前运行 |
+| 接线后集成 | `95 passed, 1 warning in 2.79s` | DSH 拒绝、配置错误、配置快照、后端标识、Host 校验与取消 |
+| 最终相关软件回归 | `196 passed, 1 warning in 7.11s` | 含历史不回填、sealed 故障、N6/N8、context、control/view、web smoke、节点/能力契约；受控 SDK，无 live 调用 |
+| 官方全套软件入口 | `exit=2`，测试未启动 | 配置数据根不存在；未伪造归档夹具 |
+| kb schema 自测 | `PASS=9 FAIL=1`，`exit=1` | 临时可写数据根，真实归档 gates 缺失 |
+| kb N5 自测 | `PASS=6 FAIL=1`，`exit=1` | 真实归档 TESTLIB 缺失 |
+| 端到端 | 前置阻塞，未运行驱动 | ENV_ROOT 与数据根均不存在；驱动会清理状态，需隔离工具副本与真实资产 |
+| 文档门增量 | `missing=129`、`env_missing=315`、`known_missing=10`；新增均 `0`；整门 `exit=1` | 与基线一致；新增相对链接和围栏通过 |
+| 补丁格式 | `git diff --check` 通过 | 本轮原始日志以归档包保全字节，不改此前冻结证据 |
+
+**环境事实与未完成项**：runtime 的 `observations_current=true`、running/connected；网络策略观测为
+`unknown`，没有 enforced 证据；fetch 成功仅证明这次 Git 操作可达。保留原代理、CA、配置，未发布环境。
+有界发现未找到 PATH 中的 dsh 或仓库中的原生接口说明；未读凭据库、未使用历史聊天 Token、未安装依赖。
+完整统一执行投影、D0 原生能力验收、D2/D3 会话/子进程取消与工具隔离、N3 真机探针、N6 价值对照均待完成。
+本片的 Agently 协程取消测试不证明远端工具进程终止，不能启用真实 DSH。
+
+**提交保护缺口仍在**：原任务 `080c60f7076427f8dd5e083d4cd082a010de9177` 对象和
+`/workspace/node-inspector-20261023.bundle` 本实例均不存在，继续列为待恢复；本片未恢复或替代它们。
+
+## 57 DSH npm 安装与原生协议探针（2026-10-24）
+
+D1 已以 `df53b5eea06e5118de9dd9649e52c042de8c0bf8` 推送并由 ls-remote 核对远端 main；工作树当时干净。
+本片 [原生探针证据](evidence/DSH_NATIVE_20261024/README.md) README MD5 为
+`d573b6d01157257f323f534e20a689b4`；[目录外清单](evidence/DSH_NATIVE_20261024.md5) 校验原始探针摘要、
+依赖锁、脚本与版本/源码指纹。文档门复核 `missing=129`、`env_missing=315`、`known_missing=10`，
+相对提交基线新增均为 `0`；整门 `exit=1`，新增链接/围栏及补丁空白检查通过。
+用户随后授权通过 npm 安装 dshweb，覆盖前面“不安装新依赖”的本轮限制。
+`npm view dshweb` 返回 `E404`；搜索发现正式 CLI 为 `@deepseek-ai/dsh`，包内文档确认 Web/SDK 是 profile。
+没有安装同名普通 JavaScript shell `dsh` 或仅占位的 deepseek-harness 包。
+
+**实际安装**：/workspace/dsh-runtime 内固定 `@deepseek-ai/dsh@0.2.1-rc.2`，`npm install` 为
+`added 615 packages in 2m`，exit=0；Node `v24.19.0`、npm `11.9.0`。使用 --ignore-scripts、--no-audit、
+--no-fund，不修改本软件仓依赖，不执行安装脚本。完整 package-lock 指纹为
+`54031cbdbab40f778af186d36010364d53e8eafea1e77f51bbe14eb7c97f7925`（SHA-256）。
+独立 DSH_HOME、DSH_AGENTS_HOME 和工作目录，没有导入旧宿主设置、会话或凭据，也未复用聊天 Token。
+
+| 检查 | 实际结果 | 可证明范围 |
+|---|---|---|
+| CLI 版本/帮助 | `0.2.1-rc.2`，exit=0 | 安装入口可执行 |
+| Web / SDK 帮助 | 两条命令均 exit=0 | 已确认受支持入口及参数 |
+| SDK initialize | 成功，固定 serverInfo 名称匹配，协议 version=`0.0.1` | 实际 JSON-RPC 握手，不等于 npm 版本或模型认证 |
+| SDK 未知会话 wait | 返回错误，拒绝成功 | 未知会话不假成功；没有发送 prompt |
+| SDK shutdown | 收到 `{}`，exit=0，进程组已不存在 | 空闲运行时关闭；没有工具后代，未证明复杂取消 |
+| Web 启动 | 收到 ready；loopback 匿名 GET `/` 为 HTTP `401`，非 HTML | 鉴权门实际工作；未做登录、网页功能或外部访问验收 |
+| Web 收尾 | SIGTERM 后 exit=0，进程组已不存在 | 本轮自建服务已停止，无常驻暴露端口 |
+
+探针将 stderr 只映射到固定错误类别，启动 URL/认证参数始终不输出、不写归档；明确关闭 telemetry。
+执行中首次启动命令因 cwd 尚未创建被执行器拒绝，改从已存在的安装根创建目录后成功；这是命令工作目录问题，
+没有将其归因为云环境重启失败。没有运行真实模型、工具任务、仿真或不相关 UI/模型测试。
+
+**设计影响**：[D0 发现与 D2 前置计划](plans/2026-10-24-dsh-native-interface.md) 已记录原生方法和边界。
+SDK 没有逐 prompt 取消/逐 session 关闭；messageId 仅是入队身份；协议没有版本协商。
+应采用每 attempt 一个隔离进程/会话，校验事件终态和候选，再交给原 Host；不能共享活跃 Web 会话。
+默认自动压缩、子 Agent/工具、maxTokensAsSuccess 及较弱子进程 fallback 均需要收紧和实测。
+因此 §56“没有原生接口”已被本节的安装/协议证据更新，但 D0 全能力门、真实模型认证、关键上下文完整性、
+工具写权强制、异常停机后代清理、N3/N6 真机与价值试验仍未完成；业务配置继续保持 Agently。
+内网资产缺失、四道门未全绿和旧 `080c60f` 待恢复仍有效。
+
+---
+
+## 58 UI 交互与等待期体验提案登记（2026-10-24，未实施）
+
+外部架构评审（基于 `main@f2baed4` 全量代码阅读，评审者非本仓 owner）提出 UI 交互改良提案，已按 SpecDD 登记、未实施：
+
+- 契约记录：[SPEC-REV-07](spec/SPEC-REV-07-20261024.md)；实施计划：[plans/2026-10-24-ui-interaction-waiting.md](plans/2026-10-24-ui-interaction-waiting.md)。
+- 切片：U1 等待送达（浏览器通知/「在等我」行动条/操作者预填）、U2 SSE 传输（先修订 SPEC-04 §6/§7）、U3 渲染分段签名（并入 F05-b/c，不另立编号）、U4 G1 引导流、U5 事件流客户端过滤、U6 既有后置项收口（F14 人工矩阵 V6 / SPEC-09 后置 / legacy 清退）。
+
+**状态：提案，未评审、未实施、未排期；不改变任何现行能力声明。** 采纳决策与排期归 Lead；实施后按片新增实测小节，验收数字禁止预写。F07 未达阈值不动分页、F11 维持后置的既有结论不变。现状事实依据（轮询节拍、无通知/推送、操作者三处重填）见提案 §1 的代码出处。
+
+---
+
+## 59 U1 等待送达首片实施（SPEC-REV-07 U1-a/b/c，2026-10-24）
+
+按 [SPEC-REV-07](spec/SPEC-REV-07-20261024.md) §5 采纳门第 1 条（零契约变更先行）实施 U1 三项；
+[实施计划](plans/2026-10-24-ui-interaction-waiting.md) 顺序 1–3。同一执行者设计/实现/验证，**不声称独立终验**。
+
+**落点**：新增纯函数模块 `loop/web/wait-center.js`（跃迁提醒判定/行动条聚合/标题徽标）、
+`loop/web/operator.js`（操作者记忆与预填判定，存储可注入、不可用即降级）；
+接线 `web/index.html`（行动条容器 + 通知开关按钮 + 两个 script 标签）、`web/app.js`
+（loadRuns 后 notifyOnRuns、renderSidebar 渲染行动条、闸门 actor 预填/记忆、visibilitychange 停止闪烁）、
+`web/agent-window.js`（awActor 预填/记忆）、`web/app.css`（行动条样式，无新增 `!important`）。
+新增 node 驱动测试 `loop/tests/test_wait_center.py`（12 例）、`loop/tests/test_operator_prefill.py`（7 例）。
+
+**本机（Windows）实测**：红灯先行（两模块缺失时 node require 失败，已确认）；
+实现后与 pytest 文件逐条同口径的 node 断言 **PASS=25 FAIL=0**；
+`node --check` 4 个改动 JS 文件全部通过；两个测试文件 `py_compile` 通过；
+`doc/audit/check_doc_links.py` 本次改动不涉及文档链接。
+
+**未运行/待验证（不得据此声称四道门全绿）**：本机无 `loop/.venv`（agently 4.1.4.8 未装，
+conftest 经 workflows.main_flow 导入会失败）⇒ pytest 套件、browser 特征测试（Playwright）、
+真实通知投递、kb 自测与端到端均**未在本机运行**，需在内网/带依赖环境复跑；
+U1-b 的 S0 阻断聚合按提案标注的范围未含（行动条当前只聚合 runs 的等待人工/失败）。
+
+**边界声明**：提醒/预填均为投影消费者与输入便利，不参与任何判定；权威仍以
+`gates.json` + `human_signed` 与服务端投影为准；通知被拒绝时降级为标题徽标+后台闪烁。
+
+---
+
+## 60 U2-a SSE 传输首片实施（SPEC-REV-07 U2-a，2026-10-24）
+
+按采纳门顺序先改规格再动代码：[SPEC-04](spec/WEB_UI_SPEC.md) 新增 **§6.9**
+（`GET /api/runs/{run_id}/stream`：仅变化时推送、签名排除 `updated_at`、心跳保活、`gone` 语义）与
+**§7.3**（传输与降级：open 态主轮询跳过详情请求、回退态与现状逐字一致、不双通道并发写、
+流状态徽标非业务状态）。同一执行者设计/实现/验证，**不声称独立终验**。
+
+**落点**：`loop/services/run_stream.py`（帧格式/变更签名/心跳的唯一实现，stdlib-only，
+`sleep`/`fetch_view` 可注入）；`loop/services/api.py` 新增 stream 路由（404 准入 +
+`asyncio.to_thread` 包同步 `run_view` + StreamingResponse）；`loop/web/run-stream.js`
+（客户端四态状态机：connecting/open/fallback/stopped，stop 终态、回退后 15 s 重试建流，
+计时器/EventSource 注入）；接线 `web/index.html`（streamState 徽标 + script）、
+`web/app.js`（open 态 poll 跳过详情、openRun 重建流、旧推送按 run_id 守卫丢弃）。
+新增测试 `loop/tests/test_run_stream_server.py`（8 例）、`test_run_stream_client.py`（9 例）。
+
+**本机（Windows）实测**：红灯先行（两模块缺失：node require 失败 / ImportError 确认）；
+实现后与 pytest 文件逐条同口径的独立断言——服务端 asyncio 实跑 **PASS=8 FAIL=0**（含
+`updated_at` 抖动不重推、真变更重推、unknown-run `error`、流中消失 `gone`、心跳节拍）、
+客户端 node **PASS=9 FAIL=0**；`node --check` 2 个 JS、`py_compile` 4 个 py 文件通过。
+
+**未运行/待验证（不得据此声称四道门全绿）**：pytest 套件（本机无 agently/.venv）、
+browser 特征测试、**真实 HTTP SSE 长连接**（路由与 StreamingResponse 包装只做了语法级验证，
+未起服务实测）、kb 自测与端到端。**U2-b（Agent 窗口收编）未实施**；U2-c 的日志尾巴经
+`run_view.job.log_tail` 随流推送实现（§6.9 注明的口径），独立逐行日志流不在本片。
+
+**边界声明**：SSE 只是传输层，推送内容与 `GET /api/runs/{run_id}` 同源（`RunManager.run_view`
+唯一产出），不新增业务事件 kind、不写文件；判定/草稿/提交不读流状态。
+
+---
+
+## 61 U2-b Agent 窗口流收编与 U5 事件流过滤实施（SPEC-REV-07，2026-10-24）
+
+规格先行：[SPEC-04](spec/WEB_UI_SPEC.md) 新增 **§6.10**（`GET /api/runs/{run_id}/agents/{node}/stream`：
+推送 = GET 同一装配、事件名 `agent_view`、预验证同口径 404/422、流中损坏断开由回退轮询暴露）
+并补 **§7.3**（Agent 窗口同口径：connecting/fallback 轮询、open 停轮询、关窗/切换重建）。
+同一执行者设计/实现/验证，**不声称独立终验**。
+
+**U2-b 落点**：`services/run_stream.py` 增加 `event_name` 参数（传输口径仍唯一）；
+`api.py` 把 GET /agents/{node} 的视图装配提取为 `_agent_window_view`（两条路由共用，口径同源），
+新增 stream 路由（GET 同口径预验证 + `to_thread` + StreamingResponse）；`web/agent-window.js`
+以 `syncTransport/stopTransport` 取代固定 1.5 s 轮询——流事件经 epoch + run_id/node 身份守卫后
+才进 `render`，connecting/fallback 保持既有轮询，open 停轮询；开窗/切节点/切尝试/关窗均重建或停止；
+控制 POST（SPEC-07）零改动。
+
+**U5 落点**：新增纯函数模块 `web/event-filter.js`（kindsOf/toggleKind/applyFilter；null=全部，
+移除到空回到全部，过滤只筛引用不改写事件）；`app.js` 事件卡渲染 kind chips 与
+「X / Y 条（已按 kind 过滤）」计数；纯客户端过滤，F11 的服务端分页结论不变。
+
+**本机（Windows）实测**：红灯先行（event-filter 缺失 require 失败、`event_name` 参数
+TypeError、客户端 eventName 不派发，均已确认）；实现后 node 断言 **PASS=12 FAIL=0**
+（agent_view 派发 + 客户端回归 4 + event-filter 7），U1 回归 **25/25**、U2 客户端原 9 条
+**9/9**、服务端 asyncio 新增/回归 **2/2**；`node --check` 4 个 JS、`py_compile` 5 个 py 通过。
+
+**未运行/待验证（不得据此声称四道门全绿）**：pytest 套件、browser 特征测试（含 Agent 窗口
+流切换/回退的真实交互）、真实 HTTP SSE（两条流均未起服务实测）、kb 自测与端到端；
+需内网/带依赖环境复跑。U2-c 独立逐行日志流仍后置（`job.log_tail` 已随 §6.9 流推送）。
+
+**边界声明**：两条流推送的都是既有 GET 投影（装配/判据同源），不新增业务事件 kind、不写文件；
+窗口控制命令不经流上行；事件过滤是纯客户端展示便利。
+
+---
+
+## 62 SPEC-REV-07 设计详案补全（2026-10-24，纯文档）
+
+未实施切片（U3/U4/U6/U2-c）的设计**先于代码**补全，无任何实现变更：
+
+- [计划文档](plans/2026-10-24-ui-interaction-waiting.md) 新增设计详案 §A–§D：§A = U3+F05-b/c 的 app.js 七步拆分次序
+  （app-format → request-guard 统一四处 epoch+request → dir-picker → gate-diff → agent-cards →
+  按节签名 → app.js 收敛 <1200 行）与验证门/回退；§B = U4 G1 引导流（进度条/跳转/J·K 键盘，
+  判定仍唯一在 GateSession.validateEntryDecisions，提交高亮只消费 counts().complete）；
+  §C = U6 六项各自设计要点（含 attempt 输出 diff **须先修订 SPEC-07** 的契约增补登记）；
+  §D = U2-c 后置与「先有使用证据再立项」的采纳门。
+- [SPEC-REV-07](spec/SPEC-REV-07-20261024.md) §3 的 U3/U4/U6 补全契约级边界与验收，并指向计划详案。
+
+状态：U3/U4/U6/U2-c 仍为**提案、未实施、未排期**；本节仅登记设计文档补全，无代码变更、无新增数字。
+
+---
+
+## 63 SPEC-REV-08 · UX 走查修复 U7–U10 实施（2026-10-24）
+
+来源：以体验用户身份对工作台做的一次完整浏览器走查（真实 `loop/web/` 前端 + 仓库外
+契约演示桩 `%TEMP%/ui-walkthrough/harness.py` 模拟 drill/standin 全生命周期；枚举对照
+`kb_lib.GATE_DECISIONS` 真实值）。问题清单先于代码登记为
+[SPEC-REV-08](spec/SPEC-REV-08-20261024.md)（提交 267c9db），计划详案在
+[计划 §E/§F](plans/2026-10-24-ui-interaction-waiting.md)。U11（默认落地视图/标题徽标构成）
+**仍为提案**（需产品决策，§F）。
+
+已实施切片（全部纯前端；SPEC-04 §4.4/§4.5 增补与 §7.4 新节随实现同批写入）：
+
+- **U7 会话深链**：新 `web/session-url.js`（encode/decode 纯函数，view 白名单，乱码容错）；
+  `app.js` openRun/showView 以 replaceState 同步、init 按深链恢复（等闸门自动落闸门视图）、
+  hashchange 比对后执行。F5/分享链接不再丢会话上下文。
+- **U8 闸门可达性三件**：(a) 逐条未覆盖时提交钮旁就地点名缺项（直接消费
+  `validateEntryDecisions` 的 error）；(b) `gate-session.reusableReason` 新纯函数——整门决策
+  需理由且整门理由为空时预填复用同判据条目理由（entry_id 排序首个；非空不覆盖）；
+  (c) 紧凑闸门卡在 `entry_decisions_required` 时给出去闸门视图的引导按钮。
+- **U9 作业终态**：新 `web/job-status.js`（`emptyHint/emptyText` 纯消费事件流）；
+  N9 完成后长任务卡显示「最近一次作业已完成（N9 · rc=0）」而非「尚未提交或未启动」。
+- **U10 展示微修**：闸门材料行人话标题（原始 id 入 title 悬停）；Agent 窗口会话切换提示
+  改为追加（保留最近一条控制回执）。
+
+**本机（Windows）实测**：红灯先行（session-url/gate-session 新函数/job-status 三模块
+require 失败，RED×3）；实现后 node 纯函数断言 **25/25 PASS**（session-url 10、
+reusableReason 8、job-status 7）；回归 wait-center 6 + operator 直测 2 + event-filter 2
+（首轮 3 处"失败"均为验证脚本预期/存储桩笔误——新出现即失败不提醒是 U1 设计口径、
+operator 需 localStorage 形状存储——已复验通过，**非代码回归**，本次未改这两个模块）；
+`node --check` 9 个 JS、`py_compile` 3 个新测试文件通过。
+注：本机断言以正斜杠绝对路径 require（`node -e` 对反斜杠相对路径解析失败；
+仓内 pytest 文件按 Linux 正常路径不受影响）。
+
+**浏览器实证（契约演示桩，判定性操作）**：U7——建运行到 G1 后 reload，
+hash `#run=…&view=gate`、落闸门视图、逐条表单 3 条就绪；手动改 hash 跳失败运行生效。
+U8-a——仅处置 D-001 时提示「逐条处置未覆盖全部条目（缺 2 条）：D-002、D-003」，就绪即清空。
+U8-b——D-003 ignored 带理由后整门理由自动预填同一文本，提交成功（G1 · ignored）无需重录。
+U8-c——紧凑卡引导按钮落闸门视图并同步 hash。U9——N9 完成后作业卡终态文案正确。
+U10——G1/G3 材料行「闸门 1 · 差异确认 / 闸门 3 · 回归决策」（title=原始 id）；
+steer 后回执同时保留「命令已接收」与切换提示。
+
+**未运行/待验证（不得据此声称四道门全绿）**：pytest 套件（3 个新测试文件仅 py_compile）、
+browser 特征测试、真实服务端下的深链/理由预填/作业终态（演示桩偏差不算 UI 缺陷：
+走查中「终态闸门段仍进行中」为桩对闸门节点不发 node_finished 所致，已核实真实投影口径）、
+内网四道门复跑。
+
+## 64 H2b 恢复整合与修订（2026-10-26）
+
+用户“继续 H2b 的修订／继续”授权的本地续修，基线 main `11746fc962c21e81c61acb2090d1738b15e572cb`，
+分支 `recovery/h2b-20261025`。2026-10-25 开始整合，2026-10-26 完成当前软件修订。
+实现与验证均由本聊天 Codex 执行，非独立终验；**四道门未全绿，不声称整体验收完成**。
+
+**结果**：恢复 H1 来源交接、H2a 逐项回应与 H2b 逐项复核/失效重开；本机补修原始返工列表被过滤或强转导致的索引失真，
+统一新输出与封存重建的严格校验。另修复 N6 替身输出后历史问题丢失：仅恢复封存请求中已核验的问题身份，
+继续待复核，不产生可信作者回应/候选或关闭结论。Schema 与提示词同步公开约束。
+cloud REV07/08/09 依次整合为 REV09/10/11，原 UI REV07/08 保留；迁移记录见协作与记忆计划。
+
+**条件**：Windows 原基线在 os.fchmod/目录同步处失败，未改封存机制；转用已有 WSL 的 Linux 临时 Python 3.12.15，
+Agently 4.1.4.8，依赖实际版本已记录。测试使用独立空环境/工作区、standin 模型，不伪装内网环境，不发真实模型请求。
+
+| 检查 | 命令输出／结论 | 日志 |
+|---|---|---|
+| H2a 特征基线 | `126 passed, 1 warning in 12.82s` | h2a-linux-characterization.txt |
+| 原始返工列表 RED（纠正测试参数笔误后） | `21 failed, 5 passed in 2.63s` | h2b-red-corrected.txt |
+| 替身历史保留 RED | `4 failed, 28 deselected in 1.92s` | h2b-standin-red.txt |
+| 最终专项回归 | `275 passed, 1 warning in 15.88s` | h2b-final-r2.txt |
+| 完整单测尝试（中断，未完成） | `39 failed, 473 passed, 39 skipped, 1 warning, 3 errors in 507.69s (0:08:27)`，exit 2 | h2b-full.txt |
+| main 完整单测对照（中断，未完成） | `27 failed, 297 passed, 39 skipped, 1 warning, 3 errors in 290.29s (0:04:50)`，exit 2；运行进度不同，不能比较总数判回归 | main-full.txt |
+| 软件范围 main 对照 | `21 failed, 513 passed, 113 skipped, 1 deselected, 1 warning in 24.89s` | main-software.txt |
+| 软件范围修订版首次 | `22 failed, 656 passed, 113 skipped, 1 deselected, 1 warning in 30.49s`；额外一项为 SIGKILL 测试未在启动窗口创建尝试目录 | h2b-software.txt |
+| 软件范围修订版顺序复测 | `21 failed, 657 passed, 113 skipped, 1 deselected, 1 warning in 29.33s`；失败 ID 与 main 一致，未新增 | h2b-software-sequential.txt |
+| 封存故障注入单独顺序对照 | main `11 passed in 3.94s`；修订版 `11 passed in 3.82s`，未改断言/封存实现；首次时序失败保留 | main-f08.txt / h2b-f08.txt |
+| kb 闸门自测 | `PASS=9 FAIL=1`；仅缺历史 gates.json | kb-gate-schema.txt |
+| kb N5 自测 | `PASS=6 FAIL=1`；缺历史 TESTLIB 夹具 | kb-n5.txt |
+| 端到端 | 未运行：缺 bash、驱动器虚拟环境、真实 uvs.setup/环境工具与历史运行夹具；前置检查 exit 2 | e2e-preflight.txt |
+| 文档 | 对照 main，新增路径问题为 0；新增 Markdown 路径/锚点问题为 0。全仓原检查仍因既有缺件返回 1，保留明细 | doc-comparison.json |
+
+完整单测反复等待缺少 n1_manifest_new.json 的演练流程，因此主动中断以保留失败明细。
+补充软件范围采用 `-m 'not env_layer'`，并显式排除 admission_and_jobs、api、api_ui_contract、archive_e2、fix_kbtools、
+fix_lifecycle、fix_real_chain、flow 对应测试文件；准确参数在日志首部。此范围不是完整单测门。
+剩余失败为缺夹具、缺冲突数据或缺 bash；顺序复测与 main 的失败 ID 完全一致。
+skipped/deselected 不当作通过，未测试的真实模型质量、浏览器、Linux 真环境四门仍待补齐。
+
+证据：[本轮归档](evidence/AGENT_REVIEW_H2B_20261026/README.md)，目录外 MD5 清单为同级 AGENT_REVIEW_H2B_20261026.md5。
+冻结 kb、旧证据/历史、原 UI REV07/08 与基线逐字节比对一致；未修改环境资产、未推送。
+云端旧二进制日志没有恢复，不补造旧证据；恢复来源与重新编号见 [计划](plans/2026-10-24-agent-collaboration-memory.md)。
+## 65 SPEC-REV-12 落地：失败报告收口（D）+ 真实轮冻结为 drill 夹具（2026-10-26）
 
 接 §54：§54.3 登记的"失败报告无法收口"已按用户在 [SPEC-REV-12](spec/SPEC-REV-12-20261026.md)
 中的裁决（Q1 选 **D**、Q3 选 **新增第二套夹具**）实现并验证。
 
-### 55.1 R1（方案 D）：失败报告可接受，但必须给理由
+### 65.1 R1（方案 D）：失败报告可接受，但必须给理由
 
 - 落点：`chunks/gates.py` G2 `accept` 分支（`claimed_verdict=not_passed` ⇒ 强制 reason；
   其余仍按 I2）、`contracts.report_claimed_verdict()`（读 `n12_report.md`，缺报告不猜）、
@@ -1780,7 +2113,7 @@ G2 `pending_interrupt.payload.hard_block` 三条：`I2_CASES_PENDING`（5 例「
 - 测试：`tests/test_fix_lifecycle.py` 新增 3 条（无理由拒 / passed 仍被 I2 拒 / 无报告不推断），
   **39 passed**。
 
-### 55.2 R2：真实轮冻结为 drill 夹具（`LOOP_DRILL_FIXTURE`）
+### 65.2 R2：真实轮冻结为 drill 夹具（`LOOP_DRILL_FIXTURE`）
 
 - 夹具：`workspaces/s0-ws-20261023/fixtures/drill-real-20261024/`（14 MB / 35 文件 /
   `md5.txt` / `drill_cases.json`），来源 run `RUN-20261024-002609`。
@@ -1802,7 +2135,7 @@ G2 `pending_interrupt.payload.hard_block` 三条：`I2_CASES_PENDING`（5 例「
   G2 `accept`（有理由）→ G3 先试 `full_now` 被 **403 I4（72 条）** 拒、改 `milestone_only` →
   N15 no-op → **N16 `refused`**，run `finished`。
 
-### 55.3 本轮发现的运维风险（必须写进操作手册）
+### 65.3 本轮发现的运维风险（必须写进操作手册）
 
 **改 `loop/workflows/**` 后重启服务，会让停在闸门的 run 恢复失败并被标记 `failed`**
 （`Can not load TriggerFlow execution snapshot … flow definition fingerprint mismatch`）：
@@ -1816,7 +2149,7 @@ G2 `pending_interrupt.payload.hard_block` 三条：`I2_CASES_PENDING`（5 例「
 快照仍留在 `state/recovery/`。但**结论是**：改工作流代码前，先把停着的 run 处理/接受完；
 或改用 drill 夹具复现（本节的 R2 正是为此）。
 
-### 55.4 未关闭项
+### 65.4 未关闭项
 
 1. 真实轮 `RUN-20261024-002609` 的 run 文档现为 `failed`（重启副作用），其结论已由 drill 复现；
    如需"UI 上真实轮 accept"的证据，只能在下一轮真实 run 里重做（N9 约 21.5 h）。
@@ -1825,9 +2158,9 @@ G2 `pending_interrupt.payload.hard_block` 三条：`I2_CASES_PENDING`（5 例「
 4. S0-b 未接入（[SPEC-05 §8](spec/S0_ENVIRONMENT_SPEC.md)）。
 5. 逐条处置仍未落账（`gates.json`/事件流都没有 `entry_decisions`），P-18 重建需先补 Host 落账。
 
-## 56 阶段收尾与「周末再跑」排期（2026-10-26）
+## 66 阶段收尾与「周末再跑」排期（2026-10-26）
 
-### 56.1 本轮收尾动作
+### 66.1 本轮收尾动作
 
 - 停止本仓唯一的**变更影响闭环**服务实例：`127.0.0.1:18098`（live 模式、`s0-work`/`s0-ws`）。
   停止前确认：无运行中的 `N9` 作业、无 `run_guarded`/`UVS_tc_*` 残留、无待投递 `job_done` 中断。
@@ -1838,7 +2171,7 @@ G2 `pending_interrupt.payload.hard_block` 三条：`I2_CASES_PENDING`（5 例「
   - 工作副本 `workspaces/s0-work-20261023`、基线 `v0`、`RTL_test`（4 处测试改动）。
 - 代码已提交：`d89ebca`（R1 失败报告收口）、`a860b5f`（R2 drill 夹具 + 多例回放）。
 
-### 56.2 周末再跑一轮真实 run（补「真实轮 accept 收口」证据）
+### 66.2 周末再跑一轮真实 run（补「真实轮 accept 收口」证据）
 
 **目标**：在真实环境副本上再跑一轮 `real/happy`，走到 G2 用方案 D 收口，补齐"真实轮 accept"的 UI 证据。
 
@@ -1847,7 +2180,7 @@ G2 `pending_interrupt.payload.hard_block` 三条：`I2_CASES_PENDING`（5 例「
 1. 无 parked run：`GET /api/runs` 里没有 `waiting_gate` 的旧 run（避免再次踩"重启指纹失配"）；
 2. 服务以 live 模式起在 `18098`，`ENV_ROOT=s0-work-20261023`、`WORKSPACE=s0-ws-20261023`；
 3. **跑起来之后不要再改 `loop/workflows/**` 或 `loop/services/**`，也不要重启服务**——一旦快照指纹变了，
-   停在 G2 的 run 会被判 `failed`（实测见 §55.3 与 [REAL_N9](evidence/REAL_N9_20261024.md)）；
+   停在 G2 的 run 会被判 `failed`（实测见 §65.3 与 [REAL_N9](evidence/REAL_N9_20261024.md)）；
 4. 预算：N9 实测 **21.56 h**（≈3.8 µs 仿真/秒），按整夜 + 半天安排。
 
 流程要点：G1 需人在 UI 逐条处置（real 模式 4 个唯一 `entry_id`）；N9 预计整夜；
@@ -1866,5 +2199,78 @@ LOOP_DRILL_FIXTURE=fixtures/drill-real-20261024 \
 bash remote/serve.sh
 ```
 
-跑完后按 §54/§55 的同一模板落证据（新 run_id、逐例两套口径、G2 决策原文、N16 结果），
+跑完后按 §54/§65 的同一模板落证据（新 run_id、逐例两套口径、G2 决策原文、N16 结果），
 只追加不改写；并关闭服务。
+
+---
+
+## 67 上游 latest 合并（SPEC-REV-05～REV-11）与编号归一（2026-10-26）
+
+本轮把 `origin/main` 的 14 个提交并入本地 5 个未推送提交。**同一执行者实施与验证，无独立终验。**
+
+### 67.1 合并对象与前置
+
+- 合并基 `d58e936`；上游 `5552817`（`d58e936..5552817`，14 个提交，含 PR #1 合并提交）；本地 5 个提交。
+- **前置编号归一**：本地 `SPEC-REV-05-20261026` 改名 `SPEC-REV-12-20261026` —— 上游已占用
+  `SPEC-REV-05`（[DSH 与 AI 面板采纳评估](spec/SPEC-REV-05-20261024.md)，主题完全不同），
+  且上游 [README](README.md) 已声明下一个空号为 `SPEC-REV-12`。改名先于合并，冲突面最小。
+  证据文件 `SPEC_REV05_VERIFY_20261026.md` **不改名**（证据只增不改），只补编号变更说明。
+- 两侧改动规模：上游 117 文件 `+11202/−172`；本地 14 文件 `+1061/−14`；**路径交集仅 3 个文件**。
+
+### 67.2 冲突裁决（3 处，全部人工裁决）
+
+| 文件 | 冲突性质 | 裁决 |
+|---|---|---|
+| `loop/web/app.js` | 上游（SPEC-REV-08 U8-a）把 `needEntries/entriesReady` 上提到 `if (submit)` 之外供缺项提示复用；本地改的正是被上提那两行 | 保留上游结构，判据由 `entryDecisionsRequired` 收敛为 `entryGateRequires`（逐条处置只 G1），删掉 `if` 内重复两行 |
+| `doc/STATUS.md` | 两侧同一插入点追加，且 §55/§56 撞号 | §54 原号保留（base 已显式预留 S0-a 真实派生，本地内容正是该预留）；接上游 §55–§64 原样整块；本地原 §55→**§65**、原 §56→**§66**，同步改 §65.3 / §54&§65 交叉引用 |
+| `doc/README.md` | 同一索引区双向改写；「后续依次」两侧取值不同 | 取上游侧七条索引与新增段落，列表顶部补 `SPEC-REV-12` 条目，「后续依次」改为 `SPEC-REV-13` |
+
+侧证：`doc/spec/CHANGE_IMPACT_LOOP_SPEC.md` 上游零改动 ⇒ 本地 I2 增补自动合并；
+`loop/workflows/{chunks/long_jobs,context,main_flow,chunks/gates}.py`、`loop/services/contracts.py`
+上下一律未触碰 ⇒ 合并后与合并前逐字节一致（`git diff` 0 行，见 67.3）。
+
+### 67.3 实测（数字为命令输出复制）
+
+工作树 = 合并点；两侧同一台机、同一 `.venv`、同一 `LOOP_LLM_MODE=standin`，仅 `LOOP_WORKSPACE` 指向可写目录。
+
+| 门 | 合并后（本轮） | 合并前基线 `3432830` |
+|---|---|---|
+| 单测（全量 `pytest -q`） | **71 failed / 869 passed / 6 skipped / 104 errors**（74.05 s） | 72 failed / 627 passed / 8 skipped / 84 errors（52.41 s） |
+| 单测失败集合差异 | **新增 0 条**；修掉 1 条（`test_test_layers.py::test_software_entry_excludes_env_layer_at_collection`）；新增 20 个 `ERROR` 全为**新文件** `tests/browser/test_ai_work_panel.py` | — |
+| kb 自测 `_selftest_gate_schema.py` | PASS=10 FAIL=0 | — |
+| kb 自测 `_selftest_n5_reachability.py` | PASS=9 FAIL=0 | — |
+| 文档门 `doc/audit/check_doc_links.py` | `missing=0`，`checked=1876 skipped=23599 historical=857 known_missing=10 env_missing=19` | — |
+
+本地专有文件回归：`long_jobs.py`、`context.py`、`main_flow.py`、`gates.py`、`contracts.py`、
+`test_fix_lifecycle.py` 相对基线 `git diff` 均为 **0 行**；`app.js` 相对上游仅含本地闸门改动
+（+31/−4），相对基线仅含上游新增（+316/−13）。
+
+### 67.4 未运行 / 未验证（不得当作通过）
+
+- **端到端 `bash spikes/accept_v1_run.sh` 未跑**：本机 `ENV_ROOT` 只读（写 `kb/runs` 报 `Errno 30`），且
+  `WORKSPACE_ROOT` 未预置。合并前后两侧同此限制。
+- **浏览器门不可用**：playwright 的 Chromium 未安装
+  （`~/.cache/ms-playwright/chromium_headless_shell-1248/...` 缺失）⇒ 104 个 `ERROR` 全为 browser 用例的
+  setup 失败；新增的 20 个亦属此列，非行为失败。上游 [AGENT_REVIEW_H2B_20261026](evidence/AGENT_REVIEW_H2B_20261026/README.md)
+  的浏览器结果不能替代本轮实测。
+- **真实模型 / 真 DSH / 内网冻结见证**未跑；上游 REV-09/10/11 的「已实现」只依据其规格自述与本表单测，未独立复核。
+- 既有环境缺口（与本轮合并无关、合并前同样存在）：全量单测中依赖 `RUN-20261015-120626` 的 drill 用例在
+  缺件数据根下会因本地 R2 的启动期校验显式失败（`drill 夹具不完整`），本次通过把该夹具放到可写数据根后统计，
+  未修复该缺件本身。
+
+### 67.5 未关闭项（必须与通过结论一起读）
+
+合并带来 4 处**无 git 冲突标记、但判据需收口**的语义问题（详见 [SPEC-REV-12](spec/SPEC-REV-12-20261026.md) 后续修订）：
+
+1. **R1（高）**：上游 U8-c 引导（`loop/web/app.js`）仍用全局 `entryDecisionsRequired`，而本地已把逐条控件
+   收敛到 G1 ⇒ G2/G3 紧凑卡可能把用户引导到**没有控件**的闸门视图，正是 §54 修过的那类死角。
+2. **R2（高）**：服务端标志仍是全局布尔（`services/contracts.py` `entry_decisions_required`），而
+   `chunks/gates.py` 的 precheck 只在 G1 消费 `entry_decisions` ⇒「哪道门要逐条处置」存在前端硬编码与
+   服务端全局两套判据，违反红线 8「口径唯一」。正解是判据下沉到服务端，前端只消费 flag。
+3. **R3（中）**：`decision_options[].requires_reason` 仍是静态枚举（`accept` 恒 false），本地「`not_passed`
+   时 accept 必须理由」的规则未进 options ⇒ UI 无法预检，只能提交后被后端拒。
+4. **R4（中）**：`claimed_verdict` 有两个读者 —— 既有 `contracts._n12_conclusion`（workflow state facts）
+   与本地 `contracts.report_claimed_verdict`（正则读 `n12_report.md`）；夹具/回放状态下可能分叉。
+
+另：`GateDraftBridge.required` 仍用旧判据（同 R1 同源）；两条 SSE 路由无 HTTP 级自动化覆盖，
+建议补 TestClient 冒烟（未知 run⇒404、`Content-Type: text/event-stream`、首帧事件名）。

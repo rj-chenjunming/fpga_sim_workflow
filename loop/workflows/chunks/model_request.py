@@ -13,7 +13,7 @@ import hashlib
 from pathlib import Path
 from typing import Any
 
-from host import model_provider as MP
+from host import agent_backends as AB
 from host import agent_memory as AM
 
 from ..context import RunCtx
@@ -49,52 +49,27 @@ async def ask(
     prompt_key: str,
     input_data: dict[str, Any],
     contract: dict[str, Any] | None = None,
+    backend: AB.AgentBackend | None = None,
 ) -> dict[str, Any]:
     """发一次真 ModelRequest。失败**不吞**：回报错误并交由调用方决定。"""
-    from agently import Agently
-
     from prompts.node_schemas import SCHEMAS
 
-    cfg = MP.configure_agently()
-    kind = prompt_key.split("_", 1)[0]
-    schema = SCHEMAS.get(kind)
+    backend = backend if backend is not None else AB.select(node)
+    schema = SCHEMAS.get(prompt_key.split("_", 1)[0])
     if schema is None:
         raise KeyError(f"没有 {prompt_key!r} 的输出契约（prompts/node_schemas.py）")
     contract = contract or request_contract(prompt_key)
-
-    agent = Agently.create_agent()
-    try:
-        data = await (
-            agent.input(input_data)
-            .info(contract["info"])
-            .instruct(contract["instruct"])
-            .output(schema, format="json")
-            .async_get_data()
-        )
-        if hasattr(data, "model_dump"):
-            data = data.model_dump()
-        elif isinstance(data, dict) and hasattr((data or {}).get("$result"), "model_dump"):
-            data = data["$result"].model_dump()
-    except Exception as exc:  # noqa: BLE001 - 回报失败，不伪造输出
-        message = f"{type(exc).__name__}: {exc}"
-        if cfg._api_key:
-            message = message.replace(cfg._api_key, "[redacted]")
-        ctx.event(
-            "warning", node=node, status="model_failed",
-            detail={"prompt": prompt_key, "model": cfg.model, "error": message},
-        )
-        return {
-            "standin": False,
-            "provider": cfg.model,
-            "model_call_failed": True,
-            "error": message,
-        }
-
-    ctx.event(
-        "node_finished", node=f"{node}_model", status="ok",
-        detail={"prompt": prompt_key, "model": cfg.model, "plugin": cfg.plugin},
-    )
-    return {"standin": False, "provider": cfg.model, "plugin": cfg.plugin, "data": data}
+    payload = await backend.execute(AB.BackendRequest(
+        input_data=input_data, info=contract["info"], instruct=contract["instruct"], schema=schema))
+    if payload.get("model_call_failed"):
+        ctx.event("warning", node=node, status="model_failed",
+                  detail={"prompt": prompt_key, "model": payload.get("provider"),
+                          "error": payload.get("error")})
+    else:
+        ctx.event("node_finished", node=f"{node}_model", status="ok",
+                  detail={"prompt": prompt_key, "model": payload.get("provider"),
+                          "plugin": payload.get("plugin")})
+    return payload
 
 
 async def run_attempt(
@@ -110,7 +85,9 @@ async def run_attempt(
 
     `validate` 是 Host 校验的唯一实现（节点语义），由调用方注入；机制层不复制判据。
     """
-    cfg = MP.resolve()
+    backend = AB.select(node)
+    cfg = backend.info
+    backend_metadata = backend.metadata()
     contract = request_contract(prompt_key)
     contract["info"] += "\n" + AM.MEMORY_RULE
     if input_data.get('human_interventions'):
@@ -126,6 +103,7 @@ async def run_attempt(
         "input": request_input, **contract, "offered": offered, "scope": scope,
         "model": cfg.model if cfg.available else None,
         "plugin": cfg.plugin if cfg.available else None,
+        "backend": backend_metadata,
         "implementation_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         "experience_diagnostics": diagnostics,
     })
@@ -137,22 +115,22 @@ async def run_attempt(
         if not cfg.available:
             out = {"mode": "standin", "standin": True, "provider": "none", "reason": cfg.reason}
         else:
-            payload = await ask(ctx, node, prompt_key=prompt_key, input_data=request_input, contract=contract)
+            payload = await ask(ctx, node, prompt_key=prompt_key, input_data=request_input,
+                                contract=contract, backend=backend)
             validation = validate(kind, payload, offered=offered)
     except BaseException as exc:
         message = f"{type(exc).__name__}: {exc}"
-        secret = getattr(cfg, "_api_key", None)
-        safe_message = message.replace(secret, "[redacted]") if secret else message
+        safe_message = backend.redact(message)
         attempt.finish("interrupted" if isinstance(exc, asyncio.CancelledError) else "error",
-                       error=safe_message)
+                       error=safe_message, backend=backend_metadata)
         if safe_message != message:
             raise RuntimeError(safe_message) from None
         raise
     if not cfg.available:
-        attempt.finish("standin", payload=out, validation=None)
-        return {**out, **attempt.refs(), "experience_diagnostics": diagnostics}
+        attempt.finish("standin", payload=out, validation=None, backend=backend_metadata)
+        return {**out, **attempt.refs(), "experience_diagnostics": diagnostics, "backend": backend_metadata}
     attempt.finish("validated" if validation["ok"] else "validation_failed",
-                   payload=payload, validation=validation)
+                   payload=payload, validation=validation, backend=backend_metadata)
     out = {
         "mode": "live" if not payload.get("standin") else "standin",
         "standin": bool(payload.get("standin")),
@@ -165,6 +143,7 @@ async def run_attempt(
         "input_digest": {k: (len(v) if isinstance(v, (list, dict)) else v) for k, v in request_input.items()},
         **attempt.refs(),
         "experience_diagnostics": diagnostics,
+        "backend": backend_metadata,
     }
     ctx.event(
         "node_finished", node=f"{node}_request",

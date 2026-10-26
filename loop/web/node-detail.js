@@ -268,6 +268,7 @@ window.NodeDetail = (function () {
       node: String(options.node),
       fallback: options.fallback || null,
       agent: options.agent || null,
+      onAgent: typeof options.onAgent === "function" ? options.onAgent : null,
       gate: !!options.gate,
       onGate: typeof options.onGate === "function" ? options.onGate : null
     };
@@ -366,6 +367,15 @@ window.NodeDetail = (function () {
     if (dialog && dialog.open) dialog.close();
     s.trigger = null;
     if (node) focusChip(node);
+  }
+
+  function openAgentTask() {
+    var target = s.target, trigger = s.trigger;
+    if (!target || !target.agent || !window.AgentWindow) return;
+    close();
+    if (target.onAgent) target.onAgent();
+    else window.AgentWindow.open({runId: target.runId, name: target.agent.name,
+      nodes: target.agent.nodes, node: target.node, trigger: trigger});
   }
 
   /* ---------------- 渲染：一句话 → 结果 → 差异清单 → 关键数字 → 过程 → 证据 → 原始记录 ---------------- */
@@ -1545,14 +1555,7 @@ window.NodeDetail = (function () {
         var jump = el("button", "btn btn-sm nd-agent-jump", "打开 Agent 工作窗口 ↗");
         jump.type = "button";
         jump.setAttribute("aria-label", "打开 " + target.agent.name + " 工作窗口");
-        jump.addEventListener("click", function () {
-          window.AgentWindow.open({
-            runId: target.runId,
-            name: target.agent.name,
-            nodes: target.agent.nodes,
-            node: target.node
-          });
-        });
+        jump.addEventListener("click", openAgentTask);
         actions.appendChild(jump);
       }
     }
@@ -1717,14 +1720,7 @@ window.NodeDetail = (function () {
     var jump = el("button", "btn btn-sm", "打开 Agent 工作窗口 ↗");
     jump.type = "button";
     jump.setAttribute("aria-label", "打开 " + s.target.agent.name + " 工作窗口");
-    jump.addEventListener("click", function () {
-      window.AgentWindow.open({
-        runId: s.target.runId,
-        name: s.target.agent.name,
-        nodes: s.target.agent.nodes,
-        node: s.target.node
-      });
-    });
+    jump.addEventListener("click", openAgentTask);
     wrap.appendChild(jump);
     return wrap;
   }

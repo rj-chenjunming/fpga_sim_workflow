@@ -1,0 +1,13 @@
+[PASS] 1 check 名 'gate-state' 可解析 
+[PASS] 2 check 名 'gate_state' 可解析 
+[PASS] 3 两种拼法解析到同一个 schema 
+[PASS] 4 schema 的 anchor.algo const 与 kb_lib._ANCHOR_ALGO 同源 (schema='sha256-of-canonical-state-without-anchor' code='sha256-of-canonical-state-without-anchor')
+[PASS] 5 gate_init + gate_set 的产出过 gate_state.schema.json 
+[PASS] 6 锚算法字段 == _ANCHOR_ALGO ({'algo': 'sha256-of-canonical-state-without-anchor', 'file': 'gates.sha256', 'value': '0aa9369aa4efa47325a0005499dd157167342ea61263b04726debd28d9f5eeac'})
+[PASS] 7 algo 常量写错一词 ⇒ 写路径抛 SchemaError (对象 不符合 gate_state.schema.json：
+  - $.anchor.algo: const 不符：期望 'sha256-of-canonic)
+[PASS] 8 被拒时账本一个字节都没动（check 在 write_json 之前） (before=1b04eaca6994 after=1b04eaca6994)
+[PASS] 9 被拒后 G2 仍是 pending（无半签） 
+[FAIL] 10 归档 gates.json 仍过校验 (跳过：/tmp/ai-panel-kb-OSrCPL/runs/RUN-20261015-120626/gates.json 不存在)
+
+汇总：PASS=9 FAIL=1

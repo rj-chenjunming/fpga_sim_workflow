@@ -1,0 +1,4 @@
+environment_exists=False
+workspace_exists=False
+e2e_driver_exists=True
+e2e_driver_not_run=required_environment_and_workspace_absent; requires_isolated_copy_before_execution

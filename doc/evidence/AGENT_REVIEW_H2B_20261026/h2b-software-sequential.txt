@@ -1,0 +1,353 @@
+cwd: /mnt/host/c/Users/chen/Documents/Codex/2026-10-25/referenced-chatgpt-conversation-this-is-an/work/fpga_sim_workflow/loop
+command: ['/tmp/codex-h2b-runtime/python/bin/python3', '-m', 'pytest', '-q', '-p', 'no:cacheprovider', '--tb=short', '-m', 'not env_layer', '--ignore=tests/test_admission_and_jobs.py', '--ignore=tests/test_api.py', '--ignore=tests/test_api_ui_contract.py', '--ignore=tests/test_archive_e2.py', '--ignore=tests/test_fix_kbtools.py', '--ignore=tests/test_fix_lifecycle.py', '--ignore=tests/test_fix_real_chain.py', '--ignore=tests/test_flow.py']
+Python: 3.12.15 (main, Oct 21 2026, 17:43:53) [Clang 23.1.3 ]
+mode: standin; Linux; isolated empty environment/workspace; no FPGA fixture
+........................................................................ [  9%]
+........................................................................ [ 18%]
+........................................................................ [ 27%]
+........................................................................ [ 36%]
+.......ssssssssss.......sssssssssssss................................... [ 45%]
+...........................sssssssssss...........................FFF..F. [ 54%]
+.sssssssssssssssssssssss................................................ [ 64%]
+.FFFF.F...............FFFF..FFF.......FF.F.............................. [ 73%]
+........................................................................ [ 82%]
+............sssssss.......F............ss..ssssssssss.........ssssssss.. [ 91%]
+...............................ssssssssssss.....Fssssssssssss.....       [100%]
+=================================== FAILURES ===================================
+______ test_decision_response_gate_state_is_authority_not_process_record _______
+tests/test_gate_projection.py:70: in test_decision_response_gate_state_is_authority_not_process_record
+    _wait_interrupt(client, rid, "G1")
+tests/test_gate_projection.py:54: in _wait_interrupt
+    raise AssertionError(f"运行失败：{view.get('error')}")
+E   AssertionError: 运行失败：FileNotFoundError: 夹具缺 n1_manifest_new.json
+----------------------------- Captured stdout call -----------------------------
+ERROR:    2026-10-26 01:15:57 | [TriggerFlowExecution] [chunk.failed] [run=b858b54893a34123aa602d59d1a368a5] Chunk 'n1_manifest' failed.
+ERROR:    2026-10-26 01:15:57 | [TriggerFlowExecution] [triggerflow.execution_failed] [run=ad57205a3a954d6b99f4926e654ebe7f] TriggerFlow execution '907432d95d224961b15ec50811d6f4f3' failed.
+ERROR:    2026-10-26 01:15:57 | [TriggerFlowExecution] [chunk.failed] [run=0be444c1d5f146b7a4c7a87dacf4429b] Chunk 'n0_baseline' failed.
+------------------------------ Captured log call -------------------------------
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=b858b54893a34123aa602d59d1a368a5] Chunk 'n1_manifest' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [triggerflow.execution_failed] [run=ad57205a3a954d6b99f4926e654ebe7f] TriggerFlow execution '907432d95d224961b15ec50811d6f4f3' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=0be444c1d5f146b7a4c7a87dacf4429b] Chunk 'n0_baseline' failed.
+_________________ test_view_projects_authority_not_just_events _________________
+tests/test_gate_projection.py:89: in test_view_projects_authority_not_just_events
+    view = _wait_interrupt(client, rid, "G1")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_gate_projection.py:54: in _wait_interrupt
+    raise AssertionError(f"运行失败：{view.get('error')}")
+E   AssertionError: 运行失败：FileNotFoundError: 夹具缺 n1_manifest_new.json
+----------------------------- Captured stdout call -----------------------------
+ERROR:    2026-10-26 01:15:57 | [TriggerFlowExecution] [chunk.failed] [run=d2120e9dc39d4e60b275eee7ab779ada] Chunk 'n1_manifest' failed.
+ERROR:    2026-10-26 01:15:57 | [TriggerFlowExecution] [triggerflow.execution_failed] [run=3569fdc4adfb4cc2b924964b25e46774] TriggerFlow execution '0a1581bbf8734c8fbcfa4f549187757a' failed.
+ERROR:    2026-10-26 01:15:57 | [TriggerFlowExecution] [chunk.failed] [run=bf5a7acb629b49778700a75b536cc627] Chunk 'n0_baseline' failed.
+------------------------------ Captured log call -------------------------------
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=d2120e9dc39d4e60b275eee7ab779ada] Chunk 'n1_manifest' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [triggerflow.execution_failed] [run=3569fdc4adfb4cc2b924964b25e46774] TriggerFlow execution '0a1581bbf8734c8fbcfa4f549187757a' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=bf5a7acb629b49778700a75b536cc627] Chunk 'n0_baseline' failed.
+________________ test_double_decide_leaves_no_orphan_signature _________________
+tests/test_gate_projection.py:127: in test_double_decide_leaves_no_orphan_signature
+    _wait_interrupt(client, rid, "G1")
+tests/test_gate_projection.py:54: in _wait_interrupt
+    raise AssertionError(f"运行失败：{view.get('error')}")
+E   AssertionError: 运行失败：FileNotFoundError: 夹具缺 n1_manifest_new.json
+----------------------------- Captured stdout call -----------------------------
+ERROR:    2026-10-26 01:15:57 | [TriggerFlowExecution] [chunk.failed] [run=17dad1b267dd454d8a080fc3e5291909] Chunk 'n1_manifest' failed.
+ERROR:    2026-10-26 01:15:57 | [TriggerFlowExecution] [triggerflow.execution_failed] [run=f4d7da45681147f0b3d45378615356a9] TriggerFlow execution '8d5fd147b4644e389eef7044394b45ed' failed.
+ERROR:    2026-10-26 01:15:57 | [TriggerFlowExecution] [chunk.failed] [run=f79092707e70453ebc9ca2e03db5ee65] Chunk 'n0_baseline' failed.
+------------------------------ Captured log call -------------------------------
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=17dad1b267dd454d8a080fc3e5291909] Chunk 'n1_manifest' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [triggerflow.execution_failed] [run=f4d7da45681147f0b3d45378615356a9] TriggerFlow execution '8d5fd147b4644e389eef7044394b45ed' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=f79092707e70453ebc9ca2e03db5ee65] Chunk 'n0_baseline' failed.
+_________________ test_gate_divergence_is_reported_not_hidden __________________
+tests/test_gate_projection.py:169: in test_gate_divergence_is_reported_not_hidden
+    _wait_interrupt(client, rid, "G1")
+tests/test_gate_projection.py:54: in _wait_interrupt
+    raise AssertionError(f"运行失败：{view.get('error')}")
+E   AssertionError: 运行失败：FileNotFoundError: 夹具缺 n1_manifest_new.json
+----------------------------- Captured stdout call -----------------------------
+ERROR:    2026-10-26 01:15:57 | [TriggerFlowExecution] [chunk.failed] [run=922503c1b1e04e8b8998125488fc3478] Chunk 'n1_manifest' failed.
+ERROR:    2026-10-26 01:15:57 | [TriggerFlowExecution] [triggerflow.execution_failed] [run=31050605dc8249d1a71ad2a828bcf5fe] TriggerFlow execution '6b025a03df164bdeabdca216014bfa76' failed.
+ERROR:    2026-10-26 01:15:57 | [TriggerFlowExecution] [chunk.failed] [run=906d0a44f08f4089a875ed750f71b079] Chunk 'n0_baseline' failed.
+------------------------------ Captured log call -------------------------------
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=922503c1b1e04e8b8998125488fc3478] Chunk 'n1_manifest' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [triggerflow.execution_failed] [run=31050605dc8249d1a71ad2a828bcf5fe] TriggerFlow execution '6b025a03df164bdeabdca216014bfa76' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=906d0a44f08f4089a875ed750f71b079] Chunk 'n0_baseline' failed.
+______________ test_endpoint_unknown_node_is_known_false_not_404 _______________
+tests/test_node_detail_projection.py:316: in test_endpoint_unknown_node_is_known_false_not_404
+    _wait_interrupt(client, rid, "G1_diff_confirm")
+tests/test_node_detail_projection.py:276: in _wait_interrupt
+    raise AssertionError(f"运行失败：{view.get('error')}")
+E   AssertionError: 运行失败：FileNotFoundError: 夹具缺 n1_manifest_new.json
+----------------------------- Captured stdout call -----------------------------
+ERROR:    2026-10-26 01:15:58 | [TriggerFlowExecution] [chunk.failed] [run=daabcdba5c2f4a6bae62e928ccf2bd2f] Chunk 'n1_manifest' failed.
+ERROR:    2026-10-26 01:15:58 | [TriggerFlowExecution] [triggerflow.execution_failed] [run=c6e42b9c29d4457681fef07b3099454d] TriggerFlow execution '16179ef2c26649888c00eb9d33b0ac54' failed.
+ERROR:    2026-10-26 01:15:58 | [TriggerFlowExecution] [chunk.failed] [run=bfad3fb7c6f04bc4a61f79faff7cd832] Chunk 'n0_baseline' failed.
+------------------------------ Captured log call -------------------------------
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=daabcdba5c2f4a6bae62e928ccf2bd2f] Chunk 'n1_manifest' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [triggerflow.execution_failed] [run=c6e42b9c29d4457681fef07b3099454d] TriggerFlow execution '16179ef2c26649888c00eb9d33b0ac54' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=bfad3fb7c6f04bc4a61f79faff7cd832] Chunk 'n0_baseline' failed.
+___________ test_drill_full_chain_every_node_has_summary_and_source ____________
+tests/test_node_detail_projection.py:326: in test_drill_full_chain_every_node_has_summary_and_source
+    rid = _drive_full_chain(client)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_node_detail_projection.py:291: in _drive_full_chain
+    _wait_interrupt(client, rid, "G1_diff_confirm")
+tests/test_node_detail_projection.py:276: in _wait_interrupt
+    raise AssertionError(f"运行失败：{view.get('error')}")
+E   AssertionError: 运行失败：FileNotFoundError: 夹具缺 n1_manifest_new.json
+----------------------------- Captured stdout call -----------------------------
+ERROR:    2026-10-26 01:15:58 | [TriggerFlowExecution] [chunk.failed] [run=f9c5074ed46047c9b3bc585fdf4cf65e] Chunk 'n1_manifest' failed.
+ERROR:    2026-10-26 01:15:58 | [TriggerFlowExecution] [triggerflow.execution_failed] [run=5d6c8161464543c4953ade262747b903] TriggerFlow execution 'dc5a16ef86934989a70ea9c9b9f13c6e' failed.
+ERROR:    2026-10-26 01:15:58 | [TriggerFlowExecution] [chunk.failed] [run=28952c80e6054065bbeed574cfe34e5f] Chunk 'n0_baseline' failed.
+------------------------------ Captured log call -------------------------------
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=f9c5074ed46047c9b3bc585fdf4cf65e] Chunk 'n1_manifest' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [triggerflow.execution_failed] [run=5d6c8161464543c4953ade262747b903] TriggerFlow execution 'dc5a16ef86934989a70ea9c9b9f13c6e' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=28952c80e6054065bbeed574cfe34e5f] Chunk 'n0_baseline' failed.
+____________________ test_halt_node_projection_has_summary _____________________
+tests/test_node_detail_projection.py:395: in test_halt_node_projection_has_summary
+    _wait_interrupt(client, rid, "G1_diff_confirm")
+tests/test_node_detail_projection.py:276: in _wait_interrupt
+    raise AssertionError(f"运行失败：{view.get('error')}")
+E   AssertionError: 运行失败：FileNotFoundError: 夹具缺 n1_manifest_new.json
+----------------------------- Captured stdout call -----------------------------
+ERROR:    2026-10-26 01:15:58 | [TriggerFlowExecution] [chunk.failed] [run=43f0735fe8184dfbb39b3d9dd56ac2fa] Chunk 'n1_manifest' failed.
+ERROR:    2026-10-26 01:15:58 | [TriggerFlowExecution] [triggerflow.execution_failed] [run=d83c12338fa54b9189f429ce1395e047] TriggerFlow execution 'bae1be76dddb4199aee5ba6d510e2e7a' failed.
+ERROR:    2026-10-26 01:15:58 | [TriggerFlowExecution] [chunk.failed] [run=2e4232180edf40bab9f9748f37501670] Chunk 'n0_baseline' failed.
+------------------------------ Captured log call -------------------------------
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=43f0735fe8184dfbb39b3d9dd56ac2fa] Chunk 'n1_manifest' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [triggerflow.execution_failed] [run=d83c12338fa54b9189f429ce1395e047] TriggerFlow execution 'bae1be76dddb4199aee5ba6d510e2e7a' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=2e4232180edf40bab9f9748f37501670] Chunk 'n0_baseline' failed.
+__________ test_g1_material_entries_carry_before_after_hunk_encoding ___________
+tests/test_node_detail_projection.py:418: in test_g1_material_entries_carry_before_after_hunk_encoding
+    view = _wait_interrupt(client, rid, "G1_diff_confirm")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_node_detail_projection.py:276: in _wait_interrupt
+    raise AssertionError(f"运行失败：{view.get('error')}")
+E   AssertionError: 运行失败：FileNotFoundError: 夹具缺 n1_manifest_new.json
+----------------------------- Captured stdout call -----------------------------
+ERROR:    2026-10-26 01:15:59 | [TriggerFlowExecution] [chunk.failed] [run=d72f7751ffc441ef8475b1485aa06cba] Chunk 'n1_manifest' failed.
+ERROR:    2026-10-26 01:15:59 | [TriggerFlowExecution] [triggerflow.execution_failed] [run=3c62ac4b30d541e78e281d97b0952c04] TriggerFlow execution 'fb0102dfbf9d4f9ab1d677fe4ed2d61a' failed.
+ERROR:    2026-10-26 01:15:59 | [TriggerFlowExecution] [chunk.failed] [run=d3de981ea238498dbb0d3c4b091a9496] Chunk 'n0_baseline' failed.
+------------------------------ Captured log call -------------------------------
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=d72f7751ffc441ef8475b1485aa06cba] Chunk 'n1_manifest' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [triggerflow.execution_failed] [run=3c62ac4b30d541e78e281d97b0952c04] TriggerFlow execution 'fb0102dfbf9d4f9ab1d677fe4ed2d61a' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=d3de981ea238498dbb0d3c4b091a9496] Chunk 'n0_baseline' failed.
+__________________ test_n0_copies_host_trace_into_the_run_dir __________________
+tests/test_node_detail_projection.py:474: in test_n0_copies_host_trace_into_the_run_dir
+    view = _wait_interrupt(client, rid, "G1_diff_confirm")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_node_detail_projection.py:276: in _wait_interrupt
+    raise AssertionError(f"运行失败：{view.get('error')}")
+E   AssertionError: 运行失败：FileNotFoundError: 夹具缺 n1_manifest_new.json
+----------------------------- Captured stdout call -----------------------------
+ERROR:    2026-10-26 01:15:59 | [TriggerFlowExecution] [chunk.failed] [run=0f794bf14c0a4708b69bc5b2714b4b24] Chunk 'n1_manifest' failed.
+ERROR:    2026-10-26 01:15:59 | [TriggerFlowExecution] [triggerflow.execution_failed] [run=9586febeeb10463dbd4ca3d4e9f0a63b] TriggerFlow execution '7b94e9c0af1f4b059554e1dd13c75362' failed.
+ERROR:    2026-10-26 01:15:59 | [TriggerFlowExecution] [chunk.failed] [run=08dd61160176407ea3fe22b8a2ae1d27] Chunk 'n0_baseline' failed.
+------------------------------ Captured log call -------------------------------
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=0f794bf14c0a4708b69bc5b2714b4b24] Chunk 'n1_manifest' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [triggerflow.execution_failed] [run=9586febeeb10463dbd4ca3d4e9f0a63b] TriggerFlow execution '7b94e9c0af1f4b059554e1dd13c75362' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=08dd61160176407ea3fe22b8a2ae1d27] Chunk 'n0_baseline' failed.
+__________ test_node_detail_carries_run_status_and_waiting_gate_block __________
+tests/test_node_detail_projection.py:682: in test_node_detail_carries_run_status_and_waiting_gate_block
+    _wait_interrupt(client, rid, "G1_diff_confirm")
+tests/test_node_detail_projection.py:276: in _wait_interrupt
+    raise AssertionError(f"运行失败：{view.get('error')}")
+E   AssertionError: 运行失败：FileNotFoundError: 夹具缺 n1_manifest_new.json
+----------------------------- Captured stdout call -----------------------------
+ERROR:    2026-10-26 01:15:59 | [TriggerFlowExecution] [chunk.failed] [run=47f805be845f4ea28c0f21bed4b335b6] Chunk 'n1_manifest' failed.
+ERROR:    2026-10-26 01:15:59 | [TriggerFlowExecution] [triggerflow.execution_failed] [run=ea998a0d64694525950e9541f3c72315] TriggerFlow execution '2fd53d7ff8524add8860a472d42c7667' failed.
+ERROR:    2026-10-26 01:15:59 | [TriggerFlowExecution] [chunk.failed] [run=e89bf229f045436f8ad93dcbfbeb66ca] Chunk 'n0_baseline' failed.
+------------------------------ Captured log call -------------------------------
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=47f805be845f4ea28c0f21bed4b335b6] Chunk 'n1_manifest' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [triggerflow.execution_failed] [run=ea998a0d64694525950e9541f3c72315] TriggerFlow execution '2fd53d7ff8524add8860a472d42c7667' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=e89bf229f045436f8ad93dcbfbeb66ca] Chunk 'n0_baseline' failed.
+_______________ test_node_detail_decided_gate_shows_dispositions _______________
+tests/test_node_detail_projection.py:699: in test_node_detail_decided_gate_shows_dispositions
+    _wait_interrupt(client, rid, "G1_diff_confirm")
+tests/test_node_detail_projection.py:276: in _wait_interrupt
+    raise AssertionError(f"运行失败：{view.get('error')}")
+E   AssertionError: 运行失败：FileNotFoundError: 夹具缺 n1_manifest_new.json
+----------------------------- Captured stdout call -----------------------------
+ERROR:    2026-10-26 01:15:59 | [TriggerFlowExecution] [chunk.failed] [run=ba41423fbad2444d9814df6d2d2779ae] Chunk 'n1_manifest' failed.
+ERROR:    2026-10-26 01:15:59 | [TriggerFlowExecution] [triggerflow.execution_failed] [run=1d71241abba74f058e537c720ba2c620] TriggerFlow execution 'dcbc5cc8bc23435e80396cd97f6ce8c5' failed.
+ERROR:    2026-10-26 01:15:59 | [TriggerFlowExecution] [chunk.failed] [run=8199c39b9dd94da2a38c63da578b81c2] Chunk 'n0_baseline' failed.
+------------------------------ Captured log call -------------------------------
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=ba41423fbad2444d9814df6d2d2779ae] Chunk 'n1_manifest' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [triggerflow.execution_failed] [run=1d71241abba74f058e537c720ba2c620] TriggerFlow execution 'dcbc5cc8bc23435e80396cd97f6ce8c5' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=8199c39b9dd94da2a38c63da578b81c2] Chunk 'n0_baseline' failed.
+________________________ test_node_started_present_flag ________________________
+tests/test_node_detail_projection.py:718: in test_node_started_present_flag
+    rid = _drive_full_chain(client)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_node_detail_projection.py:291: in _drive_full_chain
+    _wait_interrupt(client, rid, "G1_diff_confirm")
+tests/test_node_detail_projection.py:276: in _wait_interrupt
+    raise AssertionError(f"运行失败：{view.get('error')}")
+E   AssertionError: 运行失败：FileNotFoundError: 夹具缺 n1_manifest_new.json
+----------------------------- Captured stdout call -----------------------------
+ERROR:    2026-10-26 01:16:00 | [TriggerFlowExecution] [chunk.failed] [run=19bf4f47e35b49479a16a4bd95b6997b] Chunk 'n1_manifest' failed.
+ERROR:    2026-10-26 01:16:00 | [TriggerFlowExecution] [triggerflow.execution_failed] [run=a8e0b2f34c1843d79b482e5051dbbe59] TriggerFlow execution 'e1be502de15743a5a9e740cd8b6d89fb' failed.
+ERROR:    2026-10-26 01:16:00 | [TriggerFlowExecution] [chunk.failed] [run=38ef72c47d5543b18751454b988bcd35] Chunk 'n0_baseline' failed.
+------------------------------ Captured log call -------------------------------
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=19bf4f47e35b49479a16a4bd95b6997b] Chunk 'n1_manifest' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [triggerflow.execution_failed] [run=a8e0b2f34c1843d79b482e5051dbbe59] TriggerFlow execution 'e1be502de15743a5a9e740cd8b6d89fb' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=38ef72c47d5543b18751454b988bcd35] Chunk 'n0_baseline' failed.
+_____________________ test_unreached_node_in_terminal_run ______________________
+tests/test_node_detail_projection.py:727: in test_unreached_node_in_terminal_run
+    _wait_interrupt(client, rid, "G1_diff_confirm")
+tests/test_node_detail_projection.py:276: in _wait_interrupt
+    raise AssertionError(f"运行失败：{view.get('error')}")
+E   AssertionError: 运行失败：FileNotFoundError: 夹具缺 n1_manifest_new.json
+----------------------------- Captured stdout call -----------------------------
+ERROR:    2026-10-26 01:16:00 | [TriggerFlowExecution] [chunk.failed] [run=89c2e1794c7942c79c8443cc7ec5b4c5] Chunk 'n1_manifest' failed.
+ERROR:    2026-10-26 01:16:00 | [TriggerFlowExecution] [triggerflow.execution_failed] [run=be8a7018e1044f94aaf96da6d22912d3] TriggerFlow execution '905092df8c904a178132a90ef0e2305c' failed.
+ERROR:    2026-10-26 01:16:00 | [TriggerFlowExecution] [chunk.failed] [run=86e052c901324d15bf6d94b78ebbc547] Chunk 'n0_baseline' failed.
+------------------------------ Captured log call -------------------------------
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=89c2e1794c7942c79c8443cc7ec5b4c5] Chunk 'n1_manifest' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [triggerflow.execution_failed] [run=be8a7018e1044f94aaf96da6d22912d3] TriggerFlow execution '905092df8c904a178132a90ef0e2305c' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=86e052c901324d15bf6d94b78ebbc547] Chunk 'n0_baseline' failed.
+_______________ test_report_endpoint_reads_only_this_run_report ________________
+tests/test_node_detail_projection.py:772: in test_report_endpoint_reads_only_this_run_report
+    rid = _drive_full_chain(client)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_node_detail_projection.py:291: in _drive_full_chain
+    _wait_interrupt(client, rid, "G1_diff_confirm")
+tests/test_node_detail_projection.py:276: in _wait_interrupt
+    raise AssertionError(f"运行失败：{view.get('error')}")
+E   AssertionError: 运行失败：FileNotFoundError: 夹具缺 n1_manifest_new.json
+----------------------------- Captured stdout call -----------------------------
+ERROR:    2026-10-26 01:16:00 | [TriggerFlowExecution] [chunk.failed] [run=45272e5e8165460bbae43e68cdcc0215] Chunk 'n1_manifest' failed.
+ERROR:    2026-10-26 01:16:00 | [TriggerFlowExecution] [triggerflow.execution_failed] [run=80b5c0c95939430cb5e45faeae4296af] TriggerFlow execution '3ecec21df55148d98755533eed3245ba' failed.
+ERROR:    2026-10-26 01:16:00 | [TriggerFlowExecution] [chunk.failed] [run=3329b4c49b164ff1ad57991b594bb3ac] Chunk 'n0_baseline' failed.
+------------------------------ Captured log call -------------------------------
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=45272e5e8165460bbae43e68cdcc0215] Chunk 'n1_manifest' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [triggerflow.execution_failed] [run=80b5c0c95939430cb5e45faeae4296af] TriggerFlow execution '3ecec21df55148d98755533eed3245ba' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=3329b4c49b164ff1ad57991b594bb3ac] Chunk 'n0_baseline' failed.
+_______________ test_report_endpoint_truncates_oversized_report ________________
+tests/test_node_detail_projection.py:790: in test_report_endpoint_truncates_oversized_report
+    rid = _drive_full_chain(client)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_node_detail_projection.py:291: in _drive_full_chain
+    _wait_interrupt(client, rid, "G1_diff_confirm")
+tests/test_node_detail_projection.py:276: in _wait_interrupt
+    raise AssertionError(f"运行失败：{view.get('error')}")
+E   AssertionError: 运行失败：FileNotFoundError: 夹具缺 n1_manifest_new.json
+----------------------------- Captured stdout call -----------------------------
+ERROR:    2026-10-26 01:16:01 | [TriggerFlowExecution] [chunk.failed] [run=d240a9f9ae9e4425a3b9c06d40ebc2ee] Chunk 'n1_manifest' failed.
+ERROR:    2026-10-26 01:16:01 | [TriggerFlowExecution] [triggerflow.execution_failed] [run=dda6cc0ce6a54687b6b54cc0ace2c1bd] TriggerFlow execution '128695ab40ed4cf99982192acb8dfd7b' failed.
+ERROR:    2026-10-26 01:16:01 | [TriggerFlowExecution] [chunk.failed] [run=e1d13ef3255e45b99b100bac7be7b726] Chunk 'n0_baseline' failed.
+------------------------------ Captured log call -------------------------------
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=d240a9f9ae9e4425a3b9c06d40ebc2ee] Chunk 'n1_manifest' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [triggerflow.execution_failed] [run=dda6cc0ce6a54687b6b54cc0ace2c1bd] TriggerFlow execution '128695ab40ed4cf99982192acb8dfd7b' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=e1d13ef3255e45b99b100bac7be7b726] Chunk 'n0_baseline' failed.
+___________________ test_report_path_refuses_symlink_escape ____________________
+tests/test_node_detail_projection.py:802: in test_report_path_refuses_symlink_escape
+    rid = _drive_full_chain(client)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_node_detail_projection.py:291: in _drive_full_chain
+    _wait_interrupt(client, rid, "G1_diff_confirm")
+tests/test_node_detail_projection.py:276: in _wait_interrupt
+    raise AssertionError(f"运行失败：{view.get('error')}")
+E   AssertionError: 运行失败：FileNotFoundError: 夹具缺 n1_manifest_new.json
+----------------------------- Captured stdout call -----------------------------
+ERROR:    2026-10-26 01:16:01 | [TriggerFlowExecution] [chunk.failed] [run=7301364933034433b8696746daa0c729] Chunk 'n1_manifest' failed.
+ERROR:    2026-10-26 01:16:01 | [TriggerFlowExecution] [triggerflow.execution_failed] [run=674b638c214d44e8abedcbf7a5d2aee3] TriggerFlow execution 'e1a99026d0274fdaaacf5ddbfe002ee9' failed.
+ERROR:    2026-10-26 01:16:01 | [TriggerFlowExecution] [chunk.failed] [run=f599949ed2314d4cb5e5de5c602df1c4] Chunk 'n0_baseline' failed.
+------------------------------ Captured log call -------------------------------
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=7301364933034433b8696746daa0c729] Chunk 'n1_manifest' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [triggerflow.execution_failed] [run=674b638c214d44e8abedcbf7a5d2aee3] TriggerFlow execution 'e1a99026d0274fdaaacf5ddbfe002ee9' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=f599949ed2314d4cb5e5de5c602df1c4] Chunk 'n0_baseline' failed.
+______________ test_n13_waiting_projection_carries_readonly_items ______________
+tests/test_node_detail_projection.py:927: in test_n13_waiting_projection_carries_readonly_items
+    _wait_interrupt(client, rid, "G1_diff_confirm")
+tests/test_node_detail_projection.py:276: in _wait_interrupt
+    raise AssertionError(f"运行失败：{view.get('error')}")
+E   AssertionError: 运行失败：FileNotFoundError: 夹具缺 n1_manifest_new.json
+----------------------------- Captured stdout call -----------------------------
+ERROR:    2026-10-26 01:16:01 | [TriggerFlowExecution] [chunk.failed] [run=8d105615376849778a7d207bcb13f78e] Chunk 'n1_manifest' failed.
+ERROR:    2026-10-26 01:16:01 | [TriggerFlowExecution] [triggerflow.execution_failed] [run=a051966385ea4679abf24823571f4c5d] TriggerFlow execution 'aee54c65049049258a644ff3b631d769' failed.
+ERROR:    2026-10-26 01:16:01 | [TriggerFlowExecution] [chunk.failed] [run=6b369cb8aa3f4ade8eb15e80c36530d6] Chunk 'n0_baseline' failed.
+------------------------------ Captured log call -------------------------------
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=8d105615376849778a7d207bcb13f78e] Chunk 'n1_manifest' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [triggerflow.execution_failed] [run=a051966385ea4679abf24823571f4c5d] TriggerFlow execution 'aee54c65049049258a644ff3b631d769' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=6b369cb8aa3f4ade8eb15e80c36530d6] Chunk 'n0_baseline' failed.
+______________ test_n14_decided_projection_lists_regression_cases ______________
+tests/test_node_detail_projection.py:942: in test_n14_decided_projection_lists_regression_cases
+    rid = _drive_full_chain(client)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_node_detail_projection.py:291: in _drive_full_chain
+    _wait_interrupt(client, rid, "G1_diff_confirm")
+tests/test_node_detail_projection.py:276: in _wait_interrupt
+    raise AssertionError(f"运行失败：{view.get('error')}")
+E   AssertionError: 运行失败：FileNotFoundError: 夹具缺 n1_manifest_new.json
+----------------------------- Captured stdout call -----------------------------
+ERROR:    2026-10-26 01:16:01 | [TriggerFlowExecution] [chunk.failed] [run=cf3267154fa64259bf33d445bbf0e603] Chunk 'n1_manifest' failed.
+ERROR:    2026-10-26 01:16:01 | [TriggerFlowExecution] [triggerflow.execution_failed] [run=5d71d4d59c294353b3b8ee50f8d64225] TriggerFlow execution '62aacaa0a8a4469eac5d52cb5199d130' failed.
+ERROR:    2026-10-26 01:16:01 | [TriggerFlowExecution] [chunk.failed] [run=76035798db7542dfbbd5dff77ba630e5] Chunk 'n0_baseline' failed.
+------------------------------ Captured log call -------------------------------
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=cf3267154fa64259bf33d445bbf0e603] Chunk 'n1_manifest' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [triggerflow.execution_failed] [run=5d71d4d59c294353b3b8ee50f8d64225] TriggerFlow execution '62aacaa0a8a4469eac5d52cb5199d130' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=76035798db7542dfbbd5dff77ba630e5] Chunk 'n0_baseline' failed.
+_______________ test_new_run_drill_chain_carries_optional_fields _______________
+tests/test_node_detail_projection.py:989: in test_new_run_drill_chain_carries_optional_fields
+    rid = _drive_full_chain(client)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_node_detail_projection.py:291: in _drive_full_chain
+    _wait_interrupt(client, rid, "G1_diff_confirm")
+tests/test_node_detail_projection.py:276: in _wait_interrupt
+    raise AssertionError(f"运行失败：{view.get('error')}")
+E   AssertionError: 运行失败：FileNotFoundError: 夹具缺 n1_manifest_new.json
+----------------------------- Captured stdout call -----------------------------
+ERROR:    2026-10-26 01:16:01 | [TriggerFlowExecution] [chunk.failed] [run=e5c658892d844dce9fa89687884491d0] Chunk 'n1_manifest' failed.
+ERROR:    2026-10-26 01:16:01 | [TriggerFlowExecution] [triggerflow.execution_failed] [run=4e3b0d0274db46aa82415c294f1bab89] TriggerFlow execution '7c21296bef7842d0ad2d3e96b20b3a2e' failed.
+ERROR:    2026-10-26 01:16:01 | [TriggerFlowExecution] [chunk.failed] [run=358cda9dfdec4420b9e264e9f20ad804] Chunk 'n0_baseline' failed.
+------------------------------ Captured log call -------------------------------
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=e5c658892d844dce9fa89687884491d0] Chunk 'n1_manifest' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [triggerflow.execution_failed] [run=4e3b0d0274db46aa82415c294f1bab89] TriggerFlow execution '7c21296bef7842d0ad2d3e96b20b3a2e' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=358cda9dfdec4420b9e264e9f20ad804] Chunk 'n0_baseline' failed.
+________________ test_conflicts_are_uncleared_and_block_release ________________
+tests/test_projection_and_frozen.py:49: in test_conflicts_are_uncleared_and_block_release
+    assert len(items) > 0
+E   assert 0 > 0
+E    +  where 0 = len([])
+_____________ test_software_entry_excludes_env_layer_at_collection _____________
+tests/test_test_layers.py:77: in test_software_entry_excludes_env_layer_at_collection
+    proc = subprocess.run(
+/tmp/codex-h2b-runtime/python/lib/python3.12/subprocess.py:548: in run
+    with Popen(*popenargs, **kwargs) as process:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/codex-h2b-runtime/python/lib/python3.12/subprocess.py:1026: in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+/tmp/codex-h2b-runtime/python/lib/python3.12/subprocess.py:1955: in _execute_child
+    raise child_exception_type(errno_num, err_msg, err_filename)
+E   FileNotFoundError: [Errno 2] No such file or directory: 'bash'
+=============================== warnings summary ===============================
+../../../../../../../../../../../../tmp/codex-h2b-runtime/python/lib/python3.12/site-packages/fastapi/testclient.py:1
+  /tmp/codex-h2b-runtime/python/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_gate_projection.py::test_decision_response_gate_state_is_authority_not_process_record
+FAILED tests/test_gate_projection.py::test_view_projects_authority_not_just_events
+FAILED tests/test_gate_projection.py::test_double_decide_leaves_no_orphan_signature
+FAILED tests/test_gate_projection.py::test_gate_divergence_is_reported_not_hidden
+FAILED tests/test_node_detail_projection.py::test_endpoint_unknown_node_is_known_false_not_404
+FAILED tests/test_node_detail_projection.py::test_drill_full_chain_every_node_has_summary_and_source
+FAILED tests/test_node_detail_projection.py::test_halt_node_projection_has_summary
+FAILED tests/test_node_detail_projection.py::test_g1_material_entries_carry_before_after_hunk_encoding
+FAILED tests/test_node_detail_projection.py::test_n0_copies_host_trace_into_the_run_dir
+FAILED tests/test_node_detail_projection.py::test_node_detail_carries_run_status_and_waiting_gate_block
+FAILED tests/test_node_detail_projection.py::test_node_detail_decided_gate_shows_dispositions
+FAILED tests/test_node_detail_projection.py::test_node_started_present_flag
+FAILED tests/test_node_detail_projection.py::test_unreached_node_in_terminal_run
+FAILED tests/test_node_detail_projection.py::test_report_endpoint_reads_only_this_run_report
+FAILED tests/test_node_detail_projection.py::test_report_endpoint_truncates_oversized_report
+FAILED tests/test_node_detail_projection.py::test_report_path_refuses_symlink_escape
+FAILED tests/test_node_detail_projection.py::test_n13_waiting_projection_carries_readonly_items
+FAILED tests/test_node_detail_projection.py::test_n14_decided_projection_lists_regression_cases
+FAILED tests/test_node_detail_projection.py::test_new_run_drill_chain_carries_optional_fields
+FAILED tests/test_projection_and_frozen.py::test_conflicts_are_uncleared_and_block_release
+FAILED tests/test_test_layers.py::test_software_entry_excludes_env_layer_at_collection
+21 failed, 657 passed, 113 skipped, 1 deselected, 1 warning in 29.33s
+
+EXIT_CODE=1

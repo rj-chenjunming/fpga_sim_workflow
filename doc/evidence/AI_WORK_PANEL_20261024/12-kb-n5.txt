@@ -1,0 +1,9 @@
+[PASS] 1 宏第2实参识别为调用点 (['I2C_SLV_RW', 'PCIE_REG_RW', 'PCIE_REG_RW_B'])
+[PASS] 2 `define 定义行不算调用点 
+[PASS] 3 普通调用不算宏调用 
+[PASS] 4 FORKJN_FOR_BLK_PHASE 变体覆盖 
+[PASS] 5 跨行宏实参覆盖 
+[FAIL] 6 夹具存在 (跳过真实用例检查：/tmp/ai-panel-kb-OSrCPL/runs/RUN-20261015-120626/sandbox/TESTLIB 不存在)
+[PASS] 9 源不可读 ⇒ ok=False（调用方须标 static-only，不许猜 live） (用例源不可读（缺失/二进制）：/workspace/fpga_sim_workflow/kb/tools/__no_su)
+
+汇总：PASS=6 FAIL=1

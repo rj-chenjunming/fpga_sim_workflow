@@ -19,6 +19,9 @@
     <span class="pill mono tiny" id="hdrAddr">—</span>
     <span class="pill tiny" id="hdrHealth">健康检查中…</span>
     <a class="btn btn-ghost btn-sm" id="lnkLegacy" href="legacy.html">旧版操作台 ↗</a>
+    <!-- U1-a（SPEC-REV-07）：等待送达通知开关；不支持 Notification 的浏览器隐藏，降级为标题徽标/闪烁 -->
+    <button class="btn btn-ghost btn-sm hidden" id="btnNotify" type="button"
+            title="运行进入等待人工/失败/作业结束时浏览器通知；被拒绝时降级为标题闪烁">通知</button>
   </header>
 
   <div class="shell">
@@ -37,6 +40,9 @@
         <button id="segRun" data-view="run" role="tab" aria-selected="false" aria-controls="viewRun"><span class="nav-icon" aria-hidden="true">◴</span><span>运行监控</span><small>02</small></button>
         <button id="segGate" data-view="gate" role="tab" aria-selected="false" aria-controls="viewGate"><span class="nav-icon" aria-hidden="true">◇</span><span>人工闸门</span><small>03</small></button>
       </div>
+      <!-- U1-b（SPEC-REV-07）：「在等我」行动条 —— 只读聚合等待人工/失败的运行；点击直达 -->
+      <div class="rail-label action-label">在等我 <span>ATTENTION</span></div>
+      <div class="action-bar" id="actionBar"></div>
       <div class="rail-label history-label">最近运行 <span>HISTORY</span></div>
       <div class="run-list" id="runList"></div>
       <div class="rail-foot">
@@ -261,6 +267,8 @@
             <div class="card-head">
               <h2>流程执行状态</h2>
               <span class="sub">摄取 → 修订 → 验证 → 决策</span>
+              <!-- U2-a（SPEC-REV-07 / SPEC-04 §7.3）：传输状态徽标，非业务状态 -->
+              <span class="chip" id="streamState" title="实时=SSE 推送；轮询回退=断线后回到既有轮询（自动重试建流）">—</span>
             </div>
             <div class="stages" id="stages"></div>
           </div>
@@ -303,6 +311,8 @@
 
               <details class="card events" id="eventsCard">
                 <summary id="eventsSummary">事件流（折叠 · seq 递增 · 只读）</summary>
+                <!-- U5（SPEC-REV-07）：客户端 kind 过滤;清除过滤即还原全量 -->
+                <div class="ev-filter" id="eventFilter"></div>
                 <div class="ev-list" id="eventList"></div>
               </details>
             </div>
@@ -363,38 +373,56 @@
     <button class="btn btn-ghost btn-sm" id="awClose" aria-label="关闭 Agent 窗口">关闭 ×</button>
   </div>
   <div class="aw-toolbar">
-    <span class="mono" id="awIdentity">—</span>
+    <span id="awSelection">读取成果身份…</span>
     <div class="spacer"></div>
     <label for="awNode">节点</label><select class="input mono" id="awNode" aria-label="Agent 节点"></select>
     <label for="awAttempt">尝试</label><select class="input mono" id="awAttempt" aria-label="调用尝试"><option value="">跟随最新</option></select>
     <button class="btn btn-sm" id="awRefresh">刷新</button>
+    <button class="btn btn-sm" id="awCurrent" hidden>返回当前执行</button>
+    <button class="btn btn-sm" id="awNodeDetails" hidden>节点执行详情</button>
   </div>
   <div class="aw-layout">
     <div class="aw-observe">
-      <div class="aw-section-head"><h3>运行动态</h3><span class="tiny muted" id="awModel">—</span></div>
-      <div class="aw-note" id="awCapabilities">能力事实读取中…</div>
+      <h3>任务与成果</h3>
+      <p class="aw-note" id="awTask">读取任务…</p>
+      <p class="aw-note" id="awMode">执行方式未记录</p>
+      <p id="awValidation">系统校验状态未确认</p>
+      <p class="tiny muted" id="awFreshness">尚未成功读取</p>
+      <div id="awResults">正在读取成果…</div>
+      <details class="aw-detail" id="awTechnical"><summary>技术详情 <span>原始记录与诊断</span></summary>
+      <p class="aw-note mono" id="awIdentity">—</p>
+      <p class="tiny muted" id="awModel">—</p>
+      <div class="aw-note" id="awCapabilities">节点级能力事实读取中…</div>
       <details class="aw-detail"><summary>上下文预算 <span id="awBudgetSummary">—</span></summary><pre id="awBudget">—</pre></details>
       <details class="aw-detail"><summary>尝试摘要与输入差异</summary><pre id="awAttempts">—</pre></details>
-      <div class="aw-timeline" id="awTimeline">等待读取实际运行记录…</div>
       <details id="awInputDetails" class="aw-detail"><summary>任务输入 <span>完整调用输入，只读</span></summary><pre id="awInput">—</pre></details>
       <details class="aw-detail"><summary>提示词与约束 <span>调用时快照</span></summary><pre id="awPrompt">—</pre></details>
-      <details class="aw-detail" open><summary>输出与 Host 校验 <span id="awResultStatus">尚未返回</span></summary><pre id="awOutput">等待返回后显示实际结果。</pre></details>
+      <details class="aw-detail" id="awOutputDetails"><summary>原始输出与 Host 校验 <span id="awResultStatus">尚未返回</span></summary><pre id="awOutput">等待返回后显示实际结果。</pre></details>
       <p class="aw-note">这里展示实际输入、执行事件与返回结果，不提供模型隐藏推理或 token 流。</p>
+      </details>
+      <details class="aw-detail"><summary>执行记录 <span>节点与控制记录分组</span></summary><div class="aw-timeline" id="awTimeline">等待读取实际运行记录…</div></details>
     </div>
     <div class="aw-intervene">
       <div class="aw-section-head"><h3>人工干预</h3><span class="chip">请求边界</span></div>
       <p class="aw-note" id="awControlHint">读取当前可用操作…</p>
+      <div id="awControlForm">
       <label class="s0-label" for="awActor">操作者 <span>流程记录</span></label>
       <input class="input mono" id="awActor" value="human:" placeholder="human:your-name" autocomplete="off">
       <label class="s0-label" for="awMessage">补充指令 <span>仅当前任务</span></label>
       <textarea class="input" id="awMessage" rows="6" maxlength="4000" placeholder="例如：请重点核对新增端口的位宽，保留现有断言与激励时序。"></textarea>
       <button class="btn btn-primary btn-block" id="awSteer" disabled>补充指令并重跑</button>
       <div class="aw-action-row"><button class="btn" id="awPause" disabled>暂停请求</button><button class="btn" id="awResume" disabled>恢复请求</button></div>
-      <div id="awReceipt" class="aw-receipt" role="status" aria-live="polite"></div>
-      <div id="awError" role="alert"></div>
       <div class="aw-control-rule">补充指令会取消本地旧请求，再发起新的调用尝试；原始事实、Host 校验与人工闸门继续生效。暂停后恢复也会重发请求。</div>
       <div class="aw-stop"><button class="btn btn-block" id="awTerminate" disabled>终止当前节点</button><p>终止后本轮按失败收敛。关闭窗口只收起视图，不停止任务。</p></div>
+      <div id="awStopConfirm" class="aw-stop" hidden>
+        <p id="awStopTarget"></p>
+        <button class="btn" id="awStopCancel" type="button">取消终止</button>
+        <button class="btn" id="awStopApply" type="button">确认终止</button>
+      </div>
       <details class="aw-limit"><summary>取消与恢复的边界</summary><p>应用丢弃旧响应；远端是否停止推理由模型提供方决定。当前暂停仅在服务进程存活时可恢复，重启后历史会话只读。</p></details>
+      </div>
+      <div id="awReceipt" class="aw-receipt" role="status" aria-live="polite"></div>
+      <div id="awError" role="alert"></div>
     </div>
   </div>
 </dialog>
@@ -509,7 +537,14 @@
 <script src="gate-session.js"></script>
 <script src="capabilities.js"></script>
 <script src="context-explain.js"></script>
+<script src="wait-center.js"></script>
+<script src="operator.js"></script>
+<script src="run-stream.js"></script>
+<script src="event-filter.js"></script>
+<script src="session-url.js"></script>
+<script src="job-status.js"></script>
 <script src="s0.js"></script>
+<script src="agent-results.js"></script>
 <script src="agent-window.js"></script>
 <script src="report-viewer.js"></script>
 <script src="node-detail.js"></script>

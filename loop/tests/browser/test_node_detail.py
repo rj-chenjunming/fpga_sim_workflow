@@ -167,6 +167,11 @@ def open_node(page, node):
     if not chip.is_visible() and STAGE_OF.get(node):
         page.locator("#viewRun .stage-head", has_text=STAGE_OF[node]).click()
     chip.click()
+    if node in {"N3", "N6", "N8", "N10", "N11", "N12"}:
+        # SPEC-09 §11 explicitly changes the default AI entry. Preserve all
+        # story/report assertions through the retained secondary details route.
+        pw.expect(page.locator("#agentWindow")).to_be_visible()
+        page.locator("#awNodeDetails").click()
     pw.expect(page.locator("#nodeDetail")).to_be_visible()
     return chip
 
@@ -535,9 +540,11 @@ def test_gate_node_jumps_to_gate_view_and_model_node_offers_agent_window(ui):
     pw.expect(page.locator("#nodeDetail")).to_be_hidden()
     pw.expect(page.locator("#viewGate")).to_be_visible()
 
-    # 模型节点：可跳 Agent 工作窗口（SPEC-REV-01 R6 边界）
+    # SPEC-09 §11：模型节点先到统一工作面板，二级详情仍保留原故事与跳转。
     open_run_view(page)
     page.locator('#viewRun [data-node-chip="N3"]').click()
+    pw.expect(page.locator("#agentWindow")).to_be_visible()
+    page.locator("#awNodeDetails").click()
     pw.expect(page.locator("#nodeDetail")).to_be_visible()
     pw.expect(page.locator("#ndAgentJump")).to_contain_text("打开 Agent 工作窗口")
     pw.expect(page.locator("#ndIdentity")).to_contain_text("model_standin")

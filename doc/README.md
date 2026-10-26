@@ -43,7 +43,14 @@
 ## 2 `spec/` 契约
 
 > **编号**：每份 SPEC 有稳定编号 `SPEC-0X`（文件名不变）。当前修订记录：
-> [SPEC-REV-12](spec/SPEC-REV-12-20261026.md)（2026-10-26，**已实现**：R1 失败报告收口（方案 D）+ R2 真实轮冻结为 drill 夹具；验证见 [SPEC_REV05_VERIFY](evidence/SPEC_REV05_VERIFY_20261026.md)、依据 [REAL_N9_20261024](evidence/REAL_N9_20261024.md)）、
+> [SPEC-REV-12](spec/SPEC-REV-12-20261026.md)（2026-10-26，**已实现**：R1 失败报告收口（方案 D）+ R2 真实轮冻结为 drill 夹具；验证见 [SPEC_REV05_VERIFY](evidence/SPEC_REV05_VERIFY_20261026.md)、依据 [REAL_N9_20261024](evidence/REAL_N9_20261024.md)，门禁见 STATUS §65）、
+> [SPEC-REV-11](spec/SPEC-REV-11-20261025.md)（H2b 逐问题复核与候选版本失效，恢复续修），
+> [SPEC-REV-10](spec/SPEC-REV-10-20261025.md)（H2a 逐项作者回应，恢复整合），
+> [SPEC-REV-09](spec/SPEC-REV-09-20261025.md)（H1 来源交接，恢复整合）；本机验证见 STATUS §64，
+> [SPEC-REV-08](spec/SPEC-REV-08-20261024.md)（UX 走查修复：U7 会话深链/U8 闸门可达性三件/U9 作业终态/U10 展示微修已实施，见 STATUS §63；U11 提案）、
+> [SPEC-REV-07](spec/SPEC-REV-07-20261024.md)（UI 交互与等待期体验提案；U1、U2-a/b、U5 已实施，见 STATUS §59–§61；U3/U4/U6 未评审）、
+> [SPEC-REV-06](spec/SPEC-REV-06-20261024.md)（DSH D1 后端边界首片，实测见 STATUS §56）、
+> [SPEC-REV-05](spec/SPEC-REV-05-20261024.md)（DSH/UI 采纳评估与 AI 面板首批契约，实测见 STATUS §55）、
 > [SPEC-REV-04](spec/SPEC-REV-04-20261023.md)（2026-10-23，节点面板 P-01～P-35 已修订、门禁见 STATUS §49）、
 > [SPEC-REV-03](spec/SPEC-REV-03-20261023.md)（AI 工作面板体验设计草案，未实现）、
 > [SPEC-REV-02](spec/SPEC-REV-02-20261023.md)（DSH 执行后端设计草案，未实现）、
@@ -59,13 +66,25 @@
 | SPEC-05 | [S0 环境准备](spec/S0_ENVIRONMENT_SPEC.md) | 修订稿 S0 双段、基线零写、派生校验、TB 授权及三库准出边界；S0 与 drill/N0–N16 的关系与两级验收（§6/§7） |
 | SPEC-06 | [`spec/AGENT_CONTEXT_SPEC.md`](spec/AGENT_CONTEXT_SPEC.md) | Agent 上下文覆盖、逐次调用留痕、人工确认经验及版本/来源失效规则 |
 | SPEC-07 | [Agent 工作窗口](spec/AGENT_WINDOW_SPEC.md) | 逐节点观察、人工补充指令、请求暂停/恢复/终止、控制审计与身份隔离（仅模型节点；Host 节点用 SPEC-04 §4.2.1） |
-| SPEC-08（草案） | [DSH Agent 执行后端](spec/DSH_AGENT_RUNTIME_SPEC.md) | 环境 DSH 核接入、工具与候选目录权限、会话/控制/审计及验收；未实现 |
-| SPEC-09（草案） | [AI 工作面板体验设计](spec/AI_WORK_PANEL_SPEC.md) | 统一 AI 入口、成果阅读、状态化操作、历史与刷新、可访问性及分阶段验收；未实现 |
+| SPEC-08（分期实施） | [DSH Agent 执行后端](spec/DSH_AGENT_RUNTIME_SPEC.md) | D1 首片提取后端边界；原生 DSH 核、工具/候选权限及真实会话接入仍待验证 |
+| SPEC-09（分期实施） | [AI 工作面板体验设计](spec/AI_WORK_PANEL_SPEC.md) | 首批统一入口与 N3/N6/N8 成果展示；后置能力、验证边界见 STATUS §55 |
 
-DSH 接入阅读入口：[设计草案](spec/DSH_AGENT_RUNTIME_SPEC.md) → [实施切片](plans/2026-10-23-dsh-agent-runtime.md)。先探测内网真实能力，再接 N3 只读分析与 N6 候选编辑。
+DSH 接入阅读入口：[设计草案](spec/DSH_AGENT_RUNTIME_SPEC.md) → [实施切片](plans/2026-10-23-dsh-agent-runtime.md)。保持 Agently 默认，N3 做只读接入探针，N6 做价值对照，按收益决定是否扩展。
+当前开发：[D1 后端边界首片](plans/2026-10-24-dsh-backend-boundary.md)；不把后端抽象或受控测试等同于真实 DSH 接通。
+原生进展：[npm 运行时与 SDK 接口核验](plans/2026-10-24-dsh-native-interface.md)，安装后的实际映射与下一片门槛见 STATUS §57。
+
+Agent 协作与记忆：[H1/H2a/H2b 实施计划及规格迁移](plans/2026-10-24-agent-collaboration-memory.md) →
+[逐问题闭环契约](spec/AGENT_CONTEXT_SPEC.md#h2b-逐问题复核与版本失效2026-10-24)。H2b 本机修订结果与内网验收缺口见 STATUS §64。
 
 AI 界面优化入口：[设计与布局示意](spec/AI_WORK_PANEL_SPEC.md) → [实施切片](plans/2026-10-23-ai-work-panel.md)；
-修订范围见 [SPEC-REV-03](spec/SPEC-REV-03-20261023.md)。第一版复用现有接口，第二版按依赖增加对比、预览与 DSH 动态。
+初版范围见 [SPEC-REV-03](spec/SPEC-REV-03-20261023.md)，当前采纳与分期调整见 [SPEC-REV-05](spec/SPEC-REV-05-20261024.md)。
+第一版保留外壳、先改善成果阅读与反馈；布局、对比、预览与 DSH 动态按验证和依赖推进。
+首批开发见 [实施切片](plans/2026-10-24-ai-work-panel-implementation.md)，不将局部 UI 验证等同于完整方案验收。
+
+UI 交互与等待期体验提案：[提案记录 SPEC-REV-07](spec/SPEC-REV-07-20261024.md) → [实施计划](plans/2026-10-24-ui-interaction-waiting.md)。
+切片：等待送达（通知/行动条/操作者预填）、SSE 传输、渲染分段签名（并入 F05-b/c）、G1 引导流、事件流过滤、既有后置项收口；采纳门见提案 §5。
+**U1（等待送达三项）已实施首片**（2026-10-24，软件层 node 断言 25/25，浏览器/内网终验待做），实测见 STATUS §59；**U2-a（SSE 运行投影流）已实施**（先修订 SPEC-04 §6.9/§7.3；断言 8/8+9/9，真实长连接待内网实测），见 STATUS §60；**U2-b（Agent 窗口流，§6.10）与 U5（事件流客户端过滤）已实施**（断言 12/12 + 回归，见 STATUS §61）；U3（并入 F05-b/c）、U4、U6 仍为提案。
+UX 走查修复（SPEC-REV-08，2026-10-24）：**U7–U10 已实施**（会话深链/闸门可达性三件/作业终态文案/展示微修；node 断言 25/25 + 契约桩浏览器实证，SPEC-04 §4.4/§4.5/§7.4 同批增补），见 STATUS §63；U11 提案在计划 §F。
 
 ## 3 阅读顺序（新接手）
 

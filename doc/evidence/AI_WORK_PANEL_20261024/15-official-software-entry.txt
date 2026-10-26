@@ -1,0 +1,4 @@
+Command: bash loop/spikes/run_software_checks.sh --ignore=tests/browser
+Exit code: 2
+Output:
+[FAIL] 数据根不存在：/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/kb

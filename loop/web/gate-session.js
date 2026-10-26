@@ -128,12 +128,40 @@
     return { ok: true, error: null, entry_decisions: out };
   }
 
+  /* U8-b（SPEC-REV-08，2026-10-24）：整门理由复用判定。
+   * 推导出的整门决策 requires_reason 且逐条处置里已有同判据非空理由时，
+   * 返回可预填文本（entry_id 排序首个，确定性）；否则 null。
+   * app.js 只在整门理由为空时预填——不为空不覆盖，用户输入优先。 */
+  function reusableReason(entryDecisions, derivedDecision, options) {
+    if (!derivedDecision) return null;
+    var list = Array.isArray(options) ? options : [];
+    var needReason = false;
+    for (var i = 0; i < list.length; i++) {
+      if (list[i] && list[i].value === derivedDecision && list[i].requires_reason) {
+        needReason = true;
+        break;
+      }
+    }
+    if (!needReason) return null;
+    var store = entryDecisions && typeof entryDecisions === "object" ? entryDecisions : {};
+    var ids = Object.keys(store).sort();
+    for (var j = 0; j < ids.length; j++) {
+      var cur = store[ids[j]];
+      if (cur && typeof cur === "object" && String(cur.decision || "") === derivedDecision) {
+        var reason = String(cur.reason || "").trim();
+        if (reason) return reason;
+      }
+    }
+    return null;
+  }
+
   var api = {
     sessionKey: sessionKey,
     freshDraft: freshDraft,
     reconcile: reconcile,
     deriveEntryDecision: deriveEntryDecision,
     validateEntryDecisions: validateEntryDecisions,
+    reusableReason: reusableReason,
     isSubmitting: isSubmitting,
     beginSubmission: beginSubmission,
     endSubmission: endSubmission,

@@ -53,6 +53,9 @@
 - **请求机制**（`_request_contract` / `_ask` / 单次 attempt / `run_model_node` 的控制包装）唯一放在
   `workflows/chunks/model_request.py`；Host 校验 `_validate` 仍是**唯一实现**，由机制层以参数注入，
   机制层不得复制节点判据。
+- D1 将实际 SDK 调用提取到 `host/agent_backends`；请求机制仍持有预算、校验及封存调用。
+  后端选择、固定 provider 快照和兼容 backend 指纹字段见
+  [SPEC-08 §4.0](DSH_AGENT_RUNTIME_SPEC.md#40-d1-首片执行契约先于实现)。旧记录不回填。
 - **节点语义**分别放在 `n6_facts.py`（N6 事实构造）、`n10_semantics.py`（N10 分类/对账辅助）、
   `n11_guard.py`（N11 证据守护辅助）；`model_steps.py` 保留节点入口（N3/N6/N8/N10/N11/N12）
   与兼容导出，TriggerFlow 拓扑与消费者不变。
@@ -60,6 +63,102 @@
   不用它替代语义对照（提示词/Schema/输入字段/产物）。
 - 行为不变量不因拆分改变：每次请求新 agent；预算检查在请求前且不静默截断；
   取消/重发不消费旧结果；非法输出止于消费者之前。
+
+## H1 返工交接快照（2026-10-24，先于实现）
+
+N6 输入新增 `rework_handoff={version, run_id, issues}`，由 Host `agent_handoff` 唯一构造。
+每项包含稳定 `issue_id`、来源节点、源快照指纹、源调用引用/核验状态、原始要求和可得的 case/basis。
+顺序保持 N8 must_fix 在前、N11 rework_requests 在后；相同文字的不同条目不得合并。
+原 rework_reasons 由同一投影生成，保持原文本与顺序，消费者仍为 N6；新增包计入原上下文预算并随请求封存。
+
+ID 绑定 run、节点、相关意见快照、源调用身份和条目位置；重复构造不变，跨 run/源尝试/意见改变则变化。
+ID 在本片表示一次意见出现，不表示跨轮的同一个长期问题；关联新旧问题、关闭与重新打开由 H2 定义。
+引用存在时须指向本 run、对应节点、标准 attempt 目录的完整 request/result，禁止越界/符号链接；
+复用 agent_memory 核验完整性，再检查身份。半件、篡改、身份错位在 N6 发模型请求前失败。
+旧状态缺引用时标记 unrecorded，保留原输入但不补造来源；部分引用属于错误，不降级。
+
+意见来自 Host 当前工作流状态的投影；N11 可能由 Host 追加身份失败请求，故核验源调用完整性
+不等于宣称所有意见逐字来自模型 result。源快照指纹单独记录；不得标为已解决、已验收或新建业务台账。
+N8 字符串缺少结构化 case/basis 时保持 null，不猜文件定位。历史封存不回填。
+本片不解决旧状态意见过时问题，不改变返工计数/边、模型输出 Schema、业务判据或经验匹配。
+
+后续按 [分期计划](../plans/2026-10-24-agent-collaboration-memory.md) 推进问题闭环与分层记忆。
+
+## H2a 按问题回应与复核交接（2026-10-24）
+
+H2 分两片实施。本片由 Host 构造 `rework_assignment={version:1, run_id,
+target_sha256, issues}`；issues 复用 H1 的意见出现身份，target_sha256 对本次完整 targets
+做规范化 SHA-256，绑定源码指纹、修订点与上下文。它不是施加后的文件版本。
+N6 每轮从原始用例重建沙箱，不能继承上一轮修复结论；历史意见是否过时留给复核判断。
+
+N6 新增 `issue_responses`，每个输入 issue_id 恰好一条，字段为：
+`issue_id, target_sha256, disposition, explanation, edit_refs[{case, edit_index}]`。
+disposition 仅 `addressed|blocked|not_applicable`，表示作者声称已处理/受阻/不适用，**都不关闭问题**。
+explanation 必须非空；addressed 至少引用一个本次 revisions 内的 edit（索引从 0 起），
+已知 issue.case 时引用须同 case；另外两种不得引用 edit，必须解释阻塞或不适用理由。
+Host 拒绝缺项、重复/未知 ID、错版本、非法枚举/类型、空说明、重复/越界/错 case 引用；
+blocked/not_applicable 是可复核意见，不自动终止流程或获得豁免，仍走既有 N8/N11 与人工闸门。
+旧 rework_resolution 保留展示兼容，不能替代逐项回应；无意见允许省略/空 responses，非空未知回应拒绝。
+Schema 与确定性校验同步，失败在 N6_apply 消费前发生并封存 validation_failed。
+
+N8/N11 输入增加 `author_handoff`，只接收各自来源的问题与对应作者回应、引用的候选编辑，
+保留 N6 来源身份、target_sha256 与整个候选 revisions/observation_points 的 candidate_sha256。
+这些是候选指纹，不声称等于当前沙箱/执行身份；复核仍以现有 sandbox/identity/evidence 为准。
+Host 从当前 n6_author 指向的**封存 request/result**重建包，核对本 run/N6/attempt、完整性、
+validated/validation.ok，以及当前 author.data 与封存 accepted 一致；不得用可变状态冒充封存回应。
+重启按引用重建，不扫描“最新”attempt，不采信取消、错误或 validation_failed 的结果。
+无引用的旧状态标记 unavailable；带新回应却无引用、半引用/坏引用显式失败。
+完整旧记录缺 assignment 且无新回应时标记 legacy；有新回应则拒绝降级。
+standin 标记 standin，不产出可采信回应。回应及 edit_refs 拒绝额外字段，避免偷带作者关闭声明。
+有 assignment 的记录核对版本/run/targets 指纹/H1 issues 一致并复用同一回应校验，坏形状拒绝。
+新增输入纳入既有预算和封存，不裁剪；不回填历史记录，不新增台账/关闭权/返工计数。
+
+H2a 只保证回应可追溯，不表示语义修复正确，不把 N8 pass/N11 intact 自动转成逐问题关闭。
+
+## H2b 逐问题复核与版本失效（2026-10-24）
+
+Host `agent_review` 唯一构造 `review_assignment`，模型 N8/N11 是各自来源问题的复核决策者，
+`agent_memory` 仍是封存记录唯一写者，不新增问题台账。关闭是当前复核快照的意见状态，
+不代替 case_state、编译/仿真证据、Host 身份校验或人工闸门。
+
+- assignment 绑定 reviewer、N6 封存来源、target/candidate 指纹、全部本节点业务输入的
+  `review_context_sha256`，逐项列出 issue_id、原要求、case 和 acceptance。
+  验收条件为：原要求已满足或有当前证据证明不适用；N8 只能依据已提供的沙箱变更范围，
+  N11 依据当前身份/证据链且 Host consistent=true。作者 addressed/blocked/not_applicable 均不算验收。
+  指纹排除 assignment 自身及机制追加的 human_interventions/approved_experiences；它们仍随请求完整封存。
+- N8/N11 输出 `issue_reviews[{issue_id, review_context_sha256, outcome:closed|open,
+  rationale, evidence_refs, rework_index}]`，每个本节点 assigned ID 恰好一条；无 assigned 项时可省略/空。
+  Host 拒绝漏项、重复/未知/跨节点 ID、错版本、额外字段、非法类型和空理由。
+  evidence_refs 是本次输入中的 JSON Pointer，不读模型指定的文件路径。每项至少一个真实存在的非空值，
+  允许 N8 的 sandbox_cases/revision_points/applied_edits，N11 的 identity/evidence/case_states；
+  closed 还必须引用 sandbox_cases（N8）或 identity/evidence（N11）。引用能解析只证明材料存在，
+  是否支持结论由复核模型负责，不能宣称 Host 自动证明语义修复正确。
+- open 必须以从 0 起的 rework_index 关联本次 must_fix/rework_requests 中非空、可执行的返工要求；
+  N11 已知 case 须一致。多个问题可关联同一返工条目。closed 的 index 必须 null。
+  有 review_assignment 的新调用必须严格校验原始完整返工列表：N8 每项为非空字符串；
+  N11 每项为含非空字符串 case/what/basis 的对象。禁止丢弃非法项、重排或类型强转后再解索引。
+  无 assigned 问题时也校验新增要求。新调用及封存重建统一拒绝 pass/intact 携带返工要求、
+  rework/broken 无返工要求及非法结论枚举；旧无 assignment 调用保持原兼容行为。
+  有 open 时只允许 N8 rework/N11 broken；N8 pass 不得夹带 must_fix。N11 Host 身份不一致不得关闭任何问题。
+  非法输出在台账更新、事件放行之前拒绝。drill 没有真实返工预算，N8 rework 直接发 N8_ESCALATE，
+  不发 N8_PASS 或形成无计数回环；不新增真实台账计数，standin 不产生可信关闭。
+- N6 回边从当前 N6 及 N8/N11 **明确引用的封存记录**重建交接。旧问题 ID/初始来源保持，
+  open 的关联返工条目存为 follow_up，不复制成新问题；没有关联的新增要求仍按 H1 新建意见身份。
+  已携带的 follow_up 身份再次出现在旧节点状态时不重复新建。复核包必须与对应 N6 重建包一致，
+  不能只保留正确 author_source 却替换候选/目标/问题材料。
+  初始意见 ID 因此可跨轮沿用；不做语义合并，未关联的相似文字可能仍是不同问题。
+- `rework_handoff.lifecycle` 记录 previous_outcome、open/reopened 状态及复核来源。
+  每次新 N6 都是新候选生成边界，之前 closed 一律 reopened（即使源码目标指纹未变），原关闭记录不改。
+  目标/沙箱/证据变化使复核快照指纹改变，旧结论不能提交到新快照。
+  缺复核/旧格式/替身标记 unreviewed；复核指向别的 N6 封存来源标记 stale_review，旧问题继续 open。
+  坏校验和、半引用、失败/取消记录、状态与 accepted 不同、assignment 与保存输入不符则显式失败，不能降级。
+  重建不扫描目录最新尝试，不重复执行业务效果；输入全量计预算，超限明确拒绝，不丢弃历史问题。
+  N6 替身输出不能抹掉其封存请求中已分配的问题。此时仅从核验后的请求交接/targets/assignment
+  恢复本节点历史问题，保留原 ID、来源及 follow_up，标为 unreviewed/open；不携带替身回应、候选指纹或关闭权。
+  有 assignment 的替身请求仍须核验 run/targets/交接一致性；无 assignment 的旧替身不虚构历史问题。
+
+范围边界：保守的逐候选重验会增加上下文和复核成本；不做局部依赖失效或跨 run 问题合并。
+旧记录不回填，不从旧 pass/intact 反推关闭。工作记忆摘要/指令生命周期/跨运行经验仍按后续 M1/M2/M3 推进。
 
 ## M1 逐次调用记录
 

@@ -82,6 +82,12 @@ def ui(static_url):
                     "authority": "projection", "events": []})
             elif path.endswith("/evidence/exists"):
                 body = {"path": "/fixture/evidence", "exists": True, "bytes": 12}
+            elif path.startswith("/api/runs/") and "/agents/" in path:
+                # SPEC-09: AI chips now read the agent endpoint before secondary
+                # node details. Empty history is a valid API response, not a run view.
+                rid, node = path.split("/api/runs/", 1)[1].split("/agents/", 1)
+                body = {"run_id": rid, "node": node, "live": None, "selected_attempt": None,
+                        "attempts": [], "request": None, "result": None, "events": [], "controls": []}
             elif path.startswith("/api/runs/"):
                 body = api["views"][path.rsplit("/", 1)[1]]
             else:

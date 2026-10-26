@@ -1,0 +1,34 @@
+cwd: C:\Users\chen\Documents\Codex\2026-10-25\referenced-chatgpt-conversation-this-is-an\work\fpga_sim_workflow\loop
+command: ['C:\\Users\\chen\\Documents\\Codex\\2026-10-25\\referenced-chatgpt-conversation-this-is-an\\work\\h2b-venv\\Scripts\\python.exe', '-m', 'pytest', 'tests/test_agent_handoff.py', '-q', '-x', '--tb=short']
+mode: standin; isolated empty environment/workspace (not FPGA acceptance)
+F
+================================== FAILURES ===================================
+________________ test_stable_order_duplicates_and_no_mutation _________________
+host\agent_memory.py:174: in _write_once
+    os.fchmod(stream.fileno(), 0o400)
+    ^^^^^^^^^
+E   AttributeError: module 'os' has no attribute 'fchmod'. Did you mean: 'chmod'?
+
+During handling of the above exception, another exception occurred:
+tests\test_agent_handoff.py:17: in test_stable_order_duplicates_and_no_mutation
+    n8 = state(ctx)
+         ^^^^^^^^^^
+tests\test_agent_handoff.py:11: in state
+    a = AM.Attempt(ctx, node, {'input': {}, 'schema': {}})
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+host\agent_memory.py:243: in __init__
+    _sealed(self.path / "request.json", {**request, **self.identity,
+host\agent_memory.py:186: in seal_record
+    _write_once(path, content)
+host\agent_memory.py:180: in _write_once
+    _sync_directory(folder)
+host\agent_memory.py:152: in _sync_directory
+    fd = os.open(folder, os.O_RDONLY)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   PermissionError: [Errno 13] Permission denied: 'C:\\Users\\chen\\AppData\\Local\\Temp\\pytest-of-chen\\pytest-1\\test_stable_order_duplicates_a0\\workspace\\runs\\RUN-20300101-010101\\agent_calls\\N8\\attempt-000001'
+=========================== short test summary info ===========================
+FAILED tests/test_agent_handoff.py::test_stable_order_duplicates_and_no_mutation
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed in 1.18s
+
+EXIT_CODE=1

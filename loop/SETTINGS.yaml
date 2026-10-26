@@ -6,6 +6,10 @@
 # 留空即**回退到宿主 `~/.dsh/settings.yaml` 已声明的 provider** ——
 # 在仓库里再抄一份内部端点，早晚会和宿主配置漂移。
 loop:
+  # D1 后端边界已接线；原生 DSH 尚未通过准入，选择 dsh 会显式失败。
+  agent_runtime:
+    default_backend: agently
+    node_backends: {}
   llm:
     # 留空 = 用宿主声明的 api family（本机为 openai-responses）。
     # 可选值：openai-responses | chat（= chat/completions）

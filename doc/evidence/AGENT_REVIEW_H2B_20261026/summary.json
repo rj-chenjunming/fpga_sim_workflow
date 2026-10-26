@@ -1,0 +1,292 @@
+{
+  "h2a-linux-characterization": {
+    "exit_code": 0,
+    "pytest_summary": [
+      "126 passed, 1 warning in 12.82s"
+    ],
+    "failures": []
+  },
+  "h2b-red-corrected": {
+    "exit_code": 1,
+    "pytest_summary": [
+      "21 failed, 5 passed in 2.63s"
+    ],
+    "failures": [
+      "tests/test_agent_review_raw_feedback.py::test_rework_feedback_is_validated_before_coercion_or_filtering[True-scalar-N8]",
+      "tests/test_agent_review_raw_feedback.py::test_rework_feedback_is_validated_before_coercion_or_filtering[True-scalar-N11]",
+      "tests/test_agent_review_raw_feedback.py::test_rework_feedback_is_validated_before_coercion_or_filtering[True-wrong_item-N8]",
+      "tests/test_agent_review_raw_feedback.py::test_rework_feedback_is_validated_before_coercion_or_filtering[True-wrong_item-N11]",
+      "tests/test_agent_review_raw_feedback.py::test_rework_feedback_is_validated_before_coercion_or_filtering[True-unlinked_bad_item-N8]",
+      "tests/test_agent_review_raw_feedback.py::test_rework_feedback_is_validated_before_coercion_or_filtering[True-unlinked_bad_item-N11]",
+      "tests/test_agent_review_raw_feedback.py::test_rework_feedback_is_validated_before_coercion_or_filtering[False-scalar-N8]",
+      "tests/test_agent_review_raw_feedback.py::test_rework_feedback_is_validated_before_coercion_or_filtering[False-scalar-N11]",
+      "tests/test_agent_review_raw_feedback.py::test_rework_feedback_is_validated_before_coercion_or_filtering[False-wrong_item-N8]",
+      "tests/test_agent_review_raw_feedback.py::test_rework_feedback_is_validated_before_coercion_or_filtering[False-wrong_item-N11]",
+      "tests/test_agent_review_raw_feedback.py::test_rework_feedback_is_validated_before_coercion_or_filtering[False-blank-N8]",
+      "tests/test_agent_review_raw_feedback.py::test_rework_feedback_is_validated_before_coercion_or_filtering[False-blank-N11]",
+      "tests/test_agent_review_raw_feedback.py::test_rework_feedback_is_validated_before_coercion_or_filtering[False-unlinked_bad_item-N8]",
+      "tests/test_agent_review_raw_feedback.py::test_rework_feedback_is_validated_before_coercion_or_filtering[False-unlinked_bad_item-N11]",
+      "tests/test_agent_review_raw_feedback.py::test_sealed_reconstruction_uses_same_feedback_contract_even_when_stale[invalid_verdict-N8]",
+      "tests/test_agent_review_raw_feedback.py::test_sealed_reconstruction_uses_same_feedback_contract_even_when_stale[invalid_verdict-N11]",
+      "tests/test_agent_review_raw_feedback.py::test_sealed_reconstruction_uses_same_feedback_contract_even_when_stale[empty_rework-N8]",
+      "tests/test_agent_review_raw_feedback.py::test_sealed_reconstruction_uses_same_feedback_contract_even_when_stale[empty_rework-N11]",
+      "tests/test_agent_review_raw_feedback.py::test_sealed_reconstruction_uses_same_feedback_contract_even_when_stale[pass_with_rework-N11]",
+      "tests/test_agent_review_raw_feedback.py::test_sealed_reconstruction_uses_same_feedback_contract_even_when_stale[unlinked_bad_item-N8]",
+      "tests/test_agent_review_raw_feedback.py::test_sealed_reconstruction_uses_same_feedback_contract_even_when_stale[unlinked_bad_item-N11]"
+    ]
+  },
+  "h2b-green": {
+    "exit_code": 0,
+    "pytest_summary": [
+      "209 passed, 1 warning in 14.05s"
+    ],
+    "failures": []
+  },
+  "h2b-standin-red": {
+    "exit_code": 1,
+    "pytest_summary": [
+      "4 failed, 28 deselected in 1.92s"
+    ],
+    "failures": [
+      "tests/test_agent_review_raw_feedback.py::test_standin_author_cannot_erase_prior_issue_history",
+      "tests/test_agent_review_raw_feedback.py::test_standin_request_cannot_bypass_handoff_integrity[run]",
+      "tests/test_agent_review_raw_feedback.py::test_standin_request_cannot_bypass_handoff_integrity[targets]",
+      "tests/test_agent_review_raw_feedback.py::test_standin_request_cannot_bypass_handoff_integrity[assignment]"
+    ]
+  },
+  "h2b-final-r2": {
+    "exit_code": 0,
+    "pytest_summary": [
+      "275 passed, 1 warning in 15.88s"
+    ],
+    "failures": []
+  },
+  "h2b-full": {
+    "exit_code": 2,
+    "pytest_summary": [
+      "39 failed, 473 passed, 39 skipped, 1 warning, 3 errors in 507.69s (0:08:27)"
+    ],
+    "failures": [
+      "tests/test_admission_and_jobs.py::test_job_command_ending_with_exit_still_writes_rc",
+      "tests/test_admission_and_jobs.py::test_job_lifecycle_done_cancelled_dead",
+      "tests/test_admission_and_jobs.py::test_reattach_reports_undelivered",
+      "tests/test_api.py::test_gate_options_come_from_authority",
+      "tests/test_api.py::test_rejections_happen_before_consuming_the_interrupt",
+      "tests/test_api.py::test_i4_blocks_full_now_without_killing_the_gate",
+      "tests/test_api.py::test_dual_counts_and_e2_are_exposed",
+      "tests/test_api.py::test_events_endpoint_is_whitelisted",
+      "tests/test_api_ui_contract.py::test_baselines_endpoint",
+      "tests/test_api_ui_contract.py::test_env_check_current_root",
+      "tests/test_api_ui_contract.py::test_fs_dirs_lists_env_parent",
+      "tests/test_api_ui_contract.py::test_gate_material_projection_has_diff_entries",
+      "tests/test_archive_e2.py::test_drill_run_produces_readonly_archive_and_clears_e2",
+      "tests/test_fix_kbtools.py::test_run_guarded_fresh_env_without_simlib_run_acquires_lock",
+      "tests/test_fix_lifecycle.py::test_v2_lock_judged_by_job_pid_not_process_pid",
+      "tests/test_fix_lifecycle.py::test_held_slot_is_reclaimed_when_job_is_dead",
+      "tests/test_fix_lifecycle.py::test_job_runner_submit_binds_slot_lease",
+      "tests/test_fix_lifecycle.py::test_gate_resume_failure_marks_run_failed_and_closes",
+      "tests/test_fix_lifecycle.py::test_silently_rejected_resume_is_not_reported_as_success",
+      "tests/test_fix_lifecycle.py::test_dead_job_failure_closes_execution",
+      "tests/test_fix_lifecycle.py::test_submit_exception_releases_slot",
+      "tests/test_fix_lifecycle.py::test_restore_without_snapshot_fails_explicitly",
+      "tests/test_fix_lifecycle.py::test_restore_with_corrupt_snapshot_fails_explicitly",
+      "tests/test_fix_lifecycle.py::test_restore_rejects_slot_lease_conflict",
+      "tests/test_fix_lifecycle.py::test_restore_rebuilds_lease_from_job_record",
+      "tests/test_fix_lifecycle.py::test_queue_handoff_wakes_second_run",
+      "tests/test_fix_lifecycle.py::test_g1_refusal_happens_before_signing",
+      "tests/test_fix_lifecycle.py::test_g2_accept_refused_on_this_run_pending_case",
+      "tests/test_fix_lifecycle.py::test_g2_rework_reachable_and_counts_separately",
+      "tests/test_fix_lifecycle.py::test_start_quarantines_stale_events_of_reused_identity",
+      "tests/test_fix_real_chain.py::test_n6_apply_drill_copies_fixture_sandbox_and_never_fails",
+      "tests/test_fix_real_chain.py::test_n3_writes_digest_file_drill_and_real_standin",
+      "tests/test_fix_real_chain.py::test_drill_n9_second_round_survives_readonly_archive",
+      "tests/test_flow.py::test_reaches_gate1_with_readable_interrupt",
+      "tests/test_flow.py::test_gate_rejects_non_human_actor",
+      "tests/test_flow.py::test_gate_rejects_illegal_decision_value",
+      "tests/test_flow.py::test_execution_parks_while_long_job_runs_and_survives_restart",
+      "tests/test_flow.py::test_crash_recovery_delivers_dead_job_as_dead_not_done",
+      "tests/test_flow.py::test_park_snapshot_is_written_without_opportunistic_sync",
+      "tests/test_archive_e2.py::test_guard_compile_only_archives_evidence_readonly",
+      "tests/test_archive_e2.py::test_guard_archive_is_bounded_and_excludes_guard_log",
+      "tests/test_archive_e2.py::test_guard_cleans_up_scratch_and_leaves_frozen_state"
+    ]
+  },
+  "main-full": {
+    "exit_code": 2,
+    "pytest_summary": [
+      "27 failed, 297 passed, 39 skipped, 1 warning, 3 errors in 290.29s (0:04:50)"
+    ],
+    "failures": [
+      "tests/test_admission_and_jobs.py::test_job_command_ending_with_exit_still_writes_rc",
+      "tests/test_admission_and_jobs.py::test_job_lifecycle_done_cancelled_dead",
+      "tests/test_admission_and_jobs.py::test_reattach_reports_undelivered",
+      "tests/test_api.py::test_gate_options_come_from_authority",
+      "tests/test_api.py::test_rejections_happen_before_consuming_the_interrupt",
+      "tests/test_api.py::test_i4_blocks_full_now_without_killing_the_gate",
+      "tests/test_api.py::test_dual_counts_and_e2_are_exposed",
+      "tests/test_api.py::test_events_endpoint_is_whitelisted",
+      "tests/test_api_ui_contract.py::test_baselines_endpoint",
+      "tests/test_api_ui_contract.py::test_env_check_current_root",
+      "tests/test_api_ui_contract.py::test_fs_dirs_lists_env_parent",
+      "tests/test_api_ui_contract.py::test_gate_material_projection_has_diff_entries",
+      "tests/test_archive_e2.py::test_drill_run_produces_readonly_archive_and_clears_e2",
+      "tests/test_fix_kbtools.py::test_run_guarded_fresh_env_without_simlib_run_acquires_lock",
+      "tests/test_fix_lifecycle.py::test_v2_lock_judged_by_job_pid_not_process_pid",
+      "tests/test_fix_lifecycle.py::test_held_slot_is_reclaimed_when_job_is_dead",
+      "tests/test_fix_lifecycle.py::test_job_runner_submit_binds_slot_lease",
+      "tests/test_fix_lifecycle.py::test_gate_resume_failure_marks_run_failed_and_closes",
+      "tests/test_fix_lifecycle.py::test_silently_rejected_resume_is_not_reported_as_success",
+      "tests/test_fix_lifecycle.py::test_dead_job_failure_closes_execution",
+      "tests/test_fix_lifecycle.py::test_submit_exception_releases_slot",
+      "tests/test_fix_lifecycle.py::test_restore_without_snapshot_fails_explicitly",
+      "tests/test_fix_lifecycle.py::test_restore_with_corrupt_snapshot_fails_explicitly",
+      "tests/test_fix_lifecycle.py::test_restore_rejects_slot_lease_conflict",
+      "tests/test_fix_lifecycle.py::test_restore_rebuilds_lease_from_job_record",
+      "tests/test_fix_lifecycle.py::test_queue_handoff_wakes_second_run",
+      "tests/test_fix_lifecycle.py::test_g1_refusal_happens_before_signing",
+      "tests/test_archive_e2.py::test_guard_compile_only_archives_evidence_readonly",
+      "tests/test_archive_e2.py::test_guard_archive_is_bounded_and_excludes_guard_log",
+      "tests/test_archive_e2.py::test_guard_cleans_up_scratch_and_leaves_frozen_state"
+    ]
+  },
+  "h2b-software": {
+    "exit_code": 1,
+    "pytest_summary": [
+      "22 failed, 656 passed, 113 skipped, 1 deselected, 1 warning in 30.49s"
+    ],
+    "failures": [
+      "tests/test_f08_sealed.py::test_sigkill_during_publish_loop_never_yields_consumable_partial",
+      "tests/test_gate_projection.py::test_decision_response_gate_state_is_authority_not_process_record",
+      "tests/test_gate_projection.py::test_view_projects_authority_not_just_events",
+      "tests/test_gate_projection.py::test_double_decide_leaves_no_orphan_signature",
+      "tests/test_gate_projection.py::test_gate_divergence_is_reported_not_hidden",
+      "tests/test_node_detail_projection.py::test_endpoint_unknown_node_is_known_false_not_404",
+      "tests/test_node_detail_projection.py::test_drill_full_chain_every_node_has_summary_and_source",
+      "tests/test_node_detail_projection.py::test_halt_node_projection_has_summary",
+      "tests/test_node_detail_projection.py::test_g1_material_entries_carry_before_after_hunk_encoding",
+      "tests/test_node_detail_projection.py::test_n0_copies_host_trace_into_the_run_dir",
+      "tests/test_node_detail_projection.py::test_node_detail_carries_run_status_and_waiting_gate_block",
+      "tests/test_node_detail_projection.py::test_node_detail_decided_gate_shows_dispositions",
+      "tests/test_node_detail_projection.py::test_node_started_present_flag",
+      "tests/test_node_detail_projection.py::test_unreached_node_in_terminal_run",
+      "tests/test_node_detail_projection.py::test_report_endpoint_reads_only_this_run_report",
+      "tests/test_node_detail_projection.py::test_report_endpoint_truncates_oversized_report",
+      "tests/test_node_detail_projection.py::test_report_path_refuses_symlink_escape",
+      "tests/test_node_detail_projection.py::test_n13_waiting_projection_carries_readonly_items",
+      "tests/test_node_detail_projection.py::test_n14_decided_projection_lists_regression_cases",
+      "tests/test_node_detail_projection.py::test_new_run_drill_chain_carries_optional_fields",
+      "tests/test_projection_and_frozen.py::test_conflicts_are_uncleared_and_block_release",
+      "tests/test_test_layers.py::test_software_entry_excludes_env_layer_at_collection"
+    ]
+  },
+  "main-software": {
+    "exit_code": 1,
+    "pytest_summary": [
+      "21 failed, 513 passed, 113 skipped, 1 deselected, 1 warning in 24.89s"
+    ],
+    "failures": [
+      "tests/test_gate_projection.py::test_decision_response_gate_state_is_authority_not_process_record",
+      "tests/test_gate_projection.py::test_view_projects_authority_not_just_events",
+      "tests/test_gate_projection.py::test_double_decide_leaves_no_orphan_signature",
+      "tests/test_gate_projection.py::test_gate_divergence_is_reported_not_hidden",
+      "tests/test_node_detail_projection.py::test_endpoint_unknown_node_is_known_false_not_404",
+      "tests/test_node_detail_projection.py::test_drill_full_chain_every_node_has_summary_and_source",
+      "tests/test_node_detail_projection.py::test_halt_node_projection_has_summary",
+      "tests/test_node_detail_projection.py::test_g1_material_entries_carry_before_after_hunk_encoding",
+      "tests/test_node_detail_projection.py::test_n0_copies_host_trace_into_the_run_dir",
+      "tests/test_node_detail_projection.py::test_node_detail_carries_run_status_and_waiting_gate_block",
+      "tests/test_node_detail_projection.py::test_node_detail_decided_gate_shows_dispositions",
+      "tests/test_node_detail_projection.py::test_node_started_present_flag",
+      "tests/test_node_detail_projection.py::test_unreached_node_in_terminal_run",
+      "tests/test_node_detail_projection.py::test_report_endpoint_reads_only_this_run_report",
+      "tests/test_node_detail_projection.py::test_report_endpoint_truncates_oversized_report",
+      "tests/test_node_detail_projection.py::test_report_path_refuses_symlink_escape",
+      "tests/test_node_detail_projection.py::test_n13_waiting_projection_carries_readonly_items",
+      "tests/test_node_detail_projection.py::test_n14_decided_projection_lists_regression_cases",
+      "tests/test_node_detail_projection.py::test_new_run_drill_chain_carries_optional_fields",
+      "tests/test_projection_and_frozen.py::test_conflicts_are_uncleared_and_block_release",
+      "tests/test_test_layers.py::test_software_entry_excludes_env_layer_at_collection"
+    ]
+  },
+  "h2b-software-sequential": {
+    "exit_code": 1,
+    "pytest_summary": [
+      "21 failed, 657 passed, 113 skipped, 1 deselected, 1 warning in 29.33s"
+    ],
+    "failures": [
+      "tests/test_gate_projection.py::test_decision_response_gate_state_is_authority_not_process_record",
+      "tests/test_gate_projection.py::test_view_projects_authority_not_just_events",
+      "tests/test_gate_projection.py::test_double_decide_leaves_no_orphan_signature",
+      "tests/test_gate_projection.py::test_gate_divergence_is_reported_not_hidden",
+      "tests/test_node_detail_projection.py::test_endpoint_unknown_node_is_known_false_not_404",
+      "tests/test_node_detail_projection.py::test_drill_full_chain_every_node_has_summary_and_source",
+      "tests/test_node_detail_projection.py::test_halt_node_projection_has_summary",
+      "tests/test_node_detail_projection.py::test_g1_material_entries_carry_before_after_hunk_encoding",
+      "tests/test_node_detail_projection.py::test_n0_copies_host_trace_into_the_run_dir",
+      "tests/test_node_detail_projection.py::test_node_detail_carries_run_status_and_waiting_gate_block",
+      "tests/test_node_detail_projection.py::test_node_detail_decided_gate_shows_dispositions",
+      "tests/test_node_detail_projection.py::test_node_started_present_flag",
+      "tests/test_node_detail_projection.py::test_unreached_node_in_terminal_run",
+      "tests/test_node_detail_projection.py::test_report_endpoint_reads_only_this_run_report",
+      "tests/test_node_detail_projection.py::test_report_endpoint_truncates_oversized_report",
+      "tests/test_node_detail_projection.py::test_report_path_refuses_symlink_escape",
+      "tests/test_node_detail_projection.py::test_n13_waiting_projection_carries_readonly_items",
+      "tests/test_node_detail_projection.py::test_n14_decided_projection_lists_regression_cases",
+      "tests/test_node_detail_projection.py::test_new_run_drill_chain_carries_optional_fields",
+      "tests/test_projection_and_frozen.py::test_conflicts_are_uncleared_and_block_release",
+      "tests/test_test_layers.py::test_software_entry_excludes_env_layer_at_collection"
+    ]
+  },
+  "main-f08": {
+    "exit_code": 0,
+    "pytest_summary": [
+      "11 passed in 3.94s"
+    ],
+    "failures": []
+  },
+  "h2b-f08": {
+    "exit_code": 0,
+    "pytest_summary": [
+      "11 passed in 3.82s"
+    ],
+    "failures": []
+  },
+  "kb-gate-schema": {
+    "exit_code": 1,
+    "pytest_summary": [],
+    "failures": []
+  },
+  "kb-n5": {
+    "exit_code": 1,
+    "pytest_summary": [],
+    "failures": []
+  },
+  "e2e-preflight": {
+    "exit_code": 2,
+    "pytest_summary": [],
+    "failures": []
+  },
+  "h2a-first-failure": {
+    "exit_code": 1,
+    "pytest_summary": [
+      "1 failed in 1.18s"
+    ],
+    "failures": [
+      "tests/test_agent_handoff.py::test_stable_order_duplicates_and_no_mutation"
+    ]
+  },
+  "linux-dependencies": {
+    "exit_code": 0,
+    "pytest_summary": [],
+    "failures": []
+  },
+  "partial_full_suite_note": "Both canonical full-suite attempts were interrupted after repeated missing-fixture timeouts; their completion counts are not comparable.",
+  "initial_new_software_failure_ids": [
+    "tests/test_f08_sealed.py::test_sigkill_during_publish_loop_never_yields_consumable_partial"
+  ],
+  "final_new_software_failure_ids": [],
+  "existing_frozen_or_ui_files_changed": [],
+  "note": "Linux standin checks with isolated empty environment/workspace. Not FPGA/live-model acceptance or independent verification. Full-suite runs began before the final standin-history fix; final affected regression is h2b-final-r2.",
+  "new_document_path_findings": [],
+  "new_markdown_findings": []
+}

@@ -43,6 +43,9 @@
 ## 2 `spec/` 契约
 
 > **编号**：每份 SPEC 有稳定编号 `SPEC-0X`（文件名不变）。当前修订记录：
+> [SPEC-REV-11](spec/SPEC-REV-11-20261025.md)（H2b 逐问题复核与候选版本失效，恢复续修），
+> [SPEC-REV-10](spec/SPEC-REV-10-20261025.md)（H2a 逐项作者回应，恢复整合），
+> [SPEC-REV-09](spec/SPEC-REV-09-20261025.md)（H1 来源交接，恢复整合）；本机验证见 STATUS §64，
 > [SPEC-REV-08](spec/SPEC-REV-08-20261024.md)（UX 走查修复：U7 会话深链/U8 闸门可达性三件/U9 作业终态/U10 展示微修已实施，见 STATUS §63；U11 提案）、
 > [SPEC-REV-07](spec/SPEC-REV-07-20261024.md)（UI 交互与等待期体验提案；U1、U2-a/b、U5 已实施，见 STATUS §59–§61；U3/U4/U6 未评审）、
 > [SPEC-REV-06](spec/SPEC-REV-06-20261024.md)（DSH D1 后端边界首片，实测见 STATUS §56）、
@@ -51,7 +54,7 @@
 > [SPEC-REV-03](spec/SPEC-REV-03-20261023.md)（AI 工作面板体验设计草案，未实现）、
 > [SPEC-REV-02](spec/SPEC-REV-02-20261023.md)（DSH 执行后端设计草案，未实现）、
 > [SPEC-REV-01](spec/SPEC-REV-01-20261022.md)（2026-10-22，已生效）。
-> 修订记录只增不改；后续依次 `SPEC-REV-07`…
+> 修订记录只增不改；后续依次 `SPEC-REV-12`…
 
 | 编号 | 文件 | 管什么 |
 |---|---|---|
@@ -68,6 +71,9 @@
 DSH 接入阅读入口：[设计草案](spec/DSH_AGENT_RUNTIME_SPEC.md) → [实施切片](plans/2026-10-23-dsh-agent-runtime.md)。保持 Agently 默认，N3 做只读接入探针，N6 做价值对照，按收益决定是否扩展。
 当前开发：[D1 后端边界首片](plans/2026-10-24-dsh-backend-boundary.md)；不把后端抽象或受控测试等同于真实 DSH 接通。
 原生进展：[npm 运行时与 SDK 接口核验](plans/2026-10-24-dsh-native-interface.md)，安装后的实际映射与下一片门槛见 STATUS §57。
+
+Agent 协作与记忆：[H1/H2a/H2b 实施计划及规格迁移](plans/2026-10-24-agent-collaboration-memory.md) →
+[逐问题闭环契约](spec/AGENT_CONTEXT_SPEC.md#h2b-逐问题复核与版本失效2026-10-24)。H2b 本机修订结果与内网验收缺口见 STATUS §64。
 
 AI 界面优化入口：[设计与布局示意](spec/AI_WORK_PANEL_SPEC.md) → [实施切片](plans/2026-10-23-ai-work-panel.md)；
 初版范围见 [SPEC-REV-03](spec/SPEC-REV-03-20261023.md)，当前采纳与分期调整见 [SPEC-REV-05](spec/SPEC-REV-05-20261024.md)。

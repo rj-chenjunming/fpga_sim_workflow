@@ -1,0 +1,429 @@
+cwd: /mnt/host/c/Users/chen/Documents/Codex/2026-10-25/referenced-chatgpt-conversation-this-is-an/work/main-baseline/loop
+command: ['/tmp/codex-h2b-runtime/python/bin/python3', '-m', 'pytest', '-q', '-p', 'no:cacheprovider', '--tb=short']
+Python: 3.12.15 (main, Oct 21 2026, 17:43:53) [Clang 23.1.3 ]
+mode: standin; Linux; isolated empty environment/workspace; no FPGA fixture
+....FFF................................................................. [  9%]
+.............................................FFFFF.....FF..F..F.EEEF.... [ 18%]
+...................................ssssssssss.......sssssssssssss....... [ 27%]
+.......................................................sssssssssss...... [ 36%]
+.......................................F....FFF...............FFF.FFFFFF [ 45%]
+F
+==================================== ERRORS ====================================
+_____ ERROR at setup of test_guard_compile_only_archives_evidence_readonly _____
+tests/test_archive_e2.py:57: in guard_run
+    setup_md5_before = _md5(P.REPO_ROOT / "uvs.setup")
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_archive_e2.py:38: in _md5
+    with path.open("rb") as fh:
+         ^^^^^^^^^^^^^^^
+/tmp/codex-h2b-runtime/python/lib/python3.12/pathlib.py:1013: in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   FileNotFoundError: [Errno 2] No such file or directory: '/tmp/codex-h2b-empty-environment/uvs.setup'
+____ ERROR at setup of test_guard_archive_is_bounded_and_excludes_guard_log ____
+tests/test_archive_e2.py:57: in guard_run
+    setup_md5_before = _md5(P.REPO_ROOT / "uvs.setup")
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_archive_e2.py:38: in _md5
+    with path.open("rb") as fh:
+         ^^^^^^^^^^^^^^^
+/tmp/codex-h2b-runtime/python/lib/python3.12/pathlib.py:1013: in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   FileNotFoundError: [Errno 2] No such file or directory: '/tmp/codex-h2b-empty-environment/uvs.setup'
+____ ERROR at setup of test_guard_cleans_up_scratch_and_leaves_frozen_state ____
+tests/test_archive_e2.py:57: in guard_run
+    setup_md5_before = _md5(P.REPO_ROOT / "uvs.setup")
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_archive_e2.py:38: in _md5
+    with path.open("rb") as fh:
+         ^^^^^^^^^^^^^^^
+/tmp/codex-h2b-runtime/python/lib/python3.12/pathlib.py:1013: in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   FileNotFoundError: [Errno 2] No such file or directory: '/tmp/codex-h2b-empty-environment/uvs.setup'
+=================================== FAILURES ===================================
+______________ test_job_command_ending_with_exit_still_writes_rc _______________
+tests/test_admission_and_jobs.py:72: in test_job_command_ending_with_exit_still_writes_rc
+    rec = runner.submit(run_id="R1", node="N9",
+host/job_runner.py:132: in submit
+    proc = subprocess.Popen(
+/tmp/codex-h2b-runtime/python/lib/python3.12/subprocess.py:1026: in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+/tmp/codex-h2b-runtime/python/lib/python3.12/subprocess.py:1955: in _execute_child
+    raise child_exception_type(errno_num, err_msg, err_filename)
+E   FileNotFoundError: [Errno 2] No such file or directory: '/bin/bash'
+____________________ test_job_lifecycle_done_cancelled_dead ____________________
+tests/test_admission_and_jobs.py:88: in test_job_lifecycle_done_cancelled_dead
+    ok = runner.submit(run_id="R1", node="N9", command="echo hello", cwd=tmp_path)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+host/job_runner.py:132: in submit
+    proc = subprocess.Popen(
+/tmp/codex-h2b-runtime/python/lib/python3.12/subprocess.py:1026: in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+/tmp/codex-h2b-runtime/python/lib/python3.12/subprocess.py:1955: in _execute_child
+    raise child_exception_type(errno_num, err_msg, err_filename)
+E   FileNotFoundError: [Errno 2] No such file or directory: '/bin/bash'
+______________________ test_reattach_reports_undelivered _______________________
+tests/test_admission_and_jobs.py:109: in test_reattach_reports_undelivered
+    rec = runner.submit(run_id="R1", node="N9", command="true", cwd=tmp_path)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+host/job_runner.py:132: in submit
+    proc = subprocess.Popen(
+/tmp/codex-h2b-runtime/python/lib/python3.12/subprocess.py:1026: in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+/tmp/codex-h2b-runtime/python/lib/python3.12/subprocess.py:1955: in _execute_child
+    raise child_exception_type(errno_num, err_msg, err_filename)
+E   FileNotFoundError: [Errno 2] No such file or directory: '/bin/bash'
+____________________ test_gate_options_come_from_authority _____________________
+tests/test_api.py:65: in test_gate_options_come_from_authority
+    view = _wait_interrupt(client, rid, "G1_diff_confirm")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_api.py:44: in _wait_interrupt
+    raise AssertionError(f"运行失败：{view}")
+E   AssertionError: 运行失败：{'run_id': 'RUN-20261026-010912', 'run_dir': '/tmp/codex-h2b-workspace-main-baseline/runs/RUN-20261026-010912', 'baseline': 'v0', 'status': 'failed', 'error': 'FileNotFoundError: 夹具缺 n1_manifest_new.json', 'notes': ['执行已关闭：reason=run_failed close_result=dict'], 'current_node': None, 'mode': 'drill', 'created_at': '2026-10-26T01:09:12.675898', 'updated_at': '2026-10-26T01:09:12.675904', 'node_history': [{'node': 'N0', 'status': 'ok', 'kind': 'node_finished', 'at': 1792976952.7691147, 'detail': {'baseline': 'v0', 'fixture_files': 0, 'gate_init_rc': 0, 'mode': 'drill', 'source': 'drill_fixture', 'summary': 'N0：预置数据（夹具）初始化（复制 0 个夹具文件，复制清单 11 项），gate.py init rc=0，baseline=v0'}}, {'node': 'N1', 'status': 'failed', 'kind': 'node_failed', 'at': 1792976952.7700486, 'detail': {'message': '夹具缺 n1_manifest_new.json', 'source': 'drill_fixture', 'summary': 'N1：夹具缺 n1_manifest_new.json'}}], 'gate_history': [], 'gates_authority': {'present': True, 'run_id': 'RUN-20261026-010912', 'source': '/tmp/codex-h2b-workspace-main-baseline/runs/RUN-20261026-010912/gates.json', 'schema': 'kb/gate-state', 'version': 1, 'updated_at': None, 'gates': {'G1_diff_confirm': {'decision': 'pending', 'status': 'pending', 'actor': None, 'actor_kind': None, 'human_signed': False, 'signed_at': None, 'note': None, 'rework_target': None, 'history_len': 0, 'history': []}, 'G2_report_accept': {'decision': 'pending', 'status': 'pending', 'actor': None, 'actor_kind': None, 'human_signed': False, 'signed_at': None, 'note': None, 'rework_target': None, 'history_len': 0, 'history': []}, 'G3_regression_decision': {'decision': 'pending', 'status': 'pending', 'actor': None, 'actor_kind': None, 'human_signed': False, 'signed_at': None, 'note': None, 'rework_target': None, 'history_len': 0, 'history': []}}, 'all_signed': False, 'human_signed_all': False, 'anchor_ok': True, 'anchor_detail': '锚一致（e188e9898c64…）', 'divergences': []}, 'pending_interrupt': None, 'counts': None, 'evidence': None, 'job': None, 'slot': {'locked': False, 'holder': None, 'holder_alive': None, 'holder_alive_known': False, 'holder_job_id': None, 'holder_job_pid': None, 'holder_phase': None, 'format_version': None, 'queued': [], 'queue_depth': 0}, 'blockers': [{'code': 'I3_EVIDENCE_MISSING', 'severity': 'blocker', 'title': '无全跑证据，判据不可判', 'message': '尚未产出 N9 全跑日志 ⇒ 两套口径都无法取数，不得判绿。', 'refs': []}, {'code': 'I4_CONFLICTS_MISSING', 'severity': 'blocker', 'title': '冲突清单缺失', 'message': '找不到 /tmp/codex-h2b-workspace-main-baseline/conflicts/conflicts.json ⇒ I4 无法判定，按未清零处理。', 'refs': ['/tmp/codex-h2b-workspace-main-baseline/conflicts/conflicts.json']}], 'can': {'judge_pass': False, 'promote': False}, 'events': [{'detail': {'baseline': 'v0', 'drill_fixture': '/tmp/codex-h2b-workspace-main-baseline/runs/RUN-20261015-120626', 'mode': 'drill', 'project': '/tmp/codex-h2b-empty-environment', 'scenario': 'happy'}, 'kind': 'run_started', 'node': None, 'provisional': False, 'refs': [], 'run_id': 'RUN-20261026-010912', 'seq': 1, 'status': 'info', 'ts': 1792976952.6759157}, {'detail': {}, 'kind': 'node_started', 'node': 'N0', 'provisional': False, 'refs': [], 'run_id': 'RUN-20261026-010912', 'seq': 2, 'status': 'running', 'ts': 1792976952.681964}, {'detail': {'baseline': 'v0', 'fixture_files': 0, 'gate_init_rc': 0, 'mode': 'drill', 'source': 'drill_fixture', 'summary': 'N0：预置数据（夹具）初始化（复制 0 个夹具文件，复制清单 11 项），gate.py init rc=0，baseline=v0'}, 'kind': 'node_finished', 'node': 'N0', 'provisional': False, 'refs': ['/tmp/codex-h2b-workspace-main-baseline/runs/RUN-20261026-010912'], 'run_id': 'RUN-20261026-010912', 'seq': 3, 'status': 'ok', 'ts': 1792976952.7691147}, {'detail': {}, 'kind': 'node_started', 'node': 'N1', 'provisional': False, 'refs': [], 'run_id': 'RUN-20261026-010912', 'seq': 4, 'status': 'running', 'ts': 1792976952.7699068}, {'detail': {'message': '夹具缺 n1_manifest_new.json', 'source': 'drill_fixture', 'summary': 'N1：夹具缺 n1_manifest_new.json'}, 'kind': 'node_failed', 'node': 'N1', 'provisional': False, 'refs': [], 'run_id': 'RUN-20261026-010912', 'seq': 5, 'status': 'failed', 'ts': 1792976952.7700486}, {'detail': {'message': 'FileNotFoundError: 夹具缺 n1_manifest_new.json', 'rule': "失败必须显式收敛：status=failed + error + 清 pending + 关闭执行；不得把崩溃伪装成'在等人工'"}, 'kind': 'warning', 'node': 'lifecycle', 'provisional': False, 'refs': [], 'run_id': 'RUN-20261026-010912', 'seq': 6, 'status': 'failed', 'ts': 1792976952.7776933}], 'project': '/tmp/codex-h2b-empty-environment', 's0_record_id': None, 'agents': [{'role': 'analyst', 'name': 'simenv-analyst', 'nodes': ['N3'], 'active_node': 'N3', 'status': 'idle', 'last_action': '—', 'elapsed_s': None, 'summary': '产物未生成', 'mode': '—', 'evidence': [], 'note': None, 'capabilities': {'implemented': True, 'dependencies_ready': None, 'execution': 'not_started', 'verification_scope': None}}, {'role': 'author', 'name': 'simenv-author', 'nodes': ['N6'], 'active_node': 'N6', 'status': 'idle', 'last_action': '—', 'elapsed_s': None, 'summary': '产物未生成', 'mode': '—', 'evidence': [], 'note': None, 'capabilities': {'implemented': True, 'dependencies_ready': None, 'execution': 'not_started', 'verification_scope': None}}, {'role': 'checker', 'name': 'simenv-checker', 'nodes': ['N8', 'N10'], 'active_node': 'N8', 'status': 'idle', 'last_action': '—', 'elapsed_s': None, 'summary': '产物未生成', 'mode': '—', 'evidence': [], 'note': None, 'capabilities': {'implemented': True, 'dependencies_ready': None, 'execution': 'not_started', 'verification_scope': None}}, {'role': 'guardian', 'name': 'simenv-guardian', 'nodes': ['N11'], 'active_node': 'N11', 'status': 'idle', 'last_action': '—', 'elapsed_s': None, 'summary': '待命：本次尚未进入 N11', 'mode': '—', 'evidence': [], 'note': 'N11 证据守护（成链判断/返工）已实现；本卡为事件投影，验证范围以服务端证据为准。', 'capabilities': {'implemented': True, 'dependencies_ready': None, 'execution': 'not_started', 'verification_scope': None}}, {'role': 'reporter', 'name': 'simenv-reporter', 'nodes': ['N12'], 'active_node': 'N12', 'status': 'idle', 'last_action': '—', 'elapsed_s': None, 'summary': '产物未生成', 'mode': '—', 'evidence': [], 'note': None, 'capabilities': {'implemented': True, 'dependencies_ready': None, 'execution': 'not_started', 'verification_scope': None}}], 'stage_map': [{'key': 'ingest', 'name': '摄取', 'nodes': ['N0', 'N1', 'N2', 'N3', 'N4']}, {'key': 'revise', 'name': '修订', 'nodes': ['N5', 'N6', 'N7', 'N8']}, {'key': 'verify', 'name': '验证', 'nodes': ['N9', 'N10', 'N11', 'N12']}, {'key': 'decide', 'name': '决策', 'nodes': ['N13', 'N14', 'N15', 'N16']}], 'agents_authority': 'projection', 'gate_options': {'G1_diff_confirm': [{'value': 'confirmed', 'label': '差异确认', 'requires_reason': False}, {'value': 'ignored', 'label': '忽略（须给理由）', 'requires_reason': True}, {'value': 'disputed', 'label': '有疑义 ⇒ 转人工裁决', 'requires_reason': True}], 'G2_report_accept': [{'value': 'accept', 'label': '接受报告', 'requires_reason': False}, {'value': 'rework', 'label': '返工', 'requires_reason': True}], 'G3_regression_decision': [{'value': 'full_now', 'label': '立即全量回归', 'requires_reason': False}, {'value': 'subset_only', 'label': '仅受影响子集回归', 'requires_reason': False}, {'value': 'milestone_only', 'label': '仅里程碑', 'requires_reason': False}, {'value': 'defer', 'label': '暂缓', 'requires_reason': False}]}, 'rework': {'n6_n8_cycles': 0, 'g2_rework_cycles': 0, 'limit': 3, 'source': '/tmp/codex-h2b-workspace-main-baseline/runs/RUN-20261026-010912/rework_cycles.json', 'case_state_source': '/tmp/codex-h2b-workspace-main-baseline/runs/RUN-20261026-010912/case_states.json', 'missing': True}, 'difference_items': {'path': '/tmp/codex-h2b-workspace-main-baseline/runs/RUN-20261026-010912/n2_diff.json', 'present': False, 'error': '缺失', 'count': 0, 'entries': [], 'unresolved_ids': [], 'unresolved_count': 0, 'has_change': None, 'self_check_ok': None, 'mode': 'drill'}, 'case_states': {'path': '/tmp/codex-h2b-workspace-main-baseline/runs/RUN-20261026-010912/case_states.json', 'present': False, 'error': '缺失', 'created_at': '2026-10-26T01:09:12.675898', 'cases': [], 'count': 0, 'pending_own': [], 'pending_foreign_count': 0, 'pending_foreign': [], 'rework_cycles': None}, 'conflicts': {'total': 0, 'expected_total': None, 'blocks_release': 0, 'open': 0, 'source': '/tmp/codex-h2b-workspace-main-baseline/conflicts/conflicts.json', 'consistent': True}, 'baselines': [], 'server_authority': '闸门态权威在 kb/tools/gate.py（gate_state + anchor）；本视图是只读投影。'}
+----------------------------- Captured stdout call -----------------------------
+ERROR:    2026-10-26 01:09:12 | [TriggerFlowExecution] [chunk.failed] [run=43e951fbc341468fb2c194731e044a52] Chunk 'n1_manifest' failed.
+ERROR:    2026-10-26 01:09:12 | [TriggerFlowExecution] [triggerflow.execution_failed] [run=76ea0dd91d9048fc89b8ada3f16fda48] TriggerFlow execution '4b47efc4d3f94c5d865c14282a9bc5ec' failed.
+ERROR:    2026-10-26 01:09:12 | [TriggerFlowExecution] [chunk.failed] [run=b1074ba100cb49d0944970ca911204db] Chunk 'n0_baseline' failed.
+------------------------------ Captured log call -------------------------------
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=43e951fbc341468fb2c194731e044a52] Chunk 'n1_manifest' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [triggerflow.execution_failed] [run=76ea0dd91d9048fc89b8ada3f16fda48] TriggerFlow execution '4b47efc4d3f94c5d865c14282a9bc5ec' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=b1074ba100cb49d0944970ca911204db] Chunk 'n0_baseline' failed.
+____________ test_rejections_happen_before_consuming_the_interrupt _____________
+tests/test_api.py:78: in test_rejections_happen_before_consuming_the_interrupt
+    _wait_interrupt(client, rid, "G1_diff_confirm")
+tests/test_api.py:44: in _wait_interrupt
+    raise AssertionError(f"运行失败：{view}")
+E   AssertionError: 运行失败：{'run_id': 'RUN-20261026-010912', 'run_dir': '/tmp/codex-h2b-workspace-main-baseline/runs/RUN-20261026-010912', 'baseline': 'v0', 'status': 'failed', 'error': 'FileNotFoundError: 夹具缺 n1_manifest_new.json', 'notes': ['执行已关闭：reason=run_failed close_result=dict'], 'current_node': None, 'mode': 'drill', 'created_at': '2026-10-26T01:09:12.805047', 'updated_at': '2026-10-26T01:09:12.805052', 'node_history': [{'node': 'N0', 'status': 'ok', 'kind': 'node_finished', 'at': 1792976952.9044209, 'detail': {'baseline': 'v0', 'fixture_files': 0, 'gate_init_rc': 0, 'mode': 'drill', 'source': 'drill_fixture', 'summary': 'N0：预置数据（夹具）初始化（复制 0 个夹具文件，复制清单 11 项），gate.py init rc=0，baseline=v0'}}, {'node': 'N1', 'status': 'failed', 'kind': 'node_failed', 'at': 1792976952.9051938, 'detail': {'message': '夹具缺 n1_manifest_new.json', 'source': 'drill_fixture', 'summary': 'N1：夹具缺 n1_manifest_new.json'}}], 'gate_history': [], 'gates_authority': {'present': True, 'run_id': 'RUN-20261026-010912', 'source': '/tmp/codex-h2b-workspace-main-baseline/runs/RUN-20261026-010912/gates.json', 'schema': 'kb/gate-state', 'version': 1, 'updated_at': None, 'gates': {'G1_diff_confirm': {'decision': 'pending', 'status': 'pending', 'actor': None, 'actor_kind': None, 'human_signed': False, 'signed_at': None, 'note': None, 'rework_target': None, 'history_len': 0, 'history': []}, 'G2_report_accept': {'decision': 'pending', 'status': 'pending', 'actor': None, 'actor_kind': None, 'human_signed': False, 'signed_at': None, 'note': None, 'rework_target': None, 'history_len': 0, 'history': []}, 'G3_regression_decision': {'decision': 'pending', 'status': 'pending', 'actor': None, 'actor_kind': None, 'human_signed': False, 'signed_at': None, 'note': None, 'rework_target': None, 'history_len': 0, 'history': []}}, 'all_signed': False, 'human_signed_all': False, 'anchor_ok': True, 'anchor_detail': '锚一致（e188e9898c64…）', 'divergences': []}, 'pending_interrupt': None, 'counts': None, 'evidence': None, 'job': None, 'slot': {'locked': False, 'holder': None, 'holder_alive': None, 'holder_alive_known': False, 'holder_job_id': None, 'holder_job_pid': None, 'holder_phase': None, 'format_version': None, 'queued': [], 'queue_depth': 0}, 'blockers': [{'code': 'I3_EVIDENCE_MISSING', 'severity': 'blocker', 'title': '无全跑证据，判据不可判', 'message': '尚未产出 N9 全跑日志 ⇒ 两套口径都无法取数，不得判绿。', 'refs': []}, {'code': 'I4_CONFLICTS_MISSING', 'severity': 'blocker', 'title': '冲突清单缺失', 'message': '找不到 /tmp/codex-h2b-workspace-main-baseline/conflicts/conflicts.json ⇒ I4 无法判定，按未清零处理。', 'refs': ['/tmp/codex-h2b-workspace-main-baseline/conflicts/conflicts.json']}], 'can': {'judge_pass': False, 'promote': False}, 'events': [{'detail': {'baseline': 'v0', 'drill_fixture': '/tmp/codex-h2b-workspace-main-baseline/runs/RUN-20261015-120626', 'mode': 'drill', 'project': '/tmp/codex-h2b-empty-environment', 'scenario': 'happy'}, 'kind': 'run_started', 'node': None, 'provisional': False, 'refs': [], 'run_id': 'RUN-20261026-010912', 'seq': 1, 'status': 'info', 'ts': 1792976952.8050635}, {'detail': {}, 'kind': 'node_started', 'node': 'N0', 'provisional': False, 'refs': [], 'run_id': 'RUN-20261026-010912', 'seq': 2, 'status': 'running', 'ts': 1792976952.8114808}, {'detail': {'baseline': 'v0', 'fixture_files': 0, 'gate_init_rc': 0, 'mode': 'drill', 'source': 'drill_fixture', 'summary': 'N0：预置数据（夹具）初始化（复制 0 个夹具文件，复制清单 11 项），gate.py init rc=0，baseline=v0'}, 'kind': 'node_finished', 'node': 'N0', 'provisional': False, 'refs': ['/tmp/codex-h2b-workspace-main-baseline/runs/RUN-20261026-010912'], 'run_id': 'RUN-20261026-010912', 'seq': 3, 'status': 'ok', 'ts': 1792976952.9044209}, {'detail': {}, 'kind': 'node_started', 'node': 'N1', 'provisional': False, 'refs': [], 'run_id': 'RUN-20261026-010912', 'seq': 4, 'status': 'running', 'ts': 1792976952.9050493}, {'detail': {'message': '夹具缺 n1_manifest_new.json', 'source': 'drill_fixture', 'summary': 'N1：夹具缺 n1_manifest_new.json'}, 'kind': 'node_failed', 'node': 'N1', 'provisional': False, 'refs': [], 'run_id': 'RUN-20261026-010912', 'seq': 5, 'status': 'failed', 'ts': 1792976952.9051938}, {'detail': {'message': 'FileNotFoundError: 夹具缺 n1_manifest_new.json', 'rule': "失败必须显式收敛：status=failed + error + 清 pending + 关闭执行；不得把崩溃伪装成'在等人工'"}, 'kind': 'warning', 'node': 'lifecycle', 'provisional': False, 'refs': [], 'run_id': 'RUN-20261026-010912', 'seq': 6, 'status': 'failed', 'ts': 1792976952.9136543}], 'project': '/tmp/codex-h2b-empty-environment', 's0_record_id': None, 'agents': [{'role': 'analyst', 'name': 'simenv-analyst', 'nodes': ['N3'], 'active_node': 'N3', 'status': 'idle', 'last_action': '—', 'elapsed_s': None, 'summary': '产物未生成', 'mode': '—', 'evidence': [], 'note': None, 'capabilities': {'implemented': True, 'dependencies_ready': None, 'execution': 'not_started', 'verification_scope': None}}, {'role': 'author', 'name': 'simenv-author', 'nodes': ['N6'], 'active_node': 'N6', 'status': 'idle', 'last_action': '—', 'elapsed_s': None, 'summary': '产物未生成', 'mode': '—', 'evidence': [], 'note': None, 'capabilities': {'implemented': True, 'dependencies_ready': None, 'execution': 'not_started', 'verification_scope': None}}, {'role': 'checker', 'name': 'simenv-checker', 'nodes': ['N8', 'N10'], 'active_node': 'N8', 'status': 'idle', 'last_action': '—', 'elapsed_s': None, 'summary': '产物未生成', 'mode': '—', 'evidence': [], 'note': None, 'capabilities': {'implemented': True, 'dependencies_ready': None, 'execution': 'not_started', 'verification_scope': None}}, {'role': 'guardian', 'name': 'simenv-guardian', 'nodes': ['N11'], 'active_node': 'N11', 'status': 'idle', 'last_action': '—', 'elapsed_s': None, 'summary': '待命：本次尚未进入 N11', 'mode': '—', 'evidence': [], 'note': 'N11 证据守护（成链判断/返工）已实现；本卡为事件投影，验证范围以服务端证据为准。', 'capabilities': {'implemented': True, 'dependencies_ready': None, 'execution': 'not_started', 'verification_scope': None}}, {'role': 'reporter', 'name': 'simenv-reporter', 'nodes': ['N12'], 'active_node': 'N12', 'status': 'idle', 'last_action': '—', 'elapsed_s': None, 'summary': '产物未生成', 'mode': '—', 'evidence': [], 'note': None, 'capabilities': {'implemented': True, 'dependencies_ready': None, 'execution': 'not_started', 'verification_scope': None}}], 'stage_map': [{'key': 'ingest', 'name': '摄取', 'nodes': ['N0', 'N1', 'N2', 'N3', 'N4']}, {'key': 'revise', 'name': '修订', 'nodes': ['N5', 'N6', 'N7', 'N8']}, {'key': 'verify', 'name': '验证', 'nodes': ['N9', 'N10', 'N11', 'N12']}, {'key': 'decide', 'name': '决策', 'nodes': ['N13', 'N14', 'N15', 'N16']}], 'agents_authority': 'projection', 'gate_options': {'G1_diff_confirm': [{'value': 'confirmed', 'label': '差异确认', 'requires_reason': False}, {'value': 'ignored', 'label': '忽略（须给理由）', 'requires_reason': True}, {'value': 'disputed', 'label': '有疑义 ⇒ 转人工裁决', 'requires_reason': True}], 'G2_report_accept': [{'value': 'accept', 'label': '接受报告', 'requires_reason': False}, {'value': 'rework', 'label': '返工', 'requires_reason': True}], 'G3_regression_decision': [{'value': 'full_now', 'label': '立即全量回归', 'requires_reason': False}, {'value': 'subset_only', 'label': '仅受影响子集回归', 'requires_reason': False}, {'value': 'milestone_only', 'label': '仅里程碑', 'requires_reason': False}, {'value': 'defer', 'label': '暂缓', 'requires_reason': False}]}, 'rework': {'n6_n8_cycles': 0, 'g2_rework_cycles': 0, 'limit': 3, 'source': '/tmp/codex-h2b-workspace-main-baseline/runs/RUN-20261026-010912/rework_cycles.json', 'case_state_source': '/tmp/codex-h2b-workspace-main-baseline/runs/RUN-20261026-010912/case_states.json', 'missing': True}, 'difference_items': {'path': '/tmp/codex-h2b-workspace-main-baseline/runs/RUN-20261026-010912/n2_diff.json', 'present': False, 'error': '缺失', 'count': 0, 'entries': [], 'unresolved_ids': [], 'unresolved_count': 0, 'has_change': None, 'self_check_ok': None, 'mode': 'drill'}, 'case_states': {'path': '/tmp/codex-h2b-workspace-main-baseline/runs/RUN-20261026-010912/case_states.json', 'present': False, 'error': '缺失', 'created_at': '2026-10-26T01:09:12.805047', 'cases': [], 'count': 0, 'pending_own': [], 'pending_foreign_count': 0, 'pending_foreign': [], 'rework_cycles': None}, 'conflicts': {'total': 0, 'expected_total': None, 'blocks_release': 0, 'open': 0, 'source': '/tmp/codex-h2b-workspace-main-baseline/conflicts/conflicts.json', 'consistent': True}, 'baselines': [], 'server_authority': '闸门态权威在 kb/tools/gate.py（gate_state + anchor）；本视图是只读投影。'}
+----------------------------- Captured stdout call -----------------------------
+ERROR:    2026-10-26 01:09:12 | [TriggerFlowExecution] [chunk.failed] [run=047b1bfc552a4636aedc2bbfbd08b0bf] Chunk 'n1_manifest' failed.
+ERROR:    2026-10-26 01:09:12 | [TriggerFlowExecution] [triggerflow.execution_failed] [run=1fc52933563b47428ef5ee92d5cd8bee] TriggerFlow execution 'ab0087dae0244d3ea01836ba0d414c65' failed.
+ERROR:    2026-10-26 01:09:12 | [TriggerFlowExecution] [chunk.failed] [run=09bedc05f6274ef49c17eb2b929315ae] Chunk 'n0_baseline' failed.
+------------------------------ Captured log call -------------------------------
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=047b1bfc552a4636aedc2bbfbd08b0bf] Chunk 'n1_manifest' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [triggerflow.execution_failed] [run=1fc52933563b47428ef5ee92d5cd8bee] TriggerFlow execution 'ab0087dae0244d3ea01836ba0d414c65' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=09bedc05f6274ef49c17eb2b929315ae] Chunk 'n0_baseline' failed.
+_______________ test_i4_blocks_full_now_without_killing_the_gate _______________
+tests/test_api.py:100: in test_i4_blocks_full_now_without_killing_the_gate
+    _wait_interrupt(client, rid, "G1_diff_confirm")
+tests/test_api.py:44: in _wait_interrupt
+    raise AssertionError(f"运行失败：{view}")
+E   AssertionError: 运行失败：{'run_id': 'RUN-20261026-010912', 'run_dir': '/tmp/codex-h2b-workspace-main-baseline/runs/RUN-20261026-010912', 'baseline': 'v0', 'status': 'failed', 'error': 'FileNotFoundError: 夹具缺 n1_manifest_new.json', 'notes': ['执行已关闭：reason=run_failed close_result=dict'], 'current_node': None, 'mode': 'drill', 'created_at': '2026-10-26T01:09:12.941270', 'updated_at': '2026-10-26T01:09:12.941276', 'node_history': [{'node': 'N0', 'status': 'ok', 'kind': 'node_finished', 'at': 1792976953.0394924, 'detail': {'baseline': 'v0', 'fixture_files': 0, 'gate_init_rc': 0, 'mode': 'drill', 'source': 'drill_fixture', 'summary': 'N0：预置数据（夹具）初始化（复制 0 个夹具文件，复制清单 11 项），gate.py init rc=0，baseline=v0'}}, {'node': 'N1', 'status': 'failed', 'kind': 'node_failed', 'at': 1792976953.0404384, 'detail': {'message': '夹具缺 n1_manifest_new.json', 'source': 'drill_fixture', 'summary': 'N1：夹具缺 n1_manifest_new.json'}}], 'gate_history': [], 'gates_authority': {'present': True, 'run_id': 'RUN-20261026-010912', 'source': '/tmp/codex-h2b-workspace-main-baseline/runs/RUN-20261026-010912/gates.json', 'schema': 'kb/gate-state', 'version': 1, 'updated_at': None, 'gates': {'G1_diff_confirm': {'decision': 'pending', 'status': 'pending', 'actor': None, 'actor_kind': None, 'human_signed': False, 'signed_at': None, 'note': None, 'rework_target': None, 'history_len': 0, 'history': []}, 'G2_report_accept': {'decision': 'pending', 'status': 'pending', 'actor': None, 'actor_kind': None, 'human_signed': False, 'signed_at': None, 'note': None, 'rework_target': None, 'history_len': 0, 'history': []}, 'G3_regression_decision': {'decision': 'pending', 'status': 'pending', 'actor': None, 'actor_kind': None, 'human_signed': False, 'signed_at': None, 'note': None, 'rework_target': None, 'history_len': 0, 'history': []}}, 'all_signed': False, 'human_signed_all': False, 'anchor_ok': True, 'anchor_detail': '锚一致（dc91021e0ff9…）', 'divergences': []}, 'pending_interrupt': None, 'counts': None, 'evidence': None, 'job': None, 'slot': {'locked': False, 'holder': None, 'holder_alive': None, 'holder_alive_known': False, 'holder_job_id': None, 'holder_job_pid': None, 'holder_phase': None, 'format_version': None, 'queued': [], 'queue_depth': 0}, 'blockers': [{'code': 'I3_EVIDENCE_MISSING', 'severity': 'blocker', 'title': '无全跑证据，判据不可判', 'message': '尚未产出 N9 全跑日志 ⇒ 两套口径都无法取数，不得判绿。', 'refs': []}, {'code': 'I4_CONFLICTS_MISSING', 'severity': 'blocker', 'title': '冲突清单缺失', 'message': '找不到 /tmp/codex-h2b-workspace-main-baseline/conflicts/conflicts.json ⇒ I4 无法判定，按未清零处理。', 'refs': ['/tmp/codex-h2b-workspace-main-baseline/conflicts/conflicts.json']}], 'can': {'judge_pass': False, 'promote': False}, 'events': [{'detail': {'baseline': 'v0', 'drill_fixture': '/tmp/codex-h2b-workspace-main-baseline/runs/RUN-20261015-120626', 'mode': 'drill', 'project': '/tmp/codex-h2b-empty-environment', 'scenario': 'happy'}, 'kind': 'run_started', 'node': None, 'provisional': False, 'refs': [], 'run_id': 'RUN-20261026-010912', 'seq': 1, 'status': 'info', 'ts': 1792976952.9412866}, {'detail': {}, 'kind': 'node_started', 'node': 'N0', 'provisional': False, 'refs': [], 'run_id': 'RUN-20261026-010912', 'seq': 2, 'status': 'running', 'ts': 1792976952.946382}, {'detail': {'baseline': 'v0', 'fixture_files': 0, 'gate_init_rc': 0, 'mode': 'drill', 'source': 'drill_fixture', 'summary': 'N0：预置数据（夹具）初始化（复制 0 个夹具文件，复制清单 11 项），gate.py init rc=0，baseline=v0'}, 'kind': 'node_finished', 'node': 'N0', 'provisional': False, 'refs': ['/tmp/codex-h2b-workspace-main-baseline/runs/RUN-20261026-010912'], 'run_id': 'RUN-20261026-010912', 'seq': 3, 'status': 'ok', 'ts': 1792976953.0394924}, {'detail': {}, 'kind': 'node_started', 'node': 'N1', 'provisional': False, 'refs': [], 'run_id': 'RUN-20261026-010912', 'seq': 4, 'status': 'running', 'ts': 1792976953.0402806}, {'detail': {'message': '夹具缺 n1_manifest_new.json', 'source': 'drill_fixture', 'summary': 'N1：夹具缺 n1_manifest_new.json'}, 'kind': 'node_failed', 'node': 'N1', 'provisional': False, 'refs': [], 'run_id': 'RUN-20261026-010912', 'seq': 5, 'status': 'failed', 'ts': 1792976953.0404384}, {'detail': {'message': 'FileNotFoundError: 夹具缺 n1_manifest_new.json', 'rule': "失败必须显式收敛：status=failed + error + 清 pending + 关闭执行；不得把崩溃伪装成'在等人工'"}, 'kind': 'warning', 'node': 'lifecycle', 'provisional': False, 'refs': [], 'run_id': 'RUN-20261026-010912', 'seq': 6, 'status': 'failed', 'ts': 1792976953.0454857}], 'project': '/tmp/codex-h2b-empty-environment', 's0_record_id': None, 'agents': [{'role': 'analyst', 'name': 'simenv-analyst', 'nodes': ['N3'], 'active_node': 'N3', 'status': 'idle', 'last_action': '—', 'elapsed_s': None, 'summary': '产物未生成', 'mode': '—', 'evidence': [], 'note': None, 'capabilities': {'implemented': True, 'dependencies_ready': None, 'execution': 'not_started', 'verification_scope': None}}, {'role': 'author', 'name': 'simenv-author', 'nodes': ['N6'], 'active_node': 'N6', 'status': 'idle', 'last_action': '—', 'elapsed_s': None, 'summary': '产物未生成', 'mode': '—', 'evidence': [], 'note': None, 'capabilities': {'implemented': True, 'dependencies_ready': None, 'execution': 'not_started', 'verification_scope': None}}, {'role': 'checker', 'name': 'simenv-checker', 'nodes': ['N8', 'N10'], 'active_node': 'N8', 'status': 'idle', 'last_action': '—', 'elapsed_s': None, 'summary': '产物未生成', 'mode': '—', 'evidence': [], 'note': None, 'capabilities': {'implemented': True, 'dependencies_ready': None, 'execution': 'not_started', 'verification_scope': None}}, {'role': 'guardian', 'name': 'simenv-guardian', 'nodes': ['N11'], 'active_node': 'N11', 'status': 'idle', 'last_action': '—', 'elapsed_s': None, 'summary': '待命：本次尚未进入 N11', 'mode': '—', 'evidence': [], 'note': 'N11 证据守护（成链判断/返工）已实现；本卡为事件投影，验证范围以服务端证据为准。', 'capabilities': {'implemented': True, 'dependencies_ready': None, 'execution': 'not_started', 'verification_scope': None}}, {'role': 'reporter', 'name': 'simenv-reporter', 'nodes': ['N12'], 'active_node': 'N12', 'status': 'idle', 'last_action': '—', 'elapsed_s': None, 'summary': '产物未生成', 'mode': '—', 'evidence': [], 'note': None, 'capabilities': {'implemented': True, 'dependencies_ready': None, 'execution': 'not_started', 'verification_scope': None}}], 'stage_map': [{'key': 'ingest', 'name': '摄取', 'nodes': ['N0', 'N1', 'N2', 'N3', 'N4']}, {'key': 'revise', 'name': '修订', 'nodes': ['N5', 'N6', 'N7', 'N8']}, {'key': 'verify', 'name': '验证', 'nodes': ['N9', 'N10', 'N11', 'N12']}, {'key': 'decide', 'name': '决策', 'nodes': ['N13', 'N14', 'N15', 'N16']}], 'agents_authority': 'projection', 'gate_options': {'G1_diff_confirm': [{'value': 'confirmed', 'label': '差异确认', 'requires_reason': False}, {'value': 'ignored', 'label': '忽略（须给理由）', 'requires_reason': True}, {'value': 'disputed', 'label': '有疑义 ⇒ 转人工裁决', 'requires_reason': True}], 'G2_report_accept': [{'value': 'accept', 'label': '接受报告', 'requires_reason': False}, {'value': 'rework', 'label': '返工', 'requires_reason': True}], 'G3_regression_decision': [{'value': 'full_now', 'label': '立即全量回归', 'requires_reason': False}, {'value': 'subset_only', 'label': '仅受影响子集回归', 'requires_reason': False}, {'value': 'milestone_only', 'label': '仅里程碑', 'requires_reason': False}, {'value': 'defer', 'label': '暂缓', 'requires_reason': False}]}, 'rework': {'n6_n8_cycles': 0, 'g2_rework_cycles': 0, 'limit': 3, 'source': '/tmp/codex-h2b-workspace-main-baseline/runs/RUN-20261026-010912/rework_cycles.json', 'case_state_source': '/tmp/codex-h2b-workspace-main-baseline/runs/RUN-20261026-010912/case_states.json', 'missing': True}, 'difference_items': {'path': '/tmp/codex-h2b-workspace-main-baseline/runs/RUN-20261026-010912/n2_diff.json', 'present': False, 'error': '缺失', 'count': 0, 'entries': [], 'unresolved_ids': [], 'unresolved_count': 0, 'has_change': None, 'self_check_ok': None, 'mode': 'drill'}, 'case_states': {'path': '/tmp/codex-h2b-workspace-main-baseline/runs/RUN-20261026-010912/case_states.json', 'present': False, 'error': '缺失', 'created_at': '2026-10-26T01:09:12.941270', 'cases': [], 'count': 0, 'pending_own': [], 'pending_foreign_count': 0, 'pending_foreign': [], 'rework_cycles': None}, 'conflicts': {'total': 0, 'expected_total': None, 'blocks_release': 0, 'open': 0, 'source': '/tmp/codex-h2b-workspace-main-baseline/conflicts/conflicts.json', 'consistent': True}, 'baselines': [], 'server_authority': '闸门态权威在 kb/tools/gate.py（gate_state + anchor）；本视图是只读投影。'}
+----------------------------- Captured stdout call -----------------------------
+ERROR:    2026-10-26 01:09:13 | [TriggerFlowExecution] [chunk.failed] [run=55b62b2c7c0c4a1cbd6b7ee850e4d61d] Chunk 'n1_manifest' failed.
+ERROR:    2026-10-26 01:09:13 | [TriggerFlowExecution] [triggerflow.execution_failed] [run=77bf4570beaa44c48e4f73e9d8450090] TriggerFlow execution '5a04c3b1dbd0461dab68a9eab8d22a64' failed.
+ERROR:    2026-10-26 01:09:13 | [TriggerFlowExecution] [chunk.failed] [run=9516cbf864e14e7b8502be90dbb1bd63] Chunk 'n0_baseline' failed.
+------------------------------ Captured log call -------------------------------
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=55b62b2c7c0c4a1cbd6b7ee850e4d61d] Chunk 'n1_manifest' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [triggerflow.execution_failed] [run=77bf4570beaa44c48e4f73e9d8450090] TriggerFlow execution '5a04c3b1dbd0461dab68a9eab8d22a64' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=9516cbf864e14e7b8502be90dbb1bd63] Chunk 'n0_baseline' failed.
+_____________________ test_dual_counts_and_e2_are_exposed ______________________
+tests/test_api.py:129: in test_dual_counts_and_e2_are_exposed
+    _wait_interrupt(client, rid, "G1_diff_confirm")
+tests/test_api.py:44: in _wait_interrupt
+    raise AssertionError(f"运行失败：{view}")
+E   AssertionError: 运行失败：{'run_id': 'RUN-20261026-010913', 'run_dir': '/tmp/codex-h2b-workspace-main-baseline/runs/RUN-20261026-010913', 'baseline': 'v0', 'status': 'failed', 'error': 'FileNotFoundError: 夹具缺 n1_manifest_new.json', 'notes': ['执行已关闭：reason=run_failed close_result=dict'], 'current_node': None, 'mode': 'drill', 'created_at': '2026-10-26T01:09:13.070398', 'updated_at': '2026-10-26T01:09:13.070404', 'node_history': [{'node': 'N0', 'status': 'ok', 'kind': 'node_finished', 'at': 1792976953.1659253, 'detail': {'baseline': 'v0', 'fixture_files': 0, 'gate_init_rc': 0, 'mode': 'drill', 'source': 'drill_fixture', 'summary': 'N0：预置数据（夹具）初始化（复制 0 个夹具文件，复制清单 11 项），gate.py init rc=0，baseline=v0'}}, {'node': 'N1', 'status': 'failed', 'kind': 'node_failed', 'at': 1792976953.166719, 'detail': {'message': '夹具缺 n1_manifest_new.json', 'source': 'drill_fixture', 'summary': 'N1：夹具缺 n1_manifest_new.json'}}], 'gate_history': [], 'gates_authority': {'present': True, 'run_id': 'RUN-20261026-010913', 'source': '/tmp/codex-h2b-workspace-main-baseline/runs/RUN-20261026-010913/gates.json', 'schema': 'kb/gate-state', 'version': 1, 'updated_at': None, 'gates': {'G1_diff_confirm': {'decision': 'pending', 'status': 'pending', 'actor': None, 'actor_kind': None, 'human_signed': False, 'signed_at': None, 'note': None, 'rework_target': None, 'history_len': 0, 'history': []}, 'G2_report_accept': {'decision': 'pending', 'status': 'pending', 'actor': None, 'actor_kind': None, 'human_signed': False, 'signed_at': None, 'note': None, 'rework_target': None, 'history_len': 0, 'history': []}, 'G3_regression_decision': {'decision': 'pending', 'status': 'pending', 'actor': None, 'actor_kind': None, 'human_signed': False, 'signed_at': None, 'note': None, 'rework_target': None, 'history_len': 0, 'history': []}}, 'all_signed': False, 'human_signed_all': False, 'anchor_ok': True, 'anchor_detail': '锚一致（000eee1f6251…）', 'divergences': []}, 'pending_interrupt': None, 'counts': None, 'evidence': None, 'job': None, 'slot': {'locked': False, 'holder': None, 'holder_alive': None, 'holder_alive_known': False, 'holder_job_id': None, 'holder_job_pid': None, 'holder_phase': None, 'format_version': None, 'queued': [], 'queue_depth': 0}, 'blockers': [{'code': 'I3_EVIDENCE_MISSING', 'severity': 'blocker', 'title': '无全跑证据，判据不可判', 'message': '尚未产出 N9 全跑日志 ⇒ 两套口径都无法取数，不得判绿。', 'refs': []}, {'code': 'I4_CONFLICTS_MISSING', 'severity': 'blocker', 'title': '冲突清单缺失', 'message': '找不到 /tmp/codex-h2b-workspace-main-baseline/conflicts/conflicts.json ⇒ I4 无法判定，按未清零处理。', 'refs': ['/tmp/codex-h2b-workspace-main-baseline/conflicts/conflicts.json']}], 'can': {'judge_pass': False, 'promote': False}, 'events': [{'detail': {'baseline': 'v0', 'drill_fixture': '/tmp/codex-h2b-workspace-main-baseline/runs/RUN-20261015-120626', 'mode': 'drill', 'project': '/tmp/codex-h2b-empty-environment', 'scenario': 'happy'}, 'kind': 'run_started', 'node': None, 'provisional': False, 'refs': [], 'run_id': 'RUN-20261026-010913', 'seq': 1, 'status': 'info', 'ts': 1792976953.0704138}, {'detail': {}, 'kind': 'node_started', 'node': 'N0', 'provisional': False, 'refs': [], 'run_id': 'RUN-20261026-010913', 'seq': 2, 'status': 'running', 'ts': 1792976953.0771642}, {'detail': {'baseline': 'v0', 'fixture_files': 0, 'gate_init_rc': 0, 'mode': 'drill', 'source': 'drill_fixture', 'summary': 'N0：预置数据（夹具）初始化（复制 0 个夹具文件，复制清单 11 项），gate.py init rc=0，baseline=v0'}, 'kind': 'node_finished', 'node': 'N0', 'provisional': False, 'refs': ['/tmp/codex-h2b-workspace-main-baseline/runs/RUN-20261026-010913'], 'run_id': 'RUN-20261026-010913', 'seq': 3, 'status': 'ok', 'ts': 1792976953.1659253}, {'detail': {}, 'kind': 'node_started', 'node': 'N1', 'provisional': False, 'refs': [], 'run_id': 'RUN-20261026-010913', 'seq': 4, 'status': 'running', 'ts': 1792976953.1665952}, {'detail': {'message': '夹具缺 n1_manifest_new.json', 'source': 'drill_fixture', 'summary': 'N1：夹具缺 n1_manifest_new.json'}, 'kind': 'node_failed', 'node': 'N1', 'provisional': False, 'refs': [], 'run_id': 'RUN-20261026-010913', 'seq': 5, 'status': 'failed', 'ts': 1792976953.166719}, {'detail': {'message': 'FileNotFoundError: 夹具缺 n1_manifest_new.json', 'rule': "失败必须显式收敛：status=failed + error + 清 pending + 关闭执行；不得把崩溃伪装成'在等人工'"}, 'kind': 'warning', 'node': 'lifecycle', 'provisional': False, 'refs': [], 'run_id': 'RUN-20261026-010913', 'seq': 6, 'status': 'failed', 'ts': 1792976953.1717408}], 'project': '/tmp/codex-h2b-empty-environment', 's0_record_id': None, 'agents': [{'role': 'analyst', 'name': 'simenv-analyst', 'nodes': ['N3'], 'active_node': 'N3', 'status': 'idle', 'last_action': '—', 'elapsed_s': None, 'summary': '产物未生成', 'mode': '—', 'evidence': [], 'note': None, 'capabilities': {'implemented': True, 'dependencies_ready': None, 'execution': 'not_started', 'verification_scope': None}}, {'role': 'author', 'name': 'simenv-author', 'nodes': ['N6'], 'active_node': 'N6', 'status': 'idle', 'last_action': '—', 'elapsed_s': None, 'summary': '产物未生成', 'mode': '—', 'evidence': [], 'note': None, 'capabilities': {'implemented': True, 'dependencies_ready': None, 'execution': 'not_started', 'verification_scope': None}}, {'role': 'checker', 'name': 'simenv-checker', 'nodes': ['N8', 'N10'], 'active_node': 'N8', 'status': 'idle', 'last_action': '—', 'elapsed_s': None, 'summary': '产物未生成', 'mode': '—', 'evidence': [], 'note': None, 'capabilities': {'implemented': True, 'dependencies_ready': None, 'execution': 'not_started', 'verification_scope': None}}, {'role': 'guardian', 'name': 'simenv-guardian', 'nodes': ['N11'], 'active_node': 'N11', 'status': 'idle', 'last_action': '—', 'elapsed_s': None, 'summary': '待命：本次尚未进入 N11', 'mode': '—', 'evidence': [], 'note': 'N11 证据守护（成链判断/返工）已实现；本卡为事件投影，验证范围以服务端证据为准。', 'capabilities': {'implemented': True, 'dependencies_ready': None, 'execution': 'not_started', 'verification_scope': None}}, {'role': 'reporter', 'name': 'simenv-reporter', 'nodes': ['N12'], 'active_node': 'N12', 'status': 'idle', 'last_action': '—', 'elapsed_s': None, 'summary': '产物未生成', 'mode': '—', 'evidence': [], 'note': None, 'capabilities': {'implemented': True, 'dependencies_ready': None, 'execution': 'not_started', 'verification_scope': None}}], 'stage_map': [{'key': 'ingest', 'name': '摄取', 'nodes': ['N0', 'N1', 'N2', 'N3', 'N4']}, {'key': 'revise', 'name': '修订', 'nodes': ['N5', 'N6', 'N7', 'N8']}, {'key': 'verify', 'name': '验证', 'nodes': ['N9', 'N10', 'N11', 'N12']}, {'key': 'decide', 'name': '决策', 'nodes': ['N13', 'N14', 'N15', 'N16']}], 'agents_authority': 'projection', 'gate_options': {'G1_diff_confirm': [{'value': 'confirmed', 'label': '差异确认', 'requires_reason': False}, {'value': 'ignored', 'label': '忽略（须给理由）', 'requires_reason': True}, {'value': 'disputed', 'label': '有疑义 ⇒ 转人工裁决', 'requires_reason': True}], 'G2_report_accept': [{'value': 'accept', 'label': '接受报告', 'requires_reason': False}, {'value': 'rework', 'label': '返工', 'requires_reason': True}], 'G3_regression_decision': [{'value': 'full_now', 'label': '立即全量回归', 'requires_reason': False}, {'value': 'subset_only', 'label': '仅受影响子集回归', 'requires_reason': False}, {'value': 'milestone_only', 'label': '仅里程碑', 'requires_reason': False}, {'value': 'defer', 'label': '暂缓', 'requires_reason': False}]}, 'rework': {'n6_n8_cycles': 0, 'g2_rework_cycles': 0, 'limit': 3, 'source': '/tmp/codex-h2b-workspace-main-baseline/runs/RUN-20261026-010913/rework_cycles.json', 'case_state_source': '/tmp/codex-h2b-workspace-main-baseline/runs/RUN-20261026-010913/case_states.json', 'missing': True}, 'difference_items': {'path': '/tmp/codex-h2b-workspace-main-baseline/runs/RUN-20261026-010913/n2_diff.json', 'present': False, 'error': '缺失', 'count': 0, 'entries': [], 'unresolved_ids': [], 'unresolved_count': 0, 'has_change': None, 'self_check_ok': None, 'mode': 'drill'}, 'case_states': {'path': '/tmp/codex-h2b-workspace-main-baseline/runs/RUN-20261026-010913/case_states.json', 'present': False, 'error': '缺失', 'created_at': '2026-10-26T01:09:13.070398', 'cases': [], 'count': 0, 'pending_own': [], 'pending_foreign_count': 0, 'pending_foreign': [], 'rework_cycles': None}, 'conflicts': {'total': 0, 'expected_total': None, 'blocks_release': 0, 'open': 0, 'source': '/tmp/codex-h2b-workspace-main-baseline/conflicts/conflicts.json', 'consistent': True}, 'baselines': [], 'server_authority': '闸门态权威在 kb/tools/gate.py（gate_state + anchor）；本视图是只读投影。'}
+----------------------------- Captured stdout call -----------------------------
+ERROR:    2026-10-26 01:09:13 | [TriggerFlowExecution] [chunk.failed] [run=33859a859ad74747894924ce14b41ca2] Chunk 'n1_manifest' failed.
+ERROR:    2026-10-26 01:09:13 | [TriggerFlowExecution] [triggerflow.execution_failed] [run=f126ec1b9a8b46c68fbe8729c806cce3] TriggerFlow execution '9caa1925d1fa4446891d28cc45e006f3' failed.
+ERROR:    2026-10-26 01:09:13 | [TriggerFlowExecution] [chunk.failed] [run=06803d6d762248a78413d7fe7526575f] Chunk 'n0_baseline' failed.
+------------------------------ Captured log call -------------------------------
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=33859a859ad74747894924ce14b41ca2] Chunk 'n1_manifest' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [triggerflow.execution_failed] [run=f126ec1b9a8b46c68fbe8729c806cce3] TriggerFlow execution '9caa1925d1fa4446891d28cc45e006f3' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=06803d6d762248a78413d7fe7526575f] Chunk 'n0_baseline' failed.
+_____________________ test_events_endpoint_is_whitelisted ______________________
+tests/test_api.py:151: in test_events_endpoint_is_whitelisted
+    _wait_interrupt(client, rid, "G1_diff_confirm")
+tests/test_api.py:44: in _wait_interrupt
+    raise AssertionError(f"运行失败：{view}")
+E   AssertionError: 运行失败：{'run_id': 'RUN-20261026-010913', 'run_dir': '/tmp/codex-h2b-workspace-main-baseline/runs/RUN-20261026-010913', 'baseline': 'v0', 'status': 'failed', 'error': 'FileNotFoundError: 夹具缺 n1_manifest_new.json', 'notes': ['执行已关闭：reason=run_failed close_result=dict'], 'current_node': None, 'mode': 'drill', 'created_at': '2026-10-26T01:09:13.198353', 'updated_at': '2026-10-26T01:09:13.198360', 'node_history': [{'node': 'N0', 'status': 'ok', 'kind': 'node_finished', 'at': 1792976953.2877123, 'detail': {'baseline': 'v0', 'fixture_files': 0, 'gate_init_rc': 0, 'mode': 'drill', 'source': 'drill_fixture', 'summary': 'N0：预置数据（夹具）初始化（复制 0 个夹具文件，复制清单 11 项），gate.py init rc=0，baseline=v0'}}, {'node': 'N1', 'status': 'failed', 'kind': 'node_failed', 'at': 1792976953.2884684, 'detail': {'message': '夹具缺 n1_manifest_new.json', 'source': 'drill_fixture', 'summary': 'N1：夹具缺 n1_manifest_new.json'}}], 'gate_history': [], 'gates_authority': {'present': True, 'run_id': 'RUN-20261026-010913', 'source': '/tmp/codex-h2b-workspace-main-baseline/runs/RUN-20261026-010913/gates.json', 'schema': 'kb/gate-state', 'version': 1, 'updated_at': None, 'gates': {'G1_diff_confirm': {'decision': 'pending', 'status': 'pending', 'actor': None, 'actor_kind': None, 'human_signed': False, 'signed_at': None, 'note': None, 'rework_target': None, 'history_len': 0, 'history': []}, 'G2_report_accept': {'decision': 'pending', 'status': 'pending', 'actor': None, 'actor_kind': None, 'human_signed': False, 'signed_at': None, 'note': None, 'rework_target': None, 'history_len': 0, 'history': []}, 'G3_regression_decision': {'decision': 'pending', 'status': 'pending', 'actor': None, 'actor_kind': None, 'human_signed': False, 'signed_at': None, 'note': None, 'rework_target': None, 'history_len': 0, 'history': []}}, 'all_signed': False, 'human_signed_all': False, 'anchor_ok': True, 'anchor_detail': '锚一致（000eee1f6251…）', 'divergences': []}, 'pending_interrupt': None, 'counts': None, 'evidence': None, 'job': None, 'slot': {'locked': False, 'holder': None, 'holder_alive': None, 'holder_alive_known': False, 'holder_job_id': None, 'holder_job_pid': None, 'holder_phase': None, 'format_version': None, 'queued': [], 'queue_depth': 0}, 'blockers': [{'code': 'I3_EVIDENCE_MISSING', 'severity': 'blocker', 'title': '无全跑证据，判据不可判', 'message': '尚未产出 N9 全跑日志 ⇒ 两套口径都无法取数，不得判绿。', 'refs': []}, {'code': 'I4_CONFLICTS_MISSING', 'severity': 'blocker', 'title': '冲突清单缺失', 'message': '找不到 /tmp/codex-h2b-workspace-main-baseline/conflicts/conflicts.json ⇒ I4 无法判定，按未清零处理。', 'refs': ['/tmp/codex-h2b-workspace-main-baseline/conflicts/conflicts.json']}], 'can': {'judge_pass': False, 'promote': False}, 'events': [{'detail': {'baseline': 'v0', 'drill_fixture': '/tmp/codex-h2b-workspace-main-baseline/runs/RUN-20261015-120626', 'mode': 'drill', 'project': '/tmp/codex-h2b-empty-environment', 'scenario': 'happy'}, 'kind': 'run_started', 'node': None, 'provisional': False, 'refs': [], 'run_id': 'RUN-20261026-010913', 'seq': 1, 'status': 'info', 'ts': 1792976953.1983724}, {'detail': {}, 'kind': 'node_started', 'node': 'N0', 'provisional': False, 'refs': [], 'run_id': 'RUN-20261026-010913', 'seq': 2, 'status': 'running', 'ts': 1792976953.2032638}, {'detail': {'baseline': 'v0', 'fixture_files': 0, 'gate_init_rc': 0, 'mode': 'drill', 'source': 'drill_fixture', 'summary': 'N0：预置数据（夹具）初始化（复制 0 个夹具文件，复制清单 11 项），gate.py init rc=0，baseline=v0'}, 'kind': 'node_finished', 'node': 'N0', 'provisional': False, 'refs': ['/tmp/codex-h2b-workspace-main-baseline/runs/RUN-20261026-010913'], 'run_id': 'RUN-20261026-010913', 'seq': 3, 'status': 'ok', 'ts': 1792976953.2877123}, {'detail': {}, 'kind': 'node_started', 'node': 'N1', 'provisional': False, 'refs': [], 'run_id': 'RUN-20261026-010913', 'seq': 4, 'status': 'running', 'ts': 1792976953.2883382}, {'detail': {'message': '夹具缺 n1_manifest_new.json', 'source': 'drill_fixture', 'summary': 'N1：夹具缺 n1_manifest_new.json'}, 'kind': 'node_failed', 'node': 'N1', 'provisional': False, 'refs': [], 'run_id': 'RUN-20261026-010913', 'seq': 5, 'status': 'failed', 'ts': 1792976953.2884684}, {'detail': {'message': 'FileNotFoundError: 夹具缺 n1_manifest_new.json', 'rule': "失败必须显式收敛：status=failed + error + 清 pending + 关闭执行；不得把崩溃伪装成'在等人工'"}, 'kind': 'warning', 'node': 'lifecycle', 'provisional': False, 'refs': [], 'run_id': 'RUN-20261026-010913', 'seq': 6, 'status': 'failed', 'ts': 1792976953.2945035}], 'project': '/tmp/codex-h2b-empty-environment', 's0_record_id': None, 'agents': [{'role': 'analyst', 'name': 'simenv-analyst', 'nodes': ['N3'], 'active_node': 'N3', 'status': 'idle', 'last_action': '—', 'elapsed_s': None, 'summary': '产物未生成', 'mode': '—', 'evidence': [], 'note': None, 'capabilities': {'implemented': True, 'dependencies_ready': None, 'execution': 'not_started', 'verification_scope': None}}, {'role': 'author', 'name': 'simenv-author', 'nodes': ['N6'], 'active_node': 'N6', 'status': 'idle', 'last_action': '—', 'elapsed_s': None, 'summary': '产物未生成', 'mode': '—', 'evidence': [], 'note': None, 'capabilities': {'implemented': True, 'dependencies_ready': None, 'execution': 'not_started', 'verification_scope': None}}, {'role': 'checker', 'name': 'simenv-checker', 'nodes': ['N8', 'N10'], 'active_node': 'N8', 'status': 'idle', 'last_action': '—', 'elapsed_s': None, 'summary': '产物未生成', 'mode': '—', 'evidence': [], 'note': None, 'capabilities': {'implemented': True, 'dependencies_ready': None, 'execution': 'not_started', 'verification_scope': None}}, {'role': 'guardian', 'name': 'simenv-guardian', 'nodes': ['N11'], 'active_node': 'N11', 'status': 'idle', 'last_action': '—', 'elapsed_s': None, 'summary': '待命：本次尚未进入 N11', 'mode': '—', 'evidence': [], 'note': 'N11 证据守护（成链判断/返工）已实现；本卡为事件投影，验证范围以服务端证据为准。', 'capabilities': {'implemented': True, 'dependencies_ready': None, 'execution': 'not_started', 'verification_scope': None}}, {'role': 'reporter', 'name': 'simenv-reporter', 'nodes': ['N12'], 'active_node': 'N12', 'status': 'idle', 'last_action': '—', 'elapsed_s': None, 'summary': '产物未生成', 'mode': '—', 'evidence': [], 'note': None, 'capabilities': {'implemented': True, 'dependencies_ready': None, 'execution': 'not_started', 'verification_scope': None}}], 'stage_map': [{'key': 'ingest', 'name': '摄取', 'nodes': ['N0', 'N1', 'N2', 'N3', 'N4']}, {'key': 'revise', 'name': '修订', 'nodes': ['N5', 'N6', 'N7', 'N8']}, {'key': 'verify', 'name': '验证', 'nodes': ['N9', 'N10', 'N11', 'N12']}, {'key': 'decide', 'name': '决策', 'nodes': ['N13', 'N14', 'N15', 'N16']}], 'agents_authority': 'projection', 'gate_options': {'G1_diff_confirm': [{'value': 'confirmed', 'label': '差异确认', 'requires_reason': False}, {'value': 'ignored', 'label': '忽略（须给理由）', 'requires_reason': True}, {'value': 'disputed', 'label': '有疑义 ⇒ 转人工裁决', 'requires_reason': True}], 'G2_report_accept': [{'value': 'accept', 'label': '接受报告', 'requires_reason': False}, {'value': 'rework', 'label': '返工', 'requires_reason': True}], 'G3_regression_decision': [{'value': 'full_now', 'label': '立即全量回归', 'requires_reason': False}, {'value': 'subset_only', 'label': '仅受影响子集回归', 'requires_reason': False}, {'value': 'milestone_only', 'label': '仅里程碑', 'requires_reason': False}, {'value': 'defer', 'label': '暂缓', 'requires_reason': False}]}, 'rework': {'n6_n8_cycles': 0, 'g2_rework_cycles': 0, 'limit': 3, 'source': '/tmp/codex-h2b-workspace-main-baseline/runs/RUN-20261026-010913/rework_cycles.json', 'case_state_source': '/tmp/codex-h2b-workspace-main-baseline/runs/RUN-20261026-010913/case_states.json', 'missing': True}, 'difference_items': {'path': '/tmp/codex-h2b-workspace-main-baseline/runs/RUN-20261026-010913/n2_diff.json', 'present': False, 'error': '缺失', 'count': 0, 'entries': [], 'unresolved_ids': [], 'unresolved_count': 0, 'has_change': None, 'self_check_ok': None, 'mode': 'drill'}, 'case_states': {'path': '/tmp/codex-h2b-workspace-main-baseline/runs/RUN-20261026-010913/case_states.json', 'present': False, 'error': '缺失', 'created_at': '2026-10-26T01:09:13.198353', 'cases': [], 'count': 0, 'pending_own': [], 'pending_foreign_count': 0, 'pending_foreign': [], 'rework_cycles': None}, 'conflicts': {'total': 0, 'expected_total': None, 'blocks_release': 0, 'open': 0, 'source': '/tmp/codex-h2b-workspace-main-baseline/conflicts/conflicts.json', 'consistent': True}, 'baselines': [], 'server_authority': '闸门态权威在 kb/tools/gate.py（gate_state + anchor）；本视图是只读投影。'}
+----------------------------- Captured stdout call -----------------------------
+ERROR:    2026-10-26 01:09:13 | [TriggerFlowExecution] [chunk.failed] [run=414fe5396d7f4ef390cd2b84d1c03e05] Chunk 'n1_manifest' failed.
+ERROR:    2026-10-26 01:09:13 | [TriggerFlowExecution] [triggerflow.execution_failed] [run=9203fb4ef61e47d38ac13c214a85ebe8] TriggerFlow execution 'ced66564b0984c80810e14857e2156f1' failed.
+ERROR:    2026-10-26 01:09:13 | [TriggerFlowExecution] [chunk.failed] [run=3ac284d326054ee1811f3d4c2cadb641] Chunk 'n0_baseline' failed.
+------------------------------ Captured log call -------------------------------
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=414fe5396d7f4ef390cd2b84d1c03e05] Chunk 'n1_manifest' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [triggerflow.execution_failed] [run=9203fb4ef61e47d38ac13c214a85ebe8] TriggerFlow execution 'ced66564b0984c80810e14857e2156f1' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=3ac284d326054ee1811f3d4c2cadb641] Chunk 'n0_baseline' failed.
+___________________________ test_baselines_endpoint ____________________________
+tests/test_api_ui_contract.py:22: in test_baselines_endpoint
+    assert "v0" in ids
+E   AssertionError: assert 'v0' in []
+_________________________ test_env_check_current_root __________________________
+tests/test_api_ui_contract.py:29: in test_env_check_current_root
+    assert body["ok"] is True
+E   assert False is True
+________________________ test_fs_dirs_lists_env_parent _________________________
+tests/test_api_ui_contract.py:45: in test_fs_dirs_lists_env_parent
+    assert r.status_code == 200
+E   assert 403 == 200
+E    +  where 403 = <Response [403 Forbidden]>.status_code
+________________ test_gate_material_projection_has_diff_entries ________________
+tests/test_api_ui_contract.py:81: in test_gate_material_projection_has_diff_entries
+    assert pending.get("payload", {}).get("gate") == "G1_diff_confirm"
+E   AssertionError: assert None == 'G1_diff_confirm'
+E    +  where None = <built-in method get of dict object at 0x7637aebec600>('gate')
+E    +    where <built-in method get of dict object at 0x7637aebec600> = {}.get
+E    +      where {} = <built-in method get of dict object at 0x7637aed23c40>('payload', {})
+E    +        where <built-in method get of dict object at 0x7637aed23c40> = {}.get
+----------------------------- Captured stdout call -----------------------------
+ERROR:    2026-10-26 01:09:13 | [TriggerFlowExecution] [chunk.failed] [run=567a83798f70479da503f34a2e6b8e3f] Chunk 'n1_manifest' failed.
+ERROR:    2026-10-26 01:09:13 | [TriggerFlowExecution] [triggerflow.execution_failed] [run=237e5fcac7ab42c3ba80767ffa217ec4] TriggerFlow execution '23876e330a524d478df9fb30bc594d89' failed.
+ERROR:    2026-10-26 01:09:13 | [TriggerFlowExecution] [chunk.failed] [run=f47b8de1d4604544a53360e58a636396] Chunk 'n0_baseline' failed.
+------------------------------ Captured log call -------------------------------
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=567a83798f70479da503f34a2e6b8e3f] Chunk 'n1_manifest' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [triggerflow.execution_failed] [run=237e5fcac7ab42c3ba80767ffa217ec4] TriggerFlow execution '23876e330a524d478df9fb30bc594d89' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=f47b8de1d4604544a53360e58a636396] Chunk 'n0_baseline' failed.
+____________ test_drill_run_produces_readonly_archive_and_clears_e2 ____________
+tests/test_archive_e2.py:149: in test_drill_run_produces_readonly_archive_and_clears_e2
+    await m.decide(run_id=rid, gate="G1_diff_confirm", decision="confirmed", actor="human:e2",
+workflows/main_flow.py:701: in decide
+    raise KeyError(
+E   KeyError: '闸门 G1_diff_confirm 当前没有待处理中断（可能已被决策，或执行未停在该闸门）；未写权威账本。pending=[]'
+----------------------------- Captured stdout call -----------------------------
+ERROR:    2026-10-26 01:09:13 | [TriggerFlowExecution] [chunk.failed] [run=5f0faf4a33fd4e11b00f002ee69bd709] Chunk 'n1_manifest' failed.
+ERROR:    2026-10-26 01:09:13 | [TriggerFlowExecution] [triggerflow.execution_failed] [run=98501cb719d94542a5327829fe54ec6b] TriggerFlow execution 'c2bfda3a9282498e93037157cf8b2ac8' failed.
+ERROR:    2026-10-26 01:09:13 | [TriggerFlowExecution] [chunk.failed] [run=98f36a2865d14b18bfee194ebd7f2cb3] Chunk 'n0_baseline' failed.
+------------------------------ Captured log call -------------------------------
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=5f0faf4a33fd4e11b00f002ee69bd709] Chunk 'n1_manifest' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [triggerflow.execution_failed] [run=98501cb719d94542a5327829fe54ec6b] TriggerFlow execution 'c2bfda3a9282498e93037157cf8b2ac8' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=98f36a2865d14b18bfee194ebd7f2cb3] Chunk 'n0_baseline' failed.
+_________ test_run_guarded_fresh_env_without_simlib_run_acquires_lock __________
+tests/test_fix_kbtools.py:560: in test_run_guarded_fresh_env_without_simlib_run_acquires_lock
+    proc = subprocess.run(
+/tmp/codex-h2b-runtime/python/lib/python3.12/subprocess.py:548: in run
+    with Popen(*popenargs, **kwargs) as process:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/codex-h2b-runtime/python/lib/python3.12/subprocess.py:1026: in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+/tmp/codex-h2b-runtime/python/lib/python3.12/subprocess.py:1955: in _execute_child
+    raise child_exception_type(errno_num, err_msg, err_filename)
+E   FileNotFoundError: [Errno 2] No such file or directory: 'bash'
+________________ test_v2_lock_judged_by_job_pid_not_process_pid ________________
+tests/test_fix_lifecycle.py:218: in test_v2_lock_judged_by_job_pid_not_process_pid
+    job = runner.submit(run_id="R1", node="N9", command="sleep 30", cwd=tmp_path)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+host/job_runner.py:132: in submit
+    proc = subprocess.Popen(
+/tmp/codex-h2b-runtime/python/lib/python3.12/subprocess.py:1026: in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+/tmp/codex-h2b-runtime/python/lib/python3.12/subprocess.py:1955: in _execute_child
+    raise child_exception_type(errno_num, err_msg, err_filename)
+E   FileNotFoundError: [Errno 2] No such file or directory: '/bin/bash'
+_________________ test_held_slot_is_reclaimed_when_job_is_dead _________________
+tests/test_fix_lifecycle.py:244: in test_held_slot_is_reclaimed_when_job_is_dead
+    job = runner.submit(run_id="R1", node="N9", command="sleep 30", cwd=tmp_path)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+host/job_runner.py:132: in submit
+    proc = subprocess.Popen(
+/tmp/codex-h2b-runtime/python/lib/python3.12/subprocess.py:1026: in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+/tmp/codex-h2b-runtime/python/lib/python3.12/subprocess.py:1955: in _execute_child
+    raise child_exception_type(errno_num, err_msg, err_filename)
+E   FileNotFoundError: [Errno 2] No such file or directory: '/bin/bash'
+___________________ test_job_runner_submit_binds_slot_lease ____________________
+tests/test_fix_lifecycle.py:271: in test_job_runner_submit_binds_slot_lease
+    job = runner.submit(run_id="R9", node="N9", command="sleep 5", cwd=tmp_path)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+host/job_runner.py:132: in submit
+    proc = subprocess.Popen(
+/tmp/codex-h2b-runtime/python/lib/python3.12/subprocess.py:1026: in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+/tmp/codex-h2b-runtime/python/lib/python3.12/subprocess.py:1955: in _execute_child
+    raise child_exception_type(errno_num, err_msg, err_filename)
+E   FileNotFoundError: [Errno 2] No such file or directory: '/bin/bash'
+_____________ test_gate_resume_failure_marks_run_failed_and_closes _____________
+tests/test_fix_lifecycle.py:583: in test_gate_resume_failure_marks_run_failed_and_closes
+    await _drive(m, rid, "G1_diff_confirm")
+tests/test_fix_lifecycle.py:91: in _drive
+    assert ok, (
+E   AssertionError: 未在 25.0s 内到达 G1_diff_confirm；当前='' status=failed error='FileNotFoundError: 夹具缺 n1_manifest_new.json'
+E   assert False
+----------------------------- Captured stdout call -----------------------------
+ERROR:    2026-10-26 01:09:35 | [TriggerFlowExecution] [chunk.failed] [run=1b9ca89732d34b379234776fd12e4dac] Chunk 'n1_manifest' failed.
+ERROR:    2026-10-26 01:09:35 | [TriggerFlowExecution] [triggerflow.execution_failed] [run=8fb10fc9c6524b14ac54da67327bec50] TriggerFlow execution '5967c09f8d15481e91c3ea89857c403c' failed.
+ERROR:    2026-10-26 01:09:35 | [TriggerFlowExecution] [chunk.failed] [run=2861c464757949cf8c7995c2f8095cfb] Chunk 'n0_baseline' failed.
+------------------------------ Captured log call -------------------------------
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=1b9ca89732d34b379234776fd12e4dac] Chunk 'n1_manifest' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [triggerflow.execution_failed] [run=8fb10fc9c6524b14ac54da67327bec50] TriggerFlow execution '5967c09f8d15481e91c3ea89857c403c' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=2861c464757949cf8c7995c2f8095cfb] Chunk 'n0_baseline' failed.
+___________ test_silently_rejected_resume_is_not_reported_as_success ___________
+tests/test_fix_lifecycle.py:612: in test_silently_rejected_resume_is_not_reported_as_success
+    await _drive(m, rid, "G1_diff_confirm")
+tests/test_fix_lifecycle.py:91: in _drive
+    assert ok, (
+E   AssertionError: 未在 25.0s 内到达 G1_diff_confirm；当前='' status=failed error='FileNotFoundError: 夹具缺 n1_manifest_new.json'
+E   assert False
+----------------------------- Captured stdout call -----------------------------
+ERROR:    2026-10-26 01:10:00 | [TriggerFlowExecution] [chunk.failed] [run=db7c060090864e9791eaa040e4ae7fa7] Chunk 'n1_manifest' failed.
+ERROR:    2026-10-26 01:10:00 | [TriggerFlowExecution] [triggerflow.execution_failed] [run=b0662b2c10704cdc93ac2b045bb66c06] TriggerFlow execution '57ad4f90e7cc463ba72fa8c815560313' failed.
+ERROR:    2026-10-26 01:10:00 | [TriggerFlowExecution] [chunk.failed] [run=ab94debae18846e19165f4106af10b74] Chunk 'n0_baseline' failed.
+------------------------------ Captured log call -------------------------------
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=db7c060090864e9791eaa040e4ae7fa7] Chunk 'n1_manifest' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [triggerflow.execution_failed] [run=b0662b2c10704cdc93ac2b045bb66c06] TriggerFlow execution '57ad4f90e7cc463ba72fa8c815560313' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=ab94debae18846e19165f4106af10b74] Chunk 'n0_baseline' failed.
+____________________ test_dead_job_failure_closes_execution ____________________
+tests/test_fix_lifecycle.py:636: in test_dead_job_failure_closes_execution
+    await _drive(m, rid, "G1_diff_confirm")
+tests/test_fix_lifecycle.py:91: in _drive
+    assert ok, (
+E   AssertionError: 未在 25.0s 内到达 G1_diff_confirm；当前='' status=failed error='FileNotFoundError: 夹具缺 n1_manifest_new.json'
+E   assert False
+----------------------------- Captured stdout call -----------------------------
+ERROR:    2026-10-26 01:10:26 | [TriggerFlowExecution] [chunk.failed] [run=cd9cb422a9b3444b87c9bd0d27820b45] Chunk 'n1_manifest' failed.
+ERROR:    2026-10-26 01:10:26 | [TriggerFlowExecution] [triggerflow.execution_failed] [run=94e5c9ba217d4f35b96ff2874b167282] TriggerFlow execution '4aa3662c9f34430e9319574cc531d4ad' failed.
+ERROR:    2026-10-26 01:10:26 | [TriggerFlowExecution] [chunk.failed] [run=5a105e5ba31e4a3e88afad368ad833ad] Chunk 'n0_baseline' failed.
+------------------------------ Captured log call -------------------------------
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=cd9cb422a9b3444b87c9bd0d27820b45] Chunk 'n1_manifest' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [triggerflow.execution_failed] [run=94e5c9ba217d4f35b96ff2874b167282] TriggerFlow execution '4aa3662c9f34430e9319574cc531d4ad' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=5a105e5ba31e4a3e88afad368ad833ad] Chunk 'n0_baseline' failed.
+_____________________ test_submit_exception_releases_slot ______________________
+tests/test_fix_lifecycle.py:709: in test_submit_exception_releases_slot
+    await _drive(m, rid, "G1_diff_confirm")
+tests/test_fix_lifecycle.py:91: in _drive
+    assert ok, (
+E   AssertionError: 未在 25.0s 内到达 G1_diff_confirm；当前='' status=failed error='FileNotFoundError: 夹具缺 n1_manifest_new.json'
+E   assert False
+----------------------------- Captured stdout call -----------------------------
+ERROR:    2026-10-26 01:10:51 | [TriggerFlowExecution] [chunk.failed] [run=c8d9b999b4eb48d9824da6fa9d283a06] Chunk 'n1_manifest' failed.
+ERROR:    2026-10-26 01:10:51 | [TriggerFlowExecution] [triggerflow.execution_failed] [run=c10b3f7b7a0c473c9bc66d171dd8ec46] TriggerFlow execution '75f5baaf89904e56a8cb65650888f126' failed.
+ERROR:    2026-10-26 01:10:51 | [TriggerFlowExecution] [chunk.failed] [run=3981351717d34220ba6a0e582074a734] Chunk 'n0_baseline' failed.
+------------------------------ Captured log call -------------------------------
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=c8d9b999b4eb48d9824da6fa9d283a06] Chunk 'n1_manifest' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [triggerflow.execution_failed] [run=c10b3f7b7a0c473c9bc66d171dd8ec46] TriggerFlow execution '75f5baaf89904e56a8cb65650888f126' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=3981351717d34220ba6a0e582074a734] Chunk 'n0_baseline' failed.
+________________ test_restore_without_snapshot_fails_explicitly ________________
+tests/test_fix_lifecycle.py:736: in test_restore_without_snapshot_fails_explicitly
+    await _drive(m, rid, "G1_diff_confirm")
+tests/test_fix_lifecycle.py:91: in _drive
+    assert ok, (
+E   AssertionError: 未在 25.0s 内到达 G1_diff_confirm；当前='' status=failed error='FileNotFoundError: 夹具缺 n1_manifest_new.json'
+E   assert False
+----------------------------- Captured stdout call -----------------------------
+ERROR:    2026-10-26 01:11:16 | [TriggerFlowExecution] [chunk.failed] [run=a7cea3ec2b784812916fcebe93a1a384] Chunk 'n1_manifest' failed.
+ERROR:    2026-10-26 01:11:16 | [TriggerFlowExecution] [triggerflow.execution_failed] [run=72ac733428a84389bb6343cfc1d4ad6f] TriggerFlow execution '731cb414b88d4bbd87fc1ec2b95f85c0' failed.
+ERROR:    2026-10-26 01:11:16 | [TriggerFlowExecution] [chunk.failed] [run=0fa0ee97f90a47cd92bfe7d65c3ca718] Chunk 'n0_baseline' failed.
+------------------------------ Captured log call -------------------------------
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=a7cea3ec2b784812916fcebe93a1a384] Chunk 'n1_manifest' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [triggerflow.execution_failed] [run=72ac733428a84389bb6343cfc1d4ad6f] TriggerFlow execution '731cb414b88d4bbd87fc1ec2b95f85c0' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=0fa0ee97f90a47cd92bfe7d65c3ca718] Chunk 'n0_baseline' failed.
+_____________ test_restore_with_corrupt_snapshot_fails_explicitly ______________
+tests/test_fix_lifecycle.py:761: in test_restore_with_corrupt_snapshot_fails_explicitly
+    await _drive(m, rid, "G1_diff_confirm")
+tests/test_fix_lifecycle.py:91: in _drive
+    assert ok, (
+E   AssertionError: 未在 25.0s 内到达 G1_diff_confirm；当前='' status=failed error='FileNotFoundError: 夹具缺 n1_manifest_new.json'
+E   assert False
+----------------------------- Captured stdout call -----------------------------
+ERROR:    2026-10-26 01:11:41 | [TriggerFlowExecution] [chunk.failed] [run=081f736691164f53afe0d74592778666] Chunk 'n1_manifest' failed.
+ERROR:    2026-10-26 01:11:41 | [TriggerFlowExecution] [triggerflow.execution_failed] [run=238f025d00414f4c91b886284d6bf6ab] TriggerFlow execution '9eff63b5ad0f4ad4a086bb06736f6638' failed.
+ERROR:    2026-10-26 01:11:41 | [TriggerFlowExecution] [chunk.failed] [run=bf1f59c2ae6b429da0d94a1909259be8] Chunk 'n0_baseline' failed.
+------------------------------ Captured log call -------------------------------
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=081f736691164f53afe0d74592778666] Chunk 'n1_manifest' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [triggerflow.execution_failed] [run=238f025d00414f4c91b886284d6bf6ab] TriggerFlow execution '9eff63b5ad0f4ad4a086bb06736f6638' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=bf1f59c2ae6b429da0d94a1909259be8] Chunk 'n0_baseline' failed.
+___________________ test_restore_rejects_slot_lease_conflict ___________________
+tests/test_fix_lifecycle.py:786: in test_restore_rejects_slot_lease_conflict
+    await _drive(m, rid, "G1_diff_confirm")
+tests/test_fix_lifecycle.py:91: in _drive
+    assert ok, (
+E   AssertionError: 未在 25.0s 内到达 G1_diff_confirm；当前='' status=failed error='FileNotFoundError: 夹具缺 n1_manifest_new.json'
+E   assert False
+----------------------------- Captured stdout call -----------------------------
+ERROR:    2026-10-26 01:12:07 | [TriggerFlowExecution] [chunk.failed] [run=110e882b2be24b6eaa225cdcb250abc2] Chunk 'n1_manifest' failed.
+ERROR:    2026-10-26 01:12:07 | [TriggerFlowExecution] [triggerflow.execution_failed] [run=2983b5ebe7304e659c30c41253e80f79] TriggerFlow execution '360909160a0846a5970317be5536be5e' failed.
+ERROR:    2026-10-26 01:12:07 | [TriggerFlowExecution] [chunk.failed] [run=f4d409b7b08447b993e58dd1c9d4dd8b] Chunk 'n0_baseline' failed.
+------------------------------ Captured log call -------------------------------
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=110e882b2be24b6eaa225cdcb250abc2] Chunk 'n1_manifest' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [triggerflow.execution_failed] [run=2983b5ebe7304e659c30c41253e80f79] TriggerFlow execution '360909160a0846a5970317be5536be5e' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=f4d409b7b08447b993e58dd1c9d4dd8b] Chunk 'n0_baseline' failed.
+_________________ test_restore_rebuilds_lease_from_job_record __________________
+tests/test_fix_lifecycle.py:824: in test_restore_rebuilds_lease_from_job_record
+    await _drive(m, rid, "G1_diff_confirm")
+tests/test_fix_lifecycle.py:91: in _drive
+    assert ok, (
+E   AssertionError: 未在 25.0s 内到达 G1_diff_confirm；当前='' status=failed error='FileNotFoundError: 夹具缺 n1_manifest_new.json'
+E   assert False
+----------------------------- Captured stdout call -----------------------------
+ERROR:    2026-10-26 01:12:32 | [TriggerFlowExecution] [chunk.failed] [run=dbdf1333a9784fbdae3d8c7dc70358be] Chunk 'n1_manifest' failed.
+ERROR:    2026-10-26 01:12:32 | [TriggerFlowExecution] [triggerflow.execution_failed] [run=837a73cfdbf74583b17288750201c781] TriggerFlow execution 'a99e0975ed1d4226bb8785ec0dfa96e5' failed.
+ERROR:    2026-10-26 01:12:32 | [TriggerFlowExecution] [chunk.failed] [run=542920bb014e4e3cae7a8b163422c655] Chunk 'n0_baseline' failed.
+------------------------------ Captured log call -------------------------------
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=dbdf1333a9784fbdae3d8c7dc70358be] Chunk 'n1_manifest' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [triggerflow.execution_failed] [run=837a73cfdbf74583b17288750201c781] TriggerFlow execution 'a99e0975ed1d4226bb8785ec0dfa96e5' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=542920bb014e4e3cae7a8b163422c655] Chunk 'n0_baseline' failed.
+_____________________ test_queue_handoff_wakes_second_run ______________________
+tests/test_fix_lifecycle.py:860: in test_queue_handoff_wakes_second_run
+    await _drive(m, rid_a, "G1_diff_confirm")
+tests/test_fix_lifecycle.py:91: in _drive
+    assert ok, (
+E   AssertionError: 未在 25.0s 内到达 G1_diff_confirm；当前='' status=failed error='FileNotFoundError: 夹具缺 n1_manifest_new.json'
+E   assert False
+----------------------------- Captured stdout call -----------------------------
+ERROR:    2026-10-26 01:12:57 | [TriggerFlowExecution] [chunk.failed] [run=8c395f66f0034bbfacbcd3fe5f1bd412] Chunk 'n1_manifest' failed.
+ERROR:    2026-10-26 01:12:57 | [TriggerFlowExecution] [triggerflow.execution_failed] [run=5ca77ca48f18410bb53efc6e024d9c1a] TriggerFlow execution 'e382d477ca7045afa0ecb12f34442b92' failed.
+ERROR:    2026-10-26 01:12:57 | [TriggerFlowExecution] [chunk.failed] [run=51d9b15284ea44df9941fe949ce2c93a] Chunk 'n0_baseline' failed.
+------------------------------ Captured log call -------------------------------
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=8c395f66f0034bbfacbcd3fe5f1bd412] Chunk 'n1_manifest' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [triggerflow.execution_failed] [run=5ca77ca48f18410bb53efc6e024d9c1a] TriggerFlow execution 'e382d477ca7045afa0ecb12f34442b92' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=51d9b15284ea44df9941fe949ce2c93a] Chunk 'n0_baseline' failed.
+____________________ test_g1_refusal_happens_before_signing ____________________
+tests/test_fix_lifecycle.py:906: in test_g1_refusal_happens_before_signing
+    view = await _drive(m, rid, "G1_diff_confirm")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_fix_lifecycle.py:91: in _drive
+    assert ok, (
+E   AssertionError: 未在 25.0s 内到达 G1_diff_confirm；当前='' status=failed error='FileNotFoundError: 夹具缺 n1_manifest_new.json'
+E   assert False
+----------------------------- Captured stdout call -----------------------------
+ERROR:    2026-10-26 01:13:22 | [TriggerFlowExecution] [chunk.failed] [run=066154f796a845aeb65875c011c68b6b] Chunk 'n1_manifest' failed.
+ERROR:    2026-10-26 01:13:22 | [TriggerFlowExecution] [triggerflow.execution_failed] [run=258154b67b8e4517adc6e085f141a2eb] TriggerFlow execution '45ffb6cc70e045ba87d3c121e30bacdb' failed.
+ERROR:    2026-10-26 01:13:22 | [TriggerFlowExecution] [chunk.failed] [run=3e90b1ae81074972a2c6403ee4e93a51] Chunk 'n0_baseline' failed.
+------------------------------ Captured log call -------------------------------
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=066154f796a845aeb65875c011c68b6b] Chunk 'n1_manifest' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [triggerflow.execution_failed] [run=258154b67b8e4517adc6e085f141a2eb] TriggerFlow execution '45ffb6cc70e045ba87d3c121e30bacdb' failed.
+ERROR    Agently:RuntimeStorageSinkHooker.py:80 [TriggerFlowExecution] [chunk.failed] [run=3e90b1ae81074972a2c6403ee4e93a51] Chunk 'n0_baseline' failed.
+=============================== warnings summary ===============================
+../../../../../../../../../../../../tmp/codex-h2b-runtime/python/lib/python3.12/site-packages/fastapi/testclient.py:1
+  /tmp/codex-h2b-runtime/python/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_admission_and_jobs.py::test_job_command_ending_with_exit_still_writes_rc
+FAILED tests/test_admission_and_jobs.py::test_job_lifecycle_done_cancelled_dead
+FAILED tests/test_admission_and_jobs.py::test_reattach_reports_undelivered - ...
+FAILED tests/test_api.py::test_gate_options_come_from_authority - AssertionEr...
+FAILED tests/test_api.py::test_rejections_happen_before_consuming_the_interrupt
+FAILED tests/test_api.py::test_i4_blocks_full_now_without_killing_the_gate - ...
+FAILED tests/test_api.py::test_dual_counts_and_e2_are_exposed - AssertionErro...
+FAILED tests/test_api.py::test_events_endpoint_is_whitelisted - AssertionErro...
+FAILED tests/test_api_ui_contract.py::test_baselines_endpoint - AssertionErro...
+FAILED tests/test_api_ui_contract.py::test_env_check_current_root - assert Fa...
+FAILED tests/test_api_ui_contract.py::test_fs_dirs_lists_env_parent - assert ...
+FAILED tests/test_api_ui_contract.py::test_gate_material_projection_has_diff_entries
+FAILED tests/test_archive_e2.py::test_drill_run_produces_readonly_archive_and_clears_e2
+FAILED tests/test_fix_kbtools.py::test_run_guarded_fresh_env_without_simlib_run_acquires_lock
+FAILED tests/test_fix_lifecycle.py::test_v2_lock_judged_by_job_pid_not_process_pid
+FAILED tests/test_fix_lifecycle.py::test_held_slot_is_reclaimed_when_job_is_dead
+FAILED tests/test_fix_lifecycle.py::test_job_runner_submit_binds_slot_lease
+FAILED tests/test_fix_lifecycle.py::test_gate_resume_failure_marks_run_failed_and_closes
+FAILED tests/test_fix_lifecycle.py::test_silently_rejected_resume_is_not_reported_as_success
+FAILED tests/test_fix_lifecycle.py::test_dead_job_failure_closes_execution - ...
+FAILED tests/test_fix_lifecycle.py::test_submit_exception_releases_slot - Ass...
+FAILED tests/test_fix_lifecycle.py::test_restore_without_snapshot_fails_explicitly
+FAILED tests/test_fix_lifecycle.py::test_restore_with_corrupt_snapshot_fails_explicitly
+FAILED tests/test_fix_lifecycle.py::test_restore_rejects_slot_lease_conflict
+FAILED tests/test_fix_lifecycle.py::test_restore_rebuilds_lease_from_job_record
+FAILED tests/test_fix_lifecycle.py::test_queue_handoff_wakes_second_run - Ass...
+FAILED tests/test_fix_lifecycle.py::test_g1_refusal_happens_before_signing - ...
+ERROR tests/test_archive_e2.py::test_guard_compile_only_archives_evidence_readonly
+ERROR tests/test_archive_e2.py::test_guard_archive_is_bounded_and_excludes_guard_log
+ERROR tests/test_archive_e2.py::test_guard_cleans_up_scratch_and_leaves_frozen_state
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! KeyboardInterrupt !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+/tmp/codex-h2b-runtime/python/lib/python3.12/asyncio/runners.py:123: KeyboardInterrupt
+(to show a full traceback on KeyboardInterrupt use --full-trace)
+27 failed, 297 passed, 39 skipped, 1 warning, 3 errors in 290.29s (0:04:50)
+
+EXIT_CODE=2

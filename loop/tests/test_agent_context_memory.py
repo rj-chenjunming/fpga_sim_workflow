@@ -125,7 +125,8 @@ def provider(monkeypatch):
             if "wait" in calls:
                 calls["entered"].set()
                 await calls["wait"].wait()
-            return copy.deepcopy(calls["response"])
+            response = calls["response"]
+            return copy.deepcopy(response(calls['inputs'][-1]) if callable(response) else response)
 
     def create():
         agent = Agent()
@@ -223,10 +224,19 @@ async def test_n8_full_request_stays_within_context_budget(ctx, provider, monkey
 
 
 async def test_characterization_author_receives_last_rework(ctx, provider, monkeypatch):
-    monkeypatch.setattr(M, "build_n6_targets", lambda *args: [{"case": "demo", "excerpt": {"text": "old"}}])
+    from host import agent_handoff as H
+    targets = [{"case": "demo", "excerpt": {"text": "old"}}]
+    monkeypatch.setattr(M, "build_n6_targets", lambda *args: targets)
     provider["response"] = n6_response("demo", old="old", rework_resolution=["fixed"])
-    await M.n6_author(Data(ctx, {"n8_check": {"data": {"must_fix": ["fix mask"]}},
-                               "n11_review": {"rework_requests": [{"case": "demo", "what": "check evidence", "basis": "md5"}]}}))
+    n8 = {"data": {"must_fix": ["fix mask"]}}
+    n11 = {"rework_requests": [{"case": "demo", "what": "check evidence", "basis": "md5"}]}
+    assignment = H.assignment(H.build(ctx, n8, n11), targets)
+    # H2a requires explicit per-issue opinions; original context assertions stay intact.
+    provider["response"]['issue_responses'] = [
+        {'issue_id': i['issue_id'], 'target_sha256': assignment['target_sha256'],
+         'disposition': 'blocked', 'explanation': 'needs review', 'edit_refs': []}
+        for i in assignment['issues']]
+    await M.n6_author(Data(ctx, {"n8_check": n8, "n11_review": n11}))
     reasons = provider["inputs"][0]["rework_reasons"]
     assert "fix mask" in reasons and any("check evidence" in reason for reason in reasons)
 

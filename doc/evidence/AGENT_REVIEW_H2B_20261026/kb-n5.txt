@@ -1,0 +1,15 @@
+cwd: /mnt/host/c/Users/chen/Documents/Codex/2026-10-25/referenced-chatgpt-conversation-this-is-an/work/fpga_sim_workflow/loop
+command: ['/tmp/codex-h2b-runtime/python/bin/python3', '../kb/tools/_selftest_n5_reachability.py']
+Python: 3.12.15 (main, Oct 21 2026, 17:43:53) [Clang 23.1.3 ]
+mode: standin; Linux; isolated empty environment/workspace; no FPGA fixture
+[PASS] 1 宏第2实参识别为调用点 (['I2C_SLV_RW', 'PCIE_REG_RW', 'PCIE_REG_RW_B'])
+[PASS] 2 `define 定义行不算调用点 
+[PASS] 3 普通调用不算宏调用 
+[PASS] 4 FORKJN_FOR_BLK_PHASE 变体覆盖 
+[PASS] 5 跨行宏实参覆盖 
+[FAIL] 6 夹具存在 (跳过真实用例检查：/tmp/codex-h2b-kb-checks/runs/RUN-20261015-120626/sandbox/TESTLIB 不存在)
+[PASS] 9 源不可读 ⇒ ok=False（调用方须标 static-only，不许猜 live） (用例源不可读（缺失/二进制）：/mnt/host/c/Users/chen/Documents/Codex/2026-1)
+
+汇总：PASS=6 FAIL=1
+
+EXIT_CODE=1

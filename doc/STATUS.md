@@ -4268,10 +4268,81 @@ kb 自测要求 `rc=0` + 有汇总行 + `FAIL=0` + **通过条数等于验收数
 
 | 编号 | 事项 | 状态 |
 |---|---|---|
-| **E1** | I4 在**真实数据根**生效 | 仍缺可写真实数据根（`/home` ro 挂载）；派生根上已实证（§87、§96.1） |
+| **E1** | I4 在**真实数据根**生效 | 真实根仍 ro（§98.1 实测：只读挂载 + 写探测 `Read-only file system` + 无 sudo）；但"拿到写权后要跑的命令"已在可写根上用**当前权威快照**跑通（§98.3），且修掉了挡住它的指纹硬编码缺陷（§98.2） |
 | **E2** | S0-b 接入（ports/smoke、`ready_for_execution` 可为 true） | 环境侧；D4 因此等 E2 |
 | **E3** | C8 `passed` 形态夹具 | 环境侧（真实通过轮 ≈21.56 h + 写权） |
-| **E4** | 推送 | 本机出网被代理阻断；本轮结束领先 `origin/main` **33** 个提交（`git rev-list --count origin/main..HEAD` 输出复制） |
+| **E4** | 推送 | 本机出网被代理阻断；本轮结束领先 `origin/main` **34** 个提交（`git rev-list --count origin/main..HEAD` 输出复制） |
 | **D1–D4** | 四项裁决 | ✅ 全部已裁（A/A/A/A），处置见 §96 |
 | **R 类 8 条** | 登记不改 | 不变（见 kickoff §2 R 类） |
+
+## 98 E1 实测：真实数据根仍被 ro 挡；可写根上用**当前权威快照**跑通（2026-10-27）
+
+E1 的目标是"让 I4 在**真实**数据根生效"。本轮把它拆成两半，都实测了。
+
+### 98.1 真实数据根：硬阻塞再次实测（不是推测）
+
+| 事实 | 实得 |
+|---|---|
+| 挂载 | `findmnt -T <ENV_ROOT>` ⇒ `/home … ext4 ro,nosuid,nodev,relatime`；而本仓是**同一设备**上的 `rw` bind mount（`/dev/mapper/vg_group-lv_data[/work/chenjunming/change-impact-loop]` ⇒ 所以仓可写、`/home` 其余只读） |
+| 目录写权 | `ENV_ROOT`、`kb`、`kb/conflicts`、`kb/adjudication` 四个目录 `test -w` **全部 NOT-writable** |
+| 写探测 | `touch …/kb/conflicts/.write_probe` ⇒ `Read-only file system`（未产生文件） |
+| 提权 | `id -u`=1025；`sudo -n true` ⇒ `sudo must be owned by uid 0 and have the setuid bit set`（**不可用**） |
+
+**对真实数据根真跑一次**（E1 的命令本体，非 dry-run）：
+
+```
+bash loop/spikes/apply_conflict_adjudication.sh --workspace <ENV_ROOT>/kb \
+     --snapshot doc/evidence/adjudication_author_confirm_20261027
+```
+
+输出（命令原文复制）：指纹校验通过 → `[before] I4 读数：conflicts=72，blocks_release=72，open=72` →
+`[g3 ] full_now 仍被拒` / `subset_only 仍被拒` → `[n16] before … I4 在列=True` →
+`cp: cannot create regular file '<ENV_ROOT>/kb/conflicts/adjudication.json': Read-only file system` →
+`[FAIL] 复制失败（数据根不可写？）`，**退出码 4**（显式失败，不是静默成功）。
+零写入自证：`find <ENV_ROOT> -newer <marker> | wc -l` = **0**。
+
+⇒ 结论：**E1 在本机无法完成**，缺的是"可写真实数据根"或管理员 `remount -o rw /home`（或另一台有写权的机器）。
+
+### 98.2 缺陷：E1 的"一条命令"落不了**当前权威快照**（已修 + 已测）
+
+`apply_conflict_adjudication.sh` 原先把 72 条快照的 md5 **硬编码**在脚本里：用 D1 之后的权威快照
+`doc/evidence/adjudication_author_confirm_20261027`（76 条记录，含 4 条作者确认）跑，直接
+`[FAIL] 快照指纹与登记不符（红线 10）`、退出码 3 —— E1 即使拿到写权也用不了当前快照。
+（红：用 `git show HEAD:loop/spikes/apply_conflict_adjudication.sh` 的旧版实测，退出码 3，期望/实际 md5 都打印了。）
+
+**修法**（红线 10 不放宽）：指纹来源改为优先级 `--expect-md5 <adj>:<conf>` ＞ 快照自带 `md5.txt` ＞
+**仅对默认快照目录**有效的内置登记值；三者都没有 ⇒ 显式失败（"缺少可核指纹"），**不许跳过核验**。
+新增用例 `loop/tests/test_apply_adjudication_snapshot.py`（4 条，全走 `--dry-run`）：自带 md5.txt 通过 /
+被篡改必须红 / 无指纹必须红 / `--expect-md5` 可通过 ⇒ `4 passed in 1.00s`。
+更宽回归：软件层门 `991 passed, 3 deselected, 1 warning in 177.85s`（上一轮 987 + 本切片 4 条；数字来自输出）。
+
+### 98.3 可写根上的 E1 全流程（拿到写权后要跑的就是这条，已跑通）
+
+```bash
+bash loop/spikes/provision_dev_workspace.sh --force --quiet
+bash loop/spikes/apply_conflict_adjudication.sh --workspace <repo>/.dev-ws \
+     --snapshot doc/evidence/adjudication_author_confirm_20261027
+bash loop/spikes/provision_dev_workspace.sh --cleanup     # 跑完删掉
+```
+
+实得（命令输出复制）：
+
+- `[info] 快照：…adjudication_author_confirm_20261027（指纹校验通过；来源：…/md5.txt（快照自带））`
+- 生效前 `[before] … blocks_release=72`、`G3 full_now/subset_only 仍被拒`、`N16 … I4 在列=True`
+- 落账后 `[merge] adjudication.json：72 条裁决已合并进 conflicts（重跑不丢）`；
+  `[verify] 裁决记录=76（去重后 72）；conflicts=72，仍阻断=0`；`[verify] 锚与合并一致性：全部通过`
+- 生效后 `[after] I4 读数：conflicts=72，blocks_release=0，open=0`；
+  `[g3 ] full_now 提交前检查：通过`、`[g3 ] subset_only 提交前检查：通过`；
+  `[n16] after blockers=['I1_UNRESOLVED_ENTRIES','I2_CASES_PENDING','I3_EVIDENCE_MISSING','E2_EVIDENCE_ARCHIVE_EMPTY','F_N16_04_STAGING_RESIDUE']`，**I4 在列=False**
+- 结构核对：数据根里 `adjudication.json` 记录数 **76**，含"作者确认 2026-10-27"的正是 **C2/C11/C38/C58** 四条
+- 退出码 **0**
+
+⇒ E1 的**验收判据三项全部达到**（`blocks_release=0`、`G3 full_now/subset_only` 提交前检查通过、`N16` 不含
+`I4_CONFLICTS_UNCLEARED`），只是发生在**可写派生根**上；真实根那一半仍被 §98.1 的挂载挡着。
+
+### 98.4 E1 的剩余动作（交给人 / 有写权的机器）
+
+1. 拿到可写真实数据根（或 `remount -o rw /home`）后跑 §98.3 的三行命令，把 `--workspace` 换成真实数据根；
+2. 或在一台有写权的机器上跑同样命令（脚本只依赖 `loop/.venv` 与本仓快照，不依赖本机路径）；
+3. 跑完把 `[after] blocks_release=0` / `[g3]` / `[n16]` 三行输出回填 STATUS（**新节，不改本节**）。
 

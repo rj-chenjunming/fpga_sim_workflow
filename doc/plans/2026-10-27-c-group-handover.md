@@ -34,8 +34,10 @@
 
 ```bash
 # 方式 1（推荐）：指向一个**可写数据根**，一条命令完成落账+合并+校验+验证
-bash loop/spikes/apply_conflict_adjudication.sh --workspace <可写数据根> --dry-run   # 先体检
-bash loop/spikes/apply_conflict_adjudication.sh --workspace <可写数据根>
+# ⚠️ 2026-10-27 起要带 --snapshot 指向**当前权威快照**（含 4 条作者确认，76 条记录）；
+#    不带则仍是 72 条快照。指纹来源优先级：--expect-md5 ＞ 快照自带 md5.txt ＞ 仅默认快照的内置值（STATUS §98.2）
+bash loop/spikes/apply_conflict_adjudication.sh --workspace <可写数据根> --snapshot doc/evidence/adjudication_author_confirm_20261027 --dry-run   # 先体检
+bash loop/spikes/apply_conflict_adjudication.sh --workspace <可写数据根> --snapshot doc/evidence/adjudication_author_confirm_20261027
 ```
 
 - 验收：`[after] blocks_release=0`、`[g3] full_now/subset_only 提交前检查：通过`、

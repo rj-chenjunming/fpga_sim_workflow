@@ -3726,3 +3726,74 @@ I4 消费口径（`KbSources.from_workspace` + `contracts._conflict_summary`，�
 
 C 组剩余：**把裁决落到真实数据根（需写授权/可写数据根）**、C8 通过形态夹具、
 C9 S0-b 接入（环境侧）、C11 取消/续跑语义（契约）、C12 运行入口消费 S0（需求）。
+
+---
+
+## 87 C 组修订（五）：I4 生效路径做成一条命令，并在可写数据根上实证解阻（2026-10-27）
+
+上游：`§86` 已把 72 条裁决落账并快照入仓，但真实环境因数据根只读未生效。人指定"让 I4 真生效（写权路径）"。
+
+### 87.1 先把前提复核清楚：不是权限问题，是 `/home` 只读挂载
+
+```
+$ findmnt -T <ENV_ROOT> -o TARGET,FSTYPE,OPTIONS
+/home  ext4  ro,nosuid,nodev,relatime
+$ touch <ENV_ROOT>/kb/conflicts/.write-probe
+touch: cannot touch '…/.write-probe': Read-only file system
+```
+
+⇒ 目录属主虽是本用户、权限 `rwx`，但**文件系统级 ro** ⇒ `chmod` 也无用。这解释了为什么
+`AGENTS.md §4` 的"需可写数据根"必须以 `LOOP_WORKSPACE` 换根，而不是改权限。
+
+### 87.2 交付：`loop/spikes/apply_conflict_adjudication.sh`
+
+一条命令完成「生效」全链（任何人拿到可写数据根即可用）：
+
+```bash
+bash loop/spikes/apply_conflict_adjudication.sh --workspace <可写数据根> --dry-run   # 体检
+bash loop/spikes/apply_conflict_adjudication.sh --workspace <可写数据根>             # 生效
+```
+
+做的事：① 校验快照指纹（`d6ec877…` / `47300360…`，**不符即拒**，红线 10）；② 把
+`adjudication.json` 放进目标数据根 `conflicts/`；③ 重跑 `n1_conflicts.py` 合并（抽取不丢裁决）；
+④ `adjudicate_conflicts.py --verify` 校验锚与一致性；⑤ 打印 **I4 读数**、
+**G3 `full_now`/`subset_only` 提交前检查**、**N16 blockers 是否仍含 `I4_CONFLICTS_UNCLEARED`**。
+不写原 `ENV_ROOT`、不改 `kb/tools/**`。
+
+### 87.3 实证（可写数据根 = `provision_dev_workspace.sh --link-fixture` 影子根）
+
+| 检查项 | 生效前 | 生效后 |
+|---|---|---|
+| I4 读数（`_conflict_summary`） | `conflicts=72, blocks_release=72, open=72` | **`conflicts=72, blocks_release=0, open=0`** |
+| `G3 full_now` 提交前检查 | 被拒：`I4：冲突未清零（72 项 blocks_release）⇒ 不得选 full_now` | **通过** |
+| `G3 subset_only` 提交前检查 | 被拒（同上） | **通过** |
+| N16 `compute_blockers` | 含 `I4_CONFLICTS_UNCLEARED` | **不含**（余下：`I1_UNRESOLVED_ENTRIES`(drill warning)、`I2_CASES_PENDING`、`I3_EVIDENCE_MISSING`、`E2_EVIDENCE_ARCHIVE_EMPTY`、`F_N16_04_STAGING_RESIDUE`） |
+| 抽取合并 | — | `[merge] adjudication.json：72 条裁决已合并进 conflicts（重跑不丢）`；`[verify] 锚与合并一致性：全部通过` |
+
+⇒ **I4 的机制闭环已经打通并实证**：只要给一个可写数据根，`full_now/subset_only` 不再被 I4 拒。
+（N16 仍被 I2/I3 等其它前置挡住，那是另外几条不变式，不是 I4。）
+
+### 87.4 真实环境仍差一步（需环境侧动作，不是代码问题）
+
+真实 `<ENV_ROOT>/kb` 在 ro 挂载上 ⇒ 我无法把裁决写进去，真实轮次里 I4 仍是 72 条阻断。
+要让真实环境生效，需要**环境侧其一**：
+
+1. 把数据根改到可写位置（新数据根 + `LOOP_WORKSPACE` 指过去，并把 `conflicts/`、`index/` 等带过去）；
+2. 或把 `/home` 重新挂成可写（`mount -o remount,rw /home`，需管理员）；
+3. 或由环境 owner 在可写环境上执行 §87.2 的那一条命令（等价于方式 1）。
+
+三者的共同点是：**动作在环境侧，不在本仓**；本仓已把"动作是什么、怎么验证"固化。
+
+### 87.5 本轮门
+
+| 门 | 结果 | 说明 |
+|---|---|---|
+| 文档 | **missing=0、exit=0** | 新增脚本 1 份 + 本节 + 快照 README/计划更新 |
+| kb 自测 / 软件层 / 浏览器 / 端到端 | 未重跑 | 本轮只新增 `spikes/` 脚本与文档，未改产品代码/测试/`kb/tools/**` |
+| I4 生效链 | 上述 §87.3 实证 | 影子数据根（可删）上完成 before/after 对照 |
+
+### 87.6 C 组剩余
+
+C8 通过形态夹具（需真实通过轮或环境写权）、C9 S0-b 接入（环境侧 D1–D5）、
+C11 取消/续跑语义（契约决定）、C12 运行入口消费 S0（需求未定）、
+**I4 真实生效（需环境侧给可写数据根）**。

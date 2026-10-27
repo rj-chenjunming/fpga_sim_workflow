@@ -33,7 +33,14 @@
 
 ## 3 如何让它"生效"（在有写权的数据根上）
 
-本机 `ENV_ROOT` 只读 ⇒ 本轮**没有**写真实数据根（真实仍为 72 条阻断）。生效需要可写数据根，二选一：
+本机 `ENV_ROOT` 只读（实测：`/home` 是 `ro,nosuid,nodev` 挂载，`touch` 报 `Read-only file system`）
+⇒ 本轮**没有**写真实数据根（真实仍为 72 条阻断）。生效需要可写数据根：
+
+**方式 C（推荐，一条命令）**：`bash loop/spikes/apply_conflict_adjudication.sh --workspace <可写数据根>`
+（先 `--dry-run` 体检；脚本会校验本目录快照指纹、落账、重跑抽取合并、`--verify`，
+并打印 I4 读数 / G3 `full_now|subset_only` 提交前检查 / N16 blockers 是否仍含 `I4_CONFLICTS_UNCLEARED`）。
+
+另两种等价方式（手工）：
 
 ```bash
 # 方式 A（推荐）：把快照里的裁决文件放进目标数据根，再让抽取器合并

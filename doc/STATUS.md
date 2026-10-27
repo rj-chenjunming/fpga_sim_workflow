@@ -4568,3 +4568,24 @@ bash loop/spikes/provision_dev_workspace.sh --cleanup     # 跑完删掉
 
 - 软件层：**`1046 passed, 3 deselected, 1 warning in 176.47s`**。
 - 文档门：`missing=0`、`exit=0`。
+
+
+### 102.10 第三轮复核（R1–R6）与整改
+
+第三轮结论：N1–N6 **全部关闭**；但新发现 3 个残余（R1 编译输入未纳入见证 / R2 分批落盘走不通 / R3 报告与状态矛盾）。
+逐条处置（均已在真实记录或用例上复验）：
+
+| # | 第三轮发现 | 处置 | 证据 |
+|---|---|---|---|
+| **R1（残余 fail-open，与 N2 同族）** | 漂移白名单不含**编译输入** `all_define.txt` / `input.tcl` / `BIN/`（它们正是 `-f` / `-do` / `+incdir+` 的来源）⇒ 改了编译配置仍 `ready=true` | **已修**：抽出 `WITNESSED_ROOTS`（含 RTL/TB/PKG/TESTLIB/BIN/all_define.txt/input.tcl），`_verify` 与 apply 前置检查共用 | 真实记录复验：改 `work/all_define.txt` ⇒ `drift={'work_env':['TB/top_cfg.sv','TB/top_env.sv','all_define.txt']}`、`ready=False`；用例 `test_compile_inputs_are_witnessed` |
+| **R2（功能缺口）** | 分批落盘不可用：apply H1 后再确认 H2 再 apply ⇒ `H1 old_text 出现 0 次`；中间态 ports 误判 failed | **已修**：`apply_confirmed` 对"old_text 不在但 new_text 已在"的 hunk 记为 `already_applied` 跳过；ports 新增"部分已确认未落盘"判定 ⇒ `waiting` | `test_batch_apply_skips_already_applied_hunks`：apply H1 → 确认 H2 → 中间态 waiting → apply ⇒ `applied=['H2']`、`skipped=['H1']`、ports passed |
+| **R3（报告口径）** | 报告头只看 checks ⇒ 出现"头写可准出、status=failed"；smoke passed 且 reason 空时写"（尚未执行）" | **已修**：报告头与阻断项以 `ready_for_execution` 为准，并把 `status=failed`/漂移/核验错误显式列进阻断项；smoke 措辞按状态区分 | 用例与真实报告；阻断项现在会打印 `- 记录状态 failed：…` 与 `- 漂移（相对最新 work 见证）：…` |
+| **R4（证据纪律）** | apply 被拒绝只抛错、不留痕 | **已修**：拒绝落档 `s0b/apply_refusals.jsonl`（只增不改 + sha256 锚），`load_apply_refusals()` 可读 | `test_apply_refusal_is_logged` |
+| **R5（覆盖）** | unified diff 合法性无自动化用例 | **已修**：`test_unified_diff_is_a_valid_patch` 用 `patch -p0 --dry-run` 断言可应用 | 该用例通过（无 `patch` 时 skip 并如实记） |
+| **R6（观察）** | `get()` 是读路径但会重写报告；`record.json` 不随 `get()` 持久化 | **登记不改**：判定以 `get()` 返回值为准；直接读 `record.json` 的消费者可能看到旧值。读路径不持久化是刻意的（读不应产生业务写入），`report_write_error` 已保证只读记录不被误判 | STATUS 本节 |
+
+### 102.11 门（第三轮整改后，数字从输出复制）
+
+- 软件层：**`1050 passed, 3 deselected, 1 warning in 171.00s`**。
+- 文档门：`missing=0`、`exit=0`。
+- 三文件定向用例：`tests/test_s0.py + test_s0b.py + test_sv_ports.py` ⇒ **93 passed**（含 R1/R2/R4/R5 新增钉）。

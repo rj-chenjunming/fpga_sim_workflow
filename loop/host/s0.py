@@ -73,6 +73,10 @@ def _without_rtl(snapshot):
 #: 漂移判定的唯一错误文案（N4：内容恢复后按此文案清除，其它 error 不清）
 DRIFT_ERROR = '当前内容偏离派生时见证；原始准备记录保持不变'
 
+#: 被见证的资产根（复核 R1：**编译输入也算**——`-f all_define.txt`、`+incdir+./BIN`、`-do input.tcl`；
+#: 漏掉它们等于"改了编译配置仍可准出"，冒烟证据就对不上被见证的输入）。
+WITNESSED_ROOTS = {'RTL', 'TB', 'PKG', 'TESTLIB', 'BIN', 'all_define.txt', 'input.tcl'}
+
 S0B_BLOCKERS = [
     {'key': 'ports', 'message': 'S0-b：外部接口差异核对、TB/top.sv 适配与逐 hunk 登记尚未接入。'},
     {'key': 'smoke', 'message': 'S0-b：副本内真实三库冒烟尚未执行，缺少每库日志、error/warning 计数与评估。'},
@@ -306,10 +310,10 @@ class S0Store:
     def _write_report(self, folder, record):
         report = folder / 'reports/s0-env'
         report.mkdir(parents=True, exist_ok=True)   # apply/smoke 后会重写报告；不可因目录已存在而失败
-        s0b_all = bool(record.get('checks')) and all(
-            c['status'] == 'passed' for c in (record.get('checks') or []))
-        header = ('S0-a 完成不代表 S0 准出；S0-b 已全部完成（六项 passed，可准出）。'
-                  if s0b_all else 'S0-a 完成不代表 S0 准出；S0-b 未执行或未完成（见下表）。')
+        # 复核 R3：报告头必须与**准出判据**一致（不能只按 checks 判定，否则出现"头写可准出、status=failed"）
+        header = ('S0-a 完成不代表 S0 准出；S0-b 已全部完成（六项 passed 且无漂移，可准出）。'
+                  if record.get('ready_for_execution')
+                  else 'S0-a 完成不代表 S0 准出；S0-b 未执行或未完成（见下表）。')
         rows = ['# S0 环境准备记录', '', header, '']
         if record.get('rehearsal'):
             rows += ['> **演练记录（S0-rehearsal）**：只证明 copy→replace→核验链路，不是环境就绪、不是 S0-b。',
@@ -382,8 +386,9 @@ class S0Store:
                 rows.append('')
         rows += ['', '## 三库冒烟', '']
         smoke = record.get('smoke') or {}
-        smoke_reason = smoke.get("reason") or "尚未执行"
-        rows += [f'- 状态：{smoke.get("status", "waiting")}（{smoke_reason}）']
+        smoke_status = smoke.get("status", "waiting")
+        smoke_reason = smoke.get("reason") or ("已执行且无新增告警" if smoke_status == "passed" else "尚未执行")
+        rows += [f'- 状态：{smoke_status}（{smoke_reason}）']
         for label in ('candidate', 'baseline'):
             segment = smoke.get(label) or {}
             if not segment:
@@ -418,8 +423,8 @@ class S0Store:
                 current = manifest(self._path(path))
                 old = json.loads((folder / filename).read_text(encoding='utf-8'))
                 if assets:
-                    roots = {'RTL', 'TB', 'PKG', 'TESTLIB', record['docs_dir'], 'run',
-                             record.get('run_entry') or 'run'}
+                    roots = WITNESSED_ROOTS | {record['docs_dir'],
+                                               record.get('run_entry') or 'run'}
                     current = {k: v for k, v in current.items() if k.split('/')[0] in roots}
                     old = {k: v for k, v in old.items() if k.split('/')[0] in roots}
                 changed = _changes(old, current)
@@ -465,11 +470,11 @@ class S0Store:
             raise ValueError(f'缺少上一份 work 见证，无法确认落盘前是否已偏离：{previous}')
         old = json.loads(previous.read_text(encoding='utf-8'))
         current = manifest(Path(record['work_env']))
-        roots = {'RTL', 'TB', 'PKG', 'TESTLIB', record['docs_dir'], 'run',
-                 record.get('run_entry') or 'run'}
+        roots = WITNESSED_ROOTS | {record['docs_dir'], record.get('run_entry') or 'run'}
         changed = [key for key in _changes(old, current)
                    if key.split('/')[0] in roots and key != record['tb_top']]
         if changed:
+            s0b.record_apply_refusal(folder, changed, record.get('tb_top') or '')
             raise ValueError('apply 前副本已偏离上次见证：%s —— 先修复或重新派生，'
                              '不允许用落盘刷新见证来洗白' % '、'.join(changed[:8]))
         result = s0b.apply_confirmed(record, folder)

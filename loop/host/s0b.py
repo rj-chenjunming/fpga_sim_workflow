@@ -263,6 +263,36 @@ def confirm(folder: Path, hunk_id: str, decision: str, actor: str, reason: str =
 # ---------------------------------------------------------------- warning 评估（人）
 
 WARNING_DECISIONS = "warning_decisions.jsonl"
+APPLY_REFUSALS = "apply_refusals.jsonl"
+
+
+def record_apply_refusal(folder: Path, changed: list[str], tb_top: str, now=None) -> dict:
+    """把被拒绝的 apply 落档（只增不改 + 锚）：事后能查到"某次 apply 因偏离被拒"。"""
+    folder = Path(folder)
+    _s0b(folder)
+    row = {"kind": "apply_refused", "changed": [str(k) for k in changed],
+           "tb_top": tb_top, "at": _iso(_parse_now(now))}
+    row["sha256"] = _sha256_json(row)
+    with (folder / S0B_DIR / APPLY_REFUSALS).open("a", encoding="utf-8") as stream:
+        stream.write(json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n")
+    return row
+
+
+def load_apply_refusals(folder: Path) -> list[dict]:
+    path = Path(folder) / S0B_DIR / APPLY_REFUSALS
+    if not path.is_file():
+        return []
+    rows = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        row = json.loads(line)
+        body = {k: v for k, v in row.items() if k != "sha256"}
+        if row.get("sha256") != _sha256_json(body):
+            raise ValueError("apply 拒绝记录锚不符")
+        rows.append(row)
+    return rows
 
 
 def load_warning_decisions(folder: Path) -> list[dict]:
@@ -349,11 +379,15 @@ def apply_confirmed(record: dict, folder: Path) -> dict:
             skipped.append({"hunk_id": hunk["hunk_id"], "decision": decision})
             continue
         occurrences = text.count(hunk["old_text"])
-        if occurrences != 1:
-            raise ValueError("hunk %s 的 old_text 在文件里出现 %d 次（要求恰好 1 次）"
-                             % (hunk["hunk_id"], occurrences))
-        text = text.replace(hunk["old_text"], hunk["new_text"], 1)
-        applied.append(hunk["hunk_id"])
+        if occurrences == 1:
+            text = text.replace(hunk["old_text"], hunk["new_text"], 1)
+            applied.append(hunk["hunk_id"])
+            continue
+        if occurrences == 0 and text.count(hunk["new_text"]) >= 1:
+            skipped.append({"hunk_id": hunk["hunk_id"], "decision": "already_applied"})
+            continue
+        raise ValueError("hunk %s 的 old_text 在文件里出现 %d 次（要求恰好 1 次）"
+                         % (hunk["hunk_id"], occurrences))
     if applied:
         _write_text(target, text)
     return {"applied": applied, "skipped": skipped, "already_applied": False,
@@ -413,6 +447,24 @@ def evaluate_ports(record: dict, folder: Path) -> dict:
     # 与"未登记改动"（文件既不是基线也不是期望）必须区分，否则会误判 failed（复核 FAIL-7）。
     pending_apply = bool(expected) and expected != baseline_text and actual == baseline_text
 
+    def _simulate(text: str) -> str | None:
+        """把已确认 hunk 依次作用到 text 上（已应用的跳过）；推不出来返回 None。"""
+        for hunk in sorted(load_proposals(folder), key=lambda h: h["hunk_id"]):
+            if decisions.get(hunk["hunk_id"]) != "confirmed":
+                continue
+            if text.count(hunk["old_text"]) == 1:
+                text = text.replace(hunk["old_text"], hunk["new_text"], 1)
+            elif text.count(hunk["new_text"]) >= 1:
+                continue                                    # 已落盘
+            else:
+                return None
+        return text
+
+    partially_applied = False
+    if not tb_matches and not pending_apply:
+        simulated = _simulate(actual)
+        partially_applied = bool(simulated) and simulated == expected
+
     evidence = {
         "tb_top": tb_top,
         "baseline_rtl_md5": diff["baseline"]["md5"],
@@ -442,6 +494,9 @@ def evaluate_ports(record: dict, folder: Path) -> dict:
     elif pending_apply:
         status = "waiting"
         reason = "已确认的 hunk 尚未落盘（副本 TB 仍等于基线）"
+    elif partially_applied:
+        status = "waiting"
+        reason = "部分已确认的 hunk 尚未落盘（分批提交中）"
     elif not tb_matches:
         status = "failed"
         reason = "副本 TB 顶层内容与『基线 + 已确认 hunk』不一致（有未登记改动）"

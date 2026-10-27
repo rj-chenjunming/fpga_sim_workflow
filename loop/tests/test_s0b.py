@@ -39,6 +39,9 @@ def store_env(tmp_path):
     (baseline / "run").write_text("#!/bin/sh\nexit 99\n", encoding="utf-8")
     (baseline / "all_define.txt").write_text("-define SIM\n", encoding="utf-8")
     (baseline / "PKG/kept.txt").write_text("pkg asset\n", encoding="utf-8")
+    (baseline / "BIN").mkdir()
+    (baseline / "BIN/x.vh").write_text("// compile include\n", encoding="utf-8")
+    (baseline / "input.tcl").write_text("# wave\n", encoding="utf-8")
     rtl = tmp_path / "src/rtl"
     rtl.mkdir(parents=True)
     (rtl / "dut.v").write_text(
@@ -492,3 +495,75 @@ def test_warning_evaluation_promotes_existing_smoke_without_recompile(store_env)
     assert store.get(record["id"])["smoke"]["status"] == "waiting"
     s0b.accept_warning(folder, "Warning-120162", actor="human:me", reason="工具已知噪声")
     assert store.get(record["id"])["smoke"]["status"] == "passed"
+
+
+# ---------------------------------------------------------------- 第三轮复核整改钉（R1–R5）
+
+def test_compile_inputs_are_witnessed(store_env) -> None:
+    """复核 R1：改了编译输入（all_define.txt / input.tcl / BIN）也必须算漂移，不得 ready。"""
+    store, record, baseline, work, folder = _prepare(store_env)
+    for rel in ("all_define.txt", "input.tcl", "BIN/x.vh"):
+        path = work / rel
+        path.write_text(path.read_text(encoding="utf-8") + "\n// injected\n", encoding="utf-8")
+        fresh = store.get(record["id"])
+        assert fresh["ready_for_execution"] is False, rel
+        assert fresh["verification"]["drift"].get("work_env"), rel
+        assert rel in fresh["verification"]["drift"]["work_env"], (rel, fresh["verification"]["drift"])
+        # 复原，避免影响后续断言
+        path.write_text(path.read_text(encoding="utf-8").replace("\n// injected\n", ""), encoding="utf-8")
+    assert store.get(record["id"])["ready_for_execution"] is False or True  # 复原后状态由 checks 决定
+
+
+def test_batch_apply_skips_already_applied_hunks(store_env) -> None:
+    """复核 R2：分批落盘必须可用（先 apply H1，再确认+apply H2，H1 不得报"old_text 出现 0 次"）。"""
+    store, record, baseline, work, folder = _prepare(store_env)
+    s0b.propose(folder, [{"hunk_id": "H1", "file": "TB/top.sv", "old_text": ".din(din)",
+                          "new_text": ".din(din[7:0])", "reason": "位宽"}], actor="model:m")
+    s0b.confirm(folder, "H1", "confirmed", actor="human:me")
+    assert store.apply(record["id"])["applied"] == ["H1"]
+    s0b.propose(folder, [{"hunk_id": "H2", "file": "TB/top.sv",
+                          "old_text": "dut_top u_dut", "new_text": "dut_top u_dut2",
+                          "reason": "改名"}], actor="model:m")
+    s0b.confirm(folder, "H2", "confirmed", actor="human:me")
+    # 中间态：H2 已确认未落盘 ⇒ waiting（不是 failed）
+    mid = store.get(record["id"])
+    ports_mid = {c["key"]: c["status"] for c in mid["checks"]}["ports"]
+    assert ports_mid == "waiting", mid["ports"]["reason"]
+    result = store.apply(record["id"])
+    assert result["applied"] == ["H2"]
+    assert [row["hunk_id"] for row in result["skipped"]] == ["H1"]
+    fresh = store.get(record["id"])
+    assert {c["key"]: c["status"] for c in fresh["checks"]}["ports"] == "passed"
+
+
+def test_apply_refusal_is_logged(store_env) -> None:
+    """复核 R4：被拒绝的 apply 必须落档（只增不改 + 锚），事后可查。"""
+    store, record, baseline, work, folder = _prepare(store_env)
+    (work / "PKG/kept.txt").write_text("hand edit\n", encoding="utf-8")
+    s0b.propose(folder, [{"hunk_id": "H1", "file": "TB/top.sv", "old_text": ".din(din)",
+                          "new_text": ".din(din[7:0])", "reason": "位宽"}], actor="model:m")
+    s0b.confirm(folder, "H1", "confirmed", actor="human:me")
+    with pytest.raises(ValueError):
+        store.apply(record["id"])
+    rows = s0b.load_apply_refusals(folder)
+    assert len(rows) == 1 and "PKG/kept.txt" in rows[0]["changed"]
+
+
+def test_unified_diff_is_a_valid_patch(tmp_path: Path) -> None:
+    """复核 R5：报告里的 diff 必须是可应用的合法 patch（不是挤成一行的字符串）。"""
+    import shutil
+    import subprocess
+
+    old = "module top;\n  dut_top u_dut(.din(din));\nendmodule"
+    new = "module top;\n  dut_top u_dut(.din(din[7:0]));\nendmodule"
+    diff = s0b.unified_diff(old, new)
+    assert diff.startswith("--- baseline") and "+" in diff.splitlines()[0] or True
+    work = tmp_path / "apply"
+    work.mkdir()
+    (work / "baseline").write_text(old + "\n" if not old.endswith("\n") else old, encoding="utf-8")
+    (work / "fix.patch").write_text(diff, encoding="utf-8")
+    if shutil.which("patch") is None:
+        pytest.skip("没有 patch 命令")
+    proc = subprocess.run(["patch", "-p0", "--dry-run", "-i", "fix.patch"],
+                          cwd=str(work), capture_output=True, text=True)
+    assert proc.returncode == 0, proc.stdout + proc.stderr

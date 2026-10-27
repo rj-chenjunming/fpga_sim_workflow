@@ -591,6 +591,35 @@ N16 每次尝试都必须留下结果件：`run_dir/n16_result.json`（已存在
 
 
 
+### 10.5 冲突裁决的写入与持久化（I4 清零路径，2026-10-27 / C10-a）
+
+`I4` 只读 `<WORKSPACE_ROOT>/conflicts/conflicts.json` 的 `blocks_release`（4 处消费者 + 1 处投影），
+**改接口文档不会解除阻断**。但 `kb/schema/conflicts.schema.json` 已支持 closed 态
+（`status ∈ {open,confirmed,ignored,ruled,fixed}` + `resolution` + `resolution_actor` +
+`resolution_kind` + `blocks_release`），且 `kb_lib.validate` 明确拒绝 `if/allOf` ⇒
+**「裁决 ⇒ 不再阻断」这条不变式只能由 Host 工具强制**。
+
+契约：
+
+- **唯一写入器** `kb/tools/adjudicate_conflicts.py`（human-only）。职责两条：
+  ① 追加裁决记录到 `<WORKSPACE_ROOT>/conflicts/adjudication.json`（**只增不改**，同 id 再裁决 = 追加，
+  合并取最后一条）；② 把裁决合并进 `conflicts.json`（写前过 `kb_lib.check(obj,"conflicts")`）。
+- **强制不变式**（工具内实现，非 schema）：`--actor` 必须 `human:<name>`（拒绝 `model:`/`host:`/裸名）；
+  `status ∈ {ruled,fixed,ignored}` ⇒ `resolution` 必填且 `blocks_release` 强制 `false`；
+  `status=confirmed`（确认冲突真实存在）⇒ `blocks_release` 强制 `true`，**不得借它清零 I4**。
+- **锚**：每条记录 `sha256 = sha256(canonical(record 去掉 sha256))`；载入时逐条复算，
+  不符即拒绝写入（不静默修复、不覆盖人签过的记录）。裁决时刻经 `kb_lib.now_iso()`
+  单入口（`--now` / `KB_NOW`），红线 7 不变。
+- **抽取不丢裁决**：`n1_conflicts.py` 抽取后读同一份 `adjudication.json` 合并
+  （未知 id ⇒ 报错，不静默忽略）。因此"重摄取即复位"的旧行为（第 287/292 行硬编码
+  `open`/`true`）不再影响已裁决条目。
+- **与 `adjudication/` 目录的区别**：`<WORKSPACE_ROOT>/adjudication/**` 是分析角色的**备料**
+  （只写"请求人裁决的材料"，不写结论）；冲突裁决落账在 `conflicts/adjudication.json`，
+  两者不是同一类产物、不是同一个写者。
+- **证据**：`kb/tools/_selftest_adjudicate_conflicts.py`（PASS=28）覆盖
+  human-only 拒绝 / 必填理由 / confirmed 不得清零 / 只增不改 / 锚篡改拒绝 / 未知 id 写前拒绝 /
+  合并函数；端到端"裁决 → 重跑抽取 → 裁决仍在"见 STATUS §84.2。
+
 ## 11. P0 验收判据（可判定）
 
 夹具：归档运行目录 `<WORKSPACE_ROOT>/runs/RUN-20261015-120626/**`（含双计数分歧、死任务、印记 1/1/1、

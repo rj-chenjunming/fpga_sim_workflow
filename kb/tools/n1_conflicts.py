@@ -413,6 +413,61 @@ def check_linked(conflicts):
 
 # ---------------------------------------------------------------- 主流程
 
+# ---------------------------------------------------------------- 裁决合并（C10-a）
+
+ADJ_FILE = "adjudication.json"
+ADJ_SCHEMA = "kb/conflicts/adjudication"
+
+
+def load_adjudication(outdir):
+    """读 `outdir/adjudication.json`（human-only 裁决，写入器 = `adjudicate_conflicts.py`）。
+
+    返回 `{id: 记录}`（同 id 多条 = 改判，取最后一条）。文件不存在 ⇒ `{}`（旧数据根行为不变）。
+    **锚不符/形状不符 ⇒ ValueError**：不静默忽略、不覆盖人签过的记录。
+    """
+    path = os.path.join(outdir, ADJ_FILE)
+    if not os.path.exists(path):
+        return {}
+    doc = kb_lib.read_json(path)
+    if not isinstance(doc, dict) or doc.get("schema") != ADJ_SCHEMA:
+        raise ValueError("%s 形状不符：schema 应为 %r" % (path, ADJ_SCHEMA))
+    records = doc.get("records")
+    if not isinstance(records, list):
+        raise ValueError("%s 的 records 不是列表" % path)
+    latest = {}
+    for i, rec in enumerate(records):
+        if not isinstance(rec, dict) or "id" not in rec or "sha256" not in rec:
+            raise ValueError("%s 第 %d 条形状不符（缺 id/sha256）" % (path, i))
+        body = {k: v for k, v in rec.items() if k != "sha256"}
+        if kb_lib.sha256_text(kb_lib.canon_json(body)) != rec["sha256"]:
+            raise ValueError("%s 第 %d 条（%s）锚不符：记录被外部修改或损坏"
+                             % (path, i, rec.get("id")))
+        latest[rec["id"]] = rec
+    return latest
+
+
+def merge_adjudication(conflicts, decisions):
+    """把 human 裁决合并进抽取结果（`status/resolution/resolution_actor/resolution_kind/blocks_release`）。
+
+    未知 id ⇒ ValueError（双向完整性：裁决引用了不存在的冲突，说明抽取与裁决已漂移，必须人看）。
+    返回 (conflicts, 合并条数)。
+    """
+    by_id = {c["id"]: c for c in conflicts}
+    unknown = sorted(set(decisions) - set(by_id))
+    if unknown:
+        raise ValueError("adjudication.json 引用了不存在的冲突 id：%s" % unknown)
+    merged = 0
+    for cid, rec in decisions.items():
+        item = by_id[cid]
+        item["status"] = rec["status"]
+        item["resolution"] = rec.get("resolution")
+        item["resolution_actor"] = rec.get("resolution_actor")
+        item["resolution_kind"] = rec.get("resolution_kind")
+        item["blocks_release"] = bool(rec.get("blocks_release"))
+        merged += 1
+    return conflicts, merged
+
+
 TIME_FIELDS = ("generated_at",)
 NOW_ENV = "KB_NOW"
 
@@ -456,6 +511,17 @@ def main(argv=None):
 
     bad = []
     conflicts.sort(key=lambda c: int(c["id"][1:]))
+    # C10-a：human 裁决外置在 adjudication.json，抽取时合并（重跑不丢裁决）。
+    try:
+        decisions = load_adjudication(args.outdir)
+        if decisions:
+            conflicts, n_merged = merge_adjudication(conflicts, decisions)
+            if not args.quiet:
+                print("[merge] adjudication.json：%d 条裁决已合并进 conflicts（重跑不丢）"
+                      % n_merged)
+    except ValueError as exc:
+        sys.stderr.write("[FAIL] %s\n" % exc)
+        return 1
     restrictions_main = [r for r in restrictions if r["id"].startswith("R")]
     restrictions_extra = [r for r in restrictions if r["id"].startswith("A")]
     bad += check_continuity(conflicts, "C", EXPECTED_CONFLICTS, "conflicts")

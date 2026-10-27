@@ -3479,3 +3479,109 @@ md5 `434387c12a972d2ca113c09cbc6cb6ac`）。
 
 C10 机制改动（待授权改冻结 `kb/tools/**`）、C10-b 72 条人工裁决、C8 通过形态夹具、
 C9 S0-b 接入（环境侧）、C11 取消/续跑语义（契约）、C12 运行入口消费 S0（需求）。
+
+---
+
+## 84 C 组修订（二）：冲突裁决写入器 C10-a —— 冻结目录变更 + 端到端证明（2026-10-27）
+
+上游：`§83.3` 定位的 4 个机制缺口；人于 2026-10-27 明确**授权改冻结的 `kb/tools/**`**（选项 A）。
+计划 [`doc/plans/2026-10-27-c-group.md`](plans/2026-10-27-c-group.md) §3。本轮由 Lead 实施（非独立验证）。
+
+### 84.1 冻结目录变更留证（`AGENTS.md §3`：kb/tools 改语义需单独变更并留证）
+
+| 文件 | 改前 md5 | 改后 md5 | 变更性质 |
+|---|---|---|---|
+| `kb/tools/n1_conflicts.py` | `7ff7b0350921c1e2f763034ceec129d5` | `6be49e83aad5b063f3677643bfeff66f` | **增**：抽取后读 `conflicts/adjudication.json` 并合并（`load_adjudication()` / `merge_adjudication()` + main 里 1 处调用）。**无 `adjudication.json` 时逐字节等价**（见 §84.3） |
+| `kb/tools/adjudicate_conflicts.py` | （新增，原不存在） | `021820caad308921984de35db47cd5e6` | **新增**：human-only 裁决写入器（追加 `adjudication.json` + 合并进 `conflicts.json`） |
+| `kb/tools/_selftest_adjudicate_conflicts.py` | （新增） | `460ca6b41dc1ca66bd5a6348a41516f8` | **新增**：自测（PASS=28，见 §84.4） |
+| `kb/README.md` | `4aaa18c3b81c509a0564daca3bd875ed` | `9076db3f92c4b9a3ec392bcf9e1f2608` | 工具树 +1、写权表 +2 行、变更记录 v3、"两个 adjudication" 辨析 |
+
+schema **未改**（`kb/schema/conflicts.schema.json` md5 `434387c12a972d2ca113c09cbc6cb6ac` 不变，
+它已支持 closed 态；缺的是写入路径与不变式强制，不是字段）。
+
+### 84.2 端到端证明：裁决能落账、重跑抽取不丢、I4 计数真的降
+
+在临时目录里用**真实**的 72 条 `conflicts.json`（从 `<ENV_ROOT>/kb/conflicts/` 复制）+ 一条
+**明确标注为夹具**的裁决：
+
+```
+$ cp <ENV_ROOT>/kb/conflicts/conflicts.json $T/
+$ KB_NOW=2026-10-27T10:00:00+0800 python3 -B kb/tools/adjudicate_conflicts.py --outdir $T \
+    --actor human:selftest-fixture --id C1 --status ruled \
+    --resolution "自测夹具裁决：仅验证机制，不是真实裁决"
+[adj] 追加 1 条裁决 → $T/adjudication.json
+[adj] 合并进 $T/conflicts.json：变更 1 条；仍阻断发版 71 条
+
+# 关键一步：按"重摄取会复位"的旧行为，这里重跑抽取
+$ python3 -B kb/tools/n1_conflicts.py --outdir $T --quiet
+total 72 blocking 71
+C1: ruled human False | 自测夹具裁决：仅验证机制，不是真实裁决
+adjudication records: 1
+```
+
+⇒ 缺口 ④（重跑复位）已关闭。**真实数据根当前状态（只读 `--list`）**：
+`adjudication.json（0 条记录 / 0 个冲突）；conflicts=72，仍阻断发版=72` —— 一条裁决都还没签，
+**没有把我的夹具裁决写进真实数据**。
+
+### 84.3 特征保持：无裁决时抽取输出不变
+
+把真实输入重抽到临时目录，与盘上现存的三个产物逐对象比对（忽略 `generated_at` 这一唯一允许的
+非确定性字段）：
+
+```
+conflicts identical (modulo generated_at): True | total 72 blocking 72
+restrictions identical: True
+pending identical: True
+```
+
+⇒ `n1_conflicts.py` 的合并改动对**没有裁决文件**的数据根零影响（不是"看起来一样"，是对象相等）。
+
+### 84.4 工具强制的不变式 + 自测
+
+`kb/tools/_selftest_adjudicate_conflicts.py` → **PASS=28 FAIL=0**，逐条钉住：
+
+| 不变式 | 断言语义 |
+|---|---|
+| human-only | `--actor model:gpt` / `host:loop` / 裸名 `chenjm` 全部 rc=4，且**被拒时不改动** `adjudication.json` |
+| 裁决必须有结论 | `status=ruled` 无 `--resolution` ⇒ rc=5 |
+| confirmed 不得清零 I4 | `status=confirmed` 落盘后 `blocks_release` 仍为 `true` |
+| 只增不改 | 同 id 改判 ⇒ 追加记录（旧记录字节不变），合并取最后一条 |
+| 锚可复算 | `sha256(record 去 sha256)` = 记录里的 `sha256`；手改记录 ⇒ `--verify` 非 0 且**写入被拒**（rc=3） |
+| 写前拒绝 | 未知 id `C99` ⇒ rc=6，且**不产生** `adjudication.json`（不留脏记录） |
+| 缺清单不半写 | 无 `conflicts.json` 且未 `--no-apply` ⇒ rc=2 |
+| 合并函数 | `merge_adjudication()` 正常合并；未知 id ⇒ `ValueError`（不静默忽略） |
+
+另：`kb/tools/_selftest_gate_schema.py` **PASS=10**、`_selftest_n5_reachability.py` **PASS=9**（均 FAIL=0）。
+
+### 84.5 本轮门
+
+| 门 | 结果 | 说明 |
+|---|---|---|
+| kb 自测 | **28 / 10 / 9，FAIL=0** | 新增裁决自测 + 既有两条（在派生副本的可写数据根上跑） |
+| 软件层 | **975 passed / 3 deselected / 0 failed**（178.40 s） | 较 §81.9 的 974 多 1 条 = **B2 新增的钉子**（`test_g1_drill_entry_decisions_replace_the_attestation`），B 组当时只跑了目标用例、没跑全量；本轮补跑全量确认无回归 |
+| 文档 | **missing=0、exit=0** | 见本节落盘后的测量；`checked/skipped` 为诊断值、不落盘（§19） |
+| 浏览器 / 端到端 | 未重跑 | 本轮只改 `kb/tools/**` 与文档，未触达 `loop/web/**`、工作流、API |
+
+### 84.6 C10-b：72 条裁决待签
+
+机制已就绪，但**一条真实裁决都还没有**（真实数据根 `--list` = 0 条记录 / 72 条阻断）。
+按 schema 原文，模型只能写 `open` 或提建议、不得自封 `ruled` ⇒ 下一步是**人逐条（或按组）签署**：
+
+```bash
+# 单条
+python3 kb/tools/adjudicate_conflicts.py --actor human:<你的名字> --id C1 --status ruled \
+  --resolution "以位定义表为准；汇总表 xx 为占位符，登记文档勘误"
+# 同组批量（同一结论多条 id）
+python3 kb/tools/adjudicate_conflicts.py --actor human:<你的名字> --ids C1,C2,C3 --status ruled \
+  --resolution "……"
+python3 kb/tools/adjudicate_conflicts.py --list     # 随时看剩余阻断数
+```
+
+注意：真实数据根 = `<ENV_ROOT>/kb`，本机**只读** ⇒ 真签要在可写数据根上做（或先写到派生副本
+`.env-copy/kb/conflicts` 验证，再在可写环境生效）。可复现的分组与逐条摘要见
+`<ENV_ROOT>/kb/adjudication/C_conflicts_triage.md`（71 段：G1–G9 / B1–B4 / 19 条必须逐条看）。
+
+### 84.7 未关闭
+
+C10-b 72 条人工裁决（需人签）、C8 通过形态夹具、C9 S0-b 接入（环境侧授权）、
+C11 取消/续跑语义（契约）、C12 运行入口消费 S0（需求）。

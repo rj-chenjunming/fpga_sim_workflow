@@ -34,6 +34,7 @@
     ├── kb_lib.py                  #   公共库：三根解析/指纹/原子写/Schema 子集校验/闸门
     ├── n1_doc_entries.py          #   文档条目抽取 → regmap（N2/N5 的文档侧锚）
     ├── n1_conflicts.py            #   06 号笔记 → conflicts / restrictions / pending
+    ├── adjudicate_conflicts.py    #   冲突 human-only 裁决写入器（外置 adjudication.json，I4 清零用）
     ├── n1_case_scan.py            #   TESTLIB 静态访问扫描 → case_access / cases
     ├── n1_snapshot.py             #   N0/N1：自研代码 tar + 全量清单 md5 + manifest
     ├── n2_diff.py                 #   N2：纯确定性差异对比（三路）
@@ -84,9 +85,12 @@
 | `kb/tools/kb_lib.py` | Lead（契约代码，改动必须过评审） |
 | `kb/tools/n1_*.py`、`<WORKSPACE_ROOT>/index/`、`<WORKSPACE_ROOT>/conflicts/` | 对应生成脚本（Host） |
 | `kb/tools/n2_diff.py` / `n5_impact.py` / `gate.py` / `n16_promote.py` / `case_state.py` | Host 工具 owner |
+| `kb/tools/adjudicate_conflicts.py`、`<WORKSPACE_ROOT>/conflicts/adjudication.json` | 该工具（**只追加**；human-only：`--actor human:<name>` 必填，拒绝 `model:`/`host:`） |
 | `<WORKSPACE_ROOT>/baselines/**` | `n16_promote.py`（原子晋升）或 Lead 的 v0 建档 |
 | `<WORKSPACE_ROOT>/runs/<run_id>/**` | 该轮 run_id 的 owner（同一 run 内按文件切分，不并发写同一文件） |
 | `<WORKSPACE_ROOT>/adjudication/**` | 分析角色（一次一个文件）；**只写"请求人裁决的材料"，不写裁决结论** |
+
+**别混淆两个 adjudication**（2026-10-27）：`<WORKSPACE_ROOT>/adjudication/**` 是**分析角色备料**（只写"请求人裁决的材料"，不写结论）；`<WORKSPACE_ROOT>/conflicts/adjudication.json` 是 **human 裁决落账**（只由 `kb/tools/adjudicate_conflicts.py` 追加，人签署，条目带 `sha256` 锚）。
 
 **`adjudication/` 的定位**：数据根里唯一一类**给人看的非数据产物**。它存在的理由是
 spec 的闸门语义 —— 系统的职责是**备料**，不是替人拍板。所以这两个文件里
@@ -294,6 +298,7 @@ python3 kb/tools/n16_promote.py --run <run_id> --trigger-by "<人名>" --actor-k
 |---|---|---|---|---|
 | 2026-10-15 | 1 | 建档：目录布局 + 三类 schema + 口径（指纹/段/三桶/条目）+ 偏离 K1~K3 | `CHECKPOINT-20261015-1123.md` §9 第 3 条（ENV_ROOT 历史件） | `kb/schema/*.json`、`kb/tools/kb_lib.py` 自检输出 |
 | 2026-10-19 | 2 | 按三根重写 §1（本仓 `kb/`=README+schema+tools；数据在 `<WORKSPACE_ROOT>`）、写权表、节点↔脚本表、用法与红线 1/4；补 `case_state.py`；CHECKPOINT 引用标注为 ENV_ROOT 历史件 | 拆仓后 `kb/` 已分两半，旧表述会让人误以为本仓 `kb/` 有数据 | `doc/spec/ENV_PLUGIN_SPEC.md` §1/§2、`environments.json`、`git ls-files kb` |
+| 2026-10-27 | 3 | 新增 `kb/tools/adjudicate_conflicts.py`（冲突 human-only 裁决写入器）+ 自测；`n1_conflicts.py` 增合并 `conflicts/adjudication.json`（重跑不丢裁决）；写权表补两行；明确「两个 adjudication」的区别 | `I4` 72 条冲突此前**没有任何写入路径**，且重跑抽取会复位裁决（STATUS §83.3 / §84） | `_selftest_adjudicate_conflicts.py` PASS=28；`n1_conflicts.py` 改前后 md5 记入 STATUS §84 |
 
 > **历史登记里的路径**：下文各「变更登记」中的 `kb/runs/...` 等**运行数据路径**是拆仓前记录；
 > 在当前三根下等价于 `<WORKSPACE_ROOT>/...`（当前 = `ENV_ROOT/kb/...`）。内容/指纹未变，

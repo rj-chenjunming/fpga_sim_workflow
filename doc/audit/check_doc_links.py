@@ -63,7 +63,6 @@ KNOWN_MISSING: dict[str, str] = {
     "kb/tools/compile_only.sh": "审计发现：real N7 引用的工具不存在（A-A5）",
     "workspaces/simenv-tcs9620-64ch/": "约定目标位置；当前数据仍在 ENV_ROOT/kb（ENV_PLUGIN_SPEC §7）",
     "loop/ACCEPTANCE_V1.md": "迁移记录中的旧路径；现行文件为 doc/evidence/ACCEPTANCE_V1.md",
-    "kb/tools/adjudicate_conflicts.py": "计划中待授权新增的 Host 工具（STATUS §83.3 / C 组计划 §3，未落地）",
 }
 LINE_SUFFIX = re.compile(r":\d+(-\d+)?(,\d+(-\d+)?)*$")
 SYMBOL_SUFFIX = re.compile(r"::.*$")

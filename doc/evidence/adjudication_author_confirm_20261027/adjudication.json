@@ -1,0 +1,766 @@
+{
+  "records": [
+    {
+      "adjudicated_at": "2026-10-27T10:38:15+0800",
+      "blocks_release": false,
+      "id": "C19",
+      "resolution": "地址以文档自洽一方为准（段头∨总表∨实际占用取一致者），登记文档勘误；G1 批量裁决（triage G1）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "e3f48bdc591dbb78b341b985cfb83db13b8696e6f5d8a594f03f04bec5e84012",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:15+0800",
+      "blocks_release": false,
+      "id": "C23",
+      "resolution": "地址以文档自洽一方为准（段头∨总表∨实际占用取一致者），登记文档勘误；G1 批量裁决（triage G1）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "67e22ea643c7cddce14b4b39789be713e1cb184fe20ba4cc4e1cda966ef2f3e4",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:15+0800",
+      "blocks_release": false,
+      "id": "C28",
+      "resolution": "地址以文档自洽一方为准（段头∨总表∨实际占用取一致者），登记文档勘误；G1 批量裁决（triage G1）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "23fb0a1f9c8e37212be623a92b4fdce9a6693ca023356e81ea2e0bc01dcd64f1",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:15+0800",
+      "blocks_release": false,
+      "id": "C32",
+      "resolution": "地址以文档自洽一方为准（段头∨总表∨实际占用取一致者），登记文档勘误；G1 批量裁决（triage G1）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "f5c4b76df56bb47e50050c41fee913773a28cb47d5660fda8bfa039836af15ec",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:15+0800",
+      "blocks_release": false,
+      "id": "C33",
+      "resolution": "地址以文档自洽一方为准（段头∨总表∨实际占用取一致者），登记文档勘误；G1 批量裁决（triage G1）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "29bb57f5ceab78bd731f75a919e5f54fb19a74d88a74816be88a1cf1b2cd6e3b",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:15+0800",
+      "blocks_release": false,
+      "id": "C35",
+      "resolution": "地址以文档自洽一方为准（段头∨总表∨实际占用取一致者），登记文档勘误；G1 批量裁决（triage G1）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "d871408ecd2f8419930cd2bd784a589a1994e6c28070ac8e81b6f18040165e18",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:15+0800",
+      "blocks_release": false,
+      "id": "C36",
+      "resolution": "地址以文档自洽一方为准（段头∨总表∨实际占用取一致者），登记文档勘误；G1 批量裁决（triage G1）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "494d2e9aa200206dbc95b3c2d1f41853a590662ace4c6291981bb473d2759282",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:15+0800",
+      "blocks_release": false,
+      "id": "C37",
+      "resolution": "地址以文档自洽一方为准（段头∨总表∨实际占用取一致者），登记文档勘误；G1 批量裁决（triage G1）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "cded4597a86617eeaf3bbb02a24c41306deed9d12d884aef66c521bd96a93686",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:15+0800",
+      "blocks_release": false,
+      "id": "C41",
+      "resolution": "地址以文档自洽一方为准（段头∨总表∨实际占用取一致者），登记文档勘误；G1 批量裁决（triage G1）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "5133bba1d976026e243c7927ad36feaf326b098ad49a029d551901193f7dda64",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:15+0800",
+      "blocks_release": false,
+      "id": "C46",
+      "resolution": "地址以文档自洽一方为准（段头∨总表∨实际占用取一致者），登记文档勘误；G1 批量裁决（triage G1）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "aef6dbb2120ded731cd9498da2bcae0e68bce22cda28b656820477e50b5ccf7a",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:15+0800",
+      "blocks_release": false,
+      "id": "C48",
+      "resolution": "地址以文档自洽一方为准（段头∨总表∨实际占用取一致者），登记文档勘误；G1 批量裁决（triage G1）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "cdc0dcc2d9366c8e50753cc49c9a1bd08a2515fcfe20f2ab0284b241998d84e5",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:15+0800",
+      "blocks_release": false,
+      "id": "C68",
+      "resolution": "地址以文档自洽一方为准（段头∨总表∨实际占用取一致者），登记文档勘误；G1 批量裁决（triage G1）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "3c3f4c4556a9ff54ee1fa7a35e32ff57fe8e5ce7cccd4581b3592ce07772daa3",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:15+0800",
+      "blocks_release": false,
+      "id": "C1",
+      "resolution": "Reset 以位定义表为准，汇总表值登记勘误；G2 批量裁决（triage G2）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "c84973f535acdbb61c13af99b2efcba26f045ebc32e5209d744cd2124ab15165",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:15+0800",
+      "blocks_release": false,
+      "id": "C3",
+      "resolution": "Reset 以位定义表为准，汇总表值登记勘误；G2 批量裁决（triage G2）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "395c1aef389100e49081a5026b0297bf5bb59d7a7da3df69217c75718a4d24be",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:15+0800",
+      "blocks_release": false,
+      "id": "C15",
+      "resolution": "Reset 以位定义表为准，汇总表值登记勘误；G2 批量裁决（triage G2）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "dad98e3dbe309cc22de3a3da92c9ce176705704152c8da486120dc76142ffc2c",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:15+0800",
+      "blocks_release": false,
+      "id": "C70",
+      "resolution": "Reset 以位定义表为准，汇总表值登记勘误；G2 批量裁决（triage G2）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "18cb0a702c8217912c89d8b57a2e67a5dfb5fee680697ec719c9385c725e5814",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:15+0800",
+      "blocks_release": false,
+      "id": "C4",
+      "resolution": "R/W 以位定义表为准（状态类应只读，不做写回比对）；G3 批量裁决（triage G3）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "8092436f4164bcbf236125d7db9e02da92b8a71599cafd14a526fce6747bd881",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:15+0800",
+      "blocks_release": false,
+      "id": "C8",
+      "resolution": "R/W 以位定义表为准（状态类应只读，不做写回比对）；G3 批量裁决（triage G3）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "5cbf6578a2446248bcc5e68d625a87d5133eacc137c6af83626d59ac67cebc9c",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:15+0800",
+      "blocks_release": false,
+      "id": "C16",
+      "resolution": "R/W 以位定义表为准（状态类应只读，不做写回比对）；G3 批量裁决（triage G3）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "7557e3dc17c7ad20bd5e5e5470d8d6cf0b5d2504d62933859e90342d1c6966fe",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:15+0800",
+      "blocks_release": false,
+      "id": "C43",
+      "resolution": "R/W 以位定义表为准（状态类应只读，不做写回比对）；G3 批量裁决（triage G3）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "ecc797f20e2ec7376c7ec5710fef1ebf9c2f3cebf17d8a943279fca228fea0f4",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:15+0800",
+      "blocks_release": false,
+      "id": "C44",
+      "resolution": "R/W 以位定义表为准（状态类应只读，不做写回比对）；G3 批量裁决（triage G3）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "ee320bb5448a78c20c8d934997e3ada57da4be96c19947bd4d2dbc090feb9e00",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:15+0800",
+      "blocks_release": false,
+      "id": "C49",
+      "resolution": "R/W 以位定义表为准（状态类应只读，不做写回比对）；G3 批量裁决（triage G3）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "7d12b832f06b9e8cfdd4baf403fe2b9842dc4044ef78dbcc03051268dc3dbebf",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:15+0800",
+      "blocks_release": false,
+      "id": "C69",
+      "resolution": "R/W 以位定义表为准（状态类应只读，不做写回比对）；G3 批量裁决（triage G3）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "4304383135c6cbfb6d05c7b88e953af3b7d886c59e63fbdfe5388c7baf89805b",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:15+0800",
+      "blocks_release": false,
+      "id": "C7",
+      "resolution": "位段按同表规律修正（重叠与跳空按笔误处理）；G4 批量裁决（triage G4）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "be2cc74776e9d3f08c2a9fad9b49046e3cd2446ce41b73ee29394cd2ce8035b8",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:15+0800",
+      "blocks_release": false,
+      "id": "C9",
+      "resolution": "位段按同表规律修正（重叠与跳空按笔误处理）；G4 批量裁决（triage G4）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "c765c0b3f3e49bab313d11ad6e85cf440bb07185fe921b0605348d24f1d70b14",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:15+0800",
+      "blocks_release": false,
+      "id": "C18",
+      "resolution": "位段按同表规律修正（重叠与跳空按笔误处理）；G4 批量裁决（triage G4）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "61a00335a990c9602903a105d5a58fa566e3d1a237ba1f4e30784789b82cdea5",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:15+0800",
+      "blocks_release": false,
+      "id": "C25",
+      "resolution": "位段按同表规律修正（重叠与跳空按笔误处理）；G4 批量裁决（triage G4）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "4739d6a215fec48643ab753313d0e0889c979a8fa652e86aee9c79ab5374d49d",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:15+0800",
+      "blocks_release": false,
+      "id": "C27",
+      "resolution": "位段按同表规律修正（重叠与跳空按笔误处理）；G4 批量裁决（triage G4）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "033f1200109013bdf140adb43ea8cacb21ba3ac457f89a1740877bd3340b53ea",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:15+0800",
+      "blocks_release": false,
+      "id": "C39",
+      "resolution": "位段按同表规律修正（重叠与跳空按笔误处理）；G4 批量裁决（triage G4）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "78efb609251025cfdc38240af86f08a48b46cf23f22df7a1950d9d352228d8be",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:15+0800",
+      "blocks_release": false,
+      "id": "C5",
+      "resolution": "以位定义表补全汇总与位定义；无定义者（C42）用例按已定义范围裁剪并显式标注未覆盖；G5 批量裁决（triage G5）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "cf6669611b2c18fc4159f6fbd631b7c6ab9582a60c84dd1e0ddbc0efdecf957e",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:15+0800",
+      "blocks_release": false,
+      "id": "C6",
+      "resolution": "以位定义表补全汇总与位定义；无定义者（C42）用例按已定义范围裁剪并显式标注未覆盖；G5 批量裁决（triage G5）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "fb3b79d32e09ee64afcd729107a509103d3ef101a14dd7c51f9ed52478b95c81",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:15+0800",
+      "blocks_release": false,
+      "id": "C12",
+      "resolution": "以位定义表补全汇总与位定义；无定义者（C42）用例按已定义范围裁剪并显式标注未覆盖；G5 批量裁决（triage G5）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "9b5fd7fb245609a99d57340cda8805d04af194d3a86b23e41d53a4f35d7ff73c",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:15+0800",
+      "blocks_release": false,
+      "id": "C14",
+      "resolution": "以位定义表补全汇总与位定义；无定义者（C42）用例按已定义范围裁剪并显式标注未覆盖；G5 批量裁决（triage G5）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "afdde8bc7ec480eba1a6c69a30f0b83b3ae7c3110ea944c38e032fd2e57778f5",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:15+0800",
+      "blocks_release": false,
+      "id": "C31",
+      "resolution": "以位定义表补全汇总与位定义；无定义者（C42）用例按已定义范围裁剪并显式标注未覆盖；G5 批量裁决（triage G5）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "6888298c9132cb0df0c63c93d6c7d991ebf47fa46aa0c0f4787747adbd22c9df",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:15+0800",
+      "blocks_release": false,
+      "id": "C40",
+      "resolution": "以位定义表补全汇总与位定义；无定义者（C42）用例按已定义范围裁剪并显式标注未覆盖；G5 批量裁决（triage G5）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "26e860d72c4c0a72fe782b8acbda55b2b621821dc1a681c6080dac794cb61c59",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:15+0800",
+      "blocks_release": false,
+      "id": "C42",
+      "resolution": "以位定义表补全汇总与位定义；无定义者（C42）用例按已定义范围裁剪并显式标注未覆盖；G5 批量裁决（triage G5）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "9858efd3b7a01df3892d8f96f7a9782104cb0e8cdd78f2489b439b8d51eff5d1",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:15+0800",
+      "blocks_release": false,
+      "id": "C52",
+      "resolution": "以位定义表补全汇总与位定义；无定义者（C42）用例按已定义范围裁剪并显式标注未覆盖；G5 批量裁决（triage G5）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "d653b000caab31425d2d4ec4bf26cf289f515af4b5faf485593e4ff144690b59",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:15+0800",
+      "blocks_release": false,
+      "id": "C54",
+      "resolution": "以位定义表补全汇总与位定义；无定义者（C42）用例按已定义范围裁剪并显式标注未覆盖；G5 批量裁决（triage G5）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "c18e42795f24ef69ab1db2281e0f572ec8bc4872bbbbb13c7d9bdeea38451bd9",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:15+0800",
+      "blocks_release": false,
+      "id": "C64",
+      "resolution": "以位定义表补全汇总与位定义；无定义者（C42）用例按已定义范围裁剪并显式标注未覆盖；G5 批量裁决（triage G5）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "e55a70397509df628d08ddbc9b16f250d3b9c181197d293664c3a99f2f127204",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:15+0800",
+      "blocks_release": false,
+      "id": "C10",
+      "resolution": "命名以位定义表/字段名为准，汇总侧拼写登记勘误；用例按 entry_id 关联而非 name；G6 批量裁决（triage G6）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "a740ff4f1b48c417c7b4722ce44774563f84efac277f85a2d1b4abfec8ada5df",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:15+0800",
+      "blocks_release": false,
+      "id": "C13",
+      "resolution": "命名以位定义表/字段名为准，汇总侧拼写登记勘误；用例按 entry_id 关联而非 name；G6 批量裁决（triage G6）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "c4f1b923e10b6a860cb6226e97730fb438719526f475bfea26de1520f5fc057d",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:15+0800",
+      "blocks_release": false,
+      "id": "C17",
+      "resolution": "命名以位定义表/字段名为准，汇总侧拼写登记勘误；用例按 entry_id 关联而非 name；G6 批量裁决（triage G6）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "4fbd65e130e2f535ffb25b58775b41de783d75450c36dad3a3edf7f579600695",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:15+0800",
+      "blocks_release": false,
+      "id": "C24",
+      "resolution": "命名以位定义表/字段名为准，汇总侧拼写登记勘误；用例按 entry_id 关联而非 name；G6 批量裁决（triage G6）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "c633f709e662c148e19ed127f78e78e20ecfa3153fad989a3860f08dd5ed5806",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:15+0800",
+      "blocks_release": false,
+      "id": "C26",
+      "resolution": "命名以位定义表/字段名为准，汇总侧拼写登记勘误；用例按 entry_id 关联而非 name；G6 批量裁决（triage G6）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "6bd79e5f3f2ac0959ac2e241d2092367d4eccfcaad95027584075ba5c751c934",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:15+0800",
+      "blocks_release": false,
+      "id": "C45",
+      "resolution": "命名以位定义表/字段名为准，汇总侧拼写登记勘误；用例按 entry_id 关联而非 name；G6 批量裁决（triage G6）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "7254d9d2b64d43afebe89325dd8e4bbb725c83c7af879c41992f97a253b5adbe",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:15+0800",
+      "blocks_release": false,
+      "id": "C51",
+      "resolution": "命名以位定义表/字段名为准，汇总侧拼写登记勘误；用例按 entry_id 关联而非 name；G6 批量裁决（triage G6）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "0b90b52050e1b21d4f0fac76d5ecdde92fdb30636c8604666ad634ae4f9f91ae",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:15+0800",
+      "blocks_release": false,
+      "id": "C59",
+      "resolution": "命名以位定义表/字段名为准，汇总侧拼写登记勘误；用例按 entry_id 关联而非 name；G6 批量裁决（triage G6）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "4baf2571691fe7bb00887156bc1e865e96cdab278d2e6ecb55282ccc1ca4c7d4",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:15+0800",
+      "blocks_release": false,
+      "id": "C60",
+      "resolution": "命名以位定义表/字段名为准，汇总侧拼写登记勘误；用例按 entry_id 关联而非 name；G6 批量裁决（triage G6）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "85fc36c5a7b6fccb27cfdb10a2ce8e0e796233ec298cfca9a6e5a17383e66c33",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:15+0800",
+      "blocks_release": false,
+      "id": "C62",
+      "resolution": "命名以位定义表/字段名为准，汇总侧拼写登记勘误；用例按 entry_id 关联而非 name；G6 批量裁决（triage G6）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "037d733c07a039b2695b60e38d2e946bbd15e0d17fd85661cca07a664428f419",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:16+0800",
+      "blocks_release": false,
+      "id": "C20",
+      "resolution": "编号与格式勘误，不改变寄存器语义；用例引用一律带行号；G7 批量裁决（triage G7）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "df4fc8575ff4164a7763a6f46a19d0d203db0b7a76675201c30e016e7904248f",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:16+0800",
+      "blocks_release": false,
+      "id": "C21",
+      "resolution": "编号与格式勘误，不改变寄存器语义；用例引用一律带行号；G7 批量裁决（triage G7）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "0b72be4cbbc252058e1bb3ffc1743f477c3165464639182b5533c4d7474c4035",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:16+0800",
+      "blocks_release": false,
+      "id": "C22",
+      "resolution": "编号与格式勘误，不改变寄存器语义；用例引用一律带行号；G7 批量裁决（triage G7）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "de245ab7657e640d63808c9748db042026a9d617a0615ab0c33365c0bcdf8828",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:16+0800",
+      "blocks_release": false,
+      "id": "C29",
+      "resolution": "编号与格式勘误，不改变寄存器语义；用例引用一律带行号；G7 批量裁决（triage G7）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "7354334e28cbb8f6a08d471b42a5c586a81ced7d64938f0df2ce330e02c6c1cd",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:16+0800",
+      "blocks_release": false,
+      "id": "C30",
+      "resolution": "编号与格式勘误，不改变寄存器语义；用例引用一律带行号；G7 批量裁决（triage G7）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "eaee1a79ebd6625d52bf2272feb1efb834c7ea94b02f31f2affc5ddb7af3f9f7",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:16+0800",
+      "blocks_release": false,
+      "id": "C47",
+      "resolution": "编号与格式勘误，不改变寄存器语义；用例引用一律带行号；G7 批量裁决（triage G7）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "6562719465ad4a65b82c952c59475a7d34c05d640ed4456632f8de5f2f759ad4",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:16+0800",
+      "blocks_release": false,
+      "id": "C53",
+      "resolution": "编号与格式勘误，不改变寄存器语义；用例引用一律带行号；G7 批量裁决（triage G7）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "f3ebf2d677b0db4eba3a586429514e5c08708726d537d61fca0cf9dd0519da92",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:16+0800",
+      "blocks_release": false,
+      "id": "C61",
+      "resolution": "编号与格式勘误，不改变寄存器语义；用例引用一律带行号；G7 批量裁决（triage G7）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "92d4004307edbcf966528c3742cd4fab291476f119f34aa8e450dd0fadaca63e",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:16+0800",
+      "blocks_release": false,
+      "id": "C65",
+      "resolution": "编号与格式勘误，不改变寄存器语义；用例引用一律带行号；G7 批量裁决（triage G7）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "4e0a23598bd4984c3e427b8a753e832f43a46963dcfc9dcf3e298ae2654b8834",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:16+0800",
+      "blocks_release": false,
+      "id": "C66",
+      "resolution": "编号与格式勘误，不改变寄存器语义；用例引用一律带行号；G7 批量裁决（triage G7）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "b66e3b4d0afbf41f68123830a39373a18d696fce769be223143b538b70281245",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:16+0800",
+      "blocks_release": false,
+      "id": "C67",
+      "resolution": "编号与格式勘误，不改变寄存器语义；用例引用一律带行号；G7 批量裁决（triage G7）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "81cf5349289707e61f9809e1ede355863a8e7aeb5f5d9d48f242d3d1d5caebe3",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:16+0800",
+      "blocks_release": false,
+      "id": "C71",
+      "resolution": "编号与格式勘误，不改变寄存器语义；用例引用一律带行号；G7 批量裁决（triage G7）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "e1dcd877eed1c011e2e1dc2f5235f534d24814cb46e11ce5b1615a46601690cb",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:16+0800",
+      "blocks_release": false,
+      "id": "C72",
+      "resolution": "编号与格式勘误，不改变寄存器语义；用例引用一律带行号；G7 批量裁决（triage G7）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "aedb84b1930997441829527d9c45d7b67af0a20385a3556d958129c544c0af45",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:16+0800",
+      "blocks_release": false,
+      "id": "C34",
+      "resolution": "以位定义表可枚举范围为准写入索引，文档口径差异登记，用例矩阵按已定义范围；G8 批量裁决（triage G8）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "356670d94869356500bddea3e494f93365a8c0498c9c6826f4c71872056855a1",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:16+0800",
+      "blocks_release": false,
+      "id": "C50",
+      "resolution": "以位定义表可枚举范围为准写入索引，文档口径差异登记，用例矩阵按已定义范围；G8 批量裁决（triage G8）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "e4473fce4f76a714458285eb56b20e01c8eb1290eee5274d19b6165eb8a70359",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:16+0800",
+      "blocks_release": false,
+      "id": "C55",
+      "resolution": "以位定义表可枚举范围为准写入索引，文档口径差异登记，用例矩阵按已定义范围；G8 批量裁决（triage G8）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "b5e16d140c82ff94e504ac9902efc5b67d07261c67e6e4788ec6822157ae1a73",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:16+0800",
+      "blocks_release": false,
+      "id": "C63",
+      "resolution": "以位定义表可枚举范围为准写入索引，文档口径差异登记，用例矩阵按已定义范围；G8 批量裁决（triage G8）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "92210c9da61a9a804e2fb6b27588520df0b84f9ecf74ed8de60a8d49e45faf8b",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:16+0800",
+      "blocks_release": false,
+      "id": "C56",
+      "resolution": "模板/元信息残留，无寄存器语义；G9 批量裁决（triage G9）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "8f8250d8b897d52453a16fcfe69fb5b1091a16a485a510f3dcd2911ffa4aa8cb",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:16+0800",
+      "blocks_release": false,
+      "id": "C57",
+      "resolution": "模板/元信息残留，无寄存器语义；G9 批量裁决（triage G9）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "ca466d74cf79121f7ea384489036f6aa05c0a21eccdec96397ef3bbfea35b803",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:16+0800",
+      "blocks_release": false,
+      "id": "C2",
+      "resolution": "以位定义表为准：0x0004 fpga_date Reset = 2023_0911；汇总表 0x2023_0804 登记勘误（2026-10-27 人裁决）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "e8a36d3bcae598814aab4c9439a495c1e14d62cc3ac174920f9ace656dae5b49",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:16+0800",
+      "blocks_release": false,
+      "id": "C11",
+      "resolution": "以位定义表为准：0x0080 fpga_test Reset = 0x0；汇总表 0x5555aaaa（自测图案）登记勘误（2026-10-27 人裁决）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "f3640bf9bc110585fd2b95d4af6aad49b3e3ff75dff421668cc8fe988250def6",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:16+0800",
+      "blocks_release": false,
+      "id": "C38",
+      "resolution": "以位定义表逐位推导为准：i2c_polling_cfg Reset = 0xF0（bit7:4=0xf、bit0=0）；汇总表 0x10 登记勘误（2026-10-27 人裁决）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "e93e64ee892689ca6f2209cbd7c0633b8eb7a6342d16d83e7fa3658328255256",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T10:38:16+0800",
+      "blocks_release": false,
+      "id": "C58",
+      "resolution": "以 DFX_VERSION=0x25092913（≈2025-09-29）为当前版本/日期基准；0x0004 fpga_date 的 2023 值登记为历史遗留（2026-10-27 人裁决）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "16cfade3db3e8c978a7384843e11bb008d8b7825b8ddb717d2ee6c07fcccaa87",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T13:52:49+0800",
+      "blocks_release": false,
+      "id": "C2",
+      "resolution": "以位定义表为准：0x0004 fpga_date Reset = 2023_0911；汇总表 0x2023_0804 登记勘误。作者确认 2026-10-27（Host 工具代录；追加记录，不改前条）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "79ed535a86ea0695c5082fb8b2b5b4393eeaac78e324cfcccc1c4953506df66e",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T13:52:50+0800",
+      "blocks_release": false,
+      "id": "C11",
+      "resolution": "以位定义表为准：0x0080 fpga_test Reset = 0x0；汇总表 0x5555aaaa（自测图案）登记勘误。作者确认 2026-10-27（Host 工具代录；追加记录，不改前条）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "e73529d889de8e40600545b2f983a05d6d571f214090c66f6aef8a871377fd37",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T13:52:50+0800",
+      "blocks_release": false,
+      "id": "C38",
+      "resolution": "以位定义表逐位推导为准：i2c_polling_cfg Reset = 0xF0（bit7:4=0xf、bit0=0；REV bits[3:1] 复位值按 0 处理，原文 L1631 未给值）。作者确认 2026-10-27（Host 工具代录；追加记录，不改前条）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "311ce343434bcb57171a976139eca1287583504f2700ab7e04cfa3370bdaf5d0",
+      "status": "ruled"
+    },
+    {
+      "adjudicated_at": "2026-10-27T13:52:50+0800",
+      "blocks_release": false,
+      "id": "C58",
+      "resolution": "以 DFX_VERSION=0x25092913（≈2025-09-29）为当前版本/日期基准；0x0004 fpga_date 的 2023 值登记为历史遗留。作者确认 2026-10-27（Host 工具代录；追加记录，不改前条）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "sha256": "22d29e9f466a9b5a7db263986b0badbafcd8dc7dc3aff73a5beea38145517bd8",
+      "status": "ruled"
+    }
+  ],
+  "schema": "kb/conflicts/adjudication",
+  "version": 1
+}

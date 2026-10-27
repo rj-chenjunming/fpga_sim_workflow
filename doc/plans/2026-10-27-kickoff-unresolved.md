@@ -37,10 +37,10 @@
 
 | 编号 | 事项 | 现状 | 需要谁做什么 |
 |---|---|---|---|
-| **D1** | 4 条 Tier B-core 的取值只有"人给的方向"，作者未确认 | C2/C11/C38 以位定义为准、C58 以 `DFX_VERSION` 为基准，已按人批示落账（每条 resolution 末尾注明"人工批示，Host 工具代录"） | 作者或文档 owner 给出口径；若不同，按**追加改判**处理（`adjudicate_conflicts.py --id C2 --status ruled --resolution …`，不改历史） |
-| **D2** | 裁决 actor 是 `human:chenjunming` 但写入是 Host 代录 | 代录事实写在每条 `resolution` 与快照 README，不冒充亲笔 | 若要亲笔：在有写权环境重跑 `doc/evidence/conflicts_sign_20261027.sh`（追加记录，历史保留） |
-| **D3** | C11-B：取消后"重跑作业 / 终止本轮"二选一（未做） | 当前取消=终态失败（已裁决 A 方案并补齐后果告知） | 若要做，**先改** `LOOP_ORCHESTRATION_SPEC §6 第 9 条`与 §5，再改状态机/API/UI/测试；属中大型切片 |
-| **D4** | C12-B：把 S0 真正并入运行入口（未做） | 当前只做"传了才校验"（A 方案） | 需 E2 完成 + 显式 `s0_rehearsal` 选项 + N0 消费派生副本 + 调整 `project==ENV_ROOT` 约束；须先改规格 |
+| **D1** | 4 条 Tier B-core 的取值只有"人给的方向"，作者未确认 | ✅ **已裁决 A（2026-10-27）：作者确认 4 条现口径**，已追加 4 条确认记录（快照 [`adjudication_author_confirm_20261027`](../evidence/adjudication_author_confirm_20261027/README.md)，STATUS §96）；**真实数据根仍待 E1**。原状： C2/C11/C38 以位定义为准、C58 以 `DFX_VERSION` 为基准，已按人批示落账（每条 resolution 末尾注明"人工批示，Host 工具代录"） | 作者或文档 owner 给出口径；若不同，按**追加改判**处理（`adjudicate_conflicts.py --id C2 --status ruled --resolution …`，不改历史） |
+| **D2** | 裁决 actor 是 `human:chenjunming` 但写入是 Host 代录 | ✅ **已裁决 A（2026-10-27）：维持代录**，不冒充亲笔（亲笔命令见裁决单 §D2.3-B，须人按键）。原状： 代录事实写在每条 `resolution` 与快照 README，不冒充亲笔 | 若要亲笔：在有写权环境重跑 `doc/evidence/conflicts_sign_20261027.sh`（追加记录，历史保留） |
+| **D3** | C11-B：取消后"重跑作业 / 终止本轮"二选一（未做） | ✅ **已裁决 A（2026-10-27）：不做**，维持"取消=终态失败"（C11-B 关闭；若将来要做须先改规格 §6/§5）。原状： 当前取消=终态失败（已裁决 A 方案并补齐后果告知） | 若要做，**先改** `LOOP_ORCHESTRATION_SPEC §6 第 9 条`与 §5，再改状态机/API/UI/测试；属中大型切片 |
+| **D4** | C12-B：把 S0 真正并入运行入口（未做） | ✅ **已裁决 A（2026-10-27）：等 E2**，维持"传了才校验"；B 方案登记为 E2 完成后的独立切片。原状： 当前只做"传了才校验"（A 方案） | 需 E2 完成 + 显式 `s0_rehearsal` 选项 + N0 消费派生副本 + 调整 `project==ENV_ROOT` 约束；须先改规格 |
 
 ### K 类：本仓可自行推进（无外部依赖）
 

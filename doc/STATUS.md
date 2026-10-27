@@ -4218,3 +4218,60 @@ kb 自测要求 `rc=0` + 有汇总行 + `FAIL=0` + **通过条数等于验收数
 
 **未做**：`doc/plans/` 不再新增一份"门清单"单页（同一口径两处维护=会漂，红线 8 的精神）；
 门数字仍只在本文档维护，`loop/README.md` 一个都不写。
+
+## 96 D 组裁决（D1–D4 = A/A/A/A）与 D1 落账（2026-10-27）
+
+人给的裁决（[裁决单](plans/2026-10-27-d-group-rulings.md) §D5）：
+**D1 = A 确认 4 条现口径**、**D2 = A 维持代录**、**D3 = A 不做（维持取消=终态失败）**、**D4 = A 等 E2**。
+
+| 项 | 处置 | 是否有代码/数据改动 |
+|---|---|---|
+| **D1** | 4 条 Tier B-core 追加"作者确认 2026-10-27"记录（见 §96.1） | **有**（可写派生数据根 + `doc/evidence/` 新快照） |
+| **D2** | 维持"人批示 + Host 代录"，不冒充亲笔；亲笔命令留在裁决单 §D2.3-B（须人按键） | 无 |
+| **D3** | C11-B **关闭**：维持"取消=终态失败"，`LOOP_ORCHESTRATION_SPEC` §6 第 9 条即为该裁决，不新增终态/动作枚举 | 无 |
+| **D4** | 维持"传了才校验"；B 方案登记为 **E2 完成后的独立切片**（届时先改 `S0_ENVIRONMENT_SPEC` §8 再改代码） | 无 |
+
+### 96.1 D1 落账实测（数字从命令输出复制）
+
+真实 `<ENV_ROOT>/kb` 是 `ro,nosuid,nodev` 挂载 ⇒ 写入落在**可写派生数据根** `<repo>/.dev-ws`（跑完 `--cleanup` 已删）：
+
+1. `provision_dev_workspace.sh --force --quiet` 建根；`apply_conflict_adjudication.sh --workspace <repo>/.dev-ws`
+   落 72 条原始快照（指纹校验通过）。该脚本自印：
+   `[after] I4 读数：conflicts=72，blocks_release=0，open=0`；
+   `[g3 ] full_now 提交前检查：通过`；`[g3 ] subset_only 提交前检查：通过`；
+   `[n16] after blockers=['I1_UNRESOLVED_ENTRIES','I2_CASES_PENDING','I3_EVIDENCE_MISSING','E2_EVIDENCE_ARCHIVE_EMPTY','F_N16_04_STAGING_RESIDUE']`，
+   `I4 在列=False`（与 §87.3 的 before/after 同口径）。
+2. 4 条作者确认用 `adjudicate_conflicts.py --actor human:chenjunming --id <C2|C11|C38|C58> --status ruled`
+   **追加**（每次自印"追加 1 条裁决 … 仍阻断发版 0 条"）。
+3. `--verify`：`[verify] 裁决记录=76（去重后 72）；conflicts=72，仍阻断=0`；`[verify] 锚与合并一致性：全部通过`。
+4. 结构核对：每条被确认 id 都有 **2 条**历史记录（原裁决 + 确认）；`blocks_release=True` 的记录数 = **0**；
+   新记录 `adjudicated_at=2026-10-27T13:52:49～50+0800`，`sha256` 前缀
+   `79ed535a86ea`(C2) / `e73529d889de`(C11) / `311ce343434b`(C38) / `22d29e9f466a`(C58)。
+5. 回归：三个 kb 自测（`LOOP_WORKSPACE=<repo>/.dev-ws`）`汇总：PASS=28 FAIL=0`、`PASS=10 FAIL=0`、`PASS=9 FAIL=0`。
+
+**快照（只增不改，`chmod 444`，`md5sum -c` 通过）**：
+`doc/evidence/adjudication_author_confirm_20261027/`：
+`adjudication.json` **`a2e399a7c22fa0c04dc13fe8187c3396`**、`conflicts.json` **`21cc93005f9a6a151ec4f76bffab2e7f`**
+（README 记录了 4 条的口径、两处依赖假设与复算命令）。
+
+### 96.2 边界（照实登记）
+
+- **真实数据根仍未生效**：本节的 76 条记录只在派生数据根上验证过，`<ENV_ROOT>/kb` 依旧只读 ⇒
+  真实轮次的 I4 解阻仍属 **E1**（拿到可写真实数据根后 `apply_conflict_adjudication.sh --workspace <真实根>`，
+  注意它落的是 72 条快照；4 条确认记录要一并落需把本目录的 `adjudication.json` 作为快照源，
+  即 `--snapshot doc/evidence/adjudication_author_confirm_20261027`）。
+- **C38 的假设已写进记录**：`REV` bits[3:1] 复位值按 0 处理（原文 L1631 未给值）——若作者后续给出非 0 值，
+  按追加改判处理（不改本次记录）。
+- **D3/D4 无代码改动**：C11-B 关闭、C12-B 等 E2。若将来开工，**先改规格**（AGENTS §2.1）。
+
+## 97 未闭合项（截至 2026-10-27 本轮收尾）
+
+| 编号 | 事项 | 状态 |
+|---|---|---|
+| **E1** | I4 在**真实数据根**生效 | 仍缺可写真实数据根（`/home` ro 挂载）；派生根上已实证（§87、§96.1） |
+| **E2** | S0-b 接入（ports/smoke、`ready_for_execution` 可为 true） | 环境侧；D4 因此等 E2 |
+| **E3** | C8 `passed` 形态夹具 | 环境侧（真实通过轮 ≈21.56 h + 写权） |
+| **E4** | 推送 | 本机出网被代理阻断；本轮结束领先 `origin/main` **33** 个提交（`git rev-list --count origin/main..HEAD` 输出复制） |
+| **D1–D4** | 四项裁决 | ✅ 全部已裁（A/A/A/A），处置见 §96 |
+| **R 类 8 条** | 登记不改 | 不变（见 kickoff §2 R 类） |
+

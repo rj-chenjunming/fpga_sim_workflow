@@ -1,0 +1,1142 @@
+{
+  "conflicts": [
+    {
+      "blocks_release": false,
+      "category": "RT",
+      "doc_line": "L413 vs L438",
+      "evidence": "06_iface_doc_regmap.md:L838（§B.1 行）; 文档位置 L413 vs L438; 06 建议判定原文：位定义 7a64_1f01 可执行；汇总需作者确认（xx 是否表示\"随 bit[15:8] 变化\"）",
+      "id": "C1",
+      "linked_entries": [
+        "0x0000#0x0000"
+      ],
+      "resolution": "Reset 以位定义表为准，汇总表值登记勘误；G2 批量裁决（triage G2）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "0x0000",
+      "status": "ruled",
+      "summary": "0x0000 version：汇总 Reset 0x7a64_xx01 ↔ 位定义 Reset 7a64_1f01。汇总用 xx 占位符本身就不是可比较的复位值"
+    },
+    {
+      "blocks_release": false,
+      "category": "RT",
+      "doc_line": "L414 vs L447",
+      "evidence": "06_iface_doc_regmap.md:L839（§B.1 行）; 文档位置 L414 vs L447; 06 建议判定原文：二者都是合法日期，必须向作者确认哪个是当前 BIN 的发布日期",
+      "id": "C2",
+      "linked_entries": [
+        "0x0000#0x0004"
+      ],
+      "resolution": "以位定义表为准：0x0004 fpga_date Reset = 2023_0911；汇总表 0x2023_0804 登记勘误。作者确认 2026-10-27（Host 工具代录；追加记录，不改前条）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "0x0000",
+      "status": "ruled",
+      "summary": "0x0004 date：汇总 Reset 0x2023_0804 ↔ 位定义 2023_0911"
+    },
+    {
+      "blocks_release": false,
+      "category": "RW+RT",
+      "doc_line": "L417 vs L474",
+      "evidence": "06_iface_doc_regmap.md:L840（§B.1 行）; 文档位置 L417 vs L474; 06 建议判定原文：位定义 R + 0x50/0x100 更可执行（50T/100T 二选一）；汇总 R/W 若成立则用例可写该寄存器 → 直接影响用例是否写 0x0010",
+      "id": "C3",
+      "linked_entries": [
+        "0x0000#0x0010"
+      ],
+      "resolution": "Reset 以位定义表为准，汇总表值登记勘误；G2 批量裁决（triage G2）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "0x0000",
+      "status": "ruled",
+      "summary": "0x0010 FPGA_MODULE：汇总 R/W、Reset 0 ↔ 位定义 R、Reset 0x50/0x100"
+    },
+    {
+      "blocks_release": false,
+      "category": "RW",
+      "doc_line": "L421 vs L532",
+      "evidence": "06_iface_doc_regmap.md:L841（§B.1 行）; 文档位置 L421 vs L532; 06 建议判定原文：倾向 R（MSI 指示为状态位，且有复位值 0x1）",
+      "id": "C4",
+      "linked_entries": [
+        "0x0000#0x0090"
+      ],
+      "resolution": "R/W 以位定义表为准（状态类应只读，不做写回比对）；G3 批量裁决（triage G3）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "0x0000",
+      "status": "ruled",
+      "summary": "0x0090 pcie_msi_int：汇总 R/W ↔ 位定义 R"
+    },
+    {
+      "blocks_release": false,
+      "category": "MISS",
+      "doc_line": "L427 vs L597—L609",
+      "evidence": "06_iface_doc_regmap.md:L842（§B.1 行）; 文档位置 L427 vs L597—L609; 06 建议判定原文：位定义表为准（有完整位定义），汇总的\"保留\"范围需收窄为 0x00c8~0x00EC",
+      "id": "C5",
+      "linked_entries": [
+        "0x0000#0x00f0"
+      ],
+      "resolution": "以位定义表补全汇总与位定义；无定义者（C42）用例按已定义范围裁剪并显式标注未覆盖；G5 批量裁决（triage G5）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "0x0000",
+      "status": "ruled",
+      "summary": "汇总把 0x00c8~0x00FC 整体标为保留 ↔ 位定义在 0x00f0 定义了 DFX_DEBUG（10 个字段）"
+    },
+    {
+      "blocks_release": false,
+      "category": "MISS",
+      "doc_line": "L413—L427",
+      "evidence": "06_iface_doc_regmap.md:L843（§B.1 行）; 文档位置 L413—L427; 06 建议判定原文：汇总表有漏；用例应以位定义表为准，并把 3 个寄存器补进汇总",
+      "id": "C6",
+      "linked_entries": [
+        "0x0000#0x0020",
+        "0x0000#0x008c",
+        "0x0000#0x00f0"
+      ],
+      "resolution": "以位定义表补全汇总与位定义；无定义者（C42）用例按已定义范围裁剪并显式标注未覆盖；G5 批量裁决（triage G5）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "0x0000",
+      "status": "ruled",
+      "summary": "汇总表漏列 3 个位定义表已定义的寄存器：0x0020 cpu_bus_switch(L490)、0x008c cpu_stamp(L520)、0x00f0 DFX_DEBUG(L597)"
+    },
+    {
+      "blocks_release": false,
+      "category": "BITS",
+      "doc_line": "L580 vs L581",
+      "evidence": "06_iface_doc_regmap.md:L844（§B.1 行）; 文档位置 L580 vs L581; 06 建议判定原文：明显笔误，REV 应为 31:16",
+      "id": "C7",
+      "linked_entries": [
+        "0x0000#0x00c0"
+      ],
+      "resolution": "位段按同表规律修正（重叠与跳空按笔误处理）；G4 批量裁决（triage G4）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "0x0000",
+      "status": "ruled",
+      "summary": "0x00c0 RAM_err_state0：15:8 SEU_err_stat 与 31:8 REV 位段重叠"
+    },
+    {
+      "blocks_release": false,
+      "category": "RW",
+      "doc_line": "L423/L424 vs L556/L558/L559/L561/L570",
+      "evidence": "06_iface_doc_regmap.md:L845（§B.1 行）; 文档位置 L423/L424 vs L556/L558/L559/L561/L570; 06 建议判定原文：WR/WC 类寄存器读回不可预期，用例不应做读回比对 → 影响用例设计",
+      "id": "C8",
+      "linked_entries": [
+        "0x0000#0x00b8",
+        "0x0000#0x00bc"
+      ],
+      "resolution": "R/W 以位定义表为准（状态类应只读，不做写回比对）；G3 批量裁决（triage G3）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "0x0000",
+      "status": "ruled",
+      "summary": "0x00b8、0x00bc：汇总 R/W ↔ 位定义 WR（只写）"
+    },
+    {
+      "blocks_release": false,
+      "category": "BITS",
+      "doc_line": "L504、L514、L1047",
+      "evidence": "06_iface_doc_regmap.md:L846（§B.1 行）; 文档位置 L504、L514、L1047; 06 建议判定原文：统一应为 31:1；31-30 疑为\"31 到 30\"即 2 bit 的笔误",
+      "id": "C9",
+      "linked_entries": [
+        "0x0000#0x0080",
+        "0x0000#0x0084",
+        "0x2000#0x2078"
+      ],
+      "resolution": "位段按同表规律修正（重叠与跳空按笔误处理）；G4 批量裁决（triage G4）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "0x0000",
+      "status": "ruled",
+      "summary": "位定义把 REV 位段写成 31-30（8 位寄存器只有一个功能位时），31-30 与 31:1 等价性不明；同文档 i2c_m_rst 用 31~1(L1057)"
+    },
+    {
+      "blocks_release": false,
+      "category": "NAME",
+      "doc_line": "L619",
+      "evidence": "06_iface_doc_regmap.md:L855（§B.2 行）; 文档位置 L619; 06 建议判定原文：复制残留，应为\"DFX寄存器\"",
+      "id": "C10",
+      "linked_entries": [],
+      "resolution": "命名以位定义表/字段名为准，汇总侧拼写登记勘误；用例按 entry_id 关联而非 name；G6 批量裁决（triage G6）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "0x0100",
+      "status": "ruled",
+      "summary": "DFX 段汇总表头误写为\"全局寄存器（0x0100—0x01FC）\""
+    },
+    {
+      "blocks_release": false,
+      "category": "RT",
+      "doc_line": "L635 vs L735",
+      "evidence": "06_iface_doc_regmap.md:L856（§B.2 行）; 文档位置 L635 vs L735; 06 建议判定原文：二者语义完全不同（0x5555aaaa 是自测图案）；必须确认，否则用例读回比对必错",
+      "id": "C11",
+      "linked_entries": [
+        "0x0100#0x0180"
+      ],
+      "resolution": "以位定义表为准：0x0080 fpga_test Reset = 0x0；汇总表 0x5555aaaa（自测图案）登记勘误。作者确认 2026-10-27（Host 工具代录；追加记录，不改前条）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "0x0100",
+      "status": "ruled",
+      "summary": "0x0080 fpga_test：汇总 Reset 0x5555aaaa ↔ 位定义 0x0"
+    },
+    {
+      "blocks_release": false,
+      "category": "MISS",
+      "doc_line": "L724—L726",
+      "evidence": "06_iface_doc_regmap.md:L857（§B.2 行）; 文档位置 L724—L726; 06 建议判定原文：位定义缺失，需补；用例无法确定该寄存器位宽/属性",
+      "id": "C12",
+      "linked_entries": [
+        "0x0100#0x0134"
+      ],
+      "resolution": "以位定义表补全汇总与位定义；无定义者（C42）用例按已定义范围裁剪并显式标注未覆盖；G5 批量裁决（triage G5）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "0x0100",
+      "status": "ruled",
+      "summary": "0x0034 PCIE_PLL_UNLOCK_TIME 位定义表只有表头行，无任何 Bits 行"
+    },
+    {
+      "blocks_release": false,
+      "category": "NAME",
+      "doc_line": "L625 vs L673；L626 vs L682",
+      "evidence": "06_iface_doc_regmap.md:L858（§B.2 行）; 文档位置 L625 vs L673；L626 vs L682; 06 建议判定原文：dw/down 是两种不同含义（DW=Data Width？down=链路 down），必须确认",
+      "id": "C13",
+      "linked_entries": [
+        "0x0100#0x0114",
+        "0x0100#0x0118"
+      ],
+      "resolution": "命名以位定义表/字段名为准，汇总侧拼写登记勘误；用例按 entry_id 关联而非 name；G6 批量裁决（triage G6）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "0x0100",
+      "status": "ruled",
+      "summary": "0x0014：汇总备注\"pcie链路down时间\" ↔ 位定义名/描述 PCIE DW 时间；0x0018：汇总名 pcie_exit_time ↔ 位定义名 PCIE_RST_EXIT_TIME"
+    },
+    {
+      "blocks_release": false,
+      "category": "MISS",
+      "doc_line": "L769 vs L971—L1037",
+      "evidence": "06_iface_doc_regmap.md:L865（§B.3 行）; 文档位置 L769 vs L971—L1037; 06 建议判定原文：位定义为准；汇总\"REV 0x58~0x74\"作废，需重排",
+      "id": "C14",
+      "linked_entries": [
+        "0x2000#0x2054",
+        "0x2000#0x2058",
+        "0x2000#0x205c",
+        "0x2000#0x2064",
+        "0x2000#0x2068",
+        "0x2000#0x206c",
+        "0x2000#0x2070",
+        "0x2000#0x2074"
+      ],
+      "resolution": "以位定义表补全汇总与位定义；无定义者（C42）用例按已定义范围裁剪并显式标注未覆盖；G5 批量裁决（triage G5）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "0x2000",
+      "status": "ruled",
+      "summary": "汇总把 +0x58~+0x74 整体标为 REV ↔ 位定义在该区间定义了 8 个寄存器（+0x54、+0x58、+0x5c、+0x64、+0x68、+0x6c、+0x70、+0x74），其中 +0x54 汇总表完全没有对应行"
+    },
+    {
+      "blocks_release": false,
+      "category": "RT",
+      "doc_line": "L748/L749/L750/L760 vs L784/L794/L804/L874",
+      "evidence": "06_iface_doc_regmap.md:L866（§B.3 行）; 文档位置 L748/L749/L750/L760 vs L784/L794/L804/L874; 06 建议判定原文：位定义值是\"可用的实际分频/滤波/超时值\"，汇总 0x00 疑为占位；用例复位比对必须以位定义为准，否则 4 个寄存器全错",
+      "id": "C15",
+      "linked_entries": [
+        "0x2000#0x2000",
+        "0x2000#0x2004",
+        "0x2000#0x2008",
+        "0x2000#0x2030"
+      ],
+      "resolution": "Reset 以位定义表为准，汇总表值登记勘误；G2 批量裁决（triage G2）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "0x2000",
+      "status": "ruled",
+      "summary": "Reset 大面积冲突：i2c_scale 0x00↔0x4e；i2c_filter 0x00↔0x7c；i2c_timeout 0x00↔0x7c；i2c_reg_len 0x00↔1"
+    },
+    {
+      "blocks_release": false,
+      "category": "NAME+RW",
+      "doc_line": "L768 vs L954—L965",
+      "evidence": "06_iface_doc_regmap.md:L867（§B.3 行）; 文档位置 L768 vs L954—L965; 06 建议判定原文：同一个地址既是\"状态\"又是\"注入\"；对照 DOM 段把它们拆成 +0x50 状态 + +0x54 注入(L1407/L1408) → 本段汇总的\"0x58~0x74 REV\"很可能本应包含 +0x54 i2c_ram_ecc_inj，故 C14/C16 同源",
+      "id": "C16",
+      "linked_entries": [
+        "0x2000#0x2050"
+      ],
+      "resolution": "R/W 以位定义表为准（状态类应只读，不做写回比对）；G3 批量裁决（triage G3）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "0x2000",
+      "status": "ruled",
+      "summary": "+0x50：汇总名 i2c_ram_ecc_sta、属性 RO ↔ 位定义表标题同名但字段名是 i2c_ram_ecc_inj 且含 R/W 注入位（bit1:0）"
+    },
+    {
+      "blocks_release": false,
+      "category": "NAME",
+      "doc_line": "L1021 vs L1023 vs L1028",
+      "evidence": "06_iface_doc_regmap.md:L868（§B.3 行）; 文档位置 L1021 vs L1023 vs L1028; 06 建议判定原文：三者必须统一；+0x74 已是 sda_ch3(L1037)，故 +0x70 应为 scl_ch3，标题错误",
+      "id": "C17",
+      "linked_entries": [
+        "0x2000#0x2070"
+      ],
+      "resolution": "命名以位定义表/字段名为准，汇总侧拼写登记勘误；用例按 entry_id 关联而非 name；G6 批量裁决（triage G6）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "0x2000",
+      "status": "ruled",
+      "summary": "+0x70：章节标题写 i2c_sda_last_ac_time_ch3 ↔ 表标题写 i2c_scl_last_ac_time_ch3寄存器定义 ↔ 字段名写 i2c_scl_last_ac_time_ch3"
+    },
+    {
+      "blocks_release": false,
+      "category": "BITS",
+      "doc_line": "L974、L983、L992、L1001、L1010、L1019、L1028、L1037",
+      "evidence": "06_iface_doc_regmap.md:L869（§B.3 行）; 文档位置 L974、L983、L992、L1001、L1010、L1019、L1028、L1037; 06 建议判定原文：\"最后访问时间\"仅 2 bit 无法表达时间 → 疑为 1:0 后面漏写高位（如 31:0）；待确认，用例不能据此做时间比对",
+      "id": "C18",
+      "linked_entries": [
+        "0x2000#0x2054",
+        "0x2000#0x2058",
+        "0x2000#0x205c",
+        "0x2000#0x2064",
+        "0x2000#0x2068",
+        "0x2000#0x206c",
+        "0x2000#0x2070",
+        "0x2000#0x2074"
+      ],
+      "resolution": "位段按同表规律修正（重叠与跳空按笔误处理）；G4 批量裁决（triage G4）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "0x2000",
+      "status": "ruled",
+      "summary": "8 个 \"last access time\" 寄存器全部只有 Bits 1:0"
+    },
+    {
+      "blocks_release": false,
+      "category": "ADDR",
+      "doc_line": "L989 vs L998",
+      "evidence": "06_iface_doc_regmap.md:L870（§B.3 行）; 文档位置 L989 vs L998; 06 建议判定原文：疑 +0x64 应为 +0x60（若如此则 ch1=0x5c/0x60，ch2=0x64/0x68，ch3=0x6c/0x70）；必须确认，否则 4 个通道的偏移全错位",
+      "id": "C19",
+      "linked_entries": [
+        "0x2000#0x205c",
+        "0x2000#0x2064"
+      ],
+      "resolution": "地址以文档自洽一方为准（段头∨总表∨实际占用取一致者），登记文档勘误；G1 批量裁决（triage G1）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "0x2000",
+      "status": "ruled",
+      "summary": "地址空档：+0x5c(ch1 scl) 与 +0x64(ch1 sda) 之间跳过 +0x60；而 ch0 是 +0x54/+0x58、ch2 是 +0x68/+0x6c、ch3 是 +0x70/+0x74 都连续"
+    },
+    {
+      "blocks_release": false,
+      "category": "NUM",
+      "doc_line": "L611 vs L737",
+      "evidence": "06_iface_doc_regmap.md:L871（§B.3 行）; 文档位置 L611 vs L737; 06 建议判定原文：编号错误；建议 RTC 段改 3.1.2.3'/3.1.2.9",
+      "id": "C20",
+      "linked_entries": [],
+      "resolution": "编号与格式勘误，不改变寄存器语义；用例引用一律带行号；G7 批量裁决（triage G7）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "ALL",
+      "status": "ruled",
+      "summary": "3.1.2.3 这个节号被用了两次（DFX 段 与 I2C Master RTC 段）；且后者的子节用 3.1.2.3.2.x，与父节号不连续"
+    },
+    {
+      "blocks_release": false,
+      "category": "NUM",
+      "doc_line": "L976 → L1039",
+      "evidence": "06_iface_doc_regmap.md:L872（§B.3 行）; 文档位置 L976 → L1039; 06 建议判定原文：缺失的 21~25 疑对应 +0x54~+0x74 中未编号的寄存器（与 C14 同源）",
+      "id": "C21",
+      "linked_entries": [],
+      "resolution": "编号与格式勘误，不改变寄存器语义；用例引用一律带行号；G7 批量裁决（triage G7）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "0x2000",
+      "status": "ruled",
+      "summary": "详细节号 3.1.2.3.2.20 直接跳到 3.1.2.3.2.26，21~25 缺失"
+    },
+    {
+      "blocks_release": false,
+      "category": "NUM",
+      "doc_line": "L1043、L1053 vs L971+",
+      "evidence": "06_iface_doc_regmap.md:L873（§B.3 行）; 文档位置 L1043、L1053 vs L971+; 06 建议判定原文：0x0078 极易被误读为段内偏移 0x0078（正确）或全局 0x0078（错误，全局应是 0x2078）；建议统一加 +",
+      "id": "C22",
+      "linked_entries": [
+        "0x2000#0x2078",
+        "0x2000#0x207c"
+      ],
+      "resolution": "编号与格式勘误，不改变寄存器语义；用例引用一律带行号；G7 批量裁决（triage G7）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "0x2000",
+      "status": "ruled",
+      "summary": "偏移书写不统一：绝大多数用 +0xNN，而 pca_rst_n/i2c_m_rst 用 0x0078/0x007c"
+    },
+    {
+      "blocks_release": false,
+      "category": "ADDR",
+      "doc_line": "L1676（段头）vs L392（BAR0 表）",
+      "evidence": "06_iface_doc_regmap.md:L911（§B.7 行）; 文档位置 L1676（段头）vs L392（BAR0 表）; 06 建议判定原文：Offset：0x0F00 明显笔误（应为 0x0800）；0x0F00 是全文最容易让用例基地址算错的单点",
+      "id": "C23",
+      "linked_entries": [],
+      "resolution": "地址以文档自洽一方为准（段头∨总表∨实际占用取一致者），登记文档勘误；G1 批量裁决（triage G1）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "0x0800",
+      "status": "ruled",
+      "summary": "UART 段地址三处不一致：段头 UART控制器寄存器（0x0800—0x08FC） + Offset：0x0F00 ↔ BAR0 表 Uart寄存器 0x0800~0x09FC ↔ 4 路实际占用 0x0800~0x087F（L1677）"
+    },
+    {
+      "blocks_release": false,
+      "category": "NAME",
+      "doc_line": "L1679 vs L1708",
+      "evidence": "06_iface_doc_regmap.md:L912（§B.7 行）; 文档位置 L1679 vs L1708; 06 建议判定原文：位定义表复制错误，应为 THR",
+      "id": "C24",
+      "linked_entries": [
+        "0x0800#0x0800"
+      ],
+      "resolution": "命名以位定义表/字段名为准，汇总侧拼写登记勘误；用例按 entry_id 关联而非 name；G6 批量裁决（triage G6）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "0x0800",
+      "status": "ruled",
+      "summary": "发送 buffer 寄存器：汇总名 THR ↔ 位定义 Name 列写 RBR"
+    },
+    {
+      "blocks_release": false,
+      "category": "BITS",
+      "doc_line": "L1781 vs L1778—L1780",
+      "evidence": "06_iface_doc_regmap.md:L913（§B.7 行）; 文档位置 L1781 vs L1778—L1780; 06 建议判定原文：应为 31:8",
+      "id": "C25",
+      "linked_entries": [
+        "0x0800#0x0814"
+      ],
+      "resolution": "位段按同表规律修正（重叠与跳空按笔误处理）；G4 批量裁决（triage G4）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "0x0800",
+      "status": "ruled",
+      "summary": "0x014 LSR：bit5/6/7 已定义（THRE/TEMT/Error in RCVR FIFO）↔ 末行 31:5 REV 位段重叠"
+    },
+    {
+      "blocks_release": false,
+      "category": "NAME",
+      "doc_line": "L1765",
+      "evidence": "06_iface_doc_regmap.md:L914（§B.7 行）; 文档位置 L1765; 06 建议判定原文：补字段名（如 LOOP）",
+      "id": "C26",
+      "linked_entries": [
+        "0x0800#0x0810"
+      ],
+      "resolution": "命名以位定义表/字段名为准，汇总侧拼写登记勘误；用例按 entry_id 关联而非 name；G6 批量裁决（triage G6）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "0x0800",
+      "status": "ruled",
+      "summary": "MCR bit4 行 Name 列被描述文字污染（回环使能控制\\n0=不使能\\n1=使能），无独立字段名"
+    },
+    {
+      "blocks_release": false,
+      "category": "BITS",
+      "doc_line": "L1678—L1690 vs L1697+",
+      "evidence": "06_iface_doc_regmap.md:L915（§B.7 行）; 文档位置 L1678—L1690 vs L1697+; 06 建议判定原文：UART 寄存器实际数据 8 位、总线访问 32 位，Byte=4 指总线宽度；但汇总未说明，易被当成 32 位数据",
+      "id": "C27",
+      "linked_entries": [],
+      "resolution": "位段按同表规律修正（重叠与跳空按笔误处理）；G4 批量裁决（triage G4）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "0x0800",
+      "status": "ruled",
+      "summary": "汇总 Byte 列全为 4 ↔ 位定义全部为 7:0 + REV（8 位数据寄存器）"
+    },
+    {
+      "blocks_release": false,
+      "category": "ADDR",
+      "doc_line": "L1678—L1690",
+      "evidence": "06_iface_doc_regmap.md:L916（§B.7 行）; 文档位置 L1678—L1690; 06 建议判定原文：属正常的 LCR[7]/读写方向复用，但汇总未把选择条件写全（0x000 的 DLL 行写了 LCR[7]=1，THR/RBR 行写 LCR[7]=0，0x008 的 FCR 读行写 LCR[7]=1 而 IIR 行写 LCR[7]=x → x 未定义）→ 待确认（L1681—L1683）",
+      "id": "C28",
+      "linked_entries": [
+        "0x0800#0x0800",
+        "0x0800#0x0808"
+      ],
+      "resolution": "地址以文档自洽一方为准（段头∨总表∨实际占用取一致者），登记文档勘误；G1 批量裁决（triage G1）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "0x0800",
+      "status": "ruled",
+      "summary": "汇总表同一 offset 出现多行：0x000 出现 RBR/THR/DLL 三行、0x008 出现 IIR/FCR(W)/FCR(R) 三行"
+    },
+    {
+      "blocks_release": false,
+      "category": "NUM",
+      "doc_line": "L1670",
+      "evidence": "06_iface_doc_regmap.md:L917（§B.7 行）; 文档位置 L1670; 06 建议判定原文：编号错误",
+      "id": "C29",
+      "linked_entries": [],
+      "resolution": "编号与格式勘误，不改变寄存器语义；用例引用一律带行号；G7 批量裁决（triage G7）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "0x0800",
+      "status": "ruled",
+      "summary": "UART 汇总节号写作 3.1.2.4.1，挂在 3.1.2.7 下"
+    },
+    {
+      "blocks_release": false,
+      "category": "NUM",
+      "doc_line": "L1813、L1836、L1838",
+      "evidence": "06_iface_doc_regmap.md:L925（§B.8 行）; 文档位置 L1813、L1836、L1838; 06 建议判定原文：编号错误",
+      "id": "C30",
+      "linked_entries": [],
+      "resolution": "编号与格式勘误，不改变寄存器语义；用例引用一律带行号；G7 批量裁决（triage G7）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "ALL",
+      "status": "ruled",
+      "summary": "LED 段节号与 UART 完全重号：汇总 3.1.2.4.1、详细 3.1.2.7.2 与 3.1.2.7.2.1"
+    },
+    {
+      "blocks_release": false,
+      "category": "SCOPE+MISS",
+      "doc_line": "L1821—L1828 vs L1840—L1844",
+      "evidence": "06_iface_doc_regmap.md:L926（§B.8 行）; 文档位置 L1821—L1828 vs L1840—L1844; 06 建议判定原文：端口覆盖不足 + 位定义缺失；用例最多只能覆盖 32 端口，且只能验证第一个寄存器",
+      "id": "C31",
+      "linked_entries": [
+        "0x0600#0x0600",
+        "0x0600#0x0604",
+        "0x0600#0x0608",
+        "0x0600#0x060c",
+        "0x0600#0x0610",
+        "0x0600#0x0614",
+        "0x0600#0x0618",
+        "0x0600#0x061c"
+      ],
+      "resolution": "以位定义表补全汇总与位定义；无定义者（C42）用例按已定义范围裁剪并显式标注未覆盖；G5 批量裁决（triage G5）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "0x0600",
+      "status": "ruled",
+      "summary": "LED 汇总 8 行 × 4 端口 = 32 端口（与 64CH 项目不符）↔ 位定义只定义 0x000，0x004~0x01c 无位定义"
+    },
+    {
+      "blocks_release": false,
+      "category": "ADDR+NUM",
+      "doc_line": "L1663—L1666（位于 DOM 段内）",
+      "evidence": "06_iface_doc_regmap.md:L927（§B.8 行）; 文档位置 L1663—L1666（位于 DOM 段内）; 06 建议判定原文：明显错位粘贴；应归入 LED 段（0x60 疑为\"第 3 个端口寄存器\"的另一种布局）→ 必须向作者确认 LED 段的真实 offset 规划",
+      "id": "C32",
+      "linked_entries": [],
+      "resolution": "地址以文档自洽一方为准（段头∨总表∨实际占用取一致者），登记文档勘误；G1 批量裁决（triage G1）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "0x0600",
+      "status": "ruled",
+      "summary": "孤立表 0x60 LED_PORT3：9 列结构、offset 0x60、端口号 3，与 LED 段 6 列 / 0x000~0x01c 体系均不匹配，且被插在 Polling_dt(L1656) 与 UART 段(L1668) 之间"
+    },
+    {
+      "blocks_release": false,
+      "category": "ADDR",
+      "doc_line": "L398 vs L747",
+      "evidence": "06_iface_doc_regmap.md:L902（§B.6 行）; 文档位置 L398 vs L747; 06 建议判定原文：直接冲突；决定 0x2C00 段能否访问",
+      "id": "C33",
+      "linked_entries": [],
+      "resolution": "地址以文档自洽一方为准（段头∨总表∨实际占用取一致者），登记文档勘误；G1 批量裁决（triage G1）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "0x2000",
+      "status": "ruled",
+      "summary": "BAR0 总表把 0x2C00~0x2FFC 标为 REV ↔ 0x2000 段汇总把 0x2C00、0x2E00 列为控制器 7/8"
+    },
+    {
+      "blocks_release": false,
+      "category": "SCOPE",
+      "doc_line": "L397 vs L747 vs L546",
+      "evidence": "06_iface_doc_regmap.md:L903（§B.6 行）; 文档位置 L397 vs L747 vs L546; 06 建议判定原文：三处矛盾；决定用例要覆盖几个 RTC 控制器",
+      "id": "C34",
+      "linked_entries": [],
+      "resolution": "以位定义表可枚举范围为准写入索引，文档口径差异登记，用例矩阵按已定义范围；G8 批量裁决（triage G8）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "0x2000",
+      "status": "ruled",
+      "summary": "RTC 控制器数量三处不一致：BAR0 表\"寄存器1~6\"（0x2000~0x2bFC）↔ 0x2000 段列 10 个基址（到 0x3200）↔ bmc_rtc_en 位定义到 i2c master9"
+    },
+    {
+      "blocks_release": false,
+      "category": "ADDR",
+      "doc_line": "L394、L396",
+      "evidence": "06_iface_doc_regmap.md:L830（§B.0 行）; 文档位置 L394、L396; 06 建议判定原文：应为 0x0C00~0x0CFC、0x0E00~0x0EFC（与同表其它行的 0xXX00~0xXXFC 规律一致）→ 用例的\"保留段不可访问\"断言会因边界错误而误判",
+      "id": "C35",
+      "linked_entries": [],
+      "resolution": "地址以文档自洽一方为准（段头∨总表∨实际占用取一致者），登记文档勘误；G1 批量裁决（triage G1）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "ALL",
+      "status": "ruled",
+      "summary": "总表把 0x0C00~0xCFC（REV）与 0x0E00~0xFFC（REV）写成缺前导 0 的形式。若按字面理解，0xCFC/0xFFC 是比起点还小/等价的段内地址，无法构成合法区间"
+    },
+    {
+      "blocks_release": false,
+      "category": "ADDR+NUM",
+      "doc_line": "L399",
+      "evidence": "06_iface_doc_regmap.md:L831（§B.0 行）; 文档位置 L399; 06 建议判定原文：疑为 0x4000~0xFFFC 或 0x4000~0x7FFC；该段的真实上界决定 DOM/polling 控制器能枚举多少个，必须确认",
+      "id": "C36",
+      "linked_entries": [],
+      "resolution": "地址以文档自洽一方为准（段头∨总表∨实际占用取一致者），登记文档勘误；G1 批量裁决（triage G1）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "ALL",
+      "status": "ruled",
+      "summary": "0x4000~0x0x0FFFC 是明显笔误（0x0x0FFFC 不是合法十六进制数字），且该行的\"类型\"与\"数据类型\"两列全空"
+    },
+    {
+      "blocks_release": false,
+      "category": "ADDR",
+      "doc_line": "L396 vs L399",
+      "evidence": "06_iface_doc_regmap.md:L832（§B.0 行）; 文档位置 L396 vs L399; 06 建议判定原文：段边界自相矛盾；BAR0 只有 128KB（0x00000~0x1FFFC），0xFFFC 虽在范围内，但 REV 段与 DOM 段的重叠必须由作者澄清",
+      "id": "C37",
+      "linked_entries": [],
+      "resolution": "地址以文档自洽一方为准（段头∨总表∨实际占用取一致者），登记文档勘误；G1 批量裁决（triage G1）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "ALL",
+      "status": "ruled",
+      "summary": "若 C35 按字面理解（0x0E00~0x0FFC）与 0x4000~0xFFFC 不重叠 ✔；若 C36 按 0x4000~0x0xFFFC 且 C35 按 0x0E00~0xFFC 理解为\"到 0xFFC\"则两者重叠"
+    },
+    {
+      "blocks_release": false,
+      "category": "RT",
+      "doc_line": "L1409 vs L1630/L1632",
+      "evidence": "06_iface_doc_regmap.md:L897（§B.6 行）; 文档位置 L1409 vs L1630/L1632; 06 建议判定原文：二者不同（0x10 vs 0xF0）；必须确认，否则 polling 通道使能初值判断错误",
+      "id": "C38",
+      "linked_entries": [
+        "0x4000#0x4060"
+      ],
+      "resolution": "以位定义表逐位推导为准：i2c_polling_cfg Reset = 0xF0（bit7:4=0xf、bit0=0；REV bits[3:1] 复位值按 0 处理，原文 L1631 未给值）。作者确认 2026-10-27（Host 工具代录；追加记录，不改前条）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "0x4000",
+      "status": "ruled",
+      "summary": "i2c_polling_cfg：汇总 Reset 0x10 ↔ 位定义 bit0=0x0、bit7:4=0xf → 推导 0xF0"
+    },
+    {
+      "blocks_release": false,
+      "category": "BITS+SCOPE",
+      "doc_line": "L845（RTC）vs L1485（DOM）",
+      "evidence": "06_iface_doc_regmap.md:L898（§B.6 行）; 文档位置 L845（RTC）vs L1485（DOM）; 06 建议判定原文：同 IP 两实例规格不同；需确认是否有意（DOM 内部 9548 只 4 通道）",
+      "id": "C39",
+      "linked_entries": [
+        "0x2000#0x2018",
+        "0x4000#0x4018"
+      ],
+      "resolution": "位段按同表规律修正（重叠与跳空按笔误处理）；G4 批量裁决（triage G4）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "ALL",
+      "status": "ruled",
+      "summary": "同名字段 inner_9548_chn：RTC 段 7:0（8 通道）↔ DOM 段 3:0（\"最多支持 4 个通道\"）"
+    },
+    {
+      "blocks_release": false,
+      "category": "MISS",
+      "doc_line": "L1385 vs L1642",
+      "evidence": "06_iface_doc_regmap.md:L899（§B.6 行）; 文档位置 L1385 vs L1642; 06 建议判定原文：位定义漏 m1~m7；用例无法单独复位 1~7 号控制器",
+      "id": "C40",
+      "linked_entries": [
+        "0x4000#0x407c"
+      ],
+      "resolution": "以位定义表补全汇总与位定义；无定义者（C42）用例按已定义范围裁剪并显式标注未覆盖；G5 批量裁决（triage G5）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "0x4000",
+      "status": "ruled",
+      "summary": "段头声明\"DOM CPU RTC 控制器 0~7\"，但复位寄存器 dom_i2c_m_rst 只有 bit0（dom_i2c_m0_rst）"
+    },
+    {
+      "blocks_release": false,
+      "category": "ADDR",
+      "doc_line": "L1384 vs L399",
+      "evidence": "06_iface_doc_regmap.md:L900（§B.6 行）; 文档位置 L1384 vs L399; 06 建议判定原文：二者不一致（0x7ffc vs 0xFFFC）；用例枚举控制器个数会差一倍",
+      "id": "C41",
+      "linked_entries": [],
+      "resolution": "地址以文档自洽一方为准（段头∨总表∨实际占用取一致者），登记文档勘误；G1 批量裁决（triage G1）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "ALL",
+      "status": "ruled",
+      "summary": "DOM 段范围：段头 0x4000—0x7ffc ↔ BAR0 总表 0x4000~0x0x0FFFC"
+    },
+    {
+      "blocks_release": false,
+      "category": "MISS",
+      "doc_line": "L1413",
+      "evidence": "06_iface_doc_regmap.md:L901（§B.6 行）; 文档位置 L1413; 06 建议判定原文：位定义完全缺失；这是全文档最大的寄存器缺口，无法据此写 polling 用例",
+      "id": "C42",
+      "linked_entries": [],
+      "resolution": "以位定义表补全汇总与位定义；无定义者（C42）用例按已定义范围裁剪并显式标注未覆盖；G5 批量裁决（triage G5）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "0x4000",
+      "status": "ruled",
+      "summary": "\"光模块polling控制器 0~63 (CPU接口)\"只有标题，无任何 offset/寄存器定义；且 64 个控制器 × 最小 0x400 stride 将远超段头 0x7ffc 范围"
+    },
+    {
+      "blocks_release": false,
+      "category": "RW",
+      "doc_line": "L1081 vs L1111",
+      "evidence": "06_iface_doc_regmap.md:L880（§B.4 行）; 文档位置 L1081 vs L1111; 06 建议判定原文：Busy 应为 R（汇总对）；位定义 R/W 疑错 → 用例不应写该寄存器",
+      "id": "C43",
+      "linked_entries": [
+        "0x0a00#0x0b80"
+      ],
+      "resolution": "R/W 以位定义表为准（状态类应只读，不做写回比对）；G3 批量裁决（triage G3）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "0x0a00",
+      "status": "ruled",
+      "summary": "0x180 status：汇总 R ↔ 位定义 R/W（Busy）"
+    },
+    {
+      "blocks_release": false,
+      "category": "RW",
+      "doc_line": "L1084 vs L1141",
+      "evidence": "06_iface_doc_regmap.md:L881（§B.4 行）; 文档位置 L1084 vs L1141; 06 建议判定原文：位定义 R 更合理（读回值）；汇总 R/W 疑错",
+      "id": "C44",
+      "linked_entries": [
+        "0x0a00#0x0b8c"
+      ],
+      "resolution": "R/W 以位定义表为准（状态类应只读，不做写回比对）；G3 批量裁决（triage G3）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "0x0a00",
+      "status": "ruled",
+      "summary": "0x18c Rd flash status reg：汇总 R/W ↔ 位定义 R（Rd data）"
+    },
+    {
+      "blocks_release": false,
+      "category": "NAME",
+      "doc_line": "L1083、L1084、L1087",
+      "evidence": "06_iface_doc_regmap.md:L882（§B.4 行）; 文档位置 L1083、L1084、L1087; 06 建议判定原文：备注复制错误；0x188=Wr flash status、0x18c=Rd flash status、0x198=Length",
+      "id": "C45",
+      "linked_entries": [
+        "0x0a00#0x0b88",
+        "0x0a00#0x0b8c",
+        "0x0a00#0x0b98"
+      ],
+      "resolution": "命名以位定义表/字段名为准，汇总侧拼写登记勘误；用例按 entry_id 关联而非 name；G6 批量裁决（triage G6）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "0x0a00",
+      "status": "ruled",
+      "summary": "三个不同寄存器（0x188、0x18c、0x198）备注同为\"读写长度寄存器\""
+    },
+    {
+      "blocks_release": false,
+      "category": "ADDR",
+      "doc_line": "L1078 vs L1099；L1081 vs L1108",
+      "evidence": "06_iface_doc_regmap.md:L883（§B.4 行）; 文档位置 L1078 vs L1099；L1081 vs L1108; 06 建议判定原文：不算错误但极易算错全局地址；已在 §0.1/§5 双写消歧",
+      "id": "C46",
+      "linked_entries": [],
+      "resolution": "地址以文档自洽一方为准（段头∨总表∨实际占用取一致者），登记文档勘误；G1 批量裁决（triage G1）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "0x0a00",
+      "status": "ruled",
+      "summary": "偏移口径混用：汇总用段内相对（0x0000~0x00fc、0x180）↔ 位定义用全局（0x0a00~0x0afc、0x0b80）"
+    },
+    {
+      "blocks_release": false,
+      "category": "NUM",
+      "doc_line": "L1220、L1248",
+      "evidence": "06_iface_doc_regmap.md:L890（§B.5 行）; 文档位置 L1220、L1248; 06 建议判定原文：应写作 2012_1017 或 0x0132_E439；用例若按十六进制解析会取到完全不同的值",
+      "id": "C47",
+      "linked_entries": [
+        "0x0d00#0x0d00"
+      ],
+      "resolution": "编号与格式勘误，不改变寄存器语义；用例引用一律带行号；G7 批量裁决（triage G7）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "0x0d00",
+      "status": "ruled",
+      "summary": "Pcie_core_version Reset 20121017 为裸十进制、无 0x 前缀，与全文十六进制风格不一致（且 0x20121017 与 20121017 数值相差极大）"
+    },
+    {
+      "blocks_release": false,
+      "category": "ADDR",
+      "doc_line": "L1856 vs L1862",
+      "evidence": "06_iface_doc_regmap.md:L928（§B.8 行）; 文档位置 L1856 vs L1862; 06 建议判定原文：段头范围漏写 0x0004/0x0005",
+      "id": "C48",
+      "linked_entries": [],
+      "resolution": "地址以文档自洽一方为准（段头∨总表∨实际占用取一致者），登记文档勘误；G1 批量裁决（triage G1）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "SPI",
+      "status": "ruled",
+      "summary": "3.2 段头写 全局寄存器（0x0000—0x0003） ↔ 实际列到 0x0005"
+    },
+    {
+      "blocks_release": false,
+      "category": "RW",
+      "doc_line": "L1857—L1862、L1873—L1922",
+      "evidence": "06_iface_doc_regmap.md:L929（§B.8 行）; 文档位置 L1857—L1862、L1873—L1922; 06 建议判定原文：与全文\"状态类寄存器写 R/RO\"的约定冲突 → 待确认；若真为 R/W，则用例需验证\"软件写入是否影响 CPLD 侧\"",
+      "id": "C49",
+      "linked_entries": [],
+      "resolution": "R/W 以位定义表为准（状态类应只读，不做写回比对）；G3 批量裁决（triage G3）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "SPI",
+      "status": "ruled",
+      "summary": "optical_pre0~5 汇总与位定义都写 R/W ↔ 这些是 CPLD 送来的光模块在位信号（A 节 #17/#18），软件不可见且应为只读"
+    },
+    {
+      "blocks_release": false,
+      "category": "SCOPE",
+      "doc_line": "L319 vs L1848",
+      "evidence": "06_iface_doc_regmap.md:L930（§B.8 行）; 文档位置 L319 vs L1848; 06 建议判定原文：2 vs 3 不一致；第三个 SPI Slave 无任何文档（是 BMC 那条？见 L367\"FPGA与bmc的互联接口为spi\"）→ 需确认编号口径",
+      "id": "C50",
+      "linked_entries": [],
+      "resolution": "以位定义表可枚举范围为准写入索引，文档口径差异登记，用例矩阵按已定义范围；G8 批量裁决（triage G8）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "ALL",
+      "status": "ruled",
+      "summary": "总体说明\"3个SPI Slave接口\"（L319，\"Fpga与Cplda、Cpldb间的数据通路\"只举了 2 个 CPLD）↔ 3.2 节只写 SPI Slave_a / SPI Slave_b（2 个）"
+    },
+    {
+      "blocks_release": false,
+      "category": "NAME",
+      "doc_line": "L1883、L1893、L1903、L1912",
+      "evidence": "06_iface_doc_regmap.md:L931（§B.8 行）; 文档位置 L1883、L1893、L1903、L1912; 06 建议判定原文：覆盖完整（0~63）但顺序错乱；用例按编号循环时会错配端口区间",
+      "id": "C51",
+      "linked_entries": [],
+      "resolution": "命名以位定义表/字段名为准，汇总侧拼写登记勘误；用例按 entry_id 关联而非 name；G6 批量裁决（triage G6）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "SPI",
+      "status": "ruled",
+      "summary": "optical_pre 编号与光模块区间非单调：pre1=光模块 32-41、pre2=10-15、pre3=16-31、pre4=42-47"
+    },
+    {
+      "blocks_release": false,
+      "category": "MISS",
+      "doc_line": "L1931—L1934、L1941—L1944",
+      "evidence": "06_iface_doc_regmap.md:L932（§B.8 行）; 文档位置 L1931—L1934、L1941—L1944; 06 建议判定原文：IO 信号无地址（Offset：NA），本来不可寄存器读写，但文档未明说 → 待确认；用例无法把这两个表当寄存器用",
+      "id": "C52",
+      "linked_entries": [],
+      "resolution": "以位定义表补全汇总与位定义；无定义者（C42）用例按已定义范围裁剪并显式标注未覆盖；G5 批量裁决（triage G5）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "IO",
+      "status": "ruled",
+      "summary": "3.3 两个 IO 表的 R/W 与 Reset 列全为空（led 表）或 /（dbg_sig 表）"
+    },
+    {
+      "blocks_release": false,
+      "category": "NUM",
+      "doc_line": "L1943",
+      "evidence": "06_iface_doc_regmap.md:L933（§B.8 行）; 文档位置 L1943; 06 建议判定原文：编辑残留",
+      "id": "C53",
+      "linked_entries": [],
+      "resolution": "编号与格式勘误，不改变寄存器语义；用例引用一律带行号；G7 批量裁决（triage G7）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "IO",
+      "status": "ruled",
+      "summary": "Fpga_dbg_sig1 描述尾部夹带 REV 字样"
+    },
+    {
+      "blocks_release": false,
+      "category": "MISS",
+      "doc_line": "L1846",
+      "evidence": "06_iface_doc_regmap.md:L939（§B.9 行）; 文档位置 L1846; 06 建议判定原文：缺章节；用例所需的\"寄存器初始化顺序/初值\"完全缺失",
+      "id": "C54",
+      "linked_entries": [],
+      "resolution": "以位定义表补全汇总与位定义；无定义者（C42）用例按已定义范围裁剪并显式标注未覆盖；G5 批量裁决（triage G5）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "ALL",
+      "status": "ruled",
+      "summary": "3.1.9 软件初始化流程说明 有标题无正文（下一行即为 3.2）"
+    },
+    {
+      "blocks_release": false,
+      "category": "SCOPE",
+      "doc_line": "L313—L335 vs L1848 / L542—L546 / L397 / L747 / L1385 / L1413",
+      "evidence": "06_iface_doc_regmap.md:L940（§B.9 行）; 文档位置 L313—L335 vs L1848 / L542—L546 / L397 / L747 / L1385 / L1413; 06 建议判定原文：①②③ 需向作者确认\"16 = 6+10\"与\"RTC/DOM/polling 控制器数量\"的对应关系",
+      "id": "C55",
+      "linked_entries": [],
+      "resolution": "以位定义表可枚举范围为准写入索引，文档口径差异登记，用例矩阵按已定义范围；G8 批量裁决（triage G8）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "ALL",
+      "status": "ruled",
+      "summary": "接口数量与文档内部各处对不上：①\"2个I2C Slave\" ↔ 全文未给出 I2C Slave 的寄存器/地址映射；②\"3个SPI Slave\" ↔ 3.2 只 2 个（C50）；③\"16个I2C Master\"（6 路下挂 9548 + 10 路光模块）↔ bmc_rtc_en 只到 master9(10 路)、RTC 控制器 6/10 路、DOM 8 路 + polling 64 路；④\"1个SPI Master\" ↔ 在线升级段（0x0A00）可用；⑤\"4路uart接mac\" ↔ UART 段 4 路 ✔"
+    },
+    {
+      "blocks_release": false,
+      "category": "TPL",
+      "doc_line": "L7（文档属性）",
+      "evidence": "06_iface_doc_regmap.md:L941（§B.9 行）; 文档位置 L7（文档属性）; 06 建议判定原文：属性残留；不影响寄存器语义，但会误导\"这是模板文件\"的判断",
+      "id": "C56",
+      "linked_entries": [],
+      "resolution": "模板/元信息残留，无寄存器语义；G9 批量裁决（triage G9）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "ALL",
+      "status": "ruled",
+      "summary": "原 Word 文档属性标题为 \"锐捷模板\"（模板残留），与正文项目名\"TCS9620-64CH-F-RJ-MAC\"不符"
+    },
+    {
+      "blocks_release": false,
+      "category": "TPL",
+      "doc_line": "L244—L248 vs L272—L278",
+      "evidence": "06_iface_doc_regmap.md:L942（§B.9 行）; 文档位置 L244—L248 vs L272—L278; 06 建议判定原文：2010 年的两条修订属\"锐捷模板\"自身历史，与 TCS9620 寄存器内容无关；受控内容只对应 2025 的三条。用例若引用\"V0.9/V1.0\"会指向模板版本而非本 FPGA 版本",
+      "id": "C57",
+      "linked_entries": [],
+      "resolution": "模板/元信息残留，无寄存器语义；G9 批量裁决（triage G9）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "ALL",
+      "status": "ruled",
+      "summary": "两套修订履历并存：模板自身\"一、规范修订履历表\" 2010-1-19 V0.9（彭鼎祥）、2010-5-18 V1.0（彭鼎祥，L247/L248）↔ 项目\"版本修改信息\" 20250623 / 2025/06/30 / 2025/07/03（潘贺，L276—L278）"
+    },
+    {
+      "blocks_release": false,
+      "category": "RT",
+      "doc_line": "L620、L447、L278",
+      "evidence": "06_iface_doc_regmap.md:L943（§B.9 行）; 文档位置 L620、L447、L278; 06 建议判定原文：三者不可能同属一个受控版本；0x0004 的 2023/2025 分歧即 C2，DFX_VERSION 的 25092913 又自成一说 → 必须确认当前 BIN 的版本/日期基准",
+      "id": "C58",
+      "linked_entries": [],
+      "resolution": "以 DFX_VERSION=0x25092913（≈2025-09-29）为当前版本/日期基准；0x0004 fpga_date 的 2023 值登记为历史遗留。作者确认 2026-10-27（Host 工具代录；追加记录，不改前条）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "ALL",
+      "status": "ruled",
+      "summary": "版本自洽性冲突：DFX_VERSION Reset 0x25092913（可解读为 2025-09-29）晚于修订记录最后日期 2025/07/03(L278)；而 0x0004 fpga_date 位定义 2023_0911(L447) 早于首个版本记录 20250623(L276)"
+    },
+    {
+      "blocks_release": false,
+      "category": "NAME",
+      "doc_line": "L419 vs L503",
+      "evidence": "06_iface_doc_regmap.md:L847（§B.1 行）; 文档位置 L419 vs L503; 06 建议判定原文：汇总备注为复制错误；以位定义为准",
+      "id": "C59",
+      "linked_entries": [
+        "0x0000#0x0080"
+      ],
+      "resolution": "命名以位定义表/字段名为准，汇总侧拼写登记勘误；用例按 entry_id 关联而非 name；G6 批量裁决（triage G6）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "0x0000",
+      "status": "ruled",
+      "summary": "0x0080 Polling_en_sys 汇总备注写\"cpu rtc跟bmc rtc优先级控制\"，与 0x0084 cpu_first 备注(L420)完全相同 ↔ 位定义说明它是 polling 开关(L503)"
+    },
+    {
+      "blocks_release": false,
+      "category": "NAME",
+      "doc_line": "L418/L483 vs L422/L542",
+      "evidence": "06_iface_doc_regmap.md:L849（§B.1 行）; 文档位置 L418/L483 vs L422/L542; 06 建议判定原文：建议统一为 BMC-SPI/BMC-I2C/CPU-PCIE/CPU-I2C 四通道命名",
+      "id": "C60",
+      "linked_entries": [
+        "0x0000#0x0014",
+        "0x0000#0x009c"
+      ],
+      "resolution": "命名以位定义表/字段名为准，汇总侧拼写登记勘误；用例按 entry_id 关联而非 name；G6 批量裁决（triage G6）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "0x0000",
+      "status": "ruled",
+      "summary": "访问限制用语不统一：bmc I2C接口、BMC接口、CPU接口、cpu I2C接口 混用同一实体"
+    },
+    {
+      "blocks_release": false,
+      "category": "NUM",
+      "doc_line": "L424、L425",
+      "evidence": "06_iface_doc_regmap.md:L848（§B.1 行）; 文档位置 L424、L425; 06 建议判定原文：格式问题，不影响语义",
+      "id": "C61",
+      "linked_entries": [
+        "0x0000#0x00bc",
+        "0x0000#0x00c0"
+      ],
+      "resolution": "编号与格式勘误，不改变寄存器语义；用例引用一律带行号；G7 批量裁决（triage G7）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "0x0000",
+      "status": "ruled",
+      "summary": "汇总 Offset 列大小写混用：0X00BC、0X00C0 与 0x00b8 并存"
+    },
+    {
+      "blocks_release": false,
+      "category": "NAME",
+      "doc_line": "L1122",
+      "evidence": "06_iface_doc_regmap.md:L884（§B.4 行）; 文档位置 L1122; 06 建议判定原文：待确认；用例需向作者确认 bit1 的准确名称与默认值",
+      "id": "C62",
+      "linked_entries": [
+        "0x0a00#0x0b84"
+      ],
+      "resolution": "命名以位定义表/字段名为准，汇总侧拼写登记勘误；用例按 entry_id 关联而非 name；G6 批量裁决（triage G6）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "0x0a00",
+      "status": "ruled",
+      "summary": "spi if ctl bit1 字段名 3384 switch 语义不明（\"3384\"疑为器件型号残留）"
+    },
+    {
+      "blocks_release": false,
+      "category": "SCOPE",
+      "doc_line": "L772 vs L1411",
+      "evidence": "06_iface_doc_regmap.md:L874（§B.3 行）; 文档位置 L772 vs L1411; 06 建议判定原文：两段容量确实不同（区间长度也不同，自洽）；但同一 IP 两个实例容量不同需确认是否有意为之",
+      "id": "C63",
+      "linked_entries": [
+        "0x2000#0x2100",
+        "0x4000#0x4100"
+      ],
+      "resolution": "以位定义表可枚举范围为准写入索引，文档口径差异登记，用例矩阵按已定义范围；G8 批量裁决（triage G8）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "ALL",
+      "status": "ruled",
+      "summary": "同类 i2c_dt：RTC 段\"一次最大可连续读写 256 字节\"（区间 0x100~0x1fc=64 字）↔ DOM 段\"128 字节\"（区间 0x100~0x17c=32 字）"
+    },
+    {
+      "blocks_release": false,
+      "category": "MISS",
+      "doc_line": "L1961—L1972",
+      "evidence": "06_iface_doc_regmap.md:L944（§B.9 行）; 文档位置 L1961—L1972; 06 建议判定原文：文档无任何已闭环的评审结论可引用 → B 节 72 条冲突均未在文档内被裁决，不能指望\"文档已评审通过\"来消解冲突",
+      "id": "C64",
+      "linked_entries": [],
+      "resolution": "以位定义表补全汇总与位定义；无定义者（C42）用例按已定义范围裁剪并显式标注未覆盖；G5 批量裁决（triage G5）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "ALL",
+      "status": "ruled",
+      "summary": "附录一 审核意见列表 的批注 1/2/3 与答复全部为空；附录二(L1972) 完全没有内容"
+    },
+    {
+      "blocks_release": false,
+      "category": "NUM",
+      "doc_line": "L645 vs L646",
+      "evidence": "06_iface_doc_regmap.md:L859（§B.2 行）; 文档位置 L645 vs L646; 06 建议判定原文：格式问题；数据行(L646)为准",
+      "id": "C65",
+      "linked_entries": [
+        "0x0100#0x0100"
+      ],
+      "resolution": "编号与格式勘误，不改变寄存器语义；用例引用一律带行号；G7 批量裁决（triage G7）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "0x0100",
+      "status": "ruled",
+      "summary": "DFX_VERSION 位定义表表头行与数据行都写了 Name/Reset（表头行 Name 列是描述文字），格式错乱"
+    },
+    {
+      "blocks_release": false,
+      "category": "NUM",
+      "doc_line": "L1229 vs L1311",
+      "evidence": "06_iface_doc_regmap.md:L891（§B.5 行）; 文档位置 L1229 vs L1311; 06 建议判定原文：位段应写 15:0；影响读回掩码（是否比对上 16 位）",
+      "id": "C66",
+      "linked_entries": [
+        "0x0d00#0x0d70",
+        "0x0d00#0x0d74",
+        "0x0d00#0x0d78",
+        "0x0d00#0x0d7c",
+        "0x0d00#0x0d80",
+        "0x0d00#0x0d84",
+        "0x0d00#0x0d88",
+        "0x0d00#0x0d8c"
+      ],
+      "resolution": "编号与格式勘误，不改变寄存器语义；用例引用一律带行号；G7 批量裁决（triage G7）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "0x0d00",
+      "status": "ruled",
+      "summary": "汇总备注 [15:0]有效 ↔ 位定义 Bits 31:0（描述里才写 [15:0]有效）"
+    },
+    {
+      "blocks_release": false,
+      "category": "NUM",
+      "doc_line": "L1645 vs L1654",
+      "evidence": "06_iface_doc_regmap.md:L904（§B.6 行）; 文档位置 L1645 vs L1654; 06 建议判定原文：编号重号",
+      "id": "C67",
+      "linked_entries": [],
+      "resolution": "编号与格式勘误，不改变寄存器语义；用例引用一律带行号；G7 批量裁决（triage G7）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "0x4000",
+      "status": "ruled",
+      "summary": "详细节号 3.1.2.6.2.22 出现两次（i2c_dt 与 Polling_dt）"
+    },
+    {
+      "blocks_release": false,
+      "category": "ADDR",
+      "doc_line": "L1408 vs L1411",
+      "evidence": "06_iface_doc_regmap.md:L905（§B.6 行）; 文档位置 L1408 vs L1411; 06 建议判定原文：与 §4 的 C19 表现形式不同（§4 是跳过 0x60，§7 是跳过 0x58/0x5c），两段偏移规划不一致 → 需确认哪一套是 IP 真实布局",
+      "id": "C68",
+      "linked_entries": [],
+      "resolution": "地址以文档自洽一方为准（段头∨总表∨实际占用取一致者），登记文档勘误；G1 批量裁决（triage G1）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "0x4000",
+      "status": "ruled",
+      "summary": "+0x54 i2c_ram_ecc_inj 与 +0x60 i2c_polling_cfg 之间跳过 +0x58/+0x5c（汇总与位定义均无）"
+    },
+    {
+      "blocks_release": false,
+      "category": "RW",
+      "doc_line": "L1686 vs L1773—L1780",
+      "evidence": "06_iface_doc_regmap.md:L918（§B.7 行）; 文档位置 L1686 vs L1773—L1780; 06 建议判定原文：这些是只读状态位，R/W 极可能错误（对照 0x2000 段 i2c_sta 写 R/RO）→ 用例不应写 LSR",
+      "id": "C69",
+      "linked_entries": [
+        "0x0800#0x0814"
+      ],
+      "resolution": "R/W 以位定义表为准（状态类应只读，不做写回比对）；G3 批量裁决（triage G3）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "0x0800",
+      "status": "ruled",
+      "summary": "LSR 汇总属性 R/W ↔ 位定义 8 个位（DR/OE/PE/FE/BI/THRE/TEMT/Err）全写 R/W"
+    },
+    {
+      "blocks_release": false,
+      "category": "RT",
+      "doc_line": "L1686 vs L1690(L1679) 与 L1778",
+      "evidence": "06_iface_doc_regmap.md:L919（§B.7 行）; 文档位置 L1686 vs L1690(L1679) 与 L1778; 06 建议判定原文：位定义逐位 Reset 与汇总寄存器级 Reset 不一致；位定义逐位值更细，但需与寄存器级 0x0060 对齐（bit5/6 应为 1）",
+      "id": "C70",
+      "linked_entries": [
+        "0x0800#0x0814"
+      ],
+      "resolution": "Reset 以位定义表为准，汇总表值登记勘误；G2 批量裁决（triage G2）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "0x0800",
+      "status": "ruled",
+      "summary": "LSR Reset 0x0060 意味着 bit5(THRE)=1、bit6(TEMT)=1 ↔ 位定义把 bit5/6 的 Reset 写 0x0"
+    },
+    {
+      "blocks_release": false,
+      "category": "NUM",
+      "doc_line": "L1811 vs L1668",
+      "evidence": "06_iface_doc_regmap.md:L945（§B.9 行）; 文档位置 L1811 vs L1668; 06 建议判定原文：文字错误",
+      "id": "C71",
+      "linked_entries": [],
+      "resolution": "编号与格式勘误，不改变寄存器语义；用例引用一律带行号；G7 批量裁决（triage G7）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "ALL",
+      "status": "ruled",
+      "summary": "3.1.2.8（LED）与 3.1.2.7（UART）标题都含笔误\"控制器存器\"（漏\"寄\"）"
+    },
+    {
+      "blocks_release": false,
+      "category": "NUM",
+      "doc_line": "全文",
+      "evidence": "06_iface_doc_regmap.md:L946（§B.9 行）; 文档位置 全文; 06 建议判定原文：格式问题；检索/引用章节号时会失配",
+      "id": "C72",
+      "linked_entries": [],
+      "resolution": "编号与格式勘误，不改变寄存器语义；用例引用一律带行号；G7 批量裁决（triage G7）（人工批示，Host 工具代录 2026-10-27）",
+      "resolution_actor": "human:chenjunming",
+      "resolution_kind": "human",
+      "segment": "ALL",
+      "status": "ruled",
+      "summary": "子节编号大量错位：3.1.2.6.1（L1378）写作 3.1.2.6.1寄存器汇总 无分隔、3.1.2.7UART（L1668）标题与编号无空格、3.1.2.6.2.21DOM（L1635）同样无空格"
+    }
+  ],
+  "expected_total": 72,
+  "schema": "kb/conflicts/conflicts",
+  "source_note": "doc/_notes/06_iface_doc_regmap.md",
+  "version": 1
+}

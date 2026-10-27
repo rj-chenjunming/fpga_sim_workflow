@@ -5,6 +5,10 @@
 > 你在本文末尾的裁决表给口径，我按「签后动作」逐项执行，并在 `doc/STATUS.md` 落账。
 > **纪律**：改判一律**追加**（`adjudicate_conflicts.py` 只增不改，历史保留）；D3/D4 **先改规格再改代码**（AGENTS §2.1）；
 > **D2 亲笔只能由人执行**（红线 5：`human_signed` 只在 `actor_kind="human"` 时为真；模型不得代签）。
+>
+> **裁决结果（2026-10-27，已给口径）**：D1 = **A 确认 4 条现口径**（已落账，见 §D1.7）；
+> D2 = **A 维持代录**；D3 = **A 不做**（维持"取消=终态失败"）；D4 = **A 等 E2**。
+> 执行与实测见 `doc/STATUS.md` §96。
 
 ## 0 一张表看完
 
@@ -53,6 +57,18 @@
 | **A（建议）** | 确认 4 条现口径生效。我给每条 `resolution` **追加**一句"作者确认 2026-10-27"（`--status ruled --resolution ...` 追加记录，旧记录保留），重跑 `n1_conflicts.py` 核 `blocks_release` 仍为 0 | 只增记录；判据零变化；快照另存 |
 | **B** | 逐条改判：你给哪条改成什么值+依据，我按追加改判落账（C38 的 REV 假设、C58 的基准方向是重点） | 同上；若值变化，凡引用该值的用例/报告需一并核对（C11 自测图案、C38 polling 初值） |
 | **C** | 先只核对原文：上表已贴全 6 行原文；需要的话我再把 `06_iface_doc_regmap.md` 里 C2/C11/C38/C58 的抽取段落整段贴给你 | 不动任何数据，只做取证 |
+
+### D1.7 已执行（2026-10-27，A 口径）
+
+写入落在**可写派生数据根** `<repo>/.dev-ws`（真实 `<ENV_ROOT>/kb` 是 ro 挂载，写不进）：
+先 `apply_conflict_adjudication.sh` 落 72 条原始快照，再用 `adjudicate_conflicts.py` **追加** 4 条
+"作者确认 2026-10-27（Host 工具代录；追加记录，不改前条）"。快照冻结在
+[`doc/evidence/adjudication_author_confirm_20261027/`](../evidence/adjudication_author_confirm_20261027/README.md)
+（`adjudication.json` md5 `a2e399a7…`、`conflicts.json` md5 `21cc9300…`，`md5sum -c` 通过）。
+
+实测：`[verify] 裁决记录=76（去重后 72）；conflicts=72，仍阻断=0`；每条被确认 id 都有 2 条历史记录
+（原裁决 + 确认），`blocks_release=True` 记录数 = 0；`blocks_release=0`、`G3 full_now/subset_only 通过`、
+`N16` 的 `I4_CONFLICTS_UNCLEARED` 不再在列；三个 kb 自测 `PASS=28` / `PASS=10` / `PASS=9`。
 
 ### D1.6 签后动作与验证门（A 或 B 都一样）
 
@@ -136,12 +152,12 @@
 
 ## D5 裁决表（请在此给口径）
 
-| 编号 | 你的裁决（A/B/C 或一句话） | 备注 |
+| 编号 | 裁决（2026-10-27 人给） | 执行结果 |
 |---|---|---|
-| D1 | ☐ A 确认 4 条现口径　☐ B 改判（写明哪条改成什么）　☐ C 先核对原文 | C38 的 `REV bits[3:1]=0` 假设、C58 的基准方向是重点 |
-| D2 | ☐ A 维持代录　☐ B 我要亲笔（我按你给的命令执行） | B 必须由人按键，我只备环境与核对 |
-| D3 | ☐ A 不做　☐ B 做（先规格 diff / 直接开工）　☐ C 先出规格 diff 评审 | B 需先改规格 §6/§5 |
-| D4 | ☐ A 等 E2　☐ B 先写规格预案 | 现在做 B 方案不可行 |
+| D1 | ✅ **A 确认 4 条现口径** | 已追加 4 条确认记录（C2 `79ed535a…`、C11 `e73529d8…`、C38 `311ce343…`、C58 `22d29e9f…`），72→76 条记录（去重 72），`blocks_release` 仍 0；快照 `doc/evidence/adjudication_author_confirm_20261027/`；**真实数据根仍待 E1** |
+| D2 | ✅ **A 维持代录** | 无需动作：每条 resolution 与快照 README 已写明"人工批示，Host 工具代录"；**不冒充亲笔**。若将来要亲笔，命令见 §D2.3-B（必须由人按键） |
+| D3 | ✅ **A 不做** | 维持"取消=终态失败"（`LOOP_ORCHESTRATION_SPEC` §6 第 9 条现状即为该裁决）；C11-B 关闭，不新增终态/动作枚举 |
+| D4 | ✅ **A 等 E2** | 维持"传了才校验"；B 方案登记为 E2 完成后的独立切片（届时先改 `S0_ENVIRONMENT_SPEC` §8 再改代码） |
 
 **裁决一经给出**：我按上表逐项执行（一项一提交），并把结果写 `doc/STATUS.md` 新一节；
 未裁决项保持现状、不预设默认值（AGENTS §2 硬性纪律 2）。

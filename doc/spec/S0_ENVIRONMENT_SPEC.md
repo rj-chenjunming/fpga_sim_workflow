@@ -214,10 +214,13 @@ Host `loop/host/s0.py` 是派生及核验的唯一写者；API 传输、UI 投�
   - 三库 `error(s)>0` ⇒ `smoke=failed` 且报告含逐段命令、rc、计数与原始日志路径；任一侧日志缺汇总行、任一侧 rc≠0
     ⇒ 不得 `passed`（读数不可信不等于零告警）；
   - 同一副本二次核验漂移即失败（授权落盘会追加新的 work 见证，见 §8.2-1）。
-- **本仓侧已完成（2026-10-27，S0-b 接入轮）**（下面「部分已完成（C12）」指其中的执行入口消费一项，两者不矛盾）：派生/提议/确认/落盘/冒烟/准出六环已接线并通过用例
+- **本仓侧已完成（2026-10-27，S0-b 接入轮）**：派生/提议/确认/落盘/冒烟/准出六环已接线并通过用例
   （`tests/test_sv_ports.py`、`tests/test_s0b.py`）；真实环境副本上六项全 `passed`、`ready_for_execution=True`、
   基线零写入（STATUS §102）。**内网真机验收与 D5 界面仍未做**。
-- **（已完成，2026-10-27，S0-b 接入轮）**：「`ready_for_execution=false` 时 `real` 启动 400 且原因可读」已落地为 `services/api._check_s0_record_for_run()` + 4 条用例（不存在 / 未准出 / 文件自称 ready 仍拒 / drill 与不传不拦）；S0-b 其余验收（`get()` 能返回 true 的允许路径、三库 `smoke`、接口适配）仍未做。
+- **执行入口消费（C12 + S0-b 接入轮，已完成）**：「`ready_for_execution=false` 时 `real` 启动 400 且原因可读」由
+  `services/api._check_s0_record_for_run()` + 4 条用例覆盖（不存在 / 未准出 / 文件自称 ready 仍拒 / drill 与不传不拦）；
+  `get()` 能返回 true 的允许路径、三库 `smoke`、接口适配已在 S0-b 接入轮落地（STATUS §102）；
+  **仍未做的是内网真机验收与 D5 界面**。
 - **派生确定性**：同一 `baseline/RTL` + `rtl_source` 连续派生两次，输出表 md5 相同；`baseline/RTL` 或 `rtl_source` 缺文件 ⇒ `ports=failed`。**模块解析不了时按 §8.2-1 的 md5 规则判**：两侧都解析不了且源文件 md5 相同 ⇒ 不阻断（语义未变）；一侧解析成功另一侧解析不了、或两侧 md5 不同 ⇒ `ports=failed`（不得当作"无差异"）。
 - **确认门槛**：对未 `confirmed` 的 hunk，副本 TB 顶层必须**逐字节不变**（md5 断言）；确认记录追加后再落盘，旧确认不得被覆盖（只增不改）。
 - **冒烟判据**：每段必须落 `命令 / rc / error(s) / warning(s) / Error-<code> 明细 / 日志路径`；`error(s)>0` ⇒ `smoke=failed`；warning 必须落 `added/removed/count_increase`，`added ∪ count_increase` 非空时每条都要有评估记录才算 `smoke=passed`。

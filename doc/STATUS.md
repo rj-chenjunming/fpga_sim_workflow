@@ -4589,3 +4589,22 @@ bash loop/spikes/provision_dev_workspace.sh --cleanup     # 跑完删掉
 - 软件层：**`1050 passed, 3 deselected, 1 warning in 171.00s`**。
 - 文档门：`missing=0`、`exit=0`。
 - 三文件定向用例：`tests/test_s0.py + test_s0b.py + test_sv_ports.py` ⇒ **93 passed**（含 R1/R2/R4/R5 新增钉）。
+
+
+### 102.12 第四轮复核（R2 残余 / R3 残余 / 规格两句）与整改
+
+第四轮结论：N1–N6 与 R1/R4/R5 保持关闭，剩 3 项（R2 前缀型 hunk 重复应用、R3 阻断项未落地、规格 §8.5 两句）。
+另外指出 §102.10 的"现在会打印"与实际不符——本节以**代码与用例**为准，不再只写声明。
+
+| # | 第四轮发现 | 处置 | 证据 |
+|---|---|---|---|
+| **R2 残余（功能缺陷）** | 插入型 hunk（`old_text` 是 `new_text` 前缀）落盘后原片段仍在 ⇒ 只靠文本计数判不出"已应用"：中间态误判 `failed`，第二次 apply **重复应用并把副本 TB 写坏** | **已修**：新增"已应用 hunk 台账" `s0b/applied_hunks.jsonl`（只增不改 + 锚）；`apply_confirmed` 与 `ports._simulate` 都以台账判定"已落盘"，内容已是目标形态时只**认账不写文件** | 真实记录（.s0-work4）：apply#1 `['H1']`、P-1 计数 1；中间态 `waiting`（"部分已确认的 hunk 尚未落盘"）、P-1 仍 1；apply#2 `applied=['H2']`、`skipped=[H1 already_applied]`、P-1=1/P-2=1；用例 `test_prefix_type_hunk_is_not_double_applied` |
+| **R3 残余（声称未落地）** | 报告阻断项缺 `记录状态 failed` / `漂移（相对最新 work 见证）` 两行，而 §102.10 声称已有 | **已实现**（这次是真的）：`_write_report` 现按 `status/verification` 追加这两类阻断项，并把"无阻断"的措辞改为"无（六项检查全部 passed，且无漂移/核验错误）" | 用例 `test_report_blockers_show_status_and_drift`（断言报告含 `- 记录状态 failed：`、`- 漂移（相对最新 work 见证）：`、`PKG/kept.txt` 且头不写"可准出"） |
+| **规格 §8.5 两句** | L217 引用已不存在的标签（悬空）；L220「已完成」与句尾"其余验收仍未做"自相矛盾 | **已改写**：删掉悬空引用；把"执行入口消费"写成"已完成，含 C12 四项用例 + S0-b 落地"，并把"仍未做"收窄为**内网真机验收与 D5 界面** | 规格 §8.5 |
+
+### 102.13 门（第四轮整改后，数字从输出复制）
+
+- 软件层：**`1052 passed, 3 deselected, 1 warning in 185.53s`**。
+- 文档门：`missing=0`、`exit=0`。
+- 三文件定向用例：**95 passed**。
+- 真实环境副本全链路（含两次插入型 hunk 分批落盘）：六项全 `passed`、`drift={}`、**`ready_for_execution=True`**。

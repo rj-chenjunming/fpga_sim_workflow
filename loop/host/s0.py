@@ -330,8 +330,17 @@ class S0Store:
         if blocked:
             rows += [f'- {key}（{label}）：{status}' + (f' — {reason}' if reason else '')
                      for key, label, status, reason in blocked]
-        else:
-            rows += ['- 无（六项检查全部 passed）']
+        verification = record.get('verification') or {}
+        if record.get('status') == 'failed':
+            rows += [f'- 记录状态 failed：{record.get("error") or "（未给出原因）"}']
+        if verification.get('drift'):
+            rows += ['- 漂移（相对最新 work 见证）：'
+                     + json.dumps(verification['drift'], ensure_ascii=False, sort_keys=True)]
+        if verification.get('errors'):
+            rows += ['- 核验错误：' + json.dumps(verification['errors'], ensure_ascii=False)]
+        if not blocked and record.get('status') != 'failed' \
+                and not verification.get('drift') and not verification.get('errors'):
+            rows += ['- 无（六项检查全部 passed，且无漂移/核验错误）']
         if not record.get('ready_for_execution'):
             rows += ['- execution：新版执行入口尚未放行（六项未全 passed，或存在漂移/错误）']
         rows += ['', '## TB 变更登记表', '']

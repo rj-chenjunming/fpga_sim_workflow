@@ -567,3 +567,45 @@ def test_unified_diff_is_a_valid_patch(tmp_path: Path) -> None:
     proc = subprocess.run(["patch", "-p0", "--dry-run", "-i", "fix.patch"],
                           cwd=str(work), capture_output=True, text=True)
     assert proc.returncode == 0, proc.stdout + proc.stderr
+
+
+def test_prefix_type_hunk_is_not_double_applied(store_env) -> None:
+    """第四轮 R2 残余：插入型 hunk（old_text 是 new_text 的前缀）落盘后原片段仍在，
+    只靠文本计数会重复应用写坏副本；必须以"已应用 hunk 台账"判定。"""
+    store, record, baseline, work, folder = _prepare(store_env)
+    s0b.propose(folder, [{"hunk_id": "H1", "file": "TB/top.sv", "old_text": "module top;",
+                          "new_text": "module top;\n  // note one", "reason": "插入注释"}],
+                actor="model:m")
+    s0b.confirm(folder, "H1", "confirmed", actor="human:me")
+    first = store.apply(record["id"])
+    assert first["applied"] == ["H1"]
+    tb = work / "TB/top.sv"
+    after_first = tb.read_text(encoding="utf-8")
+    assert after_first.count("// note one") == 1
+    # 再确认一条插入型 hunk，中间态必须是 waiting（部分待落盘），且不得重复写 H1
+    s0b.propose(folder, [{"hunk_id": "H2", "file": "TB/top.sv", "old_text": "// note one",
+                          "new_text": "// note one\n  // note two", "reason": "再插一条"}],
+                actor="model:m")
+    s0b.confirm(folder, "H2", "confirmed", actor="human:me")
+    mid = store.get(record["id"])
+    ports_mid = {c["key"]: c["status"] for c in mid["checks"]}["ports"]
+    assert ports_mid == "waiting", (ports_mid, mid["ports"]["reason"])
+    assert tb.read_text(encoding="utf-8").count("// note one") == 1
+    second = store.apply(record["id"])
+    assert second["applied"] == ["H2"]
+    assert [row["hunk_id"] for row in second["skipped"]] == ["H1"]
+    text = tb.read_text(encoding="utf-8")
+    assert text.count("// note one") == 1 and text.count("// note two") == 1
+    assert {c["key"]: c["status"] for c in store.get(record["id"])["checks"]}["ports"] == "passed"
+
+
+def test_report_blockers_show_status_and_drift(store_env) -> None:
+    """第四轮 R3：报告阻断项必须显式列出 status=failed 与漂移（不能只列 checks）。"""
+    store, record, baseline, work, folder = _prepare(store_env)
+    (work / "PKG/kept.txt").write_text("hand edit\n", encoding="utf-8")
+    store.get(record["id"])                      # 触发一次核验（会把 drift 写进返回值）
+    report = (folder / "reports/s0-env/env-check-report.md").read_text(encoding="utf-8")
+    assert "- 记录状态 failed：" in report
+    assert "- 漂移（相对最新 work 见证）：" in report
+    assert "PKG/kept.txt" in report
+    assert "S0-b 未执行或未完成" in report          # 头不能写"可准出"

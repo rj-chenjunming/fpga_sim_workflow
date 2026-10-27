@@ -264,6 +264,40 @@ def confirm(folder: Path, hunk_id: str, decision: str, actor: str, reason: str =
 
 WARNING_DECISIONS = "warning_decisions.jsonl"
 APPLY_REFUSALS = "apply_refusals.jsonl"
+APPLIED_HUNKS = "applied_hunks.jsonl"
+
+
+def record_applied_hunk(folder: Path, hunk_id: str, tb_md5: str, how: str, now=None) -> dict:
+    """把"该 hunk 已落盘"记账（只增不改 + 锚）。`how ∈ {applied, adopted}`。
+
+    为什么需要：`old_text` 是 `new_text` 前缀时（"在某行后插一行"），落盘后原片段**仍存在**，
+    只靠文本计数判不出"已应用"，会导致重复应用把副本 TB 写坏（复核第四轮 R2 残余）。
+    """
+    folder = Path(folder)
+    _s0b(folder)
+    row = {"hunk_id": hunk_id, "how": how, "tb_md5": tb_md5, "at": _iso(_parse_now(now))}
+    row["sha256"] = _sha256_json(row)
+    with (folder / S0B_DIR / APPLIED_HUNKS).open("a", encoding="utf-8") as stream:
+        stream.write(json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n")
+    return row
+
+
+def applied_hunks(folder: Path) -> dict:
+    """hunk_id → 最近一条落盘记录（`how`/`tb_md5`）。锚不符即拒绝。"""
+    path = Path(folder) / S0B_DIR / APPLIED_HUNKS
+    if not path.is_file():
+        return {}
+    rows = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        row = json.loads(line)
+        body = {k: v for k, v in row.items() if k != "sha256"}
+        if row.get("sha256") != _sha256_json(body):
+            raise ValueError("applied_hunks 记录锚不符")
+        rows[row["hunk_id"]] = row
+    return rows
 
 
 def record_apply_refusal(folder: Path, changed: list[str], tb_top: str, now=None) -> dict:
@@ -363,6 +397,7 @@ def apply_confirmed(record: dict, folder: Path) -> dict:
         raise FileNotFoundError("副本里缺 TB 顶层文件：%s" % target)
     proposals = load_proposals(folder)
     decisions = decisions_of(folder)
+    ledger = applied_hunks(folder)
     before = _md5(target)
     text = _read_text(target)
     # 幂等：内容已经等于"基线 + 已确认 hunk" ⇒ 视为已落盘，不报错（复核 FAIL-9）
@@ -370,7 +405,7 @@ def apply_confirmed(record: dict, folder: Path) -> dict:
     if expected and text == expected:
         return {"applied": [], "already_applied": True, "skipped": [], "tb_top": tb_top,
                 "md5_before": before, "md5_after": before}
-    applied, skipped = [], []
+    applied, skipped, pending_ledger = [], [], []
     for hunk in sorted(proposals, key=lambda h: h["hunk_id"]):
         if hunk["file"] != tb_top:
             raise ValueError("hunk %s 的 file 与记录 tb_top 不一致" % hunk["hunk_id"])
@@ -378,20 +413,30 @@ def apply_confirmed(record: dict, folder: Path) -> dict:
         if decision != "confirmed":
             skipped.append({"hunk_id": hunk["hunk_id"], "decision": decision})
             continue
+        if hunk["hunk_id"] in ledger:
+            skipped.append({"hunk_id": hunk["hunk_id"], "decision": "already_applied"})
+            continue
         occurrences = text.count(hunk["old_text"])
         if occurrences == 1:
             text = text.replace(hunk["old_text"], hunk["new_text"], 1)
             applied.append(hunk["hunk_id"])
+            pending_ledger.append(hunk["hunk_id"])
             continue
-        if occurrences == 0 and text.count(hunk["new_text"]) >= 1:
+        # 内容已是目标形态（含"旧片段是新片段前缀"的插入型 hunk）⇒ 认账但不写文件
+        if text.count(hunk["new_text"]) >= 1:
             skipped.append({"hunk_id": hunk["hunk_id"], "decision": "already_applied"})
+            pending_ledger.append(hunk["hunk_id"])
             continue
         raise ValueError("hunk %s 的 old_text 在文件里出现 %d 次（要求恰好 1 次）"
                          % (hunk["hunk_id"], occurrences))
     if applied:
         _write_text(target, text)
+    after = _md5(target)
+    for hunk_id in pending_ledger:
+        record_applied_hunk(folder, hunk_id, after,
+                            "applied" if hunk_id in applied else "adopted")
     return {"applied": applied, "skipped": skipped, "already_applied": False,
-            "tb_top": tb_top, "md5_before": before, "md5_after": _md5(target)}
+            "tb_top": tb_top, "md5_before": before, "md5_after": after}
 
 
 # ---------------------------------------------------------------- ports 判据
@@ -447,11 +492,15 @@ def evaluate_ports(record: dict, folder: Path) -> dict:
     # 与"未登记改动"（文件既不是基线也不是期望）必须区分，否则会误判 failed（复核 FAIL-7）。
     pending_apply = bool(expected) and expected != baseline_text and actual == baseline_text
 
+    ledger = applied_hunks(folder)
+
     def _simulate(text: str) -> str | None:
-        """把已确认 hunk 依次作用到 text 上（已应用的跳过）；推不出来返回 None。"""
+        """把"尚未落盘"的已确认 hunk 依次作用到 text 上；推不出来返回 None。"""
         for hunk in sorted(load_proposals(folder), key=lambda h: h["hunk_id"]):
             if decisions.get(hunk["hunk_id"]) != "confirmed":
                 continue
+            if hunk["hunk_id"] in ledger:
+                continue                                  # 已落盘：不再作用
             if text.count(hunk["old_text"]) == 1:
                 text = text.replace(hunk["old_text"], hunk["new_text"], 1)
             elif text.count(hunk["new_text"]) >= 1:

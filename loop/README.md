@@ -106,8 +106,10 @@ cd loop
   直连下载被代理掐断时加 `PLAYWRIGHT_DOWNLOAD_HOST=https://cdn.npmmirror.com/binaries/playwright`。
 - 系统 Chrome 需要**可写 HOME/TMPDIR**（只读 HOME 会让 Chrome 启动即退）：
   `HOME=<repo>/.chrome-home TMPDIR=<repo>/.chrome-tmp LOOP_BROWSER_EXECUTABLE=/usr/bin/google-chrome`。
-- **浏览器门现状（2026-10-26 更新，数字见 `doc/STATUS.md` §75.6）**：
-  `tests/browser/test_web_layout.py` **12 passed**、`tests/browser/` 全量 **108 passed / 0 failed**。
+- **浏览器门 2026-10-26 那次实测（当时）**：
+  `tests/browser/test_web_layout.py` **12 passed**、`tests/browser/` 全量 **108 passed / 0 failed**
+  （数字见 `doc/STATUS.md` §75.6）。**现行数字不写在这里**，以 `doc/STATUS.md` 最新一节为准
+  （命令与前置见上文 §2.1 补①）。
   此前两条根因已闭合：①替身没给上游 U2-a/U2-b 的两条 SSE 端点打桩（已补显式 404 桩，degrade 到轮询回退）；
   ②`aside` 是 sticky 视口高容器却 `overflow:visible`，矮视口下「最近运行」条目落在视口外且
   **页面滚动无法救回**（已改为侧栏自身滚动，契约见 [WEB_UI_SPEC §14](../doc/spec/WEB_UI_SPEC.md)、
@@ -128,6 +130,35 @@ cd loop
 Agent 上下文与记忆规则见 [`AGENT_CONTEXT_SPEC`](../doc/spec/AGENT_CONTEXT_SPEC.md)：新调用在本 run 的
 `agent_calls/` 下保存输入、规则版本、输出与校验；已确认经验由人维护，按来源和作用域只读筛选。
 使用与核验命令见该规格末节；独立测试为 `tests/test_agent_context_memory.py`，不要求内网仿真夹具。
+
+---
+
+## 2.1 门清单：四道必备 + 两道补充（照抄即可跑）
+
+> **口径**：判据与"缺一不算完成"的定义在 [`AGENTS.md §4`](../AGENTS.md)，本表只把**命令**汇总到一处，
+> 不另立判据（红线 8）。**数字不写死在这里**：一律以 [`doc/STATUS.md`](../doc/STATUS.md) 为准（红线 2）。
+> 下表命令一律在 `<repo>/loop` 下执行；`<repo>` = 仓库根。
+
+| 门 | 命令 | 前置 | 期望（数字见 STATUS） |
+|---|---|---|---|
+| ① 软件层单测 | `bash spikes/run_software_checks.sh --ignore=tests/browser` | 无（脚本自建**一次性影子数据根**，`-m "not env_layer"` 排除环境层 3 条并打印被排除清单） | `0 failed`；通过/排除数抄输出（§94.3） |
+| ② kb 自测 + 环境层（一个入口） | `bash spikes/run_env_layer_checks.sh --with-kb-selftests` | `.venv`；首次会复制**派生 ENV_ROOT 副本**约 2.6 GB（`--reuse` 跳过复制、`--dry-run` 只打印计划） | `PASS=10` / `PASS=9` / `PASS=28` + `3 passed` + `原 ENV_ROOT 零写入`（§94.2） |
+| ③ 端到端 | `bash spikes/provision_dev_workspace.sh --force --quiet && LOOP_WORKSPACE=$PWD/../.dev-ws bash spikes/accept_v1_run.sh`（跑完 `bash spikes/provision_dev_workspace.sh --cleanup`） | 可写数据根（脚本建）；**不需要**可写 `ENV_ROOT` | `=> ALL PASS`，各 phase `rc=0`，`FAIL=0` |
+| ④ 文档 | `python3 ../doc/audit/check_doc_links.py` | 先清仓内临时数据根（`.dev-ws`、`.env-copy`） | `missing=0`、`exit=0` |
+| 补① 浏览器（Playwright） | `PLAYWRIGHT_BROWSERS_PATH=$PWD/../.pw-browsers HOME=$PWD/../.chrome-home TMPDIR=$PWD/../.chrome-tmp .venv/bin/python -m pytest -q tests/browser` | Chromium + **可写 `HOME`/`TMPDIR`** | `0 failed`；未装 Chromium 时属**环境缺件**，不许当通过 |
+| 补② 环境层单跑（不含 kb 自测） | `bash spikes/run_env_layer_checks.sh --reuse` | 派生副本（同上） | `3 passed` + 原 `ENV_ROOT` 零写入 |
+
+**什么时候必须重跑哪一道**（没有这一步就容易"门跑过了但和改动无关"）：
+
+| 改动落在 | 必须重跑 |
+|---|---|
+| `loop/web/**` 或 `services/contracts.py` 的界面字段 | ①②③④ + **补①**（AGENTS §4：界面门是补充门，但界面改动必须跑） |
+| `@pytest.mark.env_layer` 用例、`kb/tools/**`、派生副本脚本 | ① + **②**（必要时**补②**） |
+| 编排/节点拓扑/流程（`loop/workflows/**`、`loop/host/**`） | ①②③④ |
+| 只改文档（`doc/**`、`*.md`） | ④（涉及门命令/数字时另外跑 ②，因为它在文档里被引用） |
+
+**失败怎么记**：环境缺件（只读 `ENV_ROOT`、无 Chromium、无内网夹具）必须写成"未运行 / 环境缺件"，
+与 `failed`、`passed` 分开记（AGENTS §2.1 第 4 条）；不许把 `skip`/`deselect` 当通过。
 
 ---
 

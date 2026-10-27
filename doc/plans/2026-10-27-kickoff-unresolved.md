@@ -49,7 +49,7 @@
 | **K1** | **kb 自测没有入口脚本**：目前要手动 `LOOP_ENV_ROOT/LOOP_WORKSPACE` 指向派生副本（`_selftest_gate_schema.py` 直接跑会在真实 ENV_ROOT 上失败） | ✅ **已完成（2026-10-27，选 ②）**：`run_env_layer_checks.sh --with-kb-selftests` 一条命令跑 3 个 kb 自测 + 3 条 env_layer，共用同一个派生副本；实测 `PASS=10/9/28` + `3 passed`、原 ENV_ROOT 零写入（[STATUS §94](../STATUS.md)） | 二选一：① 新增 `loop/spikes/run_env_checks.sh`，先建/复用派生副本再跑 3 个 kb 自测 + 3 条 env_layer；② 或让 `run_env_layer_checks.sh` 加 `--with-kb-selftests` | 一条命令输出 `PASS=10` / `PASS=9` / `PASS=28` + `3 passed`；更新 `AGENTS.md §4` 与交接单 |
 | **K2** | **旧派生副本 `workspaces/real-env-copy/` 仍在**，其中 `loop/web/index.html` 含已删除的 `GATE_DECISIONS_FALLBACK`（2 处） | ✅ **已加过期横幅（2026-10-27）**：`workspaces/real-env-copy/OBSOLETE-20261027.md`（带 index.html 的 md5 与 2 处行号）。**未删除**的理由：内含 2026-10-22 真实执行的 `SIMLIB_RUN/`（978 MB）与 `kb/`（1.1 GB）留痕，且冻结证据按该路径引用当时环境（删了文档门会红） | 删除该副本，或在其内加"已过期"横幅说明不可作为新版前端验收对象 | 目录消失或带横幅；`git status` 不受影响 |
 | **K3** | `.env-copy/` 2.6 GB 占盘（含已签裁决的派生数据根） | ✅ **已清理（2026-10-27）**：`run_env_layer_checks.sh --cleanup` 执行后目录消失（`du -sh` 2.6 G → 不存在）；裁决快照仍在 `doc/evidence/adjudication_20261027/`，需要时重建见 STATUS §94 | `bash loop/spikes/run_env_layer_checks.sh --cleanup`（下次重建约 10 s） | 目录消失；需要时能重建 |
-| **K4** | 环境层/浏览器门的"必须单独跑"口径只在 AGENTS 与交接单里 | 已在 `AGENTS.md §4` 写明 | 可选：在 `doc/plans/` 里补一条"门清单"单页，或在 `loop/README.md` 里加门命令表 | 新窗口按文档能跑通四道门 + 两道补充门 |
+| **K4** | 环境层/浏览器门的"必须单独跑"口径只在 AGENTS 与交接单里 | ✅ **已落地（2026-10-27）**：[`loop/README.md` §2.1](../../loop/README.md) 新增"门清单：四道必备 + 两道补充"（命令/前置/期望 + "改动落在哪就重跑哪道"），判据仍以 `AGENTS.md §4` 为权威、数字只指向 `doc/STATUS.md` | 可选：在 `doc/plans/` 里补一条"门清单"单页，或在 `loop/README.md` 里加门命令表 | 新窗口按文档能跑通四道门 + 两道补充门（实测见 STATUS §95） |
 
 ### R 类：登记不改（有理由，别当缺陷重开）
 

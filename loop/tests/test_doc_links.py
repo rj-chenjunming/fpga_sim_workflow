@@ -78,6 +78,8 @@ def test_classification_is_by_owner_root(token: str, category: str):
 @pytest.mark.parametrize("token", [
     "http://example.com/x", "https://example.com", "#anchor", "/abs/path",
     "src/main.py", "…/x", "a b c", "<TBD>", "${VAR}/x",
+    # 仓内一次性派生副本（S0 真实环境验证 / 派生数据根）不参与断链判定
+    ".s0-work/doc/x.md", ".s0-test/records/S0-1/record.json", ".s0-rtl/RTL/a.v",
 ])
 def test_non_paths_are_not_classified(token: str):
     assert C.classify(token) is None

@@ -157,6 +157,31 @@ def test_missing_input_tree_is_not_ok(tmp_path: Path) -> None:
     assert diff["candidate"]["exists"] is False
 
 
+def test_unparsed_but_identical_between_sides_is_not_a_blocker(tmp_path: Path) -> None:
+    """两侧都解析不了、但源文件一模一样 ⇒ 语义未变，不影响差异判定（真实树有 52 个这种老式模块）。"""
+    legacy = "module legacy(a);\n  input a;\nendmodule\n"
+    base, cand = tmp_path / "base", tmp_path / "cand"
+    _write(base, "legacy.v", legacy)
+    _write(cand, "legacy.v", legacy)
+    _write(base, "dut.v", ANSI_TOP)
+    _write(cand, "dut.v", ANSI_TOP.replace("output              done",
+                                           "output              done,\n    output [1:0]       extra"))
+    diff = sv_ports.derive_port_diff(base, cand)
+    assert diff["ok"] is True
+    assert diff["unparsed_drift"] == [] and diff["unparsed_ambiguity"] == []
+    assert "legacy" in diff["baseline"]["unparsed"]
+
+
+def test_unparsed_module_that_really_changed_blocks_the_derivation(tmp_path: Path) -> None:
+    """解析不了又**内容变了** ⇒ 可能改了端口，必须 fail-closed（不许当作无差异）。"""
+    base, cand = tmp_path / "base", tmp_path / "cand"
+    _write(base, "legacy.v", "module legacy(a);\n  input a;\nendmodule\n")
+    _write(cand, "legacy.v", "module legacy(a, b);\n  input a;\n  output b;\nendmodule\n")
+    diff = sv_ports.derive_port_diff(base, cand)
+    assert diff["ok"] is False
+    assert [row["module"] for row in diff["unparsed_drift"]] == ["legacy"]
+
+
 def test_modules_filter_limits_comparison(tmp_path: Path) -> None:
     base, cand = tmp_path / "base", tmp_path / "cand"
     _write(base, "a.v", "module keep(input a);\nendmodule\n")

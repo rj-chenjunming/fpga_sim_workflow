@@ -4271,7 +4271,7 @@ kb 自测要求 `rc=0` + 有汇总行 + `FAIL=0` + **通过条数等于验收数
 | **E1** | I4 在**真实数据根**生效 | 真实根仍 ro（§98.1 实测：只读挂载 + 写探测 `Read-only file system` + 无 sudo）；但"拿到写权后要跑的命令"已在可写根上用**当前权威快照**跑通（§98.3），且修掉了挡住它的指纹硬编码缺陷（§98.2） |
 | **E2** | S0-b 接入（ports/smoke、`ready_for_execution` 可为 true） | 环境侧；D4 因此等 E2 |
 | **E3** | C8 `passed` 形态夹具 | 环境侧（真实通过轮 ≈21.56 h + 写权） |
-| **E4** | 推送 | 本机出网被代理阻断；本轮结束领先 `origin/main` **39** 个提交（`git rev-list --count origin/main..HEAD` 输出复制） |
+| **E4** | 推送 | 本机出网被代理阻断；本轮结束领先 `origin/main` **40** 个提交（`git rev-list --count origin/main..HEAD` 输出复制） |
 | **D1–D4** | 四项裁决 | ✅ 全部已裁（A/A/A/A），处置见 §96 |
 | **R 类 8 条** | 登记不改 | 不变（见 kickoff §2 R 类） |
 
@@ -4453,3 +4453,93 @@ bash loop/spikes/provision_dev_workspace.sh --cleanup     # 跑完删掉
 ### 101.5 下一步（S2）
 
 `proposals/` + 确认门槛（只增不改）+ 落盘前 md5 断言（未确认 ⇒ 副本 TB 顶层逐字节不变）。
+
+
+## 102 S0-b 接入完成（S1–S5）：`ready_for_execution` 第一次真的能为 true（2026-10-27）
+
+**范围**：E2 全部（S1 派生 → S2 提议/确认门槛 → S3 `ports` 接线 → S4 `smoke` 接线 → S5 准出开关）。
+规格修订见提交 `149489f`，本节记录实现与**真实环境副本上的端到端实测**。
+
+### 102.1 交付
+
+| 产物 | 内容 |
+|---|---|
+| `loop/host/sv_ports.py` | 端口抽取 + 差异派生（只读、确定性、按编译期宏求值；`md5` 可复算） |
+| `loop/host/s0b.py` | 提议 / 人确认（只增不改+锚）/ 精确落盘 / ports 判据 / smoke 执行与基线相对增量 / 准出开关 |
+| `loop/host/uvs_logs.py` | 编译日志**唯一**解析（汇总行 + `Error-`/`Warning-` code；**裸 grep 会误判**） |
+| `loop/host/s0.py` | 接线：`tb_top`/`run_entry` 解析、`ports`/`smoke` 结论写回 checks、`ready_for_execution` 唯一判据口、报告新增端口差量表与冒烟段 |
+| `loop/services/api.py` | 4 个端点：`POST /api/s0/{id}/{proposals,confirmations,apply,smoke}` |
+| 用例 | `tests/test_sv_ports.py`(17) + `tests/test_s0b.py`(21)；既有 `tests/test_s0.py`(37) 全绿 |
+
+### 102.2 真实环境副本端到端实测（数字从输出复制）
+
+基线 = `<ENV_ROOT>` 的派生副本（2.6 G，清掉 30 个历史运行沙箱软链，见 §102.3-③），
+`rtl_source` = 该副本的 `RTL/`（内容相同 ⇒ 期望"零差异"），`work_env` = `<repo>/.s0-work`。
+
+| 环节 | 实得 |
+|---|---|
+| `prepare()` | `status=prepared`；**`tb_top=TB/tbtop.sv`**（由编译驱动解析）、**`run_entry=run_tc.py`**；checks = copy/rtl/non_rtl **passed**、ports **passed**、smoke waiting、baseline **passed** |
+| `ports` | **passed**；`base_mods=205 cand_mods=205`、`unparsed=52/52`（两侧 md5 相同 ⇒ 语义未变）、`derive_md5=c2592ef4…` |
+| `smoke()` | **passed**；candidate `rc=0 errors=0 warnings=17`、baseline `rc=0 errors=0 warnings=17`；`delta = {added:[], removed:[], count_increase:[]}`；日志两段 `…_c_rtl.log` / `…_c_tb.log` |
+| `get()`（漂移核验） | `verification = {"drift": {}, "errors": []}`；六项 checks **全 passed** |
+| **准出** | **`ready_for_execution: True`**（此前 `get()` 里恒 False） |
+
+⇒ E2 的目标达成：S0 的六项检查现在能真实产出 `passed`，`real` 入口因此有真实判据可依（不再是"恒假"）。
+
+### 102.3 过程中发现并修掉的 5 个真问题（都不是用例能假出来的）
+
+1. **`TB/top.sv` 在真实环境不存在**（基线清单里 TB 下是 `tbtop.sv`）⇒ `tb_top` 改为由编译驱动解析（`TB/tbtop.sv`），历史写法兜底。
+2. **基线没有 `run` 文件**（真实环境是 `run_tc.py`/`run_uvs_new.sh`/`doc/tools/run_local.sh`）⇒ `run_entry` 由 `resolve_run_entry()` 按优先级解析。
+3. **真实 `ENV_ROOT` 含 30 个历史运行沙箱软链**（`doc/`5、`kb/`21、`loop/`4）而 `manifest()` 拒软链 ⇒ 真实轮的基线必须是**无软链的资产快照**（已写进规格 §2）。
+4. **冒烟沙箱不能放在被见证的树里**：`run_guarded.sh` 的沙箱工作树全是软链 ⇒ 放进 `work/` 会让漂移核验把冒烟自己当成污染（实测 `verification.errors` 两条）；改为把沙箱与证据放到**记录目录**（树外）。另外驱动用 `LOOP_ENV_ROOT` 定位环境根（不是 cwd），必须显式传。
+5. **52 个老式非 ANSI 模块**：原先"有解析不了的模块 ⇒ `ports` 恒 failed"在真实树上是死路。改为**只看未解析模块是否真的变了**：两侧都解析不了且源文件 md5 相同 ⇒ 不影响差异判定；一侧解析不了一侧解析成功、或两侧 md5 不同 ⇒ fail-closed。
+
+### 102.4 门（本轮改动后）
+
+- 软件层：**`1029 passed, 3 deselected, 1 warning in 176.55s`**（上一轮 1006 + 本切片新增 23 条；数字来自输出）。
+- 文档门：`missing=0`、`exit=0`（`checked=2226`）。新增 `.s0-work/`、`.s0-test/`、`.s0-rtl/` 跳过规则
+  （与 `.dev-ws` 同类：仓内一次性派生副本，不能算本仓文档；`tests/test_doc_links.py` 有对应断言）。
+
+### 102.5 未做（照实登记）
+
+- **D5 界面**：`loop/web/**` 的"未接入"灰态与确认交互未做（后端已返回真实 `ports/smoke`/`ready_for_execution`）；
+  做它要跑浏览器门。
+- **内网真机验收**：需要可写 `ENV_ROOT` + 真实三库协议（本机 ro 挂载）；本节的实测在派生副本上完成。
+- **E3（passed 夹具）**：仍需一次真实通过轮（≈21.56 h/5 例）+ 三个闸门的人签。
+
+
+### 102.6 独立复核（s0b-reviewer）与整改：9 条 FAIL 全部处置
+
+复核结论原文：**部分通过，不可宣称已验收**（FAIL-1 阻断级）。逐条整改如下（每条附证据；复核复现件在
+`workspaces/s0b-verify/REPORT.md`，gitignored）。
+
+| # | 复核发现 | 处置 | 证据 |
+|---|---|---|---|
+| **FAIL-1（阻断）** | `apply` 合法落盘后被 `get()` 判成漂移（拿 prepare 时刻的 `work-after.json` 比当前副本）⇒ 适配路径永远到不了准出；且 `record.json` 与 `get()` 是两套判据 | **已修**：`apply()` 落盘后**追加**见证 `work-after.<n>.json` 并写进 `record['work_witness']`；`_verify()` 取最新见证；`get/apply/smoke` 全走同一条 `_refresh_checks`（唯一判据链） | 真实副本：apply 后 `drift={}`、`status=prepared`、ports `passed`；`witness=work-after.2.json`、md5 `39e95ecd…`→`bc428020…` |
+| **FAIL-2（高）** | 提议不能追加（第二次 `FileExistsError`），API 允许空 hunks ⇒ 一次空提议永久锁死 | **已修**：`propose()` 追加（重复 `hunk_id` 拒绝）、空列表 `ValueError`、临时文件原子替换 | `test_propose_can_be_appended`：H1+H2 并存 |
+| **FAIL-3（中高）** | 基线读数不可信 / rc≠0 仍 `passed`（`errors=None→0`） | **已修**：判据顺序改为 两侧汇总行可信 → 两侧 `rc==0` → 两侧 `error(s)==0` → warning 评估；任一不满足即 `failed` | `test_smoke_requires_trustworthy_baseline_reading`、`test_smoke_fails_on_nonzero_rc` |
+| **FAIL-4（中）** | §8.2-2「每段落命令/rc」未结构化；报告只在 prepare 写一次（apply/smoke 后陈旧）；阻断项是静态文案 | **已修**：smoke 每段记 `command/rc/summary/logs`；`_refresh_checks` 末尾重写报告；报告「阻断项」按当前 checks 计算 | 真实报告含 `- candidate：rc=0 errors=0 warnings=17`、`命令：bash …/run_guarded.sh …` |
+| **FAIL-5（中）** | 「新增/上升 warning 逐条评估」无落账入口 ⇒ smoke 永远到不了 passed | **已修**：`s0b/warning_decisions.jsonl`（只增不改 + sha256 锚）+ `POST /api/s0/{id}/warnings`；`accepted` 后才可能 passed | `test_smoke_waits_for_warning_evaluation_then_passes`；`test_warning_acceptance_is_append_only_and_required` |
+| **FAIL-6（规格）** | ① §8.5「空差异 ⇒ ports 不 passed」与实现/用例冲突；② §8.2-1「解析不了 ⇒ failed」过严；③ 登记表字段缺 diff/位置/影响用例 | **已修**：规格改为"空差异可 passed 但须带派生证据且 TB 无改动；解析不了按 md5 是否真的变了判；warning 评估落账口径"；报告新增「逐 hunk 登记」（位置/影响用例/理由/真实 unified diff） | 规格 §8.2-1/§8.2-2/§8.5 已改；真实报告含 `## 逐 hunk 登记` 与 ```diff``` 段 |
+| **FAIL-7（低）** | 确认后未落盘被误判 `failed` | **已修**：新增 `pending_apply` 分支 ⇒ `waiting`（"已确认的 hunk 尚未落盘"） | `test_ports_waiting_after_confirm_before_apply`；真实链路确认后 `waiting`、apply 后 `passed` |
+| **FAIL-8（低）** | `GET /api/s0` 能力位仍 `tb_adapt=false, smoke=false` | **已修**：两位置 `true`（描述后端能力；界面 D5 仍是灰态，测试注释已写明） | `test_s0_index_advertises_rehearsal_capability` |
+| **FAIL-9（低）** | 二次 apply 报 400（非幂等） | **已修**：内容已等于"基线+已确认" ⇒ `applied=[]`、`already_applied=True` | `test_apply_is_idempotent` |
+
+**复核者观察项**：`.env-copy` 6 个目录 mtime 变但内容 md5 未变 —— 复核者已用对照实验排除被测代码
+（`prepare()` 不改源 mtime），属冒烟驱动在基线树内 `mkdir -p SIMLIB_RUN` 的已知副作用（红线 11 允许写 `SIMLIB_RUN/`）；
+本轮改为把沙箱/证据放记录目录后，基线侧只剩该 `mkdir`。
+
+**复核后新增的真实端到端（有 TB 改动的那条路径，此前走不到准出）**：
+
+| 步骤 | 实得 |
+|---|---|
+| `prepare`（零差异） | `ports=passed`；`smoke=waiting` |
+| `propose`（模型：TB 顶层插一行注释）+ `confirm`（人签） | 确认后 `ports=waiting`（"已确认的 hunk 尚未落盘"） |
+| `apply` | `applied=['H1']`、`witness=work-after.2.json`、TB md5 `39e95ecd…`→`bc428020…`、**`drift={}`**、`ports=passed` |
+| `smoke`（副本内真编译） | `passed`；candidate `0 error(s)/17 warning(s)`、baseline 同、`delta` 空 |
+| 终态 | 六项全 `passed`、`status=prepared`、**`ready_for_execution=True`**；报告含 `## 逐 hunk 登记` 与逐段命令 |
+
+### 102.7 门（复核整改后，数字从输出复制）
+
+- 软件层：**`1041 passed, 3 deselected, 1 warning in 173.55s`**（数字从本轮末次门输出复制）。
+- 文档门：`missing=0`、`exit=0`。

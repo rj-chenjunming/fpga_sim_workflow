@@ -329,10 +329,11 @@ def test_s0_index_advertises_rehearsal_capability(tmp_path, monkeypatch):
     client, store = rehearsal_client(tmp_path, monkeypatch)
     body = client.get('/api/s0').json()
     assert body['capabilities']['rehearsal'] is True
-    # 既有能力含义不变：S0-b 仍然未接入。
     assert body['capabilities']['prepare'] is True
-    assert body['capabilities']['tb_adapt'] is False
-    assert body['capabilities']['smoke'] is False
+    # 2026-10-27 S0-b 接入后，这两项**后端**能力位为 True（界面 D5 仍是灰态，属另一切片）。
+    # 判据仍然是六项全 passed 才 ready；能力位只表示"后端有实现"，不表示"本记录已准出"。
+    assert body['capabilities']['tb_adapt'] is True
+    assert body['capabilities']['smoke'] is True
     assert body['records'] == []
 
 

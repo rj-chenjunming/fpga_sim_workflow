@@ -278,8 +278,10 @@ def scan_tree(root: Path, defines: frozenset[str] | set[str] = frozenset(),
     root = Path(root)
     if not root.is_dir():
         return {"root": str(root), "exists": False, "files": 0, "modules": {},
-                "unparsed": [], "duplicates": 0, "from_filelist": False, "md5": ""}
+                "module_md5": {}, "unparsed": [], "duplicates": 0,
+                "from_filelist": False, "md5": ""}
     modules: dict[str, list[Port]] = {}
+    module_md5: dict[str, str] = {}
     unparsed: list[str] = []
     duplicates = 0
     listed, from_filelist = (_listed_sources(root) if prefer_filelist else ([], False))
@@ -295,8 +297,11 @@ def scan_tree(root: Path, defines: frozenset[str] | set[str] = frozenset(),
         except OSError:
             unparsed.append(path.relative_to(root).as_posix())
             continue
+        file_md5 = hashlib.md5(source.encode("utf-8", "surrogateescape")).hexdigest()
         found, bad = parse_module_ports(source, defines)
         unparsed.extend(bad)
+        for name in bad:
+            module_md5.setdefault(name, file_md5)
         for name, ports in found.items():
             if name in modules:
                 if [p.as_dict() for p in sorted(modules[name], key=lambda p: p.name)] == \
@@ -306,11 +311,12 @@ def scan_tree(root: Path, defines: frozenset[str] | set[str] = frozenset(),
                     unparsed.append(f"{name}@{path.relative_to(root).as_posix()}")
                 continue
             modules[name] = ports
+            module_md5.setdefault(name, file_md5)
     canonical = {name: [p.as_dict() for p in sorted(ports, key=lambda p: p.name)]
                  for name, ports in sorted(modules.items())}
     blob = json.dumps(canonical, sort_keys=True, ensure_ascii=False).encode("utf-8")
     return {"root": str(root), "exists": True, "files": files, "modules": canonical,
-            "unparsed": sorted(unparsed), "duplicates": duplicates,
+            "module_md5": module_md5, "unparsed": sorted(unparsed), "duplicates": duplicates,
             "from_filelist": from_filelist, "md5": hashlib.sha256(blob).hexdigest()}
 
 
@@ -385,9 +391,24 @@ def derive_port_diff(baseline_root: Path, candidate_root: Path,
         "added_modules": sorted(set(cand_modules) - set(base_modules)),
         "removed_modules": sorted(set(base_modules) - set(cand_modules)),
     }
-    # 不猜：任一输入不存在 / 有解析不了的模块 ⇒ ok=False（调用方必须 fail-closed）
+    # 不猜：只看"未解析模块**是否真的变了**"——
+    #   ① 某一侧解析成功、另一侧解析不了 ⇒ 无法比较 ⇒ fail-closed；
+    #   ② 两侧都解析不了，但源文件 md5 不同 ⇒ 可能变了 ⇒ fail-closed；
+    #   ③ 两侧都解析不了且源文件 md5 相同 ⇒ 语义未变（只是本解析器不支持它的写法），不影响差异判定。
+    base_unparsed = set(result["baseline"]["unparsed"])
+    cand_unparsed = set(result["candidate"]["unparsed"])
+    base_md5 = base["module_md5"]
+    cand_md5 = cand["module_md5"]
+    one_sided = sorted((base_unparsed ^ cand_unparsed))
+    drift = []
+    for name in sorted(base_unparsed & cand_unparsed):
+        if base_md5.get(name) != cand_md5.get(name):
+            drift.append({"module": name, "baseline_md5": base_md5.get(name),
+                          "candidate_md5": cand_md5.get(name)})
+    result["unparsed_ambiguity"] = one_sided
+    result["unparsed_drift"] = drift
     ok = bool(result["baseline"]["exists"] and result["candidate"]["exists"]
-              and not result["baseline"]["unparsed"] and not result["candidate"]["unparsed"])
+              and not one_sided and not drift)
     blob = json.dumps(result, sort_keys=True, ensure_ascii=False).encode("utf-8")
     result["md5"] = hashlib.sha256(blob).hexdigest()
     result["ok"] = ok

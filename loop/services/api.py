@@ -134,8 +134,10 @@ def s0_index():
     store = _s0_store()
     return {'baseline': str(P.ENV_ROOT), 'allowed_roots': [str(p) for p in store.allowed_roots],
             'records': store.list(),
-            # rehearsal=True 只说明"可以点一次本机演练"：既不表示环境就绪，也不表示 S0-b 已接入。
-            'capabilities': {'prepare': True, 'rehearsal': True, 'tb_adapt': False, 'smoke': False}}
+            # rehearsal=True 只说明"可以点一次本机演练"，不表示环境就绪。
+            # 2026-10-27：S0-b 的 tb_adapt / smoke 后端已接入（派生+提议/确认+落盘、三库编译冒烟+基线增量）；
+            # 界面（D5）仍显示灰态，故这里描述的是**后端能力**，不是界面状态。
+            'capabilities': {'prepare': True, 'rehearsal': True, 'tb_adapt': True, 'smoke': True}}
 
 
 @app.post('/api/s0')
@@ -204,6 +206,60 @@ def s0_get(record_id: str):
         raise HTTPException(404, detail={'error': '准备记录不存在'}) from exc
     except (ValueError, PermissionError) as exc:
         raise HTTPException(400, detail={'error': str(exc)}) from exc
+
+def _s0_call(action: str, record_id: str, **kwargs):
+    """S0-b 的四个写入口共用错误映射（缺记录 404 / 参数 400 / 冲突 409）。"""
+    try:
+        return getattr(_s0_store(), action)(record_id, **kwargs)
+    except FileNotFoundError as exc:
+        raise HTTPException(404, detail={'error': '准备记录不存在'}) from exc
+    except FileExistsError as exc:
+        raise HTTPException(409, detail={'error': str(exc)}) from exc
+    except (ValueError, PermissionError) as exc:
+        raise HTTPException(400, detail={'error': str(exc)}) from exc
+
+
+@app.post('/api/s0/{record_id}/proposals')
+def s0_propose(record_id: str, payload: dict[str, Any] = Body(default={})):
+    """S0-b：记录逐 hunk 提议（模型/Host 写；**不碰副本 TB**）。"""
+    return _s0_call('propose', record_id, hunks=payload.get('hunks') or [],
+                    actor=payload.get('actor') or '', now=payload.get('now'))
+
+
+@app.post('/api/s0/{record_id}/confirmations')
+def s0_confirm(record_id: str, payload: dict[str, Any] = Body(default={})):
+    """S0-b：人逐条确认/否决（只增不改，带锚；不接受 model:/host:）。"""
+    return _s0_call('confirm', record_id, hunk_id=payload.get('hunk_id') or '',
+                    decision=payload.get('decision') or '',
+                    actor=payload.get('actor') or '', reason=payload.get('reason') or '',
+                    now=payload.get('now'))
+
+
+@app.post('/api/s0/{record_id}/apply')
+def s0_apply(record_id: str):
+    """S0-b：把**已确认**的 hunk 落进副本 TB 顶层，返回前后 md5。"""
+    return _s0_call('apply', record_id)
+
+
+@app.post('/api/s0/{record_id}/smoke')
+def s0_smoke(record_id: str, payload: dict[str, Any] = Body(default={})):
+    """S0-b：在副本内跑三库编译冒烟（驱动 = kb/tools/run_guarded.sh --mode compile-only）。"""
+    case = payload.get('case') or ''
+    if not case:
+        raise HTTPException(400, detail={'error': '需要 case（TESTLIB 下的用例名）'})
+    return _s0_call('smoke', record_id, case=case, now=payload.get('now'))
+
+
+@app.post('/api/s0/{record_id}/warnings')
+def s0_warning(record_id: str, payload: dict[str, Any] = Body(default={})):
+    """S0-b：人对"新增/上升的 warning code"给出评估结论（只追加、带锚）。"""
+    code = payload.get('code') or ''
+    if not code:
+        raise HTTPException(400, detail={'error': '需要 code（如 Warning-120162）'})
+    return _s0_call('accept_warning', record_id, code=code,
+                    actor=payload.get('actor') or '', reason=payload.get('reason') or '',
+                    now=payload.get('now'))
+
 
 @app.get("/api/runs")
 def list_runs() -> dict[str, Any]:

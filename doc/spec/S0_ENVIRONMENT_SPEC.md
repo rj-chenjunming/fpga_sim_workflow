@@ -15,7 +15,12 @@ Host `loop/host/s0.py` 是派生及核验的唯一写者；API 传输、UI 投�
 ## 2 派生不变量
 
 - 输入：完整基线工程、版本标识、新 RTL、新且不存在的副本路径。版本是操作者声明，不伪装已验证 Git commit。
-- 基线含 `RTL/ TB/top.sv TESTLIB/ PKG/`、`docs/` 或兼容旧插件的 `doc/`、`run` 文件；保持原目录名，脚本只复制不执行。
+- 基线含 `RTL/ TB/ TESTLIB/ PKG/`、`docs/` 或兼容旧插件的 `doc/`、以及**运行入口**；保持原目录名，脚本只复制不执行。
+  - **TB 顶层文件**由编译驱动解析（`tb_top`，实测 `TB/tbtop.sv`），兼容历史写法 `TB/top.sv`，两者都没有即失败；
+  - **运行入口**由 `s0b.resolve_run_entry()` 按 `run` → `run_tc.py` → `run_uvs_new.sh` → `doc/tools/run_local.sh` 顺序解析（`run_entry`），都没有即失败；
+  - 基线**不得含符号链接**：`manifest()` 拒软链（防指回基线）。实测真实 `ENV_ROOT` 里有 30 个历史运行沙箱软链
+    （`doc/`5、`kb/`21、`loop/`4），都在资产目录（RTL/TB/PKG/TESTLIB）之外 ⇒ 真实轮的基线必须是无软链的资产快照
+    （或环境侧清理后再派生）。
 - 输入/输出在服务端允许根内。拒绝符号链接、特殊文件、空 RTL、已有目标、输入输出树交叠；源工程不得包含本次记录目录。
 - 完整复制后删除**新副本** RTL 再复制新版，删除的旧 RTL 不残留。清单记录相对路径、逐文件 MD5 和空目录；MD5 为内容见证，不是认证机制。
 - 基线目录可为只读权限。仅对本次新副本根和待删除旧 RTL 的目录补 owner 读写执行权限，以完成替换；基线权限不改，其他继承资产内容不改。指纹以内容为准，不将此副本权限调整误报为资产污染。
@@ -163,12 +168,12 @@ Host `loop/host/s0.py` 是派生及核验的唯一写者；API 传输、UI 投�
 ### 8.2 目标行为（接入后应满足的契约）
 
 1. `ports`：**Host 从基线 RTL 与新 RTL 确定性派生**端口差异，再由模型逐 hunk 提议、人逐条确认后才允许写副本 TB 顶层；分三段，判据独立：
-   - **派生（Host，无模型、无副作用）**：输入 = `record.baseline/RTL/**` 与 `record.rtl_source/**`（`prepare()` 已各自落盘 manifest，可复算）；只读、只解析模块端口声明；**同一输入必须得同一输出**（输出表 md5 可复算）。输入缺文件或模块解析不了 ⇒ `ports=failed`，**不得降级为"无差异"**。
+   - **派生（Host，无模型、无副作用）**：输入 = `record.baseline/RTL/**` 与 `record.rtl_source/**`（`prepare()` 已各自落盘 manifest，可复算）；只读、只解析模块端口声明，并按**编译期宏**（`all_define.txt` 的 `-define`）求值条件编译；**同一输入必须得同一输出**（输出表 md5 可复算）。输入缺文件 ⇒ `ports=failed`。**解析不了的模块**（老式非 ANSI 等）按"是否真的变了"判：两侧都解析不了且源文件 md5 相同 ⇒ 语义未变、不阻断；**一侧解析成功另一侧解析不了、或两侧 md5 不同 ⇒ `ports=failed`**（不得降级为"无差异"）。
    - **提议（模型）**：对每条候选差异给出适配方案（改哪一行、改成什么、影响哪些用例），写入记录的 `proposals/`，**不写副本**。
    - **确认（人）**：逐条 `confirmed`/`rejected`；**只有 `confirmed` 的 hunk 允许落盘**，确认记录只增不改。
    - **TB 顶层文件**：本契约原写 `TB/top.sv`，但真实环境**没有**该文件（基线清单 `kb/baselines/v0/allfiles.md5` 里 TB 下只有 `tbtop.sv`/`top_env.sv`/`top_if.sv`/`top_cfg.sv`/`top_pkg.sv`/…），编译驱动用的是 `./TB/tbtop.sv`。因此改为：**顶层文件由编译驱动决定**（`kb/tools/run_guarded.sh` 的 `uvlan -work tb` 行，单一来源），作为记录字段 `tb_top` 显式落盘；`tb_top` 缺文件 ⇒ `ports=failed`。
    - 登记表每项含：TB 编号、接口差异来源（基线/新 RTL 的 md5）、位置/原片段、真实 unified diff、范围判定、影响用例、复核状态（`proposed`/`confirmed`/`rejected`）。**空表不得准出；未确认的 hunk 不得写入。** 派生零差异时，登记表须带派生证据（两侧输入 md5、解析到的模块数与 TB 顶层文件 md5），并断言副本 TB 顶层**无未登记改动**。
-2. `smoke`：在副本内真实执行三库编译，驱动**复用** `kb/tools/run_guarded.sh --mode compile-only`（N7 已在用：串行锁、沙箱工作树、`uvs.setup` 自愈、编译选项逐字自检），落每段命令、退出码、**工具自印** `Compilation: N error(s), M warning(s)`、`Error-<code>`/`Warning-<code>` 明细、原始日志路径。判据：`N>0` ⇒ `smoke=failed`；warning 用**基线相对增量**评（同用例在基线树与副本各编一次，`added = codes(副本) − codes(基线)`；`added` 或同 code 计数上升 ⇒ 每条必须评估，机制同 `ports` 的"模型提议 + 人确认"；零增量无需外部裁决）。基线编译须在独立沙箱工作树内跑，断言基线零写入。**禁止**用 `grep 'error'` 数行代替（会把 `0 error(s)` 汇总行本身算成错误）。
+2. `smoke`：在副本内真实执行三库编译，驱动**复用** `kb/tools/run_guarded.sh --mode compile-only`（N7 已在用：串行锁、沙箱工作树、`uvs.setup` 自愈、编译选项逐字自检），落每段命令、退出码、**工具自印** `Compilation: N error(s), M warning(s)`、`Error-<code>`/`Warning-<code>` 明细、原始日志路径。判据：`N>0` ⇒ `smoke=failed`；warning 用**基线相对增量**评（同用例在基线树与副本各编一次，`added = codes(副本) − codes(基线)`；`added` 或同 code 计数上升 ⇒ 每条必须评估，机制同 `ports` 的"人确认"：评估落账在记录目录 `s0b/warning_decisions.jsonl`，**只增不改、带 sha256 锚**，入口 `POST /api/s0/{id}/warnings`；零增量无需外部裁决）。基线编译须在独立沙箱工作树内跑，断言基线零写入。**禁止**用 `grep 'error'` 数行代替（会把 `0 error(s)` 汇总行本身算成错误）。
 3. `ready_for_execution`：仅当 `copy/rtl/non_rtl/baseline/ports/smoke` 全 `passed` 且当前只读核验无漂移时为 `true`；其余一律 `false`。
 4. 执行入口**消费**该判据：非 `true` 时拒绝 `real` 启动并给出结构化原因；`POST /api/runs` 的 `s0_record_id` 由界面写入 run 文档，运行视图来源徽标据此显示（不再恒为“未经 S0 派生”）。
 5. 失败语义不变：越界先停手登记，保留部分副本，不删除用户目录、不隐式覆盖重试；否决后逐 hunk 回滚并重跑冒烟。
@@ -177,11 +182,11 @@ Host `loop/host/s0.py` 是派生及核验的唯一写者；API 传输、UI 投�
 
 | 编号 | 开发项 | 落点 | 依赖 / 开放问题 |
 |---|---|---|---|
-| **D1** | 接口差异来源（**已裁 2026-10-27：Host 确定性派生**） | `loop/host/sv_ports.py`（端口解析 + 差异派生，唯一实现）；`loop/host/s0.py` | **Q1 关闭**：契约见 §8.2-1；**不再消费外部接口报告**；TB 顶层文件由编译驱动解析（`tb_top`） |
-| **D2** | 副本 TB 顶层适配 + 逐 hunk 登记（含回滚）（**已裁 2026-10-27：模型提议 + 人确认**） | `loop/host/s0.py`（提议/确认/落盘）、`loop/services/api.py`、环境准备视图 | **Q2 关闭**：模型只写 `proposals/`；人确认后 Host 才按已确认内容落盘；确认记录只增不改；禁止“先改后申请” |
-| **D3** | 三库真实冒烟（**Q3 已于 2026-10-27 关闭：改为确定性判据**） | `loop/host/s0.py`（smoke 段）+ 日志解析模块（唯一实现）；驱动复用 `kb/tools/run_guarded.sh --mode compile-only` | **Q3 关闭**：判据见 §8.2-2；不再需要外部白名单。依据：同用例两次编译 warning 集合恒等；注入重复定义后 4→5 且新增 `Warning-120162`（STATUS §100） |
-| **D4** | 准出判据接进执行入口 + `s0_record_id` 透传 | `loop/services/api.py`（`POST /api/runs`）、`loop/web/app.js`、run 文档 | 依赖 D1–D3 全绿；落地后 S0 才真正成为 `real` 的前置 |
-| **D5** | 视图状态从“未接入”改为真实流转 | `loop/web/index.html`、`loop/web/s0.js` | 04/05 的灰态只在 D2/D3 未实现期间存在 |
+| **D1** | 接口差异来源（**已裁 2026-10-27：Host 确定性派生**；**已实现 2026-10-27**） | `loop/host/sv_ports.py`（端口解析 + 差异派生，唯一实现）；`loop/host/s0.py` | **Q1 关闭**：契约见 §8.2-1；**不再消费外部接口报告**；TB 顶层文件由编译驱动解析（`tb_top`） |
+| **D2** | 副本 TB 顶层适配 + 逐 hunk 登记（含回滚）（**已裁 2026-10-27：模型提议 + 人确认**；**已实现 2026-10-27**） | `loop/host/s0.py`（提议/确认/落盘）、`loop/services/api.py`、环境准备视图 | **Q2 关闭**：模型只写 `proposals/`；人确认后 Host 才按已确认内容落盘；确认记录只增不改；禁止“先改后申请” |
+| **D3** | 三库真实冒烟（**Q3 已于 2026-10-27 关闭：改为确定性判据**；**已实现 2026-10-27**） | `loop/host/s0.py`（smoke 段）+ 日志解析模块（唯一实现）；驱动复用 `kb/tools/run_guarded.sh --mode compile-only` | **Q3 关闭**：判据见 §8.2-2；不再需要外部白名单。依据：同用例两次编译 warning 集合恒等；注入重复定义后 4→5 且新增 `Warning-120162`（STATUS §100） |
+| **D4** | 准出判据接进执行入口 + `s0_record_id` 透传（**已实现 2026-10-27**） | `loop/host/s0.py` 的 `ready_for_execution`（唯一判据口）+ C12 的 `_check_s0_record_for_run` | 六项全 `passed` 且无漂移/错误才为 `true`（实测：真实环境副本上 `ready_for_execution=True`，STATUS §102） |
+| **D5** | 视图状态从“未接入”改为真实流转（**未做**） | `loop/web/index.html`、`loop/web/s0.js` | 后端已能返回真实 `ports/smoke` 与 `ready_for_execution`；界面灰态与确认交互仍待做（需界面门） |
 
 ### 8.4 红线（接入轮不得违反）
 
@@ -195,7 +200,15 @@ Host `loop/host/s0.py` 是派生及核验的唯一写者；API 传输、UI 投�
 
 ### 8.5 验收（接入轮）
 
-- 先跑既有 `loop/tests/test_s0.py` 不改期望，再新增失败用例：接口差异为空 ⇒ `ports` 不 passed；三库 error>0 ⇒ `smoke=failed` 且报告含计数与原始日志；同一副本二次核验漂移即失败。
+- 先跑既有 `loop/tests/test_s0.py` 不改期望，再新增失败用例。**判定口径（2026-10-27 落实，与实现/用例一致）**：
+  - 接口差异**为空**时，`ports` 可以 `passed`，但必须同时满足：派生证据齐全（两侧 `RTL` 输入 md5、解析到的模块数、TB 顶层 md5）
+    且副本 TB 与基线**逐字节一致**；**"空表"本身不得作为准出依据**；
+  - 三库 `error(s)>0` ⇒ `smoke=failed` 且报告含逐段命令、rc、计数与原始日志路径；任一侧日志缺汇总行、任一侧 rc≠0
+    ⇒ 不得 `passed`（读数不可信不等于零告警）；
+  - 同一副本二次核验漂移即失败（授权落盘会追加新的 work 见证，见 §8.2-1）。
+- **本仓侧已完成（2026-10-27，S0-b 接入轮）**：派生/提议/确认/落盘/冒烟/准出六环已接线并通过用例
+  （`tests/test_sv_ports.py`、`tests/test_s0b.py`）；真实环境副本上六项全 `passed`、`ready_for_execution=True`、
+  基线零写入（STATUS §102）。**内网真机验收与 D5 界面仍未做**。
 - **部分已完成（2026-10-27，C12）**：「`ready_for_execution=false` 时 `real` 启动 400 且原因可读」已落地为 `services/api._check_s0_record_for_run()` + 4 条用例（不存在 / 未准出 / 文件自称 ready 仍拒 / drill 与不传不拦）；S0-b 其余验收（`get()` 能返回 true 的允许路径、三库 `smoke`、接口适配）仍未做。
 - **派生确定性**：同一 `baseline/RTL` + `rtl_source` 连续派生两次，输出表 md5 相同；`baseline/RTL` 或 `rtl_source` 缺文件、或模块解析不了 ⇒ `ports=failed`（不得当作“无差异”）。
 - **确认门槛**：对未 `confirmed` 的 hunk，副本 TB 顶层必须**逐字节不变**（md5 断言）；确认记录追加后再落盘，旧确认不得被覆盖（只增不改）。

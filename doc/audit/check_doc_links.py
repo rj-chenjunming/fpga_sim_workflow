@@ -55,6 +55,8 @@ WORKSPACE_PREFIXES = [
 #: 仓内派生数据根/副本（由 `loop/spikes/*.sh` 预置，内含环境文档副本）⇒ 不算本仓文档
 SKIP_PREFIXES = ["loop/state", "loop/.logs", "loop/.venv", "loop/.pytest_cache",
                  "loop/.agently", ".env-copy", ".dev-ws", ".wsp", ".tmp-",
+                 # S0 真实环境验证的一次性派生副本（`host/s0.py` 的 work_env / rtl_source / 记录根）
+                 ".s0-",
                  "/tmp/", "/home/soft/"]
 HISTORICAL_FILES = ["doc/evidence/demo/", "doc/history/"]
 INLINE = re.compile(r"`([^`\n]{2,200})`")
@@ -227,7 +229,7 @@ def scan(roots: Roots, docs_root: Path | None = None) -> Report:
         rel = md.relative_to(base).as_posix()
         # 派生数据根/环境副本（`loop/spikes/*.sh` 预置）内含环境文档副本，不是本仓文档。
         if rel.startswith((".git/", "loop/.venv/", "workspaces/",
-                           ".env-copy/", ".dev-ws", ".wsp", ".tmp-")):
+                           ".env-copy/", ".dev-ws", ".wsp", ".tmp-", ".s0-")):
             continue
         is_historical = any(rel.startswith(p) for p in HISTORICAL_FILES)
         try:

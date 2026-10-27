@@ -113,7 +113,10 @@
 
 - `run_id`（等宽）、状态胶囊、`mode`、`baseline`、`project`、已用时长、最后更新时间。
   - v1 后端**实际**只会给出：`running / waiting_gate / finished / failed`；`waiting_job / waiting_slot` 的细分属审计 I18 的后续修复，v1 统一显示为 `waiting_gate` 并用 tooltip 说明「可能是作业/单槽等待」。
-- 动作：刷新、取消作业（仅在有活动 job 时可用）。
+- 动作：刷新、取消作业（仅在有活动 job 时可用）。**取消前必须显示后果**（2026-10-27，C11）：
+  确认框写明「取消后本轮按失败收敛、不能续跑；要重跑需要新建一轮」，成功 toast 同样标注；
+  不得只写"确认取消？"，也不得暗示取消后还能继续（取消是终态，见
+  [SPEC-02 §6](LOOP_ORCHESTRATION_SPEC.md) 第 9 条）。
 - 若 `status=failed`：展示 `error` 原文与 `notes`；不得只显示「失败」。
 
 ### 4.2 四段流程（折叠 + 展开当前段）

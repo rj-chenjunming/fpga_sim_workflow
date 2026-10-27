@@ -251,6 +251,40 @@ def test_characterization_double_click_and_rejection_keep_draft(ui):
     pw.expect(page.locator('#gatePanel [data-gate-submit]')).to_be_enabled()
 
 
+def test_cancel_job_confirms_terminal_consequence(ui):
+    """C11（2026-10-27 裁决）：取消作业是**终态** ⇒ 确认框必须先说后果，不得只问"确认取消？"
+
+    语义来源：N9/N15 的 resume 分支读到 `phase=cancelled` 即按失败收敛本轮、没有续跑入口
+    （SPEC-02 §6 第 9 条）。所以界面必须让操作员在点之前知道"本轮按失败收敛、不能续跑"。
+    """
+    page, api = ui
+    job_id = "JOB-20261027-TEST"
+    api["views"]["A"]["job"] = {
+        "job_id": job_id, "phase": "running", "node": "N9", "tc": "tc_pcie_rw_02",
+        "elapsed_s": 3, "eta_human": "未知（本作业未登记仿真时长）", "log_tail": [],
+    }
+    dialogs = []
+
+    def on_dialog(dialog):
+        dialogs.append(dialog.message)
+        dialog.accept()
+
+    page.on("dialog", on_dialog)
+    select(page, "A")
+    page.locator("#segRun").click()          # 作业卡在运行监控视图
+    pw.expect(page.locator("#viewRun")).to_be_visible()
+    tick(page)
+    btn = page.locator('#runHead button:has-text("取消作业")')
+    pw.expect(btn).to_be_enabled()
+    btn.click()
+    page.wait_for_timeout(120)
+    assert dialogs, "取消作业必须先弹确认框（不得静默提交）"
+    assert "按失败收敛" in dialogs[0] and "不能续跑" in dialogs[0], dialogs
+    assert api["posts"] and api["posts"][0][0].endswith("/jobs/%s/cancel" % job_id), api["posts"]
+    release(page, api, {"ok": True})
+    pw.expect(page.locator("#toast")).to_contain_text("按失败收敛")
+
+
 def test_cross_run_draft_is_cleared(ui):
     page, _ = ui
     open_gate(page)

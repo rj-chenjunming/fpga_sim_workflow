@@ -1267,14 +1267,21 @@
 
   async function cancelJob(job, cancelBtn, refreshBtn) {
     if (!job || !job.job_id) return;
+    /* 取消是**终态**（等价失败分支）：服务端 N9/N15 读到 phase=cancelled 就按失败收敛，没有续跑入口。
+       所以确认框必须**先说后果**，不能只说"确认取消？"（对齐 AI_WORK_PANEL_SPEC U08 的"终止前显示影响"；
+       口径见 LOOP_ORCHESTRATION_SPEC §6 第 9 条 / WEB_UI_SPEC §4.1）。 */
     var ok = true;
-    try { ok = window.confirm("确认取消作业 " + job.job_id + "？"); } catch (e) { ok = true; }
+    try {
+      ok = window.confirm(
+        "确认取消作业 " + job.job_id + "？\n\n" +
+        "取消后本轮按失败收敛、不能续跑；要重跑需要新建一轮。");
+    } catch (e) { ok = true; }
     if (!ok) return;
     if (cancelBtn) cancelBtn.disabled = true;
     if (refreshBtn) refreshBtn.disabled = true;
     try {
       await api("/api/runs/" + enc(state.runId) + "/jobs/" + enc(job.job_id) + "/cancel", { method: "POST" });
-      toast("已请求取消作业 " + job.job_id);
+      toast("已请求取消作业 " + job.job_id + "（本轮将按失败收敛）");
       await poll();
     } catch (e) {
       toast("取消失败：" + e.message);

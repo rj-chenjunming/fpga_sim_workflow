@@ -1525,7 +1525,8 @@ input[type=text]:focus,textarea:focus,select:focus{outline:1px solid #2f6fbf;bor
     q('modalTitle').textContent = '取消作业 · 二次确认';
     var body = q('modalBody');
     clear(body);
-    body.appendChild(h('div', { text: '即将调用取消接口，服务端是唯一裁决者：' }));
+    body.appendChild(h('div', { cls: 'msg msg-warn', text: '取消是终态：取消后本轮按失败收敛、不能续跑；要重跑需要新建一轮。服务端是唯一裁决者：' }));
+    body.appendChild(h('div', { text: '即将调用取消接口：' }));
     body.appendChild(h('pre', { cls: 'json', text: 'POST api/runs/' + state.runId + '/jobs/' + fmt(j.job_id) + '/cancel' }));
     body.appendChild(h('div', { cls: 'ccard-value' }, [
       kvRow('job_id', j.job_id), kvRow('tc', j.tc), kvRow('seed', j.seed), kvRow('phase', j.phase), kvRow('elapsed_s', j.elapsed_s)
@@ -1539,7 +1540,7 @@ input[type=text]:focus,textarea:focus,select:focus{outline:1px solid #2f6fbf;bor
     toast('取消作业中：' + fmt(j.job_id) + ' …', '');
     API.cancel(state.runId, j.job_id).then(function (res) {
       if (res.ok) {
-        toast('取消请求已受理（HTTP ' + res.status + '）：' + JSON.stringify(res.data), 'ok');
+        toast('取消请求已受理（本轮将按失败收敛，HTTP ' + res.status + '）：' + JSON.stringify(res.data), 'ok');
       } else {
         var detail = res.data && res.data.detail !== undefined ? res.data.detail : res.data;
         toast('取消失败（HTTP ' + res.status + '）：' + (function () { try { return JSON.stringify(detail); } catch (e) { return String(res.text); } })(), 'err');

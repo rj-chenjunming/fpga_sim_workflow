@@ -442,16 +442,16 @@ def precheck_decision(
         verdict = contracts.report_claimed_verdict(run_dir)
         # 与下发选项**同一判据**（红线 8）：选项说"必须理由" ⇔ 这里拒绝无理由的 accept。
         if contracts.decision_requires_reason(gate, decision, verdict):
-            # SPEC-REV-12 R1 方案 D：失败报告允许接受，但**必须显式理由**；
+            # SPEC-REV-12 R1 方案 D：未通过报告允许接受，但**必须显式理由**；
             # accept 只表示"接受这份未通过的报告"，不等于判据通过（N16 仍受 I3/I4 阻断）。
             if not (isinstance(reason, str) and reason.strip()):
                 raise GatePreconditionFailed(
-                    "D：本轮报告结论为 not_passed（未通过）⇒ 接受失败报告必须给出理由（reason）。"
+                    "D：本轮报告结论为 not_passed（未通过）⇒ 接受未通过报告必须给出理由（reason）。"
                     f"仍有 {len(pending)} 个用例「已修订待验」：接受报告不等于判据通过，"
                     "N16 仍受 I3/I4 阻断。"
                 )
             result["warnings"].append(
-                "报告结论 not_passed：accept 作为失败收口（已给理由）；"
+                "报告结论 not_passed：accept 作为未通过收口（已给理由）；"
                 f"{len(pending)} 个用例仍待验，不得称跑通"
             )
         elif pending:

@@ -81,7 +81,7 @@ cd change-impact-loop && git push origin main
 
 ## 6 已知未做（不藏）
 
-- B 组遗留：服务端 403 串仍写"接受失败报告"，与界面"接受未通过报告"不同源（B1b，已登记不改）。
+- ~~B 组遗留：服务端 403 串仍写"接受失败报告"~~ —— **已关闭（2026-10-27，STATUS §92）**：403 串与成功 warning 统一为"未通过"，判据零变化，证据见 `doc/evidence/SPEC_REV05_RECHECK_20261027.md`。
 - `workspaces/real-env-copy/loop/web/index.html` 是 ignored 的旧版派生副本，仍含已删除的
   `GATE_DECISIONS_FALLBACK`；不在产品路径，清理归副本 owner。
 - 4 条 Tier B-core 的取值是**人给的方向**（C2/C11/C38 以位定义为准、C58 以 DFX_VERSION 为基准），

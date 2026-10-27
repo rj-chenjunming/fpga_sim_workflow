@@ -1206,8 +1206,8 @@ def test_g2_accept_failed_report_requires_reason(tmp_path: Path) -> None:
     assert "not_passed" in str(exc.value)
 
     out = precheck_decision(gate="G2_report_accept", decision="accept", run_dir=rd,
-                            mode="real", reason="已阅失败报告：口径一 1716≠0，接受未通过结论", kb=kb)
-    assert out["warnings"], "接受失败报告必须留下告警（不得静默）"
+                            mode="real", reason="已阅未通过报告：口径一 1716≠0，接受未通过结论", kb=kb)
+    assert out["warnings"], "接受未通过报告必须留下告警（不得静默）"
     assert "not_passed" in out["warnings"][0]
 
 

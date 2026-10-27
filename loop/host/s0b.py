@@ -84,8 +84,10 @@ def _sha256_json(value) -> str:
 def unified_diff(old: str, new: str) -> str:
     """把 hunk 的"原片段 → 新片段"渲染成真实 unified diff（报告用；确定性）。"""
     import difflib
-    return "".join(difflib.unified_diff(old.splitlines(keepends=True),
-                                        new.splitlines(keepends=True),
+    old_text = old if old.endswith("\n") else old + "\n"
+    new_text = new if new.endswith("\n") else new + "\n"
+    return "".join(difflib.unified_diff(old_text.splitlines(keepends=True),
+                                        new_text.splitlines(keepends=True),
                                         fromfile="baseline", tofile="confirmed", n=2))
 
 
@@ -354,8 +356,8 @@ def apply_confirmed(record: dict, folder: Path) -> dict:
         applied.append(hunk["hunk_id"])
     if applied:
         _write_text(target, text)
-    return {"applied": applied, "skipped": skipped, "tb_top": tb_top,
-            "md5_before": before, "md5_after": _md5(target)}
+    return {"applied": applied, "skipped": skipped, "already_applied": False,
+            "tb_top": tb_top, "md5_before": before, "md5_after": _md5(target)}
 
 
 # ---------------------------------------------------------------- ports 判据
@@ -534,11 +536,30 @@ def run_smoke(record: dict, folder: Path, case: str, run_id: str, now=None) -> d
     return payload
 
 
+def reevaluate_smoke(smoke: dict, folder: Path) -> dict:
+    """人补齐 warning 评估后，**不必重跑编译**也能把 waiting 重算成 passed（复核 N6）。
+
+    只改判据、不动读数：`needs_evaluation` 全部有 `accepted` 记录 ⇒ 判 passed，否则维持 waiting。
+    """
+    if (smoke or {}).get("status") != "waiting":
+        return smoke
+    needs = ((smoke.get("warning_delta") or {}).get("needs_evaluation") or [])
+    if not needs:
+        return smoke
+    accepted = accepted_warnings(folder)
+    unaccepted = [code for code in needs if code not in accepted]
+    updated = dict(smoke, accepted_warnings=sorted(accepted), unaccepted_warnings=unaccepted)
+    if not unaccepted:
+        updated.update(status="passed", reason="新增/上升的告警已由人逐条评估")
+    return updated
+
+
 def ready_for_execution(record: dict, folder: Path) -> bool:
     """六项 check 全 passed **且**没有漂移/错误 ⇒ 才允许 `real`。
 
     fail-closed：任何一项不是 `passed`（含 `waiting`）都返回 False。
     """
     checks = {c["key"]: c["status"] for c in record.get("checks") or []}
-    return all(checks.get(key) == "passed" for key in
-               ("copy", "rtl", "non_rtl", "ports", "smoke", "baseline")) and not record.get("error")
+    return (record.get("status") == "prepared" and not record.get("error")
+            and all(checks.get(key) == "passed" for key in
+                    ("copy", "rtl", "non_rtl", "ports", "smoke", "baseline")))

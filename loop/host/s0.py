@@ -70,6 +70,9 @@ def _without_rtl(snapshot):
     return {k: v for k, v in snapshot.items() if k != 'RTL' and not k.startswith('RTL/')}
 
 
+#: 漂移判定的唯一错误文案（N4：内容恢复后按此文案清除，其它 error 不清）
+DRIFT_ERROR = '当前内容偏离派生时见证；原始准备记录保持不变'
+
 S0B_BLOCKERS = [
     {'key': 'ports', 'message': 'S0-b：外部接口差异核对、TB/top.sv 适配与逐 hunk 登记尚未接入。'},
     {'key': 'smoke', 'message': 'S0-b：副本内真实三库冒烟尚未执行，缺少每库日志、error/warning 计数与评估。'},
@@ -379,7 +382,8 @@ class S0Store:
                 rows.append('')
         rows += ['', '## 三库冒烟', '']
         smoke = record.get('smoke') or {}
-        rows += [f'- 状态：{smoke.get("status", "waiting")}（{smoke.get("reason", "尚未执行")}）']
+        smoke_reason = smoke.get("reason") or "尚未执行"
+        rows += [f'- 状态：{smoke.get("status", "waiting")}（{smoke_reason}）']
         for label in ('candidate', 'baseline'):
             segment = smoke.get(label) or {}
             if not segment:
@@ -404,8 +408,7 @@ class S0Store:
         drift, errors = {}, []
         if not record.get('baseline') or not record.get('work_env'):
             return drift, errors            # 记录不完整（伪造/早期失败）⇒ 无从核验，交给 ports 判 waiting
-        if record.get('status') not in ('prepared', 'failed'):
-            return drift, errors
+        # 注意：**不能**按 `status` 短路（复核 N1：伪造 status=preparing 会让漂移核验整体跳过）。
         for name in ('reports/s0-env/env-check-report.md', 'design-context.yaml'):
             if not (folder / name).is_file():
                 errors.append(f'准备产物缺失：{name}')
@@ -455,6 +458,20 @@ class S0Store:
         """
         folder = self._folder(record_id)
         record = self._load_record(folder)
+        # 复核 N2：**在写任何文件之前**确认"当前副本相对上一份见证只有 TB 顶层可差异"，
+        # 否则落盘会刷新见证、把既有的未登记改动洗白。拒绝必须发生在提交前（AGENTS §2 硬性纪律 5）。
+        previous = folder / (record.get('work_witness') or 'work-after.json')
+        if not previous.is_file():
+            raise ValueError(f'缺少上一份 work 见证，无法确认落盘前是否已偏离：{previous}')
+        old = json.loads(previous.read_text(encoding='utf-8'))
+        current = manifest(Path(record['work_env']))
+        roots = {'RTL', 'TB', 'PKG', 'TESTLIB', record['docs_dir'], 'run',
+                 record.get('run_entry') or 'run'}
+        changed = [key for key in _changes(old, current)
+                   if key.split('/')[0] in roots and key != record['tb_top']]
+        if changed:
+            raise ValueError('apply 前副本已偏离上次见证：%s —— 先修复或重新派生，'
+                             '不允许用落盘刷新见证来洗白' % '、'.join(changed[:8]))
         result = s0b.apply_confirmed(record, folder)
         if result.get('applied'):
             index = len(list(folder.glob('work-after*.json')))
@@ -501,7 +518,11 @@ class S0Store:
         record['verification'] = {'drift': drift, 'errors': errors}
         if drift or errors:
             record['status'] = 'failed'
-            record['error'] = '当前内容偏离派生时见证；原始准备记录保持不变'
+            record['error'] = DRIFT_ERROR
+        elif record.get('status') == 'failed' and record.get('error') == DRIFT_ERROR:
+            # 复核 N4：内容恢复后不能让陈旧 error 永久压住准出（只清这一条，其它 error 不清）
+            record['status'] = 'prepared'
+            record['error'] = None
         if record.get('baseline') and record.get('work_env'):
             try:
                 record['tb_top'] = record.get('tb_top') or s0b.resolve_tb_top(Path(record['baseline']))
@@ -514,6 +535,10 @@ class S0Store:
                                'reason': '记录缺少 baseline/work_env，无法派生接口差异',
                                'evidence': {}, 'table': [], 'derive': {}}
         smoke = record.get('smoke') or {'status': 'waiting', 'reason': '尚未执行三库冒烟'}
+        try:
+            smoke = s0b.reevaluate_smoke(smoke, folder)     # 复核 N6：评估补齐后无需重跑即重算
+        except (OSError, ValueError):
+            pass
         record['smoke'] = smoke
         for check in record.get('checks') or []:
             if check['key'] == 'ports':
@@ -523,12 +548,14 @@ class S0Store:
                 check['status'] = smoke['status']
                 check['reason'] = smoke.get('reason', '')
         record['ready_for_execution'] = s0b.ready_for_execution(record, folder)
+        # 复核 N3：读路径不能因为"报告写不进去"（如归档记录 chmod 444）就改判定；
+        # 只记 report_write_error，状态与准出仍由检查结论决定。
         try:
             record['report_url'] = record.get('report_url') or f"/api/s0/{record['id']}/report"
             self._write_report(folder, record)
+            record.pop('report_write_error', None)
         except OSError as exc:
-            record['status'] = 'failed'
-            record['error'] = f'准备报告写入失败：{exc}'
+            record['report_write_error'] = str(exc)
         return record
 
     def report_path(self, record_id):

@@ -38,6 +38,7 @@ def store_env(tmp_path):
         "module top;\n  dut_top u_dut(.din(din), .dout(dout));\nendmodule\n", encoding="utf-8")
     (baseline / "run").write_text("#!/bin/sh\nexit 99\n", encoding="utf-8")
     (baseline / "all_define.txt").write_text("-define SIM\n", encoding="utf-8")
+    (baseline / "PKG/kept.txt").write_text("pkg asset\n", encoding="utf-8")
     rtl = tmp_path / "src/rtl"
     rtl.mkdir(parents=True)
     (rtl / "dut.v").write_text(
@@ -269,14 +270,20 @@ def test_smoke_without_eda_is_waiting_not_passed(store_env, monkeypatch) -> None
 
 # ---------------------------------------------------------------- 准出开关
 
-def test_ready_requires_all_six_checks_passed() -> None:
-    record = {"checks": [{"key": k, "status": "passed"} for k in
+def test_ready_requires_all_six_checks_passed_and_prepared_status() -> None:
+    """准出开关：六项全 passed + status=prepared + 无 error；任一不满足即 False（含伪造 status）。"""
+    record = {"status": "prepared",
+              "checks": [{"key": k, "status": "passed"} for k in
                          ("copy", "rtl", "non_rtl", "ports", "smoke", "baseline")]}
     assert s0b.ready_for_execution(record, Path(".")) is True
     record["checks"][4]["status"] = "waiting"
     assert s0b.ready_for_execution(record, Path(".")) is False
     record["checks"][4]["status"] = "passed"
     record["error"] = "boom"
+    assert s0b.ready_for_execution(record, Path(".")) is False
+    record["error"] = None
+    # 复核 N1：把 status 改成 preparing 不能绕过（漂移核验 + 准出都要求 prepared）
+    record["status"] = "preparing"
     assert s0b.ready_for_execution(record, Path(".")) is False
 
 
@@ -414,3 +421,74 @@ def test_warning_acceptance_is_append_only_and_required(store_env) -> None:
         s0b.accept_warning(folder, "not-a-code", actor="human:me", reason="x")
     with pytest.raises(ValueError):
         s0b.accept_warning(folder, "Warning-1", actor="human:me", reason="")   # 必须给理由
+
+
+# ---------------------------------------------------------------- 第二轮复核整改钉（N1–N6）
+
+def test_forged_status_cannot_bypass_drift_check(store_env) -> None:
+    """复核 N1：伪造 status=preparing 时，未登记改动仍必须被抓、ready 必须 False。"""
+    store, record, baseline, work, folder = _prepare(store_env)
+    text = (work / "PKG/kept.txt").read_text(encoding="utf-8")
+    (work / "PKG/kept.txt").write_text(text + "tampered\n", encoding="utf-8")
+    raw = json.loads((folder / "record.json").read_text(encoding="utf-8"))
+    raw["status"] = "preparing"
+    (folder / "record.json").write_text(json.dumps(raw), encoding="utf-8")
+    fresh = store.get(record["id"])
+    assert fresh["ready_for_execution"] is False
+    assert fresh["verification"]["drift"].get("work_env"), fresh["verification"]
+
+
+def test_apply_refuses_to_launder_existing_drift(store_env) -> None:
+    """复核 N2：apply 不得用"刷新见证"洗白落盘前就存在的未登记改动。"""
+    store, record, baseline, work, folder = _prepare(store_env)
+    (work / "PKG/kept.txt").write_text("hand edit before apply\n", encoding="utf-8")
+    s0b.propose(folder, [{"hunk_id": "H1", "file": "TB/top.sv", "old_text": ".din(din)",
+                          "new_text": ".din(din[7:0])", "reason": "位宽对齐"}], actor="model:m")
+    s0b.confirm(folder, "H1", "confirmed", actor="human:me")
+    with pytest.raises(ValueError):
+        store.apply(record["id"])
+    fresh = store.get(record["id"])
+    assert fresh["ready_for_execution"] is False
+
+
+def test_readonly_record_does_not_flip_status(store_env) -> None:
+    """复核 N3：归档/只读记录（报告写不进去）不能因为读路径失败而改判定。"""
+    import os
+
+    store, record, baseline, work, folder = _prepare(store_env)
+    report = folder / "reports/s0-env/env-check-report.md"
+    os.chmod(report, 0o400)
+    try:
+        fresh = store.get(record["id"])
+    finally:
+        os.chmod(report, 0o600)
+    assert fresh["status"] == "prepared", fresh.get("error")
+    assert fresh.get("report_write_error")
+
+
+def test_recovered_drift_clears_stale_error(store_env) -> None:
+    """复核 N4：漂移恢复后陈旧 error 必须清掉（否则 ready 永久 false）。"""
+    store, record, baseline, work, folder = _prepare(store_env)
+    path = work / "PKG/kept.txt"
+    original = path.read_text(encoding="utf-8")
+    path.write_text(original + "x\n", encoding="utf-8")
+    assert store.get(record["id"])["status"] == "failed"
+    path.write_text(original, encoding="utf-8")
+    fresh = store.get(record["id"])
+    assert fresh["status"] == "prepared" and not fresh.get("error")
+    assert {c["key"]: c["status"] for c in fresh["checks"]}["ports"] == "passed"
+
+
+def test_warning_evaluation_promotes_existing_smoke_without_recompile(store_env) -> None:
+    """复核 N6：人补齐 warning 评估后，已有 smoke 读数应重算为 passed（不必重跑编译）。"""
+    store, record, _baseline, _work, folder = _prepare(store_env)
+    record["smoke"] = {"status": "waiting", "reason": "新增/上升的告警需人评估：Warning-120162",
+                       "case": "tc_x",
+                       "warning_delta": {"added": ["Warning-120162"], "removed": [],
+                                         "count_increase": [],
+                                         "needs_evaluation": ["Warning-120162"]},
+                       "accepted_warnings": [], "unaccepted_warnings": ["Warning-120162"]}
+    store._save_record(folder, record)
+    assert store.get(record["id"])["smoke"]["status"] == "waiting"
+    s0b.accept_warning(folder, "Warning-120162", actor="human:me", reason="工具已知噪声")
+    assert store.get(record["id"])["smoke"]["status"] == "passed"

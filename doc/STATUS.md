@@ -4541,5 +4541,30 @@ bash loop/spikes/provision_dev_workspace.sh --cleanup     # 跑完删掉
 
 ### 102.7 门（复核整改后，数字从输出复制）
 
-- 软件层：**`1041 passed, 3 deselected, 1 warning in 173.55s`**（数字从本轮末次门输出复制）。
+- 软件层：**`1046 passed, 3 deselected, 1 warning in 176.47s`**（数字从本轮末次门输出复制）。
+- 文档门：`missing=0`、`exit=0`。
+
+
+### 102.8 第二轮复核（N1–N6）与整改
+
+第二轮结论：9 条 FAIL 中 8 条关闭、FAIL-6 部分关闭；**新发现 2 个准出路径上的 fail-open（N1/N2）**，仍不宣称可验收。
+逐条处置：
+
+| # | 第二轮发现 | 处置 | 证据 |
+|---|---|---|---|
+| **N1（中高，fail-open）** | 把 `record.json` 的 `status` 改成 `preparing` ⇒ 漂移核验整段跳过、`ready=true`、`real` 入口放行 | **已修**：`_verify()` 不再按 status 短路；`ready_for_execution()` 额外要求 `status == "prepared"` | `test_forged_status_cannot_bypass_drift_check`：伪造 status 后 `ready=False` 且 drift 仍被抓 |
+| **N2（中高，fail-open）** | `apply` 落盘后直接用当前树当新见证 ⇒ 把落盘**前**就存在的未登记改动洗白（正常流程即可触发） | **已修**：把核对**提到写文件之前**——先比"当前副本 vs 上一份见证"，除 `TB/<tb_top>` 外有差异即拒绝（拒绝发生在提交前） | 真实记录复验：`N2 已拦截 ⇒ apply 前副本已偏离上次见证：TB/top_cfg.sv、TB/top_env.sv`，且**拒绝时 TB 顶层 md5 不变**；`test_apply_refuses_to_launder_existing_drift` |
+| **N3（中）** | 只读/归档记录读一次 `get()` 就变 `failed`（读路径重写报告失败改了判定） | **已修**：报告写失败只记 `report_write_error`，不改 status/ready | `test_readonly_record_does_not_flip_status` |
+| **N4（低中）** | 漂移被存成 `failed` 后内容恢复也无法自愈（error 永久残留） | **已修**：无漂移时按唯一文案清掉该漂移 error，恢复 `prepared` | `test_recovered_drift_clears_stale_error` |
+| **N5（低）** | 报告里的 unified diff 渲染破损（片段无结尾换行时挤一行） | **已修**：渲染前补行尾换行，输出合法 patch | 真实报告 `## 逐 hunk 登记` 段 |
+| **N6（观察）** | 人补齐 warning 评估后不重跑编译则 smoke 仍 waiting | **已修**：新增 `reevaluate_smoke()`——读数不动、判据重算（`needs_evaluation` 全部 accepted ⇒ passed） | `test_warning_evaluation_promotes_existing_smoke_without_recompile` |
+| **FAIL-6 残留 5 处** | ① §8.5 与 §8.2-1 冲突；② §3「S0-b 保持阻断/ready 恒 false」；③ §4 能力位 false；④ §6.1 ready 恒 false；⑤ §8.2-1 无 work 见证正文（引用悬空）；另 §8.5 自相矛盾一行 | **已修**：① 改为按 md5 规则；②③④ 标注 2026-10-27 更新（S0-b 已接入、能力位只描述后端）；⑤ **把 work 见证与"落盘前只允许 TB 顶层差异"写进 §8.2-1 正文**；矛盾行改写 | 规格 §3/§4/§6.1/§8.2-1/§8.5 |
+
+**复核后真实链路复验（在 .env-copy + .s0-work3 上）**：prepare `ports=passed` → propose+confirm（未落盘 `waiting`）
+→ apply（`applied=['H1']`、`witness=work-after.2.json`）→ smoke（candidate/baseline 均 `0 error(s)/17 warning(s)`、delta 空、`passed`）
+→ 六项全 passed、`drift={}`、`errors=[]`、**`ready_for_execution=True`**；随后在无关资产上制造未登记改动再 `apply` ⇒ **被拒且未写入**。
+
+### 102.9 门（第二轮整改后，数字从输出复制）
+
+- 软件层：**`1046 passed, 3 deselected, 1 warning in 176.47s`**。
 - 文档门：`missing=0`、`exit=0`。

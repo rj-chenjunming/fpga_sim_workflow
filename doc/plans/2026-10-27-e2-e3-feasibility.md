@@ -30,6 +30,12 @@
 ## 2 Q3（smoke 判据）这次钉清了——附一个必须写下来的陷阱
 
 **三库是什么**（据 `<ENV_ROOT>/doc/_notes/05_env_layer.md` §库 表与 `compile_only.sh`）：
+> **更正（同日，定稿前发现）**：产品侧**不**用环境那个 `compile_only.sh`——本仓已有
+> `kb/tools/run_guarded.sh --mode compile-only`（N7 在用：串行锁、沙箱工作树、`uvs.setup` 自愈、
+> 编译选项逐字自检、逐用例 rc + 日志），S0 的 `smoke` 应当**复用它**（红线 8：一套实现）。
+> 下面用环境 `compile_only.sh` 只是为了**独立证明 EDA/许可可用**（它自带 `.compile_only.lock` 与 md5 断言），
+> 不改变"产品驱动 = `run_guarded.sh`"这一结论。
+
 
 | 库 | 命令 | 产物 |
 |---|---|---|

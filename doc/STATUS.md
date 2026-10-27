@@ -4271,7 +4271,7 @@ kb 自测要求 `rc=0` + 有汇总行 + `FAIL=0` + **通过条数等于验收数
 | **E1** | I4 在**真实数据根**生效 | 真实根仍 ro（§98.1 实测：只读挂载 + 写探测 `Read-only file system` + 无 sudo）；但"拿到写权后要跑的命令"已在可写根上用**当前权威快照**跑通（§98.3），且修掉了挡住它的指纹硬编码缺陷（§98.2） |
 | **E2** | S0-b 接入（ports/smoke、`ready_for_execution` 可为 true） | 环境侧；D4 因此等 E2 |
 | **E3** | C8 `passed` 形态夹具 | 环境侧（真实通过轮 ≈21.56 h + 写权） |
-| **E4** | 推送 | 本机出网被代理阻断；本轮结束领先 `origin/main` **35** 个提交（`git rev-list --count origin/main..HEAD` 输出复制） |
+| **E4** | 推送 | 本机出网被代理阻断；本轮结束领先 `origin/main` **36** 个提交（`git rev-list --count origin/main..HEAD` 输出复制） |
 | **D1–D4** | 四项裁决 | ✅ 全部已裁（A/A/A/A），处置见 §96 |
 | **R 类 8 条** | 登记不改 | 不变（见 kickoff §2 R 类） |
 

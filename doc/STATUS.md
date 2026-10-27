@@ -4608,3 +4608,36 @@ bash loop/spikes/provision_dev_workspace.sh --cleanup     # 跑完删掉
 - 文档门：`missing=0`、`exit=0`。
 - 三文件定向用例：**95 passed**。
 - 真实环境副本全链路（含两次插入型 hunk 分批落盘）：六项全 `passed`、`drift={}`、**`ready_for_execution=True`**。
+
+
+### 102.14 第五轮复核：判定「可验收」（R5-1 已按建议修掉）
+
+第五轮复核结论：**可验收**（R2/R3/规格三条全部关闭；准出判据无 fail-open；真实 records4 的 `ready=true` 可复现）。
+唯一遗留是本轮引入的一处"判据放宽过度"（R5-1），已按复核者给的一行修法当场修掉：
+
+| # | 发现 | 处置 | 证据 |
+|---|---|---|---|
+| **R5-1（低中，非 fail-open）** | `apply_confirmed` 的"认账"条件被放宽成"只看 `new_text` 是否存在" ⇒ `old_text` 有歧义时（出现 >1 次）不再拒绝，而是静默 `adopted` + 记台账 + 不写文件（错误面消失、台账记了没发生的事） | **已修**：恢复严格条件 `occurrences == 0 and text.count(new_text) >= 1`（前缀型"已落盘"由 `applied_hunks` 台账分支处理） | 重新启用 `test_ambiguous_old_text_is_refused` 并新增 `test_ambiguous_old_text_with_new_text_present_is_still_refused`：歧义 + new_text 已存在 ⇒ `ValueError`、文件逐字节不变、台账为空 |
+
+**复核者的两条观察（登记不改）**：
+1. `apply` 的"内容已达标"早返回分支不回填台账 ⇒ 若手工清掉台账，前缀型 hunk 仍可能被重复应用；
+   但此时 `ports` 会因"实际 ≠ 基线+已确认"判 `failed`，**兜得住、不会误准出**（台账本身是只增不改证据，手工删不在威胁模型内）。
+2. `adopted` 分支与台账锚校验目前靠 `load_apply_refusals`/`applied_hunks` 的锚自检覆盖，未单独立用例；已在 §102.10 R6 的"观察不改"里登记。
+
+### 102.15 E2 收尾状态（本轮结束）
+
+| 项 | 状态 |
+|---|---|
+| S0-b `ports`（Host 确定性派生 + 模型提议 + 人确认 + 精确落盘） | ✅ 已接入，真实环境副本跑通 |
+| S0-b `smoke`（副本内三库编译 + 基线相对增量 + warning 人评估） | ✅ 已接入，真实编译 `0 error(s)`、增量空 |
+| `ready_for_execution` 六项判据（唯一判据口） | ✅ 真实记录 `drift={}`、六项 `passed`、`ready=True` |
+| 独立复核 | ✅ 五轮（FAIL-1..9 → N1..N6 → R1..R6 → R5-1），最终判定**可验收** |
+| 门 | 软件层 **`1053 passed, 3 deselected, 1 warning in 186.47s`**、文档门 `missing=0`、三文件定向 **96 passed** |
+| 仍未做（已登记） | 内网真机验收（需可写 `ENV_ROOT`）、D5 界面（需浏览器门）、E3 passed 夹具（真实通过轮） |
+
+
+### 102.16 门（第五轮整改后，数字从输出复制）
+
+- 软件层：**`1053 passed, 3 deselected, 1 warning in 186.47s`**。
+- 文档门：`missing=0`、`exit=0`。
+- 三文件定向用例：**96 passed**。

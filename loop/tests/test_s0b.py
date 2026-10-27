@@ -609,3 +609,21 @@ def test_report_blockers_show_status_and_drift(store_env) -> None:
     assert "- 漂移（相对最新 work 见证）：" in report
     assert "PKG/kept.txt" in report
     assert "S0-b 未执行或未完成" in report          # 头不能写"可准出"
+
+
+def test_ambiguous_old_text_with_new_text_present_is_still_refused(store_env) -> None:
+    """复核第五轮 R5-1：`old_text` 有歧义时，即便 `new_text` 已存在也**不得**静默 adopted。"""
+    store, record, baseline, work, folder = _prepare(store_env)
+    tb = work / "TB/top.sv"
+    text = tb.read_text(encoding="utf-8")
+    # 让 old_text `endmodule` 出现两次，且 new_text 已存在一次
+    tb.write_text(text.replace("endmodule", "endmodule // x\nendmodule"), encoding="utf-8")
+    s0b.propose(folder, [{"hunk_id": "H1", "file": "TB/top.sv",
+                          "old_text": "endmodule", "new_text": "endmodule // x",
+                          "reason": "歧义探针"}], actor="model:m")
+    s0b.confirm(folder, "H1", "confirmed", actor="human:me")
+    before = tb.read_bytes()
+    with pytest.raises(ValueError):
+        store.apply(record["id"])
+    assert tb.read_bytes() == before                      # 拒绝时不写文件
+    assert s0b.applied_hunks(folder) == {}                # 也不得记"已落盘"

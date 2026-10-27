@@ -422,8 +422,10 @@ def apply_confirmed(record: dict, folder: Path) -> dict:
             applied.append(hunk["hunk_id"])
             pending_ledger.append(hunk["hunk_id"])
             continue
-        # 内容已是目标形态（含"旧片段是新片段前缀"的插入型 hunk）⇒ 认账但不写文件
-        if text.count(hunk["new_text"]) >= 1:
+        # 内容已是目标形态 ⇒ 认账但不写文件。**必须同时满足 old_text 一次都不出现**
+        # （复核第五轮 R5-1：放宽成"只看 new_text 存在"会把 old_text 有歧义的情况静默 adopted，
+        #  错误面消失且台账记了没发生的事）。
+        if occurrences == 0 and text.count(hunk["new_text"]) >= 1:
             skipped.append({"hunk_id": hunk["hunk_id"], "decision": "already_applied"})
             pending_ledger.append(hunk["hunk_id"])
             continue

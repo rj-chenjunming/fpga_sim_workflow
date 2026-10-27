@@ -367,7 +367,7 @@ def test_gate_option_flags_come_from_run_view_not_interrupt_snapshot(ui):
     view["gate_options"] = {G2: snapshot}
     tick(page)
     pw.expect(page.locator("#gatePanel .gate-options input[type=radio]")).not_to_have_count(0)
-    pw.expect(page.locator("#gatePanel .alert.warn")).to_contain_text("接受失败报告必须填写理由")
+    pw.expect(page.locator("#gatePanel .alert.warn")).to_contain_text("接受未通过报告必须填写理由")
     # 反向：重算值说不需要理由（快照说要）⇒ 不得提示
     view["gate_options"] = {G2: [{"value": "accept", "label": "接受", "requires_reason": False},
                                  {"value": "rework", "label": "返工", "requires_reason": True}]}

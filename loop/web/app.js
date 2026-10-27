@@ -2973,7 +2973,7 @@
     }
 
     var options = gateOptionsFor(pending);
-    /* 「接受失败报告必须理由」的判据**只在服务端**（contracts.decision_requires_reason →
+    /* 「接受未通过报告必须理由」的判据**只在服务端**（contracts.decision_requires_reason →
        选项 requires_reason=true）。这里只读该 flag 决定是否提示，不自己判「本轮是否
        not_passed」，否则又是一套前置（红线 8）。 */
     var acceptOption = null;
@@ -2984,7 +2984,7 @@
     if (acceptOption && acceptOption.requires_reason === true) {
       form.appendChild(h("div", "alert warn",
         (n12.claimed_verdict ? "本轮报告结论：" + String(n12.claimed_verdict) + "。" : "") +
-        "接受失败报告必须填写理由；接受不等于判据通过，N16 仍被 I3/I4 阻断。"));
+        "接受未通过报告必须填写理由；接受不等于判据通过，N16 仍被 I3/I4 阻断。"));
     }
     /* 复核建议 A（2026-10-26）：结论**来源**必须可见。drill 夹具的报告常没有
        claimed_verdict 行（判据口径为 None），界面若不标来源，人会看到"未通过"却

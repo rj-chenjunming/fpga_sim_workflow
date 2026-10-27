@@ -3412,3 +3412,70 @@ git push origin main          # 或 gh-ssh（若该机已配 SSH key）
 既然已在对话中出现，**建议立即在 GitHub 上作废并重签**。
 
 B 组其余项已清：决策项文案（§82.1）、drill 直给逐条处置（§82.3）、复核报告落档（§81.8）。
+
+---
+
+## 83 C 组修订（一）：环境层可运行、证据时效、I4 冲突的机制缺口（2026-10-27）
+
+上游：`§82` 之后仍开的 C 组清单，人指定"开始 C 组的修订"。计划
+[`doc/plans/2026-10-27-c-group.md`](plans/2026-10-27-c-group.md)。本轮由 Lead 实施（非独立验证）。
+
+### 83.1 C13 环境层 3 条用例：派生 ENV_ROOT 副本上跑通
+
+| 项 | 内容 |
+|---|---|
+| 问题 | `@pytest.mark.env_layer` 的 3 条（`test_archive_e2` ×2、`test_projection_and_frozen` ×1）要写 ENV_ROOT 下的 `SIMLIB_RUN/`、归档与数据根，本机 ENV_ROOT 只读 ⇒ 直接跑必红，软件层入口只能 `-m "not env_layer"` 排除，长期登记为"环境缺件" |
+| 边界 | 红线 11 只禁止写**原** ENV_ROOT；在**派生副本**上验证与 S0 派生副本同一原则 |
+| 实现 | 新增 `loop/spikes/run_env_layer_checks.sh`：kb_lib 解析 ENV_ROOT → `cp -a --reflink=auto` 派生副本（2.6 GB）→ `chmod -R u+w` → 以 `LOOP_ENV_ROOT=<副本> LOOP_WORKSPACE=<副本>/kb` 跑 `-m env_layer`；`--reuse` / `--cleanup` |
+| 零写入自证 | 跑测试前建 marker，跑完 `find <原ENV_ROOT> -newer <marker>` 必须命中 0，否则 exit 3 |
+| 实测 | 冷启动（含 2.6 GB 复制）整轮 **10.221 s**、热启动（`--reuse`）**7.17 s**；结果 **3 passed, 24 deselected**；**原 ENV_ROOT `find -newer` 命中 0** |
+| 登记 | `AGENTS.md §4` 增环境层入口段；`run_software_checks.sh` 的排除提示改为指向该脚本（`INCLUDE_ENV_LAYER=1` 仅在其可写时有效）；`.env-copy/` 已加入 `.git/info/exclude` |
+
+### 83.2 C14 kb 自测重跑（刷新证据时效）
+
+在派生副本的可写数据根上跑（`-B` 保证不往冻结的 `kb/tools/` 写字节码）：
+
+```
+_selftest_gate_schema.py       汇总：PASS=10 FAIL=0
+_selftest_n5_reachability.py   汇总：PASS=9  FAIL=0
+```
+
+⇒ `AGENTS.md §4` 的 kb 自测门重新有本轮实测（上次是 §75.6）。
+
+### 83.3 C10 I4 72 条冲突：机制缺口已定位，改动待授权
+
+**现状（命令输出）**：`<ENV_ROOT>/kb/conflicts/conflicts.json`
+（md5 `1d0b95468e8be451955a0f2443c478be`）共 **72** 条，**全部** `status=open`、**全部**
+`blocks_release=true`；分类 NUM 13 / NAME 10 / ADDR 10 / MISS 9 / RT 7 / RW 6 / BITS 5 /
+SCOPE 4 / 复合 7。I4 消费链只读 `blocks_release` ⇒ 改接口文档不解除阻断。
+
+**已有资产**：`<ENV_ROOT>/kb/adjudication/C_conflicts_triage.md`
+（md5 `bc862a6855cf48f5af4a6a70294f5c87`，764 行）已把 72 条逐条摘要、可复现分组（G1–G9 /
+根因批 B1–B4 / 覆盖自检并集=72）、必须逐条看的 19 条、跨章节 17 条、与
+`access_restrictions.json` 交叉 22 条、与 `pending.json` 交叉 23 条整理完，并逐项对照 schema。
+**结论：不需要改 schema**（`status ∈ {open,confirmed,ignored,ruled,fixed}`、`resolution`、
+`resolution_actor`、`resolution_kind`、`blocks_release` 全在 `kb/schema/conflicts.schema.json`，
+md5 `434387c12a972d2ca113c09cbc6cb6ac`）。
+
+**四个工程缺口**（该文件 §6.4，本轮已复核）：① 无 `ruled_at` 字段（时刻并入 `resolution` 文本或授权加字段）；
+② 条件不变式 schema 表达不了（`kb_lib.validate` 拒绝 `if/allOf`）⇒ 只能 Host 工具强制；
+③ **没有任何 Host 工具能写 conflicts 裁决**（human-only 与锚机制目前只覆盖 `gates.json` 三闸门）；
+④ 重跑 `kb/tools/n1_conflicts.py` 会把裁决复位（第 287/292 行硬编码 `open`/`true`）
+⇒ 裁决必须外置持久化（`conflicts/adjudication.json` + 抽取时合并）。
+
+**为什么本轮没动**：③④ 要改 `kb/tools/**`（**冻结目录**，`AGENTS.md §3` 写权 = kb owner，
+"改语义需单独变更并留证"）⇒ 属需显式授权项。授权后的切片（C10-a/b/c）与判据写在计划 §3。
+
+### 83.4 本轮门
+
+| 门 | 结果 | 说明 |
+|---|---|---|
+| 环境层（新入口） | **3 passed, 24 deselected** | `bash loop/spikes/run_env_layer_checks.sh`；原 ENV_ROOT 零写入 |
+| kb 自测 | **PASS=10 / PASS=9，FAIL=0** | 见 §83.2 |
+| 软件层 / 浏览器 | 未重跑 | 本轮新增的是 `spikes/` 脚本与文档，未改产品代码与既有测试 |
+| 文档 | **missing=0、exit=0** | 新增计划 1 份 + 本节；`checked/skipped` 为诊断值、不落盘（§19） |
+
+### 83.5 C 组剩余（需授权或需裁决）
+
+C10 机制改动（待授权改冻结 `kb/tools/**`）、C10-b 72 条人工裁决、C8 通过形态夹具、
+C9 S0-b 接入（环境侧）、C11 取消/续跑语义（契约）、C12 运行入口消费 S0（需求）。

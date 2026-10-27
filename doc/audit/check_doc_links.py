@@ -52,8 +52,10 @@ WORKSPACE_PREFIXES = [
     "kb/runs/", "kb/baselines/", "kb/index/", "kb/conflicts/",
     "kb/adjudication/", "kb/FIXTURE_IDENTITY.md",
 ]
+#: 仓内派生数据根/副本（由 `loop/spikes/*.sh` 预置，内含环境文档副本）⇒ 不算本仓文档
 SKIP_PREFIXES = ["loop/state", "loop/.logs", "loop/.venv", "loop/.pytest_cache",
-                 "loop/.agently", "/tmp/", "/home/soft/"]
+                 "loop/.agently", ".env-copy", ".dev-ws", ".wsp", ".tmp-",
+                 "/tmp/", "/home/soft/"]
 HISTORICAL_FILES = ["doc/evidence/demo/", "doc/history/"]
 INLINE = re.compile(r"`([^`\n]{2,200})`")
 #: 明确「本仓不存在、但文档故意引用其缺失」的路径 ⇒ 原因（必须是环境/计划/迁移说明，不是遮羞布）。
@@ -61,6 +63,7 @@ KNOWN_MISSING: dict[str, str] = {
     "kb/tools/compile_only.sh": "审计发现：real N7 引用的工具不存在（A-A5）",
     "workspaces/simenv-tcs9620-64ch/": "约定目标位置；当前数据仍在 ENV_ROOT/kb（ENV_PLUGIN_SPEC §7）",
     "loop/ACCEPTANCE_V1.md": "迁移记录中的旧路径；现行文件为 doc/evidence/ACCEPTANCE_V1.md",
+    "kb/tools/adjudicate_conflicts.py": "计划中待授权新增的 Host 工具（STATUS §83.3 / C 组计划 §3，未落地）",
 }
 LINE_SUFFIX = re.compile(r":\d+(-\d+)?(,\d+(-\d+)?)*$")
 SYMBOL_SUFFIX = re.compile(r"::.*$")
@@ -222,7 +225,9 @@ def scan(roots: Roots, docs_root: Path | None = None) -> Report:
     report = Report()
     for md in sorted(base.rglob("*.md")):
         rel = md.relative_to(base).as_posix()
-        if rel.startswith((".git/", "loop/.venv/", "workspaces/")):
+        # 派生数据根/环境副本（`loop/spikes/*.sh` 预置）内含环境文档副本，不是本仓文档。
+        if rel.startswith((".git/", "loop/.venv/", "workspaces/",
+                           ".env-copy/", ".dev-ws", ".wsp", ".tmp-")):
             continue
         is_historical = any(rel.startswith(p) for p in HISTORICAL_FILES)
         try:

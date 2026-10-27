@@ -57,7 +57,8 @@ if [[ "${INCLUDE_ENV_LAYER:-0}" == "1" ]]; then
   MARK_ARGS=()
   echo "[info] 包含环境层用例（需要可写 ENV_ROOT / 内网冻结见证）" >&2
 else
-  echo "[info] 默认排除环境层用例（-m \"not env_layer\"）；INCLUDE_ENV_LAYER=1 可包含" >&2
+  echo "[info] 默认排除环境层用例（-m \"not env_layer\"）；用 bash spikes/run_env_layer_checks.sh" >&2
+  echo "[info]   在派生 ENV_ROOT 副本上跑这 3 条（本机 ENV_ROOT 只读）；INCLUDE_ENV_LAYER=1 仅在其可写时有效" >&2
   # 打印被排除的用例清单（只收集不执行；规格 §4.1：排除项必须可见）。
   ENV_LAYER_LIST="$("$PY" -m pytest --collect-only -q -m env_layer 2>/dev/null | grep '::' || true)"
   if [[ -n "$ENV_LAYER_LIST" ]]; then

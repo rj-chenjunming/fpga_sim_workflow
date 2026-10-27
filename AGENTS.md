@@ -98,7 +98,13 @@
 > ③ 判据不同（浏览器门验界面行为，单测门验软件行为），失败定位在一个退出码里会变差。
 > **界面（`loop/web/**`）或视图投影（`services/contracts.py` 的界面字段）有改动时必须单独跑它并记入 STATUS。**
 
-> **不得声称「已合规」**：审计发现但未修复的阻断项，必须在 `doc/STATUS.md` 与审计报告中保持可见。
+> **环境层 3 条用例（`@pytest.mark.env_layer`）单独跑**（2026-10-27，C 组 C13）：它们要写 ENV_ROOT 下的
+> `SIMLIB_RUN/`/归档与数据根，而本机 ENV_ROOT 只读 ⇒ 由
+> `cd loop && bash spikes/run_env_layer_checks.sh` 在**派生 ENV_ROOT 副本**上执行（红线 11：原 ENV_ROOT
+> 零写入，脚本用 `find -newer` 自证；副本默认 `<repo>/.env-copy`，`--reuse` 跳过复制、`--cleanup` 删除）。
+> 实测：3 passed、原 ENV_ROOT 零写入（STATUS §83.2）。
+
+
 
 ---
 

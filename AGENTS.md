@@ -85,7 +85,7 @@
 | 门 | 命令 | 期望 |
 |---|---|---|
 | 单测 | `cd loop && LOOP_LLM_MODE=standin .venv/bin/python -m pytest -q` | 收集/通过/失败/跳过分别记录于 STATUS；无回归。**需可写数据根**（见下一行），否则 drill/基线类用例会因缺件失败——那是环境缺件，不是代码缺陷 |
-| kb 自测 | `loop/.venv/bin/python kb/tools/_selftest_gate_schema.py` / `_selftest_n5_reachability.py` | 全部断言通过；需要可写 `WORKSPACE_ROOT` 与历史夹具 |
+| kb 自测 | `cd loop && bash spikes/run_env_layer_checks.sh --with-kb-selftests` | 全部断言通过（`PASS=10` / `PASS=9` / `PASS=28`，`FAIL=0`）。它们**需要可写 `WORKSPACE_ROOT` + 历史夹具**，本机只读 ⇒ 统一入口在**派生 ENV_ROOT 副本**上跑（`kb/tools/_selftest_*.py` 直接跑会在只读真实根上失败，那是环境缺件不是代码缺陷）；产物见 STATUS §94 |
 | 端到端 | `cd loop && bash spikes/accept_v1_run.sh` | 退出成功且断言完整执行，实测见 STATUS。**2026-10-26 实测更正**：全部 phase 走 `mode=drill`，只需**可写数据根**（`bash spikes/provision_dev_workspace.sh` 后指 `LOOP_WORKSPACE`），**不需要**可写 `ENV_ROOT`；跑完 `ENV_ROOT/kb` 零写入（见 STATUS §73） |
 | 文档 | 路径引用存在性 + 移动件有 MIGRATION/横幅 + 数字与 `doc/STATUS.md` 一致 | 零断链 |
 
@@ -98,11 +98,14 @@
 > ③ 判据不同（浏览器门验界面行为，单测门验软件行为），失败定位在一个退出码里会变差。
 > **界面（`loop/web/**`）或视图投影（`services/contracts.py` 的界面字段）有改动时必须单独跑它并记入 STATUS。**
 
-> **环境层 3 条用例（`@pytest.mark.env_layer`）单独跑**（2026-10-27，C 组 C13）：它们要写 ENV_ROOT 下的
-> `SIMLIB_RUN/`/归档与数据根，而本机 ENV_ROOT 只读 ⇒ 由
-> `cd loop && bash spikes/run_env_layer_checks.sh` 在**派生 ENV_ROOT 副本**上执行（红线 11：原 ENV_ROOT
-> 零写入，脚本用 `find -newer` 自证；副本默认 `<repo>/.env-copy`，`--reuse` 跳过复制、`--cleanup` 删除）。
-> 实测：3 passed、原 ENV_ROOT 零写入（STATUS §83.2）。
+> **环境层 3 条用例（`@pytest.mark.env_layer`）与 3 个 kb 自测共用一个入口**（2026-10-27，C 组 C13 + K1）：
+> 它们要写 ENV_ROOT 下的 `SIMLIB_RUN/`、归档与数据根，而本机 ENV_ROOT 只读 ⇒ 由
+> `cd loop && bash spikes/run_env_layer_checks.sh [--with-kb-selftests]` 在**派生 ENV_ROOT 副本**上执行
+> （红线 11：原 ENV_ROOT 零写入，脚本用 `find -newer` 自证；副本默认 `<repo>/.env-copy`，`--reuse` 跳过复制、
+> `--cleanup` 删除、`--dry-run` 只打印计划）。**别再手拼 `LOOP_ENV_ROOT`/`LOOP_WORKSPACE` 去跑
+> `kb/tools/_selftest_*.py`** —— 那就是 K1 要消掉的易错前置（忘了指 ⇒ 在只读真实根上失败）。
+> 实测：`--with-kb-selftests` ⇒ `PASS=10` / `PASS=9` / `PASS=28` + `3 passed`、原 ENV_ROOT 零写入
+> （STATUS §94；不含 kb 自测时 3 passed 见 §83.2）。
 
 
 

@@ -24,8 +24,7 @@
 | 浏览器（补充门） | **114 passed**（124.80 s） | `cd loop && PLAYWRIGHT_BROWSERS_PATH=<repo>/.pw-browsers HOME=<repo>/.chrome-home TMPDIR=<repo>/.chrome-tmp .venv/bin/python -m pytest -q tests/browser` |
 | 端到端 | **ALL PASS，117 断言 / 0 FAIL**（phase 1/2/3/4/4b/5 全 rc=0；50/27/18/8/8/6） | `cd loop && bash spikes/accept_v1_run.sh`（先 `provision_dev_workspace.sh` 并指 `LOOP_WORKSPACE`） |
 | 文档 | **missing=0，exit=0** | `python3 doc/audit/check_doc_links.py` |
-| kb 自测 | `_selftest_gate_schema` **10**、`_selftest_n5_reachability` **9**、`_selftest_adjudicate_conflicts` **28**，FAIL 全 0 | `loop/.venv/bin/python -B kb/tools/_selftest_*.py` |
-| 环境层 | **3 passed / 24 deselected** | `cd loop && bash spikes/run_env_layer_checks.sh` |
+| kb 自测 + 环境层（一个入口） | `_selftest_gate_schema` **10**、`_selftest_n5_reachability` **9**、`_selftest_adjudicate_conflicts` **28**，FAIL 全 0；env_layer **3 passed / 24 deselected** | `cd loop && bash spikes/run_env_layer_checks.sh --with-kb-selftests`（K1 统一入口：两类检查共用同一个派生 ENV_ROOT 副本，原环境零写入，见 STATUS §94） |
 
 ## 3 环境侧只剩三件事（都不在本仓写权内）
 
@@ -76,14 +75,17 @@ cd change-impact-loop && git push origin main
    `I2_CASES_PENDING` / `I3_EVIDENCE_MISSING` / `E2` 等，不是 I4；
 4. 若目标是"演示"：`doc/evidence/DEMO_FIXTURE_20261026.md` 里那套 drill 夹具可直接演四屏；
 5. **别踩的坑**：跑文档门前先 `bash loop/spikes/provision_dev_workspace.sh --cleanup`
-   并删掉 `.env-copy/`（否则派生副本里的环境文档会被算成 missing；2026-10-27 已给检查器加跳过规则，
-   但旧数据根仍建议清）；`loop/.venv/bin/python` 才是带依赖的解释器。
+   并 `bash loop/spikes/run_env_layer_checks.sh --cleanup`（否则派生副本里的环境文档会被算成 missing；
+   2026-10-27 已给检查器加跳过规则，且 `.env-copy/` 已按 K3 清理，但重跑环境类检查后仍要清）；
+   `loop/.venv/bin/python` 才是带依赖的解释器。
 
 ## 6 已知未做（不藏）
 
 - ~~B 组遗留：服务端 403 串仍写"接受失败报告"~~ —— **已关闭（2026-10-27，STATUS §92）**：403 串与成功 warning 统一为"未通过"，判据零变化，证据见 `doc/evidence/SPEC_REV05_RECHECK_20261027.md`。
 - `workspaces/real-env-copy/loop/web/index.html` 是 ignored 的旧版派生副本，仍含已删除的
-  `GATE_DECISIONS_FALLBACK`；不在产品路径，清理归副本 owner。
+  `GATE_DECISIONS_FALLBACK`；不在产品路径。**2026-10-27 K2 处置**：已在该目录加
+  `OBSOLETE-20261027.md`（已过期横幅，带 index.html 的 md5 `6017b1383436d5f99cff41bbfd0f0a10`
+  与 2 处行号）；未删除的理由见横幅与 STATUS §94。
 - 4 条 Tier B-core 的取值是**人给的方向**（C2/C11/C38 以位定义为准、C58 以 DFX_VERSION 为基准），
   作者若另有口径，按追加改判处理。
 - I4 裁决的 actor 是 `human:chenjunming`，但写入由 Host 工具代录（每条 resolution 末尾已注明）；

@@ -4075,3 +4075,114 @@ WITH_REASON_OK warnings= ['报告结论 not_passed：accept 作为未通过收�
 已登记进文档门 `KNOWN_MISSING`，避免把"计划中的文件"算成断链（红线 2：不虚报）。
 
 门：文档 **missing=0、exit=0**；其余门未重跑（本轮只新增/更新文档与文档门登记）。
+
+## 94 开工轮：K1 环境类检查统一入口 + K2/K3 清理（2026-10-27）
+
+本轮按 [`doc/plans/2026-10-27-kickoff-unresolved.md`](plans/2026-10-27-kickoff-unresolved.md) §3 的顺序开工：
+**先验证基线 → K1（本仓可自行推进）→ K2/K3（清理）**；E1/E2/E3/D1–D4 依该单"只登记、不擅自开工"，本轮未动。
+计划与切片见 [`2026-10-27-k1-env-checks-entry.md`](plans/2026-10-27-k1-env-checks-entry.md)。
+
+> **谁跑的、算什么**：下表标「Lead 本轮实测」的是实施者自跑；标「独立验证者」的是 `gate-verifier`
+> （只读、只报告）与 `k1-reviewer`（K1 复核）自跑。**两者都不是"独立复核全部四道门"**——K1 的独立复核只覆盖
+> K1 切片（§94.4）。红线 9：复核者只报告不改。
+
+### 94.1 基线复验（开工第一步，数字全部从命令输出复制）
+
+| 门 | 实得 | 与 §1（979/114/117/missing=0/10·9·28/3） | 出处 |
+|---|---|---|---|
+| 软件层 | `979 passed, 3 deselected, 1 warning in 167.01s`（Lead）/ `169.97s`（独立验证者） | 一致 | 本轮实测 ×2 |
+| 浏览器（补充门） | `114 passed in 118.27s`（首跑）、`130.28s`（复跑） | 一致；**中途 1 次抖动**见 §94.6 | 独立验证者 |
+| 端到端 | `=> ALL PASS`，6 phase `rc=0`，自印 `PASS=50/27/18/8/8/6`、`FAIL=0`（合计 117） | 一致 | 独立验证者 |
+| 文档 | `missing=0`、`exit=0`（复跑；首跑 `missing=1` 是并发写新计划文档的断链，见 §94.6） | 一致 | 独立验证者 |
+| 环境层 | `3 passed, 24 deselected in 6.99s` + `原 ENV_ROOT 零写入（find -newer 命中 0）` | 一致 | 独立验证者 |
+| kb 自测 | `汇总：PASS=10 FAIL=0` / `PASS=9 FAIL=0` / `PASS=28 FAIL=0` | 一致 | 独立验证者 |
+
+⇒ 基线成立，可以动手（kickoff §3 第 1 步的判据）。
+
+### 94.2 K1：环境类检查统一入口（选 kickoff 的选项 ②）
+
+**问题**（可观察）：3 个 kb 自测要**手拼** `LOOP_ENV_ROOT`/`LOOP_WORKSPACE` 指向派生副本；忘了指就在只读真实
+`ENV_ROOT` 上失败，指错根则数字不可比。两类"需要可写环境根"的检查各有各的前置 ⇒ 交接时容易只跑一半。
+
+**做法**：`loop/spikes/run_env_layer_checks.sh` 新增两个开关，派生副本构造逻辑**不新增第二份实现**（红线 8）：
+`--with-kb-selftests`（3 个 kb 自测 + 3 条 env_layer 共用同一个副本）与 `--dry-run`（零副作用：不复制、不执行、不删除）。
+kb 自测要求 `rc=0` + 有汇总行 + `FAIL=0` + **通过条数等于验收数字**（`KB_EXPECT_PASS=(10 9 28)`，退化到 `PASS=0 FAIL=0` 也会红）；
+打印的计划与真执行的命令**共用同一组数组**（`-B` + `PYTHONDONTWRITEBYTECODE=1` 不会各写一遍）。
+
+**TDD 证据**（先红后绿，顺序如实）：
+1. 红：新用例 `loop/tests/test_env_checks_script.py` 首跑 `5 failed in 11.09s`（旧脚本把 `--dry-run` 透传给 pytest、并先做起 2.6 GB 复制）；
+2. 绿：实现后 `5 passed in 0.70s`；
+3. 独立复核提 3 项（§94.4 A/B/C）+ 自查发现 1 项（打印与执行不同源，见 §94.4 下方）→ 补 3 条回归钉后 `8 passed in 2.75s`。
+
+**验收（本切片判据：一条命令输出 `PASS=10/9/28` + `3 passed`）**：
+- 全量重建副本、在**最终版脚本**上跑的那次（Lead 本轮实测，`--with-kb-selftests`，无 `--reuse`）：
+  `[kb] _selftest_gate_schema.py: PASS=10 FAIL=0`、`PASS=9 FAIL=0`、`PASS=28 FAIL=0`；`3 passed, 24 deselected in 9.92s`；
+  `原 ENV_ROOT 零写入（find -newer 命中 0）`；`[summary] ... env_layer rc=0；原 ENV_ROOT 零写入`；`RC=0`（首次全量跑 `15.14s`，同数字）。
+- `--reuse` 复跑（Lead + 独立验证者各一次）：同上数字，`3 passed, 24 deselected in 6.71s` / `7.69s`，`RC=0`。
+- 失败显式（Lead + 复核者各一次，假副本）：`[FAIL] _selftest_gate_schema.py: rc=1 汇总行=PASS=9 FAIL=1；验收数字要求 PASS=10 FAIL=0`，
+  整条命令 `RC=1` —— 没有被吞成"通过/跳过"。
+
+### 94.3 门（本轮改动后）
+
+| 门 | 实得 | 命令 |
+|---|---|---|
+| 软件层 | **`987 passed, 3 deselected, 1 warning in 174.40s`**（基线 979 + K1 新增 8 条用例；不手算，数字来自输出） | `cd loop && bash spikes/run_software_checks.sh --ignore=tests/browser` |
+| kb 自测 + 环境层 | **`PASS=10` / `PASS=9` / `PASS=28` + `3 passed` + 原 ENV_ROOT 零写入** | `cd loop && bash spikes/run_env_layer_checks.sh --with-kb-selftests`（AGENTS §4 新口径） |
+| 文档 | `missing=0`、`exit=0`（提交前收尾复跑；`checked=2137`，`known_missing` 仍 12 条） | `python3 doc/audit/check_doc_links.py` |
+| 端到端 | 未在本轮改动后重跑；**独立验证者**在改动前树上实测 `ALL PASS 117/0`。本切片不改 `loop/` 产品代码、不改流程拓扑，e2e 路径与改动无交集（新增的只是一个 spike 脚本与一个测试文件） | `cd loop && bash spikes/accept_v1_run.sh` |
+| 浏览器（补充门） | 未重跑：本轮**不触碰** `loop/web/**` 与 `services/contracts.py` 的界面字段（AGENTS §4 只在界面/投影有改动时才要求单独跑） | —— |
+
+### 94.4 独立复核（k1-reviewer，只读；8 条判定 + 3 项缺陷）
+
+判定：① 默认行为零变化 PASS ② 一条命令验收 PASS ③ 失败显式 PASS ④ 红线 8（`cp -a` 全仓仅 1 处、路径仍走 `kb_lib`）PASS
+⑤ 红线 11（三次跑完 `find kb/tools -name '*.pyc' -newermt '-60 minutes'` 空）PASS ⑥ 用例非空断言**基本 PASS 但有缺口**
+⑦ 文档一致性 **FAIL（两处）** ⑧ K2 横幅 PASS。缺陷与处置：
+
+| # | 缺陷（复核者原样报告） | 处置 |
+|---|---|---|
+| **A** | `--dry-run --cleanup` **会真的删副本**（cleanup 分支在 dry-run 之前）⇒ 默认 COPY 下等于误删 `.env-copy` | **已修**：cleanup 分支先判 `DRY_RUN`，只打印"将删除"；新增回归钉 `test_dry_run_cleanup_is_zero_side_effect` |
+| **B** | 判据不 pin 条数 ⇒ 自测退化成 `PASS=0 FAIL=0` 也算通过；而 K1 的 10/9/28 只活在人眼里 | **已修**：`KB_EXPECT_PASS=(10 9 28)` 逐项比对，不符即红并打印"验收数字要求 PASS=n FAIL=0"；本节的数字就是这条判据的落账处 |
+| **C** | 失败时 `[summary]` 仍写"3 项"却只列通过项；`--help` 用 `sed -n '2,42p'` 会打出实现代码 | **已修**：失败项也进 `[summary]`（`FAIL(rc=..)`）；`--help` 改为只打印头部注释（遇非注释行即停） |
+| 缺口 | 红线 11 的 `-B` 断言只检查"打印的计划"，不保护真执行行（复核者 M1 变异仍全绿） | **已缓解**：真执行与打印共用同一组数组（`KB_ENV`/`RUN_ENV`），改一处两边同时变；复核者 M1 手段（只改一处）不再能造成"打印有 `-B`、执行没有" |
+| 缺口 | `PASS=0 FAIL=0` 退化无独立自动用例 | **登记**：由 pin 比对覆盖（与"条数不符"同一条代码路径），本轮不额外造钩子（YAGNI）；复核者用代码审查确认 |
+| 文档 ⑦a | 四份文档引 `STATUS §94` 而 STATUS 末节还是 §93（悬空引用；文档门只查路径不查锚点） | **已修**：本节即 §94 |
+| 文档 ⑦b | `doc/plans/2026-10-27-kickoff-unresolved.md` §"五、常用命令"仍教手拼 `LOOP_ENV_ROOT`，与 AGENTS §4 矛盾 | **已修**：改为统一入口命令，并写明"不要再手拼" |
+| **自查 ⑨** | 不是复核者提的，是提交前看 `git diff` 自查发现的：`KB_ENV`（副本数据根变量）定义在 `--dry-run` 分支**之后** ⇒ 打印出的 env_layer 命令**静默少了** `LOOP_ENV_ROOT`/`LOOP_WORKSPACE`（打印与执行两套东西，计划不能照着执行） | **已修**：`KB_ENV` 提前到 dry-run 之前定义，打印与执行同源；新增回归钉 `test_printed_plan_carries_the_same_env_as_the_real_run`（红→绿）。**为什么原来的用例没接住**：第 2/4 条只断言"计划里有 py 文件/有 `-B`"，不查数据根 —— 这条钉补上 |
+
+### 94.5 K2：旧派生副本加"已过期"横幅（未删除，理由显式）
+
+`workspaces/real-env-copy/OBSOLETE-20261027.md`（红线 12：历史快照必须带横幅）：写明它不是产品代码、不是界面验收对象，
+`loop/web/index.html` md5 `6017b1383436d5f99cff41bbfd0f0a10`（87 425 B，mtime 2026-10-15 17:11:55）、
+`GATE_DECISIONS_FALLBACK` 2 处（`:359` 定义、`:381` 使用）；复核者按实物核过 md5 与行号（PASS）。
+
+**为什么没删**（kickoff 允许二选一，选横幅）：① 目录内含 2026-10-22 真实执行留痕（`SIMLIB_RUN/` 约 978 MB、`kb/` 约 1.1 GB），
+本机 `ENV_ROOT` 只读、真实通过轮约 21.56 h（[C8 评估](plans/2026-10-27-c8-feasibility.md)）⇒ 删了本机无法再生成同类留痕；
+② `doc/evidence/**`、`doc/STATUS.md` 的历史节按 `workspaces/real-env-copy` 这个路径记录当时环境，删除会让只增不改的记录指向不存在的路径
+（文档门会红，而证据目录不许回填）。`git status` 不受影响（`workspaces/*/` 已忽略）。
+
+### 94.6 K3 清理 + 两条如实登记的异常
+
+- **K3**：`bash loop/spikes/run_env_layer_checks.sh --cleanup` ⇒ `[OK] 已删除派生 ENV_ROOT：<repo>/.env-copy`；
+  `du -sh` 由 `2.6G` 变为目录不存在。裁决快照仍在 `doc/evidence/adjudication_20261027/`；重建用同一脚本（无 `--reuse` 时全量复制，
+  本轮那次全量重建实测 `RC=0`，之后才清理）。**注**：本轮为跑验收重建过 `.env-copy`，因此那份副本里**没有**已落账的裁决数据根
+  ——权威数据在 `doc/evidence/adjudication_20261027/`，需要时 `apply_conflict_adjudication.sh` 重放（§87）。
+- **浏览器门抖动（独立验证者，如实登记）**：首跑 `114 passed`、复跑 `114 passed`，**中途有一次** `1 failed, 113 passed in 137.24s`
+  （`tests/browser/test_run_sessions.py::test_characterization_double_click_and_rejection_keep_draft`，`#viewGate` `to_be_visible`）；
+  该用例孤立重跑 `1 passed in 1.56s`。测试用 `ThreadingHTTPServer(("127.0.0.1", 0))` 随机端口 + `page.route` mock ⇒ 判定为负载下的
+  UI 时序抖动，**不是代码回归、也不当通过**（该门本轮未在改动后被要求重跑，见 §94.3）。
+- **文档门首跑 `missing=1`（独立验证者，如实登记）**：`[MISSING] doc/plans/2026-10-27-k1-env-checks-entry.md:48 loop/tests/test_env_checks_script.py`
+  —— 是 Lead 先写计划文档、后落测试文件的并发窗口造成的**自造断链**，不是基线缺陷；测试文件落地后复跑 `missing=0`
+  （不是靠 `KNOWN_MISSING` 放行：`known_missing` 仍 12 条，只改了 `run_env_checks.sh` 那行的**理由文案**）。
+
+### 94.7 未闭合项（本仓写权之外，不擅自开工）
+
+1. **E1 I4 真实生效**：仍缺**可写真实数据根**（`<ENV_ROOT>` 在 `/home` 的 `ro,nosuid,nodev` 挂载上）。本轮没有拿到 ⇒ 未做；
+   取得后按 kickoff E1 跑 `apply_conflict_adjudication.sh --workspace <ws>`，验收 `blocks_release=0` + `G3` 通过 +
+   `N16` 不含 `I4_CONFLICTS_UNCLEARED`。
+2. **E2（S0-b 接入）/ E3（C8 passed 夹具）**：环境侧开发与真实通过轮，本仓侧只等"接入后改一处判据"。
+3. **D1（4 条 B-core 取值待作者确认）/ D2（代录署名）/ D3（C11-B）/ D4（C12-B）**：需人裁决；D3/D4 必须先改规格。
+4. **E4 推送**：本机出网被代理阻断，`git push` 由人在可出网机器做（本轮新增提交同样待推）。
+5. `run_env_checks.sh` **不存在**（K1 选②）：`KNOWN_MISSING` 保留该条但理由改为"选项①未采用"，不伪造文件。
+
+一致性：§94.2/§94.3 的命令与数字均从命令输出复制；`AGENTS.md §4`、`doc/plans/2026-10-27-c-group-handover.md` §2、
+`doc/plans/2026-10-27-kickoff-unresolved.md` §2 K1/K2/K3 行与本节的命令、数字**同一套写法**（红线 2/8）。

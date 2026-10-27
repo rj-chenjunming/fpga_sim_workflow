@@ -61,7 +61,7 @@ INLINE = re.compile(r"`([^`\n]{2,200})`")
 #: 明确「本仓不存在、但文档故意引用其缺失」的路径 ⇒ 原因（必须是环境/计划/迁移说明，不是遮羞布）。
 KNOWN_MISSING: dict[str, str] = {
     "kb/tools/compile_only.sh": "审计发现：real N7 引用的工具不存在（A-A5）",
-    "loop/spikes/run_env_checks.sh": "K1 计划新增的环境类检查统一入口（未落地，见 doc/plans/2026-10-27-kickoff-unresolved.md）",
+    "loop/spikes/run_env_checks.sh": "K1 的选项①**未采用**（2026-10-27 选②：`run_env_layer_checks.sh --with-kb-selftests`）；此路径只出现在计划文本里，本仓不会创建 —— 见 doc/plans/2026-10-27-k1-env-checks-entry.md §1、STATUS §94",
     "workspaces/simenv-tcs9620-64ch/": "约定目标位置；当前数据仍在 ENV_ROOT/kb（ENV_PLUGIN_SPEC §7）",
     "loop/ACCEPTANCE_V1.md": "迁移记录中的旧路径；现行文件为 doc/evidence/ACCEPTANCE_V1.md",
 }

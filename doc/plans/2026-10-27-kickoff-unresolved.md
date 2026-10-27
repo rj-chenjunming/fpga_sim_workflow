@@ -18,6 +18,10 @@
 | 环境硬限制 | `<ENV_ROOT>` 在 `/home` 的 **ro 挂载**上（`ro,nosuid,nodev`）⇒ 任何写 `ENV_ROOT` 的动作都不可行（含红线 11 允许的 `SIMLIB_RUN/`） |
 | 磁盘 | `.env-copy/` 2.6 GB（派生 ENV_ROOT，含已签裁决数据根；git 已忽略）；`workspaces/real-env-copy/` 为旧派生副本（ignored） |
 
+> **2026-10-27 开工轮更新（本表是收工时快照，不回溯改）**：K1 已落地（一条命令跑 kb 自测 + env_layer）、
+> K2 已加过期横幅、K3 已清理 `.env-copy`；软件层门因新增 K1 用例不再是 979。数字与命令见
+> [STATUS §94](../STATUS.md)，未闭合项仍是 E1/E2/E3/D1–D4（环境侧或需人裁决）。
+
 ## 2 未修复清单（按"谁能推进"分类）
 
 ### E 类：环境侧才能推进（本仓已把动作固化成命令/runbook）
@@ -42,9 +46,9 @@
 
 | 编号 | 事项 | 现状 | 怎么做 | 验收 |
 |---|---|---|---|---|
-| **K1** | **kb 自测没有入口脚本**：目前要手动 `LOOP_ENV_ROOT/LOOP_WORKSPACE` 指向派生副本（`_selftest_gate_schema.py` 直接跑会在真实 ENV_ROOT 上失败） | 本轮是手动跑的（10 / 9 / 28） | 二选一：① 新增 `loop/spikes/run_env_checks.sh`，先建/复用派生副本再跑 3 个 kb 自测 + 3 条 env_layer；② 或让 `run_env_layer_checks.sh` 加 `--with-kb-selftests` | 一条命令输出 `PASS=10` / `PASS=9` / `PASS=28` + `3 passed`；更新 `AGENTS.md §4` 与交接单 |
-| **K2** | **旧派生副本 `workspaces/real-env-copy/` 仍在**，其中 `loop/web/index.html` 含已删除的 `GATE_DECISIONS_FALLBACK`（2 处） | ignored 目录、不在产品路径；归副本 owner | 删除该副本，或在其内加"已过期"横幅说明不可作为新版前端验收对象 | 目录消失或带横幅；`git status` 不受影响 |
-| **K3** | `.env-copy/` 2.6 GB 占盘（含已签裁决的派生数据根） | 裁决快照已入仓，删了不丢权威数据 | `bash loop/spikes/run_env_layer_checks.sh --cleanup`（下次重建约 10 s） | 目录消失；需要时能重建 |
+| **K1** | **kb 自测没有入口脚本**：目前要手动 `LOOP_ENV_ROOT/LOOP_WORKSPACE` 指向派生副本（`_selftest_gate_schema.py` 直接跑会在真实 ENV_ROOT 上失败） | ✅ **已完成（2026-10-27，选 ②）**：`run_env_layer_checks.sh --with-kb-selftests` 一条命令跑 3 个 kb 自测 + 3 条 env_layer，共用同一个派生副本；实测 `PASS=10/9/28` + `3 passed`、原 ENV_ROOT 零写入（[STATUS §94](../STATUS.md)） | 二选一：① 新增 `loop/spikes/run_env_checks.sh`，先建/复用派生副本再跑 3 个 kb 自测 + 3 条 env_layer；② 或让 `run_env_layer_checks.sh` 加 `--with-kb-selftests` | 一条命令输出 `PASS=10` / `PASS=9` / `PASS=28` + `3 passed`；更新 `AGENTS.md §4` 与交接单 |
+| **K2** | **旧派生副本 `workspaces/real-env-copy/` 仍在**，其中 `loop/web/index.html` 含已删除的 `GATE_DECISIONS_FALLBACK`（2 处） | ✅ **已加过期横幅（2026-10-27）**：`workspaces/real-env-copy/OBSOLETE-20261027.md`（带 index.html 的 md5 与 2 处行号）。**未删除**的理由：内含 2026-10-22 真实执行的 `SIMLIB_RUN/`（978 MB）与 `kb/`（1.1 GB）留痕，且冻结证据按该路径引用当时环境（删了文档门会红） | 删除该副本，或在其内加"已过期"横幅说明不可作为新版前端验收对象 | 目录消失或带横幅；`git status` 不受影响 |
+| **K3** | `.env-copy/` 2.6 GB 占盘（含已签裁决的派生数据根） | ✅ **已清理（2026-10-27）**：`run_env_layer_checks.sh --cleanup` 执行后目录消失（`du -sh` 2.6 G → 不存在）；裁决快照仍在 `doc/evidence/adjudication_20261027/`，需要时重建见 STATUS §94 | `bash loop/spikes/run_env_layer_checks.sh --cleanup`（下次重建约 10 s） | 目录消失；需要时能重建 |
 | **K4** | 环境层/浏览器门的"必须单独跑"口径只在 AGENTS 与交接单里 | 已在 `AGENTS.md §4` 写明 | 可选：在 `doc/plans/` 里补一条"门清单"单页，或在 `loop/README.md` 里加门命令表 | 新窗口按文档能跑通四道门 + 两道补充门 |
 
 ### R 类：登记不改（有理由，别当缺陷重开）
@@ -118,8 +122,9 @@
     LOOP_WORKSPACE=$PWD/../.dev-ws bash spikes/accept_v1_run.sh   # 跑完 provision --cleanup
 - 文档门：python3 doc/audit/check_doc_links.py    # 跑前先删仓内临时数据根（.dev-ws/.env-copy 已加跳过规则）
 - 环境层：cd loop && bash spikes/run_env_layer_checks.sh          # 3 passed，自证原 ENV_ROOT 零写入
-- kb 自测：LOOP_ENV_ROOT=<repo>/.env-copy LOOP_WORKSPACE=<repo>/.env-copy/kb \
-    loop/.venv/bin/python -B kb/tools/_selftest_gate_schema.py    # 同理 n5 / adjudicate
+- kb 自测：cd loop && bash spikes/run_env_layer_checks.sh --with-kb-selftests --reuse
+    # 一条命令 = 3 个 kb 自测（PASS=10/9/28）+ 3 条 env_layer，共用派生副本（K1，2026-10-27）
+    # **不要再手拼 LOOP_ENV_ROOT/LOOP_WORKSPACE**：忘了指就在只读真实根上失败（AGENTS.md §4）
 
 六、汇报格式（每完成一项）
 1) 做了什么（改了哪些文件）2) 判据/为什么这么改 3) 命令与输出数字 4) 门的结果 5) 未闭合项与下一步建议。

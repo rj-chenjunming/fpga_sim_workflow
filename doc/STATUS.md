@@ -4641,3 +4641,12 @@ bash loop/spikes/provision_dev_workspace.sh --cleanup     # 跑完删掉
 - 软件层：**`1053 passed, 3 deselected, 1 warning in 186.47s`**。
 - 文档门：`missing=0`、`exit=0`。
 - 三文件定向用例：**96 passed**。
+
+
+### 102.17 收尾与清理
+
+- **保留**：`.s0-test/`（122 MB，S0 记录：records/records2/records3/records4，含真实环境副本上跑出的
+  `ready=true` 记录）与 `workspaces/s0b-verify/`（288 KB，五轮独立复核的 REPORT + 复现脚本，gitignored）。
+- **清理**：`.s0-work*/`（每份 2.6 G ×4）、`.s0-rtl/`（271 M）、`.env-copy/`（2.6 G）已删除（共约 11 GB）；
+  需要重跑真实链路时按 §102.3 重新派生即可（复制约 10 s + 清 30 个历史沙箱软链）。
+- 本地 `.git/info/exclude` 增加 `.s0-work*/`、`.s0-test*/`、`.s0-rtl*/`，文档门检查器跳过前缀 `.s0-`（用例已覆盖）。

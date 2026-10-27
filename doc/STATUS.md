@@ -3394,7 +3394,21 @@ A3 旧界面判据来源、A2 委托后脚本行为一致、A4 的 AGENTS 段落
 | 落点 | `LOOP_ORCHESTRATION_SPEC §10.4.2` 新增「drill 的 reason attestation 与逐条处置的关系（裁决 B2）」；`WEB_UI_SPEC §5` 该 flag 处加交叉引用（界面不受影响）；钉子 `tests/test_fix_lifecycle.py::test_g1_drill_entry_decisions_replace_the_attestation`（覆盖不全仍拒 + 覆盖全部时无 reason 也放行） |
 | 钉子的判别性 | 若将来收紧成"两者都要"，该用例第二次调用（`reason=None`）立刻红；若放宽成"给几条就算"，第一次调用（覆盖不全）立刻红 —— 两个方向都被钉住 |
 
-### 82.4 B 组剩余待裁决
+### 82.4 B 组剩余：推送 —— **本机沙箱不可达，待人工推送**
 
-1. **推送**：15 个提交未推（需要新 PAT；旧 PAT 已在对话暴露，建议先作废）。
-2. B 组其余项已清：决策项文案（§82.1）、drill 直给逐条处置（§82.3）、复核报告落档（§81.8）。
+2026-10-27 实测（本机）：`git push origin main` 报
+`fatal: … Received HTTP code 503 from proxy after CONNECT`；复测 `curl https://github.com/`
+经代理 20 s 超时、`direct=000`（清空代理变量后直连亦不可达）、`ssh git@github.com` 无法解析主机名。
+⇒ **不是凭据问题，是本机出网被代理阻断**。因此当时 16 个提交（`dd587e6..4a512a4`）留在本地、**未推送**；本条登记提交本身会让待推数 +1（不在此回填绝对数）。
+需要人工在能出网的机器上执行：
+
+```bash
+cd change-impact-loop
+git push origin main          # 或 gh-ssh（若该机已配 SSH key）
+```
+
+凭据处理：PAT 由人工在对话中提供，仅在一次性 `credential.helper` 里以环境变量使用，
+**未写入 `.git/config` / `~/.git-credentials` / 任何文件**（推前推后均核过）；
+既然已在对话中出现，**建议立即在 GitHub 上作废并重签**。
+
+B 组其余项已清：决策项文案（§82.1）、drill 直给逐条处置（§82.3）、复核报告落档（§81.8）。

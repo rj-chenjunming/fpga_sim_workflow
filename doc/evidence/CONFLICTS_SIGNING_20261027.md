@@ -1,6 +1,6 @@
 # 冲突清单 68 条批量裁决 · 待签草案（2026-10-27）
 
-> **状态：待签，未执行。** 本文件只准备**判据 + 命令**；裁决必须由**人**执行
+> **状态：已定值（2026-10-27 人裁决），待人工执行签字。** 本文件只准备**判据 + 命令**；裁决必须由**人**执行
 > （`kb/tools/adjudicate_conflicts.py` 强制 `--actor human:<name>`，模型不得自签，schema 原文同理）。
 > 草案中的 `human:<你的名字>`、`<可写数据根的 conflicts/>` 都是占位符，落地前替换。
 
@@ -91,7 +91,27 @@ python3 "$REPO/kb/tools/adjudicate_conflicts.py" --outdir "$OUTDIR" --verify
 # 预期：--list 显示仍阻断发版 = 4（只剩 C2/C11/C38/C58）；--verify 全部一致
 ```
 
-## 3 4 条 Tier B-core（**不能批量**，需定值或标 `confirmed`）
+## 2.5 定值记录（2026-10-27，人给定；命令见 `conflicts_sign_20261027.sh`）
+
+| id | 定值 | 依据（人给的方向） |
+|---|---|---|
+| C2 | 以**位定义** `2023_0911` | 两表打架时以位定义表为准（逐位、可执行）；汇总 `0x2023_0804` 登记勘误 |
+| C11 | 以**位定义** `0x0` | 同上；汇总 `0x5555aaaa`（自测图案）登记勘误 |
+| C38 | 以**位定义逐位推导** `0xF0`（bit7:4=0xf、bit0=0） | 同上；汇总 `0x10` 登记勘误 |
+| C58 | 以 **`DFX_VERSION=0x25092913`（≈2025-09-29）** 为版本/日期基准 | 版本基准取"可自证的最新受控版本"；`0x0004` 的 2023 值登记为历史遗留 |
+
+68 条批量结论见 §2 各组命令内的 `--resolution`（原文即 triage §4.1 的批量规则）。
+
+**一键签署**（执行人 = 人；脚本不含名字）：
+
+```bash
+ACTOR=human:<你的名字> OUTDIR=<可写数据根的 conflicts/> \
+  bash doc/evidence/conflicts_sign_20261027.sh --dry-run   # 先空跑
+ACTOR=human:<你的名字> OUTDIR=<可写数据根的 conflicts/> \
+  bash doc/evidence/conflicts_sign_20261027.sh             # 真签 + 自动 --list/--verify
+```
+
+## 3 4 条 Tier B-core（定值已给，见 §2.5；下表保留两方取值备查）
 
 triage §5.1 点名的 4 条：两个取值都合法，批量规则替不了。
 

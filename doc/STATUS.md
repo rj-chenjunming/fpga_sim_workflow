@@ -3849,3 +3849,66 @@ POST /api/runs/{run_id}/jobs/{job_id}/cancel
 
 C8 通过形态夹具（需真实通过轮或环境写权）、C9 S0-b 接入（环境侧 D1–D5）、
 C12 运行入口消费 S0（需求未定）、I4 真实生效（需环境侧给可写数据根）。
+
+---
+
+## 89 C 组修订（七）：C12 运行入口对 S0 记录「传了才校验」（2026-10-27）
+
+人于 2026-10-27 裁决选项 A：**做"传了才校验"**（小切片），不做"全并入运行入口"（B），
+也不只登记（C）。
+
+### 89.1 事实（先确认现状是规格写明的不消费，不是缺陷）
+
+| 项 | 事实 |
+|---|---|
+| API | `POST /api/runs` 早已接受**可选** `s0_record_id`（格式 `^S0-[A-Za-z0-9_-]+$`，非法 400），写进 run 文档并投影到 run/node 视图 |
+| 界面 | 运行配置视图**没有** S0 选择器 ⇒ UI 从不传 ⇒ `s0_record_id` 恒 null；右侧徽标如实显示「未经 S0 派生」 |
+| 规格 | `S0_ENVIRONMENT_SPEC §6.1` 原文：「`ready_for_execution` 当前恒为 false 且**不被任何运行入口消费**」；要并入须**显式选项**、不改 N0–N16 与 `project==ENV_ROOT` |
+| 已规划的验收 | 同规格 §8.5 写着「`ready_for_execution=false` 时 `real` 启动 **400** 且原因可读」 |
+
+### 89.2 实现（`services/api.py`）
+
+新增 `_check_s0_record_for_run(record_id, mode)`，在 `create_run` 解析完 `s0_record_id` 后调用。
+**传了才校验，不传不强制**：
+
+| 情形 | 判据 |
+|---|---|
+| `mode=real` + 传了 | 记录必须存在（否则 400「S0 记录不存在：…」）；且 `ready_for_execution is True`（否则 400「尚未准出（ready_for_execution=false）⇒ real 运行被拒；可改用 mode=drill，或先完成 S0-b」） |
+| `mode≠real`（drill/rehearsal）+ 传了 | **只做格式校验**（来源徽标语义；drill 不覆盖 S0）——不存在的 id 也不拦（既有 roundtrip 用例依赖此语义） |
+| 没传 | 不强制（现状路径零影响） |
+
+**测试暴露的关键事实**：`S0Store.get()` 会把 `ready_for_execution` **归一为 false**（S0 §3 恒假，
+防止记录文件自称准出）⇒ S0-b 接入前「real + 带 S0 记录」**一律被拒**。这是有意的 fail-closed：
+没准出的副本不许真跑；准出只能由真实核验产生。S0-b 接入后 `get()` 才可能返回 true，判据自然放行。
+
+### 89.3 钉子（4 条，含反例方向）
+
+`loop/tests/test_s0.py`：
+
+1. `test_run_entry_rejects_missing_s0_record_for_real`：real + 不存在 ⇒ 400 且含"不存在"；
+2. `test_run_entry_rejects_unready_s0_record_for_real`：real + 未准出 ⇒ 400 含"未准出"/
+   "ready_for_execution=false"，并提示"drill"/"S0-b"；
+3. `test_run_entry_rejects_even_file_claimed_ready_record_for_real`：**记录文件写 `true` 也拒**
+   （`get()` 归一）——防"改文件伪造准出"；
+4. `test_run_entry_drill_and_empty_record_id_are_not_checked`：drill 传不存在 id 不拦、不传不强制
+   ——固定"不扩大到 drill/不强制"的边界，防止以后再收紧时误伤演示路径。
+
+### 89.4 规格
+
+- `S0_ENVIRONMENT_SPEC §6.1`：把"不被任何运行入口消费"改写为「恒为 false（get() 归一）+ 运行入口
+  **传了才校验**」的三条规则（real 严、drill 徽标、不传不强制），并明说**不表示 S0 已并入执行入口**；
+- `S0_ENVIRONMENT_SPEC §8.5`：把「real 启动 400」标记为**部分完成**（本切片），S0-b 其余验收仍未做；
+- `WEB_UI_SPEC §6.4`：`POST /api/runs` 扩展补 `s0_record_id` 的 400 规则与判据出处。
+
+### 89.5 本轮门
+
+| 门 | 结果 | 说明 |
+|---|---|---|
+| 软件层 | **979 passed / 3 deselected / 0 failed**（168.64 s） | 较上轮 975 多 4 条 = 本节新增用例 |
+| 文档 | **missing=0、exit=0** | 改 2 份规格 + 计划 + 本节 |
+| 浏览器 / 端到端 | 未重跑 | 本轮未改前端、未改工作流/API 路径（只加提交前校验） |
+
+### 89.6 C 组剩余
+
+C8 通过形态夹具（需真实通过轮或环境写权）、C9 S0-b 接入（环境侧 D1–D5，本切片只做了它 §8.5 的一条前置）、
+I4 真实生效（需环境侧给可写数据根）。

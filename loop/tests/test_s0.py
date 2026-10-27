@@ -350,3 +350,69 @@ def test_api_prepare_list_get_report_and_errors(setup_s0, monkeypatch):
     assert client.post('/api/s0', json=payload).status_code == 409
     assert client.post('/api/s0', json={}).status_code == 400
     assert client.get('/api/s0/S0-missing').status_code == 404
+
+
+# ---------------------------------------------------------------- C12（2026-10-27）：运行入口传了才校验
+
+def _write_s0_record(record_id: str, *, ready: bool) -> None:
+    """在测试 state 的 S0 记录根下写一条最小记录（不跑 prepare，避免依赖路径权限）。"""
+    from host import paths as P
+
+    folder = P.STATE_DIR / "s0" / record_id
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / "record.json").write_text(json.dumps({
+        "id": record_id, "status": "failed", "ready_for_execution": ready,
+        "work_env": "/fixture/work", "created_at": "2026-10-27T00:00:00+0800",
+        "baseline_version": "fixture",
+    }), encoding="utf-8")
+
+
+def test_run_entry_rejects_missing_s0_record_for_real():
+    """C12：real + 传了不存在的记录 ⇒ 400，且原因可读（不得放行后再说）。"""
+    from fastapi import HTTPException
+
+    from services.api import _check_s0_record_for_run
+
+    with pytest.raises(HTTPException) as excinfo:
+        _check_s0_record_for_run("S0-NOT-EXIST-01", "real")
+    assert excinfo.value.status_code == 400
+    assert "不存在" in excinfo.value.detail["error"]
+
+
+def test_run_entry_rejects_unready_s0_record_for_real():
+    """C12：real + 记录未准出（ready_for_execution=false）⇒ 400，提示改 drill 或先做 S0-b。"""
+    from fastapi import HTTPException
+
+    from services.api import _check_s0_record_for_run
+
+    rid = "S0-FIXTURE-UNREADY"
+    _write_s0_record(rid, ready=False)
+    with pytest.raises(HTTPException) as excinfo:
+        _check_s0_record_for_run(rid, "real")
+    error = excinfo.value.detail["error"]
+    assert "未准出" in error and "ready_for_execution=false" in error
+    assert "drill" in error and "S0-b" in error
+
+
+def test_run_entry_rejects_even_file_claimed_ready_record_for_real():
+    """C12 + S0 §3：`S0Store.get()` 把 `ready_for_execution` **归一为 false**（S0-b 未接入时恒假）
+    ⇒ 即便记录文件里写 `true`，real 仍被拒：准出只能由真实核验产生，不能被文件声明伪造。
+    （S0-b 接入后 `get()` 才可能返回 true，那时本用例应改成"允许"，属接入轮的验收项。）
+    """
+    from fastapi import HTTPException
+
+    from services.api import _check_s0_record_for_run
+
+    rid = "S0-FIXTURE-CLAIMS-READY"
+    _write_s0_record(rid, ready=True)
+    with pytest.raises(HTTPException) as excinfo:
+        _check_s0_record_for_run(rid, "real")
+    assert "未准出" in excinfo.value.detail["error"]
+
+
+def test_run_entry_drill_and_empty_record_id_are_not_checked():
+    """C12：drill 不覆盖 S0（徽标语义）⇒ 不存在的 id 也不拦；不传 ⇒ 不强制。"""
+    from services.api import _check_s0_record_for_run
+
+    _check_s0_record_for_run("S0-NOT-EXIST-01", "drill")   # 不抛
+    _check_s0_record_for_run(None, "real")                  # 不抛（不强制 S0）

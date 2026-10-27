@@ -226,6 +226,40 @@ def _s0_record_id(value: Any) -> str | None:
     return value
 
 
+def _check_s0_record_for_run(record_id: str | None, mode: str | None) -> None:
+    """C12（2026-10-27 裁决 A）：S0 记录**传了才校验**，不传不强制。
+
+    为什么只对 `real` 校验：drill 不覆盖 S0（S0_ENVIRONMENT_SPEC §6.1「drill 不覆盖 S0」），
+    `s0_record_id` 在 drill 下只是来源徽标；而 `real` 是要拿环境真跑的，若记录没准出
+    （`ready_for_execution != true`）就必须**在提交前**拒绝（AGENTS.md §2 硬性纪律 5），
+    不能默认兜底（S0_ENVIRONMENT_SPEC §8.4 第 4 条）。
+
+    S0-b 未接入时 `S0Store.get()` 会把 `ready_for_execution` **归一为 false**（S0 §3 恒假）
+    ⇒ 该规则等于"real + 带 S0 记录 一律拒"，这是**有意的 fail-closed**：没准出的副本不许真跑，
+    且准出只能由真实核验产生、不能被记录文件自称（文件写 true 也会被 get() 归一回 false）。
+    要用 real 就别带 S0 记录（现状），或先把 S0-b（接口适配 + 三库冒烟）做完；
+    S0-b 接入后 `get()` 才可能返回 true，届时本判据自然放行。
+    """
+    if not record_id or (mode or "drill") != "real":
+        return
+    try:
+        record = _s0_store().get(record_id)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=400, detail={
+            "error": (f"S0 记录不存在：{record_id}（s0_record_id 必须是已存在的准备记录；"
+                      "省略表示未经 S0 派生）"),
+        }) from exc
+    except (ValueError, PermissionError) as exc:
+        raise HTTPException(status_code=400, detail={
+            "error": f"S0 记录不可用：{record_id}：{exc}",
+        }) from exc
+    if record.get("ready_for_execution") is not True:
+        raise HTTPException(status_code=400, detail={
+            "error": (f"该 S0 记录尚未准出（ready_for_execution=false）：{record_id} ⇒ real 运行被拒。"
+                      "可改用 mode=drill，或先完成 S0-b（TB 接口适配 + 三库冒烟）后再跑。"),
+        })
+
+
 @app.post("/api/runs")
 async def create_run(payload: dict[str, Any] = Body(default={})) -> dict[str, Any]:
     # 缺省语义只在入口解析一次（RunManager.start → host.baseline.normalize）；
@@ -242,6 +276,7 @@ async def create_run(payload: dict[str, Any] = Body(default={})) -> dict[str, An
         })
     manager = _manager()
     s0_record_id = _s0_record_id(payload.get("s0_record_id"))
+    _check_s0_record_for_run(s0_record_id, mode)   # C12：传了才校验（real 必须准出）
     try:
         run_id = await manager.start(baseline=baseline, mode=mode, scenario=scenario,
                                      now=payload.get("now"), project=str(project),

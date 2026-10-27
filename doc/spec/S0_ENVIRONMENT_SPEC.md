@@ -72,8 +72,17 @@ Host `loop/host/s0.py` 是派生及核验的唯一写者；API 传输、UI 投�
 
 - S0 是**运行前置准备**，不是 N0；S0 记录独立于 run，不得把 N0 改名为 S0，也不得静默切换进程 `ENV_ROOT`。
 - run 文档必须带 `s0_record_id`（可空）。为空时运行视图显示"**未经 S0 派生**"（[SPEC-04](WEB_UI_SPEC.md) §4.5）。
-- S0 记录的 `ready_for_execution` 当前**恒为 false 且不被任何运行入口消费**：S0 只作环境来源声明，
-  不作执行准入；S0-b 接入前，任何"就绪/准出"说法都不成立（§3）。
+- S0 记录的 `ready_for_execution` 当前**恒为 false**（`S0Store.get()` 归一，§3）：S0-b 接入前，
+  任何"就绪/准出"说法都不成立。
+- **运行入口的消费规则（2026-10-27 裁决 C12，传了才校验）**：`POST /api/runs` 的 `s0_record_id`
+  仍然**可选、不强制**；但一旦传了：
+  - `mode=real` ⇒ 记录必须存在（否则 400「S0 记录不存在」）且 `ready_for_execution=true`
+    （否则 400「尚未准出 ⇒ real 运行被拒；可改用 drill 或先完成 S0-b」）。
+    由于 `get()` 归一为 false，S0-b 接入前**real + 带 S0 记录一律拒**（有意的 fail-closed：
+    没准出的副本不许真跑；准出不能被记录文件自称伪造）。
+  - `mode≠real`（drill/rehearsal）⇒ **只做格式校验**，`s0_record_id` 只是来源徽标
+    （drill 不覆盖 S0），不存在的 id 也不拦。
+  该规则不改 N0–N16 拓扑、不改 `project == ENV_ROOT` 约束，也**不**表示 S0 已并入执行入口。
 - **禁止**用 drill 结果声称 S0 通过；**禁止**以"run 跑完了"暗示环境已按 S0 派生。
 - 若后续要把 S0 并入运行入口，必须是**显式选项**（如 drill 的 `s0_rehearsal`），且不得改变 N0–N16 拓扑、
   三道闸门与 `project == ENV_ROOT` 约束；未声明时默认不跑 S0。
@@ -173,7 +182,8 @@ Host `loop/host/s0.py` 是派生及核验的唯一写者；API 传输、UI 投�
 
 ### 8.5 验收（接入轮）
 
-- 先跑既有 `loop/tests/test_s0.py` 不改期望，再新增失败用例：接口差异为空 ⇒ `ports` 不 passed；三库 error>0 ⇒ `smoke=failed` 且报告含计数与原始日志；`ready_for_execution=false` 时 `real` 启动 400 且原因可读；同一副本二次核验漂移即失败。
+- 先跑既有 `loop/tests/test_s0.py` 不改期望，再新增失败用例：接口差异为空 ⇒ `ports` 不 passed；三库 error>0 ⇒ `smoke=failed` 且报告含计数与原始日志；同一副本二次核验漂移即失败。
+- **部分已完成（2026-10-27，C12）**：「`ready_for_execution=false` 时 `real` 启动 400 且原因可读」已落地为 `services/api._check_s0_record_for_run()` + 4 条用例（不存在 / 未准出 / 文件自称 ready 仍拒 / drill 与不传不拦）；S0-b 其余验收（`get()` 能返回 true 的允许路径、三库 `smoke`、接口适配）仍未做。
 - `bash spikes/run_software_checks.sh` 无回归；文档门零断链；数字回写 `doc/STATUS.md`。
 - **内网真机验收**：真实副本上跑一次 S0-a + S0-b，三库冒烟有原始日志与 error/warning 计数，`GET /api/s0/{id}` 与报告可复核；临时工程与演练不得替代。
 

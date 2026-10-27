@@ -4271,7 +4271,7 @@ kb 自测要求 `rc=0` + 有汇总行 + `FAIL=0` + **通过条数等于验收数
 | **E1** | I4 在**真实数据根**生效 | 真实根仍 ro（§98.1 实测：只读挂载 + 写探测 `Read-only file system` + 无 sudo）；但"拿到写权后要跑的命令"已在可写根上用**当前权威快照**跑通（§98.3），且修掉了挡住它的指纹硬编码缺陷（§98.2） |
 | **E2** | S0-b 接入（ports/smoke、`ready_for_execution` 可为 true） | 环境侧；D4 因此等 E2 |
 | **E3** | C8 `passed` 形态夹具 | 环境侧（真实通过轮 ≈21.56 h + 写权） |
-| **E4** | 推送 | 本机出网被代理阻断；本轮结束领先 `origin/main` **37** 个提交（`git rev-list --count origin/main..HEAD` 输出复制） |
+| **E4** | 推送 | 本机出网被代理阻断；本轮结束领先 `origin/main` **39** 个提交（`git rev-list --count origin/main..HEAD` 输出复制） |
 | **D1–D4** | 四项裁决 | ✅ 全部已裁（A/A/A/A），处置见 §96 |
 | **R 类 8 条** | 登记不改 | 不变（见 kickoff §2 R 类） |
 
@@ -4409,3 +4409,47 @@ bash loop/spikes/provision_dev_workspace.sh --cleanup     # 跑完删掉
 
 **快照/清理**：实验在派生副本上做，原 `ENV_ROOT` 零写入；副本已 `--cleanup` 删除。
 
+
+
+## 101 S0-b 开工（S1）：RTL 端口确定性派生 + 规格修订落地（2026-10-27）
+
+**范围**：E2 的第 1 片。规格已按 Q1/Q2 裁决与 Q3 关闭修订（提交 `149489f`），本片落地"派生"这一半；
+"提议/确认/落盘"与两项 check 接线在 S2–S4。
+
+### 101.1 做了什么
+
+- 新模块 `loop/host/sv_ports.py`：SV 端口抽取 + 基线/新 RTL 差异派生，**只读、无模型、确定性**。
+  - 关键：端口表里的 `` `ifdef/`ifndef `` 必须按**编译期宏**求值（`all_define.txt` 的
+    `-define SIM/SIMULATION/VENDOR_PANGO`）。真实 DUT 顶层 `TCS9620_MAC_TOP` 的端口表里就有
+    `` `ifndef SIMULATION `` 分段（非仿真跑 pci_exp_*，仿真跑 pcie_user_clk 等）——静态文本解析会得出
+    错误的端口集，这是本片最重要的实现约束。
+  - 只扫 `RTL/rtl_dir_pango.txt` 清单里的文件（= 编译实际编的那批），同名同端口重复定义计 `duplicates`
+    不算歧义；同名但端口不同才进 `unparsed`。
+- 新用例 `loop/tests/test_sv_ports.py`（15 条）：ANSI 解析、注释/参数块、非 ANSI 与缺方向 fail-closed、
+  同名重复两态、确定性（两次 md5 相同）、无副作用（前后树指纹不变）、增删改差异、模块过滤、
+  空端口表模块、预处理器（`ifndef` 两支）、`all_define.txt` 读取、filelist 优先。
+
+### 101.2 真实 RTL 实测（只读，未复制、未写环境）
+
+| 项 | 实得 |
+|---|---|
+| 宏 | `load_defines(<ENV_ROOT>/all_define.txt)` ⇒ `['SIM','SIMULATION','VENDOR_PANGO']` |
+| 扫描 | `scan_tree(<ENV_ROOT>/RTL, defines)` ⇒ `from_filelist=True`、**255 files**、**205 modules**、`duplicates=0`、`unparsed=52`（老式非 ANSI 模块如 `FD`/`fifo_pre`，按契约 fail-closed） |
+| DUT 顶层 | `TCS9620_MAC_TOP` 解析成功，**66 个端口**（例：`bmc_i2c_s_scl inout`、`bmc_spi_m_clk output [1:0]`） |
+| 确定性 | 同一棵树连续扫描两次 `md5` 相同（`73eb3c0cef1f39c7…` 同值） |
+| 耗时 | 约 1.8 s / 255 文件 |
+
+### 101.3 实现过程中修掉的两个真陷阱（写给后续切片，别再踩）
+
+1. **不能把 Verilog 的 `'d32` / `1'b0` 当字符串**：`_header_after` 原先用 `'` 作字符串定界符 ⇒ 从第一个
+   数字字面量起"永不闭合"，头部一直扫到文件尾，`TCS9620_MAC_TOP` 解析失败。改为只用 `"` 作定界符。
+2. **`ifdef` 不能剥掉了事**：必须带 `defines` 求值，否则仿真端口集错。
+
+### 101.4 门（本轮改动后）
+
+- 软件层：`1006 passed, 3 deselected, 1 warning in 170.36s`（上一轮 991 + 本片 15 条；数字来自输出）。
+- 文档门：`missing=0`、`exit=0`（`checked=2218`）。
+
+### 101.5 下一步（S2）
+
+`proposals/` + 确认门槛（只增不改）+ 落盘前 md5 断言（未确认 ⇒ 副本 TB 顶层逐字节不变）。

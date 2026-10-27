@@ -362,6 +362,9 @@
   ③ **G1 的 `confirmed` 在 drill 模式且存在未决条目时**——drill 无逐条处置通道
   （`entry_decisions_required=false`），此时非空 `requires_reason` 要求代表"非空 reason 即
   『已逐条核对』的 attestation"（[SPEC-01](CHANGE_IMPACT_LOOP_SPEC.md) §5 的 drill 例外）。
+  该 flag 是「没有逐条通道时的替身」：直连 API 若提交覆盖**全部**条目的 `entry_decisions`，
+  服务端以逐条证据为准、不再要求整门理由（口径见
+  [SPEC-02 §10.4.2](LOOP_ORCHESTRATION_SPEC.md)；2026-10-27 裁决 B2，界面不受影响）。
   服务端 `precheck_decision` 的拒绝条件与选项下发必须同源，保证「界面能预检、提交即通过判据」。
 - **中断载荷里的选项只是快照**：`pending_interrupt.payload.decision_options` 是中断创建时写下的，
   会随快照恢复保留旧值 ⇒ 界面**不得**用它做理由前置判断，必须消费运行视图每次重算的

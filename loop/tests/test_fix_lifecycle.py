@@ -566,6 +566,33 @@ def test_g1_drill_accepts_reason_attestation(tmp_path: Path) -> None:
     assert pre["warnings"], "drill attestation 必须留告警（不得静默）"
 
 
+def test_g1_drill_entry_decisions_replace_the_attestation(tmp_path: Path) -> None:
+    """B2（2026-10-27 裁决）：drill 下直连 API 给齐 `entry_decisions` ⇒ 不再要求整门 reason。
+
+    口径：`requires_reason` 是"没有逐条处置通道"时的 attestation 替身；一旦给了覆盖**全部**条目的
+    逐条处置（且满足 ignored/disputed 逐条理由），服务端以逐条证据为准。覆盖不全仍拒。
+    "两者都要"的收紧方向已裁决不采用（逐条证据严格更强，多要的理由通常只是复述）。
+    """
+    from workflows.chunks.gates import GatePreconditionFailed, precheck_decision
+
+    rd = _write_run_dir(tmp_path)
+    kb = _kb(tmp_path)
+    # 覆盖不全 ⇒ 不能用"给几条"换掉整门理由
+    with pytest.raises(GatePreconditionFailed, match="未覆盖"):
+        precheck_decision(gate="G1_diff_confirm", decision="confirmed", run_dir=rd,
+                          mode="drill", reason=None, kb=kb,
+                          entry_decisions={"RTL/SRC/x.v": "confirmed"})
+    # 覆盖全部 + 逐条理由齐 ⇒ 通过（无整门 reason 也放行）
+    pre = precheck_decision(
+        gate="G1_diff_confirm", decision="confirmed", run_dir=rd, mode="drill",
+        reason=None, kb=kb,
+        entry_decisions={"0x0000#0x0004": "confirmed",
+                         "RTL/SRC/x.v": {"decision": "ignored", "reason": "二进制另行处理"}},
+    )
+    assert set(pre["entries"]) == {"0x0000#0x0004", "RTL/SRC/x.v"}
+    assert pre["entries"]["RTL/SRC/x.v"] == {"decision": "ignored", "reason": "二进制另行处理"}
+
+
 def test_reason_required_for_ignored_disputed_rework(tmp_path: Path) -> None:
     """A2：ignored/disputed/rework 无理由 ⇒ 拒绝（且发生签署前）。"""
     from workflows.chunks.gates import GatePreconditionFailed, precheck_decision

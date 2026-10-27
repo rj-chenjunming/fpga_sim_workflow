@@ -3385,8 +3385,16 @@ A3 旧界面判据来源、A2 委托后脚本行为一致、A4 的 AGENTS 段落
 | 文档 | **missing=0、exit=0** | 新增本节 + `WEB_UI_SPEC §5` 一段；`checked/skipped` 为诊断值、不落盘（§19 漂移） |
 | 软件层 / 端到端 / kb 自测 | 未重跑 | 本轮未改任何 Python 产品代码、`kb/**` 与工作流；文案改动由浏览器门覆盖 |
 
-### 82.3 B 组剩余待裁决
+### 82.3 B2 残留 2（drill 直给 `entry_decisions` 时要不要那句整门理由）—— 裁决：**维持现状 + 写进口径 + 加钉子**
 
-1. **残留 2（更严方向）**：drill 模式下 API **直接**给 `entry_decisions` 时，选项声明"不需要理由"而
-   `precheck` 收下 —— 是否收紧成"照需理由校验"，需人裁决（当前登记不改，方向是更严）。
-2. **推送**：14 个提交未推（需要新 PAT；旧 PAT 已在对话暴露，建议先作废）。
+| 项 | 内容 |
+|---|---|
+| 现状 | drill 下界面**没有**逐条通道（`entry_decisions_required=false`），只能用非空 reason 当"已逐条核对"的 attestation ⇒ 这条 `requires_reason` 的本来含义是**替身**。直连 API 若提交 `entry_decisions`，服务端走的是**更硬**的校验：必须覆盖全部条目、`ignored/disputed` 逐条带理由、逐条结论与整门决策一致；满足后不再要求整门 reason |
+| 裁决 | **维持现状**（不收紧成"两者都要"）。理由：① 逐条证据严格强于一句 attestation，多要的那句通常只是复述，属信息量为零的仪式；② 界面上不存在矛盾——drill 界面没有逐条通道，它提交时仍会被要求理由；③ 收紧只会让既有直连脚本无谓变红 |
+| 落点 | `LOOP_ORCHESTRATION_SPEC §10.4.2` 新增「drill 的 reason attestation 与逐条处置的关系（裁决 B2）」；`WEB_UI_SPEC §5` 该 flag 处加交叉引用（界面不受影响）；钉子 `tests/test_fix_lifecycle.py::test_g1_drill_entry_decisions_replace_the_attestation`（覆盖不全仍拒 + 覆盖全部时无 reason 也放行） |
+| 钉子的判别性 | 若将来收紧成"两者都要"，该用例第二次调用（`reason=None`）立刻红；若放宽成"给几条就算"，第一次调用（覆盖不全）立刻红 —— 两个方向都被钉住 |
+
+### 82.4 B 组剩余待裁决
+
+1. **推送**：15 个提交未推（需要新 PAT；旧 PAT 已在对话暴露，建议先作废）。
+2. B 组其余项已清：决策项文案（§82.1）、drill 直给逐条处置（§82.3）、复核报告落档（§81.8）。

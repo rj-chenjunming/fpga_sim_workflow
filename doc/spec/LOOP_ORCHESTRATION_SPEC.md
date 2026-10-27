@@ -516,6 +516,16 @@ n9_sim chunk                       park chunk                      job_runner �
   提交仍只有闸门视图现有表单（`POST …/gates/{gate}/decision` 的 `entry_decisions` 字段，覆盖全部 `entry_id`）。
 - **逐条处置校验仍是唯一判据**：`chunks/gates.py::normalize_entry_decisions`（覆盖、取值、理由、与整门决策一致）；
   前端只做提交前提示，不新增判据。
+- **drill 的 reason attestation 与逐条处置的关系（2026-10-27 裁决 B2）**：
+  `decision_options[].requires_reason` 对「G1 + `confirmed` + drill + 有未决条目」为真，其含义是
+  「**没有**逐条处置通道时，用非空 reason 作为『已逐条核对』的替身」。因此当调用方（直连 API）
+  提交了**覆盖全部条目**的 `entry_decisions`（`normalize_entry_decisions` 的全部校验通过）时，
+  服务端**以逐条证据为准，不再要求整门 reason**；覆盖不全、取值非法、`ignored/disputed` 缺理由
+  仍逐项拒绝。界面不受影响：drill 的 `entry_decisions_required=false`，界面没有逐条通道，
+  只能走 reason attestation，所以「选项说要理由 ⇔ 提交被要求理由」在界面上始终一致。
+  **裁决不采用"两者都要"（收紧）**：逐条证据严格强于一句 attestation，多要的那句通常只是复述，
+  属信息量为零的仪式；且会让既有直连脚本无谓变红。回归钉子：
+  `tests/test_fix_lifecycle.py::test_g1_drill_entry_decisions_replace_the_attestation`。
 
 ### 10.4.3 报告只读视图（P-28）
 

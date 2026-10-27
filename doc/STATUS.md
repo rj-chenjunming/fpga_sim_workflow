@@ -4271,7 +4271,7 @@ kb 自测要求 `rc=0` + 有汇总行 + `FAIL=0` + **通过条数等于验收数
 | **E1** | I4 在**真实数据根**生效 | 真实根仍 ro（§98.1 实测：只读挂载 + 写探测 `Read-only file system` + 无 sudo）；但"拿到写权后要跑的命令"已在可写根上用**当前权威快照**跑通（§98.3），且修掉了挡住它的指纹硬编码缺陷（§98.2） |
 | **E2** | S0-b 接入（ports/smoke、`ready_for_execution` 可为 true） | 环境侧；D4 因此等 E2 |
 | **E3** | C8 `passed` 形态夹具 | 环境侧（真实通过轮 ≈21.56 h + 写权） |
-| **E4** | 推送 | 本机出网被代理阻断；本轮结束领先 `origin/main` **34** 个提交（`git rev-list --count origin/main..HEAD` 输出复制） |
+| **E4** | 推送 | 本机出网被代理阻断；本轮结束领先 `origin/main` **35** 个提交（`git rev-list --count origin/main..HEAD` 输出复制） |
 | **D1–D4** | 四项裁决 | ✅ 全部已裁（A/A/A/A），处置见 §96 |
 | **R 类 8 条** | 登记不改 | 不变（见 kickoff §2 R 类） |
 
@@ -4345,4 +4345,36 @@ bash loop/spikes/provision_dev_workspace.sh --cleanup     # 跑完删掉
 1. 拿到可写真实数据根（或 `remount -o rw /home`）后跑 §98.3 的三行命令，把 `--workspace` 换成真实数据根；
 2. 或在一台有写权的机器上跑同样命令（脚本只依赖 `loop/.venv` 与本仓快照，不依赖本机路径）；
 3. 跑完把 `[after] blocks_release=0` / `[g3]` / `[n16]` 三行输出回填 STATUS（**新节，不改本节**）。
+
+## 99 E2/E3 可行性体检：能力已就位，剩下的是裁决与算力（2026-10-27）
+
+详细报告：[`doc/plans/2026-10-27-e2-e3-feasibility.md`](plans/2026-10-27-e2-e3-feasibility.md)。本轮只做体测，
+**没有改任何 S0 代码或规格**（Q1–Q3 未定；`S0_ENVIRONMENT_SPEC §8.4` 红线 5：拿不到协议就保持阻断并登记，不得猜）。
+
+### 99.1 实测（数字从命令输出复制）
+
+| 项 | 实得 |
+|---|---|
+| EDA/许可 | `/home/soft/UNIVISTA/20260917/UVS/bin/{uvlan,uvs}` 在 PATH；`UVS_HOME`、`UV_LICENSE=8273@s24:…` 已配置 |
+| 三库编译（派生副本 `<repo>/.env-copy` 上跑 `doc/tools/compile_only.sh -c tc_pcie_rw_02`） | `[PASS] 卡点 B 通过：两段编译均成功`、`COMPILE_RC=0`、`real 0m2.737s` |
+| rtl 段 | 日志 1295 行 / 86 124 B；工具自印 `Compilation: 0 error(s), 13 warning(s)` |
+| tb 段 | 日志 795 行 / 28 421 B；工具自印 `Compilation: 0 error(s), 4 warning(s)` |
+| 原 `ENV_ROOT` 零写入（红线 11） | `find <ENV_ROOT> -newer <marker> \| wc -l` = **0** |
+
+### 99.2 顺手钉清的判据陷阱（要写进 D3 的实现与用例）
+
+用 `grep -c -iE '\berror\b' <日志>` 数"错误行"**会把工具汇总行本身算成一行 error**（实测：命中 1 行，
+内容正是 `Compilation: 0 error(s), 13 warning(s)`）。⇒ smoke 判据必须是「解析工具汇总行 `Compilation: N error(s), M warning(s)`
++ `Error-<code>` 前缀行 + 分别记录 `rc`」，不是裸 grep。warning 明细样例：
+`Warning-120002: Command option warning`、`Warning-121147: Redefinition`。
+
+### 99.3 结论与下一步（要人/环境侧给的东西）
+
+- **E2** 的阻塞从"能力"收敛为**三个口径裁决**：Q1 ports 差异来源（外部报告 vs Host 派生，需先改 S0 规格）、
+  Q2 hunk 谁填（人 / 模型提议+人确认）、Q3 warning 可接受阈值（环境侧）。给定后本仓侧是一个中小切片：
+  `host/s0.py` + `services/api.py` + 报告模板 + 用例；**D4 只需改一处**
+  （`loop/host/s0.py:334` 的 `ready_for_execution = False` 归一逻辑）。
+- **E3** 的阻塞收敛为「可写 `ENV_ROOT` + N9 全跑 ≈**21.56 h**/5 例排期 + `N6_` 观测点印记口径」；
+  卡点 B 已证明可跑（2.7 s/例）。
+- 派生副本已 `--cleanup` 删除（2.6 G；重建约 10 s）。
 

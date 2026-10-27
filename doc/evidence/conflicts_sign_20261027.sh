@@ -11,6 +11,8 @@
 #   ACTOR=human:<你的名字> OUTDIR=<可写数据根的 conflicts 目录> bash conflicts_sign_20261027.sh --dry-run
 #   # 2) 确认无误后真签
 #   ACTOR=human:<你的名字> OUTDIR=<可写数据根的 conflicts 目录> bash conflicts_sign_20261027.sh
+#   # 3) 若由他人代录（人已批示、Host 执行），必须写清代录事实：
+#   ACTOR=human:<批示人> NOTE_SUFFIX="（人工批示，Host 工具代录 2026-10-27）" OUTDIR=... bash ...
 #
 # OUTDIR 示例：
 #   * 演练（派生副本，不碰真实环境）：OUTDIR="/path/to/repo/.env-copy/kb/conflicts"
@@ -25,6 +27,8 @@ REPO="$(cd "$(dirname "$0")/../.." && pwd)"
 TOOL="$REPO/kb/tools/adjudicate_conflicts.py"
 OUTDIR="${OUTDIR:-}"
 ACTOR="${ACTOR:-}"
+#: 代录时必须显式标注（亲笔签署时留空）
+NOTE_SUFFIX="${NOTE_SUFFIX:-}"
 DRY=0
 for a in "$@"; do
   case "$a" in
@@ -49,7 +53,7 @@ esac
 [ -x "$REPO/loop/.venv/bin/python" ] && PY="$REPO/loop/.venv/bin/python" || PY="python3"
 
 adj () {  # adj <ids> <resolution>
-  local ids="$1" res="$2" extra=()
+  local ids="$1" res="$2${NOTE_SUFFIX}" extra=()
   [ "$DRY" = "1" ] && extra=(--dry-run)
   "$PY" -B "$TOOL" --outdir "$OUTDIR" --actor "$ACTOR" --ids "$ids" --status ruled \
     --resolution "$res" "${extra[@]}" || { echo "[FAIL] 该组签署失败：$ids" >&2; exit 1; }

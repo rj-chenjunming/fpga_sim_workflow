@@ -3661,3 +3661,68 @@ C11 取消/续跑语义（契约）、C12 运行入口消费 S0（需求）。
 
 C10-b 待人工执行签字（命令已备）；C8 通过形态夹具、C9 S0-b 接入（环境侧）、
 C11 取消/续跑语义（契约）、C12 运行入口消费 S0（需求）不变。
+
+---
+
+## 86 C 组修订（四）：72 条裁决已落账（人批示 + Host 代录），真实环境待写权（2026-10-27）
+
+上游：`§85` 已定值、等签字。人于 2026-10-27 明示选择「授权代录」并指定 `actor = human:chenjunming`。
+**本节如实登记：actor 是人指定的，但写入由 Host 工具执行**，不是亲笔——每条裁决的 `resolution`
+末尾都带「（人工批示，Host 工具代录 2026-10-27）」，快照 README 同样声明。
+
+### 86.1 落账结果（写进派生数据根副本 `<repo>/.env-copy/kb/conflicts/`）
+
+```
+[stat] conflicts=72，仍阻断发版=0
+[verify] 裁决记录=72（去重后 72）；conflicts=72，仍阻断=0
+[verify] 锚与合并一致性：全部通过
+```
+
+I4 消费口径（`KbSources.from_workspace` + `contracts._conflict_summary`，与服务端同源）：
+
+```
+{'total': 72, 'expected_total': 72, 'blocks_release': 0, 'open': 0, 'consistent': True}
+```
+
+落账快照已入仓（只读，append-only）：
+
+| 文件 | md5 | 说明 |
+|---|---|---|
+| `doc/evidence/adjudication_20261027/adjudication.json` | `d6ec87796f72f40dcfd124cbfc7af991` | 72 条裁决记录（每条带 `sha256` 锚） |
+| `doc/evidence/adjudication_20261027/conflicts.json` | `47300360ba208012d262bc673a1d07d9` | 合并后清单：72 条 `ruled` / `blocks_release=false` |
+| `doc/evidence/adjudication_20261027/README.md` | — | 身份、代录声明、生效方法、边界 |
+
+**重跑不丢（真实 72 条）**：在副本上再跑 `n1_conflicts.py` ⇒ `[merge] adjudication.json：72 条裁决已合并进 conflicts（重跑不丢）`、仍阻断 0。
+
+组成：68 条批量（G1–G9，结论 = triage §4.1 规则原文）+ 4 条 Tier B-core
+（C2 位定义 `2023_0911`、C11 位定义 `0x0`、C38 位定义推导 `0xF0`、C58 以 `DFX_VERSION` 为基准）。
+
+### 86.2 真实环境**仍未生效**（必须说清）
+
+本机 `<ENV_ROOT>/kb` **只读** ⇒ 本轮**没有**写真实数据根：真实 `conflicts.json` 仍是 72 条
+`blocks_release=true`（md5 `1d0b954…` 未变）。也就是说：**这批裁决目前不影响任何真实轮次的 I4 判定**，
+`G3` 的 `full_now/subset_only` 在真实环境仍会被拒、N16 仍不可达。
+
+生效路径（`doc/evidence/adjudication_20261027/README.md` §3，二选一）：
+① 把快照里的 `adjudication.json` 放进可写数据根的 `conflicts/`，再跑 `n1_conflicts.py --outdir` 合并；
+② 在可写数据根上重跑 `conflicts_sign_20261027.sh`（等价，重新签发时刻）。
+**需要环境侧/写授权**：要么给一个可写数据根，要么授权写 `ENV_ROOT/kb`（红线 11 目前禁止）。
+⇒ 登记为 C 组新遗留项（§86.4）。
+
+### 86.3 代录的边界（写清楚，避免以后被误读成亲笔）
+
+1. `resolution_kind` 仍是 `human`（schema 枚举里没有"代录"这一档）⇒ 代录事实只能写在 `resolution`
+   文本与快照 README 里；这是本轮已知的表达力缺口，若要结构化，需授权在 schema 增字段（未做）。
+2. 亲笔路线随时可用：在有写权环境重签 = **追加**新记录（旧记录保留，合并取最后一条），
+   不需要回填或删除。
+3. 4 条 core 的取值仍是"人给的方向"，不是作者确认；作者若另有口径，同样按追加改判处理。
+
+### 86.4 本轮门与剩余
+
+| 门 | 结果 | 说明 |
+|---|---|---|
+| 文档 | **missing=0、exit=0** | 新增 evidence 快照 3 份 + 本节 |
+| kb 自测 / 软件层 / 浏览器 / 端到端 | 未重跑 | 本轮只新增文档/落账快照，未改产品代码、`kb/tools/**`、测试 |
+
+C 组剩余：**把裁决落到真实数据根（需写授权/可写数据根）**、C8 通过形态夹具、
+C9 S0-b 接入（环境侧）、C11 取消/续跑语义（契约）、C12 运行入口消费 S0（需求）。

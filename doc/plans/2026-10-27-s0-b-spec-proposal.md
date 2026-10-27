@@ -3,7 +3,8 @@
 > **状态**：**提案**（2026-10-27）。**本文件不改 `doc/spec/**`，也不改任何代码**；请先评这份 diff。
 > 评审通过后我按 §5 的顺序落地：先改 `S0_ENVIRONMENT_SPEC`，再实现 D1/D2/D3，最后按 §8.5 验收。
 > **裁决依据**：`doc/plans/2026-10-27-e2-e3-feasibility.md` §3 的 Q1/Q2，人已选 **Q1=A（Host 确定性派生）**、
-> **Q2=A（模型提议 + 人确认）**；Q3（warning 阈值）**仍缺环境侧一句话**，因此 D3 只做到"能跑并记录"，不给"可准出"。
+> **Q2=A（模型提议 + 人确认）**；**Q3 已由本仓转成确定性判据**（基线相对增量，见 §2 与 STATUS §100），
+> 不再等待外部输入。
 > 流程：AGENTS §2.1（改契约先于改代码）、§3（`doc/spec/**` 唯一写者 = Lead，契约变更需显式评审）。
 
 ## 0 变更摘要
@@ -46,9 +47,18 @@
 >    `Compilation: N error(s), M warning(s)`、`Error-<code>`/`Warning-<code>` 明细、原始日志路径。
 >    **驱动复用既有实现** `kb/tools/run_guarded.sh --mode compile-only`（N7 已在用：串行锁、沙箱工作树、
 >    `uvs.setup` 自愈、编译选项逐字自检、逐用例 rc + 日志），**本仓只新增"汇总行解析 + 计数 + 明细"**，
->    不新增第二套编译驱动。判据：任意一段 `N > 0` ⇒ `smoke=failed`；`M` 的**阈值待环境侧给（Q3）**，
->    未给出前 `smoke` 最多到 `passed_with_warnings_unconfirmed`，**不得准出**。
+>    不新增第二套编译驱动。判据（**确定性，不依赖外部白名单**）：
+>    - `N > 0` ⇒ `smoke=failed`；`rc` 另记（`rc=0` 不等于 `0 error`）。
+>    - warning 用**基线相对增量**评：对同一用例，在"基线树"与"副本（新 RTL + 适配后 TB）"各编一次，
+>      取工具自印 `warning(s)` 计数与 `Warning-<code>` 集合：
+>      `added = codes(副本) − codes(基线)`；任一 code `added`、或同 code 计数上升 ⇒ 该条**必须逐条评估**
+>      （评估机制复用 Q2 的"模型提议 + 人确认"），未评估 ⇒ `smoke` 不得 `passed`；
+>      `removed` 与计数下降只记录（可能是本次修复）。
+>    - 基线编译必须在**独立沙箱工作树**里跑（`run_guarded.sh --sandbox-root`，只读软链 + 自己的 SIMLIB_RUN），
+>      保证基线目录零写入。
 >    **禁止**用 `grep 'error'` 数行代替（会把 `0 error(s)` 汇总行本身算成错误，见 STATUS §99.2 实测）。
+>    实测依据（STATUS §100）：同用例两次编译 warning 集合恒等；注入一处重复定义后 tb 由 4→5 且新增
+>    `Warning-120162` ⇒ 增量判据可检出。
 
 ## 3 diff：§8.3 D1 / D2 / D3 三行
 
@@ -62,7 +72,7 @@
 
 > | **D1** | 接口差异来源（**已裁 2026-10-27：Host 确定性派生**） | `loop/host/s0.py`（新增纯读派生函数）；报告模板新增候选表 | **Q1 关闭**：契约见 §8.2-1；**不再消费外部接口报告**。派生输入在 `record.baseline/RTL` 与 `record.rtl_source`，两者都在 `prepare()` 落盘过、可复算 |
 > | **D2** | 副本 `TB/top.sv` 适配 + 逐 hunk 登记（含回滚）（**已裁 2026-10-27：模型提议 + 人确认**） | `loop/host/s0.py`（确认门槛 + 落盘）、`loop/services/api.py`（提议/确认端点）、环境准备视图 | **Q2 关闭**：模型只写 `proposals/`；人确认后 Host 才写副本；确认记录只增不改；禁止"先改后申请" |
-> | **D3** | 三库真实冒烟（**Q3 部分就位**） | `loop/host/s0.py`（smoke 段）+ `loop/host/` 下新增日志解析模块（拟名 `uvs_logs.py`，汇总行解析的唯一实现）+ 新增用例；**驱动复用 `kb/tools/run_guarded.sh --mode compile-only`** | **Q3 剩一半**：驱动已在仓库里且 N7 在用（`run_guarded.sh --mode compile-only`，≈2 s/例；`test_fix_real_chain.py` 覆盖）；判据已实测（`Compilation: N error(s), M warning(s)`；STATUS §99）；**仍需环境侧给 `M` 的可接受阈值**。**不引入**环境侧 `doc/tools/compile_only.sh` 作为产品驱动（避免第二套实现，红线 8）——它只在本轮体检里用来证明 EDA 可用 |
+> | **D3** | 三库真实冒烟（**Q3 已关闭：改为确定性判据**） | `loop/host/s0.py`（smoke 段）+ `loop/host/` 下新增日志解析模块（拟名 `uvs_logs.py`，汇总行解析的唯一实现）+ 新增用例；**驱动复用 `kb/tools/run_guarded.sh --mode compile-only`** | **Q3 关闭（2026-10-27，本仓自定 + 实测）**：判据 = `N>0` 即 failed；warning 走**基线相对增量**（新增 code / 计数上升 ⇒ 必须逐条评估，机制复用 Q2 的"模型提议 + 人确认"）。依据：同用例两次编译 warning 集合恒等；注入重复定义后 tb 4→5 且新增 `Warning-120162`（STATUS §100）。**不需要外部白名单**；**不引入**环境侧 `doc/tools/compile_only.sh` 作为产品驱动（红线 8） |
 
 ## 4 diff：§8.4 红线（新增第 6、7 条）
 
@@ -78,7 +88,9 @@
 > - **确认门槛**：对未 `confirmed` 的 hunk，副本 `TB/top.sv` 必须**逐字节不变**（用 md5 断言）；
 >   确认记录追加后再落盘，旧确认不得被覆盖（只增不改）。
 > - **冒烟判据**：每段必须落 `命令 / rc / error(s) / warning(s) / Error-<code> 明细 / 日志路径`；
->   `error(s) > 0` ⇒ `smoke=failed`；`warning(s)` 在 Q3 阈值给前不得判 `passed`。
+>   `error(s) > 0` ⇒ `smoke=failed`；warning 必须落 `added/removed/count_increase` 三个增量集合，
+>   且 `added ∪ count_increase` 非空时**每条都要有评估记录**（模型提议 + 人确认）才算 `smoke=passed`。
+> - **基线零写入**：基线编译走独立沙箱工作树，跑完断言基线目录 md5 未变。
 
 ## 6 实现切片（评审通过后按此顺序，一片一提交）
 
@@ -98,5 +110,7 @@
    目录真实存在）。若你认为"基线 RTL 文本"另有权威来源，请指出，我改。
 2. **"人确认"的载体**：我准备复用既有闸门/账本习惯（**只增不改**的确认记录），不新造一套枚举；
    如果你要有独立的确认界面，那 D5 会提前，界面门也要跑。
-3. **Q3 的阈值**：这条不定，`smoke` 就永远只能到 `passed_with_warnings_unconfirmed` ⇒ `ready_for_execution` 仍 false。
-   这是唯一还会挡 E2 的外部输入。
+3. **Q3 已改为确定性判据（请确认这个判据本身）**：不再要外部白名单——warning 用"基线相对增量"评，
+   新增 code / 计数上升必须逐条评估（模型提议 + 人确认），零新增即无需外部裁决。
+   实测支撑：同用例两次编译 code 集合恒等；注入重复定义后 tb 4→5 且新增 `Warning-120162`（STATUS §100）。
+   若你更希望用"固定白名单"，请给名单，我改成白名单模式（两者不混用）。

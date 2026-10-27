@@ -4271,7 +4271,7 @@ kb 自测要求 `rc=0` + 有汇总行 + `FAIL=0` + **通过条数等于验收数
 | **E1** | I4 在**真实数据根**生效 | 真实根仍 ro（§98.1 实测：只读挂载 + 写探测 `Read-only file system` + 无 sudo）；但"拿到写权后要跑的命令"已在可写根上用**当前权威快照**跑通（§98.3），且修掉了挡住它的指纹硬编码缺陷（§98.2） |
 | **E2** | S0-b 接入（ports/smoke、`ready_for_execution` 可为 true） | 环境侧；D4 因此等 E2 |
 | **E3** | C8 `passed` 形态夹具 | 环境侧（真实通过轮 ≈21.56 h + 写权） |
-| **E4** | 推送 | 本机出网被代理阻断；本轮结束领先 `origin/main` **36** 个提交（`git rev-list --count origin/main..HEAD` 输出复制） |
+| **E4** | 推送 | 本机出网被代理阻断；本轮结束领先 `origin/main` **37** 个提交（`git rev-list --count origin/main..HEAD` 输出复制） |
 | **D1–D4** | 四项裁决 | ✅ 全部已裁（A/A/A/A），处置见 §96 |
 | **R 类 8 条** | 登记不改 | 不变（见 kickoff §2 R 类） |
 
@@ -4377,4 +4377,35 @@ bash loop/spikes/provision_dev_workspace.sh --cleanup     # 跑完删掉
 - **E3** 的阻塞收敛为「可写 `ENV_ROOT` + N9 全跑 ≈**21.56 h**/5 例排期 + `N6_` 观测点印记口径」；
   卡点 B 已证明可跑（2.7 s/例）。
 - 派生副本已 `--cleanup` 删除（2.6 G；重建约 10 s）。
+
+## 100 Q3 关闭：smoke 的 warning 判据改为**基线相对增量**（2026-10-27，本仓自定 + 实测）
+
+**背景**：`S0_ENVIRONMENT_SPEC` §8.3 的 **Q3** 原先写着"需环境侧三库驱动协议、如何判 error/warning、
+不得猜"，于是 D3 一直挂着等外部白名单。本轮把它从"要人给答案"改成"**可复算的判据**"——
+不是在猜，而是把"什么算回归"定义成**基线相对增量**。
+
+**实验**（派生副本 `<repo>/.env-copy` 内，4 次 `bash doc/tools/compile_only.sh`，全部 `rc=0`）：
+
+| 实验 | rtl 段 | tb 段 | 结论 |
+|---|---|---|---|
+| 同用例 `tc_pcie_rw_02` 第 1 次 | `0 error(s), 13 warning(s)`；codes `120002/120428/121553/121687` | `0 error(s), 4 warning(s)`；codes `120002/121147` | 基线参照 |
+| 同用例第 2 次 | 完全相同 | 完全相同 | **确定性成立**（同一输入同一告警集合） |
+| 换用例 `tc_bmc_i2c_03` | 同上 13 / 同 codes | 同上 4 / 同 codes | 告警主要是**环境级基线噪声**，不是用例特有 |
+| 人为注入重复定义 `tc_q3probe` | 13 / 同 codes | **5 warning(s)**，codes `120002/120162/121147` | **增量可检出**：新增 `Warning-120162`、计数 4→5 |
+
+**定下的判据**（写进 S0 规格提案 §8.2-2 / §8.5）：
+
+1. `error(s) > 0` ⇒ `smoke=failed`；`rc` 只能作"能否产出库"的记录，**不能替代** error 计数。
+2. warning 做**基线相对增量**：同一用例分别在"基线树"与"副本（新 RTL + 适配后 TB）"各编一次，
+   `added = codes(副本) − codes(基线)`；`count_increase` = 同 code 计数上升。
+   `added ∪ count_increase` 非空时，**每条都要有评估记录**（复用 Q2 的"模型提议 + 人确认"）才算 `smoke=passed`；
+   `removed` / 计数下降只记录。
+3. 基线编译必须在**独立沙箱工作树**（`run_guarded.sh --sandbox-root`：只读软链 + 自己的 `SIMLIB_RUN`），
+   跑完断言基线目录零写入。
+4. 判据实现只写一份（`loop/host/` 下日志解析模块），N7 与 S0 smoke 共用。
+
+**边界（仍然不是我能做的）**：真实 `<ENV_ROOT>` 的写入（ro 挂载）、三个闸门的人签、环境仓 `RTL/TB/PKG/TESTLIB` 的修改。
+除此之外，E2 已无外部输入阻塞。
+
+**快照/清理**：实验在派生副本上做，原 `ENV_ROOT` 零写入；副本已 `--cleanup` 删除。
 

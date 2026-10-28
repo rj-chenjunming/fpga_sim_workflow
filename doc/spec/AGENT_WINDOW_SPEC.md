@@ -84,3 +84,10 @@ Agent 历史读取（`read_view` + 与 API 同口径的事件列表）先测量�
 [REV13 IL](SPEC-REV-13-20261026.md) 设计尝试/节点返工/run 作用域、撤销、原子替代和恢复投影。
 现行会话内 /control 语义保持；不能把当前 Session.instructions 视为这些跨尝试能力已实现。
 新端点、CAS 与节点有效指令指纹、取消后的生效条件见 [详细设计](../plans/2026-10-26-cloud-dsh-memory-design.md)。
+
+## 会话旁路与写句柄（2026-10-28，未实现）
+
+[REV14](SPEC-REV-14-20261028.md) D3：人可在 DSH GUI 对会话说话，但**仅限该 attempt 进程退出的空闲期**
+（写句柄跨进程互斥，P1 实测 `already owned by an active write handle`）；Host 只冷读投影、不接管活体会话，
+人类消息只记元数据进 `human_interventions`，且只在下一 attempt 生效（本文件既有边界不变）。
+同源反代与 iframe 形态见 [体检表 §7 Q7](../plans/2026-10-28-three-layer-interaction-alignment.md)。

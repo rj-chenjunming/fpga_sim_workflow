@@ -4758,3 +4758,29 @@ $ git rev-parse HEAD
 - 临时凭据文件 `~/.git-credentials` 因 `$HOME` 只读**未能创建**（`Read-only file system`）；改用 `.git/dsh-push-token`（`600`，未入库）+ 仓库级 `credential.helper`。
 - 推送完成后已删除该文件并移除仓库级 helper 配置（见本轮收尾命令）。
 - **建议**：该 PAT 曾在会话文本中出现过，应按 GitHub 流程**作废并重建**；重建后如需再推，按 §105.3 的 `.git/` 方案临时投放即可。
+
+## 106 S0 规格交付：SPEC-REV-14 执行器契约对齐（2026-10-28，未实现）
+
+本轮只交付**规格与指针**，未改 `loop/`/`kb/` 代码，未跑四道门。
+
+### 106.1 交付物
+
+| 文件 | 内容 |
+|---|---|
+| [SPEC-REV-14](spec/SPEC-REV-14-20261028.md) | 折进 REV-13：**偏离 D1–D4**（凭据 env / 保留压缩+Host 落账 / 共用 home+resume+GUI 说话 / 子 agent 全开配额 2）、**补丁 B1–B7**（`submit_result` 结果通道、启动自检、禁复制宿主 settings、观测面、完成判据、写句柄仲裁、版本映射）、**采纳映射 A1–A10**、切片映射（S0–S6 ↔ 设计 P0–P7）、追加不变量 `DS-08`/`DS-09` |
+| [AGENT_CONTEXT_SPEC](spec/AGENT_CONTEXT_SPEC.md) | 指针：D2 压缩事实由 Host 落账；A4 上下文包按 REV-13 WM 口径 |
+| [AGENT_WINDOW_SPEC](spec/AGENT_WINDOW_SPEC.md) | 指针：D3 会话旁路与写句柄互斥（仅空闲期可写） |
+| [DSH_AGENT_RUNTIME_SPEC](spec/DSH_AGENT_RUNTIME_SPEC.md) | 指针：D1–D4 偏离与 B1–B7 补丁 |
+| [三层对齐体检表](plans/2026-10-28-three-layer-interaction-alignment.md) | §9 三张表 + §9.5 冲突裁决 + §9.6 偏离复评条件 |
+
+### 106.2 依据与边界
+
+- 依据：REV-13（`abdb16f`）+ P1–P8 探针（[证据档](evidence/DSH_PROBE_20261028/README.md)，冻结 + md5 目录外）。
+- 偏离均有**复评条件**（D1 强隔离、D2 事件流补投影、D3 只读挂载/写句柄原语、D4 成本阈值），未满足前按偏离执行。
+- **不声称**：DSH 未接通（`BackendUnavailable` 不变）、WM/IL/EXP 未实现、未跑四道门、探针只到 C1/部分 C2。
+
+### 106.3 检查（本轮）
+
+- 相关文件相对链接检查：`BROKEN: none`（脚本口径：Markdown 相对路径存在性）。
+- 文档门实测：`cd loop && LOOP_LLM_MODE=standin .venv/bin/python -m pytest -q tests/test_doc_links.py` ⇒ `65 passed in 8.67s`（从命令输出复制）。
+- 未运行：kb 自测 / 端到端 / 浏览器门（本轮无代码改动，按 AGENTS §4 它们不是本轮交付物；不把"文档门通过"当四道门完成）。

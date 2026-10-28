@@ -265,3 +265,10 @@ LOOP_LLM_MODE=standin .venv/bin/python -m pytest tests/test_agent_context_memory
 并与本文件既有“M1 逐次调用记录 / M2 人工确认经验”区分。现有基本能力与 H1/H2a/H2b 保留，
 不能因基本记录/经验筛选已存在而把后续优化标完成；实施落点、恢复/兼容及云端测试见
 [详细设计](../plans/2026-10-26-cloud-dsh-memory-design.md)。
+
+## 执行器对齐补丁（2026-10-28，未实现）
+
+[REV14](SPEC-REV-14-20261028.md) D2：会话内压缩保留给 DSH，但**压缩事实由 Host 从 session log 落账**
+（`compaction/summary` + `time`）；事件流与投影当前没有该事实（P7 实测），不得声称"投影里有压缩行"。
+覆盖责任收缩为"Host 输入包 + 提交回传"，业务结论不得依赖未提供材料（本文件 C1 的既有纪律不变）。
+A4：上下文包按 REV13 §6 的 `context_manifest_ref` / source map / `input_ref` 落地，不自造第二套。

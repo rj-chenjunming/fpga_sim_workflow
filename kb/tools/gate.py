@@ -203,6 +203,11 @@ def cmd_sign(args):
     except K.GateTamperError as e:
         sys.stderr.write("[FAIL] %s\n       gates.json 未改动。\n" % e)
         return RC_REJECT
+    except K.GateMaterialError as e:
+        # SPEC-REV-15：算不出产物指纹就不许签（跳过/当"未变"都是假的证据）
+        sys.stderr.write("[FAIL] 材料集不可读，拒绝签署（SPEC-REV-15 stateHash）：%s\n"
+                         "       gates.json 未改动。\n" % e)
+        return RC_BROKEN
     st = K.gate_get(args.run)
     g = st["gates"][args.gate]
     print("[kb] 已写入 %s" % K.relpath(gates_path(args.run)))
@@ -253,6 +258,14 @@ def cmd_require_signed(args):
                 checks.append("human_signed=false（actor_kind=%s）⇒ 非人工签署；"
                               "只有 actor_kind=rehearsal 才能用 --allow-rehearsal 放行演练链"
                               % g["actor_kind"])
+        # SPEC-REV-15：已签闸门必须**复算**签署所绑材料指纹（改件后批准必须失败）。
+        # legacy（无 state_hash）只告警、不改变既有判定，与 anchor None 同口径。
+        if g["status"] == "signed" and g["decision"] != "pending":
+            sh_ok, sh_detail = K.gate_verify_state_hash(args.run, gid)
+            if sh_ok is None:
+                print("[kb] [WARN] %s: %s（SPEC-REV-15）" % (gid, sh_detail))
+            elif sh_ok is False:
+                checks.append(sh_detail)
         result[gid] = {"decision": g["decision"], "actor": g["actor"],
                        "actor_kind": g["actor_kind"], "human_signed": g["human_signed"],
                        "expected": expect, "ok": not checks, "failures": checks}

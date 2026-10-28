@@ -4784,3 +4784,38 @@ $ git rev-parse HEAD
 - 相关文件相对链接检查：`BROKEN: none`（脚本口径：Markdown 相对路径存在性）。
 - 文档门实测：`cd loop && LOOP_LLM_MODE=standin .venv/bin/python -m pytest -q tests/test_doc_links.py` ⇒ `65 passed in 8.67s`（从命令输出复制）。
 - 未运行：kb 自测 / 端到端 / 浏览器门（本轮无代码改动，按 AGENTS §4 它们不是本轮交付物；不把"文档门通过"当四道门完成）。
+
+## 107 S0b 交付：闸门签署绑产物指纹 `stateHash`（2026-10-28）
+
+规格：[SPEC-REV-15](spec/SPEC-REV-15-20261028.md)；冻结目录（`kb/tools`、`kb/schema`）**单独变更**，按 AGENTS §3 留证。
+本轮改 3 个 kb 文件 + 1 个新测试文件；`human_signed` 铁律与闸门枚举**未动**。
+
+### 107.1 做了什么
+
+| 文件 | 变更 |
+|---|---|
+| `kb/tools/kb_lib.py` | 新增材料集与 `stateHash` 的**唯一实现**：`gate_material_manifest`（递归、跳符号链接、不可读即失败）、`gate_state_hash_record`、`gate_verify_state_hash`；`gate_set` 在写 anchor 前落 `state_hash`（不可读 ⇒ `GateMaterialError`，不写盘） |
+| `kb/tools/gate.py` | `sign` 捕获 `GateMaterialError` ⇒ rc=4；`require-signed` 对已签闸门**复算**指纹，失败输出 `STATE_HASH_MISMATCH` + `changed/added/removed`；legacy 只告警 |
+| `kb/schema/gate_state.schema.json` | 可选 `state_hash`（`additionalProperties:true`，无需迁移） |
+| `loop/tests/test_gate_state_hash.py` | T1–T8（签后无改动通过 / 改件失败 / 新增失败 / 删除失败 / 排除项不影响 / legacy 告警 / 不可读失败 / 锚篡改仍拒） |
+
+材料集范围 = run 目录除 `gates.*`、`agent_calls/`、`agent_controls/`、`decisions/`、`view.json`；
+口径写死在 REV-15 §2（含本机实测体量：drill run `5546` 文件 / `752 057 424` B / `1.445 s`）。
+
+### 107.2 门与实测（数字从命令输出复制）
+
+| 项 | 命令 | 结果 |
+|---|---|---|
+| 新用例 | `pytest -q tests/test_gate_state_hash.py` | `8 passed in 1.61s` |
+| 闸门/流程回归（可写数据根） | `.dev-ws` + `pytest -q tests/test_gate_state_hash.py tests/test_gate_ledger.py tests/test_gate_projection.py tests/test_gate_session.py tests/test_gate_reason_reuse.py tests/test_flow.py` | `69 passed, 1 warning in 106.63s` |
+| 全量单测（可写数据根） | `.dev-ws` + `pytest -q` | `1062 passed, 3 failed, 1 warning, 113 errors in 352.91s`；3 failed 全为 `@pytest.mark.env_layer`（本机 ENV_ROOT 只读的既有环境限制），113 errors 为浏览器缺件 |
+| **kb 自测 + 环境层入口** | `bash spikes/run_env_layer_checks.sh --with-kb-selftests` | `_selftest_gate_schema` `PASS=10 FAIL=0`；`_selftest_n5_reachability` `PASS=9 FAIL=0`；`_selftest_adjudicate_conflicts` `PASS=28 FAIL=0`；env_layer `3 passed`；**原 ENV_ROOT 零写入**（`find -newer` 命中 0） |
+| 端到端（drill） | `.dev-ws` + `bash spikes/accept_v1_run.sh` | `phase 1 PASS=50`、`phase 2 PASS=27`、`phase 3 PASS=18`、`phase 4 PASS=8`、`phase 4b PASS=8`、`phase 5 PASS=6`，全 `FAIL=0`，`=> ALL PASS`（`E2E_RC=0`）；跑完按脚本 `--cleanup` 删除 `.dev-ws` |
+| 文档门 | `pytest -q tests/test_doc_links.py` | `65 passed in 2.02s` |
+
+### 107.3 未做 / 不声称
+
+- 未跑浏览器门（本轮无界面改动）；未接内网真实工程验收（`stateHash` 只到 C1 机制层）。
+- 旧 run **不回填**：无 `state_hash` 的已签闸门按 legacy 告警放行（REV-15 §6）。
+- 已知边界：`sandbox/`（N6 工作副本）计入材料 ⇒ N6 改写后旧批准会失效（符合"改件后必须重跑闸门"）。
+- 派生副本（`.dev-ws` / `.env-copy`）已按脚本清理，未入库。

@@ -642,6 +642,12 @@ def gate_set(run_id, gate_id, decision, actor, actor_kind, note=None,
     if artifacts:
         g["artifacts"] = list(artifacts)
     st["updated_at"] = now_iso()
+    # SPEC-REV-15：签署必须绑产物指纹（材料集全量 md5 + 闸门摘要）。
+    # 材料不可读 ⇒ **抛 GateMaterialError**（调用方显式失败，不得跳过或当"未变"）。
+    # 放在 anchor 之前：state_hash 是 gates.json 的一部分，必须被锚覆盖。
+    if decision != "pending":
+        g["state_hash"] = gate_state_hash_record(
+            st, gate_id, gate_material_manifest(run_id))
     # **写盘前**让 schema 进闭环（F-SCHEMA-02）：此前 `gate_state.schema.json` 是个
     # **死文件** —— 没有任何脚本调用它，于是它要抓的那种错（契约常量与实际产物不符）
     # 反而不会有任何人发现（F-SCHEMA-01 就是这么漏过去的）。
@@ -699,6 +705,116 @@ def gate_verify_anchor(run_id):
         return False, ("状态被外部修改：锚期望 %s 实际 %s（gates.sha256 与内部 anchor 也需一致）"
                        % (want[:12], got[:12]))
     return True, "锚一致（%s…）" % got[:12]
+
+
+# ---------------------------------------------------------------- stateHash（SPEC-REV-15）
+#
+# 问题：`gates.sha256` 的锚只覆盖 `gates.json` **自身** ⇒ 批准之后改件不会让批准失效。
+# 本段把"签署所绑材料"做成可复算指纹：签时记全量材料 md5 + 闸门摘要，`require-signed`
+# 复算并比对；变更 ⇒ STATE_HASH_MISMATCH（旧签署不再有效）。**单一实现**：遍历/md5/canon 全复用本库。
+
+#: 材料集**排除项**：都是"签署之后会合法变化"的记录/缓存，不是材料。
+#: - gates.* 是本记录自身（由 anchor 保护）；agent_* 是模型/控制审计（只增不改）；
+#:   decisions/ 是逐条处置落账（签署**之后**由 Host 写）；view.json 是界面投影缓存。
+GATE_MATERIAL_EXCLUDE_FILES = ("gates.json", "gates.sha256", "view.json")
+GATE_MATERIAL_EXCLUDE_DIRS = ("agent_calls", "agent_controls", "decisions")
+
+#: stateHash 的 schema/algo 标识（**单一定义**：写与校验共用，禁止字面量漂移）。
+STATE_HASH_SCHEMA = "kb/gate-state-hash/1"
+STATE_HASH_ALGO = "sha256-of-materials+gate-summary"
+
+
+class GateMaterialError(Exception):
+    """材料集不可读（权限/IO）。**不得**跳过、不得当"未变"、不得用 mtime 代替内容。"""
+
+
+def gate_material_manifest(run_id):
+    """`[{path,size,md5}, ...]`，按相对路径字典序；跳过符号链接；不可读 ⇒ GateMaterialError。"""
+    root = run_dir(run_id)
+    if not os.path.isdir(root):
+        raise GateMaterialError("run 目录不存在：%s" % relpath(root))
+    items = []
+    for dirpath, dirnames, filenames in os.walk(root, followlinks=False):
+        dirnames[:] = sorted(d for d in dirnames if d not in GATE_MATERIAL_EXCLUDE_DIRS)
+        for name in sorted(filenames):
+            full = os.path.join(dirpath, name)
+            rel = os.path.relpath(full, root).replace(os.sep, "/")
+            if rel in GATE_MATERIAL_EXCLUDE_FILES:
+                continue
+            if os.path.islink(full) or not os.path.isfile(full):
+                continue
+            try:
+                with open(full, "rb") as fh:
+                    data = fh.read()
+            except OSError as exc:
+                raise GateMaterialError("材料不可读：%s（%s）" % (rel, exc)) from None
+            items.append({"path": rel, "size": len(data),
+                          "md5": hashlib.md5(data).hexdigest()})
+    items.sort(key=lambda item: item["path"])
+    return items
+
+
+def _gate_summary_map(st):
+    """闸门摘要（**不含 history**：只增不改，不作指纹）。"""
+    keys = ("decision", "status", "actor", "actor_kind", "human_signed", "signed_at")
+    return {gid: {k: st["gates"][gid].get(k) for k in keys} for gid in GATE_IDS}
+
+
+def gate_state_hash_record(st, gate_id, materials):
+    """按当前状态 + 材料集算 stateHash 记录（被 anchor 覆盖，不另加锚）。"""
+    g = st["gates"][gate_id]
+    gates_map = _gate_summary_map(st)
+    payload = {
+        "schema": STATE_HASH_SCHEMA,
+        "run_id": st["run_id"], "gate_id": gate_id,
+        "decision": g.get("decision"), "actor": g.get("actor"),
+        "actor_kind": g.get("actor_kind"), "signed_at": g.get("signed_at"),
+        "manifest_from": st.get("manifest_from"), "manifest_to": st.get("manifest_to"),
+        "materials_digest": sha256_text(canon_json(materials)),
+        "gates_digest": sha256_text(canon_json(gates_map)),
+    }
+    return {"algo": STATE_HASH_ALGO, "value": sha256_text(canon_json(payload)),
+            "computed_at": g.get("signed_at") or now_iso(),
+            "materials_digest": payload["materials_digest"],
+            "gates_digest": payload["gates_digest"],
+            "materials": materials, "gates": gates_map}
+
+
+def gate_verify_state_hash(run_id, gate_id):
+    """返回 (ok, detail)：True 一致 / False 不一致（detail 含 changed/added/removed）/ None=legacy。"""
+    st = read_json(os.path.join(run_dir(run_id), "gates.json"))
+    rec = (st["gates"].get(gate_id) or {}).get("state_hash")
+    if not isinstance(rec, dict) or not rec.get("value"):
+        return None, "无 stateHash（legacy 状态：未校验签署所绑材料）"
+    try:
+        materials = gate_material_manifest(run_id)
+    except GateMaterialError as exc:
+        return False, "STATE_HASH_MISMATCH：%s" % exc
+
+    old = {i["path"]: i for i in (rec.get("materials") or [])}
+    cur = {i["path"]: i for i in materials}
+    changed = sorted(p for p in set(old) & set(cur)
+                     if old[p].get("md5") != cur[p].get("md5")
+                     or old[p].get("size") != cur[p].get("size"))
+    added = sorted(set(cur) - set(old))
+    removed = sorted(set(old) - set(cur))
+    fresh = gate_state_hash_record(st, gate_id, materials)
+    if not (changed or added or removed) and fresh["value"] == rec.get("value"):
+        return True, "stateHash 一致（%s…）" % str(rec.get("value"))[:12]
+
+    parts = ["STATE_HASH_MISMATCH：%s 的签署所绑材料已变（旧签署不再有效，须重跑闸门）" % gate_id]
+
+    def _fmt(label, xs):
+        if xs:
+            head = ", ".join(xs[:5]) + (" …" if len(xs) > 5 else "")
+            parts.append("%s %d：%s" % (label, len(xs), head))
+
+    _fmt("changed", changed)
+    _fmt("added", added)
+    _fmt("removed", removed)
+    if not (changed or added or removed):
+        parts.append("闸门摘要或签署字段已变（value 不一致）")
+    return False, "；".join(parts)
 
 
 def gate_summary(run_id):

@@ -55,6 +55,33 @@
         "note": { "type": ["string", "null"] },
         "rework_target": { "enum": [null, "N4", "N6"] },
         "artifacts": { "type": "array", "items": { "type": "string" } },
+        "state_hash": {
+          "type": ["object", "null"],
+          "description": "SPEC-REV-15：签署所绑材料指纹（全量材料集 md5 + 闸门摘要）；require-signed 复算，改件后批准必须失败。被 anchor 覆盖；旧记录可缺省（legacy，仅告警）",
+          "required": ["algo", "value", "materials", "gates"],
+          "additionalProperties": true,
+          "properties": {
+            "algo": { "const": "sha256-of-materials+gate-summary" },
+            "value": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+            "computed_at": { "type": "string" },
+            "materials_digest": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+            "gates_digest": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+            "materials": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["path", "size", "md5"],
+                "additionalProperties": false,
+                "properties": {
+                  "path": { "type": "string" },
+                  "size": { "type": "integer", "minimum": 0 },
+                  "md5": { "type": "string", "pattern": "^[0-9a-f]{32}$" }
+                }
+              }
+            },
+            "gates": { "type": "object" }
+          }
+        },
         "history": {
           "type": "array",
           "description": "F-GATE-02：append-only 变更史；task-19 起必填。旧签署记录不得因再次签署而消失",

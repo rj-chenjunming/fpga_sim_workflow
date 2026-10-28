@@ -211,6 +211,8 @@
 3. **验收统一用 §10 的编号**（CL/DS/WM/IL/EXP/OBS/REG），本次追加 DS-08/DS-09；探针证据按 A7 分层标注（C1/C2）。
 4. **S0b（kb stateHash）保持独立**，不折进 REV-13（它是 kb 冻结目录变更 + 证据）。
 
+**S0b 已交付（2026-10-28）**：[SPEC-REV-15](../spec/SPEC-REV-15-20261028.md) + 实现（`kb/tools/kb_lib.py`、`kb/tools/gate.py`、`kb/schema/gate_state.schema.json`、`loop/tests/test_gate_state_hash.py`），门与数字见 STATUS §107（kb 自测 `PASS=10/9/28`、env_layer `3 passed`、全量 `1062 passed` + 环境层 3 failed/浏览器 113 errors）。
+
 **S0 已交付（2026-10-28）**：[SPEC-REV-14](../spec/SPEC-REV-14-20261028.md)（D1–D4 偏离 + B1–B7 补丁 + A1–A10 采纳映射 + 切片映射 + `DS-08/DS-09`）；SPEC-06/07/08 各加一段指针。实现未开始。
 
 ### 9.5 冲突裁决（2026-10-28，全部已拍）

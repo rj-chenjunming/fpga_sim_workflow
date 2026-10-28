@@ -70,7 +70,7 @@
 | SPEC-08（分期实施） | [DSH Agent 执行后端](spec/DSH_AGENT_RUNTIME_SPEC.md) | D1 首片提取后端边界；原生 DSH 核、工具/候选权限及真实会话接入仍待验证 |
 | SPEC-09（分期实施） | [AI 工作面板体验设计](spec/AI_WORK_PANEL_SPEC.md) | 首批统一入口与 N3/N6/N8 成果展示；后置能力、验证边界见 STATUS §55 |
 
-DSH 交互三层对齐（2026-10-28）：[体检对照表](plans/2026-10-28-three-layer-interaction-alignment.md) → [P1–P8 探针实测](evidence/DSH_PROBE_20261028/README.md) （只体检不改代码；Q1–Q7 + C1–C4 冲突裁决已定）→ [REV-14 执行器契约对齐](spec/SPEC-REV-14-20261028.md)（D1–D4 偏离登记，未实现）。
+DSH 交互三层对齐（2026-10-28）：[体检对照表](plans/2026-10-28-three-layer-interaction-alignment.md) → [P1–P8 探针实测](evidence/DSH_PROBE_20261028/README.md) （只体检不改代码；Q1–Q7 + C1–C4 冲突裁决已定）→ [REV-14 执行器契约对齐](spec/SPEC-REV-14-20261028.md)（D1–D4 偏离登记，未实现）→ [REV-15 闸门绑产物指纹](spec/SPEC-REV-15-20261028.md)（S0b，已实现 C1）。
 
 DSH 接入阅读入口：[设计草案](spec/DSH_AGENT_RUNTIME_SPEC.md) → [实施切片](plans/2026-10-23-dsh-agent-runtime.md)。保持 Agently 默认，N3 做只读接入探针，N6 做价值对照，按收益决定是否扩展。
 当前开发：[D1 后端边界首片](plans/2026-10-24-dsh-backend-boundary.md)；不把后端抽象或受控测试等同于真实 DSH 接通。

@@ -391,9 +391,10 @@ async def test_run_attempt_seals_working_memory_and_cold_source_map(ctx, provide
     assert source_map["entries"] and all(item["consumers"] == ["N3"]
                                          for item in source_map["entries"])
     assert {item["source_keys"][0] for item in source_map["entries"]} == set(source_map["sources"])
-    # `input_digest` 形状保持 `{key: len|value}`（多一个机制键可以，形状不变）
-    assert set(out["input_digest"]) == set(sent)
-    assert out["input_digest"]["working_memory"] == len(sent["working_memory"])
+    # `input_digest` 形状保持 `{key: len|value}`，且**不计入机制层派生投影** `working_memory`
+    # （展示摘录回到 S3 之前的字节口径；`request.input` 仍完整封存 working_memory）。
+    assert set(out["input_digest"]) == set(sent) - {"working_memory"}
+    assert "working_memory" not in out["input_digest"]
 
 
 async def test_scope_and_v1_experiences_unchanged_by_working_memory(ctx, provider):

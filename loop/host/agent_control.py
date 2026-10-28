@@ -18,6 +18,7 @@ import hashlib
 import json
 import os
 import re
+import time
 from pathlib import Path
 
 from host import agent_memory as AM, paths as P
@@ -311,7 +312,10 @@ IL_SCOPES = frozenset({'attempt', 'node_rework', 'run'})
 IL_OPERATIONS = frozenset({'create', 'revoke', 'supersede'})
 IL_MESSAGE_LIMIT = 4000
 IL_DIR = ('agent_controls', 'run')
-_IL_LOCK_NAME = '.lock'
+#: 单写者锁放**run 根**：`agent_controls/**` 只增不改，不能被锁文件改写（P2-9）。
+_IL_LOCK_NAME = '.agent-instruction-writer.lock'
+#: 事件瞬时半发布（data 已在、.sha256 未落盘）的有界单次重试间隔（P2-7）。
+_IL_READ_RETRY_S = 0.05
 _IL_FILE = re.compile(r'instruction-(\d{6,})\.json')
 _IL_ATTEMPT_DIR = re.compile(r'attempt-(\d{6,})')
 #: 命令载荷允许的字段（未知字段在写前拒绝）。
@@ -339,11 +343,15 @@ def _il_rel(sequence: int) -> str:
 
 
 def next_attempt(root, node) -> int:
-    """Host 预留的下一次明确尝试序号（与 `AM.Attempt` 取首个空位、`Session.execute` 的
-    `max+1` 同一算法；同 run 同节点的尝试创建由控制边界串行化）。"""
+    """Host 预留的下一次明确尝试序号：与 `AM.Attempt.__init__` **同一「首个空位」算法**
+    （从 1 起找第一个不存在的 `attempt-N`，不是 `max+1`）。同 run 同节点的尝试创建由
+    控制边界串行化，因此预测与实际一致；不一致时调用方显式失败（见 `model_request`）。"""
     _key(root, node)
-    previous = _attempts(root, node)
-    return int(previous[-1].name.split('-')[1]) + 1 if previous else 1
+    existing = {int(path.name.split('-')[1]) for path in _attempts(root, node)}
+    sequence = 1
+    while sequence in existing:
+        sequence += 1
+    return sequence
 
 
 @contextlib.contextmanager
@@ -355,9 +363,7 @@ def write_lock(root):
     """
     if fcntl is None:  # pragma: no cover - 非 POSIX 平台
         raise ControlConflict('本平台没有可用的单写者文件锁；拒绝指令写入')
-    directory = _il_dir(root)
-    directory.mkdir(parents=True, exist_ok=True)
-    path = _safe(root, directory / _IL_LOCK_NAME)
+    path = _safe(root, Path(root) / _IL_LOCK_NAME)
     fd = os.open(path, os.O_CREAT | os.O_RDWR, 0o600)
     try:
         try:
@@ -365,9 +371,9 @@ def write_lock(root):
         except OSError as exc:
             holder = ''
             with contextlib.suppress(OSError, ValueError):
-                holder = (directory / _IL_LOCK_NAME).read_text(encoding='utf-8').strip()
+                holder = path.read_text(encoding='utf-8').strip()
             raise ControlConflict(
-                f'指令写入锁被占用（{IL_DIR[0]}/{IL_DIR[1]}/{_IL_LOCK_NAME}），拒绝并发写入：'
+                f'指令写入锁被占用（{_IL_LOCK_NAME}），拒绝并发写入：'
                 f'{exc.strerror or exc}{("；持有者：" + holder) if holder else ""}') from exc
         with contextlib.suppress(OSError):
             os.ftruncate(fd, 0)
@@ -549,6 +555,16 @@ def _il_instruction_event(root, event, sequence) -> dict:
     return {'event': event, 'operation': operation, 'target': target, 'instruction': item}
 
 
+def _il_read(root, path):
+    """读一条已封存事件：`AM.seal_record` 的发布顺序是 data → sha，允许**一次有界重试**
+    覆盖这个瞬时窗口（P2-7）。校验和不匹配 / JSON 坏是篡改或损坏，**不重试**。"""
+    try:
+        return _read(root, path)
+    except FileNotFoundError:
+        time.sleep(_IL_READ_RETRY_S)
+        return _read(root, path)
+
+
 def _il_events(root) -> list[dict]:
     """读取并核验 run 指令事件流（按 seq 排序；不连续/坏件/身份不符 ⇒ 显式失败）。"""
     directory = Path(root) / IL_DIR[0] / IL_DIR[1]
@@ -569,7 +585,7 @@ def _il_events(root) -> list[dict]:
         if sequence != expected:
             raise ValueError(f'指令事件不连续（缺失或重复）：期望 {expected:06d}，实际 {sequence:06d}')
         try:
-            event = _read(root, path)
+            event = _il_read(root, path)
         except FileNotFoundError as exc:
             raise ValueError(f'指令事件不完整（incomplete）：{path.name}') from exc
         except ValueError as exc:
@@ -787,14 +803,16 @@ def submit(root, data) -> dict:
     expected = data.get('expected_instruction_revision')
     if isinstance(expected, bool) or not isinstance(expected, int) or expected < 0:
         raise ValueError('expected_instruction_revision 必须是非负整数')
+    target = data.get('target_instruction_id')
     body = _il_body(root, operation, data)
-    # 幂等指纹只覆盖**声明的载荷**（不含 Host 解析出的依赖版本）：同 request_id 同声明的重放
-    # 即使期间资源内容变化也返回原回执；依赖版本是 Host 记录的事实，不是客户端命令的一部分。
+    # 幂等指纹覆盖**声明的载荷**（含 `target_instruction_id`：revoke/supersede 换目标即不同命令，
+    # REV-13 §7.2「新字段全部参与命令指纹」），但不含 Host 解析出的依赖版本（那是 Host 记录的事实）。
     declared = {'instruction': {key: value for key, value in body['instruction'].items()
                                 if key != 'dependency_versions'}} if body else {}
     fingerprint = AM.fingerprint({'operation': operation, 'actor': actor,
                                   'request_id': request_id,
-                                  'expected_instruction_revision': expected, **declared})
+                                  'expected_instruction_revision': expected,
+                                  'target_instruction_id': target, **declared})
     with write_lock(root):
         try:
             entries = _il_events(root)
@@ -812,7 +830,6 @@ def submit(root, data) -> dict:
             raise ControlConflict(
                 f'指令目录 revision 已变化（期望 {expected}，当前 {len(entries)}），请刷新后重试')
         valid, _ = _il_reduce(entries)
-        target = data.get('target_instruction_id')
         if operation != 'create' and target not in valid:
             raise ControlConflict(f'指令目标不存在或已失效：{target}')
         revision = len(entries) + 1
@@ -831,5 +848,6 @@ def submit(root, data) -> dict:
                     'node': instruction['target_nodes'][0],
                     'attempt': next_attempt(root, instruction['target_nodes'][0])}
             event['instruction'] = instruction
+        _il_dir(root).mkdir(parents=True, exist_ok=True)
         _seal(_il_path(root, revision), event)
         return _il_receipt(root, event)

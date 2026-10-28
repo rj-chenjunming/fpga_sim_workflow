@@ -132,10 +132,13 @@ async def run_attempt(
     request_input["working_memory"] = working_memory.payload
     # EXP-03：可选经验批次按**剩余预算**判定 —— 加上经验后超上限 ⇒ 整批不采用（不截断、不取前 N），
     # 普通执行在必需材料完整时继续；最终准入判据仍唯一是 `AM.check_budget`（红线 8）。
+    # **只对 v2 目录选择生效**（REG-01 邻域）：v1 命中经验就照旧采用，若因此超总预算，
+    # 由 `AM.check_budget` 让节点显式失败（不静默弃用经验、不改变 v1 的可观察行为）。
     if selection.lessons:
         remaining = AM.measure_budget(request_input, contract)["used_bytes"]
         batch_bytes = AM.experience_batch_bytes(selection.lessons)
-        if remaining + batch_bytes > AM.MAX_CONTEXT_BYTES:
+        if (selection.record.get("catalog_version") == 2
+                and remaining + batch_bytes > AM.MAX_CONTEXT_BYTES):
             selection = selection.reject_batch(
                 "budget_batch_rejected", stage="remaining_budget",
                 detail=(f"remaining {remaining} + batch {batch_bytes} > "
@@ -167,9 +170,11 @@ async def run_attempt(
         },
     })
     if attempt.identity["attempt"] != attempt_sequence:
-        raise RuntimeError(
-            f'指令作用域预留的尝试序号 {attempt_sequence} 与实际 attempt '
-            f'{attempt.identity["attempt"]} 不一致；拒绝按错误尝试身份注入指令')
+        # 先封存失败事实（避免留下只有 request 的 incomplete 记录），再显式失败。
+        message = (f'指令作用域预留的尝试序号 {attempt_sequence} 与实际 attempt '
+                   f'{attempt.identity["attempt"]} 不一致；拒绝按错误尝试身份注入指令')
+        attempt.finish("error", error=message, backend=backend_metadata)
+        raise RuntimeError(message)
     for diagnostic in diagnostics:
         ctx.event("warning", node=node, status="experience_rejected", detail={"message": diagnostic})
     kind = prompt_key.split("_", 1)[0]
@@ -233,7 +238,10 @@ async def run_attempt(
         "error": payload.get("error"),
         "validation": validation,
         "data": validation.get("accepted") or payload.get("data"),
-        "input_digest": {k: (len(v) if isinstance(v, (list, dict)) else v) for k, v in request_input.items()},
+        # 展示摘录（`model_steps` 的 N3 digest markdown）回到 S3 之前的字节口径：
+        # 不把机制层派生投影 `working_memory` 计入 key 集合；`request.input` 仍完整封存它。
+        "input_digest": {k: (len(v) if isinstance(v, (list, dict)) else v)
+                         for k, v in request_input.items() if k != "working_memory"},
         **attempt.refs(),
         "experience_diagnostics": diagnostics,
         "backend": backend_metadata,

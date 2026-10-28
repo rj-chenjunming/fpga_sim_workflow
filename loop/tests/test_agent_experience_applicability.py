@@ -809,3 +809,178 @@ async def test_migrated_draft_needs_human_completion_after_partial_approval(ctx,
     assert not record["input"].get("approved_experiences")
     assert rejected_reasons(record["experience_selection"]) == {"invalid_applicability"}
     assert not record["input"].get("approved_experiences")
+
+
+# ------------------------------------------- 复核修复 A（P2-11）：目录存在但无法采用时排障口径
+#
+# "目录不存在 = 未配置"与"目录存在但解析/版本非法 = 配置坏了"是两件事：前者 legacy 空态，
+# 后者必须在选择记录里明确标成 `selection_mode="catalog_rejected"` + 原因，否则排障会误以为
+# 走的是正常 legacy 精确匹配。行为不变：整目录不采用、不注入、诊断仍走 `experience catalog rejected: …`。
+
+
+@pytest.mark.parametrize("content,reason,detail", [
+    ('{"version": 2, "items": [', "catalog_unparsable", "JSONDecodeError"),
+    ('not-json-at-all', "catalog_unparsable", "JSONDecodeError"),
+])
+def test_unparsable_catalog_records_catalog_rejected_mode(ctx, content, reason, detail):
+    path = catalog_path(ctx)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content, encoding="utf-8")
+    selection = select(ctx)
+    assert selection.lessons == [], "坏目录整目录不采用、不注入"
+    record = selection.record
+    assert record["selection_mode"] == "catalog_rejected"
+    assert record["rejection"] == {"reason": reason, "detail": detail}
+    assert record["batch"]["decision"] == "catalog_rejected"
+    assert record["selected"] == [] and record["rejected"] == []
+    assert selection.diagnostics and all(
+        "experience catalog rejected" in message for message in selection.diagnostics)
+
+
+def test_unreadable_catalog_records_catalog_rejected_mode(ctx):
+    path = catalog_path(ctx)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.mkdir()  # 目录存在但不是文件 ⇒ 读取失败
+    selection = select(ctx)
+    assert selection.lessons == []
+    record = selection.record
+    assert record["selection_mode"] == "catalog_rejected"
+    assert record["rejection"]["reason"] == "catalog_unreadable"
+    assert record["rejection"]["detail"] == "IsADirectoryError"
+    assert record["catalog_sha256"] is None
+    assert record["batch"]["decision"] == "catalog_rejected"
+
+
+@pytest.mark.parametrize("document,detail", [
+    ({"version": 3, "items": []}, "format/version"),
+    ({"version": 2, "items": "not-a-list"}, "format/version"),
+    ({"version": 1, "items": [{"id": "x"}, {"id": "x"}]},
+     "items must be unique objects with non-empty id"),
+])
+def test_invalid_version_or_format_records_catalog_rejected_mode(ctx, document, detail):
+    path = catalog_path(ctx)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(document), encoding="utf-8")
+    selection = select(ctx)
+    assert selection.lessons == []
+    record = selection.record
+    assert record["selection_mode"] == "catalog_rejected"
+    assert record["rejection"] == {"reason": "catalog_invalid", "detail": detail}
+    assert record["batch"]["decision"] == "catalog_rejected"
+    assert selection.diagnostics and all(
+        "experience catalog rejected" in message for message in selection.diagnostics)
+
+
+def test_absent_catalog_keeps_the_legacy_empty_state(ctx):
+    """无目录 = 未配置：旧行为不变（空选择、无诊断、legacy 空态）。"""
+    selection = select(ctx)
+    assert selection.lessons == [] and selection.diagnostics == []
+    record = selection.record
+    assert record["selection_mode"] == "legacy_scope_match"
+    assert record["catalog_version"] is None and record["catalog_sha256"] is None
+    assert record["batch"]["decision"] == "no_applicable_items"
+    assert "rejection" not in record
+
+
+# ------------------------------------ 复核修复 C（P2-6）：剩余预算整批拒用只在 v2 目录生效
+#
+# v1 目录（`{version:1}`，scope 逐值相等）是既有行为：命中经验就采用；若因此超总预算，
+# 旧行为是 `AM.check_budget` 让**节点显式失败**（RuntimeError，不调用模型），而不是静默弃用
+# 经验继续执行。v2 才按"剩余预算"整批不采用（EXP-03）。两者记录必须各自自洽：
+# v1 `batch.enforced=false` ⇒ decision 不得是 rejected；v2 `enforced=true` ⇒ rejected 有 reason/stage。
+
+
+def v1_lesson(ctx, scope):
+    """构造一条与当前请求 scope 逐值相等的 v1 条目（来源 + 指纹就地核验）。"""
+    source = data_file(ctx, DEFAULT_SOURCE, "human checked evidence")
+    return {"id": "lesson-1", "status": "approved", "approved_by": "human:reviewer",
+            "scope": copy.deepcopy(scope), "advice": DEFAULT_ADVICE,
+            "source": {"path": DEFAULT_SOURCE,
+                       "sha256": hashlib.sha256(source.read_bytes()).hexdigest()}}
+
+
+def latest_request(ctx, node="N3"):
+    """最新一次尝试的封存 request（失败尝试也有 result=error，可直接 verify_attempt）。"""
+    folder = sorted((ctx.run_dir / "agent_calls" / node).iterdir())[-1]
+    return AM.verify_attempt(folder)
+
+
+async def measure_v1_batch_over_budget(ctx, provider, monkeypatch):
+    """铺一条 v1 命中经验，测量 base/batch 字节后把总预算压到"加上经验即超"。"""
+    first = await call(ctx)                       # 先取当前请求的审计 scope
+    write_catalog(ctx, [v1_lesson(ctx, record_of(ctx, first)["scope"])], version=1)
+    measured = await call(ctx)                    # 正常一次：拿到实际注入的经验
+    record = record_of(ctx, measured)
+    lessons = record["input"]["approved_experiences"]
+    assert [entry["id"] for entry in lessons] == ["lesson-1"]
+    contract = {key: record[key] for key in ("info", "instruct", "schema")}
+    without = {key: value for key, value in record["input"].items()
+               if key != "approved_experiences"}
+    base = AM.measure_budget(without, contract)["used_bytes"]
+    # 用**真实序列化**测量"加上经验后"的总量，再把上限压到刚好低于它：
+    # v1 走旧路径时唯一判据是 `AM.check_budget` 的精确测量（不是 base+batch 的保守估计）。
+    with_experiences = {**without, "approved_experiences": lessons}
+    actual = AM.measure_budget(with_experiences, contract)["used_bytes"]
+    assert actual > base, "断言环境无效：加上经验必须真的更大"
+    monkeypatch.setattr(AM, "MAX_CONTEXT_BYTES", actual - 1)
+    return len(provider["inputs"])
+
+
+async def test_v1_experience_over_budget_fails_at_check_budget_without_model_call(
+        ctx, provider, monkeypatch):
+    """① v1 + 超预算 ⇒ 旧行为：`check_budget` 让节点失败（RuntimeError），不调用模型。"""
+    calls_before = await measure_v1_batch_over_budget(ctx, provider, monkeypatch)
+    with pytest.raises(RuntimeError, match="budget|预算"):
+        await call(ctx)
+    assert len(provider["inputs"]) == calls_before, "v1 超预算必须在调用模型前失败"
+    attempt = latest_request(ctx)
+    assert attempt["result"]["status"] == "error"
+    assert attempt["request"]["input"].get("approved_experiences"), \
+        "v1 不得静默弃用经验：失败原因应是总预算，而不是把经验拿掉后继续执行"
+
+
+async def test_v1_batch_record_never_contradicts_itself(ctx, provider, monkeypatch):
+    """③ v1 记录不自相矛盾：`batch.enforced=false` 且 decision 不是 rejected（无 reason/stage）。"""
+    await measure_v1_batch_over_budget(ctx, provider, monkeypatch)
+    with pytest.raises(RuntimeError, match="budget|预算"):
+        await call(ctx)
+    attempt = latest_request(ctx)
+    selection = attempt["request"]["experience_selection"]
+    assert selection["catalog_version"] == 1
+    assert selection["selection_mode"] == "legacy_scope_match"
+    batch = selection["batch"]
+    assert batch["enforced"] is False
+    assert batch["decision"] not in ("rejected", "budget_batch_rejected")
+    assert "reason" not in batch and "stage" not in batch, batch
+    assert [entry["id"] for entry in selection["selected"]] == ["lesson-1"]
+
+
+async def test_v2_remaining_budget_still_rejects_batch_and_continues(ctx, provider,
+                                                                    monkeypatch):
+    """② v2 + 超预算 ⇒ 保持 EXP-03：整批不采用（enforced=true + rejected/reason/stage），节点继续。"""
+    write_catalog(ctx, [v2_item(ctx, item_id="advice-a", kind="general_advice",
+                                advice="A" * 1200, environment_policy=APPROVED_POLICY),
+                        v2_item(ctx, item_id="advice-b", kind="general_advice",
+                                advice="B" * 1200, environment_policy=APPROVED_POLICY)])
+    first = await call(ctx)
+    record = record_of(ctx, first)
+    lessons = record["input"]["approved_experiences"]
+    assert [entry["id"] for entry in lessons] == ["advice-a", "advice-b"]
+    contract = {key: record[key] for key in ("info", "instruct", "schema")}
+    without = {key: value for key, value in record["input"].items()
+               if key != "approved_experiences"}
+    base = AM.measure_budget(without, contract)["used_bytes"]
+    monkeypatch.setattr(AM, "MAX_CONTEXT_BYTES",
+                        base + AM.experience_batch_bytes(lessons) - 1)
+
+    out = await call(ctx)
+    record = record_of(ctx, out)
+    assert not record["input"].get("approved_experiences")
+    assert attempt_of(ctx, out)["result"]["status"] == "validated"
+    selection = record["experience_selection"]
+    assert selection["catalog_version"] == 2
+    batch = selection["batch"]
+    assert batch["enforced"] is True
+    assert batch["decision"] == "rejected" and batch["reason"] == "budget_batch_rejected"
+    assert batch["stage"] == "remaining_budget"
+    assert {entry["id"] for entry in selection["rejected"]} == {"advice-a", "advice-b"}

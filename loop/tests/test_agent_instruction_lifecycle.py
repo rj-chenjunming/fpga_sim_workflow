@@ -746,3 +746,201 @@ def test_api_legacy_control_route_and_instruction_route_coexist(monkeypatch, ctx
         "session_id": "stale", "expected_revision": 1})
     assert stale.status_code == 409
     assert not (ctx.run_dir / "agent_controls" / "run").exists()
+
+
+# ---------------------------------------------------------------- 复核修复（2026-10-28 独立复核 1×P1 + 4×P2）
+
+
+async def test_idempotency_fingerprint_includes_target_instruction_id(ctx):
+    """P1-1：`target_instruction_id` 必须参与命令指纹 —— 同 request_id 换 target 不得返回旧回执。"""
+    first = C.submit(ctx.run_dir, payload(ctx.run_dir))
+    second = C.submit(ctx.run_dir, payload(ctx.run_dir, request_id="req-2",
+                                           expected_instruction_revision=1))
+    assert first["instruction"]["id"] != second["instruction"]["id"]
+    revoke = C.submit(ctx.run_dir, payload(
+        ctx.run_dir, operation="revoke", request_id="req-revoke",
+        expected_instruction_revision=2, target_instruction_id=first["instruction"]["id"]))
+    assert revoke["replaces_instruction_id"] == first["instruction"]["id"]
+
+    # 同 request_id + 同 expected revision，只是换 target ⇒ 冲突（不能静默返回上一条回执）
+    with pytest.raises(C.ControlConflict, match="request_id"):
+        C.submit(ctx.run_dir, payload(
+            ctx.run_dir, operation="revoke", request_id="req-revoke",
+            expected_instruction_revision=2,
+            target_instruction_id=second["instruction"]["id"]))
+    assert len(event_files(ctx.run_dir)) == 3, "换 target 的重放不得写事件"
+    states = {item["instruction_id"]: item["state"]
+              for item in C.instructions_view(ctx.run_dir)["instructions"]}
+    assert states[first["instruction"]["id"]] == "revoked"
+    assert states[second["instruction"]["id"]] == "valid", "未被撤销的目标必须仍有效"
+
+    # 同 request_id + 同 target 重放 ⇒ 原回执、事件数不变
+    replay = C.submit(ctx.run_dir, payload(
+        ctx.run_dir, operation="revoke", request_id="req-revoke",
+        expected_instruction_revision=2, target_instruction_id=first["instruction"]["id"]))
+    assert replay == revoke
+    assert len(event_files(ctx.run_dir)) == 3
+
+    # supersede 同 request_id + 同替代内容，换 target 同样必须冲突
+    third = C.submit(ctx.run_dir, payload(ctx.run_dir, request_id="req-3",
+                                          expected_instruction_revision=3))
+    fourth = C.submit(ctx.run_dir, payload(ctx.run_dir, request_id="req-4",
+                                           expected_instruction_revision=4))
+    supersede = C.submit(ctx.run_dir, payload(
+        ctx.run_dir, operation="supersede", request_id="req-supersede",
+        expected_instruction_revision=5, target_instruction_id=third["instruction"]["id"],
+        message="统一替代内容"))
+    with pytest.raises(C.ControlConflict, match="request_id"):
+        C.submit(ctx.run_dir, payload(
+            ctx.run_dir, operation="supersede", request_id="req-supersede",
+            expected_instruction_revision=5,
+            target_instruction_id=fourth["instruction"]["id"], message="统一替代内容"))
+    assert supersede["instruction"]["version"] == 2
+    assert len(event_files(ctx.run_dir)) == 6
+
+
+def test_api_conflicts_when_same_request_id_targets_another_instruction(monkeypatch, ctx):
+    """P1-1（API 层）：换 target 的同 request_id 重放 ⇒ 409，且不得静默撤销/替代别的指令。"""
+    client = api_client(monkeypatch, (ctx.run_id, ctx.run_dir))
+    url = f"/api/runs/{ctx.run_id}/instructions"
+    first = C.submit(ctx.run_dir, payload(ctx.run_dir))
+    second = C.submit(ctx.run_dir, payload(ctx.run_dir, request_id="req-2",
+                                           expected_instruction_revision=1))
+    assert client.post(url, json=payload(
+        ctx.run_dir, operation="revoke", request_id="req-revoke",
+        expected_instruction_revision=2,
+        target_instruction_id=first["instruction"]["id"])).status_code == 200
+    conflict = client.post(url, json=payload(
+        ctx.run_dir, operation="revoke", request_id="req-revoke",
+        expected_instruction_revision=2,
+        target_instruction_id=second["instruction"]["id"]))
+    assert conflict.status_code == 409, conflict.text
+    view = client.get(url).json()
+    states = {item["instruction_id"]: item["state"] for item in view["instructions"]}
+    assert states[second["instruction"]["id"]] == "valid"
+    assert view["revision"] == 3
+
+
+def test_next_attempt_uses_first_free_slot_like_am_attempt(ctx):
+    """P2-2：`next_attempt` 与 `AM.Attempt` 同一「首个空位」算法（不是 max+1）。"""
+    directory = ctx.run_dir / "agent_calls" / "N3"
+    (directory / "attempt-000001").mkdir(parents=True)
+    (directory / "attempt-000003").mkdir()
+    assert C.next_attempt(ctx.run_dir, "N3") == 2
+    attempt = AM.Attempt(ctx, "N3", {"input": {}})
+    assert attempt.identity["attempt"] == 2, "同一算法的直接证据：AM.Attempt 也落在 2"
+
+
+async def test_reserved_attempt_mismatch_seals_error_result(ctx, provider, monkeypatch):
+    """P2-2：预留序号与实际 attempt 不一致 ⇒ 先封存 `error` 结果再显式失败（不留半件）。"""
+    monkeypatch.setattr(C, "next_attempt", lambda *args, **kwargs: 99)
+    with pytest.raises(RuntimeError, match="尝试|序号"):
+        await call(ctx)
+    record = AM.verify_attempt(ctx.run_dir / "agent_calls" / "N3" / "attempt-000001")
+    assert record["result"]["status"] == "error", "不得留下只有 request 的 incomplete 记录"
+    assert "99" in record["result"]["error"] or "尝试" in record["result"]["error"]
+    assert record["request"]["instruction_projection"]["effective_sha256"]
+
+
+async def test_transient_half_published_event_is_read_after_one_retry(ctx, monkeypatch):
+    """P2-7：data 在、`.sha256` 未落盘的瞬时窗口 ⇒ 有界单次重试后读取成功。"""
+    C.submit(ctx.run_dir, payload(ctx.run_dir))
+    real = C._read
+    calls = {"n": 0}
+
+    def flaky(root, path):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise FileNotFoundError(path.name)
+        return real(root, path)
+
+    monkeypatch.setattr(C, "_read", flaky)
+    view = C.instructions_view(ctx.run_dir)
+    assert calls["n"] == 2, "必须恰有一次有界重试"
+    assert view["revision"] == 1 and view["instructions"][0]["state"] == "valid"
+
+
+def test_permanent_incomplete_or_tampered_event_fails_explicitly(ctx, monkeypatch):
+    """P2-7 反向：永久缺件重试一次后显式失败；校验和不匹配（篡改）**不重试**。"""
+    C.submit(ctx.run_dir, payload(ctx.run_dir))
+    counter = {"n": 0}
+
+    def tampered(root, path):
+        counter["n"] += 1
+        raise ValueError(f"agent record checksum mismatch: {path.name}")
+
+    monkeypatch.setattr(C, "_read", tampered)
+    with pytest.raises(ValueError, match="checksum"):
+        C.instructions_view(ctx.run_dir)
+    assert counter["n"] == 1, "校验和不匹配是篡改/损坏，不得重试"
+
+    counter["n"] = 0
+
+    def missing(root, path):
+        counter["n"] += 1
+        raise FileNotFoundError(path.name)
+
+    monkeypatch.setattr(C, "_read", missing)
+    with pytest.raises(ValueError, match="不完整|incomplete"):
+        C.instructions_view(ctx.run_dir)
+    assert counter["n"] == 2, "有界单次重试后仍不完整 ⇒ 显式失败"
+
+
+DIRECTIVE = {"instruction_id": "ins-000001", "version": 1, "message": "重点核对新增端口",
+             "scope": "run", "event_revision": 1,
+             "sealed_ref": "agent_controls/run/instruction-000001.json"}
+
+
+@pytest.mark.parametrize("mutation", [
+    {"scope": "global"},
+    {"scope": None},
+    {"sealed_ref": "../instruction-000001.json"},
+    {"sealed_ref": "/etc/instruction-000001.json"},
+    {"sealed_ref": "agent_controls/run/instruction-1.json"},
+    {"sealed_ref": "agent_controls/elsewhere/instruction-000001.json"},
+    {"sealed_ref": "agent_controls/run/instruction-000002.json"},
+    {"sealed_ref": ""},
+])
+def test_working_memory_rejects_bad_directive_scope_or_source(ctx, mutation):
+    """P2-8：指令条目的 scope 枚举与封存来源引用（本 run 内、无逃逸）显式校验。"""
+    with pytest.raises(ValueError):
+        WM.build(ctx, "N3", {"run_id": ctx.run_id, "diffs": []},
+                 directives=[{**DIRECTIVE, **mutation}])
+
+
+def test_working_memory_rejects_symlinked_directive_source(ctx):
+    """P2-8：封存来源是符号链接 ⇒ 显式失败（不跟随到 run 外）。"""
+    directory = ctx.run_dir / "agent_controls" / "run"
+    directory.mkdir(parents=True)
+    (directory / "elsewhere.json").write_text("{}", encoding="utf-8")
+    (directory / "instruction-000001.json").symlink_to(directory / "elsewhere.json")
+    with pytest.raises(ValueError, match="符号链接|越界"):
+        WM.build(ctx, "N3", {"run_id": ctx.run_id, "diffs": []}, directives=[DIRECTIVE])
+
+
+async def test_instruction_lock_lives_outside_the_audit_directory(ctx):
+    """P2-9：单写者锁在 run 根（不在 `agent_controls/**`），审计目录只含封存事件。"""
+    with C.write_lock(ctx.run_dir):
+        lock = ctx.run_dir / ".agent-instruction-writer.lock"
+        assert lock.is_file(), "锁文件必须在 run 根"
+        assert not (ctx.run_dir / "agent_controls" / "run" / ".lock").exists()
+    C.submit(ctx.run_dir, payload(ctx.run_dir))
+    audit = ctx.run_dir / "agent_controls" / "run"
+    assert sorted(path.name for path in audit.iterdir()) == [
+        "instruction-000001.json", "instruction-000001.sha256"], "审计目录只增不改：无锁文件"
+    assert (ctx.run_dir / ".agent-instruction-writer.lock").is_file()
+
+
+async def test_input_digest_excludes_working_memory(ctx, provider):
+    """P2-10：`input_digest` 不把机制层派生投影 `working_memory` 计入（S3 之前字节口径）。"""
+    first = await call(ctx)
+    sent = provider["inputs"][-1]
+    assert "working_memory" in sent
+    assert "working_memory" not in first["input_digest"]
+    assert set(first["input_digest"]) == set(sent) - {"working_memory"}
+    C.submit(ctx.run_dir, payload(ctx.run_dir, scope="run", target_nodes=["N3"]))
+    second = await call(ctx)
+    assert "working_memory" in provider["inputs"][-1]
+    assert "working_memory" not in second["input_digest"]
+    assert set(second["input_digest"]) == set(first["input_digest"]), (
+        "目录里有指令也不得改变展示摘录的键集合")

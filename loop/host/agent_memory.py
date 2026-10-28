@@ -96,18 +96,19 @@ def _load_catalog(path: Path) -> tuple[Any, bytes | None, str | None]:
         return None, raw, type(exc).__name__
 
 
-def _v1_pass(doc: Any, ctx, scope: dict) -> tuple[list[dict], list[str], str | None]:
+def _v1_pass(doc: Any, ctx, scope: dict) -> tuple[list[dict], list[str], str | None, str]:
     """v1 选择（原 `experiences()` 的逻辑原样；诊断文案逐值保持）。
 
-    最后一项是"整目录/整批被拒"的原因分类（仅用于 v2 选择记录的 `decision`）：
-    `"catalog"`（格式/版本/数量/重复 ID 不合格）、`"baseline"`（当前基线未知）、`None`。
+    第 3 项是"整目录/整批被拒"的原因分类（用于选择记录的 `decision`/排障口径）：
+    `"catalog"`（格式/版本/数量/重复 ID 不合格）、`"baseline"`（当前基线未知）、`None`；
+    第 4 项是目录级拒用的细节（规则名，进 `experience_selection.rejection.detail`）。
     """
     try:
         items = catalog_items_v1(doc)
-    except CatalogRejected:
-        return [], ["experience catalog rejected: ValueError"], "catalog"
+    except CatalogRejected as exc:
+        return [], ["experience catalog rejected: ValueError"], "catalog", exc.reason
     if not scope.get("baseline"):
-        return [], ["experience catalog rejected: current baseline unknown"], "baseline"
+        return [], ["experience catalog rejected: current baseline unknown"], "baseline", ""
     selected, diagnostics = [], []
     for item in items:
         try:
@@ -125,18 +126,22 @@ def _v1_pass(doc: Any, ctx, scope: dict) -> tuple[list[dict], list[str], str | N
                              "source": {"path": path, "sha256": sha}})
         except (OSError, ValueError, TypeError, KeyError) as exc:
             diagnostics.append(f"{item['id']}: {exc}")
-    return selected, diagnostics, None
+    return selected, diagnostics, None, ""
 
 
 def experiences(ctx, scope: dict) -> tuple[list[dict], list[str]]:
-    """v1 经验选择（对外行为保持：`{version:1}` 目录、scope 逐值相等、只读）。"""
+    """v1 经验选择（对外行为保持：`{version:1}` 目录、scope 逐值相等、只读）。
+
+    **兼容导出，不是第二套选择入口**：仅供 v1 审计/测试与既有调用使用；生产路径唯一走
+    `select_experiences`（v1/v2 统一入口，含两阶段适用性与批次判定）。
+    """
     path = ctx.kb.root / "adjudication" / "agent_experiences.json"
     if not path.exists():
         return [], []
     doc, _, error = _load_catalog(path)
     if error is not None:
         return [], [f"experience catalog rejected: {error}"]
-    selected, diagnostics, _ = _v1_pass(doc, ctx, scope)
+    selected, diagnostics, _, _ = _v1_pass(doc, ctx, scope)
     return selected, diagnostics
 
 
@@ -512,6 +517,22 @@ def _legacy_record(context: dict, *, catalog_version: Any, catalog_sha: str | No
                       "item_limit": 10, "enforced": False, "decision": decision}}
 
 
+def _rejected_record(context: dict, *, catalog_version: Any, catalog_sha: str | None,
+                     reason: str, detail: str = "") -> dict:
+    """目录**存在但无法采用**（读取/解析/版本/格式非法）时的选择记录。
+
+    与"目录不存在/未配置"的 legacy 空态区分：`selection_mode="catalog_rejected"` 且带
+    `rejection{reason,detail}`，避免排障时被误读成正常 legacy 精确匹配。行为不变：
+    整目录不采用、不注入，诊断仍走 `experience catalog rejected: …`。
+    `reason` 只能是非秘密规则名（`catalog_unreadable`/`catalog_unparsable`/`catalog_invalid`）。
+    """
+    record = _legacy_record(context, catalog_version=catalog_version, catalog_sha=catalog_sha,
+                            rejected_reason="catalog")
+    record["selection_mode"] = "catalog_rejected"
+    record["rejection"] = {"reason": reason, "detail": detail}
+    return record
+
+
 def _v2_selection(ctx, raw: bytes, doc: Any, context: dict, node: str,
                   input_data: Any) -> ExperienceSelection:
     """v2 选择：两阶段筛选 → 按 id 确定性排序 → 显式批次上限（不截断、不取前 N）。"""
@@ -525,6 +546,8 @@ def _v2_selection(ctx, raw: bytes, doc: Any, context: dict, node: str,
     try:
         items = catalog_items_v2(doc)
     except CatalogRejected as exc:
+        record.update({"selection_mode": "catalog_rejected",
+                       "rejection": {"reason": "catalog_invalid", "detail": exc.reason}})
         record["batch"]["decision"] = "catalog_rejected"
         return ExperienceSelection([], [f"experience catalog rejected: {exc.reason}"], record)
 
@@ -583,18 +606,25 @@ def select_experiences(ctx, scope: dict, *, node: str,
             context, catalog_version=None, catalog_sha=None, rejected_reason=None))
     doc, raw, error = _load_catalog(path)
     if error is not None:
-        return ExperienceSelection([], [f"experience catalog rejected: {error}"],
-                                   _legacy_record(context, catalog_version=None,
-                                                  catalog_sha=(hashlib.sha256(raw).hexdigest()
-                                                               if raw is not None else None),
-                                                  rejected_reason="catalog"))
+        return ExperienceSelection(
+            [], [f"experience catalog rejected: {error}"],
+            _rejected_record(context, catalog_version=None,
+                             catalog_sha=(hashlib.sha256(raw).hexdigest()
+                                          if raw is not None else None),
+                             reason=("catalog_unreadable" if raw is None
+                                     else "catalog_unparsable"),
+                             detail=error))
     version = doc.get("version") if isinstance(doc, dict) else None
+    catalog_sha = hashlib.sha256(raw).hexdigest() if raw is not None else None
     if version == 2:
         return _v2_selection(ctx, raw, doc, context, node, input_data)
-    lessons, diagnostics, rejected_reason = _v1_pass(doc, ctx, scope)
+    lessons, diagnostics, rejected_reason, rejected_detail = _v1_pass(doc, ctx, scope)
+    if rejected_reason == "catalog":
+        return ExperienceSelection(lessons, diagnostics, _rejected_record(
+            context, catalog_version=version, catalog_sha=catalog_sha,
+            reason="catalog_invalid", detail=rejected_detail))
     return ExperienceSelection(lessons, diagnostics, _legacy_record(
-        context, catalog_version=version,
-        catalog_sha=(hashlib.sha256(raw).hexdigest() if raw is not None else None),
+        context, catalog_version=version, catalog_sha=catalog_sha,
         lessons=lessons, diagnostics=diagnostics, rejected_reason=rejected_reason))
 
 

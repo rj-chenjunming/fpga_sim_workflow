@@ -99,6 +99,11 @@ _RULES: dict[str, tuple[dict[str, Any], ...]] = {
     ),
 }
 
+#: run 作用域指令条目的 scope 枚举（与 `agent_control.IL_SCOPES` 同契约）。
+_DIRECTIVE_SCOPES = frozenset({"attempt", "node_rework", "run"})
+#: IL 封存事件来源引用：只允许本 run 的 `agent_controls/run/instruction-<seq>.json`。
+_DIRECTIVE_REF = re.compile(r"agent_controls/run/instruction-(\d{6,})\.json")
+
 _POINTER_ESCAPE = re.compile(r"~(?![01])")
 _INDEX = re.compile(r"0|[1-9][0-9]*")
 _SEALED_REF = re.compile(r"agent_calls/(N(?:3|6|8|10|11|12))/attempt-([0-9]{6,})/request\.json")
@@ -286,7 +291,7 @@ def _instruction_entries(node: str, input_data: dict, instructions: Iterable[Any
     return entries, sources
 
 
-def _directive_entries(node: str, directives: Iterable[Any]) -> tuple[list, dict]:
+def _directive_entries(ctx, node: str, directives: Iterable[Any]) -> tuple[list, dict]:
     """run 作用域有效指令（IL）⇒ `constraint` 条目：`value` + 封存事件来源。
 
     为什么不复用 `human_interventions` 的 `input_ref`：run 指令由 Host 从**已封存事件**归约，
@@ -294,7 +299,9 @@ def _directive_entries(node: str, directives: Iterable[Any]) -> tuple[list, dict
     `source_keys` 指向封存事件（`sealed_ref` + `event_revision`），便于冷存追溯。
 
     有效集归约与封存校验的唯一实现是 `agent_control`（红线 8：不出现第二套同判据）；
-    这里只校验载荷形状并投影，源缺失/形状非法 ⇒ 显式失败（不猜、不静默丢弃）。
+    这里只校验**载荷形状**（scope 枚举、封存来源必须指向本 run 的
+    `agent_controls/run/instruction-<seq>.json` 且无逃逸/符号链接）并投影，
+    形状非法 ⇒ 显式失败（不猜、不静默丢弃）。
     """
     entries, sources, seen = [], {}, set()
     for index, item in enumerate(directives or ()):
@@ -303,6 +310,7 @@ def _directive_entries(node: str, directives: Iterable[Any]) -> tuple[list, dict
         instruction_id = item.get("instruction_id")
         version = item.get("version")
         message = item.get("message")
+        scope = item.get("scope")
         event_revision = item.get("event_revision")
         sealed_ref = item.get("sealed_ref")
         if not isinstance(instruction_id, str) or not instruction_id.strip():
@@ -317,6 +325,17 @@ def _directive_entries(node: str, directives: Iterable[Any]) -> tuple[list, dict
             raise ValueError("working memory 指令条目缺少封存事件 revision")
         if not isinstance(sealed_ref, str) or not sealed_ref.strip():
             raise ValueError("working memory 指令条目缺少封存来源引用")
+        if scope not in _DIRECTIVE_SCOPES:
+            raise ValueError(f"working memory 指令条目 scope 非法：{scope!r}")
+        match = _DIRECTIVE_REF.fullmatch(sealed_ref)
+        if match is None:
+            raise ValueError(f"working memory 指令来源引用非法：{sealed_ref!r}")
+        if int(match.group(1)) != event_revision:
+            raise ValueError("working memory 指令来源 revision 与引用不一致")
+        run_dir = Path(ctx.run_dir)
+        source = run_dir / sealed_ref
+        if source.is_symlink() or not source.resolve().is_relative_to(run_dir.resolve()):
+            raise ValueError("working memory 指令来源越界或使用符号链接")
         seen.add(instruction_id)
         value = {"instruction_id": instruction_id, "version": version,
                  "scope": item.get("scope"), "message": message}
@@ -420,7 +439,7 @@ def build(ctx, node: str, input_data: dict[str, Any], *,
     instruction_entries, instruction_sources = _instruction_entries(node, input_data, instructions)
     entries.extend(instruction_entries)
     sources.update(instruction_sources)
-    directive_entries, directive_sources = _directive_entries(node, directives)
+    directive_entries, directive_sources = _directive_entries(ctx, node, directives)
     entries.extend(directive_entries)
     sources.update(directive_sources)
 

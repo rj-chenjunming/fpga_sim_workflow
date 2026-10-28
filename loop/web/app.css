@@ -1112,3 +1112,42 @@ button.chip:hover{border-color:var(--primary-line);color:var(--primary)}
 .ev-chip{cursor:pointer;font-size:11px;height:24px;padding:0 10px;border-radius:999px;
   border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
 .ev-chip.on{background:var(--primary-weak);border-color:var(--primary-line);color:var(--primary)}
+
+/* ---------- S4 投影与界面（SPEC-REV-16，2026-10-28）：运行摘要 / 无进展红字 / S3 三列 / 内嵌两态 ---------- */
+.aw-summary,.aw-s3,.aw-embed{border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:0 0 16px;min-width:0;background:#fcfdfb}
+.aw-summary .aw-section-head,.aw-s3 .aw-section-head,.aw-embed .aw-section-head{margin-bottom:10px}
+.aw-summary .aw-section-head h3,.aw-s3 .aw-section-head h3,.aw-embed .aw-section-head h3{margin:0;font-size:13px}
+.aw-summary .aw-section-head h3 span,.aw-s3 .aw-section-head h3 span,.aw-embed .aw-section-head h3 span{font-weight:400;color:var(--muted);font-size:11px}
+.aw-sum-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px 18px;margin:10px 0 8px}
+.aw-sum-grid>div{min-width:0}
+.aw-sum-grid dt{font-size:10.5px;color:var(--muted);letter-spacing:.02em}
+.aw-sum-grid dd{margin:2px 0 0;font-size:12px;line-height:1.7;overflow-wrap:anywhere;word-break:break-word}
+.aw-sum-grid .aw-sum-wide{grid-column:1 / -1}
+#awNoProgress{margin:8px 0 10px;font-weight:600;line-height:1.8}
+#awNoProgress[hidden]{display:none}
+.aw-s3-table{width:100%;table-layout:fixed;border-collapse:collapse;font-size:11.5px}
+.aw-s3-table th,.aw-s3-table td{border-top:1px solid var(--line);padding:8px 6px;text-align:left;vertical-align:top;overflow-wrap:anywhere;word-break:break-word}
+.aw-s3-table th{font-size:10.5px;color:var(--muted);font-weight:600}
+.aw-s3-table td.aw-s3-accepted,.aw-s3-table td.aw-s3-applied,.aw-s3-table td.aw-s3-effective{line-height:1.7}
+.aw-s3-table .aw-s3-instruction b{display:block;font-size:12px}
+.aw-s3-table .aw-result-text{margin:2px 0 0;font-size:11px;color:var(--muted)}
+.aw-s3-table .aw-s3-empty{color:var(--muted);text-align:center;padding:14px 6px}
+.aw-s3-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;margin-top:10px}
+.aw-s3-grid>div{min-width:0}
+.aw-s3-grid h4{margin:0 0 6px;font-size:11.5px}
+.aw-s3-grid pre{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;max-height:220px;overflow:auto;
+  font:10.5px/1.8 ui-monospace,SFMono-Regular,Consolas,monospace;background:#f8faf5;border:1px solid var(--line);border-radius:8px;padding:10px}
+.aw-fallback{border:1px dashed var(--line-strong);border-radius:9px;padding:12px 14px;background:#fffdf8}
+.aw-fallback[hidden]{display:none}
+.aw-fallback-title{margin:0;font-size:13px;font-weight:600;color:var(--warn)}
+.aw-fallback .aw-note{margin:6px 0 0}
+.aw-embed-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.aw-embed-actions .btn{text-decoration:none}
+.aw-embed-actions .btn[aria-disabled="true"]{opacity:.55;cursor:not-allowed}
+.aw-embed-frame{width:100%;height:520px;border:1px solid var(--line);border-radius:9px;background:#fff}
+.aw-embed-frame[hidden]{display:none}
+.aw-session-copy{margin:10px 0 0;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;max-height:280px;overflow:auto;
+  font:10.5px/1.8 ui-monospace,SFMono-Regular,Consolas,monospace;background:#f8faf5;border:1px solid var(--line);border-radius:8px;padding:10px}
+.aw-session-copy[hidden]{display:none}
+.agent-note.bad{color:var(--danger);font-weight:600}
+@media(max-width:900px){.aw-sum-grid{grid-template-columns:minmax(0,1fr)}.aw-s3-grid{grid-template-columns:minmax(0,1fr)}.aw-embed-frame{height:360px}}

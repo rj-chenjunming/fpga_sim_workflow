@@ -383,6 +383,27 @@
   </div>
   <div class="aw-layout">
     <div class="aw-observe">
+      <!-- S4（SPEC-REV-16 §2/§3）：运行摘要 + 无进展告警。只渲染服务端 `progress`，前端不重算判据。 -->
+      <section class="aw-summary" id="awSummary" aria-labelledby="awSummaryH">
+        <div class="aw-section-head">
+          <h3 id="awSummaryH">运行摘要 <span>服务端投影，只读、可重建</span></h3>
+          <span class="chip" id="awSumAuthority">投影，非权威</span>
+        </div>
+        <div id="awNoProgress" class="alert bad" role="alert" hidden></div>
+        <dl class="aw-sum-grid">
+          <div><dt>状态</dt><dd id="awSumState">读取中…</dd></div>
+          <div><dt>当前动作</dt><dd id="awSumAction">读取中…</dd></div>
+          <div><dt>最后事件</dt><dd id="awSumLastEvent">读取中…</dd></div>
+          <div><dt>最后工具</dt><dd id="awSumLastTool">读取中…</dd></div>
+          <div><dt>最后错误</dt><dd id="awSumLastError">读取中…</dd></div>
+          <div><dt>压缩次数</dt><dd id="awSumCompaction">读取中…</dd></div>
+          <div><dt>无进展</dt><dd id="awSumNoProgress">读取中…</dd></div>
+          <div><dt>执行方式</dt><dd id="awSumExecution">读取中…</dd></div>
+          <div><dt>已运行</dt><dd id="awSumElapsed">读取中…</dd></div>
+          <div class="aw-sum-wide"><dt>身份</dt><dd class="mono" id="awSumIdentity">读取中…</dd></div>
+        </dl>
+        <p class="tiny muted">无进展只告警：不终止、不重发、不改节点状态。阈值与判据只在服务端实现，本视图只显示结论。</p>
+      </section>
       <h3>任务与成果</h3>
       <p class="aw-note" id="awTask">读取任务…</p>
       <p class="aw-note" id="awMode">执行方式未记录</p>
@@ -401,6 +422,46 @@
       <p class="aw-note">这里展示实际输入、执行事件与返回结果，不提供模型隐藏推理或 token 流。</p>
       </details>
       <details class="aw-detail"><summary>执行记录 <span>节点与控制记录分组</span></summary><div class="aw-timeline" id="awTimeline">等待读取实际运行记录…</div></details>
+      <!-- S4（SPEC-REV-16 §6.3）：S3 接面 —— accepted/applied/effective 三态分列，WM/EXP 只读。 -->
+      <section class="aw-s3" id="awS3" aria-labelledby="awS3H">
+        <div class="aw-section-head">
+          <h3 id="awS3H">指令回执与生效 <span>服务端归约；回执 ≠ 生效</span></h3>
+          <span class="chip" id="awS3Revision">—</span>
+        </div>
+        <table class="aw-s3-table">
+          <thead><tr>
+            <th scope="col">指令</th>
+            <th scope="col">已接收 accepted</th>
+            <th scope="col">已应用 applied</th>
+            <th scope="col">当前生效 effective</th>
+          </tr></thead>
+          <tbody id="awS3Rows"><tr><td class="aw-s3-empty" colspan="4">读取中…</td></tr></tbody>
+        </table>
+        <p class="aw-note" id="awS3Expiry">到期判定：—</p>
+        <div class="aw-s3-grid">
+          <div><h4>工作记忆 WM <span class="tiny muted">只读，不重算可用性</span></h4><pre id="awS3Wm">—</pre></div>
+          <div><h4>经验选择 EXP <span class="tiny muted">只读，不写回经验</span></h4><pre id="awS3Exp">—</pre></div>
+        </div>
+        <p class="tiny muted" id="awS3Source">来源：—</p>
+      </section>
+      <!-- S4（SPEC-REV-16 §5/§6）：内嵌实例两态；不可用时不静默白屏，显式降级。 -->
+      <section class="aw-embed" id="awEmbed" aria-labelledby="awEmbedH">
+        <div class="aw-section-head">
+          <h3 id="awEmbedH">内嵌实例 <span>同源反代 /instance/…；不可用时显式降级</span></h3>
+          <span class="chip" id="awEmbedState">读取中</span>
+        </div>
+        <div id="awEmbedFallback" class="aw-fallback">
+          <p class="aw-fallback-title" id="awEmbedTitle">正在读取内嵌可用性…</p>
+          <p class="tiny muted" id="awEmbedReason"></p>
+          <p class="aw-note" id="awEmbedCopyNote"></p>
+          <div class="aw-embed-actions">
+            <a class="btn btn-sm" id="awEmbedNewTab" href="#" target="_blank" rel="noopener">在新标签页打开</a>
+            <button class="btn btn-sm" id="awSessionCopy" type="button">导出会话副本</button>
+          </div>
+        </div>
+        <iframe id="awEmbedFrame" class="aw-embed-frame" title="Agent 实例会话（同源反代）" hidden></iframe>
+        <pre class="aw-session-copy" id="awSessionCopyBody" hidden>—</pre>
+      </section>
     </div>
     <div class="aw-intervene">
       <div class="aw-section-head"><h3>人工干预</h3><span class="chip">请求边界</span></div>
@@ -544,6 +605,7 @@
 <script src="session-url.js"></script>
 <script src="job-status.js"></script>
 <script src="s0.js"></script>
+<script src="s4-view.js"></script>
 <script src="agent-results.js"></script>
 <script src="agent-window.js"></script>
 <script src="report-viewer.js"></script>

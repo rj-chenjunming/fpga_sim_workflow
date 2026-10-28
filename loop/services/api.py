@@ -18,13 +18,13 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
-from fastapi import Body, FastAPI, HTTPException, Query
+from fastapi import Body, FastAPI, HTTPException, Query, Request
 from fastapi.responses import JSONResponse, FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 from host import paths as P
 from host.progress import ALLOWED_KINDS, ProgressLog
-from services import node_view
+from services import instance_proxy, node_view
 from workflows.main_flow import RunManager, get_manager
 
 import agently  # noqa: F401  (用于 /api/health 报版本)
@@ -602,6 +602,12 @@ def _agent_window_view(root: Path, run_id: str, node: str, attempt: int | None) 
     view['capabilities'] = agent_view.node_capabilities(node, events)
     # F10/R5：预算事实由 Host 唯一测量（总量与 AM.check_budget 同一实现），前端只消费。
     view['context_budget'] = AM.context_budget(view.get('request'), attempt=view.get('selected_attempt'))
+    # SPEC-REV-16 §2.1/§6.3：总结投影 + S3 解释面。唯一装配实现是 `agent_view.window_annotation`
+    # （窗口与角色卡消费同一 `progress_view`，红线 8）；`now` 只从 `host/paths.py::now_iso`
+    # 的注入入口取（`contracts.now_epoch()`），解析失败抛 ValueError ⇒ 路由按既有口径映射 422。
+    from services import contracts as _contracts
+    view.update(agent_view.window_annotation(view, node=node, root=root, events=events,
+                                             now=_contracts.now_epoch()))
     return view
 
 
@@ -826,6 +832,43 @@ def evidence_exists(run_id: str, ref: str = Query(...)) -> dict[str, Any]:
             }
     return {"exists": False, "path": str(candidates[-1]),
             "tried": [str(c) for c in candidates], "note": "证据缺失（E-2）"}
+
+
+# ---------------------------------------------------------------- 实例同源反代（SPEC-REV-16 §5）
+
+# 反代 = "人在 GUI 里看/说"的旁路会话面（REV-14 D3）。判据全部在 `services/instance_proxy.py`：
+# 目标只来自受管元数据（`<run_dir>/agent_instance.json`）、只允许 loopback、R1–R20 拒绝矩阵、
+# token 不进日志/错误体/响应、不可用态显式（503 + `X-Instance-Proxy`）。
+# **必须声明在文件末尾的 `app.mount("/", StaticFiles(...))` 之前**：挂在 "/" 的 StaticFiles
+# 会吞掉后加的路由（实测：mount 之后再 `@app.get` ⇒ 404 Not Found）。
+@app.api_route("/instance/{run_id}/{node}/{attempt}/{path:path}",
+               methods=list(instance_proxy.ALLOWED_METHODS))
+async def instance_proxy_route(request: Request, run_id: str, node: str,
+                               attempt: str, path: str):
+    """唯一反代入口：GET/HEAD/POST/PUT/PATCH/DELETE/OPTIONS 原样透传（CONNECT/TRACE/Upgrade ⇒ 405）。"""
+    root = _agent_root(run_id, node)
+    return await instance_proxy.forward(request, run_dir=root, run_id=run_id, node=node,
+                                        attempt=attempt, path=path)
+
+
+@app.get("/api/runs/{run_id}/agents/{node}/instance")
+def instance_availability_api(run_id: str, node: str,
+                              attempt: int | None = Query(default=None, ge=1)):
+    """§6.1 可用性元数据（只读投影；不返回 token，端口之外不暴露宿主细节）。
+
+    归属是 **(node, attempt)** 粒度：`attempt` 可显式带（与元数据不符 ⇒ `target_missing`），
+    省略则由受管元数据决定并在响应 `attempt` 回显（多 attempt 不能钉死 1）。
+    """
+    root = _agent_root(run_id, node)
+    return instance_proxy.availability(root, run_id=run_id, node=node, attempt=attempt)
+
+
+@app.get("/api/runs/{run_id}/agents/{node}/session-copy")
+def instance_session_copy_api(run_id: str, node: str,
+                              attempt: int | None = Query(default=None, ge=1)):
+    """§6.2 会话副本导出（复用 `dsh_sdk.read_session_log`；缺失/归属不符显式说原因）。"""
+    root = _agent_root(run_id, node)
+    return instance_proxy.session_copy(root, node=node, attempt=attempt)
 
 
 # ---------------------------------------------------------------- 静态前端

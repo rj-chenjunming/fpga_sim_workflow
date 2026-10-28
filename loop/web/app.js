@@ -1751,6 +1751,14 @@
     body.appendChild(h("div", null, summary ? "摘要：" + summary : "摘要：产物未生成"));
     var note = a ? a.note : deriveNote(def, status);
     if (note) body.appendChild(h("div", "agent-note", String(note)));
+    /* S4（SPEC-REV-16 §2/§3）：角色卡与窗口读同一份服务端 `progress` 投影；
+     * 无进展只告警不收敛，文案里不出现"在等人工/等待人工"类措辞（§3.3）。 */
+    var progress = a && a.progress ? a.progress : null;
+    var progressLine = window.S4View ? window.S4View.cardLine(progress) : "";
+    if (progressLine) {
+      var stalled = !!(progress && progress.no_progress && progress.no_progress.state === "warn");
+      body.appendChild(h("div", "agent-note" + (stalled ? " bad" : ""), progressLine));
+    }
     var facts = window.Capabilities ? window.Capabilities.line(a && a.capabilities) : "";
     if (facts) body.appendChild(h("div", "agent-note", facts));
     card.appendChild(body);

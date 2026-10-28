@@ -5112,3 +5112,86 @@ REV-14 的 D1 复评前提**部分满足**：bwrap 可作缓解，但不能据�
 交接窗口复测（命令输出复制）：浏览器门（带三组 env，命令见提示词 §6）`114 passed in 120.78s`。
 新窗口第一件事：核对 HEAD/工作树 → 读提示词 §1 九件 → 按 §6 跑四道门 + 浏览器门收口基线
 → 写 S4 的 `SPEC-REV-16` 与计划 → 按 S4 → S5 → S6 串行推进（S5 动 dsh 准入前须先拿人工裁决）。
+
+## 114 S4 交付：投影与界面（总结投影 / 无进展告警 / 同源反代 / S3 接面）（2026-10-29）
+
+本轮入口：[开工提示词 S4–S6](agents/开工提示词_S4-投影取证与候选导入.md) §4.1；契约
+[SPEC-REV-16](spec/SPEC-REV-16-20261028.md)；计划 [2026-10-28-s4-projection-ui.md](plans/2026-10-28-s4-projection-ui.md)；
+证据档 [`doc/evidence/DSH_S4_20261028/`](evidence/DSH_S4_20261028/README.md)（冻结 444 + 目录外 md5）。
+本轮**没有**改闸门、节点判据、`SETTINGS.yaml`、`prompts/**`；`dsh` 仍 `enabled=false`、`select()` 仍 `BackendUnavailable`
+（准入属 S5）。**本片是 C1（机制/本机）**，不含真实 DSH Web 内嵌（C2）与内网业务（E）。
+
+### 114.1 开工基线（先跑门确认现场）
+
+基线 = `9bd0b78`（= 交接 `46e49bb` + 两个交接文档提交；`git log --oneline -3` / `git status --short` 核对过，工作树干净）。
+
+| 门 | 结果（命令输出复制） |
+|---|---|
+| 单测（可写数据根 `<repo>/.dev-ws`） | `3 failed, 1394 passed, 1 warning, 113 errors in 358.47s`；3 failed 全是 `@pytest.mark.env_layer`（本机 ENV_ROOT 只读）、113 errors 是 `tests/browser/**` 缺 Chromium |
+| kb 自测 + env layer | `PASS=10` / `PASS=9` / `PASS=28`，`FAIL=0`；env_layer `3 passed, 24 deselected in 10.55s`；原 ENV_ROOT 零写入 |
+| 端到端（drill） | `phase 1–5`（含 4b）全 `rc=0`，`=> ALL PASS` |
+| 文档门 | `65 passed in 2.17s` |
+| 浏览器门（三组 env） | `114 passed in 124.61s` |
+
+### 114.2 交付物（三片，同一提交）
+
+| 文件 | 变更 | 契约 |
+|---|---|---|
+| `doc/spec/SPEC-REV-16-20261028.md` | 新：总结投影字段/无进展判据/时间口径/同源反代（R1–R20）/iframe 降级/S3 接面 + 新增验收 `OBS-02`～`OBS-08` | 本片契约 |
+| `loop/services/agent_view.py` | `NO_PROGRESS_THRESHOLD_S=600`（单源）、`progress_view`、`explain_view`、`window_annotation`；`build_agents` 每卡 `progress`（与窗口同一实现） | `OBS-02`～`OBS-04`、`OBS-08` |
+| `loop/services/contracts.py` | `now_epoch()`（薄委托 `host/paths.py::now_epoch`）；`run_view` 传 `now`；既有字段零改动 | 红线 7 |
+| `loop/host/paths.py` | 新增 `_now_datetime`/`now_epoch`（全仓唯一 `fromisoformat` 时钟解析），`make_run_id` 复用同一实现（行为不变） | 红线 7 |
+| `loop/services/instance_proxy.py` | 新：受管目标解析、R1–R20 拒绝/改写、token 零回显、不可用态（503+reason，HTML/JSON 双语义）、会话副本解析事实、httpx 日志压级 | `OBS-05`/`OBS-06` |
+| `loop/services/api.py` | `/instance/**` 反代 + `/instance` 可用性 + `session-copy` 三路由（都在 StaticFiles mount 之前）；`_agent_window_view` 两行接线 | 同上 |
+| `loop/web/**` | `s4-view.js`（新，纯函数展示层）+ `agent-window.js`（运行摘要/无进展红字/S3 三列/内嵌两态与降级）+ `index.html`/`app.css`/`app.js`（角色卡 progress 行） | `OBS-03`(界面)、`OBS-07`、`OBS-08`(界面) |
+| 测试 | `test_agent_view_projection.py`(39)、`test_agent_view_baseline.py`(37 特征)、`test_instance_proxy.py`(45)、`tests/browser/test_s4_projection_ui.py`(24) | 各片 TDD |
+
+### 114.3 TDD（RED → GREEN；原始数字见证据档 `raw/red-green.md`）
+
+| 片 | RED | GREEN（定向） | 反向抽检 |
+|---|---|---|---|
+| S4-A | `1 error`（`ImportError: NO_PROGRESS_THRESHOLD_S`） | 86 → 111 → 115 passed | 5 组变异全红（阈值/unknown→0/不传 now/accepted 当 applied/越界·链接校验失效） |
+| S4-B | `1 error`（`ImportError: instance_proxy`） | 38 → 45 passed；受影响回归 `254 passed` | 30 变异 / **28 抓**；2 条如实登记为等价或无效（`M16` 行为等价、`M23` 初版空断言已替换） |
+| S4-C | `15 failed, 2 passed` | 单文件 24 passed；受影响浏览器文件 `134 passed` | 6 条界面变异 + P1-1/P2-5 各 1 条全红（含 2 次"锚点无效"已改正） |
+
+### 114.4 独立复核（未参与实现，只报告不改）与处置
+
+复核在冻结 md5 上完成：**P0=0、P1=0（P1-1 已闭合）**、28 条反向抽检全红；原始报告见
+[`raw/reviewer-final.md`](evidence/DSH_S4_20261028/raw/reviewer-final.md)。
+
+| 严重度 | 发现 | 处置 |
+|---|---|---|
+| **P1-1** | 内嵌可用性没接"当前 attempt"（端点缺省 `attempt=1`、前端不带 attempt）⇒ 多 attempt 恒 `target_missing` 或嵌旧实例；且"把 attempt 钉成 1"的变异**抓不住**（无覆盖） | **已修**：服务端 `load_target(attempt=None)` 按元数据声明 + 两端点缺省 `None` + 响应回显 `attempt`；前端 `effectiveAttempt()/withAttempt()`；补 2 单测 + 2 浏览器用例；复核复测两条 attempt 变异均 RED |
+| P2 ×4 | `session-copy` 不校验 node/attempt 归属；httpx INFO 可能打印含 token 的上游 URL；R8 只量解码后 path；时间解析存在两份 `fromisoformat` | **已修**（归属校验 + import 期压级 + `raw_path` 判据 + 收敛到 `paths.now_epoch`） |
+| P2 ×3 | 角色卡 `identity.*` 恒 null（诚实值）；`explain.entries[].availability` 属转发口径；"(node,attempt) 归属"判据两处实现；`session_*` reason 前端未映射；日志用例 docstring 顺序耦合 | **登记**（`SPEC-REV-16 §9-12/13/15/16/17`、计划 §6-11/12），本轮不改 |
+
+### 114.5 终版树五道门（全部重跑；数字从输出复制）
+
+| 门 | 结果 |
+|---|---|
+| 单测（可写数据根） | `4 failed, 1607 passed, 1 warning, 137 errors in 407.31s`；3 failed 是既有 `env_layer`；**第 4 条 `test_gate_projection::test_start_honors_now` 是并发污染**（另一 pytest 进程用同一固定 `LOOP_NOW` 建出 `RUN-20310101-000000` ⇒ `运行目录已存在`），全新数据根单独复跑 ⇒ `8 passed in 17.88s`（`raw/s4-recheck-gate_projection.log`）；137 errors 是浏览器缺 Chromium（113 既有 + 24 新增） |
+| kb 自测 + env layer | `PASS=10` / `PASS=9` / `PASS=28`，`FAIL=0`；env_layer `3 passed, 24 deselected in 13.40s`；原 ENV_ROOT 零写入 |
+| 端到端（drill） | `phase 1–5 + 4b` 全 `rc=0`，`=> ALL PASS` |
+| 文档门 | `65 passed in 2.28s` |
+| **浏览器门（全量）** | **`138 passed in 153.80s`**（既有 114 + S4 新增 24；`test_gate_option_flags_*` 的并发 flake 本轮未复现） |
+
+### 114.6 纪律核对
+
+- **写权**：`loop/SETTINGS.yaml`、`loop/prompts/**` 零改动；`kb/**` 在本窗口的**唯一**改动是
+  `kb/tools/kb_lib.py` 的 `GATE_MATERIAL_EXCLUDE_DIRS` 加 `agent_workspaces`（属 **S5 C2a 的单独变更**，理由与留证见 §115；
+  S4 三片对 `kb/**` 零改动由复核者用 `git status --porcelain -- kb loop/SETTINGS.yaml loop/prompts` 取证）。
+- **红线 8（唯一判据）**：无进展阈值/压缩计数/指令三态/预算/闸门枚举各只有一处实现；前端只做取整与标签映射
+  （浏览器用例用"自相矛盾桩"——`state=warn` 且 `silence_s=130 < 阈值 600`——证明前端不重算）。
+- **红线 7（时间口径）**：`now` 唯一入口 `paths.now_iso → paths.now_epoch`；S4 新增代码无 `datetime.now()`/`time.time()`；测试不用墙钟。
+- **证据**：新目录 `doc/evidence/DSH_S4_20261028/` 冻结 444 + `doc/evidence/DSH_S4_20261028.md5`（目录外，`md5sum -c` 10/10 OK）。
+- **独立复核**：三片由三个实现 owner 完成，复核由独立验证者执行（只报告不改，反向抽检在 gitignored 私有副本内做、逐条 md5 复原）；
+  Lead 负责契约/计划/接线复核/五道门/STATUS/提交，**不声称独立验证**。
+
+### 114.7 未做 / 不声称
+
+- **不声称 C2/E**：没有真实 DSH Web 实例，没有内嵌过真实 GUI；内网上游**绝对资源路径**（`/assets`、`/api`）问题未解决（`REV-16 §9-10`）。
+- **不声称"四道门全绿"**：单测门 `env_layer 3 failed` 与 `137 errors` 是本机缺件；浏览器门单独全绿，不并入四道门。
+- **不声称会话副本全文**：`session-copy` 只给解析事实（`kind=session_log_facts`）；人类可读原文导出未实现（`§9-11`）。
+- **不做"自动收敛"**：无进展只告警，不发命令、不终止、不改状态。
+- **投影不是权威**：卡片/窗口字段可丢弃可重建，不参与闸门/预算/接受判据（`REV-16 §1`）。
+- **未映射项**：`session_*` reason 前端未本地化；反代归属判据两处实现（`§9-15/16/17`）。

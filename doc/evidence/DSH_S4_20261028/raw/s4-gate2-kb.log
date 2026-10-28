@@ -1,0 +1,11 @@
+[..] 复制派生 ENV_ROOT（约 2.6 GB，只在副本上写）：/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES → /home/work/chenjunming/change-impact-loop/.env-copy
+[info] kb 自测：3 项（与 env_layer 共用派生副本，原环境零写入；验收数字 PASS=10 9 28）
+[kb] _selftest_gate_schema.py: PASS=10 FAIL=0（验收数字 PASS=10 相符）
+[kb] _selftest_n5_reachability.py: PASS=9 FAIL=0（验收数字 PASS=9 相符）
+[kb] _selftest_adjudicate_conflicts.py: PASS=28 FAIL=0（验收数字 PASS=28 相符）
+[info] 环境层用例：3 条（2 个文件：test_archive_e2 ×2、test_projection_and_frozen ×1）
+[info] 数据根 = 副本内的 kb（满足『数据根位于 ENV_ROOT 之内』的布局要求）
+...                                                                      [100%]
+3 passed, 24 deselected in 13.40s
+[info] 原 ENV_ROOT 零写入（find -newer 命中 0）
+[summary] kb 自测 3 项：_selftest_gate_schema.py: PASS=10 FAIL=0 ; _selftest_n5_reachability.py: PASS=9 FAIL=0 ; _selftest_adjudicate_conflicts.py: PASS=28 FAIL=0 ; env_layer rc=0；原 ENV_ROOT 零写入

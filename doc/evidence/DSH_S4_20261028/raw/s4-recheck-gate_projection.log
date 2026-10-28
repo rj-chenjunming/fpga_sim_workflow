@@ -1,0 +1,16 @@
+[..] 复制 drill 夹具（约 733 MB）：/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/kb/runs/RUN-20261015-120626
+[OK] 可写数据根就绪：/home/work/chenjunming/change-impact-loop/.dev-ws
+     跑测试：
+       cd /home/work/chenjunming/change-impact-loop/loop && LOOP_WORKSPACE=/home/work/chenjunming/change-impact-loop/.dev-ws LOOP_LLM_MODE=standin .venv/bin/python -m pytest -q
+     用完清理（跑文档门前必须）：
+       bash /home/work/chenjunming/change-impact-loop/loop/spikes/provision_dev_workspace.sh --cleanup
+........                                                                 [100%]
+=============================== warnings summary ===============================
+.venv/lib64/python3.11/site-packages/fastapi/testclient.py:1
+  /home/work/chenjunming/change-impact-loop/loop/.venv/lib64/python3.11/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+8 passed, 1 warning in 17.88s
+rc=0
+[OK] 已删除可写数据根：/home/work/chenjunming/change-impact-loop/.dev-ws

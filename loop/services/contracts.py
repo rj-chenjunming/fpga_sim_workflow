@@ -1501,6 +1501,19 @@ def gate_entries_view(
     }
 
 
+def now_epoch() -> float:
+    """Host 注入 `now` 的**唯一入口**（薄委托 `host/paths.py::now_epoch`，不再自己解析）。
+
+    消费者：`run_view` 的卡片投影与 `services/api.py` 的 Agent 窗口接线（`window_annotation`）。
+    SPEC-REV-16 §4 / 红线 7：时间只能经 `LOOP_NOW`/`KB_NOW` 单一入口注入；解析实现只有
+    `host/paths.py` 的一份（本函数保留公开名，只是委托，避免第二套 `fromisoformat`）。
+    解析失败 ⇒ `ValueError`（`paths` 里显式抛），**不静默回退墙钟**。
+    """
+    from host import paths as P
+
+    return P.now_epoch()
+
+
 def run_view(
     *,
     run_doc: dict[str, Any],
@@ -1568,6 +1581,8 @@ def run_view(
             run_dir=run_dir,
             pending_interrupt=pending,
             job=job,
+            # SPEC-REV-16 §4：epoch 只从 Host 注入入口取（本函数不自己 datetime.now()）。
+            now=now_epoch(),
         ),
         "stage_map": STAGES,
         "agents_authority": "projection",

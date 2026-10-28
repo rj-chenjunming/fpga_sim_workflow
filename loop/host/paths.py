@@ -133,13 +133,30 @@ def now_iso(now: datetime | None = None) -> str:
     return datetime.now().isoformat()
 
 
-def make_run_id(now: datetime | None = None) -> str:
-    """运行目录名，形状受 `kb/tools/gate.py` 的 `RUN-YYYYMMDD-HHMMSS` 校验约束。"""
+def _now_datetime(now: datetime | None = None) -> datetime:
+    """把注入时钟解析成 `datetime`：**唯一解析实现**（取值入口仍只有 `now_iso`）。
+
+    解析失败 ⇒ 显式 `ValueError`，不回退墙钟（否则同一页面上会同时用两套时钟）。
+    """
     stamp = now_iso(now)
     try:
-        dt = datetime.fromisoformat(stamp)
+        return datetime.fromisoformat(stamp)
     except ValueError as exc:
         raise ValueError(f"LOOP_NOW/KB_NOW 不是可解析的 ISO 时间：{stamp!r}") from exc
+
+
+def now_epoch(now: datetime | None = None) -> float:
+    """注入时钟的 epoch 秒（`now_iso` 的唯一 epoch 形态，供投影/无进展判据消费）。
+
+    SPEC-REV-16 §4 / 红线 7：时间字段是唯一允许的非确定性，且只能经 `LOOP_NOW`/`KB_NOW`
+    单一入口注入；这里与 `make_run_id` 共用 `_now_datetime`，**不出现第二份 `fromisoformat`**。
+    """
+    return _now_datetime(now).timestamp()
+
+
+def make_run_id(now: datetime | None = None) -> str:
+    """运行目录名，形状受 `kb/tools/gate.py` 的 `RUN-YYYYMMDD-HHMMSS` 校验约束。"""
+    dt = _now_datetime(now)  # 与 `now_epoch` 同一解析实现（解析口径只有一份）
     return f"RUN-{dt:%Y%m%d-%H%M%S}"
 
 

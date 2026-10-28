@@ -6,6 +6,13 @@ window.AgentWindow = (function () {
   var pollTimer = null, stream = null;
   var pending = Object.create(null), draftRequest = null, sessionSeen = null, attemptSeen = null;
   var lastRead = "", resultSignature = "", stopIdentity = null, readError = false;
+  /* S4（SPEC-REV-16 §2/§3/§6）：运行摘要 / 无进展红字 / S3 三列 / 内嵌两态。
+     投影与解释面只读服务端字段：本文件不重算无进展阈值、不推断指令三态、不另算预算（红线 8）。 */
+  var instanceKey = "", instanceToken = 0, embedTimer = null, instanceUrl = "";
+  var explainSignature = "";
+  var SUMMARY_IDS = ["awSumState", "awSumAction", "awSumLastEvent", "awSumLastTool",
+    "awSumLastError", "awSumCompaction", "awSumNoProgress", "awSumExecution", "awSumElapsed",
+    "awSumIdentity"];
   var nodes = ["N3", "N6", "N8", "N10", "N11", "N12"];
   function $(id) { return document.getElementById(id); }
   function el(tag, cls, text) {
@@ -114,6 +121,295 @@ window.AgentWindow = (function () {
       host.appendChild(block);
     });
   }
+  /* ---------------- S4：运行摘要 / 无进展红字（SPEC-REV-16 §2/§3） ---------------- */
+  function setLine(id, value) { if ($(id)) $(id).textContent = value; }
+  function paintProgress(progress) {
+    var S = window.S4View;
+    var cells = S ? S.summary(progress) : null;
+    if (!cells) {
+      SUMMARY_IDS.forEach(function (id) { setLine(id, "未记录（服务端未投影运行摘要）"); });
+      setLine("awSumAuthority", "来源未标注");
+      paintBanner(null);
+      return;
+    }
+    setLine("awSumState", cells.state);
+    setLine("awSumAction", cells.action);
+    setLine("awSumLastEvent", cells.lastEvent);
+    setLine("awSumLastTool", cells.lastTool);
+    setLine("awSumLastError", cells.lastError);
+    setLine("awSumCompaction", cells.compaction);
+    setLine("awSumNoProgress", cells.noProgress);
+    setLine("awSumExecution", cells.execution);
+    setLine("awSumElapsed", cells.elapsed);
+    setLine("awSumIdentity", cells.identity);
+    setLine("awSumAuthority", cells.authority);
+    paintBanner(S.noProgressBanner(progress));
+  }
+  /* §3.3：红字只由服务端 `no_progress.state=warn` 触发；只告警，不发送任何控制命令。 */
+  function paintBanner(banner) {
+    var host = $("awNoProgress");
+    if (!host) return;
+    var visible = !!(banner && banner.visible);
+    host.textContent = visible ? banner.text : "";
+    host.hidden = !visible;
+    host.className = "alert bad";
+  }
+
+  /* ---------------- S4：S3 接面三列 + WM/EXP 只读（SPEC-REV-16 §6.3） ---------------- */
+  function paintExplain(view) {
+    var S = window.S4View;
+    var rows = $("awS3Rows");
+    if (!S || !rows) return;
+    var explain = view && view.explain;
+    var signature;
+    try { signature = JSON.stringify(explain === undefined ? null : explain); } catch (e) { signature = String(explain); }
+    if (signature === explainSignature && rows.dataset.rendered === "1") return;
+    explainSignature = signature;
+    rows.dataset.rendered = "1";
+    var block = S.instructions(explain);
+    rows.replaceChildren();
+    if (!block) {
+      var tr = el("tr");
+      var td = el("td", "aw-s3-empty", "未记录（服务端未投影解释面）");
+      td.colSpan = 4;
+      tr.appendChild(td);
+      rows.appendChild(tr);
+      setLine("awS3Revision", "未记录");
+      setLine("awS3Expiry", "到期判定：未记录");
+      setLine("awS3Wm", "未记录");
+      setLine("awS3Exp", "未记录");
+      setLine("awS3Source", "来源：未记录");
+      return;
+    }
+    if (!block.rows.length) {
+      var empty = el("tr");
+      var cell = el("td", "aw-s3-empty", "服务端未下发指令条目（空集）");
+      cell.colSpan = 4;
+      empty.appendChild(cell);
+      rows.appendChild(empty);
+    }
+    block.rows.forEach(function (row) {
+      var line = el("tr");
+      line.dataset.instructionId = row.id;
+      var head = el("td", "aw-s3-instruction");
+      head.appendChild(el("b", null, row.id));
+      head.appendChild(el("span", "tiny muted", " · " + row.scope));
+      head.appendChild(el("p", "aw-result-text", row.preview));
+      line.appendChild(head);
+      line.appendChild(el("td", "aw-s3-accepted", row.accepted));
+      line.appendChild(el("td", "aw-s3-applied", row.applied));
+      line.appendChild(el("td", "aw-s3-effective", row.effective));
+      rows.appendChild(line);
+    });
+    setLine("awS3Revision", "revision " + block.revision);
+    setLine("awS3Expiry", S.scopeExpiry(explain));
+    setLine("awS3Wm", (S.workingMemoryLines(explain) || ["未记录"]).join("\n"));
+    setLine("awS3Exp", (S.experienceLines(explain) || ["未记录"]).join("\n"));
+    setLine("awS3Source", "来源：" + block.source);
+  }
+
+  /* ---------------- S4：内嵌实例两态与降级（SPEC-REV-16 §5/§6） ---------------- */
+  /* 有效 attempt：窗口选中的 attempt / 跟随最新时的活跃 attempt；都没有就不带 query（服务端定）。 */
+  function effectiveAttempt() {
+    if (attempt) return String(attempt);
+    var liveAttempt = data && data.live ? data.live.attempt : null;
+    return liveAttempt === null || liveAttempt === undefined ? "" : String(liveAttempt);
+  }
+  function withAttempt(path) {
+    var value = effectiveAttempt();
+    if (!value) return path;
+    return path + (path.indexOf("?") >= 0 ? "&" : "?") + "attempt=" + encodeURIComponent(value);
+  }
+  function embedIdentity() {
+    return [target.runId, target.node, effectiveAttempt()].join("|");
+  }
+  function clearEmbedTimer() {
+    if (embedTimer) { clearTimeout(embedTimer); embedTimer = null; }
+  }
+  function showFallback(title, reason, note) {
+    var block = $("awEmbedFallback");
+    if (!block) return;
+    block.hidden = false;
+    setLine("awEmbedTitle", title);
+    setLine("awEmbedReason", reason || "");
+    setLine("awEmbedCopyNote", note || "");
+    if ($("awEmbedFrame")) $("awEmbedFrame").hidden = true;
+  }
+  /* 无可用 URL 时"新标签页打开"保持可见但不导航（§6.2 要求降级块给出该路径）。 */
+  function setNewTab(url) {
+    instanceUrl = url || "";
+    var link = $("awEmbedNewTab");
+    if (!link) return;
+    if (instanceUrl) {
+      link.setAttribute("href", instanceUrl);
+      link.removeAttribute("aria-disabled");
+      link.title = "在新标签页打开同源反代实例";
+    } else {
+      link.setAttribute("href", "#");
+      link.setAttribute("aria-disabled", "true");
+      link.title = "服务端未提供可用实例地址";
+    }
+  }
+  function resetEmbed() {
+    clearEmbedTimer();
+    instanceKey = "";
+    instanceUrl = "";
+    setNewTab("");
+    setLine("awEmbedState", "读取中");
+    if ($("awEmbedFrame")) {
+      $("awEmbedFrame").hidden = true;
+      $("awEmbedFrame").removeAttribute("src");
+    }
+    if ($("awSessionCopyBody")) {
+      $("awSessionCopyBody").hidden = true;
+      $("awSessionCopyBody").textContent = "—";
+    }
+    showFallback("正在读取内嵌可用性…", "", "");
+  }
+  function degradeEmbed(reason) {
+    clearEmbedTimer();
+    if ($("awEmbedFrame")) {
+      $("awEmbedFrame").hidden = true;
+      $("awEmbedFrame").removeAttribute("src");
+    }
+    var S = window.S4View;
+    setLine("awEmbedState", "不可内嵌");
+    showFallback("不可内嵌", "原因：" + (S ? S.instanceReason(reason) : String(reason || "未知")), "");
+  }
+  function embedReady(url) {
+    var frame = $("awEmbedFrame");
+    if (!frame) return;
+    var fallback = $("awEmbedFallback");
+    if (fallback) fallback.hidden = true;
+    frame.hidden = false;
+    frame.setAttribute("src", url);
+    clearEmbedTimer();
+    /* 加载超时也走同一降级路径：不静默白屏（§6.2）。 */
+    embedTimer = setTimeout(function () { degradeEmbed("embed_timeout"); }, 8000);
+  }
+  /* 同源反代的可用性探测：向 §6.1 下发的同源 URL 要 JSON（§5.5 内容协商），
+     不可用时由服务端给 reason —— 前端不自己判"能不能嵌"。 */
+  async function probeInstance(url) {
+    if (typeof fetch !== "function") return { ok: true };
+    try {
+      var res = await fetch(url, { headers: { "Accept": "application/json" },
+        credentials: "same-origin", redirect: "follow" });
+      var body = null;
+      try { body = await res.json(); } catch (e1) { body = null; }
+      if (res.ok && (!body || body.available !== false)) return { ok: true };
+      return { ok: false, reason: body && body.reason ? String(body.reason)
+        : "http_" + String(res.status) };
+    } catch (e2) {
+      return { ok: false, reason: "proxy_unreachable" };
+    }
+  }
+  function applyInstance(meta, token) {
+    function stale() { return token !== undefined && token !== instanceToken; }
+    if (!meta || typeof meta !== "object") { degradeEmbed("metadata_unavailable"); return; }
+    if (meta.available === true && meta.state === "ready" && meta.url) {
+      setNewTab(String(meta.url));
+      /* 先显示"正在确认"，探测通过才写"已内嵌"——避免失败时瞬闪成已嵌入（P2-5）。 */
+      setLine("awEmbedState", "正在确认可内嵌性");
+      return probeInstance(String(meta.url)).then(function (probe) {
+        if (stale()) return;
+        if (probe && probe.ok) {
+          setLine("awEmbedState", "已内嵌");
+          embedReady(String(meta.url));
+          return;
+        }
+        degradeEmbed(probe && probe.reason ? probe.reason : "embedded_load_failed");
+      });
+    }
+    if (stale()) return;
+    setNewTab(meta.url ? String(meta.url) : "");
+    setLine("awEmbedState", meta.embed === "new_tab_only" ? "仅新标签页" : "不可内嵌");
+    var S = window.S4View;
+    var reason = meta.reason ? String(meta.reason) : "target_missing";
+    showFallback("不可内嵌", "原因：" + (S ? S.instanceReason(reason) : reason), "");
+  }
+  async function refreshEmbed() {
+    if (!target) return;
+    var key = embedIdentity();
+    if (key === instanceKey) return;
+    instanceKey = key;
+    var token = ++instanceToken;
+    resetEmbed();
+    var meta;
+    try {
+      meta = await api(withAttempt(base() + "/instance"));
+    } catch (e) {
+      if (token !== instanceToken || !target) return;
+      degradeEmbed("metadata_unavailable");
+      var reason = $("awEmbedReason");
+      if (reason) reason.textContent = reason.textContent + " · " + e.message;
+      return;
+    }
+    if (token !== instanceToken || !target) return;
+    applyInstance(meta, token);
+  }
+  async function loadSessionCopy() {
+    if (!target) return;
+    setLine("awEmbedCopyNote", "正在读取会话副本…");
+    try {
+      var copy = await api(withAttempt(base() + "/session-copy"));
+      var body = $("awSessionCopyBody");
+      if (!copy || copy.available !== true) {
+        if (body) body.hidden = true;
+        setLine("awEmbedCopyNote", "会话副本不可用：" + (copy && copy.reason
+          ? String(copy.reason) : "服务端未给 reason"));
+        return;
+      }
+      /* 稳定键 = {available, reason, kind, facts, bytes, truncated}；**没有**会话正文。
+       * 缺 `kind` 时不显示任何"全文"，只如实说无法确定内容类型。 */
+      var kind = copy.kind === null || copy.kind === undefined ? "" : String(copy.kind);
+      if (!kind) {
+        if (body) body.hidden = true;
+        setLine("awEmbedCopyNote", "服务端未下发 kind：无法确定副本内容类型（不显示内容）");
+        return;
+      }
+      var facts = copy.facts;
+      if (body) {
+        body.hidden = false;
+        if (facts === null || facts === undefined) {
+          body.textContent = "（facts 为空；kind=" + kind + "）";
+        } else {
+          var text;
+          try { text = JSON.stringify(facts, null, 2); } catch (e3) { text = String(facts); }
+          body.textContent = "kind=" + kind + " · 服务端解析事实（非会话原文）\n" + text;
+        }
+      }
+      var note = "会话副本 kind=" + kind + " · Bytes=" + (copy.bytes === null || copy.bytes === undefined
+        ? "未知" : String(copy.bytes));
+      if (copy.truncated) note += " · 已截断（服务端上限）";
+      setLine("awEmbedCopyNote", note);
+    } catch (e) {
+      if ($("awSessionCopyBody")) $("awSessionCopyBody").hidden = true;
+      setLine("awEmbedCopyNote", "会话副本读取失败：" + e.message);
+    }
+  }
+
+  /* S4：读取中/重置态（未拿到服务端字段前不显示任何结论，也不留白屏）。 */
+  function paintPending() {
+    SUMMARY_IDS.forEach(function (id) { setLine(id, "读取中…"); });
+    setLine("awSumAuthority", "读取中…");
+    paintBanner(null);
+    var rows = $("awS3Rows");
+    if (rows) {
+      var tr = el("tr"), td = el("td", "aw-s3-empty", "读取中…");
+      td.colSpan = 4;
+      tr.appendChild(td);
+      rows.replaceChildren(tr);
+    }
+    setLine("awS3Revision", "读取中…");
+    setLine("awS3Expiry", "到期判定：读取中…");
+    setLine("awS3Wm", "读取中…");
+    setLine("awS3Exp", "读取中…");
+    setLine("awS3Source", "来源：读取中…");
+    explainSignature = "";
+    var pendingRows = $("awS3Rows");
+    if (pendingRows) pendingRows.dataset.rendered = "";
+  }
+
   function render(view) {
     if (view.run_id !== target.runId || view.node !== target.node) throw new Error("Agent 响应身份与当前窗口不一致，拒绝启用控制。");
     var live = view.live;
@@ -134,6 +430,10 @@ window.AgentWindow = (function () {
     $("awFreshness").textContent = "最后成功读取：" + lastRead + "（读取时间，非执行完成时间）";
     if (readError) { error(""); readError = false; }
     results(view);
+    /* S4：运行摘要与无进展红字、S3 三列、内嵌两态都只读服务端字段（SPEC-REV-16 §2/§3/§6）。 */
+    paintProgress(view.progress);
+    paintExplain(view);
+    refreshEmbed();
     $("awIdentity").textContent = target.runId + " / " + target.node + (live ? " / " + live.session_id : " / 历史记录");
     var capsText = window.Capabilities ? window.Capabilities.line(view.capabilities) : "";
     $("awCapabilities").textContent = "节点级能力（不代表所选历史尝试）：" + (capsText || "能力事实未知（服务端未投影）");
@@ -143,9 +443,14 @@ window.AgentWindow = (function () {
     } catch (e) {
       if ($("awAttempts")) $("awAttempts").textContent = "解释展示失败：" + (e && e.message ? e.message : e);
     }
-    var status = live ? {working: "运行中", paused: "已暂停", interrupting: "干预处理中", starting: "正在启动"}[live.state] || live.state : "只读 · 无活跃请求";
+    /* 失败/未知必须如实显示（§3.3），不得降级成"运行中"。 */
+    var status = live ? ({
+      working: "运行中", paused: "已暂停", interrupting: "干预处理中", starting: "正在启动",
+      failed: "失败", done: "完成", idle: "待命", waiting: "等待"
+    }[live.state] || live.state) : "只读 · 无活跃请求";
     $("awStatus").textContent = status;
-    $("awStatus").className = "chip " + (live && live.state === "working" ? "primary" : "");
+    $("awStatus").className = "chip " + (live && live.state === "working" ? "primary"
+      : live && live.state === "failed" ? "bad" : "");
     var options = [{value: "", label: "跟随最新"}].concat((view.attempts || []).map(function (item) {
       return {value: String(item.attempt), label: "#" + item.attempt + " · " + item.status};
     }));
@@ -205,6 +510,7 @@ window.AgentWindow = (function () {
     epoch++; request++; target = null; data = null;
     stopTransport();
     cancelStop();
+    resetEmbed();
     if ($("agentWindow").open) $("agentWindow").close();
     if (previous) {
       var trigger = previous.trigger;
@@ -305,6 +611,8 @@ window.AgentWindow = (function () {
     $("awIdentity").textContent = target.runId + " / " + target.node;
     ["awInput", "awPrompt", "awOutput"].forEach(function (id) { $(id).textContent = "读取中…"; });
     $("awTimeline").textContent = "读取实际运行记录…";
+    paintPending();
+    resetEmbed();
     controls();
   }
   function open(options) {
@@ -359,7 +667,8 @@ window.AgentWindow = (function () {
     api = requestApi;
     $("awClose").addEventListener("click", close);
     $("agentWindow").addEventListener("cancel", function (event) { event.preventDefault(); close(); });
-    $("awRefresh").addEventListener("click", load);
+    /* S4：刷新即重新探可用性 —— 一次不可用不把同一 run/node 永久标死（SPEC-REV-16 §6.1/§8）。 */
+    $("awRefresh").addEventListener("click", function () { instanceKey = ""; load(); });
     $("awCurrent").addEventListener("click", function () {
       if (!data || !data.live) return;
       selectAttempt(String(data.live.attempt));
@@ -383,6 +692,15 @@ window.AgentWindow = (function () {
     [["awSteer", "steer"], ["awPause", "pause"], ["awResume", "resume"]].forEach(function (pair) {
       $(pair[0]).addEventListener("click", function () { submit(pair[1]); });
     });
+    /* S4（SPEC-REV-16 §6.2）：降级块的新标签页在无可用 URL 时不导航；会话副本走只读端点。 */
+    if ($("awEmbedNewTab")) $("awEmbedNewTab").addEventListener("click", function (event) {
+      if (!instanceUrl) event.preventDefault();
+    });
+    if ($("awSessionCopy")) $("awSessionCopy").addEventListener("click", loadSessionCopy);
+    if ($("awEmbedFrame")) {
+      $("awEmbedFrame").addEventListener("load", clearEmbedTimer);
+      $("awEmbedFrame").addEventListener("error", function () { degradeEmbed("embedded_load_failed"); });
+    }
     /* U2-b：固定轮询已由 syncTransport 的流优先/轮询兜底取代（§7.3）。 */
   }};
   function selectAttempt(value) {
@@ -396,6 +714,8 @@ window.AgentWindow = (function () {
     $("awStatus").textContent = "加载中";
     $("awFreshness").textContent = "尚未成功读取所选尝试";
     ["awInput", "awPrompt", "awOutput", "awBudget", "awAttempts", "awTimeline", "awModel", "awResultStatus", "awIdentity", "awCapabilities"].forEach(function (id) { $(id).textContent = "读取中…"; });
+    paintPending();
+    resetEmbed();
     error(""); controls(); load();
     syncTransport(); /* attempt 变化 ⇒ 按新 URL 重建流（§6.10：流内不切换 attempt） */
   }

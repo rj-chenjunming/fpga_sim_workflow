@@ -43,6 +43,7 @@
 ## 2 `spec/` 契约
 
 > **编号**：每份 SPEC 有稳定编号 `SPEC-0X`（文件名不变）。当前修订记录：
+> [SPEC-REV-13](spec/SPEC-REV-13-20261026.md)（云端 DSH 接入与 M1/M2/M3 记忆优化实施规格，**未实现**；[详细设计](plans/2026-10-26-cloud-dsh-memory-design.md)，本轮见 STATUS §104）、
 > [SPEC-REV-12](spec/SPEC-REV-12-20261026.md)（2026-10-26，**已实现**：R1 失败报告收口（方案 D）+ R2 真实轮冻结为 drill 夹具；验证见 [SPEC_REV05_VERIFY](evidence/SPEC_REV05_VERIFY_20261026.md)、依据 [REAL_N9_20261024](evidence/REAL_N9_20261024.md)，门禁见 STATUS §65）、
 > [SPEC-REV-11](spec/SPEC-REV-11-20261025.md)（H2b 逐问题复核与候选版本失效，恢复续修），
 > [SPEC-REV-10](spec/SPEC-REV-10-20261025.md)（H2a 逐项作者回应，恢复整合），
@@ -55,7 +56,7 @@
 > [SPEC-REV-03](spec/SPEC-REV-03-20261023.md)（AI 工作面板体验设计草案，未实现）、
 > [SPEC-REV-02](spec/SPEC-REV-02-20261023.md)（DSH 执行后端设计草案，未实现）、
 > [SPEC-REV-01](spec/SPEC-REV-01-20261022.md)（2026-10-22，已生效）。
-> 修订记录只增不改；后续依次 `SPEC-REV-13`…
+> 修订记录只增不改；后续依次 `SPEC-REV-14`…
 
 | 编号 | 文件 | 管什么 |
 |---|---|---|
@@ -69,7 +70,7 @@
 | SPEC-08（分期实施） | [DSH Agent 执行后端](spec/DSH_AGENT_RUNTIME_SPEC.md) | D1 首片提取后端边界；原生 DSH 核、工具/候选权限及真实会话接入仍待验证 |
 | SPEC-09（分期实施） | [AI 工作面板体验设计](spec/AI_WORK_PANEL_SPEC.md) | 首批统一入口与 N3/N6/N8 成果展示；后置能力、验证边界见 STATUS §55 |
 
-DSH 交互三层对齐（2026-10-28）：[体检对照表](plans/2026-10-28-three-layer-interaction-alignment.md) → [P1–P8 探针实测](evidence/DSH_PROBE_20261028/README.md) （只体检不改代码；五项裁决已定，Q6 凭据投放 / Q7 内嵌形态待裁）。
+DSH 交互三层对齐（2026-10-28）：[体检对照表](plans/2026-10-28-three-layer-interaction-alignment.md) → [P1–P8 探针实测](evidence/DSH_PROBE_20261028/README.md) （只体检不改代码；Q1–Q7 裁决已定，下一步 S0 规格修订）。
 
 DSH 接入阅读入口：[设计草案](spec/DSH_AGENT_RUNTIME_SPEC.md) → [实施切片](plans/2026-10-23-dsh-agent-runtime.md)。保持 Agently 默认，N3 做只读接入探针，N6 做价值对照，按收益决定是否扩展。
 当前开发：[D1 后端边界首片](plans/2026-10-24-dsh-backend-boundary.md)；不把后端抽象或受控测试等同于真实 DSH 接通。

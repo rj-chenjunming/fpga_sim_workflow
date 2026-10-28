@@ -10,6 +10,21 @@ loop:
   agent_runtime:
     default_backend: agently
     node_backends: {}
+    # S1（SPEC-REV-14）：执行器骨架已接线但**默认禁用**；`enabled=false` 时 select() 仍显式
+    # BackendUnavailable（REV-14 §1：不因实现存在而放行）。启用须同时指纹匹配。
+    # 注意：patch 文件必须放在 attempt 目录内（包裹会遮蔽宿主 home，仓内路径不可见）。
+    dsh:
+      enabled: false
+      version: "0.2.1-rc.2"
+      node: "/home/soft/DSH/node/bin/node"
+      bin: "/home/soft/DSH/versions/0.2.1-rc.2/node_modules/@deepseek-ai/dsh/lib/bin.js"
+      bin_sha256: "80112efe368efb1a39720c7ada0af00442e5131fb2744edaaff8a3e8bb499e6f"
+      profile: headless
+      timeout_s: 600
+      stop_grace_s: 5
+      wrap: true
+      patches: []
+      api_key_env: PUBLIC_API_KEY
   llm:
     # 留空 = 用宿主声明的 api family（本机为 openai-responses）。
     # 可选值：openai-responses | chat（= chat/completions）

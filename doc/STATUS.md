@@ -4847,3 +4847,37 @@ REV-14 的 D1 复评前提**部分满足**：bwrap 可作缓解，但不能据�
 ### 108.3 裁决（Q8，2026-10-28 已拍）
 
 **维持 D1 + bwrap 缓解**：attempt 进程一律套 bwrap（`--ro-bind / /` + `--tmpfs $HOME` + 只 bind attempt 目录与 `DSH_HOME` + `env -i`）；残余风险"同 uid 下 `/proc/<dsh-pid>/environ` 可读出 key"**显式记档、不称已解决**；复评条件升级为"能挡 `/proc` 读 environ"（REV-14 D1/B8/DS-10）。
+
+## 109 S1 机制层：DSH 执行器进程与协议（2026-10-28）
+
+切片计划：[2026-10-28-s1-dsh-process.md](plans/2026-10-28-s1-dsh-process.md)。本轮只做机制层；`dsh` 后端仍**不可用**（`select()` 不变）。
+
+### 109.1 交付
+
+| 文件 | 内容 |
+|---|---|
+| `loop/host/agent_backends/dsh_protocol.py` | headless NDJSON 帧解析与终态判定：`BadFrame`/`NoTerminal`/`ConflictingTerminal`/`IdentityMismatch`；`completed` 只由 `status.turn_end` 产生 |
+| `loop/host/agent_backends/dsh_process.py` | 每 attempt 一进程：bwrap 包裹（`--ro-bind / /`+`--tmpfs $HOME`+只 bind cwd/home+`--unshare-pid`+`--die-with-parent`）、env 白名单、`TERM→宽限→KILL` 进程组、停机后同组残留检查 |
+| `loop/host/agent_backends/dsh.py` | 后端骨架：配置锁定（`enabled/version/node/bin/bin_sha256/profile/timeout/stop_grace/wrap/patches/api_key_env`，未知字段拒绝）、指纹校验、失败显式化与 redact |
+| `loop/SETTINGS.yaml` | 新增 `agent_runtime.dsh`（**enabled:false** + P0 指纹钉；注释写明 patch 必须放 attempt 目录内） |
+| 测试 | `tests/test_dsh_process.py`（13）+ `tests/test_dsh_backend.py`（8），共 **21** 条 |
+
+### 109.2 实测（数字从命令输出复制）
+
+| 项 | 命令 | 结果 |
+|---|---|---|
+| 新用例 | `pytest -q tests/test_dsh_process.py tests/test_dsh_backend.py` | `21 tests collected`；定向运行 `45 passed`（含后端回归 `test_agent_backends.py`） |
+| 回归子集 | 上述 + `test_agent_backends` + `test_agent_backend_characterization` + `test_f06_structure` | `51 passed in 2.49s` |
+| **真机集成**（包裹形态） | 用本模块 `build_argv`（含 `--unshare-pid/--new-session`）跑真 dsh（1 次模型调用） | `OK status=completed text='OK' usage={'inputTokens': 337, 'outputTokens': 2, 'totalTokens': 5715, 'cacheReadTokens': 5376}` |
+
+### 109.3 失败语义（已实现 + 用例覆盖）
+
+坏帧（不忽略坏行）、无 `turn_end`（退出码 0/空 final 都不算完成）、冲突终态、`reason.kind=error`（保留 code/message，secret 由 backend redact）、超时（`TERM→KILL` 后子孙清理，`/proc` 同组扫描）、dsh 非零退出 ⇒ 固定诊断。
+
+### 109.4 未做 / 不声称
+
+- `select()` 仍 `BackendUnavailable`（`enabled=false`）：**实现存在 ≠ 准入**（REV-14 §1）。
+- 结构化候选未接（`submit_result` 在 S2）；sdk stdio 观测面未接（B4 的 subagent/compaction 记账在 S2）。
+- B2/B3 自检（工具清单 + preset 回显）尚未接入 `dsh.py` 的启动流程。
+- 未跑全量单测与端到端（本轮只跑相关子集；S1 结束前的四门待整体切片收口时跑）。
+- 包裹的**已知边界**：patch 文件必须放在 attempt 目录内（宿主 home 被遮蔽）；`/proc/<dsh-pid>/environ` 仍可读 key（D1 残余风险，Q8 已记档）。

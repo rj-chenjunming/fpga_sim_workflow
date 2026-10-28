@@ -1,0 +1,14 @@
+6a76a7788ed6a48345cf9e318f88e4bd  ./raw/integration-input.json
+e328a7deebe146bae6125a36e449c4bf  ./raw/integration-negative-b2.json
+901adf7d1065c73c1adec644aec47af4  ./raw/integration-nokey-explicit.json
+0001d63359a12f4cf876cfa9503a4c0c  ./raw/integration-positive.json
+5d4ce8da72f13fbbfef37614da537cc6  ./raw/negative-dsh-stderr.txt
+7e52b112d3c54332bca229810f2e6e89  ./raw/patches/00-pins.yml
+674fcebf7111433e609bd3a11362e76a  ./raw/patches/01-extra-provider-public.yml
+3ebb11c7036fc027f84edd35441e7e45  ./raw/patches/10-plugin-s2-selfcheck.yml
+0c8dc159d2a2a59d388e66440f950200  ./raw/patches/10-plugin-s2-submit-result.yml
+26e27c00b214ad9454520cc4f3bcb9ab  ./raw/sdk-handshake.json
+9de26bde4146b3d3c797903c40d21ef9  ./raw/selfcheck-negative-b2.json
+6372d3d8ce8c7e4282dad242dfa126ec  ./raw/selfcheck-nokey.json
+bf218d824caa2b3f6bdc398119e18a79  ./raw/selfcheck-positive.json
+0b0e1772dfa0e2e38d9d5078445183b6  ./README.md

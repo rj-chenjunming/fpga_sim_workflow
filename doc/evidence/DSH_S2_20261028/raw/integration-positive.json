@@ -1,0 +1,59 @@
+{
+ "payload": {
+  "standin": false,
+  "provider": "dsh/0.2.1-rc.2",
+  "plugin": "dsh",
+  "data": {
+   "verdict": "pass",
+   "reason": "integration"
+  },
+  "task_id": "RUN-S2INT/N6/1",
+  "summary": "S2 集成提交",
+  "session_id": "session-5eac8f45-197a-49a5-b2d2-ba3859d4d427",
+  "isolation": "bwrap",
+  "selfcheck": {
+   "phase": "deferred",
+   "toolCount": 26,
+   "sandboxDefaultMode": "read-only",
+   "presetEcho": {
+    "availability": "composition",
+    "scope": "composition",
+    "sessionScoped": false,
+    "preset": "read-only",
+    "api": [
+     "catalog()",
+     "defaultPreset",
+     "resolve(read-only)"
+    ],
+    "defaultPreset": "read-only",
+    "catalog": {
+     "options": [
+      "danger-full-access",
+      "read-only",
+      "workspace-write"
+     ],
+     "defaultOptions": [
+      "danger-full-access",
+      "read-only",
+      "workspace-write"
+     ],
+     "defaultPreset": "read-only"
+    },
+    "resolved": {
+     "preset": "read-only",
+     "sandbox": "read-only",
+     "approval": "ask"
+    },
+    "reason": null,
+    "resolveError": null,
+    "note": "apply 期无 session 对象：session 级 preset 未回显（计划 §6-1）；此处回显 composition 默认值"
+   }
+  }
+ },
+ "usage": {
+  "inputTokens": 345,
+  "outputTokens": 39,
+  "totalTokens": 6272,
+  "cacheReadTokens": 5888
+ }
+}

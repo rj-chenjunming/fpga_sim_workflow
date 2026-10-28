@@ -1,0 +1,10 @@
+{
+ "attempt_key_used_in_positive_run": "RUN-S2INT/N6/1",
+ "attempt_root": "workspaces/.s2-scratch/attempt-real（gitignored；一次性，未归档）",
+ "request": {
+  "input_data": {"task": "把一句话结论结构化提交（verdict=pass，reason=integration）"},
+  "instruct": "调用 submit_result 提交；task_id 逐字等于 attempt 标识；payload={\"verdict\":\"pass\",\"reason\":\"integration\"}",
+  "schema": {"type": "object", "required": ["verdict"], "properties": {"verdict": {"type": "string"}, "reason": {"type": "string"}}}
+ },
+ "note": "positive/negative/nokey 三个集成脚本是一次性的（不入库，避免把'跑真模型'变成常规动作）；本文件记录输入侧身份，便于与 raw/integration-positive.json 的 task_id 对齐"
+}

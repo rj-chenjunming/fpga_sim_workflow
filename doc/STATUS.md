@@ -4889,3 +4889,108 @@ REV-14 的 D1 复评前提**部分满足**：bwrap 可作缓解，但不能据�
 
 交接时点：`a36c3aa`；本地领先 `origin/main` **6** 个提交、**未推送**（`git rev-list --count origin/main..HEAD` 输出复制）。
 新窗口第一件事：核对 HEAD/工作树 → 读该提示词 §1 五件 → 先跑四道门收口 S1 → 再按 T1/T3/T2 做 S2。
+
+## 111 S2 交付：结构化候选 / 启动自检 / sdk 观测面（2026-10-28）
+
+本轮入口：[开工提示词](agents/开工提示词_S2-DSH执行器与后续切片.md)；计划
+[2026-10-28-s2-candidate-selfcheck-observation.md](plans/2026-10-28-s2-candidate-selfcheck-observation.md)；
+契约 [REV-14](spec/SPEC-REV-14-20261028.md) B1/B2/B3/B4/B5/B8、DS-08/DS-09/DS-10；
+证据档 [`doc/evidence/DSH_S2_20261028/`](evidence/DSH_S2_20261028/README.md)（冻结 444 + 目录外 md5）。
+本轮**没有**改 `kb/`、闸门、节点判据；`dsh` 仍显式不可用（`enabled=false`、`select()` 抛 `BackendUnavailable`）。
+
+### 111.1 S1 收口：四道门（先做，再开工 S2）
+
+基线 = `4e7baac`（交接提交；工作树干净，`git log --oneline -3` / `git status --short` 核对过）。
+
+| 门 | 命令 | 结果（命令输出复制） |
+|---|---|---|
+| 单测 | `bash spikes/provision_dev_workspace.sh` → `LOOP_WORKSPACE=<repo>/.dev-ws LOOP_LLM_MODE=standin .venv/bin/python -m pytest -q` | `3 failed, 1083 passed, 1 warning, 113 errors in 372.25s`；3 failed **全部**是 `@pytest.mark.env_layer`（本机 ENV_ROOT 只读的既有环境限制），113 errors 是浏览器缺件（Chromium 未并入四门） |
+| kb 自测 + env layer | `bash spikes/run_env_layer_checks.sh --with-kb-selftests` | `_selftest_gate_schema` `PASS=10` / `_selftest_n5_reachability` `PASS=9` / `_selftest_adjudicate_conflicts` `PASS=28`，`FAIL=0`；env_layer `3 passed, 24 deselected`；**原 ENV_ROOT 零写入**（`find -newer` 命中 0） |
+| 端到端（drill） | `LOOP_WORKSPACE=<repo>/.dev-ws LOOP_LLM_MODE=standin bash spikes/accept_v1_run.sh` | `phase 1 PASS=50`、`2 PASS=27`、`3 PASS=18`、`4 PASS=8`、`4b PASS=8`、`5 PASS=6`，全 `FAIL=0`，`=> ALL PASS` |
+| 文档门 | `pytest -q tests/test_doc_links.py` | `65 passed` |
+
+**数据根易错点（本轮实测，已修正开工提示词 §5 的字面写法）**：`cd loop && bash spikes/provision_dev_workspace.sh`
+把可写数据根建在 **`<repo>/.dev-ws`**，而 `$PWD/.dev-ws` 在 `cd loop` 后是 `loop/.dev-ws` ⇒ 按字面拼会把
+`LOOP_WORKSPACE` 指到不存在的目录，184 条用例因"drill 夹具不完整"失败（实测 `75 failed, 1005 passed, 113 errors`）。
+那是**数据根缺件**，不是代码缺陷；用绝对路径 `<repo>/.dev-ws` 重跑即回到上表。
+
+### 111.2 S2 交付物
+
+| 文件 | 变更 | 契约 |
+|---|---|---|
+| `loop/host/agent_backends/dsh_plugin/submit_result.mjs` | 新：ESM `defineTool` 注册 `submit_result(task_id, summary, payload)`；handler **不判业务**、**不落侧信道**（提交事实由 NDJSON `tool_call`/`tool_result` 承载），回 `{accepted:true,problems:[]}`（accepted = 引擎已接收） | B1 |
+| `loop/host/agent_backends/dsh_protocol.py` | `fold` 只**收集** `SubmissionCall`（S1 语义零改动）；新增独立纯门 `require_submission()` + `Submission` + `NoSubmission`/`ConflictingSubmissions`/`BadSubmission`（task_id 不符复用 `IdentityMismatch`） | B1/B5、DS-02 |
+| `loop/host/agent_backends/dsh.py` | 任务文本写入提交契约（task_id=attempt_key、schema）；`completed` 后**无条件**过提交门，只出 `{data:payload, task_id, summary, session_id, usage}`，**删 text/note 占位**；接入 B3 双钉、B2 自检钩子（带本次 `nonce`/`attemptKey` 身份 join）、DS-09/DS-10 前置检查（`to_thread` 跑探针）；`wrap=false` 在**配置路径**上不可启用（只允许代码里显式 `diagnostic_unwrapped`） | B1/B2/B3/B5、DS-02/08/09/10 |
+| `loop/host/agent_backends/dsh_plugin/selfcheck.mjs` | 新：`apply` 写 `$DSH_SELFCHECK_DIR/selfcheck.json`（`toolNames`/`sandboxDefaultMode`/`presetEcho`/`home`/`patches`/`nonce`/`attemptKey`），`phase=apply→deferred` 两段快照，**stdout 零写入** | B2/B3 |
+| `loop/host/agent_backends/dsh_selfcheck.py` | 新：`verify_home`（复用 `dsh_assets.home_problems`）、`verify_session`/`averify_session`（只认 deferred 快照；**nonce/attemptKey 身份 join**；缺工具/档位不符/回显 unknown/home 带宿主件 ⇒ 失败）、`attest_wrap`（DS-10 真 bwrap 探针） | B2/B3/B8、DS-08/09/10 |
+| `loop/host/agent_backends/dsh_process.py` | 拆 `build_wrap_argv(spec, inner)`（dsh 与探针共用隔离参数）；`run_attempt(on_start=...)`（spawn 后、收帧前的准入钩子，抛错 ⇒ `TERM→KILL` 后重抛）；新增可选 `asset_dirs`（只读）/`state_dirs`（可写） | B8、DS-10 |
+| `loop/host/agent_backends/dsh_sdk.py` | 新：锁定 `0.2.1-rc.2` 的 7 个请求方法 / 4 个通知（逐字来自 `dsh-sdk-protocol` 类型文件）；严格 NDJSON JSON-RPC 客户端（坏行/未知方法/未知通知/版本不符/超时显式失败、响应按 id 配对允许乱序）；`subagent.*`/`session.status`/`session.event` 落账；`parse_session_log_lines`/`read_session_log` 压缩事实 | B4/B7、D2 |
+| `loop/host/agent_backends/dsh_assets.py` | 新（共享基础）：attempt 布局、patch 物化（钉死 → 外部 overlay → 插件 insert）、**物化时清掉旧自检报告**、home 最小化检查、`node_modules` 解析软链、完整 preset 表（`config` 是整块替换，见 §111.5） | B1/B3/B8、DS-09 |
+| 测试 | `test_dsh_assets`(12) + `test_dsh_candidate`(35) + `test_dsh_selfcheck`(34) + `test_dsh_sdk`(37) = **新增 118 条**；`test_dsh_process`(13) 保持绿；`test_dsh_backend` 由 8→10（S1 成功用例改为 S2 契约：无提交 ⇒ 显式失败；新增 `wrap=false` 准入与 `diagnostic_unwrapped` 自曝两条） | 各片 TDD + 复核回归 |
+
+### 111.3 S2 关键实测（C2 部分；证据原文见证据档 raw/）
+
+1. **真机正例（1 次模型调用）**：`bwrap` 包裹的真 dsh + 真模型 ⇒ 模型真调用 `submit_result`，Host 收口得到
+   `data={"verdict":"pass","reason":"integration"}`、`task_id="RUN-S2INT/N6/1"`、`session_id=session-5eac8f45…`、
+   `isolation="bwrap"`、`selfcheck.toolCount=26`、`sandboxDefaultMode="read-only"`、`presetEcho.defaultPreset="read-only"`；
+   `usage={inputTokens:2651, outputTokens:41, totalTokens:6276}`。
+2. **负例（自检真能挡）**：人为移除插件模块解析链 ⇒ 工具清单 25 项无 `submit_result` ⇒
+   `model_call_failed=True`、error 指向 B2（"启动自检未通过…工具清单缺 submit_result"），**不出候选**、不启动模型调用。
+3. **负例（缺凭据显式失败）**：自检通过但 `PUBLIC_API_KEY` 未设 ⇒ `model_call_failed=True` + `MISSING_CREDENTIAL` 原文，
+   不伪装"在等人工"。
+4. **真 sdk 握手**：`dsh --profile sdk` 的 `initialize` 回 `{"serverInfo":{"name":"deepseek-harness-sdk-runtime","version":"0.0.1"}}`，
+   `shutdown` 回 `{}`、rc=0；客户端按 id 配对（实测响应可乱序）。
+5. **压缩计数**：真实 P7 日志回放 `count=1 / freed_tokens=3356 / start=2 / end=2 / prune=1 / 1 条显式 error`，与 P7 原文逐项一致。
+
+### 111.4 S2 收口：四道门（全部重跑；含复核修复后的终版树）
+
+> 复核修复（§111.5）落地后，四道门在**终版树**上重新跑过一次，下表是终版数字。
+
+| 门 | 结果（命令输出复制） |
+|---|---|
+| 单测（可写数据根） | `3 failed, 1203 passed, 1 warning, 113 errors in 365.01s`；3 failed 仍是 env_layer 环境限制、113 errors 仍是浏览器缺件 |
+| kb 自测 + env layer | `PASS=10` / `PASS=9` / `PASS=28`，`FAIL=0`；env_layer `3 passed, 24 deselected in 16.38s`；**原 ENV_ROOT 零写入**（`find -newer` 命中 0） |
+| 端到端（drill） | `phase 1 PASS=50`、`2 PASS=27`、`3 PASS=18`、`4 PASS=8`、`4b PASS=8`、`5 PASS=6`，全 `FAIL=0`，`=> ALL PASS` |
+| 文档门 | `65 passed in 2.11s` |
+
+定向回归（复核修复后）：`tests/test_dsh_assets.py test_dsh_candidate.py test_dsh_process.py test_dsh_backend.py test_dsh_selfcheck.py test_dsh_sdk.py`（+`test_agent_backends.py`）`165 passed in 14.03s`。
+**浏览器门未跑**：本片无 `loop/web/**` 与 `services/contracts.py` 界面字段改动（AGENTS §4 只在该类改动时要求）。
+
+### 111.5 独立复核与按复核修复
+
+独立验证者（未参与实现，**只报告不改**）结论：**无 P0；2×P1（潜在 fail-open，一旦接 DSH 准入即升 P0）+ 5×P2**；
+另做 4 条反向抽检（临时 monkeypatch 把实现改坏，用例按预期变红 ⇒ 断言不是自证）。本轮按发现逐条处置：
+
+| # | 复核发现 | 严重度 | 处置 |
+|---|---|---|---|
+| P1-1 | 自检快照没有 attempt 绑定：复用 attempt root 时 Host 用**上一次**的 deferred 快照放行（复核实测：进程没写报告、钩子仍放行、`outcome=completed`） | P1 | **已修**：每次 attempt 生成随机 `nonce`（`DSH_SELFCHECK_NONCE`）+ `DSH_ATTEMPT_KEY` 注入 env，报告必须回显、Host 逐字比对；物化时清空 `selfcheck/`；新增 4 条用例（含 `averify_session` 入口）；真机正例已按修复后代码**重跑**（`raw/selfcheck-positive.json` 的 `nonce`/`attemptKey` 在位） |
+| P1-2 | `wrap=false` 一个配置布尔静默关掉 DS-08/09/10 三项准入并照常出候选；`isolation="unwrapped"` 无消费者 | P1 | **已修**：`DshConfig.verify(wrap_required=True)` 拒绝配置关包裹；无包裹只允许代码里显式 `DshBackend(config, diagnostic_unwrapped=True)`，候选标 `isolation="unwrapped-diagnostic"` 且不伪造 selfcheck；新增 2 条用例 |
+| P2-1 | 计划 §3.2 的 `profiles/` 判据未实现且未登记：dsh 在空 home 里自建 `profiles/`，按原文实现会恒失败 | P2 | **已修文档**：DS-09 只禁宿主 settings/凭据；`profiles/` 口径登记 [计划 §6-9](plans/2026-10-28-s2-candidate-selfcheck-observation.md) |
+| P2-2 | DS-10「父进程 env 不继承」是同源自证（探针用显式 env 起进程，断言结构上不可能红） | P2 | **已修措辞**：实测判据降为「内层 env ⊆ `build_env` 白名单」，「不继承」由显式传 env 的结构保证；计划/证据/dsctring 同步 |
+| P2-3 | `dsh_sdk.py` 映射表里 `types.d.ts` 行号 5 处偏 1 | P2 | **已修**（14/27/35/57/62/67/77/82/84/91/98/105/122/129，逐条 `grep -n` 核对） |
+| P2-4 | `attest_wrap` 在 async `execute` 里同步 `subprocess.run`（最长阻塞 2×60 s） | P2 | **已修**：`asyncio.to_thread` |
+| P2-5 | `submissions.jsonl` 侧信道无消费者 + 写失败静默（AGENTS §2.4） | P2 | **已修**：删除侧信道（提交事实由 NDJSON `tool_call`/`tool_result` 承载），用例断言"不落侧信道" |
+| 证据缺口 | 负例决定性快照与 dsh stderr 未归档；正例缺输入侧 `attempt_key`；D2 把"手工构造夹具"写成"原样回放" | — | **已修**：`raw/selfcheck-negative-b2.json`、`raw/negative-dsh-stderr.txt`、`raw/integration-input.json` 归档；D2 措辞改为"按 P7 记录片段手工构造（非原样回放）" |
+
+**写权说明**：A/B/C 三片交付并结束后，复核修复与整合接线由 Lead 在同一轮落盘（不再有并行 owner 写入），
+不改变各片 owner 分工；`kb/**`、`SETTINGS.yaml` 全轮未被任何 owner 修改。
+
+复核**未**发现问题的项（照录）：唯一业务判据仍在 `model_steps._validate`（无第二套）、`text`/`note` 已删、
+失败显式（含 redact）、`select()`/SETTINGS 准入未放开、sdk 坏帧/未知通知/版本/超时硬失败、压缩计数不编数、
+证据数字与代码一致。
+
+### 111.6 纪律核对
+
+- **写权**：`kb/**` 零改动（`git status` 无 `kb/`）；`SETTINGS.yaml` 未改；`doc/spec` 只改 REV-14 **状态行**（正文未改）。
+- **证据**：新目录 `doc/evidence/DSH_S2_20261028/` 冻结（444）+ `doc/evidence/DSH_S2_20261028.md5`（目录外，`md5sum -c` 通过）。
+- **独立复核**：实现由 3 个实现 owner + Lead 完成，复核由**独立验证者**执行（只报告不改）；结果见 §111.5。
+- **失败显式**：无提交/被拒/冲突/身份不符/坏帧/无终态/超时/自检未过/缺凭据 ⇒ 一律 `model_call_failed` + error（redact），没有"等人工"式伪装。
+- **偏离复评条件**：D1（`/proc` 可读 key）**未满足**，维持偏离、不称已解决；D2（事件流 compaction）未验，保留"session log 落账"。
+
+### 111.7 未做 / 不声称
+
+- `select()` 仍 `BackendUnavailable`、`SETTINGS.dsh.enabled=false`：**实现存在 ≠ 准入**（REV-14 §1）。
+- B4 观测面：C1（stub 37 条 + 真 `initialize`/`shutdown` 握手）已实现；**真实模型 turn（`session/prompt`→`session/wait`）未验**（无 key 时本片不发真实 prompt），不用 headless 事件冒充。
+- DS-09 只到 **composition 级** preset 回显（`apply` 期无 session）；session 级回显与 `permissionPresets.current(session)` 待拿到 session 后重测。
+- 不声称挡 `/proc/<dsh-pid>/environ`；不声称大 payload 不截断（截断 fail-closed 未实测）；不声称子 agent 真实通知/长会话压缩已验。
+- 真机集成只做了 **1 次**模型调用（C2 部分），不是业务验收；内网工程验收（E）仍未做。

@@ -1,0 +1,16 @@
+- id: sandbox-policy
+  config:
+    mode: read-only
+- id: permission
+  config:
+    presets:
+      danger-full-access:
+        sandbox: danger-full-access
+        approval: never
+      read-only:
+        sandbox: read-only
+        approval: ask
+      workspace-write:
+        sandbox: workspace-write
+        approval: ask
+    defaultPreset: read-only

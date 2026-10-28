@@ -1,0 +1,8 @@
+{
+ "payload": {
+  "standin": false,
+  "provider": "dsh/0.2.1-rc.2",
+  "model_call_failed": true,
+  "error": "attempt RUN-S2NOKEY/N6/1 dsh 退出码 1：dsh: MISSING_CREDENTIAL: llm-pi-ai: no credential for provider route \"public\"; its profile resolves PUBLIC_API_KEY, which is not set — store PUBLIC_API_KEY through the credentials service (the web Models page writes it) or export it, and remove apiKeyEnv only if this provider should authenticate from pi-ai's own environment discovery"
+ }
+}

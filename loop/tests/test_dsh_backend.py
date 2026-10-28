@@ -74,18 +74,23 @@ def test_unknown_config_key_rejected(tmp_path: Path) -> None:
         D.config_from_settings(doc)
 
 
-async def test_execute_ok_returns_text_and_usage(tmp_path: Path) -> None:
+async def test_execute_without_submission_is_explicit_failure(tmp_path: Path) -> None:
+    """S2（B1/B5）：`turn_end(completed)` 但**没有** `submit_result` 提交 ⇒ 不得出候选。
+
+    S1 的 `text` 占位与 `note` 在 S2 已删除（结构化候选只走提交工具）；成功路径见
+    `tests/test_dsh_candidate.py`（stub 真发 tool_call/tool_result）。
+    """
     stub = _stub(tmp_path); cwd, home = _dirs(tmp_path)
-    backend = D.DshBackend(_config(tmp_path, stub))
+    backend = D.DshBackend(_config(tmp_path, stub), diagnostic_unwrapped=True)
     payload = await backend.execute(_request(), attempt_key="RUN-TEST/N6/1", cwd=cwd, home=home)
-    assert payload["standin"] is False
-    assert payload["text"] == "OK" and payload["usage"] == {"inputTokens": 3}
-    assert payload["note"].startswith("S1 骨架")
+    assert payload["model_call_failed"] is True
+    assert "submit_result" in payload["error"]
+    assert "text" not in payload and "note" not in payload
 
 
 async def test_execute_requires_explicit_dirs(tmp_path: Path) -> None:
     stub = _stub(tmp_path)
-    backend = D.DshBackend(_config(tmp_path, stub))
+    backend = D.DshBackend(_config(tmp_path, stub), diagnostic_unwrapped=True)
     with pytest.raises(BackendConfigurationError):
         await backend.execute(_request())
 
@@ -93,7 +98,7 @@ async def test_execute_requires_explicit_dirs(tmp_path: Path) -> None:
 async def test_execute_failure_is_explicit_and_redacted(tmp_path: Path, monkeypatch) -> None:
     stub = _stub(tmp_path, STUB_REFUSE); cwd, home = _dirs(tmp_path)
     monkeypatch.setenv("PUBLIC_API_KEY", "sk-SECRET")
-    backend = D.DshBackend(_config(tmp_path, stub))
+    backend = D.DshBackend(_config(tmp_path, stub), diagnostic_unwrapped=True)
     payload = await backend.execute(_request(), attempt_key="RUN-TEST/N6/1", cwd=cwd, home=home)
     assert payload["model_call_failed"] is True
     assert "sk-SECRET" not in payload["error"]
@@ -115,3 +120,44 @@ def test_shipped_pin_matches_actual_binary_when_present() -> None:
         pytest.skip("本机没有该 DSH 安装（CI/异机）——指纹比对不适用")
     actual = hashlib.sha256(cfg.bin.read_bytes()).hexdigest()
     assert actual == cfg.bin_sha256, "dsh bin 指纹漂移：请按 P0 重新录制 manifest 并更新 SETTINGS/REV"
+
+
+def test_wrap_off_cannot_enable_backend_from_config(tmp_path: Path) -> None:
+    """独立复核 P1-2：配置里 `wrap:false` 不能静默关掉 DS-08/09/10 准入。
+
+    生产路径（`config_from_settings` → `verify()`）要求 `wrap=true`；只有代码里显式
+    `diagnostic_unwrapped=True` 的诊断/单测路径才允许无包裹，且候选会标 `unwrapped-diagnostic`。
+    """
+    stub = _stub(tmp_path)
+    cfg = _config(tmp_path, stub)          # wrap=False（_config 默认给测试省 bwrap）
+    with pytest.raises(BackendConfigurationError, match="wrap=true"):
+        D.DshBackend(cfg)
+    # 诊断开关与 wrap=true 互斥（不许两边都声明）
+    with pytest.raises(BackendConfigurationError, match="矛盾"):
+        D.DshBackend(_config(tmp_path, stub, wrap=True), diagnostic_unwrapped=True)
+
+
+STUB_SUBMIT = '''#!/usr/bin/env python3
+import json, os, sys
+def emit(o): sys.stdout.write(json.dumps(o) + "\\n"); sys.stdout.flush()
+emit({"type": "session", "sessionId": "s-stub", "cwd": os.getcwd()})
+emit({"type": "tool_call", "callId": "c1", "tool": "submit_result",
+      "input": {"task_id": "RUN-TEST/N6/1", "summary": "一句话", "payload": {"verdict": "pass"}}})
+emit({"type": "tool_result", "callId": "c1", "status": "completed",
+      "result": json.dumps({"accepted": True, "problems": []})})
+emit({"type": "status", "phase": "turn_end", "reason": {"kind": "completed"}})
+emit({"type": "final", "text": "OK"})
+emit({"type": "status", "phase": "step_end", "usage": {"inputTokens": 3}})
+'''
+
+
+async def test_diagnostic_payload_is_marked_unwrapped(tmp_path: Path) -> None:
+    """诊断模式必须自曝身份：`isolation` 不能冒充 bwrap。"""
+    stub = _stub(tmp_path, STUB_SUBMIT)
+    cwd, home = _dirs(tmp_path)
+    backend = D.DshBackend(_config(tmp_path, stub), diagnostic_unwrapped=True)
+    payload = await backend.execute(_request(), attempt_key="RUN-TEST/N6/1", cwd=cwd, home=home)
+    assert "model_call_failed" not in payload, payload.get("error")
+    assert payload["data"] == {"verdict": "pass"}
+    assert payload["isolation"] == "unwrapped-diagnostic"
+    assert "selfcheck" not in payload, "无包裹就没有运行时自检事实，不得伪造"

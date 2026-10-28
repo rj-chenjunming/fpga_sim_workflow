@@ -1,0 +1,81 @@
+{
+ "plugin": "s2-selfcheck",
+ "applied": true,
+ "phase": "deferred",
+ "pid": 2,
+ "toolNames": [
+  "job_output",
+  "job_list",
+  "job_kill",
+  "web_search",
+  "web_fetch",
+  "submit_result",
+  "todo_write",
+  "exit_plan_mode",
+  "get_goal",
+  "create_goal",
+  "update_goal",
+  "working_directory",
+  "read",
+  "write",
+  "edit",
+  "glob",
+  "grep",
+  "skill",
+  "bash",
+  "read_image",
+  "send_message",
+  "interrupt_agent",
+  "list_agents",
+  "subagent",
+  "subagent_fork",
+  "workflow"
+ ],
+ "toolError": null,
+ "sandboxDefaultMode": "read-only",
+ "sandboxModeError": null,
+ "presetEcho": {
+  "availability": "composition",
+  "scope": "composition",
+  "sessionScoped": false,
+  "preset": "read-only",
+  "api": [
+   "catalog()",
+   "defaultPreset",
+   "resolve(read-only)"
+  ],
+  "defaultPreset": "read-only",
+  "catalog": {
+   "options": [
+    "danger-full-access",
+    "read-only",
+    "workspace-write"
+   ],
+   "defaultOptions": [
+    "danger-full-access",
+    "read-only",
+    "workspace-write"
+   ],
+   "defaultPreset": "read-only"
+  },
+  "resolved": {
+   "preset": "read-only",
+   "sandbox": "read-only",
+   "approval": "ask"
+  },
+  "reason": null,
+  "resolveError": null,
+  "note": "apply 期无 session 对象：session 级 preset 未回显（计划 §6-1）；此处回显 composition 默认值"
+ },
+ "home": "/home/work/chenjunming/change-impact-loop/workspaces/.s2-scratch/attempt-real/dsh-home",
+ "patches": [
+  "/home/work/chenjunming/change-impact-loop/workspaces/.s2-scratch/attempt-real/patches/00-pins.yml",
+  "/home/work/chenjunming/change-impact-loop/workspaces/.s2-scratch/attempt-real/patches/01-extra-provider-public.yml",
+  "/home/work/chenjunming/change-impact-loop/workspaces/.s2-scratch/attempt-real/patches/10-plugin-s2-submit-result.yml",
+  "/home/work/chenjunming/change-impact-loop/workspaces/.s2-scratch/attempt-real/patches/10-plugin-s2-selfcheck.yml"
+ ],
+ "node": "v24.21.0",
+ "nonce": "a0130ed07c3f4d9a8a98603dacccd724",
+ "attemptKey": "RUN-S2INT/N6/1",
+ "writtenAt": "2026-10-28T07:39:23.693Z"
+}

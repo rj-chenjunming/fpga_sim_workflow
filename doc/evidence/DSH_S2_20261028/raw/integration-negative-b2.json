@@ -1,0 +1,9 @@
+{
+ "payload": {
+  "standin": false,
+  "provider": "dsh/0.2.1-rc.2",
+  "model_call_failed": true,
+  "error": "启动自检未通过（/home/work/chenjunming/change-impact-loop/workspaces/.s2-scratch/attempt-negative/selfcheck/selfcheck.json）：B2：工具清单缺 submit_result（插件/工具没激活；dsh 只出 `warning: … did not activate` 不阻断启动）；可见 25 个：['bash', 'create_goal', 'edit', 'exit_plan_mode', 'get_goal', 'glob', 'grep', 'interrupt_agent', 'job_kill', 'job_list', 'job_output', 'list_agents']"
+ },
+ "expect": "model_call_failed=True 且 error 指向 B2/工具清单"
+}

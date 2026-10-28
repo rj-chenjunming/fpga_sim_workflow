@@ -5,7 +5,8 @@
 
 不变量：
 - 每次 attempt 独立进程、独立 session；不 resume 用户的会话（D3 的会话面在看板侧，不在这里）。
-- 包裹（`wrap=True`）时：全盘只读 + 宿主 home 遮蔽 + 只 bind attempt 的 cwd/home + env 白名单。
+- 包裹（`wrap=True`）时：全盘只读 + 宿主 home 遮蔽 + bind attempt 的 cwd/home（+ 显式
+  `asset_dirs` 只读 / `state_dirs` 可写）+ env 白名单。
   **不声称**挡 `/proc/<pid>/environ`（P0 实测同 uid 可读；D1 残余风险）。
 - 超时/停机：`TERM` → 宽限 → `KILL` 进程组；停机后仍有子孙 ⇒ `LeftoverChildren`（execution_unknown 语义）。
 """
@@ -59,6 +60,14 @@ class AttemptSpec:
     api_key_env: str = "PUBLIC_API_KEY"
     proxy_env: dict[str, str] = field(default_factory=dict)
     env_extra: dict[str, str] = field(default_factory=dict)   # 显式白名单（测试/诊断）
+    #: 包裹内额外**只读**可见的 attempt 资产目录（patch overlay / 插件源码）。
+    #: 为什么需要：`--ro-bind / /` 只在路径未被遮蔽时可读，而 attempt 目录可能落在 `--tmpfs /tmp`
+    #: 或宿主 home（被 tmpfs 遮蔽）之下 ⇒ 不显式 bind 时 dsh 读不到自己的 patch，插件只会
+    #: "did not activate"（实测：`failed to read overlay … ENOENT`）。空元组 = 旧行为。
+    asset_dirs: tuple[Path, ...] = ()
+    #: 包裹内额外**可写**的 attempt 私有目录（自检侧信道等）。只允许 attempt 目录内的私有面；
+    #: 宿主 home 永不可写。空元组 = 旧行为。
+    state_dirs: tuple[Path, ...] = ()
 
 
 def build_env(spec: AttemptSpec) -> dict[str, str]:
@@ -77,27 +86,49 @@ def build_env(spec: AttemptSpec) -> dict[str, str]:
     return env
 
 
-def build_argv(spec: AttemptSpec) -> list[str]:
-    """argv 用数组（绝不拼 shell 字符串）；包裹时只 bind attempt 的 cwd/home。"""
-    inner = [str(spec.node), str(spec.dsh_bin), "--profile", spec.profile]
-    for patch in spec.patches:
-        inner += ["--patch", str(patch)]
-    inner += ["--json", spec.task]
+def build_wrap_argv(spec: AttemptSpec, inner: list[str]) -> list[str]:
+    """把 `inner` 包进 bwrap（**唯一**隔离参数来源；dsh 与自检探针共用一套，避免第二套口径）。
+
+    - `--ro-bind / /`：全盘只读可见；
+    - `--tmpfs <宿主 home>`：宿主 home 整体遮蔽（P0 实测 `AGENTS.md` ⇒ `No such file`）；
+    - `--bind cwd` / `--bind home`：attempt 唯一可写面；
+    - `asset_dirs` 只读补齐、`state_dirs` 可写补齐（attempt 私有资产/侧信道）；
+    - `--unshare-pid` + `--die-with-parent` + `--new-session`：停机会话 + 子孙随死。
+
+    **不声称**挡 `/proc/<pid>/environ`（D1 残余风险；P0 实测同 uid 可读）。`wrap=False` 时原样返回。
+    """
     if not spec.wrap:
-        return inner
-    host_home = str(Path.home())
-    return ["bwrap",
+        return list(inner)
+    argv = ["bwrap",
             "--ro-bind", "/", "/",
             "--dev", "/dev",
             "--proc", "/proc",
             "--tmpfs", "/tmp",
-            "--tmpfs", host_home,
+            "--tmpfs", str(Path.home()),
             "--bind", str(spec.cwd), str(spec.cwd),
-            "--bind", str(spec.home), str(spec.home),
-            "--unshare-pid",
-            "--die-with-parent",
-            "--new-session",
-            *inner]
+            "--bind", str(spec.home), str(spec.home)]
+    seen = {Path(spec.cwd), Path(spec.home)}
+    for directory, flag in ([(d, "--ro-bind") for d in spec.asset_dirs]
+                            + [(d, "--bind") for d in spec.state_dirs]):
+        path = Path(directory)
+        if path in seen:
+            continue
+        seen.add(path)
+        argv += [flag, str(path), str(path)]
+    argv += ["--unshare-pid",
+             "--die-with-parent",
+             "--new-session",
+             *inner]
+    return argv
+
+
+def build_argv(spec: AttemptSpec) -> list[str]:
+    """argv 用数组（绝不拼 shell 字符串）；包裹时只 bind attempt 的 cwd/home（+ 显式资产）。"""
+    inner = [str(spec.node), str(spec.dsh_bin), "--profile", spec.profile]
+    for patch in spec.patches:
+        inner += ["--patch", str(patch)]
+    inner += ["--json", spec.task]
+    return build_wrap_argv(spec, inner)
 
 
 def _group_members(pgid: int) -> list[int]:
@@ -136,8 +167,14 @@ async def _stop_group(proc: asyncio.subprocess.Process, grace_s: float) -> None:
             continue
 
 
-async def run_attempt(spec: AttemptSpec, *, on_event=None) -> DPR.RunOutcome:
-    """起一次 attempt：收帧、判终态；失败一律显式抛（不返回假候选）。"""
+async def run_attempt(spec: AttemptSpec, *, on_event=None,
+                      on_start=None) -> DPR.RunOutcome:
+    """起一次 attempt：spawn → `on_start` 自检钩子 → 收帧、判终态。
+
+    `on_start`（可选、async）：**spawn 之后、收帧之前**的准入钩子（启动自检，DS-08）。
+    钩子抛异常 ⇒ 先 `TERM→KILL` 整个进程组再重新抛出（显式失败；不留孤儿、不降级为告警）。
+    其余失败语义不变：超时/残留/坏帧/无终态一律显式抛（不返回假候选）。
+    """
     argv = build_argv(spec)
     env = build_env(spec)
     proc = await asyncio.create_subprocess_exec(
@@ -148,6 +185,14 @@ async def run_attempt(spec: AttemptSpec, *, on_event=None) -> DPR.RunOutcome:
     wait_task = asyncio.create_task(proc.wait())
     out_task = asyncio.create_task(proc.stdout.read())
     err_task = asyncio.create_task(proc.stderr.read())
+    if on_start is not None:
+        try:
+            await on_start()
+        except BaseException:
+            # 自检失败 = 本次 attempt 不得继续：先停进程组，再把原因抛给调用方
+            await _stop_group(proc, spec.stop_grace_s)
+            await asyncio.wait({out_task, err_task, wait_task}, timeout=10.0)
+            raise
     timed_out = False
     try:
         await asyncio.wait_for(asyncio.gather(out_task, err_task, wait_task, return_exceptions=True),

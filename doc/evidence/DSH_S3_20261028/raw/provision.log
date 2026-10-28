@@ -1,0 +1,6 @@
+[..] 复制 drill 夹具（约 733 MB）：/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/kb/runs/RUN-20261015-120626
+[OK] 可写数据根就绪：/home/work/chenjunming/change-impact-loop/.dev-ws
+     跑测试：
+       cd /home/work/chenjunming/change-impact-loop/loop && LOOP_WORKSPACE=/home/work/chenjunming/change-impact-loop/.dev-ws LOOP_LLM_MODE=standin .venv/bin/python -m pytest -q
+     用完清理（跑文档门前必须）：
+       bash /home/work/chenjunming/change-impact-loop/loop/spikes/provision_dev_workspace.sh --cleanup

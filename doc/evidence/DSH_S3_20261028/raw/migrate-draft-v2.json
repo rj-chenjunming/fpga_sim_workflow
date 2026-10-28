@@ -1,0 +1,30 @@
+{
+  "version": 2,
+  "items": [
+    {
+      "id": "mask-lesson",
+      "revision": 1,
+      "status": "draft",
+      "approved_by": null,
+      "kind": "exact_fact",
+      "advice": "结合当前 RTL 核对掩码，历史结论不能作为本轮通过凭据。",
+      "source": {
+        "path": "runs/historical/note.md",
+        "sha256": "2bf3487b8d23f4520e20b7771f432a58d210bb2bc79dac944db48acb2076bcc9"
+      },
+      "applicability": {
+        "nodes": [],
+        "dependencies": [
+          {
+            "type": "env",
+            "env_id": "simenv"
+          },
+          {
+            "type": "baseline",
+            "value": "v0"
+          }
+        ]
+      }
+    }
+  ]
+}

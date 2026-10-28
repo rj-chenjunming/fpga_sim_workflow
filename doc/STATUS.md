@@ -4994,3 +4994,109 @@ REV-14 的 D1 复评前提**部分满足**：bwrap 可作缓解，但不能据�
 - DS-09 只到 **composition 级** preset 回显（`apply` 期无 session）；session 级回显与 `permissionPresets.current(session)` 待拿到 session 后重测。
 - 不声称挡 `/proc/<dsh-pid>/environ`；不声称大 payload 不截断（截断 fail-closed 未实测）；不声称子 agent 真实通知/长会话压缩已验。
 - 真机集成只做了 **1 次**模型调用（C2 部分），不是业务验收；内网工程验收（E）仍未做。
+
+## 112 S3 交付：WM / IL / EXP 三片（2026-10-28，C1 机制）
+
+本轮入口：[开工提示词 S3](agents/开工提示词_S3-记忆与指令.md)；计划 [2026-10-28-s3-wm-il-exp.md](plans/2026-10-28-s3-wm-il-exp.md)；
+契约 [REV-13](spec/SPEC-REV-13-20261026.md) §6/§7/§8/§10、[REV-14](spec/SPEC-REV-14-20261028.md) §5 A4/A5/A6 + §6 切片映射；
+证据档 [`doc/evidence/DSH_S3_20261028/`](evidence/DSH_S3_20261028/README.md)（冻结 444 + 目录外 md5）。
+本轮**没有**改 `kb/`、闸门、节点判据、`SETTINGS.yaml`、`prompts/`、`services/contracts.py`、`loop/web/**`；
+`dsh` 仍显式不可用（`enabled=false`、`select()` 抛 `BackendUnavailable`）。**本片是 C1（机制），不是 C2/E。**
+
+### 112.1 开工基线（先跑四道门确认现场，工作树干净）
+
+基线 = `06519d7`（= 交接 `5cae13c` + 交接文档提交；本地领先 `origin/main` 9、未推送）。
+
+| 门 | 命令 | 结果（命令输出复制） |
+|---|---|---|
+| 单测 | `bash spikes/provision_dev_workspace.sh` → `LOOP_WORKSPACE=<repo>/.dev-ws LOOP_LLM_MODE=standin pytest -q` | `3 failed, 1203 passed, 1 warning, 113 errors in 392.09s`；3 failed **全部**是 `@pytest.mark.env_layer`（本机 ENV_ROOT 只读），113 errors 是 `tests/browser/**` 缺 Chromium（不并入四门） |
+| kb 自测 + env layer | `bash spikes/run_env_layer_checks.sh --with-kb-selftests` | `PASS=10`/`PASS=9`/`PASS=28`，`FAIL=0`；env_layer `3 passed, 24 deselected in 13.29s`；**原 ENV_ROOT 零写入**（`find -newer` 命中 0） |
+| 端到端（drill） | `LOOP_WORKSPACE=<repo>/.dev-ws LOOP_LLM_MODE=standin bash spikes/accept_v1_run.sh` | `phase 1–5` 全 `rc=0`，`=> ALL PASS` |
+| 文档门 | `pytest -q tests/test_doc_links.py` | `65 passed in 2.20s` |
+
+### 112.2 交付物（三片，逐片提交）
+
+| 提交 | 内容 | 契约 / 必测 |
+|---|---|---|
+| `9d9147e` | 计划（SpecDD ②）：三片、落点、写权、验证门、缺口登记 | REV-13 §10、REV-14 §6 |
+| `fc82b98` | **S3a WM**：新 `host/agent_working_memory.py`（唯一构造者；五类条目/`input_ref`/确定性指纹/封存来源核验/强制材料缺口）+ `model_request.run_attempt` 接线（`working_memory` 进 `input`、`source_map` 冷存 request 顶层）+ `agent_review.prepare` 机制字段排除一行（Lead 授权的写权例外） | REV-13 §6、**WM-01～05** |
+| `4f9fc36` | **S3b IL**：`agent_control` run 作用域事件面（`agent_controls/run/instruction-<seq>.json`、CAS、幂等、原子 supersede、作用域/到期归约、单写者锁、`accepted/applied/effective` 分离）+ `GET/POST /api/runs/{run_id}/instructions` + 请求封存 `instruction_revision`/本节点指纹 + 结果后接受门（迟到结果丢弃、不新增 status 枚举） | REV-13 §7、**IL-01～04** |
+| `9aa52e5` | **S3c EXP**：`agent_memory` v1 原样 / v2 两阶段适用性（exact_fact 必须非空 typed 依赖、general_advice 必须有已批准环境策略或契约范围）、typed 依赖唯一解析器、批次整批拒用、选择记录 + 新 `host/experience_migrate.py`（只读校验 + 候选草稿，拒覆盖/拒写 adjudication）+ `run_attempt` 消费与剩余预算判定 | REV-13 §8、**EXP-01～03** |
+| `5690c52` | **独立复核处置**：P1（IL 幂等指纹含 `target_instruction_id`）+ 6×P2（首个空位取号/不一致先封存 error、事件半发布有界重试、锁移出审计面、WM 指令条目防御、`input_digest` 排除 WM、批次拒用只对 v2、`catalog_rejected` 口径） | 计划 §6.4 |
+
+测试新增：`test_agent_working_memory.py` 39、`test_agent_instruction_lifecycle.py` 68、
+`test_agent_experience_applicability.py` 84 = **191 条新用例**（全部无 skip/xfail）。
+
+### 112.3 三片 TDD 证据（RED → GREEN，数字为命令输出复制）
+
+| 片 | 先失败（RED） | 定向（GREEN） | 全量软件门（该片收口时） |
+|---|---|---|---|
+| S3a | 模块不存在 ⇒ `1 error in 0.18s`（ImportError）；接线前 `3 failed, 36 passed in 0.93s`；缺 `agent_review` 排除行 ⇒ `2 failed, 36 deselected in 0.70s`（`review_context_sha256` 逐值不等） | WM `39 passed in 0.80s`；9 文件受影响回归 `290 passed, 1 warning in 66.56s` | `3 failed, 1242 passed, 1 warning, 113 errors in 388.70s` |
+| S3b | 实现回退到 `fc82b98`、保留最终测试 ⇒ `50 failed, 1 passed in 2.50s` | 12 文件 `295 passed, 1 warning in 22.38s` | `3 failed, 1293 passed, 1 warning, 113 errors in 399.71s` |
+| S3c | 实现前 ⇒ `61 failed, 2 passed in 2.56s` | 新文件 `65 passed`；8 文件 `301 passed` | `3 failed, 1358 passed, 1 warning, 113 errors in 475.49s` |
+| S3c 适用性收紧 | 新 9 条用例 ⇒ `4 failed, 5 passed in 1.06s` | 文件 `74 passed in 2.56s` | —— |
+| 复核修复 | IL/WM 新用例 ⇒ `17 failed, 90 passed in 3.35s`；批次分支 ⇒ `2 failed, 1 passed` | `107 passed`；9 文件 `349 passed in 8.03s`；5 文件 `243 passed` | —— |
+
+三次全量门的 `3 failed` 均为同一组 `@pytest.mark.env_layer`（`test_archive_e2.py` ×2、`test_projection_and_frozen.py` ×1，
+本机 ENV_ROOT 只读），`113 errors` 均为 `tests/browser/**` 缺 Chromium —— **环境缺件，照实记录，不算通过**。
+
+### 112.4 终版树四道门（修复后全部重跑；数字从输出复制）
+
+终版树 = `5690c52`（+ 文档/证据提交）。`raw/` 原始输出见 [证据档](evidence/DSH_S3_20261028/README.md)。
+
+| 门 | 结果（命令输出复制） |
+|---|---|
+| 单测（可写数据根） | `3 failed, 1394 passed, 1 warning, 113 errors in 496.53s`；3 failed 仍是 env_layer、113 errors 仍是浏览器缺件 |
+| kb 自测 + env layer | `PASS=10` / `PASS=9` / `PASS=28`，`FAIL=0`；env_layer `3 passed, 24 deselected in 14.81s`；**原 ENV_ROOT 零写入**（`find -newer` 命中 0） |
+| 端到端（drill） | `phase 1`–`5` 全 `rc=0`，`=> ALL PASS`（`PASS=50/27/18/8/8/6`，`FAIL=0`） |
+| 文档门 | `65 passed in 2.72s`（写 STATUS/证据前）；写完后再跑一次见 §112.6 |
+
+差量对账：`1203 → 1394 passed`（+191 = 三新文件用例数）；`failed 3=3`、`errors 113=113`、`warnings 1=1`，零新增失败。
+**浏览器门未跑**：本片 `loop/web/**` 与 `services/contracts.py` 界面字段零改动（AGENTS §4 只在该类改动时要求）；
+全量里的 113 errors 是环境缺件，不当通过。
+
+### 112.5 独立复核（未参与实现，只报告不改）与处置
+
+复核者只读（未改被测文件、未提交、未写 STATUS），静态 + 动态两轮；实现 owner 按 SpecDD 修复，见计划 §6.4。
+
+| 严重度 | 发现 | 处置 |
+|---|---|---|
+| **P1** | IL 幂等指纹漏 `target_instruction_id`：同 `request_id`+同 `expected_instruction_revision` 换目标 ⇒ 返回上一条回执（accepted）、新目标未撤销，违 §7.2"新字段全部参与指纹" | **已修** `5690c52`：target 入指纹 + 用例（同 ID 换 target ⇒ 409；同 ID 同 target 重放 ⇒ 原回执且事件数不变） |
+| P2 ×6 | 取号算法与 `AM.Attempt` 不一致/不一致时留 incomplete；事件 data→sha 半发布被并发 GET 读到；锁文件写在审计目录；WM 指令条目缺 scope/来源校验；`input_digest` 含 WM 改变 N3 digest 字节；v1 也被"剩余预算整批拒用"改变旧行为且记录自相矛盾 | **已修** `5690c52`（逐条见计划 §6.4-33～38） |
+| P2 ×7 | run 终态到期未实现；`context_manifest_ref` 未接；§7.3 主动停止未做；`catalog_rejected` 口径；`experiences()` 兼容导出；旧 session `attempt` 投影在缺口场景偏 1；锁路径/字节数口径 | **登记**计划 §6.4-39～46（不含未声明的"已实现"） |
+| 动态抽检 | **16/16 反向抽检变红**（WM-01/02/03/05、IL-01～04、EXP-01～03、REG-01 各 1 条 + 4 个修复项），每次还原后 sha256 与 `git diff` 均一致；独立复跑全量 `3 failed/1394 passed/113 errors`、文档门 `65 passed`、定向 9 文件 `369 passed` | 复核结论：**可按 C1 声称已实现 + 断言可证伪**；不能声称四门全通过（kb/e2e 由 Lead 跑）、TDD 时序有独立证据、C2/E、"IL/EXP 全量语义完整" |
+
+复核者"确认没问题"的项（照录）：红线（预算唯一 `AM.check_budget`、无第二套闸门枚举、未复制 `model_steps._validate`、
+`kb/`/`SETTINGS.yaml`/`prompts`/`contracts.py`/`web/**` 零改动、无生产路径写 `adjudication/agent_experiences.json`、
+`select()`/`dsh enabled=false` 未放开）；旧 `/control` 代码区与基线逐字节相同；H2b/REG-01（`prepare` 只加一个
+`'working_memory'`、`review_context_sha256` 旧值不变、v1 scope 逐值行为与诊断文案保持）；`accepted/applied/effective` 三分；
+失败显式（无吞异常换默认值）；跨切片接线顺序（scope → EXP 选择 → WM → EXP 批次 → 封存 → check_budget → 模型 → 接受门）。
+
+### 112.6 纪律核对
+
+- **写权**：`kb/**` 零改动（`git status` 无 `kb/`）；`SETTINGS.yaml`、`prompts/`、`services/contracts.py`、`loop/web/**` 未改。
+  唯一写权例外：`loop/host/agent_review.py::prepare` 排除元组加 `'working_memory'`（Lead 授权，理由与回归见计划 §6-12）；
+  既有用例 `tests/test_agent_control.py` 的 steer 断言被**加强**（计划 §6-13），`test_agent_working_memory.py` 两行断言随
+  `input_digest` 口径更新（§6.4-37）。
+- **证据**：新目录 `doc/evidence/DSH_S3_20261028/` 冻结（444）+ `doc/evidence/DSH_S3_20261028.md5`（目录外，`md5sum -c` 通过）；
+  STATUS 本节只增。
+- **独立复核**：实现由 3 个实现 owner（S3a/S3b/S3c）完成，复核由**独立验证者**执行（只报告不改，16/16 反向抽检已还原）；
+  Lead 负责计划/接线复核/四道门/STATUS/提交，**不声称独立验证**。
+- **失败显式**：源半件/篡改/跨 run/越界、未知枚举、CAS/幂等冲突、锁占用、审计损坏、预算超限、迟到结果 ⇒ 一律显式失败
+  （无"等人工"式伪装、无静默截断/降级）。
+- **准入不动**：`agent_backends.select()` 对 dsh 仍 `BackendUnavailable`；`SETTINGS.dsh.enabled=false`。
+- **文档门终版**：写完本节与证据档后重跑（命令输出复制）：`65 passed in 2.80s`。
+
+### 112.7 未做 / 不声称
+
+- **不声称 C2/E**：未接真实 DSH/模型/工具，未跑真实长会话/压缩边界/内网工程验收；本片只到 C1。
+- **不声称"四道门全通过"**：单测门里 `env_layer 3 failed` 与 `browser 113 errors` 是本机缺件（照实记录，不当通过）；
+  浏览器门按 AGENTS §4 未并入（本片无界面改动）。
+- **不声称"IL/EXP 全量语义完整"**：run 终态到期（计划 §6.4-39）、`context_manifest_ref`（§6.4-40）、
+  §7.3 主动停止在途执行（§6.4-43）是**已登记缺口**；旧 session `attempt` 投影在目录缺口场景可能偏 1（§6.4-45）。
+- **运行期开关未实现**（计划 §6-1）：兼容性由"新字段可缺省 + 旧记录只读"保证，回滚只能回滚代码。
+- **UI/S4 投影未做**（§6-20）：`accepted/applied/effective` 与 WM/EXP 解释面只有服务端投影，`loop/web/**` 零改动。
+- **DSH 冷材料补读未接**（S5）：`input_ref` 不声称替代材料送达；Agently 路径靠"引用只指向本次已发送正文"。
+- **提示词未增强**（§6-19）：模型只从 `info` 一行护栏 + WM `constraint` 条目得知指令是补充、不可覆盖事实/Schema/预算/闸门。
+- **不声称经验选择语义正确**：v2 判据是确定性 typed 规则（无模型/关键词相似度、无学习排序、无向量检索）；
+  经验永不签闸门、不改计数、不弱化 blockers；迁移草稿不可被选择（`draft` ⇒ `not_approved`）。

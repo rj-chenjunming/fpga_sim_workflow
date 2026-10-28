@@ -660,6 +660,53 @@ async def agent_command(run_id: str, node: str, payload: dict[str, Any] = Body(d
     except OSError as exc:
         raise HTTPException(503, detail={'error': f'控制审计写入失败：{exc}'}) from exc
 
+
+# ---------------------------------------------------------------- run 作用域指令（IL，REV-13 §7）
+
+def _run_root(run_id: str) -> Path:
+    """run 级端点共用的 404 口径：与 `_agent_root` 同一 `manager.docs` 判据（不另立规则）。"""
+    manager = _manager()
+    if run_id not in manager.docs:
+        raise HTTPException(404, detail={'error': '运行不存在'})
+    return Path(manager.docs[run_id].run_dir)
+
+
+@app.get('/api/runs/{run_id}/instructions')
+async def run_instructions(run_id: str):
+    """当前有效条目/版本/来源/失效原因（历史只读）；空集合与读取失败不是同一状态。
+
+    `accepted`/`applied`/`effective` 由服务端分别投影（回执≠生效）；本端点不写任何文件。
+    审计损坏 ⇒ 422（与既有 agents 视图同口径），不静默清空指令继续。
+    """
+    from host import agent_control as control
+    root = _run_root(run_id)
+    try:
+        return await asyncio.to_thread(control.instructions_view, root)
+    except (OSError, ValueError) as exc:
+        raise HTTPException(422, detail={'error': str(exc)}) from exc
+
+
+@app.post('/api/runs/{run_id}/instructions')
+async def run_instruction_command(run_id: str, payload: dict[str, Any] = Body(default={})):
+    """create/revoke/supersede（必带 actor/request_id/expected_instruction_revision）。
+
+    回执只表示 accepted；applied 与 effective 由 GET 从封存记录/有效集投影。
+    错误映射与既有 `/control` 一致：400 数据错、403 actor 错、409 冲突/过期、503 审计写失败。
+    """
+    from host import agent_control as control
+    root = _run_root(run_id)
+    try:
+        return await asyncio.to_thread(control.submit, root, payload)
+    except PermissionError as exc:
+        raise HTTPException(403, detail={'error': str(exc)}) from exc
+    except control.ControlConflict as exc:
+        raise HTTPException(409, detail={'error': str(exc)}) from exc
+    except ValueError as exc:
+        raise HTTPException(400, detail={'error': str(exc)}) from exc
+    except OSError as exc:
+        raise HTTPException(503, detail={'error': f'指令审计写入失败：{exc}'}) from exc
+
+
 @app.post("/api/runs/{run_id}/gates/{gate_id}/decision")
 async def submit_decision(
     run_id: str,

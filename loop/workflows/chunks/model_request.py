@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any
 
 from host import agent_backends as AB
+from host import agent_control as AC
 from host import agent_memory as AM
 from host import agent_working_memory as WM
 from host import gate_authority as GA
@@ -88,6 +89,11 @@ async def run_attempt(
     """发请求 + Host 校验；调用记录只增不改，经验不取得业务写权。
 
     `validate` 是 Host 校验的唯一实现（节点语义），由调用方注入；机制层不复制判据。
+
+    IL（REV-13 §7）只在这里接线：先归约**本节点本次尝试**的有效指令（唯一归约实现仍在
+    `agent_control`），作为 WM 的 `constraint` 条目注入；请求封存 `instruction_revision` /
+    本节点指纹 / 采用与未采用原因；结果返回后按**本节点**指纹复核，变化 ⇒ 结果丢弃、
+    显式失败（`result.status` 仍用既有 `error`，不新增枚举值），不进消费者。
     """
     backend = AB.select(node)
     cfg = backend.info
@@ -97,6 +103,15 @@ async def run_attempt(
     if input_data.get('human_interventions'):
         contract['info'] += ('\n人工 human_interventions 仅为当前任务的补充指令；'
                              '不得覆盖原始事实、授权范围、输出 Schema、Host 校验或人工闸门。')
+    # IL：本次明确尝试的序号由 Host 预留（与 AM.Attempt 的取号算法同一实现派生），
+    # 有效集归约/到期/作用域判据全部在 agent_control，这里只消费结论（红线 8）。
+    attempt_sequence = AC.next_attempt(ctx.run_dir, node)
+    instructions = AC.effective(ctx.run_dir, node, attempt=attempt_sequence)
+    directives = instructions["adopted"]
+    if directives:
+        contract['info'] += ('\nworking_memory 的 constraint 条目是 Host 已封存的人工指令；'
+                             '同为补充指令，不得覆盖原始事实、授权范围、输出 Schema、'
+                             'Host 校验或人工闸门。')
     scope = AM.scope_for(ctx, input_data, contract)
     lessons, diagnostics = AM.experiences(ctx, scope)
     request_input = AM.normalized({k: v for k, v in input_data.items() if k != "approved_experiences"})
@@ -109,6 +124,7 @@ async def run_attempt(
         ctx, node, request_input,
         instructions=tuple(interventions) if isinstance(interventions, list) else (),
         gate_projection=(GA.authority_view(ctx.run_id) if WM.requires_gate(node) else None),
+        directives=directives,
     )
     request_input["working_memory"] = working_memory.payload
     attempt = AM.Attempt(ctx, node, {
@@ -120,7 +136,22 @@ async def run_attempt(
         "implementation_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         "experience_diagnostics": diagnostics,
         "working_memory_source_map": working_memory.source_map,
+        "instruction_revision": instructions["revision"],
+        "instruction_projection": {
+            "effective_sha256": instructions["effective_sha256"],
+            # 实际采用的 ID/版本/来源（改写为紧凑副本，便于冷存追溯）；未采用也给明确原因。
+            "adopted": [{key: item[key] for key in
+                         ("instruction_id", "version", "scope", "message",
+                          "event_revision", "sealed_ref")} for item in directives],
+            "not_adopted": [{"instruction_id": item["instruction_id"],
+                             "version": item["version"], "reason": item["reason"]}
+                            for item in instructions["not_adopted"]],
+        },
     })
+    if attempt.identity["attempt"] != attempt_sequence:
+        raise RuntimeError(
+            f'指令作用域预留的尝试序号 {attempt_sequence} 与实际 attempt '
+            f'{attempt.identity["attempt"]} 不一致；拒绝按错误尝试身份注入指令')
     for diagnostic in diagnostics:
         ctx.event("warning", node=node, status="experience_rejected", detail={"message": diagnostic})
     kind = prompt_key.split("_", 1)[0]
@@ -149,6 +180,27 @@ async def run_attempt(
         if safe_message != message:
             raise RuntimeError(safe_message) from None
         raise
+    # 接受门（IL-03）：结果返回后按**本节点**有效指令指纹复核；变化 ⇒ 丢弃、显式失败。
+    # 用指纹而不是目录 revision：改 N12 的指令不会取消 N6 的结果接受资格。
+    rejection = None
+    current = AC.effective(ctx.run_dir, node, attempt=attempt_sequence)
+    if current["effective_sha256"] != instructions["effective_sha256"]:
+        rejection = {"accepted": False, "reason": "effective_instruction_sha256_changed",
+                     "requested_effective_sha256": instructions["effective_sha256"],
+                     "current_effective_sha256": current["effective_sha256"],
+                     "instruction_revision": instructions["revision"],
+                     "current_instruction_revision": current["revision"]}
+    if rejection is not None:
+        message = (f'本节点有效指令在请求期间发生变化，结果按接受门丢弃、不进消费者'
+                   f'（request={rejection["requested_effective_sha256"][:12]}，'
+                   f'current={rejection["current_effective_sha256"][:12]}）')
+        audit = {"error": message, "acceptance": rejection, "backend": backend_metadata}
+        if cfg.available:
+            audit.update({"payload": payload, "validation": validation})
+        else:
+            audit["payload"] = out
+        attempt.finish("error", **audit)
+        raise RuntimeError(message)
     if not cfg.available:
         attempt.finish("standin", payload=out, validation=None, backend=backend_metadata)
         return {**out, **attempt.refs(), "experience_diagnostics": diagnostics, "backend": backend_metadata}

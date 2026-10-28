@@ -286,6 +286,50 @@ def _instruction_entries(node: str, input_data: dict, instructions: Iterable[Any
     return entries, sources
 
 
+def _directive_entries(node: str, directives: Iterable[Any]) -> tuple[list, dict]:
+    """run 作用域有效指令（IL）⇒ `constraint` 条目：`value` + 封存事件来源。
+
+    为什么不复用 `human_interventions` 的 `input_ref`：run 指令由 Host 从**已封存事件**归约，
+    不是客户端在本次输入里发的正文；因此按契约把它作为 `value` 条目注入（不新增顶层 input 键），
+    `source_keys` 指向封存事件（`sealed_ref` + `event_revision`），便于冷存追溯。
+
+    有效集归约与封存校验的唯一实现是 `agent_control`（红线 8：不出现第二套同判据）；
+    这里只校验载荷形状并投影，源缺失/形状非法 ⇒ 显式失败（不猜、不静默丢弃）。
+    """
+    entries, sources, seen = [], {}, set()
+    for index, item in enumerate(directives or ()):
+        if not isinstance(item, dict):
+            raise ValueError("working memory 指令条目必须是对象")
+        instruction_id = item.get("instruction_id")
+        version = item.get("version")
+        message = item.get("message")
+        event_revision = item.get("event_revision")
+        sealed_ref = item.get("sealed_ref")
+        if not isinstance(instruction_id, str) or not instruction_id.strip():
+            raise ValueError("working memory 指令条目缺少 instruction_id")
+        if instruction_id in seen:
+            raise ValueError(f"working memory 指令条目重复：{instruction_id}")
+        if isinstance(version, bool) or not isinstance(version, int) or version < 1:
+            raise ValueError("working memory 指令条目 version 非法")
+        if not isinstance(message, str) or not message.strip():
+            raise ValueError("working memory 指令条目缺少非空 message")
+        if isinstance(event_revision, bool) or not isinstance(event_revision, int) or event_revision < 1:
+            raise ValueError("working memory 指令条目缺少封存事件 revision")
+        if not isinstance(sealed_ref, str) or not sealed_ref.strip():
+            raise ValueError("working memory 指令条目缺少封存来源引用")
+        seen.add(instruction_id)
+        value = {"instruction_id": instruction_id, "version": version,
+                 "scope": item.get("scope"), "message": message}
+        key = f"instruction_event.{event_revision:06d}"
+        sha = AM.fingerprint(value)
+        sources[key] = {"origin": "agent_controls/run", "sealed_ref": sealed_ref,
+                        "event_revision": event_revision, "instruction_id": instruction_id,
+                        "version": version, "sha256": sha, "kind": "constraint", "present": True}
+        entries.append(_entry(f"constraint:{node}:directive[{index:04d}]", "constraint", key,
+                              node, value=value, sha256=sha))
+    return entries, sources
+
+
 def _mandatory_bytes(entries: list[dict], input_data: dict) -> int:
     """强制材料的紧凑序列化字节（`AM.encoded`，与预算同一实现）。
 
@@ -314,12 +358,15 @@ class WorkingMemory:
 
 
 def build(ctx, node: str, input_data: dict[str, Any], *,
-          instructions: Iterable[Any] = (), gate_projection: Any = None) -> WorkingMemory:
+          instructions: Iterable[Any] = (), gate_projection: Any = None,
+          directives: Iterable[Any] = ()) -> WorkingMemory:
     """从当前业务状态的**明确来源**重建工作记忆（不扫描目录、不重放效果、不调用模型）。
 
     - `input_data`：本次**实际发送**的请求输入（`input_ref` 只指向它，天然满足"索引≠材料已送达"）；
-    - `instructions`：本次已生效的人工指令（旧 `/control` 语义；S3b 再扩展 run 作用域）；
-    - `gate_projection`：`gate_authority.authority_view(run_id)` 的只读投影（只有 N10/N12 消费）。
+    - `instructions`：本次已生效的**会话内**人工指令（旧 `/control` 语义；引用已发送正文）；
+    - `gate_projection`：`gate_authority.authority_view(run_id)` 的只读投影（只有 N10/N12 消费）；
+    - `directives`：run 作用域有效指令（IL，`agent_control.effective()` 的归约结果）；
+      作为 `constraint` 条目以 `value` 注入，来源指向封存事件，**不新增顶层 input 键**。
     """
     if node not in ROLES:
         raise ValueError(f"working memory 不支持的节点：{node!r}")
@@ -373,6 +420,9 @@ def build(ctx, node: str, input_data: dict[str, Any], *,
     instruction_entries, instruction_sources = _instruction_entries(node, input_data, instructions)
     entries.extend(instruction_entries)
     sources.update(instruction_sources)
+    directive_entries, directive_sources = _directive_entries(node, directives)
+    entries.extend(directive_entries)
+    sources.update(directive_sources)
 
     entries.sort(key=lambda item: (item["kind"], item["entry_id"]))
     unavailable.sort(key=lambda item: (item["kind"], item["slot"]))

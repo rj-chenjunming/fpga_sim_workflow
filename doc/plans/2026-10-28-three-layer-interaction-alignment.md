@@ -1,6 +1,6 @@
 # 底层与 Agent 交互三层对齐体检（参考 cpld-pipeline 远程看板模式）
 
-> 日期：2026-10-28。状态：**只体检、不改代码**；§7 五项裁决已于同日拍定；**P1–P8 探针已于同日跑完**（结论见 §6.3 与 [证据档](../evidence/DSH_PROBE_20261028/README.md)），下一步是按 S0 改规格。
+> 日期：2026-10-28。状态：**只体检、不改代码**；§7 五项裁决 + §9.5 四项冲突裁决已拍；P1–P8 探针已跑完（§6.3 + [证据档](../evidence/DSH_PROBE_20261028/README.md)）；下一步是 **S0 = 写 SPEC-REV-14（折进 REV-13，含 D1–D4 偏离）**。
 > 参考文档：`/home/work/chenjunming/cpld-pipeline/doc/research/04-remote-ui-pattern.md`（方法论，**不是本仓契约**）。
 > 本仓契约仍以 [`../spec/`](../spec/) 为准；流程纪律见 [`../../AGENTS.md`](../../AGENTS.md) §2/§3。
 > 取证：代码 `file:line` + 一次定向 standin 测试（见 §8）。未跑四道门，不声称完成任何门。
@@ -160,3 +160,73 @@
 - 未验证：P1–P8 全部探针、真实模型认证、工具写权强制、上下文完整性、异常停机清理。**不得**在规格里写成已实现。
 - 残余风险（Q6）：凭据经 env 注入，agent 的 bash 工具可读到（读隔离不存在）——**已接受并记档**，不当作已缓解。
 - 残余风险（C5）：DSH 自动压缩使"会话是否读完输入包"不可证；本表把覆盖责任收缩到"Host 输入包 + 提交回传"，业务结论不得依赖未提供材料——这条要写进 SPEC-06 修订。
+
+## 9 与 SPEC-REV-13（2026-10-26，远端 `abdb16f`）的对齐
+
+> 来源：[SPEC-REV-13](../spec/SPEC-REV-13-20261026.md) + [云端 DSH 与记忆设计](../plans/2026-10-26-cloud-dsh-memory-design.md)。
+> 该规格成文于本次体检之前，**已把 D2/D3/D4 与 WM/IL/EXP 写成契约**；因此 S0 不再"新写一份 SPEC-08 修订"，
+> 而是**折进 REV-13**（新增 REV-14 记录差异，不改历史正文）。下列三张表是折叠时的输入。
+
+### 9.1 可直接借鉴（不必自造）
+
+| # | REV-13 条款 | 借鉴点 | 落到本次哪项 |
+|---|---|---|---|
+| A1 | §5.3 状态机 | `prepared → starting → running → completed/failed/cancelled/execution_unknown → closed`；**`completed` 只表示后端候选完备**，业务接受另经 Host | N1/N2 的 adapter 状态与收口语义 |
+| A2 | §5.2 请求与句柄 | `contract_version/identity{run_id,node,attempt_key,generation}/context_manifest_ref/instruction_revision/execution_grant_ref/runtime_fingerprint`；**handle 只存在接入层**，可恢复描述由 `agent_memory` 封存 | N1/N2 的字段与落点（别再自造第二套） |
+| A3 | §4.1 + §4.3 | 资源布局（`input/` 只读、`scratch/`、`candidate/`、私有 `dsh-home/`、`agents/`）；七步交接：**先封存 intent → 起资源 → Host 封存 handle 才 prompt → 停止后才导入候选** | N1/N3/N4 的执行顺序与目录 |
+| A4 | §6 WM 与 §6.3 冷热分离 | `working_memory` + `snapshot_sha256` + `source map` + `input_ref`（JSON Pointer，禁循环/外部）；**索引不等于材料已送达** | N8 上下文包（比"路径+md5 清单"更完整） |
+| A5 | §7 IL 指令生命周期 | scope（attempt / node_rework / run）+ `create/revoke/supersede` + CAS + **接受门核 generation/指令版本** + `accepted≠applied≠effective` | **"人反馈"的正解通道**（见 §9.2-C3） |
+| A6 | §10 必测不变量 | `CL/DS/WM/IL/EXP/OBS/REG` 系列，尤其 `DS-02`（仅 idle/messageId/rc=0 不放行）、`DS-03`（迟到结果只看代次）、`DS-05`（留后代不得报 paused）、`DS-06`（源漂移/换件拒绝） | S1–S3 的验收蓝本 |
+| A7 | §4 分级 C0/C1/C2/E + `ready/unavailable/unknown` | 把"探针通过"与"业务可用"分层；**配置启用 ≠ 观察可用** | 我们把本机探针标为 C1/C2 证据，业务结论仍需 E |
+| A8 | §5.4 | "**不以 cwd、提示词或工具名称白名单代替效果隔离**" | 修正我们 P3 的"写隔离即隔离"表述 |
+| A9 | §5.1 | 版本锁定：0.1.x/0.2.x 不默认兼容，**本机安装版本不能代替目标版本** | S0 必须锁 package/锁文件/协议指纹；本轮探针只对 `0.2.1-rc.2` 成立 |
+| A10 | 设计 §2 `P0–P7` | 已有切片编号与依赖（P0 探测 → P1/P2/P3 记忆/指令/经验 → P4/P5 D2/D3 → P6 C2 → P7 D4） | 我们的 S0–S6 应**映射**到 P0–P7，不并存两套编号（红线 8） |
+
+### 9.2 与本次裁决的冲突（必须重裁，按严重度）
+
+| # | 冲突点 | REV-13 条款（原文要点） | 本次裁决 | 后果 |
+|---|---|---|---|---|
+| **C1** | 凭据与工具准入 | §5.4 "无其他 run、宿主 home、**凭据文件**…挂载"；"原始凭据不得成为模型可读文件/工具输出"；"**若无法阻止工具读取原始秘密或宿主其他数据，则带工具准入失败**"；DS-04 必测 | **Q6 只走 env + 风险记档** | 直接冲突。按 REV-13，env 注入且读隔离不存在 ⇒ **带工具准入不成立**；要么真容器/bwrap 隔离，要么本阶段不带工具 |
+| **C2** | 自动压缩 | §5.4 "受限 profile **关闭自动压缩**、静默工具裁剪和 token 达限当成功"；DS-07 必测 | **#8 压缩归 DSH + 投影显示次数** | 冲突。P7 实测压缩计数只在 session log、事件流与 projcache 都没有 ⇒ 我们那条"投影显示次数"没有稳定来源；REV-13 的"关闭"更可判 |
+| **C3** | 会话续接与"人在会话里说话" | §5.3 "每 attempt 独立进程…**私有 DSH_HOME/DSH_AGENTS_HOME**；不连接用户正在使用的会话；**不使用 session/resume 续接不明上下文**"；§2 不实施"共享聊天历史"；§11 "默认不续会话" | **#3/#4 共用 home + 同会话 resume + #9 人进 GUI 说话** | 硬冲突。替代方案：REV-13 的 **IL（A5）** 正是"人在下一个尝试生效"的受控通道，与我们裁决 #10 完全一致，且不需要共用 home/resume |
+| **C4** | 子 agent | §2 不实施项含"**并行子 Agent**"；§5.4 "默认关闭自动委派" | **#7 全开放（配额 2）** | 冲突。P6 证明能力存在且可拒，但"能"不等于"该开" |
+| **C5** | home 共用与可见性 | §5.3/§4.1 每次 attempt **私有 home**，不与用户会话共享 | **#11 home 共用**（P1 验证并发安全）；**Q7 同源反代**依赖共用 home 才能列出 attempt 会话 | 级联冲突：采纳私有 home ⇒ Web 看不到 attempt 会话 ⇒ 反代没有对象，"人看对话"只能走 Q5 降级线（Host 导出投影/会话副本） |
+
+### 9.3 探针结论反哺 REV-13（规格缺口，不是我们自造）
+
+| # | 探针 | 应补进 REV-13 的位置 | 补什么 |
+|---|---|---|---|
+| B1 | P2 | §4.2 `result` 行 + DS-02 | `submit_result` 工具是"结构化结果 + turn 完成"的稳定通道；`result` 行至今没写"稳定结果获取接口"长什么样 |
+| B2 | P2 | 新增 DS-08 | **插件/工具加载失败只出 warning、不阻断启动** ⇒ "启动成功 ≠ 可用"，必须自检工具清单 |
+| B3 | P3 | §5.4 + 新增 DS-09 | 权限档会被用户层 `permission-presets.defaultPreset` 覆盖；**禁止把宿主 settings 复制进 attempt home**；必须回显实际 preset |
+| B4 | P6/P7 | §5.1/§5.4 | headless `--json` 无 `subagent.*`/compaction 事件 ⇒ 观测面只能是 sdk 协议 + session log 落账 |
+| B5 | P5 | DS-02 | **退出码 0、空 `final.text`、无 `turn_end` 都不算完成**；SIGKILL+full-access 会留工具后代 |
+| B6 | P1 | §5.3 | `resume` 与写句柄互斥（`already owned by an active write handle`）；若保留 resume 必须写句柄仲裁；采纳私有 home 则作废 |
+| B7 | P6 | §5.1 映射表 | 0.2.1-rc.2 实测配额键 `subagent.config.maxActiveSubagents`（默认 8）与越额原文 `active child limit: 1`；锁定版本映射时以实测为准 |
+
+### 9.4 修订建议（S0 的新定义）
+
+1. **不新写 SPEC-08 修订**：新增 `SPEC-REV-14`（日期本轮），只记录 §9.2 的冲突裁决与 §9.3 的缺口补丁，并给 SPEC-08/06/07 加指针；REV-13 正文不动（历史文档只增不改）。
+2. **切片改挂 P0–P7**：本轮 S0–S6 与设计文档 P0–P7 做映射表（一处编号），S0=REV-14 契约、S1=P0+P4 探测与协议、S2=P5 接线、S3=P1/P2/P3 记忆与指令、S4=S4 投影界面、S5=P6 C2、S6=P7 D4。
+3. **验收统一用 §10 的编号**（CL/DS/WM/IL/EXP/OBS/REG），本次追加 DS-08/DS-09；探针证据按 A7 分层标注（C1/C2）。
+4. **S0b（kb stateHash）保持独立**，不折进 REV-13（它是 kb 冻结目录变更 + 证据）。
+
+### 9.5 冲突裁决（2026-10-28，全部已拍）
+
+| 冲突 | 裁决 | 与 REV-13 的关系 | 落地要求 |
+|---|---|---|---|
+| **C1** 凭据/工具准入 | **保留本轮裁决**：凭据只走 attempt 进程 env、不落 home；记录"agent 可读 env/可读宿主文件"为**已知风险** | **偏离** §5.4（"无法阻止读取则带工具准入失败"） | REV-14 的偏离条款 D1 必须写明：本阶段带工具准入**不以强隔离为前提**，代价与暴露面显式记档；真容器隔离落地后重评 |
+| **C2** 自动压缩 | **保留 DSH 压缩 + Host 落账**：Host 从 session log 读 `compaction/summary`（含 `time`/`compactionId`）落账并投影 | **偏离** §5.4（"关闭自动压缩"）/ DS-07 | D2 条款：压缩是确定性可读事实（P7），不是静默截断；`compaction/end.error` 必须显式失败 |
+| **C3+C5** 会话/home/人反馈 | **保留共用 home + 同会话 `resume` + 人可在 GUI 说话**（写句柄互斥 ⇒ 只能在两次 attempt 之间）；**Q7 同源反代保留** | **偏离** §5.3（私有 home、不 resume、不连接在用会话）与 §2"不实施共享聊天历史" | D3 条款：会话是**旁路审计与沟通面**，不是业务状态；Host 只冷读、不接管活体；attempt 进程退出后 Web 才能写；`human_interventions` 从会话事件抓取 |
+| **C4** 子 agent | **全开放，配额 `maxActiveSubagents=2`** | **偏离** §2"不实施并行子 Agent" / §5.4"默认关闭自动委派" | D4 条款：越额必须显式拒绝（P6 原文 `active child limit: 1`）；记账只走 sdk 协议通知 + 父会话日志，**不读 headless 输出**；默认 8 不得当作生效值（须运行时回显） |
+
+### 9.6 偏离登记（REV-14 的骨架）
+
+REV-14 不重写 REV-13，只记录：① 上述 D1–D4 四条偏离（含理由、证据、复评条件）；② §9.3 的 B1–B7 缺口补丁；③ §9.1 的 A1–A10 采纳映射；④ 切片编号映射（本轮 S0–S6 ↔ 设计 P0–P7）。
+
+**偏离复评条件（写成条款，不是愿望）**：
+
+- D1：出现等价强制沙箱（能挡读 + 清 env）并通过 DS-04 实测 ⇒ 重评"带工具准入"是否恢复为 REV-13 口径。
+- D2：若 DSH 后续版本在事件流/投影里提供 compaction 事实 ⇒ 改为"事件流优先、session log 兜底"。
+- D3：若 DSH 支持"只读挂载他人 home 会话"或写句柄仲裁原语 ⇒ 重新考虑是否需要共用 home。
+- D4：若子 agent 成本/后代残留实测超阈值（P6 未测成本）⇒ 收紧为白名单或关闭。

@@ -7,6 +7,10 @@
 调用记录只增不改；`implementation_sha256` 记录本模块指纹。
 **工作记忆（WM，REV-13 §6）只在这里接线**：`working_memory` 与 `input_data`/`approved_experiences`
 同级进入 `request_input` 并随 `AM.Attempt` 封存；`source_map` 只冷存进 request 顶层，不进模型输入。
+**经验分层（EXP，REV-13 §8）只在这里消费结论**：选择判据全部在 `agent_memory.select_experiences`
+（v1 精确匹配 / v2 两阶段适用性）；本模块只把选中的建议放进 `request_input.approved_experiences`、
+把选择记录（选中/拒用/目录指纹/适用上下文/批次判定）冷存进 request 顶层 `experience_selection`，
+并在"加上经验会超总预算"时整批不采用（不截断、不取前 N；最终准入仍唯一 `AM.check_budget`）。
 """
 from __future__ import annotations
 
@@ -113,10 +117,9 @@ async def run_attempt(
                              '同为补充指令，不得覆盖原始事实、授权范围、输出 Schema、'
                              'Host 校验或人工闸门。')
     scope = AM.scope_for(ctx, input_data, contract)
-    lessons, diagnostics = AM.experiences(ctx, scope)
+    # EXP（REV-13 §8）：v1 目录沿用原精确匹配，v2 目录走两阶段适用性筛选；判据只在 agent_memory。
+    selection = AM.select_experiences(ctx, scope, node=node, input_data=input_data)
     request_input = AM.normalized({k: v for k, v in input_data.items() if k != "approved_experiences"})
-    if lessons:
-        request_input["approved_experiences"] = lessons
     # WM 必须在 scope/experiences 之后重建：v1 作用域指纹只由节点业务输入决定（REG-01/EXP-01）。
     # 闸门投影只给有该消费需求的节点（N10/N12），其余节点不注入无关历史。
     interventions = request_input.get("human_interventions")
@@ -127,6 +130,20 @@ async def run_attempt(
         directives=directives,
     )
     request_input["working_memory"] = working_memory.payload
+    # EXP-03：可选经验批次按**剩余预算**判定 —— 加上经验后超上限 ⇒ 整批不采用（不截断、不取前 N），
+    # 普通执行在必需材料完整时继续；最终准入判据仍唯一是 `AM.check_budget`（红线 8）。
+    if selection.lessons:
+        remaining = AM.measure_budget(request_input, contract)["used_bytes"]
+        batch_bytes = AM.experience_batch_bytes(selection.lessons)
+        if remaining + batch_bytes > AM.MAX_CONTEXT_BYTES:
+            selection = selection.reject_batch(
+                "budget_batch_rejected", stage="remaining_budget",
+                detail=(f"remaining {remaining} + batch {batch_bytes} > "
+                        f"{AM.MAX_CONTEXT_BYTES} bytes"),
+                extra={"base_bytes": remaining})
+        else:
+            request_input["approved_experiences"] = selection.lessons
+    diagnostics = selection.diagnostics
     attempt = AM.Attempt(ctx, node, {
         "prompt_key": prompt_key, "cycle": input_data.get("cycle"),
         "input": request_input, **contract, "offered": offered, "scope": scope,
@@ -135,6 +152,7 @@ async def run_attempt(
         "backend": backend_metadata,
         "implementation_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         "experience_diagnostics": diagnostics,
+        "experience_selection": selection.record,
         "working_memory_source_map": working_memory.source_map,
         "instruction_revision": instructions["revision"],
         "instruction_projection": {

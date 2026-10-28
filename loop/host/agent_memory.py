@@ -8,8 +8,9 @@ import json
 import os
 import re
 import tempfile
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Sequence
 
 from host import paths as P
 
@@ -50,24 +51,63 @@ def scope_for(ctx, input_data: dict, contract: dict) -> dict:
             "schema_sha256": fingerprint(contract["schema"])}
 
 
-def experiences(ctx, scope: dict) -> tuple[list[dict], list[str]]:
-    path = ctx.kb.root / "adjudication" / "agent_experiences.json"
-    if not path.exists():
-        return [], []
+class SourceRejected(ValueError):
+    """来源核验失败（`reason` 是 EXP 拒用原因，`str(exc)` 保持 v1 诊断原文）。"""
+
+    def __init__(self, reason: str, message: str):
+        self.reason = reason
+        super().__init__(message)
+
+
+def resolve_source(root: Path, source: Any) -> tuple[str, str]:
+    """核验 `source{path,sha256}`：路径必须落在数据根 `runs/` 内且 SHA-256 一致。
+
+    **v1/v2 共用**这一处路径逃逸与锚规则（v1 诊断文案仍是原文：
+    `source escapes workspace runs or missing` / `source fingerprint mismatch`）。
+    `reason` 只做 v2 原因区分（`source_missing` / `source_corrupt`），不改变 v1 文本。
+    """
+    rel = Path(source["path"])  # KeyError/TypeError 原样抛出：v1 逐条诊断依赖其原文
+    base = Path(root).resolve()
+    runs = (base / "runs").resolve()
+    resolved = (base / rel).resolve()
+    if (rel.is_absolute() or not rel.parts or rel.parts[0] != "runs" or ".." in rel.parts
+            or not runs.is_relative_to(base) or not resolved.is_relative_to(runs)):
+        raise SourceRejected("source_corrupt", "source escapes workspace runs or missing")
+    if not resolved.is_file():
+        raise SourceRejected("source_missing", "source escapes workspace runs or missing")
+    sha = hashlib.sha256(resolved.read_bytes()).hexdigest()
+    if sha != source.get("sha256"):
+        raise SourceRejected("source_corrupt", "source fingerprint mismatch")
+    return rel.as_posix(), sha
+
+
+def _load_catalog(path: Path) -> tuple[Any, bytes | None, str | None]:
+    """读取并解析经验目录；返回 `(doc, raw, error_type_name)`。
+
+    `error_type_name` 保留 v1 的诊断口径（`OSError` / `JSONDecodeError` / …）。
+    """
     try:
-        doc = json.loads(path.read_text(encoding="utf-8"))
-        if not isinstance(doc, dict) or doc.get("version") != 1 or not isinstance(doc.get("items"), list):
-            raise ValueError("catalog format/version")
-        items = doc["items"]
-        if len(items) > 10:
-            raise ValueError("catalog exceeds ten entries")
-        ids = [i.get("id") for i in items if isinstance(i, dict)]
-        if len(ids) != len(items) or any(not isinstance(i, str) or not i for i in ids) or len(set(ids)) != len(ids):
-            raise ValueError("invalid or duplicate id")
-    except (OSError, ValueError, TypeError) as exc:
-        return [], [f"experience catalog rejected: {type(exc).__name__}"]
+        raw = path.read_bytes()
+    except OSError as exc:
+        return None, None, type(exc).__name__
+    try:
+        return json.loads(raw.decode("utf-8")), raw, None
+    except (ValueError, TypeError) as exc:
+        return None, raw, type(exc).__name__
+
+
+def _v1_pass(doc: Any, ctx, scope: dict) -> tuple[list[dict], list[str], str | None]:
+    """v1 选择（原 `experiences()` 的逻辑原样；诊断文案逐值保持）。
+
+    最后一项是"整目录/整批被拒"的原因分类（仅用于 v2 选择记录的 `decision`）：
+    `"catalog"`（格式/版本/数量/重复 ID 不合格）、`"baseline"`（当前基线未知）、`None`。
+    """
+    try:
+        items = catalog_items_v1(doc)
+    except CatalogRejected:
+        return [], ["experience catalog rejected: ValueError"], "catalog"
     if not scope.get("baseline"):
-        return [], ["experience catalog rejected: current baseline unknown"]
+        return [], ["experience catalog rejected: current baseline unknown"], "baseline"
     selected, diagnostics = [], []
     for item in items:
         try:
@@ -80,23 +120,482 @@ def experiences(ctx, scope: dict) -> tuple[list[dict], list[str]]:
             if not isinstance(advice, str) or not advice.strip() or len(advice) > 4000:
                 raise ValueError("invalid advice size")
             source = item.get("source") or {}
-            rel = Path(source["path"])
-            root = ctx.kb.root.resolve()
-            runs = (root / "runs").resolve()
-            resolved = (root / rel).resolve()
-            if rel.is_absolute() or not rel.parts or rel.parts[0] != "runs" or ".." in rel.parts or not runs.is_relative_to(root) or not resolved.is_relative_to(runs) or not resolved.is_file():
-                raise ValueError("source escapes workspace runs or missing")
-            sha = hashlib.sha256(resolved.read_bytes()).hexdigest()
-            if sha != source.get("sha256"):
-                raise ValueError("source fingerprint mismatch")
+            path, sha = resolve_source(ctx.kb.root, source)
             selected.append({"id": item["id"], "advice": advice,
-                             "source": {"path": rel.as_posix(), "sha256": sha}})
+                             "source": {"path": path, "sha256": sha}})
         except (OSError, ValueError, TypeError, KeyError) as exc:
             diagnostics.append(f"{item['id']}: {exc}")
+    return selected, diagnostics, None
+
+
+def experiences(ctx, scope: dict) -> tuple[list[dict], list[str]]:
+    """v1 经验选择（对外行为保持：`{version:1}` 目录、scope 逐值相等、只读）。"""
+    path = ctx.kb.root / "adjudication" / "agent_experiences.json"
+    if not path.exists():
+        return [], []
+    doc, _, error = _load_catalog(path)
+    if error is not None:
+        return [], [f"experience catalog rejected: {error}"]
+    selected, diagnostics, _ = _v1_pass(doc, ctx, scope)
     return selected, diagnostics
 
 
 BILLING_FIELDS = ("info", "instruct", "schema")
+
+
+# ---------------------------------------------------------------------------
+# EXP：经验分层（REV-13 §8；必测 EXP-01～03）
+#
+# 版本分派：`version == 1` ⇒ v1 原样（`_v1_pass`）；`version == 2` ⇒ 本段新逻辑；
+# 其它 ⇒ 整目录拒用（复用 v1 的 `experience catalog rejected` 诊断）。
+#
+# 两阶段检查（顺序固定，诊断分开记 `phase`）：
+#   ① 源完整性：目录格式/版本/人工批准/条目 revision/来源路径+sha256（`source_integrity_v2`）；
+#   ② 当前事实适用性：typed 依赖 + 节点/环境/契约范围（`_applicability_checks`）。
+#
+# 拒用原因（EXP-03 的枚举为下限；`invalid_item`/`invalid_applicability` 是 v2 声明的细分）：
+# `not_approved` / `revoked` / `source_missing` / `source_corrupt` / `dependency_changed` /
+# `unknown_dependency` / `contract_incompatible` / `environment_mismatch` /
+# `invalid_item` / `invalid_applicability` / `budget_batch_rejected`。
+# 诊断只报非秘密 ID/规则，不回显凭据或建议正文。
+# ---------------------------------------------------------------------------
+
+#: 请求/经验契约的唯一显式版本 token（`general_advice` 的兼容范围与 typed `contract` 依赖都比对它）。
+CONTRACT_VERSION = 1
+#: 可选经验批次的显式字节上限（`experience_batch_bytes` 唯一计量；超出 ⇒ 整批拒用）。
+EXPERIENCE_BATCH_MAX_BYTES = 8000
+#: v2 目录的显式条目上限（旧版 ≤10 条规则保持）。
+EXPERIENCE_V2_MAX_ITEMS = 10
+EXP_KINDS = frozenset({"exact_fact", "general_advice"})
+#: 与 `Attempt` 的节点枚举/`WM.ROLES` 同一集合（N3/N6/N8/N10/N11/N12），不新增节点类型。
+EXP_NODES = frozenset({"N3", "N6", "N8", "N10", "N11", "N12"})
+REJECT_REASONS = frozenset({
+    "not_approved", "revoked", "source_missing", "source_corrupt", "dependency_changed",
+    "unknown_dependency", "contract_incompatible", "environment_mismatch",
+    "invalid_item", "invalid_applicability", "budget_batch_rejected"})
+
+_V2_ITEM_FIELDS = frozenset({"id", "revision", "status", "approved_by", "kind", "advice",
+                             "source", "applicability"})
+_V2_APPLICABILITY_FIELDS = frozenset({"nodes", "environment_policy", "contract_versions",
+                                      "dependencies"})
+#: typed 依赖的字段白名单：声明了别的键 = 声明不合法（`invalid_applicability`）。
+_DEPENDENCY_FIELDS: dict[str, tuple[str, ...]] = {
+    "baseline": ("value",), "env": ("env_id",), "mode": ("value",),
+    "contract": ("version",), "targets_sha256": ("value",),
+    "file_sha256": ("path", "sha256")}
+
+
+class ItemRejected(ValueError):
+    """单条目或整目录拒用（`reason` 取自 `REJECT_REASONS` 或目录级说明）。"""
+
+    def __init__(self, reason: str, detail: str = ""):
+        self.reason = reason
+        self.detail = detail
+        super().__init__(reason if not detail else f"{reason}: {detail}")
+
+
+class CatalogRejected(ItemRejected):
+    """目录级拒用（格式/版本/条目数/重复 ID）——整目录不采用。"""
+
+
+@dataclass(frozen=True)
+class ExperienceSelection:
+    """一次经验选择的完整结果：注入项 + 诊断（list[str] 兼容）+ 请求记录投影。"""
+
+    lessons: list[dict]
+    diagnostics: list[str]
+    record: dict[str, Any]
+
+    def reject_batch(self, reason: str, *, stage: str, detail: str = "",
+                     extra: dict[str, Any] | None = None) -> "ExperienceSelection":
+        """整批拒用（EXP-03）：清空注入项、候选 ID 全部进拒用清单，**不截断、不取前 N**。"""
+        record = json.loads(json.dumps(self.record, ensure_ascii=False))
+        rejected = list(record.get("rejected") or [])
+        for entry in record.get("selected") or []:
+            rejected.append({"id": entry["id"], "reason": reason, "detail": detail,
+                             "phase": "batch"})
+        record["selected"] = []
+        record["rejected"] = rejected
+        batch = dict(record.get("batch") or {})
+        batch.update({"decision": "rejected", "reason": reason, "stage": stage})
+        batch.update(extra or {})
+        record["batch"] = batch
+        message = f"experience batch rejected: {reason}" + (f" ({detail})" if detail else "")
+        return ExperienceSelection([], self.diagnostics + [message], record)
+
+
+def experience_batch_bytes(lessons: Any) -> int:
+    """可选经验批次的紧凑序列化字节（**唯一实现**；批次上限与剩余预算都从这里取数）。"""
+    return len(encoded({"approved_experiences": lessons}))
+
+
+def applicability_context(ctx, *, node: str) -> dict:
+    """Host 的当前适用性上下文（复用既有身份：`P.ENV_ID` / `ctx.mode` / view.json baseline）。
+
+    与 `scope_for` 的审计指纹**分离**：这里只描述"当前事实/环境是什么"，不参与审计指纹计算。
+    """
+    try:
+        baseline = json.loads((ctx.run_dir / "view.json").read_text()).get("baseline")
+    except (OSError, ValueError, AttributeError):
+        baseline = None
+    return {"node": node, "env_id": P.ENV_ID, "mode": ctx.mode,
+            "baseline": baseline, "contract_version": CONTRACT_VERSION}
+
+
+def catalog_items_v1(doc: Any) -> list[dict]:
+    """v1 目录格式（版本/条目对象/数量/重复 ID）；不合法 ⇒ `CatalogRejected` 整目录拒用。
+
+    这是 v1 选择与迁移工具共用的**同一条**目录判据（v1 诊断文本由 `_v1_pass` 保持原文）。
+    """
+    if (not isinstance(doc, dict) or doc.get("version") != 1
+            or not isinstance(doc.get("items"), list)):
+        raise CatalogRejected("format/version")
+    items = doc["items"]
+    if len(items) > 10:
+        raise CatalogRejected("catalog exceeds ten entries")
+    ids = [item.get("id") if isinstance(item, dict) else None for item in items]
+    if (any(not isinstance(item_id, str) or not item_id for item_id in ids)
+            or len(set(ids)) != len(ids)):
+        raise CatalogRejected("items must be unique objects with non-empty id")
+    return items
+
+
+def catalog_items_v2(doc: Any) -> list[dict]:
+    """v2 目录格式（版本/条目对象/数量/重复 ID）；不合法 ⇒ `CatalogRejected` 整目录拒用。"""
+    if (not isinstance(doc, dict) or doc.get("version") != 2
+            or not isinstance(doc.get("items"), list)):
+        raise CatalogRejected("format/version")
+    items = doc["items"]
+    if len(items) > EXPERIENCE_V2_MAX_ITEMS:
+        raise CatalogRejected(f"catalog exceeds {EXPERIENCE_V2_MAX_ITEMS} entries")
+    ids = [item.get("id") if isinstance(item, dict) else None for item in items]
+    if (any(not isinstance(item_id, str) or not item_id for item_id in ids)
+            or len(set(ids)) != len(ids)):
+        raise CatalogRejected("items must be unique objects with non-empty id")
+    return items
+
+
+def source_integrity_v2(item: dict, root: Path) -> dict:
+    """阶段①：条目声明/人工批准/revision/来源路径+sha256（**不**核验当前事实适用性）。"""
+    if not isinstance(item, dict):
+        raise ItemRejected("invalid_item", "item is not an object")
+    unknown = sorted(set(item) - _V2_ITEM_FIELDS)
+    if unknown:
+        raise ItemRejected("invalid_item", f"unknown fields: {', '.join(unknown)}")
+    if not isinstance(item.get("id"), str) or not item["id"]:
+        raise ItemRejected("invalid_item", "invalid or missing id")
+    revision = item.get("revision")
+    if not isinstance(revision, int) or isinstance(revision, bool) or revision < 1:
+        raise ItemRejected("invalid_item", "revision must be an integer >= 1")
+    status = item.get("status")
+    if status == "revoked":
+        raise ItemRejected("revoked", "item revoked by human")
+    if status != "approved":
+        raise ItemRejected("not_approved", "status is not approved")
+    actor = item.get("approved_by")
+    if not isinstance(actor, str) or not actor.startswith("human:") or not actor[6:].strip():
+        raise ItemRejected("not_approved", "human confirmation missing")
+    if item.get("kind") not in EXP_KINDS:
+        raise ItemRejected("invalid_item", "kind must be exact_fact or general_advice")
+    advice = item.get("advice")
+    if (not isinstance(advice, str) or not advice.strip()
+            or len(advice) > 4000):
+        raise ItemRejected("invalid_item", "invalid advice size")
+    source = item.get("source")
+    if not isinstance(source, dict) or not isinstance(source.get("path"), str):
+        raise ItemRejected("invalid_item", "source must declare path and sha256")
+    if not isinstance(source.get("sha256"), str):
+        raise ItemRejected("source_corrupt", "source fingerprint mismatch")
+    try:
+        path, sha = resolve_source(root, source)
+    except SourceRejected as exc:
+        raise ItemRejected(exc.reason, str(exc)) from None
+    return {"id": item["id"], "revision": revision, "kind": item["kind"], "advice": advice,
+            "source": {"path": path, "sha256": sha}}
+
+
+def _data_path(root: Path, rel: Any) -> Path | None:
+    """在数据根内解析相对路径；绝对路径/`..`/符号链接逃逸/缺件 ⇒ None（不可核验）。"""
+    if not isinstance(rel, str) or not rel:
+        return None
+    path = Path(rel)
+    if path.is_absolute() or not path.parts or ".." in path.parts:
+        return None
+    base = Path(root).resolve()
+    resolved = (base / path).resolve()
+    if not resolved.is_relative_to(base):
+        return None
+    return resolved if resolved.is_file() else None
+
+
+def _validate_dependency(dep: Any) -> str:
+    """声明形状校验（阶段②的第一步）：返回 `type`；不合法 ⇒ `invalid_applicability`。"""
+    if not isinstance(dep, dict):
+        raise ItemRejected("invalid_applicability", "dependency must be an object")
+    kind = dep.get("type")
+    if not isinstance(kind, str) or not kind:
+        raise ItemRejected("invalid_applicability", "dependency type missing")
+    if kind not in _DEPENDENCY_FIELDS:
+        raise ItemRejected("unknown_dependency", f"unknown dependency type: {kind}")
+    fields = _DEPENDENCY_FIELDS[kind]
+    unknown = sorted(set(dep) - {"type", *fields})
+    if unknown:
+        raise ItemRejected("invalid_applicability",
+                           f"dependency {kind} unknown fields: {', '.join(unknown)}")
+    if kind == "baseline":
+        if "value" not in dep:
+            raise ItemRejected("invalid_applicability", "baseline dependency needs value")
+    elif kind == "env":
+        if not isinstance(dep.get("env_id"), str) or not dep["env_id"]:
+            raise ItemRejected("invalid_applicability", "env dependency needs env_id")
+    elif kind == "mode":
+        if dep.get("value") not in ("real", "drill"):
+            raise ItemRejected("invalid_applicability", "mode dependency must be real or drill")
+    elif kind == "contract":
+        version = dep.get("version")
+        if not isinstance(version, int) or isinstance(version, bool):
+            raise ItemRejected("invalid_applicability",
+                               "contract dependency needs integer version")
+    elif kind == "targets_sha256":
+        if not isinstance(dep.get("value"), str) or not dep["value"]:
+            raise ItemRejected("invalid_applicability",
+                               "targets_sha256 dependency needs value")
+    else:  # file_sha256
+        if not isinstance(dep.get("path"), str) or not dep["path"]:
+            raise ItemRejected("invalid_applicability", "file_sha256 dependency needs path")
+        if not isinstance(dep.get("sha256"), str) or not dep["sha256"]:
+            raise ItemRejected("invalid_applicability", "file_sha256 dependency needs sha256")
+    return kind
+
+
+def resolve_dependency(dep: dict, *, root: Path, context: dict,
+                       input_data: Any) -> str | None:
+    """typed 依赖解析（**唯一实现**）：None = 通过，否则返回拒用原因。
+
+    - 不可解析/不可核验（未知 type、缺 targets、缺件、逃逸、当前基线未知）⇒ `unknown_dependency`；
+    - 可解析但当前事实不同 ⇒ `dependency_changed` / `environment_mismatch` / `contract_incompatible`。
+
+    **原因映射**（只报规则名，不回显材料）：`baseline`/`targets_sha256`/`file_sha256` 不符 ⇒
+    `dependency_changed`；`env`/`mode` 不符 ⇒ `environment_mismatch`；`contract` 版本不符 ⇒
+    `contract_incompatible`。
+    """
+    kind = dep["type"]
+    if kind == "baseline":
+        if context.get("baseline") is None:
+            return "unknown_dependency"
+        return None if normalized(dep["value"]) == normalized(context["baseline"]) \
+            else "dependency_changed"
+    if kind == "env":
+        return None if dep["env_id"] == context["env_id"] else "environment_mismatch"
+    if kind == "mode":
+        return None if dep["value"] == context["mode"] else "environment_mismatch"
+    if kind == "contract":
+        return None if dep["version"] == CONTRACT_VERSION else "contract_incompatible"
+    if kind == "targets_sha256":
+        if not isinstance(input_data, dict) or "targets" not in input_data:
+            return "unknown_dependency"
+        return None if fingerprint(input_data["targets"]) == dep["value"] \
+            else "dependency_changed"
+    if kind == "file_sha256":
+        resolved = _data_path(root, dep["path"])
+        if resolved is None:
+            return "unknown_dependency"
+        try:
+            sha = hashlib.sha256(resolved.read_bytes()).hexdigest()
+        except OSError:
+            return "unknown_dependency"
+        return None if sha == dep["sha256"] else "dependency_changed"
+    return "unknown_dependency"
+
+
+def _applicability_checks(item: dict, *, node: str, context: dict, root: Path,
+                          input_data: Any) -> dict:
+    """阶段②：节点/环境策略/契约兼容范围 + 全部 typed 依赖逐项核验（依声明顺序短路）。
+
+    原因映射：节点白名单不含当前节点或 `environment_policy` 不符 ⇒ `environment_mismatch`；
+    声明的 `contract_versions` 不含 `CONTRACT_VERSION` ⇒ `contract_incompatible`；
+    依赖结论取自 `resolve_dependency`；声明形状坏 ⇒ `invalid_applicability`。
+    """
+    applicability = item.get("applicability")
+    if not isinstance(applicability, dict):
+        raise ItemRejected("invalid_applicability", "applicability must be an object")
+    unknown = sorted(set(applicability) - _V2_APPLICABILITY_FIELDS)
+    if unknown:
+        raise ItemRejected("invalid_applicability",
+                           f"applicability unknown fields: {', '.join(unknown)}")
+    nodes = applicability.get("nodes")
+    if (not isinstance(nodes, list) or not nodes
+            or any(not isinstance(entry, str) or not entry for entry in nodes)):
+        raise ItemRejected("invalid_applicability", "nodes must be a non-empty list")
+    if len(set(nodes)) != len(nodes) or any(entry not in EXP_NODES for entry in nodes):
+        raise ItemRejected("invalid_applicability", "nodes must be unique known node ids")
+    policy = applicability.get("environment_policy")
+    if policy is not None and (not isinstance(policy, str) or not policy.strip()):
+        raise ItemRejected("invalid_applicability", "environment_policy must be a string")
+    versions = applicability.get("contract_versions")
+    if versions is not None:
+        if (not isinstance(versions, list)
+                or any(not isinstance(entry, int) or isinstance(entry, bool)
+                       for entry in versions)
+                or len(set(versions)) != len(versions)):
+            raise ItemRejected("invalid_applicability",
+                               "contract_versions must be unique integers")
+    dependencies = applicability.get("dependencies")
+    if not isinstance(dependencies, list):
+        raise ItemRejected("invalid_applicability", "dependencies must be a list")
+    for dependency in dependencies:
+        _validate_dependency(dependency)
+    # 适用性不得 fail-open（Lead 裁决 2026-10-28；REV-13 §8.3 / 设计 §7）：
+    # ① exact_fact 必须绑定当前事实——没有 typed 依赖就永远检测不到资源变化；
+    # ② general_advice 必须绑定已批准的环境策略或契约兼容范围——typed 依赖是额外核验，
+    #    不替代批准范围（"缺依赖不是通用的理由"，反过来"有依赖也不等于有范围"）。
+    if item["kind"] == "exact_fact" and not dependencies:
+        raise ItemRejected("invalid_applicability",
+                           "exact_fact requires explicit typed dependencies")
+    if item["kind"] == "general_advice" and policy is None and not versions:
+        raise ItemRejected(
+            "invalid_applicability",
+            "general_advice requires an approved environment policy or contract range")
+
+    checks: dict[str, Any] = {}
+    if node not in nodes:
+        raise ItemRejected("environment_mismatch", f"current node {node} not approved")
+    checks["nodes"] = "ok"
+    if policy is not None:
+        expected = f"{context['env_id']}/{context['mode']}"
+        if policy != expected:
+            raise ItemRejected("environment_mismatch", "environment_policy mismatch")
+        checks["environment_policy"] = "ok"
+    else:
+        checks["environment_policy"] = "absent"
+    if versions is not None:
+        if CONTRACT_VERSION not in versions:
+            raise ItemRejected("contract_incompatible",
+                               "current contract version not in approved versions")
+        checks["contract_versions"] = "ok"
+    else:
+        checks["contract_versions"] = "absent"
+    results = []
+    for dependency in dependencies:
+        reason = resolve_dependency(dependency, root=root, context=context,
+                                    input_data=input_data)
+        results.append({"type": dependency["type"], "result": reason or "ok"})
+        if reason:
+            raise ItemRejected(reason, f"dependency {dependency['type']}: {reason}")
+    checks["dependencies"] = results
+    return checks
+
+
+def _legacy_record(context: dict, *, catalog_version: Any, catalog_sha: str | None,
+                   lessons: Sequence[dict] = (), diagnostics: Sequence[str] = (),
+                   rejected_reason: str | None = None) -> dict:
+    """v1 选择记录（保持 legacy 语义；不做 v2 的批次字节判定）。"""
+    if rejected_reason == "catalog":
+        decision = "catalog_rejected"
+    elif rejected_reason == "baseline":
+        decision = "baseline_unknown"
+    elif lessons:
+        decision = "selected"
+    elif diagnostics:
+        decision = "rejected_items"
+    else:
+        decision = "no_applicable_items"
+    return {"catalog_version": catalog_version, "catalog_sha256": catalog_sha,
+            "selection_mode": "legacy_scope_match", "applicable_context": dict(context),
+            "selected": [{"id": entry["id"], "revision": None, "kind": None,
+                          "source": dict(entry["source"]),
+                          "checks": {"scope_equal": True}} for entry in lessons],
+            "rejected": [], "rejected_structured": False,
+            "batch": {"candidates": len(lessons),
+                      "bytes": experience_batch_bytes(list(lessons)),
+                      "limit_bytes": EXPERIENCE_BATCH_MAX_BYTES,
+                      "item_limit": 10, "enforced": False, "decision": decision}}
+
+
+def _v2_selection(ctx, raw: bytes, doc: Any, context: dict, node: str,
+                  input_data: Any) -> ExperienceSelection:
+    """v2 选择：两阶段筛选 → 按 id 确定性排序 → 显式批次上限（不截断、不取前 N）。"""
+    record: dict[str, Any] = {
+        "catalog_version": 2, "catalog_sha256": hashlib.sha256(raw).hexdigest(),
+        "selection_mode": "v2_applicability", "applicable_context": dict(context),
+        "selected": [], "rejected": [],
+        "batch": {"candidates": 0, "bytes": 0, "limit_bytes": EXPERIENCE_BATCH_MAX_BYTES,
+                  "item_limit": EXPERIENCE_V2_MAX_ITEMS, "enforced": True,
+                  "decision": "no_applicable_items"}}
+    try:
+        items = catalog_items_v2(doc)
+    except CatalogRejected as exc:
+        record["batch"]["decision"] = "catalog_rejected"
+        return ExperienceSelection([], [f"experience catalog rejected: {exc.reason}"], record)
+
+    selected: list[dict] = []
+    rejected: list[dict] = []
+    diagnostics: list[str] = []
+    for item in items:
+        try:
+            entry = source_integrity_v2(item, ctx.kb.root)
+        except ItemRejected as exc:
+            rejected.append({"id": str(item.get("id") or "<missing>"), "reason": exc.reason,
+                             "detail": exc.detail, "phase": "source_integrity"})
+            diagnostics.append(f"{item.get('id') or '<missing>'}: {exc.reason}")
+            continue
+        try:
+            checks = _applicability_checks(item, node=node, context=context,
+                                           root=ctx.kb.root, input_data=input_data)
+        except ItemRejected as exc:
+            rejected.append({"id": entry["id"], "reason": exc.reason,
+                             "detail": exc.detail, "phase": "applicability"})
+            diagnostics.append(f"{entry['id']}: {exc.reason}")
+            continue
+        selected.append({**entry, "checks": checks})
+
+    selected.sort(key=lambda entry: entry["id"])  # 确定性顺序；不引入学习排序/相似度
+    lessons = [{"id": entry["id"], "revision": entry["revision"], "kind": entry["kind"],
+                "advice": entry["advice"], "source": dict(entry["source"])}
+               for entry in selected]
+    record["selected"] = [{"id": entry["id"], "revision": entry["revision"],
+                           "kind": entry["kind"], "source": dict(entry["source"]),
+                           "checks": entry["checks"]} for entry in selected]
+    record["rejected"] = rejected
+    batch_bytes = experience_batch_bytes(lessons)
+    record["batch"].update({"candidates": len(lessons), "bytes": batch_bytes,
+                            "decision": "selected" if lessons else "no_applicable_items"})
+    selection = ExperienceSelection(lessons, diagnostics, record)
+    if lessons and batch_bytes > EXPERIENCE_BATCH_MAX_BYTES:
+        return selection.reject_batch(
+            "budget_batch_rejected", stage="batch_bytes",
+            detail=f"{batch_bytes} > {EXPERIENCE_BATCH_MAX_BYTES} bytes",
+            extra={"candidates": len(lessons), "checked_bytes": batch_bytes})
+    return selection
+
+
+def select_experiences(ctx, scope: dict, *, node: str,
+                       input_data: Any) -> ExperienceSelection:
+    """EXP 选择入口（v1 走 `_v1_pass` 原样；v2 走适用性分层）。
+
+    `scope` 仍由 `scope_for` 计算并随请求封存（审计指纹）；**v2 不使用它判复用**
+    （EXP-02：审计指纹 ≠ 适用条件）。本函数不写任何目录、不晋升经验。
+    """
+    context = applicability_context(ctx, node=node)
+    path = ctx.kb.root / "adjudication" / "agent_experiences.json"
+    if not path.exists():
+        return ExperienceSelection([], [], _legacy_record(
+            context, catalog_version=None, catalog_sha=None, rejected_reason=None))
+    doc, raw, error = _load_catalog(path)
+    if error is not None:
+        return ExperienceSelection([], [f"experience catalog rejected: {error}"],
+                                   _legacy_record(context, catalog_version=None,
+                                                  catalog_sha=(hashlib.sha256(raw).hexdigest()
+                                                               if raw is not None else None),
+                                                  rejected_reason="catalog"))
+    version = doc.get("version") if isinstance(doc, dict) else None
+    if version == 2:
+        return _v2_selection(ctx, raw, doc, context, node, input_data)
+    lessons, diagnostics, rejected_reason = _v1_pass(doc, ctx, scope)
+    return ExperienceSelection(lessons, diagnostics, _legacy_record(
+        context, catalog_version=version,
+        catalog_sha=(hashlib.sha256(raw).hexdigest() if raw is not None else None),
+        lessons=lessons, diagnostics=diagnostics, rejected_reason=rejected_reason))
 
 
 def measure_budget(input_data: Any, contract: dict) -> dict:

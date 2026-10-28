@@ -1,0 +1,16 @@
+dsh: warning: 1 entry did not activate
+probe-submit-cjs (file:///home/work/chenjunming/change-impact-loop/workspaces/.probe-dsh/plugin/submit.cjs): failed to import: Error [ERR_REQUIRE_ESM_RACE_CONDITION]: Cannot require() ES Module /home/soft/DSH/versions/0.2.1-rc.2/node_modules/@deepseek-ai/dsh-tools/lib/index.js because it is not yet fully loaded.
+This may be caused by a race condition if the module is simultaneously dynamically import()-ed via Promise.all().
+Try await-ing the import() sequentially in a loop instead.
+ (From /home/work/chenjunming/change-impact-loop/workspaces/.probe-dsh/plugin/submit.cjs in non-loader-hook thread)
+    at ModuleLoader.importSyncForRequire (node:internal/modules/esm/loader:325:15)
+    at loadESMFromCJS (node:internal/modules/cjs/loader:1747:24)
+    at Module._compile (node:internal/modules/cjs/loader:1911:5)
+    at Object..js (node:internal/modules/cjs/loader:2060:10)
+    at Module.load (node:internal/modules/cjs/loader:1651:32)
+    at Module._load (node:internal/modules/cjs/loader:1443:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:261:19)
+    at Module.require (node:internal/modules/cjs/loader:1674:12)
+    at require (node:internal/modules/helpers:157:16)
+    at Object.<anonymous> (/home/work/chenjunming/change-impact-loop/workspaces/.probe-dsh/plugin/submit.cjs:2:24)
+dsh: a task is required, for example: dsh --profile headless "run the tests"

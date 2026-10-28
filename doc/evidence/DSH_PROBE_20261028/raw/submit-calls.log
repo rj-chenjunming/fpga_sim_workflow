@@ -1,0 +1,2 @@
+{"ev":"plugin_applied","pid":7}
+{"ev":"submit_called","args":{"task_id":"p2-1","summary":"探针提交成功","payload":{"ok":true}},"pid":7}

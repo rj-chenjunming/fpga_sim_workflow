@@ -4650,3 +4650,45 @@ bash loop/spikes/provision_dev_workspace.sh --cleanup     # 跑完删掉
 - **清理**：`.s0-work*/`（每份 2.6 G ×4）、`.s0-rtl/`（271 M）、`.env-copy/`（2.6 G）已删除（共约 11 GB）；
   需要重跑真实链路时按 §102.3 重新派生即可（复制约 10 s + 清 30 个历史沙箱软链）。
 - 本地 `.git/info/exclude` 增加 `.s0-work*/`、`.s0-test*/`、`.s0-rtl*/`，文档门检查器跳过前缀 `.s0-`（用例已覆盖）。
+
+## 103 DSH 交互探针 P1–P8（2026-10-28，只体检不改代码）
+
+本轮输入：[三层对齐体检表](plans/2026-10-28-three-layer-interaction-alignment.md) §6.1 的 P1–P8。
+证据档：[`doc/evidence/DSH_PROBE_20261028/`](evidence/DSH_PROBE_20261028/README.md)（冻结 + 目录外 md5 `doc/evidence/DSH_PROBE_20261028.md5`，`md5sum -c` 通过）。
+**本轮未改 `loop/` `kb/` 业务代码，未跑四道门**（只体检轮）；下述数字均从探针命令输出复制。
+
+### 103.1 结论（8 项）
+
+| 探针 | 三态 | 关键数字/原文 |
+|---|---|---|
+| P1 home/可见 | 过（有条件） | 共用 home：`session/list n=1`、`session/page records=3`；隔离 home：`items:[]`/`session/not-found`；并发 3 进程×2 会话 + Web 在跑 ⇒ `sessions=10 ok=10 bad=0`、`storages 11 json bad=0`；同会话并发写者被拒 `already owned by an active write handle` |
+| P2 提交工具 | 过 | `tool_call{tool:"submit_result",input:{task_id:"p2-1",…}}` → `tool_result{"accepted":true,"problems":[]}`；handler `pid=7`；插件加载失败仅 `dsh: warning: 1 entry did not activate` |
+| P3 cwd/写隔离 | 部分 | read-only 两处写 `Read-only file system`/`rc=1`；workspace-write 副本内 `rc=0`、副本外 `rc=1`；**读隔离不存在**（`AGENTS.md`、`~/.dsh/settings.yaml` 均 `rc=0`）；只 patch `sandbox-policy.mode` 被 `permission-presets.defaultPreset` 覆盖 |
+| P4 事件/终态 | 过（headless 层） | `turn_end.reason.kind=completed`；缺凭据 `error`+`code:"MISSING_CREDENTIAL"`；`--session-id` 续跑 turn 1→2、`cacheReadTokens 9216` |
+| P5 杀进程 | 部分 | SIGTERM 两档无残留；SIGKILL+`danger-full-access` 残留 `sleep 45` 孤儿（+3 s/+8 s 仍在）；SIGTERM 后 `headless_exit=0` 但**无 `turn_end`** |
+| P6 子 agent | 过（限定） | sdk JSON-RPC 实发 `subagent.started/finished`；配额键 `subagent.config.maxActiveSubagents`（默认 8）；越额原文 `active child limit: 1`；headless `--json` 0 条 `subagent.*` |
+| P7 压缩可见 | 部分 | 触发成功（`compaction/prune→start→summary 4845 字符→end`，释放 3356 tokens）；计数只在 session log（`compaction/summary`+`time`）；headless 0 条、projcache 无 compaction 行 |
+| P8 Web 鉴权/内嵌 | 部分 | 匿名 `401` 三处、**无 `WWW-Authenticate`**、不支持 Bearer；`?token=`→`HttpOnly; SameSite=Strict` cookie；页面无 `X-Frame-Options`/CSP，`/api` 跨权威 `Origin`/`sec-fetch-site: cross-site`/伪 `Host` 均 `403` |
+
+### 103.2 由探针改写的契约点（已回填体检表 §6.3 / §7）
+
+1. 桥的观测面必须是 **sdk stdio JSON-RPC**（subagent/compaction 事件只在那里）；`submit_result` 仍靠 `--patch` 挂薄插件。
+2. **启动成功 ≠ 可用**：插件加载失败只 warning、权限档可被用户层覆盖 ⇒ Host 必须启动后自检"工具清单 + 实际 preset 回显"。
+3. **attempt home 必须最小化且不携带凭据**（读隔离不存在）；复制宿主 `~/.dsh/settings.yaml` 会带进 `danger-full-access`。
+4. terminate＝`TERM → 超时 → KILL 进程组`；收口只认 `turn_end`/提交工具（退出码 0 与空 `final.text` 不算成功）。
+5. 可见性＝**冷读持久化日志**；写句柄跨进程互斥 ⇒ 人只能在两次 attempt 之间说话（与裁决 #10 一致）。
+6. 内嵌 GUI 受同源约束：跨站 iframe 因 `SameSite=Strict` 拿不到 cookie，`/api` 跨权威 `403`。
+7. 压缩计数与子 agent 记账由 **Host 落账**（读 session log / 收 SDK 通知）。
+
+### 103.3 新增裁决（2026-10-28 已拍）
+
+- **Q6 凭据投放 = 只走 env + 风险记档**：key 不落 attempt home；已知风险——agent 的 bash 工具可 `echo $PUBLIC_API_KEY` 读到（读隔离不存在），记残余风险，不称已解决。
+- **Q7 内嵌形态 = 同源反代**：看板 `/instance/*` 反代到 DSH web（同源 ⇒ cookie 可投递、`/api` 不 403），iframe 内嵌；反代层并入浏览器门。
+
+### 103.4 限制与残留（照实登记）
+
+- 未用真浏览器验 iframe cookie 投递；sdk `session/prompt`/`session/wait` 全链路未由 Python 侧复测（P6 自写 Node 客户端只验通知面）。
+- 探针 bash 在 bwrap `--unshare-pid` 内，`pgrep` 只覆盖本命名空间 ⇒ 不能声称"全机无残留"；收尾分别做了特征清理。
+- P3/P5/P7 各用 4 次 headless 运行（软预算 3，超 1 次原因在各自报告 §5/§3.10 记录）。
+- 探针工作区 `workspaces/.probe-dsh/`（约 2.6 MB，gitignored）保留供复现；`~/.dsh` 零写入，`127.0.0.1:3083` 未碰。
+- 观察（非本轮判据）：`ss -ltnp` 显示 `127.0.0.1:18731/18732` 有监听且 `ps` 无匹配进程（非本探针，未处理）。

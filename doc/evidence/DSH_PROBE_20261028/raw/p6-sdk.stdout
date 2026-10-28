@@ -1,0 +1,11 @@
+[+1.8s] RESULT id=1 ok={"serverInfo":{"name":"deepseek-harness-sdk-runtime","version":"0.0.1"}}
+[+1.8s] NOTIFY session.status params={"sessionId":"p6-sdk-probe-1","status":"running"}
+[+1.8s] RESULT id=2 ok={"messageId":"9d02b849-9cdf-4db4-84e8-49c8425b80b7"}
+[+4.8s] NOTIFY subagent.started params={"parentSessionId":"p6-sdk-probe-1","childSessionId":"cb76f4f5-dab3-4ec9-9f13-5b2f33a97dce"}
+[+4.8s] NOTIFY session.status params={"sessionId":"cb76f4f5-dab3-4ec9-9f13-5b2f33a97dce","status":"running"}
+[+4.8s] NOTIFY session.event type=subagent/catalog seq=16 data={"version":0,"childId":"cb76f4f5-dab3-4ec9-9f13-5b2f33a97dce","childCreatedAt":1793167275481,"mode":"continuable","label":"Ask subagent 1+1"}
+[+9.4s] NOTIFY session.status params={"sessionId":"cb76f4f5-dab3-4ec9-9f13-5b2f33a97dce","status":"idle"}
+[+9.5s] NOTIFY subagent.finished params={"provider":"spawn","agentId":"cb76f4f5-dab3-4ec9-9f13-5b2f33a97dce","parentSessionId":"p6-sdk-probe-1","childSessionId":"cb76f4f5-dab3-4ec9-9f13-5b2f33a97dce","status":"ok","stopReason":"completed","lastAssistantMessage":[{"type":"text","text":"2"}]}
+[+11.4s] SUBCATEGORY summary: notifications=["permission/preset","sandbox/mode","approval/policy","agent/inbox/spliced","session.status","turn/start","agent/inbox/spliced","step/start","system/message","user/message","user/message","user/message","request/header","request/context","session/title","assistant/message","tool/call","subagent.started","agent/inbox/spliced","session.status","turn/start","agent/inbox/spliced","tool/result","step/end","step/start","system/message","user/message","user/message","user/message","request/header","request/context","session/title","step/start","assistant/message","tool/call","tool/result","step/end","step/start","assistant/message","tool/call","agent/inbox/spliced","tool/result","step/end","step/start","assistant/message","tool/call","tool/result","step/end","agent/inbox/spliced","step/start","user/message","assistant/message","step/end","turn/end","session.status","agent/inbox/spliced","subagent.finished","assistant/message","step/end","agent/inbox/spliced","step/start","user/message"]
+[+11.4s] session.event type counts (filtered subagent/compaction printed above)
+[+11.5s] RESULT id=3 ok={}

@@ -18,7 +18,7 @@ def prepare(node, value):
     if node not in _RULES:
         raise ValueError('unsupported issue reviewer')
     facts = {k: v for k, v in value.items() if k not in
-             ('review_assignment', 'human_interventions', 'approved_experiences')}
+             ('review_assignment', 'human_interventions', 'approved_experiences', 'working_memory')}
     packet = value.get('author_handoff') or {}
     issues = packet.get('issues', []) if packet.get('availability') == 'verified' else []
     return {'version': 1, 'reviewer': node,

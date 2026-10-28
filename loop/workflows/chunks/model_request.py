@@ -5,6 +5,8 @@
 
 不变量：每次请求新 agent；预算检查在请求前；取消/重发不消费旧结果；
 调用记录只增不改；`implementation_sha256` 记录本模块指纹。
+**工作记忆（WM，REV-13 §6）只在这里接线**：`working_memory` 与 `input_data`/`approved_experiences`
+同级进入 `request_input` 并随 `AM.Attempt` 封存；`source_map` 只冷存进 request 顶层，不进模型输入。
 """
 from __future__ import annotations
 
@@ -15,6 +17,8 @@ from typing import Any
 
 from host import agent_backends as AB
 from host import agent_memory as AM
+from host import agent_working_memory as WM
+from host import gate_authority as GA
 
 from ..context import RunCtx
 from .model_common import load_prompts
@@ -98,6 +102,15 @@ async def run_attempt(
     request_input = AM.normalized({k: v for k, v in input_data.items() if k != "approved_experiences"})
     if lessons:
         request_input["approved_experiences"] = lessons
+    # WM 必须在 scope/experiences 之后重建：v1 作用域指纹只由节点业务输入决定（REG-01/EXP-01）。
+    # 闸门投影只给有该消费需求的节点（N10/N12），其余节点不注入无关历史。
+    interventions = request_input.get("human_interventions")
+    working_memory = WM.build(
+        ctx, node, request_input,
+        instructions=tuple(interventions) if isinstance(interventions, list) else (),
+        gate_projection=(GA.authority_view(ctx.run_id) if WM.requires_gate(node) else None),
+    )
+    request_input["working_memory"] = working_memory.payload
     attempt = AM.Attempt(ctx, node, {
         "prompt_key": prompt_key, "cycle": input_data.get("cycle"),
         "input": request_input, **contract, "offered": offered, "scope": scope,
@@ -106,12 +119,22 @@ async def run_attempt(
         "backend": backend_metadata,
         "implementation_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         "experience_diagnostics": diagnostics,
+        "working_memory_source_map": working_memory.source_map,
     })
     for diagnostic in diagnostics:
         ctx.event("warning", node=node, status="experience_rejected", detail={"message": diagnostic})
     kind = prompt_key.split("_", 1)[0]
     try:
-        AM.check_budget(request_input, contract)
+        try:
+            AM.check_budget(request_input, contract)
+        except RuntimeError as exc:
+            # 预算准入的唯一判据仍是 `AM.check_budget`；这里只把"强制材料缺口"作为可读原因追加，
+            # 不另立判据、不截断、不抽样（REV-13 §6.3 / WM-03）。
+            if not working_memory.over_budget:
+                raise
+            raise RuntimeError(
+                f"{exc}；工作记忆强制材料缺口：mandatory_bytes={working_memory.mandatory_bytes}"
+                f" > {working_memory.limit_bytes}（不截断、不抽样，按缺口失败）") from exc
         if not cfg.available:
             out = {"mode": "standin", "standin": True, "provider": "none", "reason": cfg.reason}
         else:

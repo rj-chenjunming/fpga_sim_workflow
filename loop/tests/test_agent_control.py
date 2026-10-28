@@ -41,7 +41,18 @@ async def test_steer_reissues_with_instruction_and_disposes_old_attempt(ctx, pro
     await until(lambda: len(provider['inputs']) == 2)
     new = provider['inputs'][1]
     assert new['human_interventions'][0]['message'] == '重点核对新增端口'
-    assert {k: v for k, v in new.items() if k != 'human_interventions'} == original
+    # S3a（WM 接线）之后：`working_memory` 是机制层的**派生投影**，本次 steer **本来就应该**
+    # 多出一条「指令约束」条目。这里不是放宽断言：业务输入键仍严格比较，WM 条目也逐条比较，
+    # 只把"指令约束"这一条单列（它的变化正是 steer 的效果）。
+    def business(request):
+        return {k: v for k, v in request.items()
+                if k not in ('human_interventions', 'working_memory')}
+
+    assert business(new) == business(original)
+    assert [e for e in new['working_memory']['entries'] if e['kind'] != 'constraint'] == [
+        e for e in original['working_memory']['entries'] if e['kind'] != 'constraint']
+    constraints = [e for e in new['working_memory']['entries'] if e['kind'] == 'constraint']
+    assert [e.get('input_ref') for e in constraints] == ['/human_interventions/0']
     assert not task.done()
     provider['wait'].set()
     result = await task

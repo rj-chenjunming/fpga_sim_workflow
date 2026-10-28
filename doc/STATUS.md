@@ -4819,3 +4819,32 @@ $ git rev-parse HEAD
 - 旧 run **不回填**：无 `state_hash` 的已签闸门按 legacy 告警放行（REV-15 §6）。
 - 已知边界：`sandbox/`（N6 工作副本）计入材料 ⇒ N6 改写后旧批准会失效（符合"改件后必须重跑闸门"）。
 - 派生副本（`.dev-ws` / `.env-copy`）已按脚本清理，未入库。
+
+## 108 S1 前置（P0）：能力清单与"真隔离"探测（2026-10-28）
+
+证据档：[`doc/evidence/DSH_P0_20261028/`](evidence/DSH_P0_20261028/README.md)（冻结 444；目录外 md5 `doc/evidence/DSH_P0_20261028.md5`，`md5sum -c` 通过）。
+本轮只探测，未改业务代码；探针现场 `workspaces/.probe-dsh/`（gitignored），`~/.dsh` 零写入。
+
+### 108.1 能力清单（机器可复算）
+
+`node v24.21.0`；dsh `lib/bin.js` sha256 `80112efe…499e6f`；`package.json` `ab51c256…ea2a87`；
+`package-lock.json` `e242cda6…cd0d01`；`bubblewrap 0.4.0`；kernel `4.18.0-553.el8_10.x86_64`；
+sdk profile 组合树 409 行 sha256 `6e19a614…b49234`。
+工具面比先前假设更宽：`tool-web`/`tool-workflow`/`tool-goal`/`tool-workspace-dependencies` 也在默认组合里 ⇒ 带工具准入必须**显式禁用**。
+
+### 108.2 探测结论（三态）
+
+| 问题 | 结论 | 证据 |
+|---|---|---|
+| 未包裹时 agent 能看到什么 | agent bash 继承 **145** 个 env；**不含** `PUBLIC_API_KEY`（`KEYLEN=0`，dsh 剥离）；`~/.dsh/settings.yaml` **可读**（`RC=0`）；`.credentials.yaml` **可读、237 B** | `p0-env-leak.ndjson`/`p0-env-clean.ndjson` |
+| bwrap 包裹能否跑起 dsh | **能**：`--ro-bind / /` + `--tmpfs $HOME` + 只 bind attempt 目录 + `env -i`，`FINAL: OK`、`turn_end.completed` | `p0-bwrap-dsh.ndjson` |
+| 包裹内宿主数据/凭据 | **被遮蔽**：`~/.dsh` 为空、`AGENTS.md` ⇒ `No such file`、工具 env 无 key | `p0-bwrap-agent.ndjson`/`p0-bwrap-home-mask.ndjson` |
+| 包裹内原始凭据是否仍可读 | **是**：agent bash 在 `/proc/6/environ` 命中 `PUBLIC_API_KEY`（`LEAK:/proc/6/environ`）⇒ 同 uid 下 pid ns 挡不住读父进程 environ | `p0-proc-env.ndjson` |
+
+⇒ "挡读宿主数据 + 清无关 env"**已可做到**；"原始凭据对 agent 不可读"**做不到**（`/proc` 路径）。
+REV-14 的 D1 复评前提**部分满足**：bwrap 可作缓解，但不能据此恢复 REV-13 §5.4 口径。
+
+### 108.3 待裁决（Q8）
+
+维持 D1 + bwrap 缓解（记残余风险）／升级 Host 代理（dsh 不持上游 key）／不同 uid/容器（本机无 root，S1 不现实）。
+未决前按 D1 执行，不把"bwrap 能挡宿主数据"当成"凭据已安全"。

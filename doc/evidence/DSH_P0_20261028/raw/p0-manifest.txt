@@ -1,0 +1,10 @@
+# P0 capability manifest (2026-10-28T14:39:36+08:00)
+node=v24.21.0
+dsh_bin_sha256=80112efe368efb1a39720c7ada0af00442e5131fb2744edaaff8a3e8bb499e6f
+pkg_sha256=ab51c256bf5c927a91c3af4fb1a9cf0fc2513618cf84b1f249eadad7efea2a87
+lock_sha256=e242cda6888c94186a18d8b10d629483d6344fc20141793139f8f9ff21cd0d01
+bwrap=bubblewrap 0.4.0
+kernel=4.18.0-553.el8_10.x86_64
+dump_rc=0
+sdk_config_sha256=6e19a614ad803f1d8f362c96e79ec6f549d4b3a2334554397fbbd671cdb49234
+sdk_config_lines=409

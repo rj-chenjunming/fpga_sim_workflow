@@ -4844,7 +4844,6 @@ sdk profile 组合树 409 行 sha256 `6e19a614…b49234`。
 ⇒ "挡读宿主数据 + 清无关 env"**已可做到**；"原始凭据对 agent 不可读"**做不到**（`/proc` 路径）。
 REV-14 的 D1 复评前提**部分满足**：bwrap 可作缓解，但不能据此恢复 REV-13 §5.4 口径。
 
-### 108.3 待裁决（Q8）
+### 108.3 裁决（Q8，2026-10-28 已拍）
 
-维持 D1 + bwrap 缓解（记残余风险）／升级 Host 代理（dsh 不持上游 key）／不同 uid/容器（本机无 root，S1 不现实）。
-未决前按 D1 执行，不把"bwrap 能挡宿主数据"当成"凭据已安全"。
+**维持 D1 + bwrap 缓解**：attempt 进程一律套 bwrap（`--ro-bind / /` + `--tmpfs $HOME` + 只 bind attempt 目录与 `DSH_HOME` + `env -i`）；残余风险"同 uid 下 `/proc/<dsh-pid>/environ` 可读出 key"**显式记档、不称已解决**；复评条件升级为"能挡 `/proc` 读 environ"（REV-14 D1/B8/DS-10）。

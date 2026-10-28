@@ -1,0 +1,41 @@
+{
+  "frames": 166,
+  "frame_kinds": {
+    "session": 1,
+    "permission/preset": 1,
+    "sandbox/mode": 1,
+    "approval/policy": 1,
+    "agent/inbox/spliced": 2,
+    "turn/start": 1,
+    "step/start": 16,
+    "system/message": 1,
+    "user/message": 2,
+    "request/header": 1,
+    "request/context": 1,
+    "session/title": 1,
+    "assistant/message": 16,
+    "tool/call": 27,
+    "job/registered": 27,
+    "job/settled": 26,
+    "tool/result": 26,
+    "step/end": 15
+  },
+  "tool_calls": {
+    "bash": 27
+  },
+  "tool_call_steps": 16,
+  "candidate_related_tool_calls": [
+    {
+      "step": 4,
+      "command_head": "\"{\\\"command\\\":\\\"find /home/work/chenjunming/change-impact-loop -maxdepth 8 -type d -name TESTLIB 2>/dev/null | head -20\\\",\\\"description\\\":\\\"Find TESTLIB dirs\\\"}\""
+    },
+    {
+      "step": 7,
+      "command_head": "\"{\\\"command\\\":\\\"find / -type d -name 'TESTLIB' 2>/dev/null | head -20; echo ---; find / -type f -name 'i2c_m.sv' 2>/dev/null | head -10\\\",\\\"description\\\":\\\"Search filesystem for TESTLIB and i2c_m.sv\\\",\\\"timeoutMs\\\":18000"
+    },
+    {
+      "step": 9,
+      "command_head": "\"{\\\"command\\\":\\\"ls /home/work/lixu/FPGA-DV/CPLD-SIM/FPGA_SIM/CBG-SIM/TC20R0T400_BASE_SIM/TESTLIB | head -50; echo ---; ls /home/work/lixu/FPGA-DV/CPLD-SIM/FPGA_SIM/CBG-SIM/TC20R0T400_BASE_SIM/TESTLIB | wc -l\\\",\\\"descript"
+    }
+  ]
+}

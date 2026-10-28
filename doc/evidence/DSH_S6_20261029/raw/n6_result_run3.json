@@ -1,0 +1,19 @@
+{
+  "run_id": "RUN-20261029-S6-03",
+  "exit": "failed",
+  "error": "timeout>300.0s（已停止，不重发）",
+  "wall_s": 300.185,
+  "usage": {
+    "inputTokens": "unknown",
+    "outputTokens": "unknown",
+    "totalTokens": "unknown",
+    "cacheReadTokens": "unknown"
+  },
+  "session_id": "unknown",
+  "candidate_files": [],
+  "channel": {},
+  "apply_status": null,
+  "apply_cases": [],
+  "candidate_import": null,
+  "candidate_listing_note": "候选 0 件（旧布局 attempt/candidate 空；第 3 次根因是应用层沙箱审批，见 README §3）"
+}

@@ -36,12 +36,16 @@ from typing import Any
 from host import evidence as EV
 from host import model_provider as MP
 from host import paths as P
+from host import agent_candidate_import as CI
 from host import agent_memory as AM
 from host import agent_handoff as AH
 from host import agent_review as AR
 
 from ..context import RunCtx, ctx_of
-from .host_steps import md5_file, run_kb_tool
+from .host_steps import (
+    CANDIDATE_BASELINE_KEY, CANDIDATE_EXECUTION_KEY, CANDIDATE_MANIFEST_KEY, CANDIDATE_ROOT_KEY,
+    md5_file, run_kb_tool,
+)
 
 #: Host 侧确定性校验的输出种类（= prompt_key 的前缀）
 _KNOWN_KINDS = frozenset({"n3", "n6", "n8", "n10", "n11", "n12"})
@@ -746,11 +750,147 @@ def _observation_points(data_out: dict[str, Any] | None) -> list[dict[str, Any]]
     ]
 
 
+# ---------------------------------------------------------------- N6 候选通道（S6/DS-06）
+
+
+def _candidate_contract_path(case: str) -> str:
+    """候选契约路径（G1 冻结口径）：`TESTLIB/<case>.sv`。
+
+    为什么由合同定而不是"扫到什么算什么"：清单键若来自扫描，导入的 `extra_file`（扫描-清单差）
+    与 `hash_mismatch`（快照 vs 导入复算）在真机上就恒假；DS-06 的拒绝矩阵会变成空转。
+    """
+    return "TESTLIB/%s.sv" % case
+
+
+def _candidate_execution_state(out: dict[str, Any]) -> str:
+    """停止确认口径：只有"进程已退出且无 execution_unknown"才给 `stopped`，否则 `unknown`。
+
+    dsh 的 `run_attempt` 只在进程结束且无残留后代后返回；`ExecutionUnknown` 是**抛异常**
+    （没有 out）。所以拿到 live out 即"进程已退出"，但仍按口径复核 payload 标记：
+    非 live / `model_call_failed` / error 含 `execution_unknown` ⇒ `unknown`
+    （**不许**把未知当已停止，DS-05 禁止自动重发）。
+    """
+    if out.get("mode") != "live":
+        return "unknown"
+    if out.get("model_call_failed"):
+        return "unknown"
+    if "execution_unknown" in str(out.get("error") or ""):
+        return "unknown"
+    return "stopped"
+
+
+def _sealed_attempt_workspace(ctx: RunCtx, out: dict[str, Any]) -> dict[str, Any] | None:
+    """从**已封存**的 attempt 请求记录取 `attempt_workspace`（不读任务文本/客户端 hint）。
+
+    记录不完整/校验失败/无本键 ⇒ None（没有候选通道 ⇒ 一个键都不产出，保持 legacy 路径）。
+    """
+    ref = out.get("request_ref")
+    if not isinstance(ref, str) or not ref:
+        return None
+    try:
+        record = AM.verify_attempt((ctx.run_dir / ref).parent)
+    except (OSError, ValueError, KeyError):
+        return None
+    workspace = record["request"].get("attempt_workspace")
+    return workspace if isinstance(workspace, dict) else None
+
+
+def _candidate_root_from_workspace(ctx: RunCtx, workspace: dict[str, Any]) -> Path | None:
+    """布局 `candidate`（封存记录里相对 run_dir）⇒ 绝对路径；越界/缺失/非目录 ⇒ None。"""
+    rel = workspace.get("candidate")
+    if not isinstance(rel, str) or not rel:
+        return None
+    try:
+        root = (ctx.run_dir / rel).resolve()
+    except OSError:
+        return None
+    run_root = ctx.run_dir.resolve()
+    if run_root != root and run_root not in root.parents:
+        return None
+    return root if root.is_dir() else None
+
+
+def _pin_candidate_baseline(data: Any, targets: list[dict[str, Any]]) -> dict[str, str]:
+    """**起 prompt 前** pin 源件 md5（判源漂移 R16）：模型看到的是这份源件，之后变了就是漂移。
+
+    取不到 `repo_root` 或缺件 ⇒ 跳过该件（不猜、不补）；缺项的后果是导入判 `source_drift`
+    （无法证明无漂移 ⇒ 拒），不是静默放行。
+    """
+    try:
+        repo_root = Path(data.require_resource("repo_root"))
+    except (KeyError, TypeError):
+        return {}
+    pinned: dict[str, str] = {}
+    for target in targets:
+        case = str(target.get("case") or "")
+        if not case:
+            continue
+        rel = _candidate_contract_path(case)
+        source = repo_root / str(target.get("file") or rel)
+        if source.is_file() and not source.is_symlink():
+            pinned[rel] = md5_file(source)
+    return pinned
+
+
+def _workspace_hint(ctx: RunCtx, targets: list[dict[str, Any]]) -> dict[str, Any]:
+    """本 attempt 工作区的**绝对路径**与**基线源件位置**（Host 已知事实）。
+
+    为什么给：S6 真机前两次失败都在"模型不知道工作区/拿不到基线全文 ⇒ 去扫宿主机 FS"。
+    路径与 `model_request.run_attempt` 的分配**同源**：`AC.next_attempt`（首个空位预测，
+    Host 串行保证预测=实际；不一致时 model_request 已显式失败）+ `A.workspace_root`
+    （布局唯一实现）；`source_files` 与 `model_request._attempt_sources` 的落点同源
+    （`input/TESTLIB/<basename>`，`stage_sources` 只保留文件名）。本函数只读、不写盘。
+    """
+    from host import agent_control as AC
+    from host.agent_backends import dsh_assets as A
+
+    sequence = AC.next_attempt(ctx.run_dir, "N6")
+    layout = A.AttemptLayout.under(A.workspace_root(ctx.run_dir, "N6", sequence))
+    sources = ["input/TESTLIB/%s" % Path(str(target.get("file") or "")).name
+               for target in targets if str(target.get("file") or "").strip()]
+    return {
+        "cwd": str(layout.work),
+        "candidate": str(layout.candidate),
+        "input": str(layout.input_dir),
+        "source_files": sources,
+        "rule": ("cwd 是你的工作目录；基线源件在 source_files（相对工作区根，只读）；"
+                 "候选 = 该源件的整份内容 + 你的 edits，写到 candidate/TESTLIB/<case>.sv；"
+                 "材料不足写 notes，不要扫描宿主机文件系统"),
+    }
+
+
+def _attach_candidate_channel(ctx: RunCtx, out: dict[str, Any], targets: list[dict[str, Any]],
+                              baseline_pin: dict[str, str]) -> None:
+    """S6/DS-06：dsh 隔离工作区存在时，把四键写进 N6 输出（**要么全给、要么全不给**）。
+
+    - 键名与 `host_steps.candidate_plan` 同一组常量（不写第二份键名）；
+    - `candidate_manifest`：键来自**合同**（`TESTLIB/<case>.sv`）、值来自**停止后快照**；
+    - `baseline`：起 prompt 前 pin 的源件 md5（缺项 ⇒ 导入判源漂移，不静默放行）；
+    - `execution_state`：只在确认停止时 `stopped`，否则 `unknown`。
+    无工作区（agently/drill/旧记录/记录校验失败）⇒ 一个键都不加（legacy 路径，不半给）。
+    """
+    workspace = _sealed_attempt_workspace(ctx, out)
+    if workspace is None or not targets:
+        return
+    candidate_root = _candidate_root_from_workspace(ctx, workspace)
+    if candidate_root is None:
+        return
+    expected = [_candidate_contract_path(str(target.get("case")))
+                for target in targets if target.get("case")]
+    out[CANDIDATE_ROOT_KEY] = str(candidate_root)
+    out[CANDIDATE_MANIFEST_KEY] = CI.snapshot_candidate_manifest(candidate_root, expected)
+    out[CANDIDATE_BASELINE_KEY] = dict(baseline_pin)
+    out[CANDIDATE_EXECUTION_KEY] = _candidate_execution_state(out)
+
+
 async def n6_author(data: Any) -> dict[str, Any]:
     """N6 修订/补充（模型节点）：只出**结构化 edits**，不自己写文件。
 
     写权边界：Host 的 `n6_apply` 只写 `run_dir/sandbox/TESTLIB/`，不写冻结的 `TESTLIB/`。
     **I7**：本节点不再自增 `n6_n8_cycles`（返工预算只在 N8 判 rework 时消耗）。
+    **S6/DS-06 候选通道**：dsh attempt 隔离工作区存在时，输出带四键（`candidate_root` /
+    `candidate_manifest` / `baseline` / `execution_state`），供 `n6_apply` 先导入再施加；
+    无工作区（agently/drill/旧记录）⇒ 四键**全不给**（legacy 路径），不半给、不降级。
     """
     ctx = ctx_of(data)
     ctx.node_started("N6")
@@ -786,8 +926,16 @@ async def n6_author(data: Any) -> dict[str, Any]:
         "must_change_count": n5.get("must_change_count"),
         "rule": ("只针对 targets 的用例；edits.old 必须逐字取自 targets[].excerpt.text 并且唯一；"
                  "拿不准写进 notes，不要猜。"),
-        "write_scope_rule": "只写沙箱；Host 的 n6_apply 负责落盘，模型不得声称已改文件。",
+        # S6/DS-06：写权只在 attempt 隔离工作区的候选目录（模型不能写共享 TESTLIB/沙箱）
+        "write_scope_rule": ("只写本次 attempt 的 candidate/TESTLIB/<case>.sv（与 work/ 同级）；"
+                             "Host 在确认停止后导入候选并落沙箱，模型不得声称已改共享 TESTLIB/沙箱。"),
+        # S6-DS06-02：把 Host 已知的工作区绝对路径 + 基线源件位置直接给模型（前两轮实测：
+        # 模型去 `find / -name TESTLIB` 找材料，120/300 s 内没写候选）。只给路径，不放宽判据。
+        "workspace": _workspace_hint(ctx, targets),
     }
+    # S6/DS-06：候选基线必须在**起 prompt 之前** pin（模型看到的源件；之后变了就是漂移）。
+    # 只有 real 会产生 attempt 隔离工作区（dsh）；drill/standin 不产生候选通道。
+    baseline_pin = _pin_candidate_baseline(data, targets) if ctx.mode == "real" else {}
     out = await run_model_node(
         ctx, "N6", prompt_key="n6_author", input_data=input_data,
         offered={"cases": set(cases) | {t["case"] for t in targets},
@@ -804,6 +952,8 @@ async def n6_author(data: Any) -> dict[str, Any]:
         problems = (out.get("validation") or {}).get("problems") or ["模型输出解析/校验失败"]
         ctx.node_failed("N6", message=f"N6 修订输出校验失败（fail-closed）：{problems[:3]}")
         raise RuntimeError(f"N6：修订输出未通过 Host 校验（含观测点约束）：{problems[:5]}")
+    # S6/DS-06：实验证通过后接候选通道（四键要么全给、要么全不给）；由 n6_apply 消费。
+    _attach_candidate_channel(ctx, out, targets, baseline_pin)
     await data.async_set_state("n6_author", out)
     validation_ok = (out.get("validation") or {}).get("ok")
     source = "model_live" if out["mode"] == "live" else "model_standin"

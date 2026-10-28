@@ -1,0 +1,1 @@
+{"attempt_key": "RUN-20261029-S6-04/N6/1", "field": "candidate_files", "observed": 1, "path": "work/candidate/TESTLIB/tc_bmc_i2c_03.sv", "bytes": 15647, "reason": "探针旧路径 bug，非无候选"}

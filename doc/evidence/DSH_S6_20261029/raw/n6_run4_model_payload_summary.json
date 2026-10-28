@@ -1,0 +1,29 @@
+{
+  "type": "dict",
+  "keys": [
+    "notes",
+    "observation_points",
+    "revisions",
+    "rework_resolution"
+  ],
+  "revisions": [
+    {
+      "case": "tc_bmc_i2c_03",
+      "edits": 2
+    }
+  ],
+  "first_edit": [
+    {
+      "line": 218,
+      "old": "    task sys_reg_test(int pid);\n        bit[31:0] base_addr;",
+      "new": "    task sys_reg_test(int pid);\n        bit[31:0] base_addr;\n        bit[31:0] fpga_date_exp;",
+      "basis": "为观测点新增 task 局部变量（line 218 位于 excerpts 207-237 内，sys_reg_test 唯一）；不涉及写入值/地址实参/掩码，仅为打印读回比较值提供变量载体。"
+    },
+    {
+      "line": 222,
+      "old": "        `I2C_MST(pid).reg_field_test(base_addr+'h04  ,32'h0000_0000, `REG_FPGA_DATE, 1);",
+      "new": "        fpga_date_exp = 32'h2026_0708;\n        `I2C_MST(pid).reg_field_test(base_addr+'h04  ,32'h0000_0000, fpga_date_exp, 1);\n        `uvm_info(\"N6_fpga_date\", $sformatf(\"OK 0x0000+0x04 fpga_date = 0x%08h\", fpga_date_exp), UVM_LOW)",
+      "basis": "revision_points[0] entry_id=0x0000#0x0004 (segment=0x0000, offset=0x4)：doc_bitdef fpga_date.reset 由 2023_0911 改为 2026_0708（见 n2_diff entry 0x0000#0x0004 字段变更），rtl_change 为空 ⇒ 以 doc_bitdef 修订期望；api_semantics reg_field_test 第3参 initial_dat 在 only_r=1 时经 data_rdexp = initial_dat 成为读回期望值，故把过期宏 `REG_FPGA_DATE 替换为 32'h2026_0708；地址实参 base_addr+'h04 与 data_expmask 32'h0000_0000 保持不变；新增 UVM_INFO 以 ID=N6_fpga_date 打印该读回比较值。"
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+CMD: cd loop && /home/work/chenjunming/change-impact-loop/loop/.venv/bin/python .logs/s6/import4.py
+
+Traceback (most recent call last):
+  File "/home/work/chenjunming/change-impact-loop/loop/.logs/s6/import4.py", line 11, in <module>
+    from host import agent_candidate_import as CI, paths as P
+ImportError: cannot import name 'agent_candidate_import' from 'host' (/home/work/chenjunming/change-impact-loop/loop/host/__init__.py)
+

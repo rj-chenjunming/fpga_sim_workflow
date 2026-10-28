@@ -1,0 +1,19 @@
+{
+  "run_id": "RUN-20261029-S6-04",
+  "exit": "failed",
+  "error": "RuntimeError: N6：修订输出未通过 Host 校验（含观测点约束）：[\"submit_result 输入的 payload 必须是 JSON 对象（实际 'str'）\"]",
+  "wall_s": 127.76,
+  "usage": {
+    "inputTokens": "unknown",
+    "outputTokens": "unknown",
+    "totalTokens": "unknown",
+    "cacheReadTokens": "unknown"
+  },
+  "session_id": "unknown",
+  "candidate_files": [],
+  "channel": {},
+  "apply_status": null,
+  "apply_cases": [],
+  "candidate_import": null,
+  "apply_error": null
+}

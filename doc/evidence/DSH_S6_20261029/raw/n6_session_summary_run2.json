@@ -1,0 +1,57 @@
+{
+  "frames": 275,
+  "frame_kinds": {
+    "session": 1,
+    "permission/preset": 1,
+    "sandbox/mode": 1,
+    "approval/policy": 1,
+    "agent/inbox/spliced": 4,
+    "turn/start": 1,
+    "step/start": 30,
+    "system/message": 1,
+    "user/message": 3,
+    "request/header": 1,
+    "request/context": 1,
+    "session/title": 1,
+    "assistant/message": 30,
+    "tool/call": 43,
+    "job/registered": 42,
+    "job/settled": 40,
+    "tool/result": 42,
+    "step/end": 29,
+    "assistant/attempt": 1,
+    "llm/retry": 1,
+    "llm/retry-started": 1
+  },
+  "tool_calls": {
+    "bash": 42,
+    "job_output": 1
+  },
+  "tool_call_steps": 30,
+  "candidate_related_tool_calls": [
+    {
+      "step": 1,
+      "command_head": "\"{\\\"command\\\":\\\"ls -la ../candidate 2>/dev/null; echo \\\\\\\"---TESTLIB---\\\\\\\"; ls ../candidate/TESTLIB 2>/dev/null\\\",\\\"description\\\":\\\"Check candidate directory\\\"}\""
+    },
+    {
+      "step": 7,
+      "command_head": "\"{\\\"command\\\":\\\"env | grep -i -E 'DSH|WORK|REPO|KB|TESTLIB|HOME' | sort\\\",\\\"description\\\":\\\"Show relevant environment variables\\\"}\""
+    },
+    {
+      "step": 12,
+      "command_head": "\"{\\\"command\\\":\\\"find /home/work/chenjunming/change-impact-loop/loop/.logs -path '*/candidate/TESTLIB/*.sv' 2>/dev/null | head -20\\\",\\\"description\\\":\\\"Find prior candidate files in loop logs\\\"}\""
+    },
+    {
+      "step": 15,
+      "command_head": "\"{\\\"command\\\":\\\"find /home/work -maxdepth 5 -type d -name TESTLIB 2>/dev/null | head -20; echo done\\\",\\\"description\\\":\\\"Find TESTLIB directories under work\\\"}\""
+    },
+    {
+      "step": 16,
+      "command_head": "\"{\\\"command\\\":\\\"for d in /home/work/lixu/FPGA-DV/*/TESTLIB; do if [ -f \\\\\\\"$d/tc_bmc_i2c_03.sv\\\\\\\" ]; then echo \\\\\\\"$d\\\\\\\"; md5sum \\\\\\\"$d/tc_bmc_i2c_03.sv\\\\\\\"; fi; done\\\",\\\"description\\\":\\\"Check target file in TESTLIBs\\\""
+    },
+    {
+      "step": 30,
+      "command_head": "\"{\\\"command\\\":\\\"timeout 90 grep -rl 'candidate/TESTLIB' /home/work/chenjunming /home/soft/DSH 2>/dev/null | head -20; echo done\\\",\\\"description\\\":\\\"Search for candidate import logic\\\"}\""
+    }
+  ]
+}

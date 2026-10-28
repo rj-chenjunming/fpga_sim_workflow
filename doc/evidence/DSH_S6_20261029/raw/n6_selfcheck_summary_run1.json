@@ -1,0 +1,70 @@
+{
+  "phase": "deferred",
+  "attemptKey": "RUN-20261029-S6-01/N6/1",
+  "sandboxDefaultMode": "workspace-write",
+  "presetEcho": {
+    "availability": "composition",
+    "scope": "composition",
+    "sessionScoped": false,
+    "preset": "workspace-write",
+    "api": [
+      "catalog()",
+      "defaultPreset",
+      "resolve(workspace-write)"
+    ],
+    "defaultPreset": "workspace-write",
+    "catalog": {
+      "options": [
+        "danger-full-access",
+        "read-only",
+        "workspace-write"
+      ],
+      "defaultOptions": [
+        "danger-full-access",
+        "read-only",
+        "workspace-write"
+      ],
+      "defaultPreset": "workspace-write"
+    },
+    "resolved": {
+      "preset": "workspace-write",
+      "sandbox": "workspace-write",
+      "approval": "ask"
+    },
+    "reason": null,
+    "resolveError": null,
+    "note": "apply 期无 session 对象：session 级 preset 未回显（计划 §6-1）；此处回显 composition 默认值"
+  },
+  "sandboxModeError": null,
+  "toolError": null,
+  "writtenAt": "2026-10-28T16:55:12.818Z",
+  "toolCount": 26,
+  "toolNames": [
+    "bash",
+    "create_goal",
+    "edit",
+    "exit_plan_mode",
+    "get_goal",
+    "glob",
+    "grep",
+    "interrupt_agent",
+    "job_kill",
+    "job_list",
+    "job_output",
+    "list_agents",
+    "read",
+    "read_image",
+    "send_message",
+    "skill",
+    "subagent",
+    "subagent_fork",
+    "submit_result",
+    "todo_write",
+    "update_goal",
+    "web_fetch",
+    "web_search",
+    "workflow",
+    "working_directory",
+    "write"
+  ]
+}

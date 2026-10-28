@@ -1,0 +1,13 @@
+{
+  "run_id": "RUN-20261029-S6-03",
+  "target": {
+    "case": "tc_bmc_i2c_03",
+    "file": "TESTLIB/tc_bmc_i2c_03.sv"
+  },
+  "repo_root": "/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES",
+  "backend": "unknown",
+  "candidate_files": [],
+  "channel": {},
+  "wall_s": 300.185,
+  "timeout_s": 300.0
+}

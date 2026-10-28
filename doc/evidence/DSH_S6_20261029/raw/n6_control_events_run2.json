@@ -1,0 +1,23 @@
+[
+  {
+    "at": "2026-10-29T01:01:14.391961",
+    "attempt": 1,
+    "instruction_ids": [],
+    "node": "N6",
+    "revision": 1,
+    "run_id": "RUN-20261029-S6-02",
+    "session_id": "N6:session-000001",
+    "state": "working",
+    "type": "state"
+  },
+  {
+    "at": "2026-10-29T01:06:14.522215",
+    "attempt": 1,
+    "node": "N6",
+    "revision": 2,
+    "run_id": "RUN-20261029-S6-02",
+    "session_id": "N6:session-000001",
+    "state": "failed",
+    "type": "state"
+  }
+]

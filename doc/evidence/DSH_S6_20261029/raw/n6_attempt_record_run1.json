@@ -1,0 +1,80 @@
+{
+  "tag": "run1",
+  "run_id": "RUN-20261029-S6-01",
+  "node": "N6",
+  "attempt": 1,
+  "prompt_key": "n6_author",
+  "attempt_workspace": {
+    "attempt_key": "RUN-20261029-S6-01/N6/1",
+    "candidate": "agent_workspaces/N6/attempt-000001/candidate",
+    "home": "agent_workspaces/N6/attempt-000001/dsh-home",
+    "input": "agent_workspaces/N6/attempt-000001/input",
+    "materials": [
+      {
+        "md5": "c5e4b45b9615932e2cb02cebef6b2e28",
+        "name": "n1_manifest_new.json",
+        "present": true,
+        "size": 2879
+      },
+      {
+        "md5": "a24c84986b0b06f7853cb5ca1cb5e089",
+        "name": "n2_diff.json",
+        "present": true,
+        "size": 5520
+      },
+      {
+        "md5": null,
+        "name": "n2_diff.md",
+        "present": false,
+        "size": null
+      },
+      {
+        "md5": null,
+        "name": "n3_digest.md",
+        "present": false,
+        "size": null
+      },
+      {
+        "md5": "46e6b75f9e0c43cdc768ede986f5231d",
+        "name": "n5_impact.json",
+        "present": true,
+        "size": 248445
+      },
+      {
+        "md5": null,
+        "name": "n5_impact.md",
+        "present": false,
+        "size": null
+      },
+      {
+        "md5": "10bd2ae349e84f1e29d1857b55471962",
+        "name": "doc_entries.jsonl",
+        "present": true,
+        "size": 41681
+      },
+      {
+        "md5": null,
+        "name": "case_states.json",
+        "present": false,
+        "size": null
+      }
+    ],
+    "root": "agent_workspaces/N6/attempt-000001",
+    "work": "agent_workspaces/N6/attempt-000001/work"
+  },
+  "prompt_has_candidate_rule": true,
+  "prompt_has_no_host_scan_rule": false,
+  "instruct_has_write_candidate": true,
+  "write_scope_rule": "只写本次 attempt 的 candidate/TESTLIB/<case>.sv（与 work/ 同级）；Host 在确认停止后导入候选并落沙箱，模型不得声称已改共享 TESTLIB/沙箱。",
+  "workspace_hint": null,
+  "targets": [
+    {
+      "case": "tc_bmc_i2c_03",
+      "file": "TESTLIB/tc_bmc_i2c_03.sv"
+    }
+  ],
+  "result_status": "interrupted",
+  "result_error": "CancelledError: ",
+  "request_sha256": "68efd542234b79d6a9acbecfc41cc50c5e1f6c99f1c7c016f4da3a84d6ec95de",
+  "result_sha256": "b7caa46bd7a7746ba6f730f2328ea41ee6d9e7ce33ae127daa29acc9026f597f"
+}

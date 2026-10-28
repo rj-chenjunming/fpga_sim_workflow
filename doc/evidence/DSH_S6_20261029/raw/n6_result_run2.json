@@ -1,0 +1,19 @@
+{
+  "run_id": "RUN-20261029-S6-02",
+  "exit": "failed",
+  "error": "timeout>300.0s（已停止，不重发）",
+  "wall_s": 300.367,
+  "usage": {
+    "inputTokens": "unknown",
+    "outputTokens": "unknown",
+    "totalTokens": "unknown",
+    "cacheReadTokens": "unknown"
+  },
+  "session_id": "unknown",
+  "candidate_files": [],
+  "channel": {},
+  "apply_status": null,
+  "apply_cases": [],
+  "candidate_import": null,
+  "apply_error": null
+}

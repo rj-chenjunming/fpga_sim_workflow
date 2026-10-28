@@ -1,0 +1,2 @@
+candidate_dir=.logs/s6/ws-real4/runs/RUN-20261029-S6-04/agent_workspaces/N6/attempt-000001/work/candidate
+files=['TESTLIB/tc_bmc_i2c_03.sv']

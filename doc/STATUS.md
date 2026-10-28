@@ -5279,3 +5279,75 @@ REV-14 的 D1 复评前提**部分满足**：bwrap 可作缓解，但不能据�
 - **不声称跨 pidns 残留检测可用**（DS-05 盲点）；**不声称挡住 `/proc` 读 key**（D1 残余）；**不声称越界读被挡**。
 - **不声称 E（内网业务）**；不因 C2 通过改默认后端；未推送。
 - 真实调用：**32 行 attempt 记录**（含 boot 失败/超时/冲突等非成功路径），其中 **9 行有 usage**；N6 502 s 那次 54848 tokens 单列（探针未打上限，已修）。
+
+## 116 S6 交付：N6 候选导入（DS-06）+ 真机尝试与分级结论（2026-10-29）
+
+本轮入口：[开工提示词 S4–S6](agents/开工提示词_S4-投影取证与候选导入.md) §4.3/§4.4；计划
+[2026-10-28-s5-s6-admission-and-candidate.md](plans/2026-10-28-s5-s6-admission-and-candidate.md) §2-A4/§4/§7；
+契约沿用 REV-13 §4/§10（`DS-06`）、REV-14 §4 B1/B3、[SPEC-08](spec/DSH_AGENT_RUNTIME_SPEC.md) §5/§10（D04）/§12；
+证据档 [`doc/evidence/DSH_S6_20261029/`](evidence/DSH_S6_20261029/README.md)（冻结 444 + 目录外 md5）。
+**本片真机部分 = 未达成/证据不足**（无 Agently 对照组 ⇒ 按 SPEC-08 §12.2 只写"探索/证据不足"）；**C1 软件层证据成立**。
+
+### 116.1 交付物（C1）
+
+| 文件 | 变更 | 契约 |
+|---|---|---|
+| `loop/host/agent_candidate_import.py`（新） | 纯导入判据 + 结构化输出（**零写入**）：`RejectReason` 21 值；白名单后缀 `.sv/.svh/.v/.vh/.md/.txt`；单文件 256 KiB / 总量 1 MiB（超限**拒绝不截断**）；停止确认 → 候选根（绝对/非链接/在 attempt 内/等于布局 candidate）→ 清单（缺即拒、键 POSIX 规范化）→ 目标覆盖 → 逐件（路径安全/后缀/链接/非普通文件/大小/复算 md5/UTF-8）→ 额外文件扫描 → 总量 → 源漂移；`snapshot_candidate_manifest`（**键来自合同**、值=停止后快照） | DS-06；REV-13 §4 |
+| `loop/workflows/chunks/host_steps.py` | `n6_apply` 增加"有候选 ⇒ 先导入"分支（在 `_ensure_case_state`/建沙箱**之前**）：四键 resolver `candidate_plan`（**全给或全不给**，半给即拒）+ `_attempt_root_for`（逐级反推、找不到⇒None）+ `_candidate_layout_problem` + `_import_candidates_or_fail`（被拒 ⇒ `node_failed` + `ValueError`，**绝不退回"模型 edits 直接写"**）+ **`EDITS_MISMATCH` 关键防线**（候选 md5 == `apply_edits` 结果 md5，写在写盘之前）；drill 分支与既有校验未动 | DS-06；A3 |
+| `loop/workflows/chunks/model_steps.py` | `n6_author` 候选通道生产方：四键（`candidate_root`/`candidate_manifest`/`baseline`/`execution_state`）+ 起 prompt 前 pin 基线 + `input.workspace`（cwd/candidate/input/source_files）；`_candidate_execution_state` **未知不升级 `stopped`** | A2/A3 |
+| `loop/prompts/loop_nodes.yaml` | `n6_author.info.rules` 加候选通道规则 + "不扫描宿主文件系统、材料在 input/、材料不足写 notes"；`instruct` 加"先写候选再 submit_result、内容与 edits 施加结果逐字一致"；`model_steps` 的 `write_scope_rule` 文案同步（**模型输入文本**，不改 schema/判据） | 红线 8（判据未变） |
+| 测试 | `test_agent_candidate_import.py` **52 例**（R1–R19 拒绝矩阵 + 清单/基线规范化 + 生产接线四键 + 真机形态布局 + 真候选字节篡改矩阵） | 各条 TDD |
+
+**S5 侧为 S6 前置修掉的两条**（已在 §115.3 记账）：`stage_sources`（N6 目标源件只读进 `input/`）、`candidate = work/candidate`（应用层 `workspace-write` 边界 = cwd）。
+
+### 116.2 C1 证据（TDD，数字从命令输出复制）
+
+| 阶段 | 命令 | 结果 |
+|---|---|---|
+| RED | 移走新模块后 `pytest tests/test_agent_candidate_import.py` | collection `1 error`（`ImportError: agent_candidate_import`） |
+| GREEN | 同文件 | **49 → 52 passed** |
+| 定向回归 | 11 文件（dsh 六件 + host_steps/model_steps 相关 + n6/story/context） | **454 passed / 0 failed**（后续累计 503 passed） |
+| 布局改动后 | `test_agent_candidate_import.py` + 6 文件组 | **52 passed** / **341 passed, 0 failed**（prompt 改动前后同数） |
+| 拒绝矩阵 | R1–R19 逐条 + 真机形态 3 次篡改 | **3/3 拒绝、沙箱零写入**；对照 `applied`；**真实候选字节**上同样 3/3 拒绝（补充证据） |
+| 关键防线 | `test_n6_apply_rejects_candidate_that_bypasses_edits` | 候选自洽但与 `apply(基线,edits)` 不一致 ⇒ `candidate_edits_mismatch`，**零写入** |
+
+### 116.3 真机尝试与结论（DS-06 = **未达成/证据不足**）
+
+4 次真实 N6 调用（上限 120/300/300/300 s，**均未重试**），失败根因链（证据档 §3，不简写）：
+
+1. **第 1–2 次**：`candidate/` **不在任何 bwrap 绑定里** ⇒ 包裹 `--tmpfs $HOME` 遮蔽仓路径 ⇒ 包裹内不可见不可写（真 bwrap A/B：修复前写 `No such file`，加 `--bind` 后 rc=0）。
+2. **第 3 次**：OS 绑定修好后暴露**应用层** `workspace-write` 边界 = cwd（`work`）；`candidate/` 是兄弟目录 ⇒ 写它要 `danger-full-access` 升级审批 ⇒ headless `approval/decided=unavailable` 拒绝（+131 s/+144 s 两次审批等待）；模型退回写 `work/candidate/`（15701 B）但未 `submit_result`。
+3. **第 4 次（布局改 `work/candidate` 后）**：三座山全翻——**127.76 s 产出真实候选 15647 B**（`work/candidate/TESTLIB/tc_bmc_i2c_03.sv`）；失败在**模型输出合规**：`submit_result.payload` 传成 JSON **字符串**（须为对象）⇒ 提交门 `BadSubmission`；即使按对象提交，`edits[0].line=218` 与实际 **217** 不符 ⇒ `apply_edits` 行号漂移判据同样拒绝。**两次都是 Host 正确 fail-closed**。
+
+⇒ **DS-06 真机 = 未达成**；C1（52 用例 + 真实候选字节 3/3 篡改拒绝）可独立引用，**不得**当 DS-06 真机通过。
+**分级结论**（SPEC-08 §12.2）：本轮**无 Agently 对照组**（人工裁决"统一都走 dsh"）⇒ 只能写 **"探索/证据不足"**；**不宣布采纳、不宣布节省成本/时间**，`default_backend` 不动。
+
+### 116.4 收口门（S6 树，数字从输出复制）
+
+| 门 | 结果 |
+|---|---|
+| 单测（可写数据根） | `3 failed, 1643 passed, 1 warning, 137 errors in 389.42s`；3 failed 全部是既有 `@pytest.mark.env_layer`（ENV_ROOT 只读）；137 errors = 浏览器缺 Chromium |
+| kb 自测 + env layer | `PASS=10` / `PASS=9` / `PASS=28`，`FAIL=0`；env_layer `3 passed, 24 deselected in 14.60s`；原 ENV_ROOT 零写入 |
+| 端到端（drill） | `phase 1–5 + 4b` 全 `rc=0`，`=> ALL PASS` |
+| 文档门 | `65 passed in 2.36s` |
+| 浏览器门 | **未跑**：S6 未改 `loop/web/**` 与 `services/contracts.py` 界面字段（AGENTS §4 只在该类改动时要求）；S4 收口时已跑 `138 passed` |
+
+差量对账：S5 树 `1591 passed` → S6 树 `1643 passed`（+52 = `test_agent_candidate_import.py`）；`failed 3=3`、`errors 137=137`、`warnings 1=1`，**零新增失败**。
+
+### 116.5 纪律核对
+
+- **写权**：`kb/**` 本片零改动（S5 的 kb 单独变更见 §115）；`loop/SETTINGS.yaml` 本片零改动；`services/**`、`loop/web/**` 零改动。
+- **判据唯一（红线 8）**：导入判据只有 `agent_candidate_import` 一处；`old` 唯一命中仍只在 `apply_edits`；四键 resolver 只读布局字段与合同键，**不扫描 candidate/ 造清单**（否则 `extra_file`/`hash_mismatch` 会恒假）。
+- **失败显式**：导入被拒 ⇒ `node_failed` + `ValueError`（带 reason 与 `resend_allowed`），不退回模型 edits；`execution_state` 未知不升级 `stopped`；真机两次不合规输出均 fail-closed。
+- **证据只增不改**：`raw/attempts.jsonl` 4 行**未回填**（md5 与定稿前一致）；run4 探针 bug 以 `raw/attempts_corrections.jsonl` 更正，README 明确以更正文件为准。
+- **prompt 改动**：只加"候选通道 + 不扫宿主 FS + 材料不足写 notes + 先写候选再提交"的**模型输入文本**；不改 schema、校验、预算、闸门；改动前后定向组同数（338 passed）。
+- **两次收口**：S5 = `4a4186c`、S6 = 本提交（两份证据目录、两段 STATUS、两个提交，**未合成大提交**）。
+
+### 116.6 未做 / 不声称
+
+- **不声称 DS-06 真机通过**（4 次失败；DS-06 = 证据不足）。
+- **不声称对照收益**（无对照组）；不声称"DSH 更省人工/更省成本"。
+- **模型声明清单未实现**：生产侧 manifest 由 Host **停止后快照**生成、键来自合同；真机"换件"证据只可能是"停止快照 vs 导入复算"窗口。
+- **候选通道仍依赖 `work/candidate` 布局**（应用层 `workspace-write` 边界 = cwd 的真机发现）；若将来放宽 dsh 沙箱策略才考虑兄弟目录。
+- **工具白名单未实现**（全量 harness 26 项，见 §115.6）；`/proc` 读 key 与越界读仍是 D1 残余。
+- 未推送（需人授权 + 凭据）。

@@ -26,6 +26,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from host import agent_candidate_import as CI
 from host import paths as P
 
 from ..context import RunCtx, ctx_of
@@ -624,6 +625,158 @@ def _source_case_path(repo_root: Path, target: dict[str, Any]) -> Path:
     return repo_root / "TESTLIB" / f"{case}.sv"
 
 
+# ---------------------------------------------------------------- N6 候选导入（S6/DS-06）
+
+#: `n6_author` 里候选导入的四键（**G1 冻结**，S5/S6 两侧照此写）。
+#: 生产方 = dsh 结果侧（`host/agent_backends/**`，SPEC-08 §4 ResultEnvelope 的
+#: "候选产物清单及哈希"）；**该接线属 S5/真机步骤，登记为缺口**，C1 由夹具注入这四键。
+CANDIDATE_ROOT_KEY = "candidate_root"
+CANDIDATE_MANIFEST_KEY = "candidate_manifest"
+CANDIDATE_BASELINE_KEY = "baseline"
+CANDIDATE_EXECUTION_KEY = "execution_state"
+
+
+def candidate_plan(author: dict[str, Any]) -> dict[str, Any] | None:
+    """从 `n6_author` 读四键；**全缺 ⇒ None（无候选，既有路径完全不变）**。
+
+    任一键存在 ⇒ 走导入分支：**缺件不降级**（缺清单/缺停止确认由导入判据判成显式拒绝），
+    绝不因为"导入走不通"就退回"用模型回传的 edits 直接写"（那样会绕过 DS-06 的候选核对）。
+    `attempt_root` 由 `_attempt_root_for` **按布局反推**（candidate 可能在 attempt 根下，
+    也可能在 `work/` 下）：反推不到 ⇒ `None` ⇒ 导入显式拒绝（fail-closed，不用 `parent` 猜）。
+    """
+    keys = (CANDIDATE_ROOT_KEY, CANDIDATE_MANIFEST_KEY, CANDIDATE_BASELINE_KEY,
+            CANDIDATE_EXECUTION_KEY)
+    if not any(key in author for key in keys):
+        return None
+    root_text = author.get(CANDIDATE_ROOT_KEY)
+    root = Path(str(root_text)) if root_text not in (None, "") else None
+    return {
+        "candidate_root": root,
+        "attempt_root": _attempt_root_for(root),
+        "manifest": author.get(CANDIDATE_MANIFEST_KEY),
+        # 封存基线（可选）：给了就逐项核对源漂移；不给则如实标 drift_checked=False
+        "baseline": author.get(CANDIDATE_BASELINE_KEY),
+        "execution_state": author.get(CANDIDATE_EXECUTION_KEY),
+    }
+
+
+def _candidate_baseline_current(manifest: Any, targets: list[dict[str, Any]],
+                                repo_root: Path) -> dict[str, str]:
+    """现算源件 md5（源漂移判据的"当前基线"）：清单 `rel_path` 的 stem ⇒ 目标用例源件。"""
+    by_case = {str(target.get("case")): target for target in targets}
+    current: dict[str, str] = {}
+    if not isinstance(manifest, dict):
+        return current
+    for rel in manifest:
+        if not isinstance(rel, str) or not rel.strip():
+            continue
+        target = by_case.get(Path(rel).stem)
+        if target is None:
+            continue
+        source = _source_case_path(repo_root, target)
+        if source.is_file():
+            current[rel] = md5_file(source)
+    return current
+
+
+def candidate_dir_for_attempt(attempt_root: Path) -> Path:
+    """按 attempt 布局定位候选目录：`AttemptLayout.candidate`（布局**唯一**实现）。
+
+    本函数只转调布局，不自己拼"candidate 在哪"的规则（红线 8）。布局把候选从 attempt 根
+    移到 `work/` 内时，这里与调用方都自动跟随。
+    """
+    from host.agent_backends import dsh_assets as A
+
+    layout = A.AttemptLayout.under(attempt_root)
+    return Path(layout.candidate)
+
+
+def _attempt_root_for(candidate_root: Path | None) -> Path | None:
+    """从声明候选根**反推** attempt 根：逐级找"`candidate_dir_for_attempt(x) == 声明根"的 x。
+
+    为什么不能再用 `candidate_root.parent`：候选可能在 attempt 根下（旧形态
+    `<attempt>/candidate`），也可能在 `work/` 下（新形态 `<attempt>/work/candidate`）；
+    写死 parent 会在换布局后把合法候选判成越界。
+    判据仍只有布局一份（`candidate_dir_for_attempt`），本函数只做反推：
+    - 反推不到 ⇒ `None`（fail-closed：不退回 parent 猜测，导入会显式拒绝）；
+    - **符号链接祖先不参与反推**（跳过），声明根本身是链接也不参与（导入判据另拒）。
+    """
+    if candidate_root is None:
+        return None
+    try:
+        if candidate_root.is_symlink():
+            return None
+        declared = candidate_root.resolve()
+    except OSError:
+        return None
+    for ancestor in (candidate_root, *candidate_root.parents):
+        try:
+            if ancestor.is_symlink():
+                continue
+            if candidate_dir_for_attempt(ancestor).resolve() == declared:
+                return ancestor
+        except (OSError, ValueError):
+            continue
+    return None
+
+
+def _candidate_layout_problem(plan: dict[str, Any]) -> str | None:
+    """候选根必须**等于** attempt 布局的候选目录，且 attempt 根必须由布局反推得到。
+
+    这是"写权只在每 attempt 隔离工作区的候选目录"的接线检查；路径穿越/链接/逃逸的判据
+    仍只在 `agent_candidate_import`（本层不复制）。
+    """
+    declared, attempt_root = plan.get("candidate_root"), plan.get("attempt_root")
+    if declared is None:
+        return None
+    if attempt_root is None:
+        return (f"候选根无法按 attempt 布局反推 attempt 根：声明 {declared}"
+                f"（{CI.RejectReason.CANDIDATE_ROOT_UNSAFE.value}；fail-closed，不猜 parent）")
+    expected = candidate_dir_for_attempt(Path(attempt_root))
+    try:
+        matches = Path(declared).resolve() == expected.resolve()
+    except OSError:
+        matches = False
+    if matches:
+        return None
+    return (f"候选根与 attempt 布局不符：声明 {declared} 期望 {expected}"
+            f"（{CI.RejectReason.CANDIDATE_ROOT_UNSAFE.value}；只认布局里的 candidate）")
+
+
+def _import_candidates_or_fail(
+        ctx: RunCtx, plan: dict[str, Any], targets: list[dict[str, Any]],
+        repo_root: Path) -> tuple[dict[str, CI.ImportedCandidate], dict[str, Any]]:
+    """导入候选（**零写入**）；被拒 ⇒ `node_failed` + 显式异常（不退回 edits 直接写）。
+
+    停止事实只**消费** `plan["execution_state"]`（"已确认停止"由控制层/封存事实给出，
+    `n6_apply` 不自己再判停止 —— 红线 8：同判据不出现第二套实现）。
+    """
+    layout_problem = _candidate_layout_problem(plan)
+    if layout_problem is not None:
+        ctx.node_failed("N6_apply", message=f"候选导入被拒：{layout_problem}")
+        raise ValueError(f"N6_apply：候选导入被拒（reason="
+                         f"{CI.RejectReason.CANDIDATE_ROOT_UNSAFE.value}）：{layout_problem}")
+    result = CI.import_candidates(
+        plan["candidate_root"],
+        manifest=plan["manifest"],
+        execution_state=plan["execution_state"],
+        attempt_root=plan["attempt_root"],
+        baseline=plan["baseline"],
+        baseline_current=_candidate_baseline_current(plan["manifest"], targets, repo_root),
+        expected_cases={str(target.get("case")) for target in targets},
+    )
+    if not result.ok:
+        ctx.node_failed(
+            "N6_apply",
+            message=f"候选导入被拒（{result.reason_value}）：{result.detail}",
+        )
+        raise ValueError(
+            f"N6_apply：候选导入被拒（reason={result.reason_value}, "
+            f"resend_allowed={str(result.resend_allowed).lower()}）：{result.detail}"
+        )
+    return result.by_case(), result.record()
+
+
 async def n6_apply(data: Any) -> dict[str, Any]:
     """N6 的 **Host 沙箱写入步骤**：模型只出 edits，写盘/校验/冻结/记账都在这里。
 
@@ -631,6 +784,10 @@ async def n6_apply(data: Any) -> dict[str, Any]:
     - 逐条校验 `old` 在声明行唯一命中，0/多次 ⇒ fail closed；
     - 冻结 md5（写后复算，并 chmod 444）；
     - 调 `kb/tools/case_state.py set --state 已修订待验` 记账（I2 写入者）；
+    - **S6/DS-06 候选导入**：`n6_author` 带四键（`candidate_root`/`candidate_manifest`/
+      `baseline`/`execution_state`，G1 冻结）⇒ **先**按白名单+哈希+停止确认导入
+      （`host.agent_candidate_import`，纯判据零写入），再交本函数的 `apply_edits` 施加；
+      导入被拒 ⇒ 显式失败（**不**退回"用模型回传的 edits 直接写"）。缺四键 ⇒ 既有路径不变。
     - drill：直接采用夹具沙箱件（复制到 run_dir），夹具缺失则 no-op + note，**不失败**。
     """
     ctx = ctx_of(data)
@@ -733,6 +890,13 @@ async def n6_apply(data: Any) -> dict[str, Any]:
         raise ValueError(f"N6_apply：revision 含非目标用例：{extra}")
 
     repo_root = Path(data.require_resource("repo_root"))
+    # S6/DS-06：**有候选 ⇒ 先导入再应用**（导入是纯判据、零写入；被拒即显式失败）。
+    # 无候选四键 ⇒ `candidate_plan` 返回 None，既有语义与 drill 分支完全不变。
+    plan = candidate_plan(author)
+    imported: dict[str, CI.ImportedCandidate] = {}
+    candidate_record: dict[str, Any] | None = None
+    if plan is not None:
+        imported, candidate_record = _import_candidates_or_fail(ctx, plan, targets, repo_root)
     _ensure_case_state(ctx)
     sandbox_lib.mkdir(parents=True, exist_ok=True)
     applied: list[dict[str, Any]] = []
@@ -751,6 +915,22 @@ async def n6_apply(data: Any) -> dict[str, Any]:
         text = source.read_text(encoding="utf-8", errors="strict")
         md5_before = md5_file(source)
         new_text, applied_edits = apply_edits(text, edits, case=case)
+        candidate = imported.get(case)
+        if candidate is not None:
+            # **关键防线**：候选内容必须等于 apply(基线, edits) 的结果 —— 否则候选绕过了
+            # `apply_edits` 的唯一命中判据（DS-06「候选文件不能绕过 edits/目标范围/源指纹校验」）。
+            applied_md5 = hashlib.md5(new_text.encode("utf-8")).hexdigest()
+            if applied_md5 != candidate.md5:
+                ctx.node_failed(
+                    "N6_apply",
+                    message=(f"{case} 候选内容与 edits 施加结果不一致"
+                             f"（{CI.RejectReason.EDITS_MISMATCH.value}）：候选 {candidate.md5} "
+                             f"≠ 施加 {applied_md5}"),
+                )
+                raise ValueError(
+                    f"N6_apply：候选内容与 edits 施加结果不一致"
+                    f"（{CI.RejectReason.EDITS_MISMATCH.value}）：{case}"
+                )
         dest = sandbox_lib / source.name
         if dest.exists():
             dest.chmod(0o644)
@@ -783,20 +963,28 @@ async def n6_apply(data: Any) -> dict[str, Any]:
             raise RuntimeError(
                 f"N6_apply：case_state set 失败 rc={set_res['rc']}: {set_res['stderr_tail'][-400:]}"
             )
-        applied.append(
-            {
-                "case": case,
-                "file": str(target.get("file") or f"TESTLIB/{source.name}"),
-                "sandbox_path": str(dest),
-                "md5_before": md5_before,
-                "md5_after": md5_after,
-                "edits": len(applied_edits),
-                "applied_edits": applied_edits,
-                "case_state_rc": set_res["rc"],
-                "source": "env_root",
-                "rationale": str(rev.get("rationale") or ""),
+        record: dict[str, Any] = {
+            "case": case,
+            "file": str(target.get("file") or f"TESTLIB/{source.name}"),
+            "sandbox_path": str(dest),
+            "md5_before": md5_before,
+            "md5_after": md5_after,
+            "edits": len(applied_edits),
+            "applied_edits": applied_edits,
+            "case_state_rc": set_res["rc"],
+            # 候选导入过 == 沙箱件内容 == 候选快照；否则如实标 env_root（既有语义）
+            "source": "candidate_import" if candidate is not None else "env_root",
+            "rationale": str(rev.get("rationale") or ""),
+        }
+        if candidate is not None:
+            record["candidate"] = {
+                "path": candidate.path,
+                "md5": candidate.md5,
+                "size": candidate.size,
+                "baseline_md5": candidate.baseline_md5,
+                "execution_state": (candidate_record or {}).get("execution_state"),
             }
-        )
+        applied.append(record)
 
     payload = {
         "run_id": ctx.run_id,
@@ -808,23 +996,29 @@ async def n6_apply(data: Any) -> dict[str, Any]:
         "count": len(applied),
         "case_state_path": str(ctx.run_dir / "case_states.json"),
     }
+    if candidate_record is not None:
+        # 结构化导入结论（ok/reason/execution_state/drift_checked/文件清单及哈希）
+        payload["candidate_import"] = candidate_record
     await data.async_set_state("n6_applied", payload)
     edits_total = sum(c["edits"] for c in applied)
+    detail: dict[str, Any] = {
+        "status": "applied",
+        "cases": len(applied),
+        "edits": edits_total,
+        # P-21：逐用例修改清单（与 N6 同源）+ 实际写入的用例名
+        "case_edits": case_edits_from_output(author_data),
+        "applied_cases": [str(c["case"]) for c in applied if c.get("case")],
+        "source": "framework",
+        "summary": (
+            f"N6_apply：{len(applied)} 个用例写入沙箱，共施加 {edits_total} 条 edits"
+            "（old 唯一命中校验 + 冻结 md5 + 用例态记账）"
+        ),
+    }
+    if candidate_record is not None:
+        detail["candidate_import"] = candidate_record
     ctx.node_finished(
         "N6_apply",
-        detail={
-            "status": "applied",
-            "cases": len(applied),
-            "edits": edits_total,
-            # P-21：逐用例修改清单（与 N6 同源）+ 实际写入的用例名
-            "case_edits": case_edits_from_output(author_data),
-            "applied_cases": [str(c["case"]) for c in applied if c.get("case")],
-            "source": "framework",
-            "summary": (
-                f"N6_apply：{len(applied)} 个用例写入沙箱，共施加 {edits_total} 条 edits"
-                "（old 唯一命中校验 + 冻结 md5 + 用例态记账）"
-            ),
-        },
+        detail=detail,
         refs=[c["sandbox_path"] for c in applied],
     )
     return payload

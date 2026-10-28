@@ -1,0 +1,33 @@
+{
+  "frames": 81,
+  "frame_kinds": {
+    "session": 1,
+    "permission/preset": 1,
+    "sandbox/mode": 1,
+    "approval/policy": 1,
+    "agent/inbox/spliced": 2,
+    "turn/start": 1,
+    "step/start": 9,
+    "system/message": 1,
+    "user/message": 2,
+    "request/header": 1,
+    "request/context": 1,
+    "session/title": 1,
+    "assistant/message": 9,
+    "tool/call": 11,
+    "job/registered": 9,
+    "job/settled": 9,
+    "tool/result": 11,
+    "step/end": 9,
+    "turn/end": 1
+  },
+  "tool_calls": {
+    "bash": 9,
+    "read": 1,
+    "submit_result": 1
+  },
+  "tool_call_steps": 8,
+  "write_calls": [],
+  "approvals": [],
+  "note": "第 4 次：模型写 work/candidate 成功（相对路径），提交 payload 为字符串被协议门拒"
+}

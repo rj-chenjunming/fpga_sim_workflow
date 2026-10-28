@@ -1,0 +1,43 @@
+{
+ "payload": {
+  "standin": false,
+  "provider": "dsh/0.2.1-rc.2",
+  "model_call_failed": true,
+  "error": "attempt RUN-20261029-C2-DS04/N3/1 超时 120.0s 后被停止（TERM→KILL）",
+  "contract": {
+   "contract_version": "legacy",
+   "identity": "unknown",
+   "context_manifest_ref": "unknown",
+   "execution_grant_ref": "unknown",
+   "runtime_fingerprint": "unknown"
+  }
+ },
+ "attempt": {
+  "started_at": "2026-10-29T00:33:57.059211",
+  "ended_at": "2026-10-29T00:35:59.041720",
+  "wall_s": 121.976,
+  "usage": {
+   "inputTokens": "unknown",
+   "outputTokens": "unknown",
+   "totalTokens": "unknown",
+   "cacheReadTokens": "unknown"
+  },
+  "exit": "failed",
+  "session_id": "unknown",
+  "attempt_key": "RUN-20261029-C2-DS04/N3/1",
+  "workspace": "agent_workspaces/N3/attempt-000001",
+  "session_log_ref": "agent_workspaces/N3/attempt-000001/dsh-home/sessions/--home-work-chenjunming-change-impact-loop-loop-.logs-s5-c2-ws-runs-RUN-20261029-C2-DS04-agent_workspaces-N3-attempt-000001-work--/session-b11b6523-1230-4192-9b54-1147b27695c6/session.v4.jsonl.zstd",
+  "tool_calls": "see ds04_result.json (submitted payload carries tool report)",
+  "selfcheck": "unknown",
+  "error": "attempt RUN-20261029-C2-DS04/N3/1 超时 120.0s 后被停止（TERM→KILL）",
+  "compaction": {
+   "availability": "ok",
+   "count": 0,
+   "prune_count": 0,
+   "start_count": 0,
+   "end_count": 0,
+   "errors": [],
+   "path": "agent_workspaces/N3/attempt-000001/dsh-home/sessions/--home-work-chenjunming-change-impact-loop-loop-.logs-s5-c2-ws-runs-RUN-20261029-C2-DS04-agent_workspaces-N3-attempt-000001-work--/session-b11b6523-1230-4192-9b54-1147b27695c6/session.v4.jsonl.zstd"
+  }
+ }
+}

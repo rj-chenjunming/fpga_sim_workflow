@@ -1,0 +1,66 @@
+{
+ "attempt": "RUN-20261029-C2-DS04/N3/1",
+ "bin_sha256": "80112efe368efb1a39720c7ada0af00442e5131fb2744edaaff8a3e8bb499e6f",
+ "cap": {
+  "tokens": 50000,
+  "wall_s": 120.0
+ },
+ "ds04_kou_jing": "写隔离/宿主 home 与凭据遮蔽照实宣称；越界读可读与 /proc environ 可读记 D1 残余（不称被挡）",
+ "dsh_version": "0.2.1-rc.2",
+ "inputs": {
+  "case_states.json": {
+   "md5": null,
+   "present": false
+  },
+  "doc_entries.jsonl": {
+   "md5": null,
+   "present": false
+  },
+  "n1_manifest_new.json": {
+   "md5": null,
+   "present": false
+  },
+  "n2_diff.json": {
+   "md5": "5fd73fe9804d467c703e66476fa5b5b6",
+   "present": true
+  },
+  "n2_diff.md": {
+   "md5": null,
+   "present": false
+  },
+  "n3_digest.md": {
+   "md5": null,
+   "present": false
+  },
+  "n5_impact.json": {
+   "md5": null,
+   "present": false
+  },
+  "n5_impact.md": {
+   "md5": null,
+   "present": false
+  }
+ },
+ "material_dirs": [
+  "input"
+ ],
+ "node": "N3",
+ "patch_order": [
+  "patches/00-pins.yml",
+  "patches/01-provider.yml",
+  "patches/10-plugin-s2-submit-result.yml",
+  "patches/10-plugin-s2-selfcheck.yml"
+ ],
+ "patch_sha256": {
+  "00-pins.yml": "5f5e06e8862816edc5bea17c16d7d5c3",
+  "01-provider.yml": "be0bf9ea228b1c77ecfca95a8a7d16b1",
+  "10-plugin-s2-selfcheck.yml": "57fdb025216e763bbd2ad716fd2fc504",
+  "10-plugin-s2-submit-result.yml": "0ad72b4ab43ac26fd80732f7821f9b02"
+ },
+ "probe": "ds04",
+ "profile": "headless",
+ "run_id": "RUN-20261029-C2-DS04",
+ "task_sha256": "8ac3ed8b238cf2800366165af9b850fb2bb4c910461578739c3754caa27da5a8",
+ "timeout_s": 120.0,
+ "wrap": true
+}

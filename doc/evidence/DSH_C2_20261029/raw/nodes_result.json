@@ -1,0 +1,47 @@
+{
+ "run_id": "RUN-20261029-C2-NODES",
+ "results": [
+  {
+   "node": "N3",
+   "exit": "live",
+   "wall_s": 15.625,
+   "validation_ok": true,
+   "error": null
+  },
+  {
+   "node": "N6",
+   "exit": "live",
+   "wall_s": 501.957,
+   "validation_ok": false,
+   "error": null
+  },
+  {
+   "node": "N8",
+   "exit": "live",
+   "wall_s": 23.132,
+   "validation_ok": false,
+   "error": null
+  },
+  {
+   "node": "N10",
+   "exit": "live",
+   "wall_s": 23.397,
+   "validation_ok": true,
+   "error": null
+  },
+  {
+   "node": "N11",
+   "exit": "failed",
+   "wall_s": 25.759,
+   "validation_ok": false,
+   "error": "出现 2 条互相不同的提交，无法确定唯一候选"
+  },
+  {
+   "node": "N12",
+   "exit": "live",
+   "wall_s": 76.901,
+   "validation_ok": true,
+   "error": null
+  }
+ ]
+}

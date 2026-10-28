@@ -75,6 +75,17 @@ def _require(env: dict) -> subprocess.CompletedProcess:
     return _run(env, "gate.py", "require-signed", "--run", RUN, "--gate", G1)
 
 
+def _manifest(env: dict) -> list[dict]:
+    """直接问 kb_lib 要材料集（不自己 walk：口径唯一，红线 8）。"""
+    code = ("import json,sys;sys.path.insert(0,%r);import kb_lib as K;"
+            "print(json.dumps(K.gate_material_manifest(%r), ensure_ascii=False))"
+            % (str(KB_TOOLS), RUN))
+    r = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True,
+                       cwd=str(ROOT), env=env, timeout=120)
+    assert r.returncode == 0, r.stderr
+    return json.loads(r.stdout)
+
+
 # ---------------------------------------------------------------- 绿灯基线
 
 def test_t1_signed_and_unchanged_passes(tmp_path: Path) -> None:
@@ -171,3 +182,47 @@ def test_t8_anchor_tamper_still_rejected(tmp_path: Path) -> None:
     r = _require(env)
     assert r.returncode == 3, (r.returncode, r.stderr)
     assert "防篡改锚" in r.stderr or "被外部修改" in r.stderr
+
+# ---------------------------------------------------------------- 执行期暂存 vs 业务材料（S5 C2a）
+
+def test_t9_agent_workspaces_are_excluded_from_gate_materials(tmp_path: Path) -> None:
+    """`agent_workspaces/**`（每 attempt 的隔离工作区）**不进**闸门材料集。
+
+    为什么必须排除：工作区是执行期暂存（work 副本 / dsh-home / candidate / input 材料副本），
+    签署之后会合法增长；不排除就会让签名后的正常读写把 `stateHash` 判成失配（假 red），
+    也会让 C2 真机取证污染闸门材料集。判据两条（不读实现也应成立）：
+    ① `gate_material_manifest()` 里不出现该路径（不是"恰好没变"）；
+    ② 签署后往工作区写文件，`require-signed` 仍然通过。
+    """
+    env, rd = _signed_run(tmp_path)
+    attempt = rd / "agent_workspaces" / "N3" / "attempt-000001"
+    (attempt / "work").mkdir(parents=True)
+    (attempt / "work" / "x.sv").write_text("module x; endmodule\n", encoding="utf-8")
+    (attempt / "dsh-home").mkdir()
+    (attempt / "dsh-home" / "session.jsonl").write_text("{}\n", encoding="utf-8")
+    (attempt / "input").mkdir()
+    (attempt / "input" / "n2_diff.json").write_text('{"diffs": []}\n', encoding="utf-8")
+    paths = [item["path"] for item in _manifest(env)]
+    assert not any(path.startswith("agent_workspaces/") for path in paths), paths
+    signed = json.loads((rd / "gates.json").read_text(encoding="utf-8"))
+    assert not any(item["path"].startswith("agent_workspaces/")
+                   for item in signed["gates"][G1]["state_hash"]["materials"])
+    r = _require(env)
+    assert r.returncode == 0, r.stderr + r.stdout
+
+
+def test_t10_business_materials_under_sandbox_stay_in_the_manifest(tmp_path: Path) -> None:
+    """排除项只排除**执行期暂存**：导入后的业务材料（`sandbox/**`）仍必须在材料集里。
+
+    反向抽检：如果实现把排除做大了（比如按名字前缀或整类目录排除），这条会红。
+    """
+    env, rd = _signed_run(tmp_path)
+    target = rd / "sandbox" / "TESTLIB" / "x.sv"
+    target.parent.mkdir(parents=True)
+    target.write_text("module x; endmodule\n", encoding="utf-8")
+    paths = [item["path"] for item in _manifest(env)]
+    assert "sandbox/TESTLIB/x.sv" in paths, paths
+    r = _require(env)
+    assert r.returncode == 3, (r.returncode, r.stdout, r.stderr)
+    assert "STATE_HASH_MISMATCH" in r.stderr
+    assert "sandbox/TESTLIB/x.sv" in r.stderr

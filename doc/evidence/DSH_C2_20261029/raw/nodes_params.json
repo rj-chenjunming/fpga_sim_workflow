@@ -1,0 +1,58 @@
+{
+ "effective_dsh_timeout_s": 600.0,
+ "entry": "MR.run_attempt（生产机制）",
+ "mode": "real",
+ "plan": {
+  "N10": {
+   "input_sha256": "6e4c68370d716182905363cfcae2dfa1dd9d8898fd50743e3bafe14fa9316609",
+   "offered_keys": [
+    "buckets"
+   ],
+   "prompt_key": "n10_fail_classify"
+  },
+  "N11": {
+   "input_sha256": "bf53f8271c6cb327772360f37c6eba70a804d21154804d6b94d009ad795d09e7",
+   "offered_keys": [
+    "counts",
+    "review_context"
+   ],
+   "prompt_key": "n11_review"
+  },
+  "N12": {
+   "input_sha256": "a4e96bd5bca4d0fcb76f67ae64eacc91a9e3a7f3312a9410218f1b8db17a53bc",
+   "offered_keys": [
+    "counts",
+    "verdict"
+   ],
+   "prompt_key": "n12_report"
+  },
+  "N3": {
+   "input_sha256": "392032311da7861872bb14306dd9328563ab56edfe8970996395452a85943384",
+   "offered_keys": [
+    "diff_ids",
+    "segments"
+   ],
+   "prompt_key": "n3_digest"
+  },
+  "N6": {
+   "input_sha256": "c9cd25a048ff6949577f2bdf3c8f6d285a1fa519054034a55d0e2f27b66726d1",
+   "offered_keys": [
+    "cases",
+    "rework_assignment"
+   ],
+   "prompt_key": "n6_author"
+  },
+  "N8": {
+   "input_sha256": "12e098846dc75f8c4ce447e5f61d0e46db100ff6d600f20dcc0dec76115699ba",
+   "offered_keys": [
+    "cases",
+    "review_context"
+   ],
+   "prompt_key": "n8_check"
+  },
+  "_effective_dsh_timeout_s": 600.0
+ },
+ "run_id": "RUN-20261029-C2-NODES",
+ "wall_cap_s": 120.0,
+ "口径": "最小合法输入 ⇒ 真会话+提交收口+自检事实；不声称业务验收"
+}

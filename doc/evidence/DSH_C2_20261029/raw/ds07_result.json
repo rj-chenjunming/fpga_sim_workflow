@@ -1,0 +1,148 @@
+{
+ "attempt": {
+  "probe": "ds07",
+  "started_at": "2026-10-29T00:44:16.687923",
+  "ended_at": "2026-10-29T00:44:55.049157",
+  "wall_s": 38.356,
+  "exit": "completed",
+  "session_id": "session-4ca7e525-424c-432a-9bf5-c6be43dcc54e",
+  "attempt_key": "RUN-20261029-C2-DS07/N3/1",
+  "session_log_ref": "agent_workspaces/N3/attempt-000001/dsh-home/sessions/--home-work-chenjunming-change-impact-loop-loop-.logs-s5-c2-ws-runs-RUN-20261029-C2-DS07-agent_workspaces-N3-attempt-000001-work--/session-4ca7e525-424c-432a-9bf5-c6be43dcc54e/session.v4.jsonl.zstd",
+  "usage": {
+   "inputTokens": 220,
+   "outputTokens": 197,
+   "totalTokens": 9633,
+   "cacheReadTokens": 9216
+  },
+  "compaction": {
+   "availability": "ok",
+   "count": 2,
+   "prune_count": 2,
+   "start_count": 2,
+   "end_count": 2,
+   "errors": [],
+   "records": [
+    {
+     "compactionId": "8fd62b9d-a028-429b-8ebf-307d0920b779",
+     "time": 1793205872200,
+     "shadowedTokenCount": 1791
+    },
+    {
+     "compactionId": "33eab8cc-385a-4ad9-a6a0-935a2cbefad4",
+     "time": 1793205883830,
+     "shadowedTokenCount": 3399
+    }
+   ],
+   "path": "agent_workspaces/N3/attempt-000001/dsh-home/sessions/--home-work-chenjunming-change-impact-loop-loop-.logs-s5-c2-ws-runs-RUN-20261029-C2-DS07-agent_workspaces-N3-attempt-000001-work--/session-4ca7e525-424c-432a-9bf5-c6be43dcc54e/session.v4.jsonl.zstd"
+  },
+  "error": null,
+  "selfcheck": {
+   "phase": "deferred",
+   "toolCount": 26,
+   "sandboxDefaultMode": "workspace-write",
+   "presetEcho": {
+    "availability": "composition",
+    "scope": "composition",
+    "sessionScoped": false,
+    "preset": "workspace-write",
+    "api": [
+     "catalog()",
+     "defaultPreset",
+     "resolve(workspace-write)"
+    ],
+    "defaultPreset": "workspace-write",
+    "catalog": {
+     "options": [
+      "danger-full-access",
+      "read-only",
+      "workspace-write"
+     ],
+     "defaultOptions": [
+      "danger-full-access",
+      "read-only",
+      "workspace-write"
+     ],
+     "defaultPreset": "workspace-write"
+    },
+    "resolved": {
+     "preset": "workspace-write",
+     "sandbox": "workspace-write",
+     "approval": "ask"
+    },
+    "reason": null,
+    "resolveError": null,
+    "note": "apply 期无 session 对象：session 级 preset 未回显（计划 §6-1）；此处回显 composition 默认值"
+   },
+   "pinnedMode": "workspace-write",
+   "pinnedPreset": "workspace-write",
+   "echoedPreset": "workspace-write"
+  }
+ },
+ "payload": {
+  "standin": false,
+  "provider": "dsh/0.2.1-rc.2",
+  "plugin": "dsh",
+  "data": {
+   "pattern": "行 NNNNN：这是用于触发上下文压缩的填充材料，不含任何真实业务信息。（NNNNN 为 5 位零填充序号，从 00000 起逐行加 1，至 00999）",
+   "lines": 1000
+  },
+  "task_id": "RUN-20261029-C2-DS07/N3/1",
+  "summary": "全文 1000 行均为同一模板，行前缀是“行 ”加 5 位零填充且从 00000 到 00999 连续递增的序号，后接固定中文填充句。",
+  "session_id": "session-4ca7e525-424c-432a-9bf5-c6be43dcc54e",
+  "usage": {
+   "inputTokens": 220,
+   "outputTokens": 197,
+   "totalTokens": 9633,
+   "cacheReadTokens": 9216
+  },
+  "isolation": "bwrap",
+  "contract": {
+   "contract_version": "legacy",
+   "identity": "unknown",
+   "context_manifest_ref": "unknown",
+   "execution_grant_ref": "unknown",
+   "runtime_fingerprint": "unknown"
+  },
+  "selfcheck": {
+   "phase": "deferred",
+   "toolCount": 26,
+   "sandboxDefaultMode": "workspace-write",
+   "presetEcho": {
+    "availability": "composition",
+    "scope": "composition",
+    "sessionScoped": false,
+    "preset": "workspace-write",
+    "api": [
+     "catalog()",
+     "defaultPreset",
+     "resolve(workspace-write)"
+    ],
+    "defaultPreset": "workspace-write",
+    "catalog": {
+     "options": [
+      "danger-full-access",
+      "read-only",
+      "workspace-write"
+     ],
+     "defaultOptions": [
+      "danger-full-access",
+      "read-only",
+      "workspace-write"
+     ],
+     "defaultPreset": "workspace-write"
+    },
+    "resolved": {
+     "preset": "workspace-write",
+     "sandbox": "workspace-write",
+     "approval": "ask"
+    },
+    "reason": null,
+    "resolveError": null,
+    "note": "apply 期无 session 对象：session 级 preset 未回显（计划 §6-1）；此处回显 composition 默认值"
+   },
+   "pinnedMode": "workspace-write",
+   "pinnedPreset": "workspace-write",
+   "echoedPreset": "workspace-write"
+  }
+ }
+}

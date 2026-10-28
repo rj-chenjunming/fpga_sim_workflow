@@ -24,6 +24,7 @@ from host import agent_control as AC
 from host import agent_memory as AM
 from host import agent_working_memory as WM
 from host import gate_authority as GA
+from host import paths as P
 
 from ..context import RunCtx
 from .model_common import load_prompts
@@ -59,8 +60,16 @@ async def ask(
     input_data: dict[str, Any],
     contract: dict[str, Any] | None = None,
     backend: AB.AgentBackend | None = None,
+    request_meta: dict[str, Any] | None = None,
+    execute_kwargs: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """发一次真 ModelRequest。失败**不吞**：回报错误并交由调用方决定。"""
+    """发一次真 ModelRequest。失败**不吞**：回报错误并交由调用方决定。
+
+    `request_meta` 是 A2（REV-13 §5.2）的 Host 侧身份/契约引用：只由本机制填写，
+    后端只读；缺省字段投影成 `legacy`/`unknown`（旧调用方不必改）。
+    `execute_kwargs` 是 Host 分配的 attempt 执行面（如 dsh 的 `cwd`/`home`/`attempt_key`）：
+    只来自 Host 分配，不从任务文本或客户端 hint 拼。
+    """
     from prompts.node_schemas import SCHEMAS
 
     backend = backend if backend is not None else AB.select(node)
@@ -68,8 +77,13 @@ async def ask(
     if schema is None:
         raise KeyError(f"没有 {prompt_key!r} 的输出契约（prompts/node_schemas.py）")
     contract = contract or request_contract(prompt_key)
+    meta = request_meta or {}
     payload = await backend.execute(AB.BackendRequest(
-        input_data=input_data, info=contract["info"], instruct=contract["instruct"], schema=schema))
+        input_data=input_data, info=contract["info"], instruct=contract["instruct"], schema=schema,
+        contract_version=meta.get("contract_version"), identity=meta.get("identity"),
+        context_manifest_ref=meta.get("context_manifest_ref"),
+        execution_grant_ref=meta.get("execution_grant_ref"),
+        runtime_fingerprint=meta.get("runtime_fingerprint")), **(execute_kwargs or {}))
     if payload.get("model_call_failed"):
         ctx.event("warning", node=node, status="model_failed",
                   detail={"prompt": prompt_key, "model": payload.get("provider"),
@@ -81,7 +95,52 @@ async def ask(
     return payload
 
 
+def _attempt_sources(node: str, input_data: dict[str, Any]) -> tuple[tuple[Path, str], ...]:
+    """Host 侧派生"外部只读源件"清单：**只在 N6 且 input_data 带 targets 时**给出。
+
+    为什么只给 N6：候选通道要求模型写整份 `candidate/TESTLIB/<case>.sv`，没有基线全文就只能
+    去扫宿主文件系统（S6 真机两次失败的原因）。其它节点/无 targets ⇒ 空元组（不给无关材料面）。
+    路径来源 = Host 已知事实（`targets[].file`，相对 `ENV_ROOT`），不接受模型/客户端 hint。
+    """
+    if node != "N6":
+        return ()
+    targets = input_data.get("targets")
+    if not isinstance(targets, list):
+        return ()
+    seen: list[tuple[Path, str]] = []
+    for item in targets:
+        if not isinstance(item, dict):
+            continue
+        relative = item.get("file")
+        if not isinstance(relative, str) or not relative.strip():
+            continue
+        pair = (Path(P.ENV_ROOT), relative.strip())
+        if pair not in seen:
+            seen.append(pair)
+    return tuple(seen)
+
+
 async def run_attempt(
+    ctx: RunCtx,
+    node: str,
+    *,
+    prompt_key: str,
+    input_data: dict[str, Any],
+    offered: dict[str, Any],
+    validate,
+) -> dict[str, Any]:
+    """在**请求作用域**声明 run 模式，再走单次 attempt（机制实现见 `_run_attempt`）。
+
+    为什么是作用域而不是多加参数：`select(node)` 的调用形状是既有契约（测试用单参替身替换），
+    加参数会让"没改到调用点"静默退回旧语义；作用域让"谁在什么模式下调用"显式可读，
+    退出即还原（不泄漏到别的请求）。模式取值仍在 `agent_backends.select` 的唯一判据里消费。
+    """
+    with AB.run_mode(ctx.mode):
+        return await _run_attempt(ctx, node, prompt_key=prompt_key, input_data=input_data,
+                                  offered=offered, validate=validate)
+
+
+async def _run_attempt(
     ctx: RunCtx,
     node: str,
     *,
@@ -147,12 +206,47 @@ async def run_attempt(
         else:
             request_input["approved_experiences"] = selection.lessons
     diagnostics = selection.diagnostics
+    # A2（REV-13 §5.2）：身份与契约引用由 Host 填写，后端只读。
+    # `attempt_key` 与 dsh 的 attempt 标识同形（run/node/序号）：提交门的 task_id join 用它。
+    attempt_key = f"{ctx.run_id}/{node}/{attempt_sequence}"
+    request_identity = AB.RequestIdentity(
+        run_id=ctx.run_id, node=node, attempt_key=attempt_key,
+        generation=attempt_sequence)
+    context_manifest_ref = "wm-sha256:" + AM.fingerprint(working_memory.source_map)
+    # 运行时指纹由后端自报（dsh 给配置/版本指纹，agently 退到实现指纹）；都没有 ⇒ unknown，
+    # 不拿预算/校验值冒充运行时事实。
+    runtime_fingerprint = backend_metadata.get("runtime_fingerprint") or (
+        "implementation-sha256:" + str(backend_metadata.get("implementation_sha256") or "unknown"))
+    request_meta = {"contract_version": AB.CONTRACT_VERSION, "identity": request_identity,
+                    "context_manifest_ref": context_manifest_ref,
+                    # S6：Host 授权表尚未落地 ⇒ 缺省即 unknown（不编造引用）
+                    "execution_grant_ref": None,
+                    "runtime_fingerprint": runtime_fingerprint}
+    # S5-C2a：需要隔离工作区的后端（dsh）由 Host 分配 `<run>/agent_workspaces/<node>/attempt-N/`，
+    # `cwd/home` 从分配结果传进去（不看任务文本、不看客户端 hint）；不需要的后端（agently）不分配。
+    prepare_attempt = getattr(backend, "prepare_attempt", None)
+    # attempt 身份由 Host 给出（与 A2 identity / 提交门 task_id 同一个值，不两处派生）。
+    # N6 的候选通道要求模型写整份 `TESTLIB/<case>.sv` ⇒ 必须把 targets 声明的源件以**只读**
+    # 方式摆进 `input/TESTLIB/`（否则模型只能去扫宿主文件系统）。**只对 N6 + 有 targets 生效**。
+    prepare_sources = _attempt_sources(node, input_data)
+    workspace = prepare_attempt(ctx.run_dir, node, attempt_sequence,
+                                attempt_key=request_identity.attempt_key,
+                                sources=prepare_sources) \
+        if callable(prepare_attempt) else None
     attempt = AM.Attempt(ctx, node, {
         "prompt_key": prompt_key, "cycle": input_data.get("cycle"),
         "input": request_input, **contract, "offered": offered, "scope": scope,
         "model": cfg.model if cfg.available else None,
         "plugin": cfg.plugin if cfg.available else None,
         "backend": backend_metadata,
+        # A2 契约投影（旧记录没有本键 ⇒ 读出侧显示 legacy/unknown，不回填）
+        "backend_contract": AB.contract_record(
+            contract_version=AB.CONTRACT_VERSION, identity=request_identity,
+            context_manifest_ref=context_manifest_ref,
+            execution_grant_ref=None, runtime_fingerprint=runtime_fingerprint),
+        # S5-C2a：工作区形状 + `input/` 白名单材料的 md5/size（DS-04 证据的复核入口）
+        **({"attempt_workspace": workspace.record(run_dir=ctx.run_dir)}
+           if workspace is not None else {}),
         "implementation_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         "experience_diagnostics": diagnostics,
         "experience_selection": selection.record,
@@ -193,7 +287,9 @@ async def run_attempt(
             out = {"mode": "standin", "standin": True, "provider": "none", "reason": cfg.reason}
         else:
             payload = await ask(ctx, node, prompt_key=prompt_key, input_data=request_input,
-                                contract=contract, backend=backend)
+                                contract=contract, backend=backend, request_meta=request_meta,
+                                execute_kwargs=(workspace.execute_kwargs()
+                                                if workspace is not None else None))
             validation = validate(kind, payload, offered=offered)
     except BaseException as exc:
         message = f"{type(exc).__name__}: {exc}"

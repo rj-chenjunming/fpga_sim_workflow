@@ -1,0 +1,37 @@
+{
+ "attempt": {
+  "probe": "ds05b",
+  "started_at": "2026-10-29T00:41:44.042438",
+  "ended_at": "2026-10-29T00:42:25.155731",
+  "wall_s": 38.611,
+  "cancelled_at": null,
+  "attempt_key": "RUN-20261029-C2-DS05B/N3/1",
+  "exit": "completed",
+  "stop_confirmed": null,
+  "heartbeat_first_sample": {
+   "hb_same.log": -1,
+   "hb_setsid.log": -1
+  },
+  "heartbeat_second_sample": {
+   "hb_same.log": -1,
+   "hb_setsid.log": -1
+  },
+  "heartbeat_still_growing": {
+   "hb_same.log": false,
+   "hb_setsid.log": false
+  },
+  "leak": false,
+  "session_log_ref": "agent_workspaces/N3/attempt-000001/dsh-home/sessions/--home-work-chenjunming-change-impact-loop-loop-.logs-s5-c2-ws-runs-RUN-20261029-C2-DS05B-agent_workspaces-N3-attempt-000001-work--/session-fcd79c0b-67f3-4fe5-871a-7f8f404e050f/session.v4.jsonl.zstd",
+  "usage": {
+   "inputTokens": "unknown",
+   "outputTokens": "unknown",
+   "totalTokens": "unknown",
+   "cacheReadTokens": "unknown"
+  },
+  "note": "心跳在 attempt 目录内可观；跨 pidns 的 /proc 扫描在 v1 实测恒空（盲点已登记）"
+ },
+ "outcome": {
+  "raised": null,
+  "note": "run_attempt 正常返回（turn 已自己结束，取消太晚）"
+ }
+}

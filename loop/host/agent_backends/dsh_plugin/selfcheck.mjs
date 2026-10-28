@@ -12,7 +12,8 @@
  * - 拿不到的事实写 null/unknown + reason，**不编造**（计划 §6-1）。
  *
  * 落盘时机：`apply` 时写 `phase:'apply'`（**诊断用**：那时工具注册表与服务可能还没就绪），
- * `setTimeout(0).unref()` 后再写 `phase:'deferred'`（**准入用**：能看到 apply 之后才注册的工具）。
+ * 之后**轮询到就绪**（工具清单非空 + 沙箱档取到 + preset 回显非 unknown）再写
+ * `phase:'deferred'`（**准入用**）；最长 5 s，超时仍写（Host 会显式失败）。
  * Host 只认 `phase:'deferred'`；只有 apply 快照到达超时 ⇒ 显式失败（不可能拿它当准入）。
  */
 
@@ -240,13 +241,40 @@ function buildReport(ctx, phase) {
   }
 }
 
+/** 准入快照的"就绪"判据：工具清单非空 + 沙箱档取到 + preset 回显不是 unknown。
+ *
+ * 为什么需要轮询（C2 实测缺陷，2026-10-29）：`setTimeout(0)` 只等一个宏任务，
+ * 在部分 boot 里其它插件的服务还没注册 ⇒ deferred 快照里 `toolNames=None`、
+ * `sandboxPolicy`/`permissionPresets` 取不到（6 次真实 attempt 里 4 次这样）。
+ * Host 会 fail-closed（正确），但准入判定变成了**竞态**。改为：就绪即写，
+ * 未就绪则每 ${POLL_MS}ms 重试，最长 ${DEADLINE_MS}ms 后仍写（Host 仍会显式失败）。
+ */
+const READY_POLL_MS = 50
+const READY_DEADLINE_MS = 5000
+
+function ready(report) {
+  const tools = report.toolNames
+  const echo = report.presetEcho || {}
+  return Array.isArray(tools) && tools.length > 0
+    && typeof report.sandboxDefaultMode === 'string' && report.sandboxDefaultMode.length > 0
+    && echo.availability !== 'unknown'
+}
+
 export function apply(ctx) {
   // 第一份是 **apply 期快照**：此时工具注册表与服务可能还没就绪（实测 toolNames=[]、
   // sandboxPolicy 取不到）⇒ Host 不得拿它当准入，只能当诊断；
   writeReport(buildReport(ctx, 'apply'))
-  // 第二份是 **deferred 快照**（准入快照）：覆盖 apply 之后才注册的工具/服务
-  const timer = setTimeout(() => {
-    writeReport(buildReport(ctx, 'deferred'))
-  }, 0)
+  // 第二份是 **deferred 快照**（准入快照）：等"就绪"再写（轮询，最长 5s）
+  const started = Date.now()
+  const tick = () => {
+    const report = buildReport(ctx, 'deferred')
+    if (ready(report) || Date.now() - started >= READY_DEADLINE_MS) {
+      writeReport(report)
+      return
+    }
+    const next = setTimeout(tick, READY_POLL_MS)
+    if (next && typeof next.unref === 'function') next.unref()
+  }
+  const timer = setTimeout(tick, 0)
   if (timer && typeof timer.unref === 'function') timer.unref()
 }

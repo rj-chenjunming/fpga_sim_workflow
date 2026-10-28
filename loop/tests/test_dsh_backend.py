@@ -1,6 +1,7 @@
 """S1：DSH 后端骨架（配置锁定 + 编排；默认不可用）。"""
 from __future__ import annotations
 
+import dataclasses
 import hashlib
 from pathlib import Path
 
@@ -105,12 +106,23 @@ async def test_execute_failure_is_explicit_and_redacted(tmp_path: Path, monkeypa
     assert "[redacted]" in payload["error"]
 
 
-def test_shipped_settings_are_disabled_by_default() -> None:
-    """仓内 SETTINGS 的 dsh 段必须默认关闭（不因实现存在而放行）。"""
+def test_shipped_settings_do_not_bypass_admission() -> None:
+    """仓内 SETTINGS 的 dsh 段**不因实现存在而放行**（原"必须默认关闭"的旧假设已随人工裁决更新）。
+
+    判据分两半，都不依赖"配置里是否写了 enabled"：
+    1. 配置可解析 + 生产路径 `verify(wrap_required=True)` 通过（指纹/版本/包裹齐备才算锁住）；
+    2. **`run_mode` 未声明时 `select()` 仍 `BackendUnavailable`**（旧/未知调用不得默认当 real，
+       也不得因为配置里启用了 dsh 就偷偷用起来）；
+    3. `enabled=False` 时 `DshBackend` 必抛（用 tmp 配置造，不依赖仓内取值）。
+    """
+    from host import agent_backends as B
+
     cfg = D.config_from_settings()
-    assert cfg.enabled is False
+    cfg.verify(wrap_required=True)
     with pytest.raises(BackendUnavailable):
-        D.DshBackend(cfg)
+        B.select("N3")
+    with pytest.raises(BackendUnavailable):
+        D.DshBackend(dataclasses.replace(cfg, enabled=False))
 
 
 def test_shipped_pin_matches_actual_binary_when_present() -> None:

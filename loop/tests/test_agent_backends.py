@@ -42,15 +42,34 @@ async def test_default_backend_identity_is_sealed_and_not_taken_from_input(ctx, 
     {'default_backend': 'dsh'},
     {'node_backends': {'N3': 'dsh'}},
 ])
-async def test_explicit_dsh_rejects_before_provider_even_in_standin(ctx, monkeypatch, settings, runtime):
+async def test_explicit_dsh_under_standin_mode_is_a_scoped_substitution(ctx, monkeypatch, settings, runtime):
+    """S5 契约变更（人工裁决 2026-10-28 规则②）：`LOOP_LLM_MODE=standin` ⇒ 按**模式**用替身。
+
+    旧断言「standin + 显式 dsh ⇒ `BackendUnavailable`」只对 `run_mode` **未知**的直调成立
+    （严格语义，判据唯一实现在 `agent_backends.select`，用例见
+    `tests/test_dsh_admission.py::test_unspecified_run_mode_keeps_strict_semantics`）。
+    经 `model_request` 的请求已声明 run 模式，standin 的定义是"模型用确定性替身"，
+    契约上**不选任何原生后端**；这是模式规则，不是 dsh 准入失败后的回落。
+
+    替身决策必须是**纯的**：不探测 Agently provider/凭据（`select` 阶段不解析），
+    也不写请求记录（拒绝/替身都发生在提交前）。
+    """
     B = settings(runtime)
     monkeypatch.setenv('LOOP_LLM_MODE', 'standin')
     def forbidden():
-        pytest.fail('DSH admission must not resolve Agently credentials')
+        pytest.fail('standin/drill 的模式决策不得解析 Agently provider/凭据')
     monkeypatch.setattr(MP, 'resolve', forbidden)
-    with pytest.raises(B.BackendUnavailable, match='DSH'):
-        await call(ctx)
+    with B.run_mode('real'):
+        backend = B.select('N3')
+    assert backend.metadata()['name'] == 'agently'
+    record = backend.metadata()['admission']
+    assert record['rule'] == 'standin_mode' and record['code'] == 'substituted'
+    assert record['requested'] == 'dsh' and record['effective'] == 'agently'
+    assert record['reason']
     assert not (ctx.run_dir / 'agent_calls').exists()
+    # 严格语义不许被放宽：`run_mode` 未声明的直调仍显式失败（同一判据，不另写一套）
+    with pytest.raises(B.BackendUnavailable):
+        B.select('N3')
 
 
 async def test_node_override_precedes_default_and_does_not_select_other_node(ctx, provider, settings):

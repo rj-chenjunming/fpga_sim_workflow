@@ -1,0 +1,11 @@
+{
+ "input_sha256": "60efc7a5a8b6e20e4d874328f0109a8dd91aa8d6b1b9c716a966f0d06bffd348",
+ "node": "N6",
+ "run_id": "RUN-20261029-C2-N6",
+ "target_case": "tc_bmc_i2c_03",
+ "target_file": "TESTLIB/tc_bmc_i2c_03.sv",
+ "targets_used": 1,
+ "total_targets_available": 5,
+ "wall_cap_s": 300.0,
+ "口径": "1 target 最小合法输入（规模收紧，不是判据放宽）；非业务验收；仅此一次"
+}

@@ -5195,3 +5195,87 @@ REV-14 的 D1 复评前提**部分满足**：bwrap 可作缓解，但不能据�
 - **不做"自动收敛"**：无进展只告警，不发命令、不终止、不改状态。
 - **投影不是权威**：卡片/窗口字段可丢弃可重建，不参与闸门/预算/接受判据（`REV-16 §1`）。
 - **未映射项**：`session_*` reason 前端未本地化；反代归属判据两处实现（`§9-15/16/17`）。
+
+## 115 S5 交付：六节点 dsh 受控准入 + C2 真机取证（2026-10-29）
+
+本轮入口：[开工提示词 S4–S6](agents/开工提示词_S4-投影取证与候选导入.md) §4.2/§4.4；计划
+[2026-10-28-s5-s6-admission-and-candidate.md](plans/2026-10-28-s5-s6-admission-and-candidate.md)；
+契约沿用 [REV-13](spec/SPEC-REV-13-20261026.md) §5/§7.3/§10、[REV-14](spec/SPEC-REV-14-20261028.md) §3/§4/§6/§7、
+[SPEC-08](spec/DSH_AGENT_RUNTIME_SPEC.md) §10/§12（**未新写替代契约**）；
+证据档 [`doc/evidence/DSH_C2_20261029/`](evidence/DSH_C2_20261029/README.md)（冻结 444 + 目录外 md5）。
+本轮**没有**改闸门、节点业务判据（仍只 `model_steps._validate`）、`prompts/**`（prompt 的候选通道改动属 S6，见 §116）。
+
+### 115.1 人工裁决（2026-10-28 本窗口，人已拍；与旧裁决的差异照实登记）
+
+原话：**「所有节点都要走 dsh 呀 且赋予读写权限 暂时不考虑额度时间限制」「统一都走 dsh」「只在对应的隔离工作区写」**
+（并选定"全员 dsh，保留可回退"）。
+
+| # | 裁决 | 与旧口径的关系 | 落地 |
+|---|---|---|---|
+| A1 | **六个模型节点 N3/N6/N8/N10/N11/N12 全部显式走 dsh** | 扩开工提示词 §4.2"首版只 N3 只读"；与体检表 **Q4**（`default_backend` 仍 agently）一致 | `SETTINGS.yaml` 六条 `node_backends` + `dsh.enabled=true`；`select()` 受控准入分支 |
+| A2 | **写权只在每 attempt 隔离工作区**（仓库/ENV_ROOT/kb/闸门/审计写不到） | 与红线 11、AGENTS §3 一致 | cwd/`work` 可写、`candidate=work/candidate` 可写；`input/`、plugin、patch 只读；越界写实测 EROFS |
+| A3 | **暂不设调用次数/时长硬上限** | **改**计划原拟"12 次/1 h" | 不设硬上限 ≠ 不记账：32 行 attempt 记账（9 行有 usage，其余 unknown，**不填 0**） |
+| A4 | **不再跑 Agently 对照组** | **改**开工提示词 §4.3 公平对照 | 无对照组 ⇒ 按 SPEC-08 §12.2 只写"探索/证据不足"，**不宣布收益** |
+
+未放宽：`default_backend` 仍 `agently`（一键回退）；准入 ≠ 默认；未通过准入仍 `BackendUnavailable`，不静默回退；未推送。
+
+### 115.2 交付物
+
+| 文件 | 变更 | 契约 |
+|---|---|---|
+| `loop/host/agent_backends/__init__.py` | `select(node, *, run_mode, llm_mode)` + 四条**顺序**模式规则（①`run_mode` 未声明 ⇒ 严格失败 ②`standin` ⇒ 替身 `rule='standin_mode'` ③`drill` ⇒ 替身 `rule='mode_drill'` ④`real+live` ⇒ 准入链）+ `BackendUnavailable.admission` 四字段 | REV-14 §1/§6；DS-01 |
+| `loop/host/agent_backends/base.py` | A2：`CONTRACT_VERSION`/`RequestIdentity`/`BackendRequest` 五字段/`contract_record`/`read_contract`（旧记录 ⇒ `legacy`/`unknown`）+ `ExecutionUnknown` | REV-13 §5.2；A2 |
+| `loop/host/agent_backends/dsh.py` | `admit()`（enabled→verify(wrap)→版本(安装树)→运行时指纹→DS-08/09 静态自检，失败 code 可判）+ 生成式 provider overlay（**不含密钥**）+ 双钉 `workspace-write` + `_compose_task` 首行修复 + `candidate=work/candidate` + `stage_sources` 材料供给 | REV-14 §4 B1/B3/B8；DS-08/09/10 |
+| `loop/host/agent_backends/dsh_process.py` | 取消 ⇒ `TERM→KILL` 进程组 + 残留检查；停不确认 ⇒ `ExecutionUnknown`；`AttemptSpec.write_dirs`（模型可写业务落点，与 Host 侧信道分开）+ `material_dirs` 只读材料面 | DS-05；REV-14 B8 |
+| `loop/host/agent_backends/dsh_assets.py` | `candidate=work/candidate` + `check_layout` 不变式 + `ATTEMPT_PINS` + `stage_sources`（显式 (root,rel) 对、拒绝对/`..`/链接/越界、md5 入记录） | 布局 A3；B3 |
+| `loop/host/agent_backends/dsh_plugin/selfcheck.mjs` | `deferred` 快照改为**轮询到就绪**（工具清单非空 + 档位 + preset 回显，最长 5 s） | DS-08/09 |
+| `loop/host/agent_backends/agently.py` | provider **惰性解析**（`select()` 的模式决策完全不触碰 provider/凭据；`test_config_snapshot_is_used_once_for_audit_and_sdk` 仍断言 resolve 恰好 1 次） | DS-01 |
+| `loop/workflows/chunks/model_request.py` | `run_mode(ctx.mode)` 请求作用域 + A2 填写（`context_manifest_ref='wm-sha256:'+…`）+ `execute_kwargs`（cwd/home 只由 Host 给）+ C2a 工作区分配 | A2；A3 |
+| `loop/host/agent_memory.py` | `contract_view()` 转发（读出侧唯一实现是 `read_contract`） | A2 兼容 |
+| `loop/host/agent_control.py` | §7.3：先撤销资格 → 停执行 → **确认后** `applied`；`unknown` ⇒ `execution_unknown` + 抛 `ExecutionUnknown`、禁止重发 | IL/DS-05 |
+| `loop/SETTINGS.yaml` | `node_backends` 六条 + `dsh.enabled=true`（`default_backend` 仍 agently），注释写明裁决与 mode 分层 | A1 |
+| `kb/tools/kb_lib.py` | **kb 冻结目录单独变更 + 留证**：`GATE_MATERIAL_EXCLUDE_DIRS` 加 `agent_workspaces`（执行期暂存会合法变化；业务材料以导入后的 `sandbox/` 为准） | REV-15 stateHash |
+| 测试 | `test_dsh_admission.py`(71) + `test_gate_state_hash.py`(+2) + `test_agent_backends.py`/`test_dsh_backend.py` 按新契约**改旧假设**（见 115.3-④） | 各条 TDD |
+
+### 115.3 C2 真机取证结论（三态；详见证据档）
+
+| 必测 | 结论 |
+|---|---|
+| DS-08 / DS-09 | **满足（真机）**：`toolNames` 26 项含 `submit_result`、`presetEcho/defaultPreset/mode=workspace-write` 双钉一致、attempt home 无宿主 settings/凭据 |
+| DS-10 | **满足（真机 + 离线 bwrap A/B）**：宿主 home 被 `--tmpfs` 遮蔽、工具 env 无 key；`/proc` 不声称 |
+| DS-04 | **部分（如实）**：写隔离成立（cwd 可写、`/`/`kb`/他 run/只读 `input` 全拒）；遮蔽成立（`$HOME/AGENTS.md`、`~/.dsh/.credentials.yaml` 不可见）；**残余**：宿主 home 之外路径只读可见、`/proc/1/environ` 可读、`/tmp` 沙箱内可写 |
+| DS-07 | **满足（真机）**：session log 落账 `count=2`（`compaction/summary`×2，`shadowedTokenCount=1791/3399`）、`session_log_ref` 相对 run_dir、usage 如实 |
+| DS-05 | **部分（如实）**：取消/120 s 两条路径 `TERM→KILL` 无同组残留；工具后代不可跨调用存活；**盲点**：`_group_members` 在 Host pid ns 看不到 `--unshare-pid` 子 ns 子孙 ⇒ 不能自证"无残留"，只能依据内核语义 + `--die-with-parent` |
+| DS-02 | **满足（真机）**：N11 出现 2 条互相不同提交 ⇒ 提交门拒；`turn_end.kind=max-tokens` 终态 **不放行** |
+| 六节点收口 | **5/6**：N3/N8/N10/N11/N12 `validation=ok`；**N6 未收口**（300 s 超时、1 target 最小输入；原因：材料面 + 345 KB `n5_impact.json` 诱导反复解析）⇒ **不写"六节点全绿"** |
+
+**本轮修掉的真机缺陷**（证据档 §2）：① **P1** `_compose_task` 任务文本首行 `- ` 被 dsh CLI 当选项 ⇒ boot 即死（六节点前两轮 12 次 attempt 全灭）；② **P2** selfcheck deferred 快照竞态（`toolNames=None`，Host 正确 fail-closed）；③ **P1** 凭据只从进程 env 取（凭据在 `~/.dsh/.credentials.yaml`）⇒ 改 `_api_key()`（仍只注入子进程 env）；④ **P1** attempt `input/` 不含 N6 目标源件 ⇒ `stage_sources`；⑤ **P1** `candidate/` 不在 bwrap 绑定内 ⇒ `write_dirs`；⑥ **P1（S6 收口前发现）** `workspace-write` 应用层边界 = cwd ⇒ `candidate` 改为 `work/candidate`（否则 headless 审批 `unavailable` 必然拒写）。
+
+### 115.4 收口门（干净 S5 树：S6 改动 `git stash` 后跑；数字从输出复制）
+
+| 门 | 结果 |
+|---|---|
+| 单测（可写数据根） | `3 failed, 1591 passed, 1 warning, 137 errors in 386.97s`；3 failed **全部**是既有 `@pytest.mark.env_layer`（ENV_ROOT 只读）；137 errors = `tests/browser/**` 缺 Chromium |
+| kb 自测 + env layer | `PASS=10 / PASS=9 / PASS=28`，`FAIL=0`；env_layer `3 passed, 24 deselected in 7.00s`；**原 ENV_ROOT 零写入** |
+| 端到端（drill） | `phase 1–5 + 4b` 全 `rc=0`，`=> ALL PASS` |
+| 文档门 | `65 passed in 3.76s` |
+| 浏览器门 | **未跑**：S5 未改 `loop/web/**` 与 `services/contracts.py` 界面字段（AGENTS §4 只在该类改动时要求）；S4 收口时已跑 `138 passed` |
+
+差量对账：S4 树 `1607 passed` → S5 树 `1591 passed`（差量 = 去掉 S6 已写但未提交的 49 条候选导入用例 + 新增 `test_dsh_admission.py` 等；`failed 3=3`、`errors 137=137`、`warnings 1=1`，**零新增失败**）。
+
+### 115.5 纪律核对
+
+- **写权**：`kb/**` 唯一改动 = `kb_lib.py` 排除项（**冻结目录单独变更 + 留证**，见 §115.2 与 `test_gate_state_hash.py` 的 t9/t10）；`prompts/**` 未在 S5 改；`doc/STATUS.md` 只增本节。
+- **唯一判据（红线 8）**：准入只有 `dsh.admit()` 一处；预算仍只 `AM.check_budget`；业务校验仍只 `model_steps._validate`；指令三态仍只 `agent_control.instructions_view`。
+- **时间口径（红线 7）**：`now` 仍只经 `paths.now_iso → paths.now_epoch`；真机记账时间由探针如实写，不可得标 unknown。
+- **失败显式**：准入失败带可判 `code`；停不确认 ⇒ `execution_unknown` + 不重发；模型输出不合规 ⇒ `validation_failed`；**没有**"崩溃/停止未知伪装成在等人工"。
+- **独立复核**：本片实现由 `s5-admit` 完成（C1 + C2 取证），Lead 负责契约口径/裁决/门/证据冻结/提交；**S5 没有独立复核者**（与 S4 不同，照实说明，不声称独立验证）。
+- **证据**：`doc/evidence/DSH_C2_20261029/` 冻结 444 + 目录外 md5；真机脚本一次性不入库（S2 先例），参数与结果已落 raw。
+
+### 115.6 未做 / 不声称
+
+- **不声称工具白名单**：真机 `toolNames` 为全量 harness（26 项含 `web_search/web_fetch/subagent/workflow/send_message/job_*/present`）⇒ REV-14 D4 白名单**未实现**（P1 gap；0.2.1-rc.2 无廉价键，需另立 tool-allowlist 插件小片）。
+- **不声称 N6 已收口**；不声称"六节点全绿"。
+- **不声称跨 pidns 残留检测可用**（DS-05 盲点）；**不声称挡住 `/proc` 读 key**（D1 残余）；**不声称越界读被挡**。
+- **不声称 E（内网业务）**；不因 C2 通过改默认后端；未推送。
+- 真实调用：**32 行 attempt 记录**（含 boot 失败/超时/冲突等非成功路径），其中 **9 行有 usage**；N6 502 s 那次 54848 tokens 单列（探针未打上限，已修）。

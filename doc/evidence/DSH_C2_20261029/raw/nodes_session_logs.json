@@ -1,0 +1,24 @@
+{
+ "run_id": "RUN-20261029-C2-NODES",
+ "session_logs": {
+  "N3": [
+   "agent_workspaces/N3/attempt-000001/dsh-home/sessions/--home-work-chenjunming-change-impact-loop-loop-.logs-s5-c2-ws-nodes-runs-RUN-20261029-C2-NODES-agent_workspaces-N3-attempt-000001-work--/session-2d9172d3-13c6-4ca6-8798-d27f2eeab113/session.v4.jsonl.zstd"
+  ],
+  "N6": [
+   "agent_workspaces/N6/attempt-000001/dsh-home/sessions/--home-work-chenjunming-change-impact-loop-loop-.logs-s5-c2-ws-nodes-runs-RUN-20261029-C2-NODES-agent_workspaces-N6-attempt-000001-work--/session-fac94cbc-d3e8-4aa3-a5d4-8c7e039b6651/session.v4.jsonl.zstd"
+  ],
+  "N8": [
+   "agent_workspaces/N8/attempt-000001/dsh-home/sessions/--home-work-chenjunming-change-impact-loop-loop-.logs-s5-c2-ws-nodes-runs-RUN-20261029-C2-NODES-agent_workspaces-N8-attempt-000001-work--/session-f44f6861-4798-4dcf-bded-adf7a0b6676e/session.v4.jsonl.zstd"
+  ],
+  "N10": [
+   "agent_workspaces/N10/attempt-000001/dsh-home/sessions/--home-work-chenjunming-change-impact-loop-loop-.logs-s5-c2-ws-nodes-runs-RUN-20261029-C2-NODES-agent_workspaces-N10-attempt-000001-work--/session-e4d730e8-897e-404c-b0e2-10ae365929a7/session.v4.jsonl.zstd"
+  ],
+  "N11": [
+   "agent_workspaces/N11/attempt-000001/dsh-home/sessions/--home-work-chenjunming-change-impact-loop-loop-.logs-s5-c2-ws-nodes-runs-RUN-20261029-C2-NODES-agent_workspaces-N11-attempt-000001-work--/session-480d3744-6833-4151-99bc-d6a0a48e6a9f/session.v4.jsonl.zstd"
+  ],
+  "N12": [
+   "agent_workspaces/N12/attempt-000001/dsh-home/sessions/--home-work-chenjunming-change-impact-loop-loop-.logs-s5-c2-ws-nodes-runs-RUN-20261029-C2-NODES-agent_workspaces-N12-attempt-000001-work--/session-75d2e452-1c1c-4422-bc17-435204670dfd/session.v4.jsonl.zstd"
+  ]
+ },
+ "note": "探针 glob 少了一层（sessions/<cwd-slug>/session-<id>/session.v4.jsonl.zstd）⇒ attempts.jsonl 里 session_log_ref=unknown 是探针 bug，不是没有日志；此处按磁盘补正"
+}

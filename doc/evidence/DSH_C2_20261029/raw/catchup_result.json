@@ -1,0 +1,26 @@
+{
+ "run_id": "RUN-20261029-C2-CATCHUP",
+ "results": [
+  {
+   "node": "N6",
+   "exit": "failed",
+   "wall_s": 122.26,
+   "validation_ok": false,
+   "error": "attempt RUN-20261029-C2-CATCHUP/N6/1 超时 120.0s 后被停止（TERM→KILL）"
+  },
+  {
+   "node": "N8",
+   "exit": "live",
+   "wall_s": 25.432,
+   "validation_ok": true,
+   "error": null
+  },
+  {
+   "node": "N11",
+   "exit": "live",
+   "wall_s": 51.095,
+   "validation_ok": true,
+   "error": null
+  }
+ ]
+}

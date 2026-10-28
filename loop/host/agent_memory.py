@@ -800,6 +800,14 @@ def verify_attempt(path: Path) -> dict:
     return out
 
 
+#: A2（REV-13 §5.2）请求契约的读出入口：旧记录缺省 `legacy`/`unknown`，只读不回填。
+#: 唯一实现在 `agent_backends.base.read_contract`（延迟导入：本模块在包初始化早期被引用）。
+def contract_view(request: dict | None) -> dict:
+    from host.agent_backends.base import read_contract
+
+    return read_contract(request)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Verify agent records without reissuing requests.")
     parser.add_argument("--verify", type=Path, required=True)

@@ -6,9 +6,12 @@
 不变量：
 - 每次 attempt 独立进程、独立 session；不 resume 用户的会话（D3 的会话面在看板侧，不在这里）。
 - 包裹（`wrap=True`）时：全盘只读 + 宿主 home 遮蔽 + bind attempt 的 cwd/home（+ 显式
-  `asset_dirs` 只读 / `state_dirs` 可写）+ env 白名单。
+  `asset_dirs` 只读资产 / `material_dirs` 只读材料 / `state_dirs` 可写侧信道 /
+  `write_dirs` 可写业务落点）+ env 白名单。
   **不声称**挡 `/proc/<pid>/environ`（P0 实测同 uid 可读；D1 残余风险）。
 - 超时/停机：`TERM` → 宽限 → `KILL` 进程组；停机后仍有子孙 ⇒ `LeftoverChildren`（execution_unknown 语义）。
+- **取消**（`CancelledError`，即 REV-13 §7.3 的"撤销资格后停执行"）：同样 `TERM→KILL` 进程组，
+  并**确认**组内已无成员才让取消传播；停不确认 ⇒ `ExecutionUnknown`（不冒充"已停"、禁止自动重发）。
 """
 from __future__ import annotations
 
@@ -19,6 +22,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from . import dsh_protocol as DPR
+from .base import ExecutionUnknown
 
 
 class AttemptError(RuntimeError):
@@ -65,9 +69,17 @@ class AttemptSpec:
     #: 或宿主 home（被 tmpfs 遮蔽）之下 ⇒ 不显式 bind 时 dsh 读不到自己的 patch，插件只会
     #: "did not activate"（实测：`failed to read overlay … ENOENT`）。空元组 = 旧行为。
     asset_dirs: tuple[Path, ...] = ()
-    #: 包裹内额外**可写**的 attempt 私有目录（自检侧信道等）。只允许 attempt 目录内的私有面；
-    #: 宿主 home 永不可写。空元组 = 旧行为。
+    #: 包裹内额外**只读**可见的**授权材料**目录（Host 按白名单拷入的 `input/`）。
+    #: 与 `asset_dirs` 分开是语义边界：资产是"让 dsh 能起来"，材料是"模型被授权读什么"；
+    #: 两者都是 `--ro-bind`（模型不可写），但混成一个列表会让"材料面"在审计里消失。
+    material_dirs: tuple[Path, ...] = ()
+    #: 包裹内额外**可写**的 attempt 私有目录（**Host 侧信道**：自检报告等）。只允许 attempt
+    #: 目录内的私有面；宿主 home 永不可写。空元组 = 旧行为。
     state_dirs: tuple[Path, ...] = ()
+    #: 包裹内额外**可写**的 attempt 私有目录（**模型可写的业务产物落点**：`candidate/`）。
+    #: 为什么与 `state_dirs` 分开：两者 owner 不同（Host 侧信道 vs 模型写候选），审计/证据要能
+    #: 分开看；绑定语义相同（都是 `--bind`，且**只挂这一层**，绝不放宽到 attempt root / run_dir）。
+    write_dirs: tuple[Path, ...] = ()
 
 
 def build_env(spec: AttemptSpec) -> dict[str, str]:
@@ -108,8 +120,8 @@ def build_wrap_argv(spec: AttemptSpec, inner: list[str]) -> list[str]:
             "--bind", str(spec.cwd), str(spec.cwd),
             "--bind", str(spec.home), str(spec.home)]
     seen = {Path(spec.cwd), Path(spec.home)}
-    for directory, flag in ([(d, "--ro-bind") for d in spec.asset_dirs]
-                            + [(d, "--bind") for d in spec.state_dirs]):
+    for directory, flag in ([(d, "--ro-bind") for d in (*spec.asset_dirs, *spec.material_dirs)]
+                            + [(d, "--bind") for d in (*spec.state_dirs, *spec.write_dirs)]):
         path = Path(directory)
         if path in seen:
             continue
@@ -201,6 +213,18 @@ async def run_attempt(spec: AttemptSpec, *, on_event=None,
         timed_out = True
         await _stop_group(proc, spec.stop_grace_s)
         await asyncio.wait({out_task, err_task, wait_task}, timeout=10.0)
+    except asyncio.CancelledError:
+        # §7.3 / DS-05：撤销资格后要**真的停**在途执行。取消协程本身不会杀子进程，
+        # 不停就是孤儿（还可能继续写 attempt 目录、继续花 token）。
+        await _stop_group(proc, spec.stop_grace_s)
+        await asyncio.wait({out_task, err_task, wait_task}, timeout=10.0)
+        leftovers = _group_members(proc.pid)
+        if leftovers:
+            # 停不确认：不许把 CancelledError 当"已停"往外送（那会让控制层记 applied）。
+            raise ExecutionUnknown(
+                "attempt %s 取消后仍有同组进程存活：%s（停止无法确认 ⇒ execution_unknown，"
+                "禁止自动重发）" % (spec.attempt_key, leftovers[:5])) from None
+        raise
 
     def _value(task: "asyncio.Task[bytes]", default: bytes = b"") -> bytes:
         return task.result() if task.done() and not task.cancelled() and task.exception() is None \

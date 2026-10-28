@@ -371,7 +371,9 @@ def attest_wrap(spec: DP.AttemptSpec, *, probe_file: Path | str | None = None,
             asset_paths=(), returncode=None,
             problems=("探针文件不存在：%s（用例必须先造出来）" % probe,))
 
-    asset_paths = tuple(str(p) for p in spec.patches) + tuple(str(d) for d in spec.asset_dirs)
+    # 可见性探针覆盖：patch、资产目录、**授权材料目录**（模型读不到材料 = 任务跑空，也要自证）
+    asset_paths = (tuple(str(p) for p in spec.patches)
+                   + tuple(str(d) for d in (*spec.asset_dirs, *spec.material_dirs)))
     env = DP.build_env(spec)
     # 两次探针、同一套包裹参数：① 路径可见性（需要 shell 的 test）② env 白名单（不经 shell，
     # 否则 shell 自己会加 PWD/SHLVL/_，就分不清"父进程继承"和"shell 自带"）

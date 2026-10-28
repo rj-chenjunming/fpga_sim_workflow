@@ -1,0 +1,81 @@
+{
+ "plugin": "s2-selfcheck",
+ "applied": true,
+ "phase": "deferred",
+ "pid": 2,
+ "toolNames": [
+  "job_output",
+  "job_list",
+  "job_kill",
+  "web_search",
+  "web_fetch",
+  "submit_result",
+  "todo_write",
+  "exit_plan_mode",
+  "get_goal",
+  "create_goal",
+  "update_goal",
+  "working_directory",
+  "read",
+  "write",
+  "edit",
+  "glob",
+  "grep",
+  "skill",
+  "bash",
+  "read_image",
+  "send_message",
+  "interrupt_agent",
+  "list_agents",
+  "subagent",
+  "subagent_fork",
+  "workflow"
+ ],
+ "toolError": null,
+ "sandboxDefaultMode": "workspace-write",
+ "sandboxModeError": null,
+ "presetEcho": {
+  "availability": "composition",
+  "scope": "composition",
+  "sessionScoped": false,
+  "preset": "workspace-write",
+  "api": [
+   "catalog()",
+   "defaultPreset",
+   "resolve(workspace-write)"
+  ],
+  "defaultPreset": "workspace-write",
+  "catalog": {
+   "options": [
+    "danger-full-access",
+    "read-only",
+    "workspace-write"
+   ],
+   "defaultOptions": [
+    "danger-full-access",
+    "read-only",
+    "workspace-write"
+   ],
+   "defaultPreset": "workspace-write"
+  },
+  "resolved": {
+   "preset": "workspace-write",
+   "sandbox": "workspace-write",
+   "approval": "ask"
+  },
+  "reason": null,
+  "resolveError": null,
+  "note": "apply 期无 session 对象：session 级 preset 未回显（计划 §6-1）；此处回显 composition 默认值"
+ },
+ "home": "/home/work/chenjunming/change-impact-loop/loop/.logs/s5-c2/ws/runs/RUN-20261029-C2-DS04/agent_workspaces/N3/attempt-000001/dsh-home",
+ "patches": [
+  "/home/work/chenjunming/change-impact-loop/loop/.logs/s5-c2/ws/runs/RUN-20261029-C2-DS04/agent_workspaces/N3/attempt-000001/patches/00-pins.yml",
+  "/home/work/chenjunming/change-impact-loop/loop/.logs/s5-c2/ws/runs/RUN-20261029-C2-DS04/agent_workspaces/N3/attempt-000001/patches/01-provider.yml",
+  "/home/work/chenjunming/change-impact-loop/loop/.logs/s5-c2/ws/runs/RUN-20261029-C2-DS04/agent_workspaces/N3/attempt-000001/patches/10-plugin-s2-submit-result.yml",
+  "/home/work/chenjunming/change-impact-loop/loop/.logs/s5-c2/ws/runs/RUN-20261029-C2-DS04/agent_workspaces/N3/attempt-000001/patches/10-plugin-s2-selfcheck.yml"
+ ],
+ "node": "v24.21.0",
+ "nonce": "eb41984aceec4fcbbb542b62549763ce",
+ "attemptKey": "RUN-20261029-C2-DS04/N3/1",
+ "writtenAt": "2026-10-28T16:33:58.962Z"
+}

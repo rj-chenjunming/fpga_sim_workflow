@@ -4,6 +4,9 @@
 
 1. 旧 `/control`（`Session`/`command`/`execute`）：会话内 steer/pause/resume/terminate，
    事件写 `agent_controls/<node>/session-*/`，语义与指纹保持（IL-04，不许改）；
+   旧会话还承担 §7.3 的"撤销资格 → **停执行** → 确认后 applied"顺序：`cancel_child` 返回
+   `stopped`/`unknown`，后者落 `execution_unknown` 且禁止自动重发（DS-05）。
+
 2. run 作用域指令生命周期（REV-13 §7，`submit`/`instructions_view`/`effective`/`next_attempt`）：
    事件写 `agent_controls/run/instruction-<seq>.json`（只增不改、复用 `AM.seal_record`），
    支持 create/revoke/supersede、目录 revision CAS、request_id 幂等与单写者锁。
@@ -192,9 +195,18 @@ class Session:
                 'available_actions': [] if self.pending else ACTIONS.get(self.state, [])}
 
     async def cancel_child(self):
+        """撤销资格后**主动停**在途执行；返回 `'stopped'`（可确认）或 `'unknown'`（停不确认）。
+
+        为什么返回状态而不是只抛异常：调用方要区分两件事实 ——
+        ① 已确认停止 ⇒ 才允许记 `applied`、才允许发替代尝试；
+        ② 停止无法确认 ⇒ `execution_unknown`、节点失败、**禁止自动重发**（REV-13 §7.3 / DS-05）。
+        `ExecutionUnknown` 由执行层抛出（如 dsh 进程组停不下来）；这里只做**判定**，不另立停止判据。
+        """
+        from host.agent_backends.base import ExecutionUnknown
+
         task = self.task
         if task is None:
-            return
+            return 'stopped'
         if not task.done():
             task.cancel()
             done, _ = await asyncio.wait({task}, timeout=CANCEL_TIMEOUT)
@@ -202,9 +214,11 @@ class Session:
                 # 旧调用即使返回也只会写请求记录；调用消费者已被本边界切断。
                 task.add_done_callback(lambda t: t.exception() if not t.cancelled() else None)
                 raise RuntimeError('模型请求取消超时；禁止重叠重发，节点失败')
+        self.task = None
+        exception = None if task.cancelled() else task.exception()
         with contextlib.suppress(asyncio.CancelledError, Exception):
             task.result()
-        self.task = None
+        return 'unknown' if isinstance(exception, ExecutionUnknown) else 'stopped'
 
 
 def command(root, node, data):
@@ -247,6 +261,9 @@ def command(root, node, data):
 
 
 async def execute(ctx, node, invoke):
+    # 停止判定的类型来自执行层（唯一发布点 `agent_backends.base`）：本层只**判定**，不复制判据。
+    from host.agent_backends.base import ExecutionUnknown
+
     key = _key(ctx.run_dir, node)
     if key in _ACTIVE:
         raise RuntimeError('同一节点已有活跃模型请求')
@@ -268,8 +285,15 @@ async def execute(ctx, node, invoke):
                     with contextlib.suppress(asyncio.CancelledError):
                         await notification
                 if session.pending:
+                    # §7.3 顺序不可换：**先**持久化撤销资格（discarded，旧结果不再可能进消费者），
+                    # **再**停执行，**确认后**才 applied（见下面第二个 while）。
                     session.record('discarded', attempt=session.attempt)
-                    await session.cancel_child()
+                    stopped = await session.cancel_child()
+                    if stopped != 'stopped':
+                        terminal = 'execution_unknown'
+                        raise ExecutionUnknown(
+                            '撤销资格后无法确认在途执行已停止（execution_unknown）：'
+                            '节点失败，禁止自动重发，也不换后端掩盖')
                     break
                 if session.task.done():
                     result = session.task.result()
@@ -294,7 +318,9 @@ async def execute(ctx, node, invoke):
                 await session.signal.wait()
     finally:
         try:
-            await session.cancel_child()
+            stopped = await session.cancel_child()
+            if stopped != 'stopped':
+                terminal = 'execution_unknown'
         finally:
             _ACTIVE.pop(key, None)
             session.transition(terminal)

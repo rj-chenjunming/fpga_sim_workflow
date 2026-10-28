@@ -1,0 +1,18 @@
+{
+ "payload": {
+  "standin": false,
+  "provider": "dsh/0.2.1-rc.2",
+  "model_call_failed": true,
+  "error": "attempt RUN-20261029-C2-DS04/N3/1 超时 120.0s 后被停止（TERM→KILL）",
+  "contract": {
+   "contract_version": "legacy",
+   "identity": "unknown",
+   "context_manifest_ref": "unknown",
+   "execution_grant_ref": "unknown",
+   "runtime_fingerprint": "unknown"
+  }
+ },
+ "error": "attempt RUN-20261029-C2-DS04/N3/1 超时 120.0s 后被停止（TERM→KILL）",
+ "failed": true,
+ "wall_s": 121.976
+}

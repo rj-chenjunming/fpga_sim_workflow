@@ -6,15 +6,26 @@
 # 留空即**回退到宿主 `~/.dsh/settings.yaml` 已声明的 provider** ——
 # 在仓库里再抄一份内部端点，早晚会和宿主配置漂移。
 loop:
-  # D1 后端边界已接线；原生 DSH 尚未通过准入，选择 dsh 会显式失败。
+  # 2026-10-28 人工裁决（S5）：**六个模型节点全部显式走 dsh**，Agently 保留可一键回退
+  # （`default_backend` 仍 `agently`；未列入 `node_backends` 的节点仍走默认）。
+  # 准入 ≠ 默认：只有 `enabled=true` + `DshConfig.verify(wrap_required=True)` + 启动自检 +
+  # 版本/指纹全通过才返回 `DshBackend`；任一不满足仍 `BackendUnavailable`，**不静默回退 Agently**。
+  # mode 分层（S5 C1）：`LOOP_LLM_MODE=standin` ⇒ 确定性替身；`drill` ⇒ 替身；
+  # 只有 `real` + live 才走 dsh 准入链；`run_mode` 未声明（旧调用）⇒ 严格失败。
   agent_runtime:
     default_backend: agently
-    node_backends: {}
-    # S1（SPEC-REV-14）：执行器骨架已接线但**默认禁用**；`enabled=false` 时 select() 仍显式
-    # BackendUnavailable（REV-14 §1：不因实现存在而放行）。启用须同时指纹匹配。
+    node_backends:
+      N3: dsh
+      N6: dsh
+      N8: dsh
+      N10: dsh
+      N11: dsh
+      N12: dsh
+    # S1（SPEC-REV-14）：执行器骨架；`enabled=false` 时 select() 仍显式 BackendUnavailable
+    # （REV-14 §1：不因实现存在而放行）。启用须同时指纹匹配 + 启动自检通过。
     # 注意：patch 文件必须放在 attempt 目录内（包裹会遮蔽宿主 home，仓内路径不可见）。
     dsh:
-      enabled: false
+      enabled: true
       version: "0.2.1-rc.2"
       node: "/home/soft/DSH/node/bin/node"
       bin: "/home/soft/DSH/versions/0.2.1-rc.2/node_modules/@deepseek-ai/dsh/lib/bin.js"

@@ -716,8 +716,12 @@ def gate_verify_anchor(run_id):
 #: 材料集**排除项**：都是"签署之后会合法变化"的记录/缓存，不是材料。
 #: - gates.* 是本记录自身（由 anchor 保护）；agent_* 是模型/控制审计（只增不改）；
 #:   decisions/ 是逐条处置落账（签署**之后**由 Host 写）；view.json 是界面投影缓存。
+#: - `agent_workspaces`（2026-10-28，S5 C2a 的单独变更 + 留证）：每 attempt 的隔离工作区
+#:   （`work` 副本 / `dsh-home` / `candidate` / `input` 材料副本）属**执行期暂存**，像会话日志
+#:   一样会合法变化；业务材料以导入后的 `sandbox/` 为准（它在材料集内）。不排除会让签名后
+#:   正常读写导致 `stateHash` 恒失配（假 red），并让 C2 真机取证污染闸门材料集。
 GATE_MATERIAL_EXCLUDE_FILES = ("gates.json", "gates.sha256", "view.json")
-GATE_MATERIAL_EXCLUDE_DIRS = ("agent_calls", "agent_controls", "decisions")
+GATE_MATERIAL_EXCLUDE_DIRS = ("agent_calls", "agent_controls", "decisions", "agent_workspaces")
 
 #: stateHash 的 schema/algo 标识（**单一定义**：写与校验共用，禁止字面量漂移）。
 STATE_HASH_SCHEMA = "kb/gate-state-hash/1"

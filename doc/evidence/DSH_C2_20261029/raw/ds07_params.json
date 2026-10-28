@@ -1,0 +1,24 @@
+{
+ "attempt": "RUN-20261029-C2-DS07/N3/1",
+ "compaction_patch_sha256": "ea82142cf4ed82bedf038cb4e8d63493",
+ "model_options": {
+  "contextWindow": 20000,
+  "maxTokens": 8000
+ },
+ "patch_order": [
+  "00-pins.yml",
+  "01-provider.yml",
+  "02-extra-patch-compaction-p7.yml",
+  "10-plugin-s2-submit-result.yml",
+  "10-plugin-s2-selfcheck.yml"
+ ],
+ "probe": "ds07",
+ "profile": "headless",
+ "run_id": "RUN-20261029-C2-DS07",
+ "task_sha256": "2b69eb25bfc6ed7c2e49742cc30fb4840c137af1b87bc3b1bbe5116b8d981015",
+ "task_tokens_est": "~13k（1000 行填充）",
+ "timeout_s": 120.0,
+ "trigger_tokens_est": 11000,
+ "wrap": true,
+ "取证": "dsh_sdk.read_session_log（唯一实现）；session_log_ref 相对 run_dir"
+}

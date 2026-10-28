@@ -1,0 +1,80 @@
+{
+ "probe": "n6-final",
+ "node": "N6",
+ "started_at": "2026-10-29T01:09:42.538666",
+ "ended_at": "2026-10-29T01:14:44.815424",
+ "wall_s": 302.276,
+ "exit": "failed",
+ "error": "attempt RUN-20261029-C2-N6/N6/1 超时 300.0s 后被停止（TERM→KILL）",
+ "validation": {
+  "ok": false,
+  "problems": [
+   "attempt RUN-20261029-C2-N6/N6/1 超时 300.0s 后被停止（TERM→KILL）"
+  ]
+ },
+ "usage": "unknown",
+ "session_id": "unknown",
+ "session_log_ref": "agent_workspaces/N6/attempt-000001/dsh-home/sessions/--home-work-chenjunming-change-impact-loop-loop-.logs-s5-c2-ws-n6-final-runs-RUN-20261029-C2-N6-agent_workspaces-N6-attempt-000001-work--/session-d62a2111-4bd9-4e5e-a50a-69393d214579/session.v4.jsonl.zstd",
+ "effective_timeout_s": 300.0,
+ "targets_used": 1,
+ "target_case": "tc_bmc_i2c_03",
+ "input_sha256": "60efc7a5a8b6e20e4d874328f0109a8dd91aa8d6b1b9c716a966f0d06bffd348",
+ "attempt_workspace_materials": [
+  {
+   "md5": null,
+   "name": "n1_manifest_new.json",
+   "present": false,
+   "size": null
+  },
+  {
+   "md5": "a24c84986b0b06f7853cb5ca1cb5e089",
+   "name": "n2_diff.json",
+   "present": true,
+   "size": 5520
+  },
+  {
+   "md5": null,
+   "name": "n2_diff.md",
+   "present": false,
+   "size": null
+  },
+  {
+   "md5": null,
+   "name": "n3_digest.md",
+   "present": false,
+   "size": null
+  },
+  {
+   "md5": "dd1306a4e8584e7a7f0f43cb1a83e87e",
+   "name": "n5_impact.json",
+   "present": true,
+   "size": 345638
+  },
+  {
+   "md5": null,
+   "name": "n5_impact.md",
+   "present": false,
+   "size": null
+  },
+  {
+   "md5": null,
+   "name": "doc_entries.jsonl",
+   "present": false,
+   "size": null
+  },
+  {
+   "md5": "5f929418d0302bd1160bd3680e31c6a1",
+   "name": "case_states.json",
+   "present": true,
+   "size": 5193
+  },
+  {
+   "md5": "ab8132db1bf51c0f0782451d5047c777",
+   "name": "TESTLIB/tc_bmc_i2c_03.sv",
+   "present": true,
+   "size": 15470,
+   "source": "/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/TESTLIB/tc_bmc_i2c_03.sv"
+  }
+ ],
+ "note": "1 target 最小合法输入；非业务验收；最后一次"
+}

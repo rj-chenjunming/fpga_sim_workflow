@@ -1,0 +1,71 @@
+{
+ "run_id": "RUN-20261029-C2-N6",
+ "attempt_key": "RUN-20261029-C2-N6/N6/1",
+ "input_subdir": "input/",
+ "listing": {
+  "TESTLIB/tc_bmc_i2c_03.sv": 15470,
+  "n2_diff.json": 13
+ },
+ "materials": [
+  {
+   "name": "n1_manifest_new.json",
+   "present": false,
+   "md5": null,
+   "size": null
+  },
+  {
+   "name": "n2_diff.json",
+   "present": true,
+   "md5": "ea517d83023d49df2b2390a80bbabd02",
+   "size": 13
+  },
+  {
+   "name": "n2_diff.md",
+   "present": false,
+   "md5": null,
+   "size": null
+  },
+  {
+   "name": "n3_digest.md",
+   "present": false,
+   "md5": null,
+   "size": null
+  },
+  {
+   "name": "n5_impact.json",
+   "present": false,
+   "md5": null,
+   "size": null
+  },
+  {
+   "name": "n5_impact.md",
+   "present": false,
+   "md5": null,
+   "size": null
+  },
+  {
+   "name": "doc_entries.jsonl",
+   "present": false,
+   "md5": null,
+   "size": null
+  },
+  {
+   "name": "case_states.json",
+   "present": false,
+   "md5": null,
+   "size": null
+  },
+  {
+   "name": "TESTLIB/tc_bmc_i2c_03.sv",
+   "source": "/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/TESTLIB/tc_bmc_i2c_03.sv",
+   "present": true,
+   "md5": "ab8132db1bf51c0f0782451d5047c777",
+   "size": 15470
+  }
+ ],
+ "material_dirs": [
+  "/home/work/chenjunming/change-impact-loop/loop/.logs/s5-c2/ws-n6-final/runs/RUN-20261029-C2-N6/agent_workspaces/N6/attempt-000001/input"
+ ],
+ "patch_order": [],
+ "note": "离线物化（无模型调用）；input/ 只读 bind 面 = material_dirs"
+}

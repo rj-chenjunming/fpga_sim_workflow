@@ -1,0 +1,18 @@
+{
+ "case": "tc_bmc_i2c_03",
+ "fixture": "/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/kb/runs/RUN-20261015-120626",
+ "input_sha256": {
+  "N11": "2b67a1f9f61a2b96b5a33ddb2ebf01e2c6daf877964043ea9c06a17778ef9f05",
+  "N6": "1d5701efc22adaaaffae732388cf27f93e93a7a5ffc2d2044e48fe411f3fe664",
+  "N8": "5981bcbb7d2fcbd17cdd2c109be9cd7b78be805b680bdc458a71563ca8b31f19"
+ },
+ "n6_targets": 5,
+ "prompt_keys": {
+  "N11": "n11_review",
+  "N6": "n6_author",
+  "N8": "n8_check"
+ },
+ "run_id": "RUN-20261029-C2-CATCHUP",
+ "wall_cap_s": 120.0,
+ "口径": "最小合法输入/真夹具派生（N6 targets 由 build_n6_targets 从夹具生成）；非业务验收"
+}

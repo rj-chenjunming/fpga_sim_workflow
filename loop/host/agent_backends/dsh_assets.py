@@ -10,6 +10,7 @@
 """
 from __future__ import annotations
 
+import hashlib
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
@@ -28,7 +29,64 @@ ATTEMPT_KEY_ENV = "DSH_ATTEMPT_KEY"
 #: 宿主侧凭据/设置件：**不得**出现在 attempt home（DS-09；B3 禁止复制宿主 settings）
 FORBIDDEN_HOME_ENTRIES = ("settings.yaml", ".credentials.yaml", ".credentials")
 
-#: 权限档钉死值（B3：`mode` + `defaultPreset` 双钉；单钉会被用户层覆盖，P3 实测）
+#: attempt 隔离工作区在 run 内的固定位置（REV-13 §5.4 / S5-C2a）。
+#: **不放进 `agent_calls/**`**：那是封存记录目录（`verify_attempt` 只认 request/result 两种文件名，
+#: 多出目录会让"记录目录"混进执行现场）。
+WORKSPACE_DIRNAME = "agent_workspaces"
+
+#: attempt 内**生成式** provider overlay 的文件名（Host 生成，不落静态仓文件：避免"仓里再抄一份
+#: 内部端点"与漂移；密钥值**永不**进该文件，只写环境变量名）。
+PROVIDER_PATCH_FILE = "01-provider.yml"
+#: dsh 的 provider 插件 id / 默认模型插件 id（与锁定版本 `--dump-config` 同形；换版本要重核）
+PROVIDER_PLUGIN_ID = "llm-pi-ai"
+DEFAULT_MODEL_PLUGIN_ID = "agent-default-model"
+#: 生成 overlay 里使用的 provider 名（只是标签；不承载凭据，凭据靠 `apiKeyEnv` 的环境变量名）
+PROVIDER_NAME = "loop"
+#: `model_provider` 的 api family → dsh provider 的 `api` 取值。
+#: **`openai-responses` 已实测**（P0/P2/P7）；`chat*` 映射为未验证（用前需真机确认，别默认它能跑）。
+FAMILY_TO_DSH_API = {"openai-responses": "openai-responses", "responses": "openai-responses",
+                     "chat": "chat", "chat/completions": "chat", "completions": "chat"}
+
+#: 允许进入 attempt `input/` 的**只读材料白名单**（Host 显式常量；不许整目录拷贝）。
+#: 新增一项是评审动作（它决定模型能读到哪份 run 产物）：不许 `kb/**`、`ENV_ROOT`、绝对路径、
+#: 符号链接或"目录里最新那个"。缺失的材料不补、不猜（真需要补读走工具，见 S5 的冷材料缺口）。
+INPUT_MATERIALS = ("n1_manifest_new.json", "n2_diff.json", "n2_diff.md",
+                   "n3_digest.md", "n5_impact.json", "n5_impact.md",
+                   "doc_entries.jsonl", "case_states.json")
+
+
+#: attempt `input/` 里"外部只读源件"的子目录（N6 目标用例源件等）：与 run 产物白名单分开，
+#: 便于审计"哪些是 Host 从环境只读拷进来的"（`input/TESTLIB/<case>.sv`）。
+SOURCE_SUBDIR = "TESTLIB"
+
+
+def check_layout(layout: AttemptLayout) -> None:
+    """布局不变式：候选落点**必须在工作区内**（dsh `workspace-write` 边界 = cwd）。
+
+    越界/符号链接 ⇒ `AssetError`（显式失败，不回退）。这条是不变式而不是"建议"：
+    S6 第 3 次真机证明，候选在兄弟目录时 dsh 应用层会要求 `danger-full-access` 审批，
+    headless 无审批人 ⇒ 候选写不出去、整轮超时。
+    """
+    work = Path(layout.work)
+    candidate = Path(layout.candidate)
+    if candidate.is_symlink() or work.is_symlink():
+        raise AssetError("attempt 布局含符号链接：work=%s candidate=%s" % (work, candidate))
+    if not candidate.is_relative_to(work) or candidate == work:
+        raise AssetError("candidate 必须是工作区内的子目录（实际 %s，work=%s）"
+                         % (candidate, work))
+
+
+def workspace_root(run_dir: Path | str, node: str, sequence: int) -> Path:
+    """一次 attempt 的隔离工作区根：`<run>/agent_workspaces/<node>/attempt-00000N/`。
+
+    形状固定（`work`/`dsh-home`/`candidate`/`input` 由 `AttemptLayout` 给出）：
+    `candidate` 是本片之外（S6）唯一允许模型写业务产物的落点，本片不往里写任何东西。
+    """
+    return Path(run_dir) / WORKSPACE_DIRNAME / node / ("attempt-%06d" % int(sequence))
+
+#: **无 attempt 归属**的保守默认档（B3：`mode` + `defaultPreset` 双钉；单钉会被用户层覆盖，P3 实测）。
+#: 为什么仍留 read-only：它是"不知道该不该写"时的失败安全默认，也是既有用例钉住的可观察行为；
+#: **生产 attempt 用 `ATTEMPT_PINS`（workspace-write）**，不是本常量。
 DEFAULT_SANDBOX_MODE = "read-only"
 DEFAULT_PRESET = "read-only"
 
@@ -58,17 +116,25 @@ class AttemptLayout:
     plugin_dir: Path      # 插件源码副本
     patch_dir: Path       # 生成的 patch overlay
     selfcheck_dir: Path   # 侧信道（自检报告等）
+    #: 候选落点（attempt 内唯一允许模型写业务产物的目录；S6 导入只读它）。
+    #: **必须在工作区内**（`work/candidate`）：dsh 的应用层 `workspace-write` 边界 = 工作区（cwd），
+    #: 兄弟目录写要 `danger-full-access` 升级审批；headless 无审批人 ⇒ `outcome="unavailable"`
+    #: ⇒ 模型写候选被拒（S6 第 3 次真机决定性证据，2026-10-29）。只改 OS 绑定不够。
+    candidate: Path
+    input_dir: Path       # 只读材料（Host 按白名单拷入；包裹内以 `--ro-bind` 只读可见）
 
     @classmethod
     def under(cls, root: Path | str) -> "AttemptLayout":
         root = Path(root)
-        return cls(root=root, work=root / "work", home=root / "dsh-home",
+        work = root / "work"
+        return cls(root=root, work=work, home=root / "dsh-home",
                    plugin_dir=root / "plugin", patch_dir=root / "patches",
-                   selfcheck_dir=root / "selfcheck")
+                   selfcheck_dir=root / "selfcheck", candidate=work / "candidate",
+                   input_dir=root / "input")
 
     def prepare(self) -> None:
         for path in (self.root, self.work, self.home, self.plugin_dir,
-                     self.patch_dir, self.selfcheck_dir):
+                     self.patch_dir, self.selfcheck_dir, self.candidate, self.input_dir):
             path.mkdir(parents=True, exist_ok=True)
 
     def selfcheck_file(self) -> Path:
@@ -89,6 +155,101 @@ class Pins:
 
     sandbox_mode: str = DEFAULT_SANDBOX_MODE
     default_preset: str = DEFAULT_PRESET
+
+
+#: **生产 attempt 的钉死档位**（人工裁决 2026-10-28：写权只在每 attempt 隔离工作区内）。
+#: 与 `Pins()` 的 read-only 默认分开：改默认会放大暴露面、也会把既有可观察行为悄悄换掉；
+#: attempt 路径显式用本常量，并由启动自检把**实际回显**逐字比对回它（不符即拒，DS-09）。
+ATTEMPT_SANDBOX_MODE = "workspace-write"
+ATTEMPT_PRESET = "workspace-write"
+ATTEMPT_PINS = Pins(sandbox_mode=ATTEMPT_SANDBOX_MODE, default_preset=ATTEMPT_PRESET)
+
+
+def stage_sources(layout: AttemptLayout, sources: tuple[tuple[Path, str], ...], *,
+                  subdir: str = SOURCE_SUBDIR) -> tuple[dict[str, Any], ...]:
+    """把**显式声明的外部只读源件**拷进 attempt `input/<subdir>/`（N6 目标用例源件用）。
+
+    判据（显式失败，不降级）：
+    1. 只接受 `(root, 相对路径)` 对：**绝对路径 / `..` / 空** 一律拒；
+    2. 解析后必须在 `root` 之内（不吃符号链接逃逸，源件本身是 symlink 也拒）；
+    3. **不整目录**：调用方逐个声明（N6 只声明 `targets[].file`）；
+    4. 每件算 md5+size，随 attempt 记录封存（便于 DS-04/DS-06 复核"模型读到的是什么版本"）。
+    """
+    sub = str(subdir or "").strip()
+    if not sub or sub.startswith("/") or ".." in Path(sub).parts:
+        raise AssetError("input 源件子目录非法：%r" % (subdir,))
+    target_dir = layout.input_dir / sub
+    target_dir.mkdir(parents=True, exist_ok=True)
+    staged: list[dict[str, Any]] = []
+    for root, relative in sources:
+        rel = str(relative or "").strip()
+        if not rel or rel.startswith("/") or ".." in Path(rel).parts:
+            raise AssetError("input 源件路径非法（只接受 root 内相对路径）：%r" % (relative,))
+        base = Path(root)
+        if not base.is_dir():
+            raise AssetError("input 源件根不存在或不是目录：%s" % base)
+        source = base / rel
+        if source.is_symlink():
+            raise AssetError("input 源件是符号链接（拒绝逃逸）：%s" % source)
+        if not source.is_file():
+            raise AssetError("input 源件不存在：%s" % source)
+        try:
+            resolved = source.resolve()
+            if resolved != (base / rel).resolve() or base.resolve() not in resolved.parents:
+                raise AssetError("input 源件越界：%s" % source)
+            payload = source.read_bytes()
+        except OSError as exc:
+            raise AssetError("input 源件不可读（%s）：%s" % (source, exc)) from None
+        destination = target_dir / Path(rel).name
+        destination.write_bytes(payload)
+        staged.append({"name": "%s/%s" % (sub, Path(rel).name),
+                       "source": str(source), "present": True,
+                       "md5": hashlib.md5(payload).hexdigest(), "size": len(payload)})
+    return tuple(staged)
+
+
+@dataclass(frozen=True)
+class ProviderOverlay:
+    """一次 attempt 的 **provider overlay**（Host 生成；内容可审计，**不含密钥值**）。"""
+
+    text: str
+    filename: str = PROVIDER_PATCH_FILE
+
+
+def provider_overlay(*, family: str | None, base_url: str | None, model: str | None,
+                     api_key_env: str | None,
+                     model_options: dict[str, object] | None = None) -> ProviderOverlay:
+    """由 `host.model_provider` 已解析的配置**生成** dsh 的 provider overlay。
+
+    为什么生成而不是静态文件：SETTINGS 纪律明确反对"仓里再抄一份内部端点"（迟早与宿主配置
+    漂移）；生成式还能保证只写**环境变量名**、不写密钥值。
+    输入只有四样：api family / baseURL / model / apiKeyEnv 名；任一缺失或不认识的 family
+    ⇒ `AssetError`（显式失败，不猜、不生成半个 overlay）。
+    """
+    api = FAMILY_TO_DSH_API.get(str(family or "").strip().lower())
+    if api is None:
+        raise AssetError("生成 provider overlay 失败：不认识的 api family %r" % (family,))
+    if not base_url or not str(base_url).strip():
+        raise AssetError("生成 provider overlay 失败：缺 baseURL（model_provider 未解析出端点）")
+    if not model or not str(model).strip():
+        raise AssetError("生成 provider overlay 失败：缺 model 名")
+    if not api_key_env or not str(api_key_env).strip():
+        raise AssetError("生成 provider overlay 失败：缺 apiKeyEnv 名")
+    entry = ["- id: %s" % PROVIDER_PLUGIN_ID,
+             '  name: "@deepseek-ai/dsh-%s"' % PROVIDER_PLUGIN_ID,
+             "  config:", "    providers:", "      %s:" % PROVIDER_NAME,
+             "        displayName: %s" % PROVIDER_NAME,
+             "        apiKeyEnv: %s" % api_key_env,
+             "        api: %s" % api,
+             "        baseURL: %s" % base_url,
+             "        models:", "          - id: %s" % model,
+             "            name: %s" % model]
+    for key in sorted(model_options or {}):
+        entry.append("            %s: %s" % (key, (model_options or {})[key]))
+    entry += ["- id: %s" % DEFAULT_MODEL_PLUGIN_ID,
+              '  name: "@deepseek-ai/dsh-%s"' % DEFAULT_MODEL_PLUGIN_ID,
+              "  config:", "    provider: %s" % PROVIDER_NAME, "    model: %s" % model]
+    return ProviderOverlay(text="\n".join(entry) + "\n")
 
 
 @dataclass(frozen=True)
@@ -164,14 +325,26 @@ def _pins_patch(pins: Pins) -> str:
     return "\n".join(lines) + "\n"
 
 
+def pins_patch(pins: Pins) -> str:
+    """钉死 patch 的**公开**文本（唯一生成实现仍是 `_pins_patch`）。
+
+    为什么要有公开入口：准入自检要在**不起进程**的前提下判定"双钉确实是期望值"，
+    它读这一份文本而不是自己拼第二套 YAML（红线 8）。
+    """
+    return _pins_patch(pins)
+
+
 def materialize(layout: AttemptLayout, *,
                 plugins: tuple[Plugin, ...] = (),
                 pins: Pins | None = None,
+                provider: ProviderOverlay | None = None,
                 extra_patches: tuple[Path, ...] = (),
                 node_modules: Path | None = None) -> Assets:
     """把 asset 落进 attempt 目录，返回 patch 的应用顺序。
 
-    patch 顺序固定：**钉死 → 外部 overlay（如 provider）→ 插件 insert**。
+    patch 顺序固定：**钉死 → 生成的 provider overlay → 外部 overlay → 插件 insert**。
+    （provider overlay 必须早于外部 overlay：后者可以覆盖 provider 的模型参数，例如 P7 的
+    小窗口阈值；插件 insert 最后，自检的 deferred 快照才看得到 `submit_result`。）
     插件 insert 的顺序即 `plugins` 的顺序（自检插件必须排在提交插件之后，才能看到它的工具）。
     `node_modules` 给出时，在插件目录里放一条软链，让插件的 `@deepseek-ai/dsh-tools`
     import 能解析（见 `node_modules_for`）。
@@ -192,7 +365,12 @@ def materialize(layout: AttemptLayout, *,
         path.write_text(_pins_patch(pins), encoding="utf-8")
         patch_files.append(path)
 
-    for index, extra in enumerate(extra_patches, start=1):
+    if provider is not None:
+        path = layout.patch_dir / provider.filename
+        path.write_text(provider.text, encoding="utf-8")
+        patch_files.append(path)
+
+    for index, extra in enumerate(extra_patches, start=2 if provider is not None else 1):
         source = Path(extra)
         if not source.is_file():
             raise AssetError("外部 patch 不存在：%s" % source)

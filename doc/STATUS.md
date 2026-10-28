@@ -4271,7 +4271,7 @@ kb 自测要求 `rc=0` + 有汇总行 + `FAIL=0` + **通过条数等于验收数
 | **E1** | I4 在**真实数据根**生效 | 真实根仍 ro（§98.1 实测：只读挂载 + 写探测 `Read-only file system` + 无 sudo）；但"拿到写权后要跑的命令"已在可写根上用**当前权威快照**跑通（§98.3），且修掉了挡住它的指纹硬编码缺陷（§98.2） |
 | **E2** | S0-b 接入（ports/smoke、`ready_for_execution` 可为 true） | 环境侧；D4 因此等 E2 |
 | **E3** | C8 `passed` 形态夹具 | 环境侧（真实通过轮 ≈21.56 h + 写权） |
-| **E4** | 推送 | 本机出网被代理阻断；本轮结束领先 `origin/main` **40** 个提交（`git rev-list --count origin/main..HEAD` 输出复制） |
+| **E4** | 推送 | ✅ **已关闭（2026-10-28）**：本机代理恢复后推送成功，`abdb16f..4c8281a  main -> main`（`git push` 输出复制）；远端 `refs/heads/main` 与本地 HEAD 同为 `4c8281a`（`git ls-remote` 核对），详见 §105 |
 | **D1–D4** | 四项裁决 | ✅ 全部已裁（A/A/A/A），处置见 §96 |
 | **R 类 8 条** | 登记不改 | 不变（见 kickoff §2 R 类） |
 
@@ -4720,3 +4720,41 @@ JSON 示例 **5** 个可解析，代码围栏配对；git diff --check 返回 **
 既有路径缺件 **96** 项在本机空环境/工作区下保持不变，不能据此声称全仓文档门或内网门已全绿。
 运行代码、冻结 kb、已有证据/历史及 AGENTS.md 没有改动。原始检查结果保存在本聊天 outputs 的文档验证 JSON；
 本轮没有运行软件、模型、原生 DSH、浏览器或内网业务验收，不将“仅设计”伪装为通过。
+
+## 105 推送与远端整合（2026-10-28，E4 关闭）
+
+### 105.1 远端分叉的发现与处置
+
+| 项 | 值（命令输出复制） |
+|---|---|
+| 本地 HEAD（整合前） | `636782e docs(probe): … Q1–Q7 裁决` |
+| 远端 main（fetch 后） | `abdb16f docs: specify cloud DSH integration and agent memory lifecycle`（2026-10-26 20:46） |
+| 分叉计数 | `git rev-list --left-right --count HEAD...origin/main` ⇒ `46	1`（领先 46 / 落后 1） |
+| 冲突 | 仅 `doc/STATUS.md`：两边都占 `## 75`（远端=云端 DSH 规格；本地=侧栏可达性，被 README/plans/audit 多处引用） |
+| 处置 | 保留本地 §75；远端整节**整节重编号 `§75 → §104`** 追加到末尾（正文未改，仅标题 + 两行说明）；`doc/README.md` 引用同步改 `§104`；合并提交 `4c8281a` |
+| 文档检查 | 合并后相关文件相对链接 `BROKEN: none` |
+
+### 105.2 推送证据
+
+```text
+$ git push origin main
+To https://github.com/rj-chenjunming/fpga_sim_workflow.git
+   abdb16f..4c8281a  main -> main
+$ git ls-remote origin main
+4c8281a0d5ec6eb2db6abea2ee82ddd241620f0f	refs/heads/main
+$ git rev-parse HEAD
+4c8281a0d5ec6eb2db6abea2ee82ddd241620f0f
+```
+
+### 105.3 过程中钉清的环境事实
+
+- 本机代理当时**可用**：`https://github.com` ⇒ `200`，`git ls-remote`/`git fetch` 均成功（与旧 E4「出网被代理阻断」不同）。
+- 推送失败的真实原因不是网络，而是**凭据缺失**：HTTPS 无 `credential.helper`/`~/.git-credentials`（`fatal: could not read Username …`），SSH 无私钥（`Could not read from remote repository`）。
+- `$HOME` 只读（`~/.git-credentials` ⇒ `Read-only file system`、`/home/…/.gitconfig` 同样只读）⇒ 凭据只能放在**仓库 `.git/` 内**（不入版本库、`600`）；用完已删（见 §105.4）。
+- 远端 `abdb16f` 引入 [SPEC-REV-13](spec/SPEC-REV-13-20261026.md) 与 [云端 DSH 记忆设计](plans/2026-10-26-cloud-dsh-memory-design.md)：S0 的 SPEC-08 修订必须**折进 REV-13**，不另写第二份。
+
+### 105.4 凭据处置（照实登记）
+
+- 临时凭据文件 `~/.git-credentials` 因 `$HOME` 只读**未能创建**（`Read-only file system`）；改用 `.git/dsh-push-token`（`600`，未入库）+ 仓库级 `credential.helper`。
+- 推送完成后已删除该文件并移除仓库级 helper 配置（见本轮收尾命令）。
+- **建议**：该 PAT 曾在会话文本中出现过，应按 GitHub 流程**作废并重建**；重建后如需再推，按 §105.3 的 `.git/` 方案临时投放即可。

@@ -1,0 +1,444 @@
+Command Line: /home/soft/UNIVISTA/20261016/UVS/bin/uvlog2 -top tbtop,glbl -debug f -ddb -debug -logfile /home/work/chenjunming/change-impact-loop/workspaces/s0-ws-20261023/runs/RUN-20261024-002609/evidence/20261024-144201_tc_rtc_10_1_c_uvs.log -j32 -o /home/work/chenjunming/change-impact-loop/workspaces/s0-work-20261023/SIMLIB_RUN/wave/tc_rtc_10_1/UVS_tc_rtc_10_1 -deposit_initval randomxz=1 -uvm1.2 -sv -debug_cell -usdb -uvs_xlrm MacroConcatEarly -Xair yxxie.fix_fatal_empty_fmt -Xair yxxie.allow_compatible_copy -Xair xb.always_opt_with_pda_signal -Xair hhlin.fix_final_finish -Xopts sva_fix_AIR_12100 -Xopts sva_fix_AIR_12098 -Xair be.air12017_containerTy_castexpr -Xopts later_bind_param_opt=0 -timescale 1ns/1ns -fly_Nopts cgresolve_partial_assign:0 
+
+              UniVista Simulator Plus(UVS+)
+
+Version: UVS2026.06.P3 (Release, amd64)  Build Date: 2026-10-09
+Copyright (c) 2021-2026 Shanghai UniVista Industrial Software Group Co., Ltd.
+              ALL RIGHTS RESERVED WORLDWIDE
+
+This deliverable and its associated documentation contain trade secrets and commercial or
+financial information that are the property of Shanghai UniVista Industrial Software Group Co., Ltd.
+and are subject to the license granted in the relevant license agreement with prohibitions
+and restrictions.
+
+Warning-120002: Command option warning
+    Option -usdb -uvs_xlrm is not supported, ignore it.
+
+Warning-120002: Command option warning
+    Option -Xopts sva_fix_AIR_12100 is not supported, ignore it.
+
+Warning-120002: Command option warning
+    Option -Xopts sva_fix_AIR_12098 is not supported, ignore it.
+
+Option "-Xair xb.always_opt_with_pda_signal" is already default
+Option "-Xair be.air12017_containerTy_castexpr" is already default
+-Xair flag warning: ignored invalid -Xair flag: yxxie.fix_fatal_empty_fmt
+-Xair flag warning: ignored invalid -Xair flag: yxxie.allow_compatible_copy
+-Xair flag warning: ignored invalid -Xair flag: hhlin.fix_final_finish
+Compilation starts at: 2026-10-24 14:42:04
+Reading setup file 'uvs.setup'
+Warning-121719: Unconnected named input port
+    TB/tbtop.sv, 184
+                                      .cplda_spi_s_clk  (),//input   wire 
+                                       ^
+    Input port 'cplda_spi_s_clk' has no connection
+
+Warning-121719: Unconnected named input port
+    TB/tbtop.sv, 185
+                                      .cplda_spi_s_csn  (),//input   wire 
+                                       ^
+    Input port 'cplda_spi_s_csn' has no connection
+
+Warning-121720: Unconnected named output port
+    TB/tbtop.sv, 186
+                                      .cplda_spi_s_miso (),//output  wire 
+                                       ^
+    Output port 'cplda_spi_s_miso' has no connection
+
+Warning-121719: Unconnected named input port
+    TB/tbtop.sv, 187
+                                      .cplda_spi_s_mosi (),//input   wire 
+                                       ^
+    Input port 'cplda_spi_s_mosi' has no connection
+
+Warning-121720: Unconnected named output port
+    TB/tbtop.sv, 212
+                                      .fpga_ver_led     (                                                            )  // O [2:0]
+                                       ^
+    Output port 'fpga_ver_led' has no connection
+
+Warning-121749: Unconnected named output port
+    TB/tbtop.sv, 138
+                               ) DUT (
+                                 ^
+    Output port 'fpga_base_int_n' has no connection
+
+Warning-121749: Unconnected named output port
+    TB/tbtop.sv, 138
+                               ) DUT (
+                                 ^
+    Output port 'bmc_spi_m_clk' has no connection
+
+Warning-121749: Unconnected named output port
+    TB/tbtop.sv, 138
+                               ) DUT (
+                                 ^
+    Output port 'bmc_spi_m_csn' has no connection
+
+Warning-121748: Unconnected named input port
+    TB/tbtop.sv, 138
+                               ) DUT (
+                                 ^
+    Input port 'bmc_spi_m_miso' has no connection
+
+Warning-121749: Unconnected named output port
+    TB/tbtop.sv, 138
+                               ) DUT (
+                                 ^
+    Output port 'bmc_spi_m_mosi' has no connection
+
+Warning-121748: Unconnected named input port
+    TB/tbtop.sv, 138
+                               ) DUT (
+                                 ^
+    Input port 'cpldb_spi_s_clk' has no connection
+
+Warning-121748: Unconnected named input port
+    TB/tbtop.sv, 138
+                               ) DUT (
+                                 ^
+    Input port 'cpldb_spi_s_csn' has no connection
+
+Warning-121749: Unconnected named output port
+    TB/tbtop.sv, 138
+                               ) DUT (
+                                 ^
+    Output port 'cpldb_spi_s_miso' has no connection
+
+Warning-121748: Unconnected named input port
+    TB/tbtop.sv, 138
+                               ) DUT (
+                                 ^
+    Input port 'cpldb_spi_s_mosi' has no connection
+
+Warning-121749: Unconnected named output port
+    TB/tbtop.sv, 138
+                               ) DUT (
+                                 ^
+    Output port 'pca_9548_rst_n' has no connection
+
+Warning-121749: Unconnected named output port
+    TB/tbtop.sv, 138
+                               ) DUT (
+                                 ^
+    Output port 'qsfp_led_port_mac' has no connection
+
+Warning-121749: Unconnected named output port
+    TB/tbtop.sv, 138
+                               ) DUT (
+                                 ^
+    Output port 'fpga_dbg_sig' has no connection
+
+Warning-121749: Unconnected named output port
+    RTL/SRC/imports/SRC/reg/dfx_debug_reg.sv, 439
+    )s_rslt_rst_bus_pose_inst(
+     ^
+    Output port 'nege_sig' has no connection
+
+Warning-121748: Unconnected named input port
+    RTL/SRC/imports/SRC/qsfp/qsfp_top.v, 127
+    qsfp_int_acc qsfp_int_acc_inst(
+                 ^
+    Input port 'modprsl_int_clr' has no connection
+
+Warning-121748: Unconnected named input port
+    RTL/SRC/imports/SRC/qsfp/qsfp_top.v, 127
+    qsfp_int_acc qsfp_int_acc_inst(
+                 ^
+    Input port 'modprsl_int_mask' has no connection
+
+Warning-121749: Unconnected named output port
+    RTL/SRC/imports/SRC/qsfp/qsfp_top.v, 127
+    qsfp_int_acc qsfp_int_acc_inst(
+                 ^
+    Output port 'modprsl_int_o' has no connection
+
+Too many 'Warning-121749' emitted, print all the warnings by specify [-max_single_warn_cnt 0]
+
+Warning-121748: Unconnected named input port
+    RTL/SRC/imports/SRC/qsfp/qsfp_top.v, 144
+    qsfp_reg_dcb qsfp_reg_dcb_inst(
+                 ^
+    Input port 'cpld_ver' has no connection
+
+Warning-121748: Unconnected named input port
+    RTL/SRC/imports/SRC/qsfp/qsfp_top.v, 144
+    qsfp_reg_dcb qsfp_reg_dcb_inst(
+                 ^
+    Input port 'cpld_year' has no connection
+
+Warning-121748: Unconnected named input port
+    RTL/SRC/imports/SRC/qsfp/qsfp_top.v, 144
+    qsfp_reg_dcb qsfp_reg_dcb_inst(
+                 ^
+    Input port 'cpld_mon' has no connection
+
+Warning-121748: Unconnected named input port
+    RTL/SRC/imports/SRC/qsfp/qsfp_top.v, 144
+    qsfp_reg_dcb qsfp_reg_dcb_inst(
+                 ^
+    Input port 'cpld_day' has no connection
+
+Too many 'Warning-121748' emitted, print all the warnings by specify [-max_single_warn_cnt 0]
+
+Warning-121720: Unconnected named output port
+    RTL/SRC/imports/SRC/TCS9620_MAC_TOP.v, 1067
+          .sda_o                            (),                                    //  output  wire          sda_o            ,
+           ^
+    Output port 'sda_o' has no connection
+
+Warning-121720: Unconnected named output port
+    RTL/SRC/imports/SRC/TCS9620_MAC_TOP.v, 1072
+          .i2c_stop                         (),                                    //  output  wire          i2c_stop         ,
+           ^
+    Output port 'i2c_stop' has no connection
+
+Warning-121720: Unconnected named output port
+    RTL/SRC/imports/SRC/TCS9620_MAC_TOP.v, 1073
+          .data_wr_en                       (),                                    //  output  wire          data_wr_en       ,
+           ^
+    Output port 'data_wr_en' has no connection
+
+Warning-121720: Unconnected named output port
+    RTL/SRC/imports/SRC/TCS9620_MAC_TOP.v, 1074
+          .wdata                            (),                                    //  output  wire  [7:0]   wdata            ,
+           ^
+    Output port 'wdata' has no connection
+
+Warning-121720: Unconnected named output port
+    RTL/SRC/imports/SRC/TCS9620_MAC_TOP.v, 1223
+          .pca0_rst_n                       (),                                    //soft_pca_rst_n   [0]),//output               pca0_rst_n         ,
+           ^
+    Output port 'pca0_rst_n' has no connection
+
+Warning-121720: Unconnected named output port
+    RTL/SRC/imports/SRC/TCS9620_MAC_TOP.v, 1224
+          .pca1_rst_n                       (),                                    //soft_pca_rst_n   [1]),//output               pca1_rst_n         ,
+           ^
+    Output port 'pca1_rst_n' has no connection
+
+Warning-121720: Unconnected named output port
+    RTL/SRC/imports/SRC/TCS9620_MAC_TOP.v, 1225
+          .pca2_rst_n                       (),                                    //soft_pca_rst_n   [2]),//output               pca2_rst_n         ,
+           ^
+    Output port 'pca2_rst_n' has no connection
+
+Warning-121720: Unconnected named output port
+    RTL/SRC/imports/SRC/TCS9620_MAC_TOP.v, 1226
+          .pca3_rst_n                       (),                                    //soft_pca_rst_n   [3]),//output               pca3_rst_n         ,
+           ^
+    Output port 'pca3_rst_n' has no connection
+
+Too many 'Warning-121720' emitted, print all the warnings by specify [-max_single_warn_cnt 0]
+
+Warning-121824: Undriven implicit wire detected
+    RTL/SRC/imports/SRC/TCS9620_MAC_TOP.v, 1496
+          .pcie_rst_n                       (fpga_pcie_rst_n),                     //  input wire                   pcie_rst_n        ,
+                                             ^
+    Implicit wire 'fpga_pcie_rst_n' lacks driving source. Verify whether this behavior is expected.
+
+Warning-121824: Undriven implicit wire detected
+    RTL/SRC/imports/SRC/qsfp/qsfp_top.v, 104
+        .reset_cnt_clear   (cpu_cb_rst_cnt_clr),
+                            ^
+    Implicit wire 'cpu_cb_rst_cnt_clr' lacks driving source. Verify whether this behavior is expected.
+
+Warning-126024: Size mismatch in port connection
+    TB/tbtop.sv, 162
+                                      .pcie_rerr        ( U_TOP_IF.pcie_intf.amd2p64_if.m_axis_rx_tuser              ), // I
+                                       ^
+    The '22' bit port 'U_TOP_IF.pcie_intf.amd2p64_if.m_axis_rx_tuser' is connected to '1' bit port 'pcie_rerr'.
+
+Warning-126024: Size mismatch in port connection
+    TB/tbtop.sv, 168
+                                      .pcie_int_num     ( U_TOP_IF.pcie_intf.amd2p64_if.cfg_pciecap_interrupt_msgnum ), // O [7:0]
+                                       ^
+    The '5' bit port 'U_TOP_IF.pcie_intf.amd2p64_if.cfg_pciecap_interrupt_msgnum' is connected to '8' bit port 'pcie_int_num'.
+
+Warning-126024: Size mismatch in port connection
+    TB/tbtop.sv, 198
+                                      .fpga_i2c_scl     ( fpga_i2c_scl                                               ), // T [12:0]i2c_s9548_scl
+                                       ^
+    The '14' bit port 'fpga_i2c_scl' is connected to '12' bit port 'fpga_i2c_scl'.
+
+Warning-126024: Size mismatch in port connection
+    TB/tbtop.sv, 199
+                                      .fpga_i2c_sda     ( fpga_i2c_sda                                               ), // T [12:0]i2c_s9548_sda
+                                       ^
+    The '14' bit port 'fpga_i2c_sda' is connected to '12' bit port 'fpga_i2c_sda'.
+
+Warning-126024: Size mismatch in port connection
+    TB/tbtop.sv, 210
+                                      .clk_mon_test   ({m_50m_clk,m_50m_clk,m_156m_clk}),
+                                       ^
+    The '3' bit port '{m_50m_clk,m_50m_clk,m_156m_clk}' is connected to '4' bit port 'clk_mon_test'.
+
+Warning-126024: Size mismatch in port connection
+    TB/tbtop.sv, 310
+                out_9548 out_9548_inst(7'h10+i,7'h60,m_125m_clk,m_125m_rst_n,dome_i2c_s_scl[i],dome_i2c_s_sda[i]);
+                                       ^
+    The '32' bit port '7'b10000+i' is connected to '7' bit port 'device9548_addr'.
+
+Warning-126024: Size mismatch in port connection
+    TB/tbtop.sv, 310
+                out_9548 out_9548_inst(7'h10+i,7'h60,m_125m_clk,m_125m_rst_n,dome_i2c_s_scl[i],dome_i2c_s_sda[i]);
+                                       ^
+    The '32' bit port '7'b10000+i' is connected to '7' bit port 'device9548_addr'.
+
+Warning-126024: Size mismatch in port connection
+    TB/tbtop.sv, 310
+                out_9548 out_9548_inst(7'h10+i,7'h60,m_125m_clk,m_125m_rst_n,dome_i2c_s_scl[i],dome_i2c_s_sda[i]);
+                                       ^
+    The '32' bit port '7'b10000+i' is connected to '7' bit port 'device9548_addr'.
+
+Warning-126024: Size mismatch in port connection
+    TB/tbtop.sv, 310
+                out_9548 out_9548_inst(7'h10+i,7'h60,m_125m_clk,m_125m_rst_n,dome_i2c_s_scl[i],dome_i2c_s_sda[i]);
+                                       ^
+    The '32' bit port '7'b10000+i' is connected to '7' bit port 'device9548_addr'.
+
+Warning-126024: Size mismatch in port connection
+    TB/tbtop.sv, 310
+                out_9548 out_9548_inst(7'h10+i,7'h60,m_125m_clk,m_125m_rst_n,dome_i2c_s_scl[i],dome_i2c_s_sda[i]);
+                                       ^
+    The '32' bit port '7'b10000+i' is connected to '7' bit port 'device9548_addr'.
+
+Too many 'Warning-126024' emitted, print all the warnings by specify [-max_single_warn_cnt 0]
+
+Top level design units:
+    glbl
+    tbtop
+
+Warning-121561: Index out of bounds
+    RTL/SRC/ip/common/vendor_pango/family_logos2/ram/user_sdpram_pango_bram.sv, 712
+                       wr_cs_bit0 = wr_addr_bus[ADDR_WIDTH_A-CS_ADDR_WIDTH_A];
+                                    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Select index 9 into 'wr_addr_bus' is out of bounds
+
+Warning-121561: Index out of bounds
+    RTL/SRC/ip/common/vendor_pango/family_logos2/ram/user_sdpram_pango_bram.sv, 722
+                       wr_cs_bit0 = wr_addr_bus[ADDR_WIDTH_A-CS_ADDR_WIDTH_A];
+                                    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Select index 9 into 'wr_addr_bus' is out of bounds
+
+Warning-121561: Index out of bounds
+    RTL/SRC/ip/common/vendor_pango/family_logos2/ram/user_sdpram_pango_bram.sv, 734
+                       wr_cs_bit0 = wr_addr_bus[ADDR_WIDTH_A-CS_ADDR_WIDTH_A];
+                                    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Select index 9 into 'wr_addr_bus' is out of bounds
+
+Warning-121561: Index out of bounds
+    RTL/SRC/ip/common/vendor_pango/family_logos2/ram/user_sdpram_pango_bram.sv, 744
+                       wr_cs_bit0 = wr_addr_bus[ADDR_WIDTH_A-CS_ADDR_WIDTH_A];
+                                    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Select index 9 into 'wr_addr_bus' is out of bounds
+
+Warning-121561: Index out of bounds
+    RTL/SRC/ip/common/vendor_pango/family_logos2/ram/user_sdpram_pango_bram.sv, 749
+                       wr_cs_bit0 = wr_addr_bus[ADDR_WIDTH_A-CS_ADDR_WIDTH_A];
+                                    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Select index 9 into 'wr_addr_bus' is out of bounds
+
+Warning-121561: Index out of bounds
+    RTL/SRC/ip/common/vendor_pango/family_logos2/ram/user_sdpram_pango_bram.sv, 750
+                       wr_cs_bit1_bus[gen_csa] = wr_addr_bus[ADDR_WIDTH_A-CS_ADDR_WIDTH_A+1];
+                                                 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Select index 10 into 'wr_addr_bus' is out of bounds
+
+Warning-121561: Index out of bounds
+    RTL/SRC/ip/common/vendor_pango/family_logos2/ram/user_sdpram_pango_bram.sv, 859
+                        rd_cs_bit0 = rd_addr_bus[ADDR_WIDTH_B-CS_ADDR_WIDTH_B];
+                                     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Select index 9 into 'rd_addr_bus' is out of bounds
+
+Warning-121561: Index out of bounds
+    RTL/SRC/ip/common/vendor_pango/family_logos2/ram/user_sdpram_pango_bram.sv, 864
+                        rd_cs_bit0 = rd_addr_bus[ADDR_WIDTH_B-CS_ADDR_WIDTH_B];
+                                     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Select index 9 into 'rd_addr_bus' is out of bounds
+
+Warning-121561: Index out of bounds
+    RTL/SRC/ip/common/vendor_pango/family_logos2/ram/user_sdpram_pango_bram.sv, 869
+                        rd_cs_bit0 = rd_addr_bus[ADDR_WIDTH_B-CS_ADDR_WIDTH_B];
+                                     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Select index 9 into 'rd_addr_bus' is out of bounds
+
+Warning-121561: Index out of bounds
+    RTL/SRC/ip/common/vendor_pango/family_logos2/ram/user_sdpram_pango_bram.sv, 881
+                        rd_cs_bit0 = rd_addr_bus[ADDR_WIDTH_B-CS_ADDR_WIDTH_B];
+                                     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Select index 9 into 'rd_addr_bus' is out of bounds
+
+Too many 'Warning-121561' emitted, print all the warnings by specify [-max_single_warn_cnt 0]
+
+Warning-120885: Bad range expression
+    ../../../../../../../../soft/pango/pds/2025.2-SP3-ads/arch/vendor/pango/verilog/simulation/GTP_DRM36K_E1.v, 694
+    
+    Cannot select range of [71:0] from reg[RAM_DATA_WIDTH-1:0]
+
+Warning-120885: Bad range expression
+    ../../../../../../../../soft/pango/pds/2025.2-SP3-ads/arch/vendor/pango/verilog/simulation/GTP_DRM36K_E1.v, 695
+    
+    Cannot select range of [71:0] from reg[RAM_DATA_WIDTH-1:0]
+
+Warning-120885: Bad range expression
+    ../../../../../../../../soft/pango/pds/2025.2-SP3-ads/arch/vendor/pango/verilog/simulation/GTP_DRM36K_E1.v, 696
+    
+    Cannot select range of [71:0] from reg[RAM_DATA_WIDTH-1:0]
+
+Warning-120885: Bad range expression
+    ../../../../../../../../soft/pango/pds/2025.2-SP3-ads/arch/vendor/pango/verilog/simulation/GTP_DRM36K_E1.v, 697
+    
+    Cannot select range of [71:0] from reg[RAM_DATA_WIDTH-1:0]
+
+Warning-120885: Bad range expression
+    ../../../../../../../../soft/pango/pds/2025.2-SP3-ads/arch/vendor/pango/verilog/simulation/GTP_DRM36K_E1.v, 698
+    
+    Cannot select range of [71:0] from reg[RAM_DATA_WIDTH-1:0]
+
+Warning-120885: Bad range expression
+    ../../../../../../../../soft/pango/pds/2025.2-SP3-ads/arch/vendor/pango/verilog/simulation/GTP_DRM36K_E1.v, 699
+    
+    Cannot select range of [71:0] from reg[RAM_DATA_WIDTH-1:0]
+
+Warning-120885: Bad range expression
+    ../../../../../../../../soft/pango/pds/2025.2-SP3-ads/arch/vendor/pango/verilog/simulation/GTP_DRM36K_E1.v, 700
+    
+    Cannot select range of [71:0] from reg[RAM_DATA_WIDTH-1:0]
+
+Warning-120885: Bad range expression
+    ../../../../../../../../soft/pango/pds/2025.2-SP3-ads/arch/vendor/pango/verilog/simulation/GTP_DRM36K_E1.v, 701
+    
+    Cannot select range of [71:0] from reg[RAM_DATA_WIDTH-1:0]
+
+Warning-120885: Bad range expression
+    ../../../../../../../../soft/pango/pds/2025.2-SP3-ads/arch/vendor/pango/verilog/simulation/GTP_DRM36K_E1.v, 705
+    
+    Cannot select range of [71:0] from reg[RAM_DATA_WIDTH-1:0]
+
+Warning-120885: Bad range expression
+    ../../../../../../../../soft/pango/pds/2025.2-SP3-ads/arch/vendor/pango/verilog/simulation/GTP_DRM36K_E1.v, 706
+    
+    Cannot select range of [71:0] from reg[RAM_DATA_WIDTH-1:0]
+
+Too many 'Warning-120885' emitted, print all the warnings by specify [-max_single_warn_cnt 0]
+
+Saving all verilog modules to /home/work/chenjunming/change-impact-loop/workspaces/s0-work-20261023/SIMLIB_RUN/wave/tc_rtc_10_1/UVS_tc_rtc_10_1.db/treeir.db
+Warning-121636: No datasensitive in always block
+    ipm_flex_ppm_ram_rom/rtl/ipm_flex_ppm_ram_rom_infer.v, 620
+    Datasensitivelist is empty in always block
+
+Warning-121636: No datasensitive in always block
+    ipm_flex_ppm_ram_rom/rtl/ipm_flex_ppm_ram_rom_infer.v, 620
+    Datasensitivelist is empty in always block
+
+Warning-121636: No datasensitive in always block
+    ipm_flex_ppm_ram_rom/rtl/ipm_flex_ppm_ram_rom_infer.v, 620
+    Datasensitivelist is empty in always block
+
+* Translating all modules, 1 of 32 thread(s) in use.
+* Total 417 compile units, 417 need recompile.
+Elapsed time: 19.15s, CPU time: 38.80s, RSS size: 1.32G
+* EXECUTABLE SAVED TO 'UVS_tc_rtc_10_1'.
+Compilation: 0 error(s), 71 warning(s)
+Compilation ends at: 2026-10-24 14:42:31

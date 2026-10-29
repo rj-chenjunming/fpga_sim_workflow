@@ -1,0 +1,68 @@
+{
+  "allfiles_manifest": {
+    "entries": 4492,
+    "path": "runs/RUN-20261024-002609/bundle/allfiles.md5",
+    "scope": [
+      "PKG",
+      "RTL",
+      "TB",
+      "TESTLIB"
+    ],
+    "sha256": "552d526509068dc725fc01c320b3e71cfef42fe81d5b63cc69e4922080984658"
+  },
+  "baseline": "v1",
+  "cases_freeze": {
+    "entries": 162,
+    "path": "runs/RUN-20261024-002609/bundle/cases.md5",
+    "scope": [
+      "TESTLIB"
+    ],
+    "sha256": "8ef854dd0ef9b5a03073565318a87ba4bcc5ac7be0a863905fcea6c617e3304e"
+  },
+  "commit": {
+    "parseable": true,
+    "ref": "951ef1d1e4c1981a2f97dce7958d48f8c1f388bb",
+    "repo": "RTL"
+  },
+  "conflicts_snapshot": {
+    "entries": 72,
+    "path": "runs/RUN-20261024-002609/bundle/conflicts/conflicts.json",
+    "scope": [
+      "冲突清单快照：72 条，open 72"
+    ],
+    "sha256": "24284b2a1a696d79a7ad5eb2d347a4b0e07f45d770bce65fd6f08340156be1e8"
+  },
+  "created_at": "2026-10-24T00:26:10+0800",
+  "created_by": "n1_snapshot.py (Host)",
+  "doc_fingerprint": {
+    "algo": "sha256-of-normalized-canonical-lines",
+    "entries": 126,
+    "path": "runs/RUN-20261024-002609/bundle/doc_entries.txt",
+    "source_doc": "doc/reference/TCS9620-64CH-F-RJ-MAC_FPGA_软硬件接口文档.md",
+    "value": "0bedd7a35f7b3bb3be3a7d0c40ffa7ac96339a4151b248f14b28221366472359"
+  },
+  "evidence_index": "runs/RUN-20261024-002609/bundle/evidence/index.md",
+  "notes": [
+    "自研代码快照范围=RTL/SRC/imports,RTL/RTL_COMMON（vendor IP 与 RTL/.git 不入快照）",
+    "全量文件清单 scope=RTL,TB,TESTLIB,PKG（该 scope 外的文件本轮不参与 ② 路 diff）",
+    "文档源=doc/reference/TCS9620-64CH-F-RJ-MAC_FPGA_软硬件接口文档.md（sha256 fb28d550f8de3d68ef6489af2b5f5f10c55e3cbd413814f44db2c256f3987d45）",
+    "交付包 sha256 缺失：N/A(本轮未收到交付包；按产品决策 2 只存 KB 自建的自研子集快照，完整包由交付方保留)",
+    "commit 锚来自 RTL 嵌套仓 HEAD（parseable=True）；未沿用已漂移的 BIN/commit_id.log",
+    "N1 摄取草案：baseline=v1 尚未晋升；必须经 G2=accept + G3 决策后由 n16_promote.py 原子晋升"
+  ],
+  "package_sha256": "N/A(本轮未收到交付包；按产品决策 2 只存 KB 自建的自研子集快照，完整包由交付方保留)",
+  "parent": "v0",
+  "rtl_snapshot": {
+    "entries": 162,
+    "manifest_sha256": "942b9ec8d8d4f2afa01e7be385bb07ce8cdffc92fa2215c88fe45c901b811075",
+    "path": "runs/RUN-20261024-002609/bundle/rtl_snapshot.tar",
+    "scope": [
+      "RTL/RTL_COMMON",
+      "RTL/SRC/imports"
+    ],
+    "sha256": "9cb5eafb214aea2b3a74ff84501a5b1124a4452c6942e08045c459dd41c9cfa3"
+  },
+  "schema": "kb/manifest",
+  "trigger": null,
+  "version": 1
+}

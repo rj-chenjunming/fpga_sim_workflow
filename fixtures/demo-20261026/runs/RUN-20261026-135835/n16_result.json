@@ -1,0 +1,16 @@
+{
+  "schema": "loop/n16_result",
+  "run_id": "RUN-20261026-135835",
+  "cmd": "/home/work/chenjunming/change-impact-loop/loop/.venv/bin/python -B /home/work/chenjunming/change-impact-loop/kb/tools/n16_promote.py --run RUN-20261026-135835 --trigger-by human:lead-verify-20261026 --actor-kind human --dry-run --baselines-root /home/work/chenjunming/change-impact-loop/workspaces/s0-ws-20261023/runs/RUN-20261026-135835/baseline_drill",
+  "rc": 3,
+  "mode": "drill",
+  "dry_run": true,
+  "actor": "human:lead-verify-20261026",
+  "actor_kind": "human",
+  "stdout_tail": "[kb] N16 晋升：run_id=RUN-20261026-135835 触发者=human:lead-verify-20261026(actor_kind=human) 基线根=runs/RUN-20261026-135835/baseline_drill\n",
+  "stderr_tail": "[FAIL] 用例态台账不存在：runs/RUN-20261026-135835/case_states.json\n      ⇒ 先 kb/tools/case_state.py init --run <id> 并由 N6~N10 责任方写入（I2：缺台账不得晋升）\n",
+  "source": "kb_tool",
+  "reason_line": "[FAIL] 用例态台账不存在：runs/RUN-20261026-135835/case_states.json",
+  "summary": "N16：dry-run 晋升 rc=3（refused），actor=human:lead-verify-20261026，actor_kind=human",
+  "result_artifact": "/home/work/chenjunming/change-impact-loop/workspaces/s0-ws-20261023/runs/RUN-20261026-135835/n16_result.json"
+}

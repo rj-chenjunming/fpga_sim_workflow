@@ -1,0 +1,795 @@
+Command Line: /home/soft/UNIVISTA/20261016/UVS/bin/uvlog2 -analyze -work tb ./TB/tbtop.sv /home/work/chenjunming/change-impact-loop/workspaces/s0-ws-20261023/runs/RUN-20261024-002609/sandbox/TESTLIB/tc_pcie_rw_smoke.sv -f all_define.txt -uvm1.2 -sv -debug_cell -usdb -uvs_xlrm MacroConcatEarly -Xair yxxie.fix_fatal_empty_fmt -Xair yxxie.allow_compatible_copy -Xair xb.always_opt_with_pda_signal -Xair hhlin.fix_final_finish -Xopts sva_fix_AIR_12100 -Xopts sva_fix_AIR_12098 -Xair be.air12017_containerTy_castexpr -Xopts later_bind_param_opt=0 -timescale 1ns/1ns -fly_Nopts cgresolve_partial_assign:0 -logfile /home/work/chenjunming/change-impact-loop/workspaces/s0-ws-20261023/runs/RUN-20261024-002609/evidence/20261024-143644_tc_pcie_rw_smoke_1_c_tb.log +incdir+./TESTLIB,./TB/LIBS/SVX-LIB/version,./TB/LIBS/SVX-LIB/linked,./TB/LIBS/SVX-LIB/lexer,./TB/LIBS/SVX-LIB/iterators,./TB/LIBS/SVX-LIB/containers,./TB/LIBS/SVX-LIB/behaviors,./TB/LIBS/SV-LIB/src/dpi,./TB/LIBS/SV-LIB/src,./TB/LIBS/PKT-LIB/pkt_head_lib,./TB/LIBS/PKT-LIB/pkt_head_lib,./TB/LIBS/SV-LIB,./TB/LIBS/SVSTRING-LIB,./TB/LIBS/SVX-LIB,./TB/LIBS/MEM-MGR-LIB,./TB/LIBS/PKT-LIB,./TB/LIBS/SQL-LIB,./TB/LIBS/ASSERT-LIB,./TB/LIBS/DSCRAMBLER-LIB,./TB/LIBS/CBB-LIB,./TB/AGENTS/CRG-Agent,./TB/AGENTS/MDIO-Agent,./TB/AGENTS/UART-Agent,./TB/AGENTS/I2C-Agent,./TB/AGENTS/FAN-Agent,./TB/AGENTS/PCIE-Agent,./TB/AGENTS/SPI-Agent,./TB/AGENTS/dcb_agent,./TB/MODEL,./TB +incdir+/home/work/chenjunming/change-impact-loop/workspaces/s0-ws-20261023/runs/RUN-20261024-002609/sandbox/TESTLIB -define TEST_NAME=tc_pcie_rw_smoke 
+
+              UniVista Simulator Plus(UVS+)
+
+Version: UVS2026.06.P3 (Release, amd64)  Build Date: 2026-10-09
+Copyright (c) 2021-2026 Shanghai UniVista Industrial Software Group Co., Ltd.
+              ALL RIGHTS RESERVED WORLDWIDE
+
+This deliverable and its associated documentation contain trade secrets and commercial or
+financial information that are the property of Shanghai UniVista Industrial Software Group Co., Ltd.
+and are subject to the license granted in the relevant license agreement with prohibitions
+and restrictions.
+
+Warning-120002: Command option warning
+    Option -usdb -uvs_xlrm is not supported, ignore it.
+
+Warning-120002: Command option warning
+    Option -Xopts sva_fix_AIR_12100 is not supported, ignore it.
+
+Warning-120002: Command option warning
+    Option -Xopts sva_fix_AIR_12098 is not supported, ignore it.
+
+Option "-Xair xb.always_opt_with_pda_signal" is already default
+Option "-Xair be.air12017_containerTy_castexpr" is already default
+-Xair flag warning: ignored invalid -Xair flag: yxxie.fix_fatal_empty_fmt
+-Xair flag warning: ignored invalid -Xair flag: yxxie.allow_compatible_copy
+-Xair flag warning: ignored invalid -Xair flag: hhlin.fix_final_finish
+Compilation starts at: 2026-10-24 14:36:46
+Reading setup file 'uvs.setup'
+Analyzing Verilog file './TB/tbtop.sv'
+analyzing included file './TB/LIBS/CBB-LIB/macros_pkg.sv'
+    ./TB/tbtop.sv, 74
+
+analyzing included file './TB/LIBS/CBB-LIB/cmd_dpi_pkg.sv'
+    ./TB/LIBS/CBB-LIB/macros_pkg.sv, 31
+
+analyzing included file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh'
+    ./TB/LIBS/CBB-LIB/cmd_dpi_pkg.sv, 34
+
+analyzing included file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/macros/uvm_uvs_line_patch.svh'
+    /home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh, 68
+
+back to file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh'
+    /home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh, 68
+
+analyzing included file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/macros/uvm_uvs_message_patch.svh'
+    /home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh, 69
+
+back to file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh'
+    /home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh, 69
+
+analyzing included file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/macros/uvm_version_defines.svh'
+    /home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh, 70
+
+back to file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh'
+    /home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh, 70
+
+analyzing included file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/macros/uvm_global_defines.svh'
+    /home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh, 71
+
+back to file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh'
+    /home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh, 71
+
+analyzing included file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/macros/uvm_message_defines.svh'
+    /home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh, 72
+
+back to file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh'
+    /home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh, 72
+
+analyzing included file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/macros/uvm_phase_defines.svh'
+    /home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh, 73
+
+back to file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh'
+    /home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh, 73
+
+analyzing included file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/macros/uvm_object_defines.svh'
+    /home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh, 74
+
+back to file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh'
+    /home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh, 74
+
+analyzing included file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/macros/uvm_printer_defines.svh'
+    /home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh, 75
+
+back to file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh'
+    /home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh, 75
+
+analyzing included file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/macros/uvm_tlm_defines.svh'
+    /home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh, 76
+
+analyzing included file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/tlm1/uvm_tlm_imps.svh'
+    /home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/macros/uvm_tlm_defines.svh, 616
+
+back to file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/macros/uvm_tlm_defines.svh'
+    /home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/macros/uvm_tlm_defines.svh, 616
+
+back to file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh'
+    /home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh, 76
+
+analyzing included file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/macros/uvm_sequence_defines.svh'
+    /home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh, 77
+
+back to file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh'
+    /home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh, 77
+
+analyzing included file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/macros/uvm_callback_defines.svh'
+    /home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh, 78
+
+back to file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh'
+    /home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh, 78
+
+analyzing included file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/macros/uvm_reg_defines.svh'
+    /home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh, 79
+
+back to file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh'
+    /home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh, 79
+
+analyzing included file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/macros/uvm_deprecated_defines.svh'
+    /home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh, 80
+
+back to file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh'
+    /home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh, 80
+
+back to file './TB/LIBS/CBB-LIB/cmd_dpi_pkg.sv'
+    ./TB/LIBS/CBB-LIB/cmd_dpi_pkg.sv, 34
+
+back to file './TB/LIBS/CBB-LIB/macros_pkg.sv'
+    ./TB/LIBS/CBB-LIB/macros_pkg.sv, 31
+
+analyzing included file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh'
+    ./TB/LIBS/CBB-LIB/macros_pkg.sv, 41
+
+back to file './TB/LIBS/CBB-LIB/macros_pkg.sv'
+    ./TB/LIBS/CBB-LIB/macros_pkg.sv, 41
+
+back to file './TB/tbtop.sv'
+    ./TB/tbtop.sv, 74
+
+analyzing included file './TB/top_if.sv'
+    ./TB/tbtop.sv, 75
+
+analyzing included file './TB/LIBS/CBB-LIB/cbb_pkg.sv'
+    ./TB/top_if.sv, 31
+
+analyzing included file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh'
+    ./TB/LIBS/CBB-LIB/cbb_pkg.sv, 89
+
+back to file './TB/LIBS/CBB-LIB/cbb_pkg.sv'
+    ./TB/LIBS/CBB-LIB/cbb_pkg.sv, 89
+
+back to file './TB/top_if.sv'
+    ./TB/top_if.sv, 31
+
+analyzing included file './TB/AGENTS/CRG-Agent/crg_if.sv'
+    ./TB/top_if.sv, 32
+
+analyzing included file './TB/LIBS/CBB-LIB/cbb_pkg.sv'
+    ./TB/AGENTS/CRG-Agent/crg_if.sv, 31
+
+back to file './TB/AGENTS/CRG-Agent/crg_if.sv'
+    ./TB/AGENTS/CRG-Agent/crg_if.sv, 31
+
+analyzing included file './TB/LIBS/CBB-LIB/macros_pkg.sv'
+    ./TB/AGENTS/CRG-Agent/crg_if.sv, 32
+
+back to file './TB/AGENTS/CRG-Agent/crg_if.sv'
+    ./TB/AGENTS/CRG-Agent/crg_if.sv, 32
+
+analyzing included file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh'
+    ./TB/AGENTS/CRG-Agent/crg_if.sv, 33
+
+back to file './TB/AGENTS/CRG-Agent/crg_if.sv'
+    ./TB/AGENTS/CRG-Agent/crg_if.sv, 33
+
+analyzing included file './TB/AGENTS/CRG-Agent/crg_pkg.sv'
+    ./TB/AGENTS/CRG-Agent/crg_if.sv, 34
+
+analyzing included file './TB/LIBS/CBB-LIB/cbb_pkg.sv'
+    ./TB/AGENTS/CRG-Agent/crg_pkg.sv, 31
+
+back to file './TB/AGENTS/CRG-Agent/crg_pkg.sv'
+    ./TB/AGENTS/CRG-Agent/crg_pkg.sv, 31
+
+analyzing included file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh'
+    ./TB/AGENTS/CRG-Agent/crg_pkg.sv, 39
+
+back to file './TB/AGENTS/CRG-Agent/crg_pkg.sv'
+    ./TB/AGENTS/CRG-Agent/crg_pkg.sv, 39
+
+analyzing included file './TB/AGENTS/CRG-Agent/crg_cfg.sv'
+    ./TB/AGENTS/CRG-Agent/crg_pkg.sv, 42
+
+back to file './TB/AGENTS/CRG-Agent/crg_pkg.sv'
+    ./TB/AGENTS/CRG-Agent/crg_pkg.sv, 42
+
+analyzing included file './TB/AGENTS/CRG-Agent/crg_pkt.sv'
+    ./TB/AGENTS/CRG-Agent/crg_pkg.sv, 43
+
+back to file './TB/AGENTS/CRG-Agent/crg_pkg.sv'
+    ./TB/AGENTS/CRG-Agent/crg_pkg.sv, 43
+
+analyzing included file './TB/AGENTS/CRG-Agent/crg_driver.sv'
+    ./TB/AGENTS/CRG-Agent/crg_pkg.sv, 44
+
+back to file './TB/AGENTS/CRG-Agent/crg_pkg.sv'
+    ./TB/AGENTS/CRG-Agent/crg_pkg.sv, 44
+
+analyzing included file './TB/AGENTS/CRG-Agent/crg_monitor.sv'
+    ./TB/AGENTS/CRG-Agent/crg_pkg.sv, 45
+
+back to file './TB/AGENTS/CRG-Agent/crg_pkg.sv'
+    ./TB/AGENTS/CRG-Agent/crg_pkg.sv, 45
+
+analyzing included file './TB/AGENTS/CRG-Agent/crg_sequencer.sv'
+    ./TB/AGENTS/CRG-Agent/crg_pkg.sv, 46
+
+back to file './TB/AGENTS/CRG-Agent/crg_pkg.sv'
+    ./TB/AGENTS/CRG-Agent/crg_pkg.sv, 46
+
+analyzing included file './TB/AGENTS/CRG-Agent/crg_agent.sv'
+    ./TB/AGENTS/CRG-Agent/crg_pkg.sv, 47
+
+back to file './TB/AGENTS/CRG-Agent/crg_pkg.sv'
+    ./TB/AGENTS/CRG-Agent/crg_pkg.sv, 47
+
+analyzing included file './TB/AGENTS/CRG-Agent/crg_sequence_list.sv'
+    ./TB/AGENTS/CRG-Agent/crg_pkg.sv, 48
+
+analyzing included file './TB/AGENTS/CRG-Agent/crg_smoke_seq.sv'
+    ./TB/AGENTS/CRG-Agent/crg_sequence_list.sv, 31
+
+back to file './TB/AGENTS/CRG-Agent/crg_sequence_list.sv'
+    ./TB/AGENTS/CRG-Agent/crg_sequence_list.sv, 31
+
+back to file './TB/AGENTS/CRG-Agent/crg_pkg.sv'
+    ./TB/AGENTS/CRG-Agent/crg_pkg.sv, 48
+
+back to file './TB/AGENTS/CRG-Agent/crg_if.sv'
+    ./TB/AGENTS/CRG-Agent/crg_if.sv, 34
+
+back to file './TB/top_if.sv'
+    ./TB/top_if.sv, 32
+
+analyzing included file './TB/AGENTS/FAN-Agent/fan_if.sv'
+    ./TB/top_if.sv, 33
+
+analyzing included file './TB/LIBS/CBB-LIB/cbb_pkg.sv'
+    ./TB/AGENTS/FAN-Agent/fan_if.sv, 31
+
+back to file './TB/AGENTS/FAN-Agent/fan_if.sv'
+    ./TB/AGENTS/FAN-Agent/fan_if.sv, 31
+
+analyzing included file './TB/LIBS/CBB-LIB/macros_pkg.sv'
+    ./TB/AGENTS/FAN-Agent/fan_if.sv, 32
+
+back to file './TB/AGENTS/FAN-Agent/fan_if.sv'
+    ./TB/AGENTS/FAN-Agent/fan_if.sv, 32
+
+analyzing included file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh'
+    ./TB/AGENTS/FAN-Agent/fan_if.sv, 33
+
+back to file './TB/AGENTS/FAN-Agent/fan_if.sv'
+    ./TB/AGENTS/FAN-Agent/fan_if.sv, 33
+
+analyzing included file './TB/AGENTS/FAN-Agent/fan_pkg.sv'
+    ./TB/AGENTS/FAN-Agent/fan_if.sv, 34
+
+analyzing included file './TB/LIBS/CBB-LIB/cbb_pkg.sv'
+    ./TB/AGENTS/FAN-Agent/fan_pkg.sv, 31
+
+back to file './TB/AGENTS/FAN-Agent/fan_pkg.sv'
+    ./TB/AGENTS/FAN-Agent/fan_pkg.sv, 31
+
+analyzing included file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh'
+    ./TB/AGENTS/FAN-Agent/fan_pkg.sv, 39
+
+back to file './TB/AGENTS/FAN-Agent/fan_pkg.sv'
+    ./TB/AGENTS/FAN-Agent/fan_pkg.sv, 39
+
+analyzing included file './TB/AGENTS/FAN-Agent/fan_cfg.sv'
+    ./TB/AGENTS/FAN-Agent/fan_pkg.sv, 42
+
+back to file './TB/AGENTS/FAN-Agent/fan_pkg.sv'
+    ./TB/AGENTS/FAN-Agent/fan_pkg.sv, 42
+
+analyzing included file './TB/AGENTS/FAN-Agent/fan_pkt.sv'
+    ./TB/AGENTS/FAN-Agent/fan_pkg.sv, 43
+
+back to file './TB/AGENTS/FAN-Agent/fan_pkg.sv'
+    ./TB/AGENTS/FAN-Agent/fan_pkg.sv, 43
+
+analyzing included file './TB/AGENTS/FAN-Agent/fan_driver.sv'
+    ./TB/AGENTS/FAN-Agent/fan_pkg.sv, 44
+
+back to file './TB/AGENTS/FAN-Agent/fan_pkg.sv'
+    ./TB/AGENTS/FAN-Agent/fan_pkg.sv, 44
+
+analyzing included file './TB/AGENTS/FAN-Agent/fan_monitor.sv'
+    ./TB/AGENTS/FAN-Agent/fan_pkg.sv, 45
+
+back to file './TB/AGENTS/FAN-Agent/fan_pkg.sv'
+    ./TB/AGENTS/FAN-Agent/fan_pkg.sv, 45
+
+analyzing included file './TB/AGENTS/FAN-Agent/fan_sequencer.sv'
+    ./TB/AGENTS/FAN-Agent/fan_pkg.sv, 46
+
+back to file './TB/AGENTS/FAN-Agent/fan_pkg.sv'
+    ./TB/AGENTS/FAN-Agent/fan_pkg.sv, 46
+
+analyzing included file './TB/AGENTS/FAN-Agent/fan_agent.sv'
+    ./TB/AGENTS/FAN-Agent/fan_pkg.sv, 47
+
+back to file './TB/AGENTS/FAN-Agent/fan_pkg.sv'
+    ./TB/AGENTS/FAN-Agent/fan_pkg.sv, 47
+
+analyzing included file './TB/AGENTS/FAN-Agent/fan_sequence_list.sv'
+    ./TB/AGENTS/FAN-Agent/fan_pkg.sv, 48
+
+analyzing included file './TB/AGENTS/FAN-Agent/fan_smoke_seq.sv'
+    ./TB/AGENTS/FAN-Agent/fan_sequence_list.sv, 31
+
+back to file './TB/AGENTS/FAN-Agent/fan_sequence_list.sv'
+    ./TB/AGENTS/FAN-Agent/fan_sequence_list.sv, 31
+
+back to file './TB/AGENTS/FAN-Agent/fan_pkg.sv'
+    ./TB/AGENTS/FAN-Agent/fan_pkg.sv, 48
+
+back to file './TB/AGENTS/FAN-Agent/fan_if.sv'
+    ./TB/AGENTS/FAN-Agent/fan_if.sv, 34
+
+back to file './TB/top_if.sv'
+    ./TB/top_if.sv, 33
+
+analyzing included file './TB/AGENTS/PCIE-Agent/pcie_if.sv'
+    ./TB/top_if.sv, 34
+
+analyzing included file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh'
+    ./TB/AGENTS/PCIE-Agent/pcie_if.sv, 37
+
+back to file './TB/AGENTS/PCIE-Agent/pcie_if.sv'
+    ./TB/AGENTS/PCIE-Agent/pcie_if.sv, 37
+
+analyzing included file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh'
+    ./TB/AGENTS/PCIE-Agent/pcie_if.sv, 131
+
+back to file './TB/AGENTS/PCIE-Agent/pcie_if.sv'
+    ./TB/AGENTS/PCIE-Agent/pcie_if.sv, 131
+
+analyzing included file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh'
+    ./TB/AGENTS/PCIE-Agent/pcie_if.sv, 239
+
+back to file './TB/AGENTS/PCIE-Agent/pcie_if.sv'
+    ./TB/AGENTS/PCIE-Agent/pcie_if.sv, 239
+
+analyzing included file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh'
+    ./TB/AGENTS/PCIE-Agent/pcie_if.sv, 356
+
+back to file './TB/AGENTS/PCIE-Agent/pcie_if.sv'
+    ./TB/AGENTS/PCIE-Agent/pcie_if.sv, 356
+
+analyzing included file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh'
+    ./TB/AGENTS/PCIE-Agent/pcie_if.sv, 477
+
+back to file './TB/AGENTS/PCIE-Agent/pcie_if.sv'
+    ./TB/AGENTS/PCIE-Agent/pcie_if.sv, 477
+
+analyzing included file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh'
+    ./TB/AGENTS/PCIE-Agent/pcie_if.sv, 601
+
+back to file './TB/AGENTS/PCIE-Agent/pcie_if.sv'
+    ./TB/AGENTS/PCIE-Agent/pcie_if.sv, 601
+
+analyzing included file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh'
+    ./TB/AGENTS/PCIE-Agent/pcie_if.sv, 895
+
+back to file './TB/AGENTS/PCIE-Agent/pcie_if.sv'
+    ./TB/AGENTS/PCIE-Agent/pcie_if.sv, 895
+
+back to file './TB/top_if.sv'
+    ./TB/top_if.sv, 34
+
+analyzing included file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh'
+    ./TB/top_if.sv, 39
+
+back to file './TB/top_if.sv'
+    ./TB/top_if.sv, 39
+
+back to file './TB/tbtop.sv'
+    ./TB/tbtop.sv, 75
+
+analyzing included file './TB/AGENTS/UART-Agent/uart_if.sv'
+    ./TB/tbtop.sv, 76
+
+back to file './TB/tbtop.sv'
+    ./TB/tbtop.sv, 76
+
+analyzing included file './TB/AGENTS/SPI-Agent/spi_m_if.sv'
+    ./TB/tbtop.sv, 77
+
+back to file './TB/tbtop.sv'
+    ./TB/tbtop.sv, 77
+
+analyzing included file './TB/AGENTS/SPI-Agent/spi_s_if.sv'
+    ./TB/tbtop.sv, 78
+
+back to file './TB/tbtop.sv'
+    ./TB/tbtop.sv, 78
+
+analyzing included file './TB/AGENTS/I2C-Agent/i2c_m_if.sv'
+    ./TB/tbtop.sv, 79
+
+back to file './TB/tbtop.sv'
+    ./TB/tbtop.sv, 79
+
+analyzing included file './TB/AGENTS/I2C-Agent/i2c_s_if.sv'
+    ./TB/tbtop.sv, 80
+
+back to file './TB/tbtop.sv'
+    ./TB/tbtop.sv, 80
+
+analyzing included file './TB/MODEL/pca9548.sv'
+    ./TB/tbtop.sv, 81
+
+analyzing included file './TB/LIBS/CBB-LIB/macros_pkg.sv'
+    ./TB/MODEL/pca9548.sv, 31
+
+back to file './TB/MODEL/pca9548.sv'
+    ./TB/MODEL/pca9548.sv, 31
+
+analyzing included file './TB/MODEL/i2c_slave_model.v'
+    ./TB/MODEL/pca9548.sv, 32
+
+back to file './TB/MODEL/pca9548.sv'
+    ./TB/MODEL/pca9548.sv, 32
+
+analyzing included file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh'
+    ./TB/MODEL/pca9548.sv, 45
+
+back to file './TB/MODEL/pca9548.sv'
+    ./TB/MODEL/pca9548.sv, 45
+
+back to file './TB/tbtop.sv'
+    ./TB/tbtop.sv, 81
+
+analyzing included file './TB/MODEL/at24c02.v'
+    ./TB/tbtop.sv, 82
+
+analyzing included file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh'
+    ./TB/MODEL/at24c02.v, 199
+
+back to file './TB/MODEL/at24c02.v'
+    ./TB/MODEL/at24c02.v, 199
+
+back to file './TB/tbtop.sv'
+    ./TB/tbtop.sv, 82
+
+analyzing included file './TB/sfp_if.sv'
+    ./TB/tbtop.sv, 83
+
+back to file './TB/tbtop.sv'
+    ./TB/tbtop.sv, 83
+
+analyzing included file './TB/MODEL/out_9548.sv'
+    ./TB/tbtop.sv, 84
+
+analyzing included file './TB/LIBS/CBB-LIB/macros_pkg.sv'
+    ./TB/MODEL/out_9548.sv, 31
+
+back to file './TB/MODEL/out_9548.sv'
+    ./TB/MODEL/out_9548.sv, 31
+
+analyzing included file './TB/MODEL/pca9548.sv'
+    ./TB/MODEL/out_9548.sv, 32
+
+back to file './TB/MODEL/out_9548.sv'
+    ./TB/MODEL/out_9548.sv, 32
+
+analyzing included file './TB/MODEL/i2c_slv_rw.sv'
+    ./TB/MODEL/out_9548.sv, 33
+
+analyzing included file './TB/LIBS/CBB-LIB/macros_pkg.sv'
+    ./TB/MODEL/i2c_slv_rw.sv, 31
+
+back to file './TB/MODEL/i2c_slv_rw.sv'
+    ./TB/MODEL/i2c_slv_rw.sv, 31
+
+analyzing included file './TB/MODEL/i2c_slave_model.v'
+    ./TB/MODEL/i2c_slv_rw.sv, 32
+
+back to file './TB/MODEL/i2c_slv_rw.sv'
+    ./TB/MODEL/i2c_slv_rw.sv, 32
+
+analyzing included file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh'
+    ./TB/MODEL/i2c_slv_rw.sv, 44
+
+back to file './TB/MODEL/i2c_slv_rw.sv'
+    ./TB/MODEL/i2c_slv_rw.sv, 44
+
+back to file './TB/MODEL/out_9548.sv'
+    ./TB/MODEL/out_9548.sv, 33
+
+back to file './TB/tbtop.sv'
+    ./TB/tbtop.sv, 84
+
+analyzing included file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh'
+    ./TB/tbtop.sv, 92
+
+back to file './TB/tbtop.sv'
+    ./TB/tbtop.sv, 92
+
+Analyzing Verilog file '/home/work/chenjunming/change-impact-loop/workspaces/s0-ws-20261023/runs/RUN-20261024-002609/sandbox/TESTLIB/tc_pcie_rw_smoke.sv'
+analyzing included file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh'
+    /home/work/chenjunming/change-impact-loop/workspaces/s0-ws-20261023/runs/RUN-20261024-002609/sandbox/TESTLIB/tc_pcie_rw_smoke.sv, 33
+
+back to file '/home/work/chenjunming/change-impact-loop/workspaces/s0-ws-20261023/runs/RUN-20261024-002609/sandbox/TESTLIB/tc_pcie_rw_smoke.sv'
+    /home/work/chenjunming/change-impact-loop/workspaces/s0-ws-20261023/runs/RUN-20261024-002609/sandbox/TESTLIB/tc_pcie_rw_smoke.sv, 33
+
+analyzing included file './TB/top_pkg.sv'
+    /home/work/chenjunming/change-impact-loop/workspaces/s0-ws-20261023/runs/RUN-20261024-002609/sandbox/TESTLIB/tc_pcie_rw_smoke.sv, 35
+
+analyzing included file './TB/LIBS/CBB-LIB/macros_pkg.sv'
+    ./TB/top_pkg.sv, 33
+
+back to file './TB/top_pkg.sv'
+    ./TB/top_pkg.sv, 33
+
+analyzing included file './TB/AGENTS/CRG-Agent/crg_pkg.sv'
+    ./TB/top_pkg.sv, 34
+
+back to file './TB/top_pkg.sv'
+    ./TB/top_pkg.sv, 34
+
+analyzing included file './TB/AGENTS/FAN-Agent/fan_pkg.sv'
+    ./TB/top_pkg.sv, 35
+
+back to file './TB/top_pkg.sv'
+    ./TB/top_pkg.sv, 35
+
+analyzing included file './TB/AGENTS/PCIE-Agent/pcie_pkg.sv'
+    ./TB/top_pkg.sv, 36
+
+analyzing included file './TB/AGENTS/I2C-Agent/i2c_s.sv'
+    ./TB/AGENTS/PCIE-Agent/pcie_pkg.sv, 31
+
+back to file './TB/AGENTS/PCIE-Agent/pcie_pkg.sv'
+    ./TB/AGENTS/PCIE-Agent/pcie_pkg.sv, 31
+
+analyzing included file './TB/AGENTS/SPI-Agent/spi_m.sv'
+    ./TB/AGENTS/PCIE-Agent/pcie_pkg.sv, 32
+
+back to file './TB/AGENTS/PCIE-Agent/pcie_pkg.sv'
+    ./TB/AGENTS/PCIE-Agent/pcie_pkg.sv, 32
+
+analyzing included file './TB/AGENTS/UART-Agent/uart_pkg.sv'
+    ./TB/AGENTS/PCIE-Agent/pcie_pkg.sv, 33
+
+analyzing included file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh'
+    ./TB/AGENTS/UART-Agent/uart_pkg.sv, 35
+
+back to file './TB/AGENTS/UART-Agent/uart_pkg.sv'
+    ./TB/AGENTS/UART-Agent/uart_pkg.sv, 35
+
+analyzing included file './TB/AGENTS/UART-Agent/uart_config.sv'
+    ./TB/AGENTS/UART-Agent/uart_pkg.sv, 37
+
+back to file './TB/AGENTS/UART-Agent/uart_pkg.sv'
+    ./TB/AGENTS/UART-Agent/uart_pkg.sv, 37
+
+analyzing included file './TB/AGENTS/UART-Agent/uart_frame.sv'
+    ./TB/AGENTS/UART-Agent/uart_pkg.sv, 38
+
+back to file './TB/AGENTS/UART-Agent/uart_pkg.sv'
+    ./TB/AGENTS/UART-Agent/uart_pkg.sv, 38
+
+analyzing included file './TB/AGENTS/UART-Agent/uart_monitor.sv'
+    ./TB/AGENTS/UART-Agent/uart_pkg.sv, 39
+
+back to file './TB/AGENTS/UART-Agent/uart_pkg.sv'
+    ./TB/AGENTS/UART-Agent/uart_pkg.sv, 39
+
+analyzing included file './TB/AGENTS/UART-Agent/uart_rx_monitor.sv'
+    ./TB/AGENTS/UART-Agent/uart_pkg.sv, 40
+
+back to file './TB/AGENTS/UART-Agent/uart_pkg.sv'
+    ./TB/AGENTS/UART-Agent/uart_pkg.sv, 40
+
+analyzing included file './TB/AGENTS/UART-Agent/uart_tx_monitor.sv'
+    ./TB/AGENTS/UART-Agent/uart_pkg.sv, 41
+
+back to file './TB/AGENTS/UART-Agent/uart_pkg.sv'
+    ./TB/AGENTS/UART-Agent/uart_pkg.sv, 41
+
+analyzing included file './TB/AGENTS/UART-Agent/uart_sequencer.sv'
+    ./TB/AGENTS/UART-Agent/uart_pkg.sv, 42
+
+back to file './TB/AGENTS/UART-Agent/uart_pkg.sv'
+    ./TB/AGENTS/UART-Agent/uart_pkg.sv, 42
+
+analyzing included file './TB/AGENTS/UART-Agent/uart_tx_driver.sv'
+    ./TB/AGENTS/UART-Agent/uart_pkg.sv, 43
+
+back to file './TB/AGENTS/UART-Agent/uart_pkg.sv'
+    ./TB/AGENTS/UART-Agent/uart_pkg.sv, 43
+
+analyzing included file './TB/AGENTS/UART-Agent/uart_rx_driver.sv'
+    ./TB/AGENTS/UART-Agent/uart_pkg.sv, 44
+
+back to file './TB/AGENTS/UART-Agent/uart_pkg.sv'
+    ./TB/AGENTS/UART-Agent/uart_pkg.sv, 44
+
+analyzing included file './TB/AGENTS/UART-Agent/uart_tx_agent.sv'
+    ./TB/AGENTS/UART-Agent/uart_pkg.sv, 45
+
+back to file './TB/AGENTS/UART-Agent/uart_pkg.sv'
+    ./TB/AGENTS/UART-Agent/uart_pkg.sv, 45
+
+analyzing included file './TB/AGENTS/UART-Agent/uart_rx_agent.sv'
+    ./TB/AGENTS/UART-Agent/uart_pkg.sv, 46
+
+back to file './TB/AGENTS/UART-Agent/uart_pkg.sv'
+    ./TB/AGENTS/UART-Agent/uart_pkg.sv, 46
+
+analyzing included file './TB/AGENTS/UART-Agent/uart_env.sv'
+    ./TB/AGENTS/UART-Agent/uart_pkg.sv, 47
+
+back to file './TB/AGENTS/UART-Agent/uart_pkg.sv'
+    ./TB/AGENTS/UART-Agent/uart_pkg.sv, 47
+
+analyzing included file './TB/AGENTS/UART-Agent/uart_seq_lib.sv'
+    ./TB/AGENTS/UART-Agent/uart_pkg.sv, 48
+
+back to file './TB/AGENTS/UART-Agent/uart_pkg.sv'
+    ./TB/AGENTS/UART-Agent/uart_pkg.sv, 48
+
+back to file './TB/AGENTS/PCIE-Agent/pcie_pkg.sv'
+    ./TB/AGENTS/PCIE-Agent/pcie_pkg.sv, 33
+
+analyzing included file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh'
+    ./TB/AGENTS/PCIE-Agent/pcie_pkg.sv, 37
+
+back to file './TB/AGENTS/PCIE-Agent/pcie_pkg.sv'
+    ./TB/AGENTS/PCIE-Agent/pcie_pkg.sv, 37
+
+analyzing included file './TB/AGENTS/PCIE-Agent/pcie_cfg.sv'
+    ./TB/AGENTS/PCIE-Agent/pcie_pkg.sv, 204
+
+back to file './TB/AGENTS/PCIE-Agent/pcie_pkg.sv'
+    ./TB/AGENTS/PCIE-Agent/pcie_pkg.sv, 204
+
+analyzing included file './TB/AGENTS/PCIE-Agent/pcie_data.sv'
+    ./TB/AGENTS/PCIE-Agent/pcie_pkg.sv, 205
+
+back to file './TB/AGENTS/PCIE-Agent/pcie_pkg.sv'
+    ./TB/AGENTS/PCIE-Agent/pcie_pkg.sv, 205
+
+analyzing included file './TB/AGENTS/PCIE-Agent/pcie_driver.sv'
+    ./TB/AGENTS/PCIE-Agent/pcie_pkg.sv, 206
+
+back to file './TB/AGENTS/PCIE-Agent/pcie_pkg.sv'
+    ./TB/AGENTS/PCIE-Agent/pcie_pkg.sv, 206
+
+analyzing included file './TB/AGENTS/PCIE-Agent/pcie_monitor.sv'
+    ./TB/AGENTS/PCIE-Agent/pcie_pkg.sv, 207
+
+back to file './TB/AGENTS/PCIE-Agent/pcie_pkg.sv'
+    ./TB/AGENTS/PCIE-Agent/pcie_pkg.sv, 207
+
+analyzing included file './TB/AGENTS/PCIE-Agent/pcie_sequencer.sv'
+    ./TB/AGENTS/PCIE-Agent/pcie_pkg.sv, 208
+
+back to file './TB/AGENTS/PCIE-Agent/pcie_pkg.sv'
+    ./TB/AGENTS/PCIE-Agent/pcie_pkg.sv, 208
+
+analyzing included file './TB/AGENTS/PCIE-Agent/pcie_scoreboard.sv'
+    ./TB/AGENTS/PCIE-Agent/pcie_pkg.sv, 209
+
+back to file './TB/AGENTS/PCIE-Agent/pcie_pkg.sv'
+    ./TB/AGENTS/PCIE-Agent/pcie_pkg.sv, 209
+
+analyzing included file './TB/AGENTS/PCIE-Agent/pcie_agent.sv'
+    ./TB/AGENTS/PCIE-Agent/pcie_pkg.sv, 210
+
+back to file './TB/AGENTS/PCIE-Agent/pcie_pkg.sv'
+    ./TB/AGENTS/PCIE-Agent/pcie_pkg.sv, 210
+
+analyzing included file './TB/AGENTS/PCIE-Agent/pcie_sequence.sv'
+    ./TB/AGENTS/PCIE-Agent/pcie_pkg.sv, 211
+
+back to file './TB/AGENTS/PCIE-Agent/pcie_pkg.sv'
+    ./TB/AGENTS/PCIE-Agent/pcie_pkg.sv, 211
+
+back to file './TB/top_pkg.sv'
+    ./TB/top_pkg.sv, 36
+
+analyzing included file './TB/AGENTS/UART-Agent/uart_pkg.sv'
+    ./TB/top_pkg.sv, 37
+
+back to file './TB/top_pkg.sv'
+    ./TB/top_pkg.sv, 37
+
+analyzing included file './TB/AGENTS/SPI-Agent/spi_m.sv'
+    ./TB/top_pkg.sv, 38
+
+back to file './TB/top_pkg.sv'
+    ./TB/top_pkg.sv, 38
+
+analyzing included file './TB/AGENTS/SPI-Agent/spi_s.sv'
+    ./TB/top_pkg.sv, 39
+
+Warning-121147: Redefinition
+    TB/AGENTS/PCIE-Agent/pcie_sequence.sv, 802
+          bit [31:0] base_addr, wdata, rdata,exp_data,rd_data;
+                     ^
+    Redefinition of value identifier 'base_addr', the redefinition will be ignored
+    Previous definition here
+        TB/AGENTS/PCIE-Agent/pcie_sequence.sv, 799
+            task set_rtc_rw(int n, int chn=1, bit [31:0] addr, int w_byte, bit rw_flg, bit in_flg=0,int n9548=0, bit [31:0] base_addr='h2000, 
+                                                                                                                            ^
+
+back to file './TB/top_pkg.sv'
+    ./TB/top_pkg.sv, 39
+
+analyzing included file './TB/AGENTS/I2C-Agent/i2c_m.sv'
+    ./TB/top_pkg.sv, 40
+
+back to file './TB/top_pkg.sv'
+    ./TB/top_pkg.sv, 40
+
+analyzing included file './TB/AGENTS/I2C-Agent/i2c_s.sv'
+    ./TB/top_pkg.sv, 41
+
+back to file './TB/top_pkg.sv'
+    ./TB/top_pkg.sv, 41
+
+analyzing included file '/home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/uvm_macros.svh'
+    ./TB/top_pkg.sv, 46
+
+back to file './TB/top_pkg.sv'
+    ./TB/top_pkg.sv, 46
+
+analyzing included file './TB/top_cfg.sv'
+    ./TB/top_pkg.sv, 58
+
+back to file './TB/top_pkg.sv'
+    ./TB/top_pkg.sv, 58
+
+analyzing included file './TB/top_vsqr.sv'
+    ./TB/top_pkg.sv, 59
+
+back to file './TB/top_pkg.sv'
+    ./TB/top_pkg.sv, 59
+
+analyzing included file './TB/top_scoreboard.sv'
+    ./TB/top_pkg.sv, 60
+
+back to file './TB/top_pkg.sv'
+    ./TB/top_pkg.sv, 60
+
+analyzing included file './TB/top_env.sv'
+    ./TB/top_pkg.sv, 61
+
+back to file './TB/top_pkg.sv'
+    ./TB/top_pkg.sv, 61
+
+analyzing included file './TB/LIBS/CBB-LIB/test_lib.sv'
+    ./TB/top_pkg.sv, 62
+
+back to file './TB/top_pkg.sv'
+    ./TB/top_pkg.sv, 62
+
+back to file '/home/work/chenjunming/change-impact-loop/workspaces/s0-ws-20261023/runs/RUN-20261024-002609/sandbox/TESTLIB/tc_pcie_rw_smoke.sv'
+    /home/work/chenjunming/change-impact-loop/workspaces/s0-ws-20261023/runs/RUN-20261024-002609/sandbox/TESTLIB/tc_pcie_rw_smoke.sv, 35
+
+analyzing included file './TB/AGENTS/CRG-Agent/crg_pkg.sv'
+    /home/work/chenjunming/change-impact-loop/workspaces/s0-ws-20261023/runs/RUN-20261024-002609/sandbox/TESTLIB/tc_pcie_rw_smoke.sv, 36
+
+back to file '/home/work/chenjunming/change-impact-loop/workspaces/s0-ws-20261023/runs/RUN-20261024-002609/sandbox/TESTLIB/tc_pcie_rw_smoke.sv'
+    /home/work/chenjunming/change-impact-loop/workspaces/s0-ws-20261023/runs/RUN-20261024-002609/sandbox/TESTLIB/tc_pcie_rw_smoke.sv, 36
+
+analyzing included file './TB/LIBS/CBB-LIB/macros_pkg.sv'
+    /home/work/chenjunming/change-impact-loop/workspaces/s0-ws-20261023/runs/RUN-20261024-002609/sandbox/TESTLIB/tc_pcie_rw_smoke.sv, 37
+
+back to file '/home/work/chenjunming/change-impact-loop/workspaces/s0-ws-20261023/runs/RUN-20261024-002609/sandbox/TESTLIB/tc_pcie_rw_smoke.sv'
+    /home/work/chenjunming/change-impact-loop/workspaces/s0-ws-20261023/runs/RUN-20261024-002609/sandbox/TESTLIB/tc_pcie_rw_smoke.sv, 37
+
+analyzing included file './TB/AGENTS/I2C-Agent/packet.sv'
+    /home/work/chenjunming/change-impact-loop/workspaces/s0-ws-20261023/runs/RUN-20261024-002609/sandbox/TESTLIB/tc_pcie_rw_smoke.sv, 38
+
+back to file '/home/work/chenjunming/change-impact-loop/workspaces/s0-ws-20261023/runs/RUN-20261024-002609/sandbox/TESTLIB/tc_pcie_rw_smoke.sv'
+    /home/work/chenjunming/change-impact-loop/workspaces/s0-ws-20261023/runs/RUN-20261024-002609/sandbox/TESTLIB/tc_pcie_rw_smoke.sv, 38
+
+
+Saving Verilog Library 'tb' to Path './SIMLIB_RUN/tc_pcie_rw_smoke_1/tb' Done
+Elapsed time: 0.91s, CPU time: 0.95s, RSS size: 467.75M
+Compilation: 0 error(s), 4 warning(s)

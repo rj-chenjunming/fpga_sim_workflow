@@ -1,0 +1,18 @@
+{
+  "run_id": "RUN-20261026-135835",
+  "run_dir": "/home/work/chenjunming/change-impact-loop/workspaces/s0-ws-20261023/runs/RUN-20261026-135835",
+  "baseline": "v0",
+  "project": "/home/work/chenjunming/change-impact-loop/workspaces/s0-work-20261023",
+  "s0_record_id": null,
+  "mode": "drill",
+  "scenario": "happy",
+  "status": "finished",
+  "created_at": "2026-10-26T13:58:35.907363",
+  "updated_at": "2026-10-26T13:59:14.481322",
+  "pending_interrupt": null,
+  "error": null,
+  "notes": [
+    "snapshot 失败：RuntimeError: Can not save TriggerFlowExecution 467e1782b3654391ad870309a0238b5a with require_idle=True while tasks are active.",
+    "执行已关闭：reason=terminal_node_reached close_result=dict"
+  ]
+}

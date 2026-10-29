@@ -1,0 +1,141 @@
+{
+  "anchor": {
+    "algo": "sha256-of-canonical-state-without-anchor",
+    "file": "gates.sha256",
+    "value": "671fd9257e1c615922b8ec3e93abc4b576fab616d0cfc6d489cd9d999182fea0"
+  },
+  "created_at": "2026-10-26T13:58:35+0800",
+  "gates": {
+    "G1_diff_confirm": {
+      "actor": "human:lead-verify-20261026",
+      "actor_kind": "human",
+      "artifacts": [
+        "n2_diff.json md5=3eb2eaac3b386844cb95b7e40470f4ee",
+        "n3_digest.md md5=7590f2ed09daeda48b0c2751fa938b24"
+      ],
+      "decision": "confirmed",
+      "gate_id": "G1_diff_confirm",
+      "history": [
+        {
+          "actor": "human:lead-verify-20261026",
+          "actor_kind": "human",
+          "at": "2026-10-26T13:58:45+0800",
+          "decision": "confirmed",
+          "gate": "G1_diff_confirm",
+          "human_signed": true,
+          "note": "drill 夹具回放工程验证（非用户确认）",
+          "prev": {
+            "actor": null,
+            "actor_kind": null,
+            "artifacts": [],
+            "decision": "pending",
+            "gate_id": "G1_diff_confirm",
+            "human_signed": false,
+            "kind": "diff_confirm",
+            "note": null,
+            "rework_target": null,
+            "signed_at": null,
+            "status": "pending"
+          },
+          "rework_target": null
+        }
+      ],
+      "human_signed": true,
+      "kind": "diff_confirm",
+      "note": "drill 夹具回放工程验证（非用户确认）",
+      "rework_target": null,
+      "signed_at": "2026-10-26T13:58:45+0800",
+      "status": "signed"
+    },
+    "G2_report_accept": {
+      "actor": "human:lead-verify-20261026",
+      "actor_kind": "human",
+      "artifacts": [
+        "n12_report.md md5=b9b4ecd234d81e3d8540007706b2333d",
+        "evidence/fixture_tc_cpu_i2c_03_1_c_rtl.log md5=abfec2cac2200d7e100059631cccd566",
+        "evidence/fixture_tc_cpu_i2c_03_1_c_tb.log md5=7e08cf98499185a99f3751f71e30de6f"
+      ],
+      "decision": "accept",
+      "gate_id": "G2_report_accept",
+      "history": [
+        {
+          "actor": "human:lead-verify-20261026",
+          "actor_kind": "human",
+          "at": "2026-10-26T13:59:06+0800",
+          "decision": "accept",
+          "gate": "G2_report_accept",
+          "human_signed": true,
+          "note": "drill 回放验证 R1：接受未通过报告（非用户确认）",
+          "prev": {
+            "actor": null,
+            "actor_kind": null,
+            "artifacts": [],
+            "decision": "pending",
+            "gate_id": "G2_report_accept",
+            "human_signed": false,
+            "kind": "report_accept",
+            "note": null,
+            "rework_target": null,
+            "signed_at": null,
+            "status": "pending"
+          },
+          "rework_target": null
+        }
+      ],
+      "human_signed": true,
+      "kind": "report_accept",
+      "note": "drill 回放验证 R1：接受未通过报告（非用户确认）",
+      "rework_target": null,
+      "signed_at": "2026-10-26T13:59:06+0800",
+      "status": "signed"
+    },
+    "G3_regression_decision": {
+      "actor": "human:lead-verify-20261026",
+      "actor_kind": "human",
+      "artifacts": [
+        "n12_report.md md5=b9b4ecd234d81e3d8540007706b2333d",
+        "evidence/fixture_tc_cpu_i2c_03_1_c_rtl.log md5=abfec2cac2200d7e100059631cccd566",
+        "evidence/fixture_tc_cpu_i2c_03_1_c_tb.log md5=7e08cf98499185a99f3751f71e30de6f"
+      ],
+      "decision": "milestone_only",
+      "gate_id": "G3_regression_decision",
+      "history": [
+        {
+          "actor": "human:lead-verify-20261026",
+          "actor_kind": "human",
+          "at": "2026-10-26T13:59:13+0800",
+          "decision": "milestone_only",
+          "gate": "G3_regression_decision",
+          "human_signed": true,
+          "note": "drill 回放验证：冲突未清零，仅里程碑",
+          "prev": {
+            "actor": null,
+            "actor_kind": null,
+            "artifacts": [],
+            "decision": "pending",
+            "gate_id": "G3_regression_decision",
+            "human_signed": false,
+            "kind": "regression_decision",
+            "note": null,
+            "rework_target": null,
+            "signed_at": null,
+            "status": "pending"
+          },
+          "rework_target": null
+        }
+      ],
+      "human_signed": true,
+      "kind": "regression_decision",
+      "note": "drill 回放验证：冲突未清零，仅里程碑",
+      "rework_target": null,
+      "signed_at": "2026-10-26T13:59:13+0800",
+      "status": "signed"
+    }
+  },
+  "manifest_from": "N/A",
+  "manifest_to": "runs/RUN-20261026-135835/n1_manifest_new.json",
+  "run_id": "RUN-20261026-135835",
+  "schema": "kb/gate-state",
+  "updated_at": "2026-10-26T13:59:13+0800",
+  "version": 1
+}

@@ -1,0 +1,27 @@
+{
+  "schema": "loop/gate_entries",
+  "gate": "G2_report_accept",
+  "run_id": "RUN-20261026-135835",
+  "records": [
+    {
+      "cycle": "0-0",
+      "decided_at": "2026-10-26T13:59:06+0800",
+      "decision": "accept",
+      "actor": "human:lead-verify-20261026",
+      "reason": "drill 回放验证 R1：接受未通过报告（非用户确认）",
+      "entries": {},
+      "hard_block": [
+        {
+          "code": "I3_KOUTOU1_NONZERO",
+          "title": "口径一 = 29 ≠ 0（I3 第 4 项不成立）",
+          "message": "口径二为 0 **不足以**判绿。口径一由 `*E` 文本行数而来，其非零是既有缺陷所致（本轮修订点 0x0000+0x04 未命中）。根因方向：TB/AGENTS/PCIE-Agent/pcie_sequence.sv:598 走 uvm_info 而非 `uvm_error`。"
+        },
+        {
+          "code": "I4_CONFLICTS_UNCLEARED",
+          "title": "冲突未清零：72/72 项 blocks_release",
+          "message": "按 I4「清单未清零不发版」⇒ 阻断 full_now/subset_only 选项与晋升动作。"
+        }
+      ]
+    }
+  ]
+}

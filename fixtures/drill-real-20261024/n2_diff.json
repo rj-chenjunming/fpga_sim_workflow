@@ -1,0 +1,348 @@
+{
+  "blocking_gap": false,
+  "blocking_gap_reasons": [],
+  "checks": {
+    "deterministic": true,
+    "generated_at_source": "wallclock(kb_lib.now_iso)",
+    "normalized_sha256": "8def487743f524c66a883c80bdc1ad1863deddda5485098399b60d88926c1250",
+    "schema": "kb/schema/n2_diff.schema.json",
+    "self_check_ok": true,
+    "time_fields": [
+      "generated_at"
+    ],
+    "weak_criterion": "kb_lib.sha256_obj_normalized(obj, ('generated_at',))"
+  },
+  "diffs": [
+    {
+      "after": "18fc0eaa75fc5bcca914c45d72b8fe40",
+      "before": "5fcc185667726a78b17a309514111db2",
+      "change": "modified",
+      "diff_hunk": null,
+      "evidence": "baselines/v0/allfiles.md5:L2872 -> runs/RUN-20261024-002609/bundle/allfiles.md5:L2872（逐文件 md5 变化）",
+      "id": "RTL/SRC/imports/SRC/TCS9620_MAC_TOP.v",
+      "kind": "allfile",
+      "lines": [],
+      "offsets": [],
+      "unresolved": "② 路只比逐文件 md5 清单，无文本 hunk（旧版正文不在 KB）⇒ offset 由 ①/③ 路提供；本条已按『modified』计入差异"
+    },
+    {
+      "after": "f08ce76487ef70975798b0d3ae3f0062",
+      "before": "7b24a57af2d6f087d91e4a03f5879705",
+      "change": "modified",
+      "diff_hunk": null,
+      "evidence": "baselines/v0/allfiles.md5:L2877 -> runs/RUN-20261024-002609/bundle/allfiles.md5:L2877（逐文件 md5 变化）",
+      "id": "RTL/SRC/imports/SRC/dom_src/dom_engine_top.v",
+      "kind": "allfile",
+      "lines": [],
+      "offsets": [],
+      "unresolved": "② 路只比逐文件 md5 清单，无文本 hunk（旧版正文不在 KB）⇒ offset 由 ①/③ 路提供；本条已按『modified』计入差异"
+    },
+    {
+      "after": "50e4ca25f384d0ee384252b34f30e760",
+      "before": "d560f2ff15388aad16dc64431d67a617",
+      "change": "modified",
+      "diff_hunk": null,
+      "evidence": "baselines/v0/allfiles.md5:L2896 -> runs/RUN-20261024-002609/bundle/allfiles.md5:L2896（逐文件 md5 变化）",
+      "id": "RTL/SRC/imports/SRC/pcie_controller/pcie_register.v",
+      "kind": "allfile",
+      "lines": [],
+      "offsets": [],
+      "unresolved": "② 路只比逐文件 md5 清单，无文本 hunk（旧版正文不在 KB）⇒ offset 由 ①/③ 路提供；本条已按『modified』计入差异"
+    },
+    {
+      "after": "8043478856d7d620a95a110fde0a20fd",
+      "before": "dd139449354a134f0afea9ac72525d21",
+      "change": "modified",
+      "diff_hunk": null,
+      "evidence": "baselines/v0/allfiles.md5:L2936 -> runs/RUN-20261024-002609/bundle/allfiles.md5:L2936（逐文件 md5 变化）",
+      "id": "RTL/SRC/imports/SRC/uart/uart_top.v",
+      "kind": "allfile",
+      "lines": [],
+      "offsets": [],
+      "unresolved": "② 路只比逐文件 md5 清单，无文本 hunk（旧版正文不在 KB）⇒ offset 由 ①/③ 路提供；本条已按『modified』计入差异"
+    },
+    {
+      "after": "18fc0eaa75fc5bcca914c45d72b8fe40",
+      "before": "5fcc185667726a78b17a309514111db2",
+      "change": "modified",
+      "diff_hunk": "--- \n+++ \n@@ -1,3 +1,4 @@\n+// TEST-CHANGE 2026-10-23 #2: verifiable comment-only change (clean-env walkthrough)\n ///////////////////////////////////////////////////////////////////////////////\n //  Current version info\n ///////////////////////////////////////////////////////////////////////////////",
+      "encoding": "utf-8",
+      "evidence": "baselines/v0/rtl_files.md5:L95 -> runs/RUN-20261024-002609/bundle/rtl_files.md5:L95（逐文件 md5 变化）",
+      "id": "RTL/SRC/imports/SRC/TCS9620_MAC_TOP.v",
+      "kind": "rtl_file",
+      "lines": [
+        1
+      ],
+      "offsets": [],
+      "unresolved": "hunk 里未抽到地址字面量（32'hXXXX / 0xXXXX）⇒ offset 交由 ③ 路或人工补"
+    },
+    {
+      "after": "f08ce76487ef70975798b0d3ae3f0062",
+      "before": "7b24a57af2d6f087d91e4a03f5879705",
+      "change": "modified",
+      "diff_hunk": "--- \n+++ \n@@ -1,3 +1,4 @@\n+// TEST-CHANGE 2026-10-23 #3: verifiable comment-only change (clean-env walkthrough)\n //`timescale 1ns / 1ps\n //////////////////////////////////////////////////////////////////////////////////\n // Company: Ruijie",
+      "encoding": "utf-8",
+      "evidence": "baselines/v0/rtl_files.md5:L100 -> runs/RUN-20261024-002609/bundle/rtl_files.md5:L100（逐文件 md5 变化）",
+      "id": "RTL/SRC/imports/SRC/dom_src/dom_engine_top.v",
+      "kind": "rtl_file",
+      "lines": [
+        1
+      ],
+      "offsets": [],
+      "unresolved": "hunk 里未抽到地址字面量（32'hXXXX / 0xXXXX）⇒ offset 交由 ③ 路或人工补"
+    },
+    {
+      "after": "50e4ca25f384d0ee384252b34f30e760",
+      "before": "d560f2ff15388aad16dc64431d67a617",
+      "change": "modified",
+      "diff_hunk": "--- \n+++ \n@@ -168,7 +168,8 @@\n \tassign\ts_hit_7x\t=\tdcb_gnt ? (dcb_addr[7:4]\t\t==\t4'h7)\t?\t1'b1 : 1'b0\t:\thit_7x;\n \tassign\ts_hit_8x\t=\tdcb_gnt ? (dcb_addr[7:4]\t\t==\t4'h8)\t?\t1'b1 : 1'b0\t:\thit_8x;\n \t\n-\tassign\ts_reg_test\t\t=\t(write & hit_0x & hit_x4 & dcb_wdval) ? dcb_wdata \t: reg_test;\t\n+\t// 0x0d04 pcie_test: [31:16] reserved, read as 0; only [15:0] R/W\n+\tassign\ts_reg_test\t\t=\t(write & hit_0x & hit_x4 & dcb_wdval) ? {16'h0, dcb_wdata[15:0]} \t: reg_test;\t\n \tassign\ts_little_endian\t=\t(write & hit_0x & hit_x8 & dcb_wdval) ? |dcb_wdata\t: little_endian\t;\n \t\n \tassign\ts_dcb_gnt = \tdcb_gnt | grant_1d | grant_2d ? 1'b0               //ensure write complete",
+      "encoding": "utf-8",
+      "evidence": "baselines/v0/rtl_files.md5:L119 -> runs/RUN-20261024-002609/bundle/rtl_files.md5:L119（逐文件 md5 变化）",
+      "id": "RTL/SRC/imports/SRC/pcie_controller/pcie_register.v",
+      "kind": "rtl_file",
+      "lines": [
+        171,
+        172
+      ],
+      "offsets": [
+        "0xd04"
+      ],
+      "unresolved": null
+    },
+    {
+      "after": "8043478856d7d620a95a110fde0a20fd",
+      "before": "dd139449354a134f0afea9ac72525d21",
+      "change": "modified",
+      "diff_hunk": "--- \n+++ \n@@ -1,3 +1,4 @@\n+// TEST-CHANGE 2026-10-23 #4: verifiable comment-only change (clean-env walkthrough)\n ///////////////////////////////////////////////////////////////////////////////\n //  Current version info\n ///////////////////////////////////////////////////////////////////////////////",
+      "encoding": "utf-8",
+      "evidence": "baselines/v0/rtl_files.md5:L159 -> runs/RUN-20261024-002609/bundle/rtl_files.md5:L159（逐文件 md5 变化）",
+      "id": "RTL/SRC/imports/SRC/uart/uart_top.v",
+      "kind": "rtl_file",
+      "lines": [
+        1
+      ],
+      "offsets": [],
+      "unresolved": "hunk 里未抽到地址字面量（32'hXXXX / 0xXXXX）⇒ offset 交由 ③ 路或人工补"
+    }
+  ],
+  "from": {
+    "baseline": "v0",
+    "manifest_path": "baselines/v0/manifest.json",
+    "manifest_sha256": "aefc43d4ab646a013f59fa31d15f73fe894dc430b3fa1dc0d2d353c574b0e732"
+  },
+  "generated_at": "2026-10-24T00:26:10+0800",
+  "generator": "kb/tools/n2_diff.py (Host 确定性)",
+  "has_change": true,
+  "index_gaps": [],
+  "inputs": {
+    "allfiles_md5_from": {
+      "entries": 4492,
+      "path": "baselines/v0/allfiles.md5",
+      "scope": [
+        "PKG",
+        "RTL",
+        "TB",
+        "TESTLIB"
+      ],
+      "sha256": "19f0108bdc790df6c2020f18bdf2b74d29ed2d5f198991f00ed2f35d73fc682d"
+    },
+    "allfiles_md5_to": {
+      "entries": 4492,
+      "path": "runs/RUN-20261024-002609/bundle/allfiles.md5",
+      "scope": [
+        "PKG",
+        "RTL",
+        "TB",
+        "TESTLIB"
+      ],
+      "sha256": "552d526509068dc725fc01c320b3e71cfef42fe81d5b63cc69e4922080984658"
+    },
+    "allfiles_scope_intersection": [
+      "PKG",
+      "RTL",
+      "TB",
+      "TESTLIB"
+    ],
+    "doc_entries_from": {
+      "entries": 126,
+      "path": "baselines/v0/doc_entries.jsonl",
+      "resolved_by": "manifest.doc_fingerprint.path 同目录（主口径）",
+      "sha256": "79ca33dd98a106e57276ed216ff6afb32ab4137e7ec89996e42891f6ce634f0a"
+    },
+    "doc_entries_to": {
+      "entries": 126,
+      "path": "runs/RUN-20261024-002609/bundle/doc_entries.jsonl",
+      "resolved_by": "manifest.doc_fingerprint.path 同目录（主口径）",
+      "sha256": "79ca33dd98a106e57276ed216ff6afb32ab4137e7ec89996e42891f6ce634f0a"
+    },
+    "doc_fingerprint_from": {
+      "entries": 126,
+      "path": "baselines/v0/doc_entries.txt",
+      "sha256": "0bedd7a35f7b3bb3be3a7d0c40ffa7ac96339a4151b248f14b28221366472359"
+    },
+    "doc_fingerprint_to": {
+      "entries": 126,
+      "path": "runs/RUN-20261024-002609/bundle/doc_entries.txt",
+      "sha256": "0bedd7a35f7b3bb3be3a7d0c40ffa7ac96339a4151b248f14b28221366472359"
+    },
+    "from_manifest": {
+      "path": "baselines/v0/manifest.json",
+      "sha256": "aefc43d4ab646a013f59fa31d15f73fe894dc430b3fa1dc0d2d353c574b0e732"
+    },
+    "rtl_files_md5_from": {
+      "entries": 162,
+      "path": "baselines/v0/rtl_files.md5",
+      "sha256": "a86f7d6959fcf9082ed964a926e88d5d7e0cd017f413a01d6cca941bcb06d95b"
+    },
+    "rtl_files_md5_to": {
+      "entries": 162,
+      "path": "runs/RUN-20261024-002609/bundle/rtl_files.md5",
+      "sha256": "942b9ec8d8d4f2afa01e7be385bb07ce8cdffc92fa2215c88fe45c901b811075"
+    },
+    "rtl_snapshot_sha256_from": {
+      "path": "baselines/v0/rtl_snapshot.tar",
+      "sha256": "983d835813fb3b4796e86f976c0329764749550ec61d6800580855b823f5be6f"
+    },
+    "rtl_snapshot_sha256_to": {
+      "path": "runs/RUN-20261024-002609/bundle/rtl_snapshot.tar",
+      "sha256": "9cb5eafb214aea2b3a74ff84501a5b1124a4452c6942e08045c459dd41c9cfa3"
+    },
+    "to_manifest": {
+      "path": "runs/RUN-20261024-002609/n1_manifest_new.json",
+      "sha256": "c0f776248a182312c5737c4c1ad8e186122c6e4412a2f685da3ff863d30fd221"
+    }
+  },
+  "no_change_statement": null,
+  "notes": [],
+  "offsets": [
+    {
+      "entry_id": null,
+      "kind": "rtl_file",
+      "lines": [
+        171,
+        172
+      ],
+      "raw": "0x0d04",
+      "source": "RTL/SRC/imports/SRC/pcie_controller/pcie_register.v",
+      "value": "0xd04"
+    }
+  ],
+  "routes": {
+    "allfiles": {
+      "added": 0,
+      "changed": 4,
+      "entries_from": 4492,
+      "entries_to": 4492,
+      "md5_listing_from": "baselines/v0/allfiles.md5",
+      "md5_listing_sha256_from": "19f0108bdc790df6c2020f18bdf2b74d29ed2d5f198991f00ed2f35d73fc682d",
+      "md5_listing_sha256_to": "552d526509068dc725fc01c320b3e71cfef42fe81d5b63cc69e4922080984658",
+      "md5_listing_to": "runs/RUN-20261024-002609/bundle/allfiles.md5",
+      "ok": true,
+      "only_in_from": [],
+      "only_in_to": [],
+      "removed": 0,
+      "scope": [
+        "PKG",
+        "RTL",
+        "TB",
+        "TESTLIB"
+      ],
+      "scope_from": [
+        "PKG",
+        "RTL",
+        "TB",
+        "TESTLIB"
+      ],
+      "scope_intersection": [
+        "PKG",
+        "RTL",
+        "TB",
+        "TESTLIB"
+      ],
+      "scope_to": [
+        "PKG",
+        "RTL",
+        "TB",
+        "TESTLIB"
+      ]
+    },
+    "doc_entries": {
+      "added": 0,
+      "changed": 0,
+      "entries_derivation": "主口径 dirname(manifest.doc_fingerprint.path)/doc_entries.jsonl；回退链 <manifest>/bundle → <manifest> 同目录 → kb/index/regmap.json",
+      "entries_from": 126,
+      "entries_from_path": "baselines/v0/doc_entries.jsonl",
+      "entries_from_resolved_by": "manifest.doc_fingerprint.path 同目录（主口径）",
+      "entries_to": 126,
+      "entries_to_path": "runs/RUN-20261024-002609/bundle/doc_entries.jsonl",
+      "entries_to_resolved_by": "manifest.doc_fingerprint.path 同目录（主口径）",
+      "fingerprint_entries_from": 126,
+      "fingerprint_entries_to": 126,
+      "fingerprint_from": "0bedd7a35f7b3bb3be3a7d0c40ffa7ac96339a4151b248f14b28221366472359",
+      "fingerprint_to": "0bedd7a35f7b3bb3be3a7d0c40ffa7ac96339a4151b248f14b28221366472359",
+      "ok": true,
+      "removed": 0,
+      "used_fallback": false
+    },
+    "rtl_files": {
+      "added": 0,
+      "changed": 4,
+      "entries_from": 162,
+      "entries_to": 162,
+      "manifest_sha256_from": "a86f7d6959fcf9082ed964a926e88d5d7e0cd017f413a01d6cca941bcb06d95b",
+      "manifest_sha256_to": "942b9ec8d8d4f2afa01e7be385bb07ce8cdffc92fa2215c88fe45c901b811075",
+      "md5_listing_from": "baselines/v0/rtl_files.md5",
+      "md5_listing_to": "runs/RUN-20261024-002609/bundle/rtl_files.md5",
+      "ok": true,
+      "removed": 0,
+      "tar_sha256_from": "983d835813fb3b4796e86f976c0329764749550ec61d6800580855b823f5be6f",
+      "tar_sha256_to": "9cb5eafb214aea2b3a74ff84501a5b1124a4452c6942e08045c459dd41c9cfa3"
+    }
+  },
+  "run_id": "RUN-20261024-002609",
+  "schema": "kb/run/n2_diff",
+  "scope_notes": [],
+  "to": {
+    "baseline": "v1",
+    "manifest_path": "runs/RUN-20261024-002609/n1_manifest_new.json",
+    "manifest_sha256": "c0f776248a182312c5737c4c1ad8e186122c6e4412a2f685da3ff863d30fd221"
+  },
+  "unresolved_offsets": [
+    {
+      "id": "RTL/SRC/imports/SRC/TCS9620_MAC_TOP.v",
+      "kind": "allfile",
+      "reason": "② 路只比逐文件 md5 清单，无文本 hunk（旧版正文不在 KB）⇒ offset 由 ①/③ 路提供；本条已按『modified』计入差异"
+    },
+    {
+      "id": "RTL/SRC/imports/SRC/dom_src/dom_engine_top.v",
+      "kind": "allfile",
+      "reason": "② 路只比逐文件 md5 清单，无文本 hunk（旧版正文不在 KB）⇒ offset 由 ①/③ 路提供；本条已按『modified』计入差异"
+    },
+    {
+      "id": "RTL/SRC/imports/SRC/pcie_controller/pcie_register.v",
+      "kind": "allfile",
+      "reason": "② 路只比逐文件 md5 清单，无文本 hunk（旧版正文不在 KB）⇒ offset 由 ①/③ 路提供；本条已按『modified』计入差异"
+    },
+    {
+      "id": "RTL/SRC/imports/SRC/uart/uart_top.v",
+      "kind": "allfile",
+      "reason": "② 路只比逐文件 md5 清单，无文本 hunk（旧版正文不在 KB）⇒ offset 由 ①/③ 路提供；本条已按『modified』计入差异"
+    },
+    {
+      "id": "RTL/SRC/imports/SRC/TCS9620_MAC_TOP.v",
+      "kind": "rtl_file",
+      "reason": "hunk 里未抽到地址字面量（32'hXXXX / 0xXXXX）⇒ offset 交由 ③ 路或人工补"
+    },
+    {
+      "id": "RTL/SRC/imports/SRC/dom_src/dom_engine_top.v",
+      "kind": "rtl_file",
+      "reason": "hunk 里未抽到地址字面量（32'hXXXX / 0xXXXX）⇒ offset 交由 ③ 路或人工补"
+    },
+    {
+      "id": "RTL/SRC/imports/SRC/uart/uart_top.v",
+      "kind": "rtl_file",
+      "reason": "hunk 里未抽到地址字面量（32'hXXXX / 0xXXXX）⇒ offset 交由 ③ 路或人工补"
+    }
+  ],
+  "version": 1
+}

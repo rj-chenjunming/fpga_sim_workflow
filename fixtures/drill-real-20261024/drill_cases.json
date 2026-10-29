@@ -1,0 +1,58 @@
+{
+  "schema": "drill-cases/1",
+  "source_run": "RUN-20261024-002609",
+  "source_project": "/home/work/chenjunming/change-impact-loop/workspaces/s0-work-20261023",
+  "note": "由真实 run 冻结（SPEC-REV-05 R2）；只回放，不重跑仿真；数字不得改写。",
+  "cases": [
+    {
+      "case": "tc_cpu_i2c_03",
+      "run_log": "20261024-003330_tc_cpu_i2c_03_1_run.log",
+      "rc": 0,
+      "compile_logs": {
+        "c_rtl": "20261024-003330_tc_cpu_i2c_03_1_c_rtl.log",
+        "c_tb": "20261024-003330_tc_cpu_i2c_03_1_c_tb.log",
+        "c_uvs": "20261024-003330_tc_cpu_i2c_03_1_c_uvs.log"
+      }
+    },
+    {
+      "case": "tc_pcie_rw_02",
+      "run_log": "20261024-141810_tc_pcie_rw_02_1_run.log",
+      "rc": 0,
+      "compile_logs": {
+        "c_rtl": "20261024-141810_tc_pcie_rw_02_1_c_rtl.log",
+        "c_tb": "20261024-141810_tc_pcie_rw_02_1_c_tb.log",
+        "c_uvs": "20261024-141810_tc_pcie_rw_02_1_c_uvs.log"
+      }
+    },
+    {
+      "case": "tc_pcie_rw_smoke",
+      "run_log": "20261024-143644_tc_pcie_rw_smoke_1_run.log",
+      "rc": 0,
+      "compile_logs": {
+        "c_rtl": "20261024-143644_tc_pcie_rw_smoke_1_c_rtl.log",
+        "c_tb": "20261024-143644_tc_pcie_rw_smoke_1_c_tb.log",
+        "c_uvs": "20261024-143644_tc_pcie_rw_smoke_1_c_uvs.log"
+      }
+    },
+    {
+      "case": "tc_rtc_05",
+      "run_log": "20261024-143755_tc_rtc_05_1_run.log",
+      "rc": 0,
+      "compile_logs": {
+        "c_rtl": "20261024-143755_tc_rtc_05_1_c_rtl.log",
+        "c_tb": "20261024-143755_tc_rtc_05_1_c_tb.log",
+        "c_uvs": "20261024-143755_tc_rtc_05_1_c_uvs.log"
+      }
+    },
+    {
+      "case": "tc_rtc_10",
+      "run_log": "20261024-144201_tc_rtc_10_1_run.log",
+      "rc": 0,
+      "compile_logs": {
+        "c_rtl": "20261024-144201_tc_rtc_10_1_c_rtl.log",
+        "c_tb": "20261024-144201_tc_rtc_10_1_c_tb.log",
+        "c_uvs": "20261024-144201_tc_rtc_10_1_c_uvs.log"
+      }
+    }
+  ]
+}

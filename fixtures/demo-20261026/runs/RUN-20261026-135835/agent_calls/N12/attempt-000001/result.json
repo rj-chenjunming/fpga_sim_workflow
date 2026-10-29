@@ -1,0 +1,1 @@
+{"attempt":1,"format_version":1,"node":"N12","payload":{"mode":"standin","provider":"none","reason":"LOOP_LLM_MODE=standin：本进程被显式要求离线（用确定性替身）","standin":true},"run_id":"RUN-20261026-135835","status":"standin","validation":null}

@@ -1,0 +1,39 @@
+{
+  "schema": "loop/gate_entries",
+  "gate": "G1_diff_confirm",
+  "run_id": "RUN-20261026-135835",
+  "records": [
+    {
+      "cycle": 0,
+      "decided_at": "2026-10-26T13:58:45+0800",
+      "decision": "confirmed",
+      "actor": "human:lead-verify-20261026",
+      "reason": "drill 夹具回放工程验证（非用户确认）",
+      "entries": {
+        "RTL/SRC/imports/SRC/TCS9620_MAC_TOP.v": {
+          "decision": "confirmed",
+          "reason": "drill 夹具回放工程验证（非用户确认）"
+        },
+        "RTL/SRC/imports/SRC/dom_src/dom_engine_top.v": {
+          "decision": "confirmed",
+          "reason": "drill 夹具回放工程验证（非用户确认）"
+        },
+        "RTL/SRC/imports/SRC/pcie_controller/pcie_register.v": {
+          "decision": "confirmed",
+          "reason": "drill 夹具回放工程验证（非用户确认）"
+        },
+        "RTL/SRC/imports/SRC/uart/uart_top.v": {
+          "decision": "confirmed",
+          "reason": "drill 夹具回放工程验证（非用户确认）"
+        }
+      },
+      "hard_block": [
+        {
+          "code": "I4_CONFLICTS_UNCLEARED",
+          "title": "冲突未清零：72/72 项 blocks_release",
+          "message": "按 I4「清单未清零不发版」⇒ 阻断 full_now/subset_only 选项与晋升动作。"
+        }
+      ]
+    }
+  ]
+}

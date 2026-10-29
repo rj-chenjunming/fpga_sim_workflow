@@ -1,0 +1,22 @@
+{
+  "schema": "loop/gate_entries",
+  "gate": "G3_regression_decision",
+  "run_id": "RUN-20261026-135835",
+  "records": [
+    {
+      "cycle": 0,
+      "decided_at": "2026-10-26T13:59:13+0800",
+      "decision": "milestone_only",
+      "actor": "human:lead-verify-20261026",
+      "reason": "drill 回放验证：冲突未清零，仅里程碑",
+      "entries": {},
+      "hard_block": [
+        {
+          "code": "I4_CONFLICTS_UNCLEARED",
+          "title": "冲突未清零：72/72 项 blocks_release",
+          "message": "按 I4「清单未清零不发版」⇒ 阻断 full_now/subset_only 选项与晋升动作。"
+        }
+      ]
+    }
+  ]
+}

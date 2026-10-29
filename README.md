@@ -24,6 +24,7 @@
 | `doc/history/` | 拆仓前的历史快照（不是现状） | [`doc/history/README.md`](doc/history/README.md) |
 | `doc/audit/` | 审计与独立验证报告（只登记/只报告，不改被测实现） | [`doc/audit/README.md`](doc/audit/README.md) |
 | `workspaces/` | 每环境数据的**约定**落点（当前 default 环境数据仍在环境仓） | [`workspaces/README.md`](workspaces/README.md) |
+| `fixtures/` | **冻结夹具的版本库副本**（28 MB，只增不改；活数据根仍在 `workspaces/`） | [`fixtures/README.md`](fixtures/README.md) |
 
 ### 它不是
 

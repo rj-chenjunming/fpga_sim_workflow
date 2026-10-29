@@ -1,0 +1,306 @@
+Command Line: /home/work/chenjunming/change-impact-loop/workspaces/s0-work-20261023/SIMLIB_RUN/wave/tc_rtc_05_1/UVS_tc_rtc_05_1 -fixed_seed 1 +UVM_TESTNAME=tc_rtc_05 -logfile /home/work/chenjunming/change-impact-loop/workspaces/s0-ws-20261023/runs/RUN-20261024-002609/evidence/20261024-143755_tc_rtc_05_1_run.log +UVM_VERBOSITY=UVM_LOW -usdb=all,cell +usdbfile=/home/work/chenjunming/change-impact-loop/workspaces/s0-work-20261023/SIMLIB_RUN/wave/tc_rtc_05_1/tc_rtc_05_1.usdb -cli -do input.tcl 
+              UniVista Simulator Plus(UVS+)
+
+Version: UVS2026.06.P3 (Release, amd64)  Build Date: 2026-10-09
+Copyright (c) 2021-2026 Shanghai UniVista Industrial Software Group Co., Ltd.
+              ALL RIGHTS RESERVED WORLDWIDE
+
+* UVS+ (Release) - Simulation Runtime
+* Version: UVS2026.06.P3
+* Copyright (c) 2021 by Univista ISG, Shanghai, China
+* ALL RIGHTS RESERVED
+* Simulation starts at: 2026-10-24 14:38:22
+
+current random seed: 1
+UVM_INFO /home/soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/base/uvm_root.svh(392) @ 0: reporter [UVM/RELNOTES] 
+----------------------------------------------------------------
+UVM-1.2
+(C) 2007-2014 Mentor Graphics Corporation
+(C) 2007-2014 Cadence Design Systems, Inc.
+(C) 2006-2014 Synopsys, Inc.
+(C) 2011-2013 Cypress Semiconductor Corp.
+(C) 2013-2014 NVIDIA Corporation
+----------------------------------------------------------------
+
+  ***********       IMPORTANT RELEASE NOTES         ************
+
+  You are using a version of the UVM library that has been compiled
+  with `UVM_NO_DEPRECATED undefined.
+  See http://www.eda.org/svdb/view.php?id=3313 for more details.
+
+  You are using a version of the UVM library that has been compiled
+  with `UVM_OBJECT_DO_NOT_NEED_CONSTRUCTOR undefined.
+  See http://www.eda.org/svdb/view.php?id=3770 for more details.
+
+      (Specify +UVM_NO_RELNOTES to turn off this notice)
+
+input.tcl:1% dump -add tbtop  -depth 20
+>>> USDB: [Info] </home/work/chenjunming/change-impact-loop/workspaces/s0-work-20261023/SIMLIB_RUN/wave/tc_rtc_05_1/tc_rtc_05_1.usdb> created.
+>>> USDB: [Info] mda dumping enabled.
+>>> USDB: [Info] struct dumping enabled.
+>>> USDB: [Info] functions dumping enabled.
+>>> USDB: [Info] power dumping enabled.
+>>> USDB: [Info] string dumping enabled.
+>>> USDB: [Info] begin traversing scope (tbtop), depth(20).
+>>> USDB: [Warning] skip dumping large unpacked array <tbtop.DUT.user_sem_common_inst.\g_pango.sem_top_pango_inst .u_FPGA_SEU.U_GTP_IPAL_E2.cmem>. size: 30000, can use option 'unpacked_limit' control max elements array to dump.
+>>> USDB: [Info] end of traversing.
+input.tcl:2% 
+input.tcl:3% run
+UVM_INFO @ 0.000 us: reporter [RNTST] Running test tc_rtc_05...
+[tbtop.DUT.user_clk_rst_inst.u_main_clk_gen.g_pango.user_clk_pango_inst] : INFO : Pango manual VCO = 625.000000 MHz
+[tbtop.DUT.user_clk_rst_inst.u_mon_156m.g_pango.user_clk_pango_inst] : INFO : Pango manual VCO = 625.000000 MHz
+[tbtop.DUT.user_clk_rst_inst.u_mon_50m_0.g_pango.user_clk_pango_inst] : INFO : Pango manual VCO = 625.000000 MHz
+[tbtop.DUT.user_clk_rst_inst.u_mon_50m_1.g_pango.user_clk_pango_inst] : INFO : Pango manual VCO = 625.000000 MHz
+set deviceAddr = 50 @ 0.000 us
+set deviceAddr = 50 @ 0.000 us
+set deviceAddr = 50 @ 0.000 us
+set deviceAddr = 50 @ 0.000 us
+set deviceAddr = 50 @ 0.000 us
+set deviceAddr = 50 @ 0.000 us
+set deviceAddr = 50 @ 0.000 us
+set deviceAddr = 50 @ 0.000 us
+set deviceAddr = 50 @ 0.000 us
+set deviceAddr = 50 @ 0.000 us
+set deviceAddr = 50 @ 0.000 us
+set deviceAddr = 50 @ 0.000 us
+set deviceAddr = 50 @ 0.000 us
+set deviceAddr = 50 @ 0.000 us
+set deviceAddr = 50 @ 0.000 us
+set deviceAddr = 50 @ 0.000 us
+set deviceAddr = 50 @ 0.000 us
+set deviceAddr = 50 @ 0.000 us
+set deviceAddr = 50 @ 0.000 us
+set deviceAddr = 50 @ 0.000 us
+set deviceAddr = 50 @ 0.000 us
+set deviceAddr = 50 @ 0.000 us
+set deviceAddr = 50 @ 0.000 us
+set deviceAddr = 50 @ 0.000 us
+set deviceAddr = 50 @ 0.000 us
+set deviceAddr = 50 @ 0.000 us
+set deviceAddr = 50 @ 0.000 us
+set deviceAddr = 50 @ 0.000 us
+set deviceAddr = 50 @ 0.000 us
+set deviceAddr = 50 @ 0.000 us
+set deviceAddr = 50 @ 0.000 us
+set deviceAddr = 50 @ 0.000 us
+set deviceAddr = 50 @ 0.000 us
+set deviceAddr = 50 @ 0.000 us
+set deviceAddr = 50 @ 0.000 us
+set deviceAddr = 50 @ 0.000 us
+set deviceAddr = 50 @ 0.000 us
+set deviceAddr = 50 @ 0.000 us
+set deviceAddr = 50 @ 0.000 us
+set deviceAddr = 50 @ 0.000 us
+set deviceAddr = 50 @ 0.000 us
+set deviceAddr = 50 @ 0.000 us
+set deviceAddr = 50 @ 0.000 us
+set deviceAddr = 50 @ 0.000 us
+UVM_INFO top_env.sv(154) @ 0.000 us [UART_CFG] Uart[0] Config Randomization:
+-----------------------------------------------------------
+Name             Type                     Size  Value      
+-----------------------------------------------------------
+uart_cfgs[0]     uart_config              -     @815       
+  is_tx_active   uvm_active_passive_enum  1     UVM_ACTIVE 
+  is_rx_active   uvm_active_passive_enum  1     UVM_PASSIVE
+  baud_rate_gen  integral                 8     'd0        
+  baud_rate_div  integral                 8     'd1        
+  char_length    integral                 8     'h7        
+  nbstop         integral                 2     'h1        
+  parity_en      integral                 1     'h1        
+  parity_mode    integral                 2     'h0        
+-----------------------------------------------------------
+
+UVM_INFO top_env.sv(154) @ 0.000 us [UART_CFG] Uart[1] Config Randomization:
+-----------------------------------------------------------
+Name             Type                     Size  Value      
+-----------------------------------------------------------
+uart_cfgs[1]     uart_config              -     @842       
+  is_tx_active   uvm_active_passive_enum  1     UVM_ACTIVE 
+  is_rx_active   uvm_active_passive_enum  1     UVM_PASSIVE
+  baud_rate_gen  integral                 8     'd0        
+  baud_rate_div  integral                 8     'd1        
+  char_length    integral                 8     'h7        
+  nbstop         integral                 2     'h1        
+  parity_en      integral                 1     'h1        
+  parity_mode    integral                 2     'h0        
+-----------------------------------------------------------
+
+UVM_INFO top_env.sv(154) @ 0.000 us [UART_CFG] Uart[2] Config Randomization:
+-----------------------------------------------------------
+Name             Type                     Size  Value      
+-----------------------------------------------------------
+uart_cfgs[2]     uart_config              -     @866       
+  is_tx_active   uvm_active_passive_enum  1     UVM_ACTIVE 
+  is_rx_active   uvm_active_passive_enum  1     UVM_PASSIVE
+  baud_rate_gen  integral                 8     'd0        
+  baud_rate_div  integral                 8     'd1        
+  char_length    integral                 8     'h7        
+  nbstop         integral                 2     'h1        
+  parity_en      integral                 1     'h1        
+  parity_mode    integral                 2     'h0        
+-----------------------------------------------------------
+
+UVM_INFO top_env.sv(154) @ 0.000 us [UART_CFG] Uart[3] Config Randomization:
+-----------------------------------------------------------
+Name             Type                     Size  Value      
+-----------------------------------------------------------
+uart_cfgs[3]     uart_config              -     @890       
+  is_tx_active   uvm_active_passive_enum  1     UVM_ACTIVE 
+  is_rx_active   uvm_active_passive_enum  1     UVM_PASSIVE
+  baud_rate_gen  integral                 8     'd0        
+  baud_rate_div  integral                 8     'd1        
+  char_length    integral                 8     'h7        
+  nbstop         integral                 2     'h1        
+  parity_en      integral                 1     'h1        
+  parity_mode    integral                 2     'h0        
+-----------------------------------------------------------
+
+UVM_INFO pcie_agent.sv(133) @ 0.000 us [uvm_test_top.top_env0.m_pcie_agent] use pcie intf mode:AMD2P64
+UVM_INFO test_lib.sv(186) @ 0.000 us [FACTORY] Printing the test factory :
+
+UVM_INFO pcie_scoreboard.sv(102) @ 0.000 us [uvm_test_top.top_env0.m_pcie_agent.m_scoreboard] Use Order Mode:4.
+UVM_INFO uart_monitor.sv(127) @ 0.000 us [uart_rx_monitor] Start Running
+UVM_INFO uart_monitor.sv(127) @ 0.000 us [uart_rx_monitor] Start Running
+UVM_INFO uart_monitor.sv(127) @ 0.000 us [uart_rx_monitor] Start Running
+UVM_INFO uart_monitor.sv(127) @ 0.000 us [uart_rx_monitor] Start Running
+UVM_INFO uart_monitor.sv(130) @ 64.001 us [uart_rx_monitor] Detected Reset Done
+UVM_INFO uart_monitor.sv(130) @ 64.001 us [uart_rx_monitor] Detected Reset Done
+UVM_INFO uart_monitor.sv(130) @ 64.001 us [uart_rx_monitor] Detected Reset Done
+UVM_INFO uart_monitor.sv(130) @ 64.001 us [uart_rx_monitor] Detected Reset Done
+UVM_INFO tc_rtc_05.sv(75) @ 137.997 us [DEBUG] Start TestCase...>>>@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+[I2C_RD] reg@0x00000014 = 0x00000000, [OK] 232.377 us
+[SPI_WR] reg@0x0000009c = 0x000003ff, 245.097 us
+[SPI_RD] reg@0x0000009c = 0x000003ff, 257.417 us
+UVM_INFO tc_rtc_05.sv(110) @ 257.417 us [SYSTEM_REG_TEST] ----------------
+UVM_INFO pcie_sequence.sv(554) @ 257.417 us [PCIE_REG_WR@3DW] @ADDR[0x8] -> DATA[0x78563412]
+UVM_INFO pcie_pkg.sv(186) @ 257.737 us [GET_TRIGGER] You get trigger data[Tag0x0@WR_RAM_FPGA_MIRROR@0x8].
+UVM_INFO pcie_sequence.sv(596) @ 257.737 us [PCIE_REG_RD@3DW] @ADDR[0x8] -> DATA[0x12345678]
+UVM_INFO pcie_sequence.sv(554) @ 257.737 us [PCIE_REG_WR@3DW] @ADDR[0x8] -> DATA[0xaaaaaaaa]
+UVM_INFO pcie_pkg.sv(186) @ 258.057 us [GET_TRIGGER] You get trigger data[Tag0x1@WR_RAM_FPGA_MIRROR@0x8].
+UVM_INFO pcie_sequence.sv(596) @ 258.057 us [PCIE_REG_RD@3DW] @ADDR[0x8] -> DATA[0xaaaaaaaa]
+UVM_INFO pcie_sequence.sv(554) @ 258.057 us [PCIE_REG_WR@3DW] @ADDR[0xd04] -> DATA[0x78563412]
+UVM_INFO pcie_pkg.sv(186) @ 258.369 us [GET_TRIGGER] You get trigger data[Tag0x2@WR_RAM_FPGA_MIRROR@0xd04].
+UVM_INFO pcie_sequence.sv(596) @ 258.369 us [PCIE_REG_RD@3DW] @ADDR[0xd04] -> DATA[0x5678]
+UVM_INFO pcie_pkg.sv(186) @ 258.601 us [GET_TRIGGER] You get trigger data[Tag0x3@WR_RAM_FPGA_MIRROR@0xd04].
+UVM_INFO pcie_sequence.sv(571) @ 258.601 us [PCIE_REG_RD@3DW] @ADDR[0xd04] -> DATA[0x78560000]
+UVM_INFO tc_rtc_05.sv(120) @ 258.601 us [N6_pcie_test_tc_rtc_05] OK 0x0d00+0x04 pcie_test = 0x78560000
+UVM_INFO pcie_pkg.sv(186) @ 258.841 us [GET_TRIGGER] You get trigger data[Tag0x4@WR_RAM_FPGA_MIRROR@0x2078].
+UVM_INFO pcie_sequence.sv(596) @ 258.841 us [PCIE_REG_RD@3DW] @ADDR[0x2078] -> DATA[0x1]
+UVM_INFO pcie_sequence.sv(554) @ 258.841 us [PCIE_REG_WR@3DW] @ADDR[0x2078] -> DATA[0x0]
+UVM_INFO pcie_sequence.sv(554) @ 268.841 us [PCIE_REG_WR@3DW] @ADDR[0x2078] -> DATA[0x1000000]
+UVM_INFO pcie_pkg.sv(186) @ 269.161 us [GET_TRIGGER] You get trigger data[Tag0x5@WR_RAM_FPGA_MIRROR@0x2278].
+UVM_INFO pcie_sequence.sv(596) @ 269.161 us [PCIE_REG_RD@3DW] @ADDR[0x2278] -> DATA[0x1]
+UVM_INFO pcie_sequence.sv(554) @ 269.161 us [PCIE_REG_WR@3DW] @ADDR[0x2278] -> DATA[0x0]
+UVM_INFO pcie_sequence.sv(554) @ 279.161 us [PCIE_REG_WR@3DW] @ADDR[0x2278] -> DATA[0x1000000]
+UVM_INFO pcie_pkg.sv(186) @ 279.481 us [GET_TRIGGER] You get trigger data[Tag0x6@WR_RAM_FPGA_MIRROR@0x2478].
+UVM_INFO pcie_sequence.sv(596) @ 279.481 us [PCIE_REG_RD@3DW] @ADDR[0x2478] -> DATA[0x1]
+UVM_INFO pcie_sequence.sv(554) @ 279.481 us [PCIE_REG_WR@3DW] @ADDR[0x2478] -> DATA[0x0]
+UVM_INFO pcie_sequence.sv(554) @ 289.481 us [PCIE_REG_WR@3DW] @ADDR[0x2478] -> DATA[0x1000000]
+UVM_INFO pcie_pkg.sv(186) @ 289.801 us [GET_TRIGGER] You get trigger data[Tag0x7@WR_RAM_FPGA_MIRROR@0x2678].
+UVM_INFO pcie_sequence.sv(596) @ 289.801 us [PCIE_REG_RD@3DW] @ADDR[0x2678] -> DATA[0x1]
+UVM_INFO pcie_sequence.sv(554) @ 289.801 us [PCIE_REG_WR@3DW] @ADDR[0x2678] -> DATA[0x0]
+UVM_INFO pcie_sequence.sv(554) @ 299.801 us [PCIE_REG_WR@3DW] @ADDR[0x2678] -> DATA[0x1000000]
+UVM_INFO pcie_pkg.sv(186) @ 300.121 us [GET_TRIGGER] You get trigger data[Tag0x8@WR_RAM_FPGA_MIRROR@0x2878].
+UVM_INFO pcie_sequence.sv(596) @ 300.121 us [PCIE_REG_RD@3DW] @ADDR[0x2878] -> DATA[0x1]
+UVM_INFO pcie_sequence.sv(554) @ 300.121 us [PCIE_REG_WR@3DW] @ADDR[0x2878] -> DATA[0x0]
+UVM_INFO pcie_sequence.sv(554) @ 310.121 us [PCIE_REG_WR@3DW] @ADDR[0x2878] -> DATA[0x1000000]
+UVM_INFO pcie_pkg.sv(186) @ 310.441 us [GET_TRIGGER] You get trigger data[Tag0x9@WR_RAM_FPGA_MIRROR@0x2a78].
+UVM_INFO pcie_sequence.sv(596) @ 310.441 us [PCIE_REG_RD@3DW] @ADDR[0x2a78] -> DATA[0x1]
+UVM_INFO pcie_sequence.sv(554) @ 310.441 us [PCIE_REG_WR@3DW] @ADDR[0x2a78] -> DATA[0x0]
+UVM_INFO pcie_sequence.sv(554) @ 320.441 us [PCIE_REG_WR@3DW] @ADDR[0x2a78] -> DATA[0x1000000]
+UVM_INFO pcie_pkg.sv(186) @ 320.761 us [GET_TRIGGER] You get trigger data[Tag0xa@WR_RAM_FPGA_MIRROR@0x2c78].
+UVM_INFO pcie_sequence.sv(596) @ 320.761 us [PCIE_REG_RD@3DW] @ADDR[0x2c78] -> DATA[0x1]
+UVM_INFO pcie_sequence.sv(554) @ 320.761 us [PCIE_REG_WR@3DW] @ADDR[0x2c78] -> DATA[0x0]
+UVM_INFO pcie_sequence.sv(554) @ 330.761 us [PCIE_REG_WR@3DW] @ADDR[0x2c78] -> DATA[0x1000000]
+UVM_INFO pcie_pkg.sv(186) @ 331.081 us [GET_TRIGGER] You get trigger data[Tag0xb@WR_RAM_FPGA_MIRROR@0x2e78].
+UVM_INFO pcie_sequence.sv(596) @ 331.081 us [PCIE_REG_RD@3DW] @ADDR[0x2e78] -> DATA[0x1]
+UVM_INFO pcie_sequence.sv(554) @ 331.081 us [PCIE_REG_WR@3DW] @ADDR[0x2e78] -> DATA[0x0]
+UVM_INFO pcie_sequence.sv(554) @ 341.081 us [PCIE_REG_WR@3DW] @ADDR[0x2e78] -> DATA[0x1000000]
+UVM_INFO pcie_pkg.sv(186) @ 341.401 us [GET_TRIGGER] You get trigger data[Tag0xc@WR_RAM_FPGA_MIRROR@0x3078].
+UVM_INFO pcie_sequence.sv(596) @ 341.401 us [PCIE_REG_RD@3DW] @ADDR[0x3078] -> DATA[0x1]
+UVM_INFO pcie_sequence.sv(554) @ 341.401 us [PCIE_REG_WR@3DW] @ADDR[0x3078] -> DATA[0x0]
+UVM_INFO pcie_sequence.sv(554) @ 351.401 us [PCIE_REG_WR@3DW] @ADDR[0x3078] -> DATA[0x1000000]
+UVM_INFO pcie_pkg.sv(186) @ 351.721 us [GET_TRIGGER] You get trigger data[Tag0xd@WR_RAM_FPGA_MIRROR@0x3278].
+UVM_INFO pcie_sequence.sv(596) @ 351.721 us [PCIE_REG_RD@3DW] @ADDR[0x3278] -> DATA[0x1]
+UVM_INFO pcie_sequence.sv(554) @ 351.721 us [PCIE_REG_WR@3DW] @ADDR[0x3278] -> DATA[0x0]
+UVM_INFO pcie_sequence.sv(554) @ 361.721 us [PCIE_REG_WR@3DW] @ADDR[0x3278] -> DATA[0x1000000]
+[SPI_RD] reg@0x00002078 = 0x00000001, 394.041 us
+[SPI_WR] reg@0x00002078 = 0x00000000, 406.361 us
+[SPI_WR] reg@0x00002078 = 0x00000001, 428.681 us
+[SPI_RD] reg@0x00002278 = 0x00000001, 441.001 us
+[SPI_WR] reg@0x00002278 = 0x00000000, 453.321 us
+[SPI_WR] reg@0x00002278 = 0x00000001, 475.641 us
+[SPI_RD] reg@0x00002478 = 0x00000001, 487.961 us
+[SPI_WR] reg@0x00002478 = 0x00000000, 500.281 us
+[SPI_WR] reg@0x00002478 = 0x00000001, 522.601 us
+[SPI_RD] reg@0x00002678 = 0x00000001, 534.921 us
+[SPI_WR] reg@0x00002678 = 0x00000000, 547.241 us
+[SPI_WR] reg@0x00002678 = 0x00000001, 569.561 us
+[SPI_RD] reg@0x00002878 = 0x00000001, 581.881 us
+[SPI_WR] reg@0x00002878 = 0x00000000, 594.201 us
+[SPI_WR] reg@0x00002878 = 0x00000001, 616.521 us
+[SPI_RD] reg@0x00002a78 = 0x00000001, 628.841 us
+[SPI_WR] reg@0x00002a78 = 0x00000000, 641.161 us
+[SPI_WR] reg@0x00002a78 = 0x00000001, 663.481 us
+[SPI_RD] reg@0x00002c78 = 0x00000001, 675.801 us
+[SPI_WR] reg@0x00002c78 = 0x00000000, 688.121 us
+[SPI_WR] reg@0x00002c78 = 0x00000001, 710.441 us
+[SPI_RD] reg@0x00002e78 = 0x00000001, 722.761 us
+[SPI_WR] reg@0x00002e78 = 0x00000000, 735.081 us
+[SPI_WR] reg@0x00002e78 = 0x00000001, 757.401 us
+[SPI_RD] reg@0x00003078 = 0x00000001, 769.721 us
+[SPI_WR] reg@0x00003078 = 0x00000000, 782.041 us
+[SPI_WR] reg@0x00003078 = 0x00000001, 804.361 us
+[SPI_RD] reg@0x00003278 = 0x00000001, 816.681 us
+[SPI_WR] reg@0x00003278 = 0x00000000, 829.001 us
+[SPI_WR] reg@0x00003278 = 0x00000001, 851.321 us
+UVM_INFO uvm_objection.svh(1309) @ 852.321 us [TEST_DONE] 'run' phase is ready to proceed to the 'extract' phase
+UVM_INFO uart_rx_monitor.sv(209) @ 852.321 us [uart_rx_monitor] UART Frames Collected:0
+UVM_INFO uart_tx_driver.sv(260) @ 852.321 us [uart_tx_driver] UART Frames Sent:0
+UVM_INFO uart_rx_monitor.sv(209) @ 852.321 us [uart_rx_monitor] UART Frames Collected:0
+UVM_INFO uart_tx_driver.sv(260) @ 852.321 us [uart_tx_driver] UART Frames Sent:0
+UVM_INFO uart_rx_monitor.sv(209) @ 852.321 us [uart_rx_monitor] UART Frames Collected:0
+UVM_INFO uart_tx_driver.sv(260) @ 852.321 us [uart_tx_driver] UART Frames Sent:0
+UVM_INFO uart_rx_monitor.sv(209) @ 852.321 us [uart_rx_monitor] UART Frames Collected:0
+UVM_INFO uart_tx_driver.sv(260) @ 852.321 us [uart_tx_driver] UART Frames Sent:0
+[1;34m
+UVM_INFO test_lib.sv(286) @ 852.321 us [tc_rtc_05] Final_phase status: Pass!
+ /\ /\   ____   _    ____ ____    /\ /\
+|/\|/\| |  _ \ / \  / ___/ ___|  |/\|/\|
+        | |_) / _ \ \___ \___ \
+        |  __/ ___ \ ___) |__) |
+        |_| /_/   \_\____/____/
+[0mUVM_INFO macros_pkg.sv(1228) @ 852.321 us [UVM/REPORT/CATCHER] Caught to dropped!
+UVM_INFO uvm_report_server.svh(847) @ 852.321 us [UVM/REPORT/SERVER] 
+--- UVM Report Summary ---
+
+** Report counts by severity
+UVM_INFO :   82
+UVM_WARNING :    0
+UVM_ERROR :    0
+UVM_FATAL :    0
+** Report counts by id
+[DEBUG]     1
+[FACTORY]     1
+[GET_TRIGGER]    14
+[N6_pcie_test_tc_rtc_05]     1
+[PCIE_REG_RD@3DW]    14
+[PCIE_REG_WR@3DW]    23
+[RNTST]     1
+[SYSTEM_REG_TEST]     1
+[TEST_DONE]     1
+[UART_CFG]     4
+[UVM/RELNOTES]     1
+[UVM/REPORT/CATCHER]     1
+[tc_rtc_05]     1
+[uart_rx_monitor]    12
+[uart_tx_driver]     4
+[uvm_test_top.top_env0.m_pcie_agent]     1
+[uvm_test_top.top_env0.m_pcie_agent.m_scoreboard]     1
+
+* Calling '$finish' at ../../../../../soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/base/uvm_root.svh,517.
+Halted at location **../../../../../soft/UNIVISTA/20261016/UVS/packages/uvm/1.2/src/base/uvm_root.svh(517) time 852321000000 fs from call to $finish.
+* There were 0 error(s), 0 warning(s), and 0 inform(s).
+* UVS+ simulation completes with '$finish' at time 852321000000 fs.
+* Elapsed: 218.43s ,User: 373.48s ,Sys: 1.81s ,VmPeak: 1810.87MB VmRss: 427.92MB  (X)  GCHeap: 50MB GCTime: 0.00s
+* Simulation ends at: 2026-10-24 14:42:01

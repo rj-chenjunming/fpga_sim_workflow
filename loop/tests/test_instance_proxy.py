@@ -1430,3 +1430,155 @@ def test_s7d_ownership_kind_maps_to_each_reason_vocabulary(tmp_path: Path) -> No
     assert c.value.reason == "target_missing"
     assert instance_proxy.session_copy(tmp_path, node="N3", attempt=1)["reason"] \
         == "session_owner_mismatch"
+
+
+# ================================================================ S8e：token 脱敏漏面（AUDIT-20261029-s7 P1-2）
+
+# REV-16 §5.4「token 永不出现在本服务日志」是**绝对**契约；S7c 的 `TokenRedactFilter` 挂在 logger 上，
+# 只覆盖"直接打在 root/uvicorn logger 上"的记录。独立复核实测三条漏面（并把参数化形态泄到 stderr）：
+#   ① 子 logger 消息（logger 级 filter 不作用于冒泡记录）；
+#   ② `extra=` 字段；
+#   ③ `exc_info` traceback。
+# 判据不变（仍是"日志文本里的 `token=<值>`"），只是覆盖到**所有**记录。
+
+def test_s8e_child_logger_messages_are_redacted(caplog: pytest.LogCaptureFixture) -> None:
+    """漏面①：子 logger（`services.api`）直接打的记录也必须脱敏。"""
+    caplog.set_level(logging.INFO)
+    logging.getLogger("services.api").info("first hop /?token=%s", SEKRET)
+    assert SEKRET not in caplog.text, caplog.text
+    assert "token=<redacted>" in caplog.text, caplog.text
+
+
+def test_s8e_extra_fields_are_redacted(caplog: pytest.LogCaptureFixture) -> None:
+    """漏面②：`extra=` 带进来的字符串字段也必须脱敏（记录本身不得留下值）。"""
+    caplog.set_level(logging.INFO)
+    logging.getLogger("services.instance_proxy").info(
+        "hop", extra={"request_line": f"/instance/x/?token={SEKRET}"})
+    leaked = [str(record.__dict__) for record in caplog.records if SEKRET in str(record.__dict__)]
+    assert leaked == [], leaked
+
+
+def test_s8e_exception_traceback_is_redacted(caplog: pytest.LogCaptureFixture) -> None:
+    """漏面③：`exc_info` 渲染出的 traceback 文本也必须脱敏。"""
+    caplog.set_level(logging.INFO)
+    try:
+        raise RuntimeError(f"upstream rejected /?token={SEKRET}")
+    except RuntimeError:
+        logging.getLogger("services.instance_proxy").exception("forward failed")
+    assert SEKRET not in caplog.text, caplog.text
+    assert "token=<redacted>" in caplog.text, caplog.text
+
+
+def test_s8e_parameterized_secret_never_reaches_stderr(
+        caplog: pytest.LogCaptureFixture, capsys: pytest.CaptureFixture[str]) -> None:
+    """参数化形态 `token=%s`：脱敏后仍必须可格式化（否则 logging 内部错误会把原值打到 stderr）。"""
+    caplog.set_level(logging.INFO)
+    logging.getLogger("services.api").warning("first hop ?token=%s", SEKRET)
+    assert SEKRET not in caplog.text, caplog.text
+    assert SEKRET not in capsys.readouterr().err
+
+
+def test_s8e_redaction_is_installed_at_import_time() -> None:
+    """判据挂在 `Handler.handle` 上 ⇒ 每条记录（含冒泡与 extra）都过同一个实现。"""
+    hook = logging.Handler.handle
+    assert getattr(hook, "_loop_token_redacting", False) is True, hook
+
+
+# ------------------------------------------------- S8e：长连接事件流不得被"读超时"掐断
+
+class _SlowSSEUpstream:
+    """每隔 `gap_s` 才吐一块的 SSE 上游（用来暴露"把空闲期当读超时"的缺陷）。
+
+    `plugins/events` 是 dsh Web 的事件流：首块之后可能**长时间无数据**（心跳间隔由上游决定）。
+    反代若把非流式口径的 `READ_TIMEOUT_S`（默认 15 s）套在它身上，浏览器会拿到
+    `ERR_INCOMPLETE_CHUNKED_ENCODING`（S8c 真机 A/B 实测，AUDIT-20261029-s7 P2）。
+    """
+
+    def __init__(self, *, gap_s: float = 0.4) -> None:
+        outer = self
+
+        class Handler(BaseHTTPRequestHandler):
+            protocol_version = "HTTP/1.1"
+
+            def log_message(self, *_args: object) -> None:      # 静音
+                return
+
+            def do_GET(self) -> None:                            # noqa: N802 - http.server 约定
+                self.send_response(200)
+                self.send_header("content-type", "text/event-stream")
+                self.send_header("cache-control", "no-cache")
+                self.send_header("connection", "close")
+                self.end_headers()
+                self.wfile.write(b": hello\n\n")
+                self.wfile.flush()
+                time.sleep(gap_s)                                # 空闲期：> 被压小的读超时
+                self.wfile.write(b"data: pong\n\n")
+                self.wfile.flush()
+                self.wfile.close()
+
+        self._server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        self.port = self._server.server_address[1]
+        self._thread = threading.Thread(target=self._server.serve_forever, daemon=True)
+        self._thread.start()
+        outer  # noqa: B018 - 保留闭包引用（可读性）
+
+    def close(self) -> None:
+        self._server.shutdown()
+        self._server.server_close()
+
+
+def test_s8e_event_stream_survives_idle_gap_longer_than_read_timeout(
+        client: TestClient, run_dir: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """SSE 空闲超过读超时也必须继续透传（否则浏览器报 `ERR_INCOMPLETE_CHUNKED_ENCODING`）。
+
+    判据：REV-16 §5.4 的 15 s **读**超时是非流式口径；`text/event-stream` 不适用它
+    （连接超时 1 s 仍生效）。
+    """
+    monkeypatch.setattr(instance_proxy, "READ_TIMEOUT_S", 0.1)   # 远小于 0.4 s 的空闲期
+    srv = _SlowSSEUpstream(gap_s=0.4)
+    try:
+        write_instance(run_dir, port=srv.port)
+        with client.stream("GET", f"{PREFIX}plugins/events",
+                           headers={"accept": "text/event-stream"}) as response:
+            assert response.status_code == 200, response.read()
+            body = b"".join(response.iter_bytes())
+    finally:
+        srv.close()
+    assert b"pong" in body, body                                # 第二块真的到了
+    assert b"hello" in body, body
+
+
+# ------------------------------------------------- S8e：错误页转义 + session-copy reason 枚举
+
+def test_s8e_error_page_escapes_link_and_text() -> None:
+    """P2-12（加固）：`_error_page` 的参数一律转义 —— 即便当前不可达也不留注入面。"""
+    page = instance_proxy._error_page(
+        "<b>标题</b>", "<script>alert(1)</script>",
+        link='"><img src=x onerror=alert(1)>')
+    assert "<script>" not in page
+    assert "<img src=x" not in page
+    assert "&lt;script&gt;" in page
+    assert "&lt;img" in page
+
+
+def test_s8e_session_copy_never_passes_sdk_free_text_reason(
+        client: TestClient, run_dir: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """P2-5：`session-copy` 的 reason 必须是 §6.2 的**六项枚举**。
+
+    `dsh_sdk.read_session_log` 的 `reason` 是自由文本，实测含宿主绝对路径 ⇒ 不得直接透传给界面。
+    """
+    log = run_dir / "s.v4.jsonl.zstd"
+    log.write_bytes(b"not-really-zstd")
+    write_instance(run_dir, port=_free_port(), session_log=log.name)
+    from host.agent_backends import dsh_sdk
+
+    monkeypatch.setattr(
+        dsh_sdk, "read_session_log",
+        lambda _path: SimpleNamespace(
+            availability="degraded",
+            reason="/home/work/chenjunming/secret-proj 解码失败：多帧 zstd 未验"))
+    payload = client.get(f"/api/runs/{RUN_ID}/agents/{NODE}/session-copy").json()
+    assert payload["reason"] == "session_log_unavailable", payload
+    dumped = json.dumps(payload, ensure_ascii=False)
+    assert "/home/work" not in dumped, dumped
+    assert "secret-proj" not in dumped, dumped

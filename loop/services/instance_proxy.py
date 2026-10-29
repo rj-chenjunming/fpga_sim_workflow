@@ -32,10 +32,12 @@
 
 from __future__ import annotations
 
+import html
 import json
 import logging
 import posixpath
 import re
+import traceback
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Iterable, Mapping
@@ -77,19 +79,80 @@ def _redact_token_text(value: Any) -> Any:
 
 
 class TokenRedactFilter(logging.Filter):
-    """日志记录级脱敏：**只改日志文本**，不改请求/响应/元数据（token 仍只进受管元数据）。"""
+    """日志记录级脱敏：**只改日志文本**，不改请求/响应/元数据（token 仍只进受管元数据）。
+
+    **兼容层**（S8e）：真正的防线已下移到 `LogRecord` 工厂（见 `install_token_redaction`），
+    因为 logger 级 filter **只对直接打在该 logger 上的记录生效**，子 logger 冒泡上来的记录会绕过它
+    （独立复核 AUDIT-20261029-s7 P1-2 实测）。本类保留给"显式给某个 logger 加一层"的场合。
+    """
 
     def filter(self, record: logging.LogRecord) -> bool:
-        record.msg = _redact_token_text(record.msg)
-        if isinstance(record.args, tuple):
-            record.args = tuple(_redact_token_text(item) for item in record.args)
-        elif isinstance(record.args, dict):
-            record.args = {key: _redact_token_text(item) for key, item in record.args.items()}
+        _sanitize_record(record)
         return True
 
 
+#: `LogRecord` 的标准属性：除这些之外、`record.__dict__` 里的字符串值都算 `extra=`，
+#: 一律进脱敏（`extra=` 也是日志面，不能成为漏面）。
+_RECORD_STANDARD_ATTRS = frozenset({
+    "name", "msg", "args", "levelname", "levelno", "pathname", "filename", "module",
+    "exc_info", "exc_text", "stack_info", "lineno", "funcName", "created", "msecs",
+    "relativeCreated", "thread", "threadName", "processName", "process", "taskName",
+    "message", "asctime",
+})
+
+
+def _sanitize_record(record: logging.LogRecord) -> None:
+    """把一条日志记录里的 `token=<值>` 全部换成 `token=<redacted>`（**只改日志文本**）。
+
+    关键顺序：**先 `getMessage()` 再把 `args` 清空**。只改格式串、不改参数会让 `logging`
+    内部格式化抛 `TypeError`，而 logging 的"内部错误处理"会把**原始参数**（含 secret）
+    直接打到 stderr —— 那等于把漏面从日志文件搬到终端（P1-2 附项实测）。
+    """
+    if record.args:
+        try:
+            message = record.getMessage()
+        except Exception:                        # 格式化本身坏了也不能把原值留下
+            message = "%s %s" % (record.msg, record.args)
+        record.msg = _redact_token_text(message)
+        record.args = ()
+    else:
+        record.msg = _redact_token_text(record.msg)
+    for key, value in list(record.__dict__.items()):
+        if key in _RECORD_STANDARD_ATTRS:
+            continue
+        if isinstance(value, str):
+            record.__dict__[key] = _redact_token_text(value)
+    if record.exc_info:
+        # Formatter 只在 `exc_text` 为空时才自己渲染 traceback ⇒ 预渲染成脱敏文本即可接管。
+        try:
+            record.exc_text = _redact_token_text(
+                "".join(traceback.format_exception(*record.exc_info)))
+        except Exception:                        # 渲染失败就不留全文（宁可少信息也不漏 secret）
+            record.exc_text = "traceback unavailable"
+    if isinstance(record.stack_info, str):
+        record.stack_info = _redact_token_text(record.stack_info)
+
+
 def install_token_redaction() -> None:
-    """给 uvicorn/root logger 装上 token 脱敏过滤器（幂等：重复调用不会叠加多个）。"""
+    """把脱敏挂到 **`logging.Handler.handle`** 上（幂等：import 多次 / 模块 reload 都不会叠加）。
+
+    为什么不是 logger.filter，也不是 `LogRecord` 工厂：
+    - logger 的 filter 只对**直接打在该 logger** 的记录生效，子 logger 冒泡上来的记录会绕过它；
+    - `extra=` 字段是在 `Logger.makeRecord()` **构造完记录之后**才塞进 `record.__dict__` 的，
+      记录工厂（在构造期调用）**看不到**它；
+    - handler 的 `handle()` 在"该记录的日志器处理链已跑完、即将 emit"时调用，**每条记录都会经过**，
+      因此三处漏面（子 logger / `extra=` / `exc_info` traceback）在这一点上全覆盖
+      （独立复核 AUDIT-20261029-s7 P1-2 实测的三条路径）。
+    """
+    previous = logging.Handler.handle
+    if not getattr(previous, "_loop_token_redacting", False):
+        def handle(self, record: logging.LogRecord) -> bool:  # noqa: ANN001 - 复刻 stdlib 签名
+            _sanitize_record(record)
+            return previous(self, record)
+
+        handle._loop_token_redacting = True      # type: ignore[attr-defined]
+        logging.Handler.handle = handle
+    # 兼容保留：把老的 logger 级过滤器也装上（不是唯一防线，但无害且幂等）。
     for name in TOKEN_REDACT_LOGGERS:
         logger = logging.getLogger(name)
         if not any(isinstance(item, TokenRedactFilter) for item in logger.filters):
@@ -109,8 +172,19 @@ MAX_QUERY_LEN = 4096
 #: R12：显式超时常量（连接 1.0 s / 读 15 s）；测试 monkeypatch 小值，不空转
 CONNECT_TIMEOUT_S = 1.0
 READ_TIMEOUT_S = 15.0
+#: 事件流的 `Accept` 标记（EventSource 规范）；见 `is_event_stream_accept`。
+STREAM_ACCEPT = "text/event-stream"
 #: 会话副本内容上限（§6.2 "有大小上限"）
 SESSION_COPY_MAX_BYTES = 64 * 1024
+
+
+def is_event_stream_accept(accept: str | None) -> bool:
+    """请求是否在要**事件流**（SSE）。R12 的读超时只适用于非流式响应。
+
+    为什么用 `Accept` 而不是"看响应 `content-type`"：超时在建连时就装到连接上了，
+    响应到手再改没用（S8c 真机 A/B：经反代 15.02 s 被断、直连上游同一时刻仍开着）。
+    """
+    return bool(accept) and STREAM_ACCEPT in accept.lower()
 
 LOOPBACK_HOSTS = frozenset({"127.0.0.1", "::1", "localhost"})
 ALLOWED_METHODS = ("GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
@@ -482,8 +556,9 @@ def session_copy(run_dir: Path | str, *, node: str,
     except (dsh_sdk.SessionLogError, OSError):
         return _session_unavailable("session_log_unavailable", attempt=effective_attempt)
     if facts.availability != dsh_sdk.AVAILABILITY_OK:
-        return _session_unavailable(facts.reason or "session_log_unavailable",
-                                    attempt=effective_attempt)
+        # §6.2 的 reason 是**六项枚举**；`facts.reason` 是 SDK 的自由文本，实测含宿主绝对路径
+        # ⇒ 不得直接透传给界面（AUDIT-20261029-s7 P2-5）。这里统一收敛到枚举内的一项。
+        return _session_unavailable("session_log_unavailable", attempt=effective_attempt)
 
     payload = asdict(facts)
     encoded = json.dumps(payload, ensure_ascii=False, default=str).encode("utf-8")
@@ -624,11 +699,18 @@ def _wants_html(accept: str | None) -> bool:
 
 
 def _error_page(title: str, detail: str, *, link: str | None) -> str:
-    action = (f'<p><a href="{link}" target="_blank" rel="noopener">在新标签页打开</a></p>'
+    """极简不可用/拒绝页。**所有插值一律 HTML 转义**（P2-12 加固）。
+
+    当前调用方传入的 `link` 来自 `(run, node, attempt)` 的受管前缀（不是客户端原文），但这层的
+    契约应当是"参数怎么传都不可能注入"，而不是"调用方碰巧安全"。
+    """
+    action = (f'<p><a href="{html.escape(link, quote=True)}" target="_blank" rel="noopener">'
+              "在新标签页打开</a></p>"
               if link else "")
+    safe_title = html.escape(title)
     return ("<!DOCTYPE html><html lang=\"zh-CN\"><head><meta charset=\"utf-8\">"
-            f"<title>{title}</title></head><body><h1>{title}</h1>"
-            f"<p>{detail}</p>{action}"
+            f"<title>{safe_title}</title></head><body><h1>{safe_title}</h1>"
+            f"<p>{html.escape(detail)}</p>{action}"
             "<p><strong>显式不可用态</strong>：不可内嵌，也不会伪装成已加载。</p>"
             "</body></html>")
 
@@ -734,7 +816,14 @@ async def forward(request: Request, *, run_dir: Path | str, run_id: str, node: s
     if request.method not in ("GET", "HEAD"):
         body = await request.body()
 
-    timeout = httpx.Timeout(connect=CONNECT_TIMEOUT_S, read=READ_TIMEOUT_S,
+    # REV-16 §5.4（S8e 澄清）：`READ_TIMEOUT_S` 是**非流式**口径。事件流（SSE）在首块之后
+    # 可能长时间无数据，把 15 s 读超时套上去会在空闲期把连接掐断 ⇒ 浏览器拿到
+    # `ERR_INCOMPLETE_CHUNKED_ENCODING`（S8c 真机 A/B 实测：经反代 15.02 s 被断、直连上游仍开着）。
+    # 判据只能**前置**：EventSource 规范要求客户端带 `Accept: text/event-stream`，而超时一旦
+    # 装到连接上就改不了；连接超时（`CONNECT_TIMEOUT_S`）对流式同样生效。
+    event_stream = is_event_stream_accept(request.headers.get("accept"))
+    timeout = httpx.Timeout(connect=CONNECT_TIMEOUT_S,
+                            read=None if event_stream else READ_TIMEOUT_S,
                             write=READ_TIMEOUT_S, pool=CONNECT_TIMEOUT_S)
     client = httpx.AsyncClient(trust_env=False, timeout=timeout)
     try:
@@ -768,6 +857,10 @@ async def forward(request: Request, *, run_dir: Path | str, run_id: str, node: s
         try:
             async for chunk in upstream_response.aiter_bytes():
                 yield chunk
+        except httpx.HTTPError as exc:
+            # 响应头/首块**已经**发给浏览器 ⇒ 不能再改成 503；干净结束（而不是断在半个 chunk）
+            # 让 EventSource 走它自己的重连语义。判据不在这里：读超时已在建连前按请求类型定过。
+            LOG.warning("instance proxy stream interrupted: reason=%s", type(exc).__name__)
         finally:
             await upstream_response.aclose()
             await client.aclose()

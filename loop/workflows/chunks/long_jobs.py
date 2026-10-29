@@ -156,7 +156,7 @@ async def _drill_replay_done(ctx: RunCtx, data: Any, job: dict[str, Any], job_id
     """drill 多例回放完成：逐例重新抽数（不信任载荷），口径合并后判 pass/fail。"""
     case_names = [item["case"] for item in spec]
     evidence_dir = Path(str(job.get("evidence_dir") or (ctx.run_dir / "evidence")))
-    logs = _collect_case_logs(evidence_dir, case_names)
+    logs = ctx.environment.collect_logs(evidence_dir, case_names)
     missing = [c for c in case_names if c not in logs]
     if missing:
         ctx.node_failed("N9", message=f"缺 {len(missing)} 例证据日志：{missing}")
@@ -296,57 +296,6 @@ def _verify_targets(cases: list[dict[str, Any]]) -> None:
                 )
 
 
-def _serial_guard_command(cases: list[dict[str, Any]], *, sandbox_root: Path,
-                          evidence_dir: Path, run_id: str, summary_path: Path) -> str:
-    """把「逐用例 run_guarded full」拼成**一个** bash 作业（串行，单槽内）。
-
-    作业自身总是 exit 0：单例 rc 记进 summary，交 N10 三分类（审计 A8 要求
-    「跑挂 ⇒ 采证并三分类」而不是直接终止）。基础设施缺失（没有日志）由 park 判失败。
-    """
-    guard = str(P.KB_TOOLS / "run_guarded.sh")
-    lines = [
-        "set -u",
-        f"mkdir -p {shlex.quote(str(evidence_dir))}",
-        ": > " + shlex.quote(str(summary_path)),
-    ]
-    for item in cases:
-        case = item["case"]
-        cmd = (
-            f"bash {shlex.quote(guard)}"
-            f" --case-file {shlex.quote(item['sandbox_path'])}"
-            f" --case-name {shlex.quote(case)}"
-            f" --seed {_SEED}"
-            f" --mode full"
-            f" --sandbox-root {shlex.quote(str(sandbox_root))}"
-            f" --evidence-dir {shlex.quote(str(evidence_dir))}"
-            f" --run {shlex.quote(run_id)}"
-        )
-        lines.append(f"echo '=== BEGIN {case} ==='")
-        lines.append(cmd)
-        lines.append("__rc=$?")
-        lines.append(
-            f"printf '%s|%s\\n' {shlex.quote(case)} \"$__rc\" >> {shlex.quote(str(summary_path))}"
-        )
-        lines.append(f"echo '=== END {case} rc='\"$__rc\"' ==='")
-    lines.append("exit 0")
-    return "\n".join(lines)
-
-
-def _collect_case_logs(evidence_dir: Path, cases: list[str], *, seed: str = _SEED) -> dict[str, Path]:
-    """按 run_guarded 的命名约定找每例**权威** run.log（不解析内容，交给 evidence 聚合）。"""
-    out: dict[str, Path] = {}
-    if not evidence_dir.is_dir():
-        return out
-    for case in cases:
-        candidates = sorted(
-            p for p in evidence_dir.glob(f"*_{case}_{seed}_run.log")
-            if not p.name.endswith("_guard.log")
-        )
-        if candidates:
-            out[case] = candidates[-1]
-    return out
-
-
 def aggregate_evidence(
     ctx: RunCtx,
     *,
@@ -460,311 +409,362 @@ def _n9_detail(*, cases: dict[str, Any] | None,
 # ---------------------------------------------------------------- N9 提交
 
 
+# 保留既有流程快照的节点源码行号。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 async def n9_submit(data: Any) -> dict[str, Any]:
-    """申请单槽 + 提交全跑作业。**返回后图即停放，执行不再是 `running`。**
+    """保留流程快照身份的节点入口。"""
+    from ..nodes.n9_submit import run
+    return await run(data, _REAL_CASE=_REAL_CASE, _SEED=_SEED, _acquire_slot=_acquire_slot, _drill_case_spec=_drill_case_spec, _slot_job_id=_slot_job_id, _submit_drill_replay=_submit_drill_replay, _target_cases=_target_cases, _verify_targets=_verify_targets, ctx_of=ctx_of)
 
-    real：一个作业串行跑**全部**受影响用例（目标集取 n6_applied 冻结件）。
-    drill：保持既有夹具形态（accept_v1 的断言依赖它）。
-    """
-    ctx = ctx_of(data)
-    ctx.node_started("N9")
-    assert ctx.runner is not None
-    run_dir: Path = ctx.run_dir
-    evidence_dir = run_dir / "evidence"
 
-    if ctx.mode == "drill":
-        # SPEC-REV-05 R2：夹具带多例清单 ⇒ 回放全部用例；否则保持 legacy 单例分支。
-        spec = _drill_case_spec(ctx)
-        if spec:
-            return await _submit_drill_replay(data, ctx, spec, run_dir=run_dir,
-                                              evidence_dir=evidence_dir)
-        gate = await _acquire_slot(data, ctx, job_id=_slot_job_id(ctx), tc=_REAL_CASE)
-        if gate.get("retry"):
-            return {"status": "slot_retry"}
-        log_name = f"{ctx.run_id}_tc_pcie_rw_02_1_DRILLFIXTURE.log"
-        dest = evidence_dir / log_name
-        if ctx.scenario == "dead_job":
-            command = "kill -9 $$"          # 无 rc 文件 ⇒ 必须是 dead，不得当成功
-        elif ctx.scenario == "cancel":
-            command = "sleep 120"
-        else:
-            src = ctx.fixture / "evidence" / "20261015-125305_tc_pcie_rw_02_1_run.log"
-            arch = evidence_dir / "archive"
-            arch_copy = arch / dest.name
-            prov = arch / "DRILL_FIXTURE_PROVENANCE.txt"
-            # **必须放在子 shell 里跑 `set -e`**：JobRunner 会在命令之后追加
-            # `__rc=$?; echo $__rc > <rc>`；若命令串顶层 `set -e` 因 cp 失败退出，
-            # rc 文件就永远写不出来 ⇒ poll() 判 dead ⇒ 下游把「归档件已存在」误判成死任务。
-            # 第二轮（G2 rework 回边再次 N9）的归档件是 444，直接 cp 会 Permission denied ⇒
-            # 先 `rm -f` 目标再写（归档只增不改的语义由文件名/内容保证，本处是同一 drill 副本重建）。
-            command = (
-                "( set -e; "
-                f"mkdir -p {str(arch)!r}; "
-                f"rm -f {str(dest)!r} {str(arch_copy)!r}; "
-                f"cp {str(src)!r} {str(dest)!r}; "
-                f"cp {str(src)!r} {str(arch_copy)!r}; chmod 444 {str(arch_copy)!r}; "
-                f"rm -f {str(prov)!r}; "
-                f"printf '%s\\n%s\\n' "
-                f"'DRILL FIXTURE：本归档目录由 drill 夹具产生，仅用于演示归档腿形态。' "
-                f"'真实归档件由 kb/tools/run_guarded.sh 产出（只增不改 + 归档件只读）。' "
-                f"> {str(prov)!r}; chmod 444 {str(prov)!r}"
-                " )"
-            )
-        try:
-            record = ctx.runner.submit(
-                run_id=ctx.run_id, node="N9", command=command,
-                cwd=Path(data.require_resource("repo_root")),
-                tc=_REAL_CASE, seed=_SEED,
-                note=f"mode={ctx.mode} scenario={ctx.scenario} DRILL FIXTURE",
-            )
-        except BaseException:
-            # 铁律：acquire → submit 之间失败也必须释放单槽（否则后续全部卡在 SLOT）
-            if ctx.admission is not None:
-                ctx.admission.release(job_id=_slot_job_id(ctx))
-            raise
-        payload = {
-            "job_id": record.job_id, "node": "N9", "phase": "running",
-            "tc": _REAL_CASE, "seed": _SEED, "cases": [_REAL_CASE],
-            "expected_cases": [_REAL_CASE], "md5s": {}, "target_set": "drill_fixture",
-            "started_at": record.started_at, "log_path": record.log_path,
-            "mode": ctx.mode, "scenario": ctx.scenario,
-            "sandbox_root": str(run_dir / "sandbox"), "evidence_dir": str(evidence_dir),
-        }
-        ctx.pending["n9_job_id"] = record.job_id
-        await data.async_set_state("n9_job", payload)
-        ctx.event("job_submitted", node="N9", status="running", detail=payload, refs=[record.log_path])
-        # P-33：提交型节点也要有开始事件（面板才有"开始/结束区间"，不再只有一步"结束"）。
-        ctx.node_started("N9_submit")
-        ctx.node_finished("N9_submit", detail={
-            "job_id": record.job_id, "scenario": ctx.scenario,
-            # R3-09：drill 也下发"覆盖用例数"（= 本轮 drill 目标用例数，与 real 分支同字段名），
-            # 面板/summary 才能说"覆盖 N 个用例"而不是"覆盖用例数未下发"。
-            "cases": len(payload.get("cases") or []),
-            "source": "drill_fixture",
-            "summary": (f"N9_submit：已提交全跑作业 {record.job_id}"
-                        f"（drill 夹具，scenario={ctx.scenario}）⇒ 图转入停放"),
-        }, refs=[record.log_path])
-        return payload
 
-    # ---------------------------------------------------------------- real
-    cases = _target_cases(data)
-    _verify_targets(cases)
-    case_names = [c["case"] for c in cases]
-    gate = await _acquire_slot(data, ctx, job_id=_slot_job_id(ctx),
-                               tc=",".join(case_names), seed=_SEED)
-    if gate.get("retry"):
-        return {"status": "slot_retry"}
 
-    summary_path = run_dir / "sandbox" / "n9_run_summary.tsv"
-    summary_path.parent.mkdir(parents=True, exist_ok=True)
-    command = _serial_guard_command(cases, sandbox_root=run_dir / "sandbox",
-                                    evidence_dir=evidence_dir, run_id=ctx.run_id,
-                                    summary_path=summary_path)
-    try:
-        record = ctx.runner.submit(
-            run_id=ctx.run_id, node="N9", command=command,
-            cwd=Path(data.require_resource("repo_root")),
-            tc=",".join(case_names), seed=_SEED,
-            note=f"mode=real cases={len(case_names)} sandbox_only",
-        )
-    except BaseException:
-        if ctx.admission is not None:
-            ctx.admission.release(job_id=_slot_job_id(ctx))
-        raise
-    md5s = {c["case"]: c["md5"] for c in cases}
-    payload = {
-        "job_id": record.job_id, "node": "N9", "phase": "running",
-        "tc": ",".join(case_names), "seed": _SEED,
-        "cases": case_names, "expected_cases": case_names, "md5s": md5s,
-        "target_set": "n6_applied", "started_at": record.started_at,
-        "log_path": record.log_path, "sandbox_root": str(run_dir / "sandbox"),
-        "evidence_dir": str(evidence_dir), "summary_path": str(summary_path),
-        "mode": ctx.mode, "scenario": ctx.scenario,
-        "identity": {"cases": case_names, "md5s": md5s, "seed": _SEED, "run_id": ctx.run_id},
-    }
-    ctx.pending["n9_job_id"] = record.job_id
-    await data.async_set_state("n9_job", payload)
-    ctx.event("job_submitted", node="N9", status="running", detail=payload,
-              refs=[record.log_path, str(summary_path)])
-    ctx.node_started("N9_submit")
-    ctx.node_finished("N9_submit", detail={
-        "job_id": record.job_id, "cases": len(case_names),
-        "source": "kb_tool",
-        "summary": (f"N9_submit：已提交全跑作业 {record.job_id}，"
-                    f"覆盖 {len(case_names)} 个沙箱用例 ⇒ 图转入停放"),
-    }, refs=[record.log_path, str(summary_path)])
-    return payload
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 async def n9_park(data: Any) -> dict[str, Any]:
-    """停在 `job_done` 中断上等外部完成。
+    """保留流程快照身份的节点入口。"""
+    from ..nodes.n9_park import run
+    return await run(data, _REAL_CASE=_REAL_CASE, _SEED=_SEED, _combine_counts=_combine_counts, _drill_case_spec=_drill_case_spec, _drill_replay_done=_drill_replay_done, _identity_summary=_identity_summary, _md5_file=_md5_file, _n9_detail=_n9_detail, _slot_job_id=_slot_job_id, aggregate_evidence=aggregate_evidence, counts_text=counts_text, ctx_of=ctx_of)
 
-    必须用 `resume_to="self"`：`resume_to="next"` 时 `pause_for` 的返回值是**中断描述符**，
-    恢复载荷会直接流向下游 ⇒ **本 chunk 永远看不到作业结局**，
-    死任务/取消会被静默当成继续（这是实测到的真 bug，不得再犯）。
 
-    **恢复后以日志为权威重新取数**，不信任 resume 载荷里的数字
-    （否则外部可以伪造"跑通"）。
-    """
-    ctx = ctx_of(data)
-    job = data.get_state("n9_job") or {}
-    job_id = job.get("job_id") or ctx.pending.get("n9_job_id")
-    if not job_id:
-        raise RuntimeError("N9 park 找不到 job_id：状态未落盘")
 
-    if not getattr(data, "is_resume", False):
-        await data.async_pause_for(
-            type="job_done",
-            interrupt_id=f"JOB:{job_id}",
-            payload={"job_id": job_id, "node": "N9", "tc": job.get("tc"),
-                     "log_path": job.get("log_path"), "cases": job.get("cases"),
-                     "wait_reason": "全跑为外部长任务；图必须停放而非阻塞 handler。"},
-            resume_to="self",
-        )
-        return {"status": "waiting", "job_id": job_id}
 
-    payload = (getattr(data.resume, "value", None) or {}) if getattr(data, "resume", None) else {}
-    try:
-        try:
-            phase = ctx.runner.poll(job_id).phase
-        except Exception:
-            phase = payload.get("phase")
-        if payload.get("phase") and phase != payload.get("phase"):
-            ctx.event("warning", node="N9", status="phase_disagreement",
-                      detail={"job_id": job_id, "payload_phase": payload.get("phase"),
-                              "authority_phase": phase,
-                              "rule": "以权威（rc 文件 + 进程存活）为准，载荷只作提示"})
-        if phase == "dead":
-            ctx.event("dead_job", node="N9", status="dead", detail=payload)
-            raise RuntimeError(f"死任务 {job_id}：进程已终结但未留下 rc ⇒ 不得当成功，走失败分支。")
-        if phase == "cancelled":
-            ctx.event("warning", node="N9", status="cancelled", detail=payload)
-            raise RuntimeError(f"作业 {job_id} 被取消 ⇒ 本轮无法满足 I3，按失败处理，不得继续。")
-        if phase not in ("done",):
-            raise RuntimeError(
-                f"作业 {job_id} 的相位是 {phase!r}（既非 done 也非 dead/cancelled）⇒ "
-                "不得按完成处理；按失败终止本轮。"
-            )
 
-        if ctx.mode == "drill":
-            spec = _drill_case_spec(ctx)
-            if spec:
-                return await _drill_replay_done(ctx, data, job, job_id, payload, spec)
-            ev = ctx.evidence()
-            counts = ev.get("counts") or {}
-            out = {
-                "job_id": job_id,
-                "resume_payload": payload,
-                "evidence": ev,
-                "counts": counts,
-                "target_cases": job.get("cases") or [_REAL_CASE],
-                "cases": {_REAL_CASE: {"present": ev.get("present"), "counts": counts,
-                                       "verdict": ev.get("verdict"),
-                                       "path": ev.get("path")}},
-                "verdict": ev.get("verdict") or {},
-                "authority_note": "resume 载荷只作提示；口径一/口径二/印记一律由日志重新抽取。",
-            }
-            ctx.pending["n9_result"] = out
-            await data.async_set_state("n9_result", out)
-            status = "pass" if counts.get("both_zero") else "fail"
-            ctx.event("job_finished", node="N9", status=status,
-                      detail={"job_id": job_id, "rc": payload.get("rc"),
-                              "koutou1": (counts.get("koutou1") or {}).get("value"),
-                              "koutou2": (counts.get("koutou2") or {}).get("value")},
-                      refs=[ev.get("path", "")])
-            ctx.node_finished("N9", status=status,
-                              detail={"koutou1": (counts.get("koutou1") or {}).get("value"),
-                                      "koutou2": (counts.get("koutou2") or {}).get("value"),
-                                      "cases": len(out["target_cases"]),
-                                      "job_id": job_id,
-                                      **_n9_detail(
-                                          cases=out.get("cases"),
-                                          identity={
-                                              "consistent": None, "mismatches": [],
-                                              "source": ("drill_fixture：夹具日志无身份头，"
-                                                         "未做身份四方同值"),
-                                          }),
-                                      "source": "drill_fixture",
-                                      "summary": (f"N9：全跑作业 {job_id} 完成（drill 夹具），"
-                                                  f"{counts_text(counts)}，"
-                                                  f"both_zero={counts.get('both_zero')}")},
-                              refs=[ev.get("path", "")])
-            return out
 
-        # ---------------------------------------------------------------- real
-        case_names = [str(c) for c in (job.get("expected_cases") or job.get("cases") or [])]
-        md5s = {str(k): str(v) for k, v in (job.get("md5s") or {}).items()}
-        if not case_names:
-            raise RuntimeError("N9 real 恢复后找不到目标用例集（n9_job 未落 cases）")
-        # 沙箱件在跑之前/跑之后都必须与冻结值一致（审的 md5 == 跑的 md5）
-        for case in case_names:
-            sandbox = Path(str(job.get("sandbox_root") or "")) / "TESTLIB" / f"{case}.sv"
-            if not sandbox.is_file():
-                raise RuntimeError(f"N9：沙箱件不存在 {sandbox}（禁止回退未修订 TESTLIB）")
-            if md5s.get(case) and _md5_file(sandbox) != md5s[case]:
-                raise RuntimeError(f"N9：{case} 沙箱 md5 在跑后被改动 ⇒ 证据作废")
-        logs = _collect_case_logs(Path(str(job.get("evidence_dir") or ctx.run_dir / "evidence")),
-                                  case_names)
-        missing = [c for c in case_names if c not in logs]
-        if missing:
-            # 跑挂了也要「采证并三分类」，但**没有日志**就没有证据 —— 不得默认通过
-            ctx.node_failed("N9", message=f"缺 {len(missing)} 例证据日志：{missing}")
-            raise RuntimeError(
-                f"N9：以下用例没有 run.log（{missing}）⇒ 不得把'没跑出证据'当通过"
-            )
-        aggregate = aggregate_evidence(ctx, logs=logs, cases=case_names,
-                                       expected_md5=md5s, seed=_SEED)
-        per_case = aggregate.get("per_case") or {}
-        not_present = [c for c in case_names if not (per_case.get(c) or {}).get("present")]
-        if not_present:
-            ctx.node_failed("N9", message=f"证据不可用（present=false）：{not_present}")
-            raise RuntimeError(f"N9：证据不可用 {not_present} ⇒ 不得继续")
-        counts = _combine_counts(per_case)
-        verdict = aggregate.get("verdict") or {}
-        identity = _identity_summary(aggregate, md5s)
-        out = {
-            "job_id": job_id,
-            "resume_payload": payload,
-            "target_cases": case_names,
-            "run_md5s": md5s,
-            "cases": per_case,
-            "evidence": aggregate,
-            "counts": counts,
-            "verdict": verdict,
-            "identity": identity,
-            "evidence_paths": {c: str(p) for c, p in logs.items()},
-            "authority_note": ("resume 载荷只作提示；两套口径/印记/身份由 host.evidence 聚合"
-                               "（run_guarded 身份头）重新抽取。"),
-        }
-        ctx.pending["n9_result"] = out
-        await data.async_set_state("n9_result", out)
-        status = "pass" if verdict.get("passed") else "fail"
-        ctx.event("job_finished", node="N9", status=status,
-                  detail={"job_id": job_id, "rc": payload.get("rc"),
-                          "cases": len(case_names),
-                          "koutou1": (counts.get("koutou1") or {}).get("value"),
-                          "koutou2": (counts.get("koutou2") or {}).get("value"),
-                          "identity_consistent": identity["consistent"]},
-                  refs=[out["evidence_paths"][c] for c in case_names][:6])
-        ctx.node_finished("N9", status=status,
-                          detail={"cases": len(case_names),
-                                  "koutou1": (counts.get("koutou1") or {}).get("value"),
-                                  "koutou2": (counts.get("koutou2") or {}).get("value"),
-                                  "job_id": job_id,
-                                  **_n9_detail(cases=per_case, identity=identity),
-                                  "source": "kb_tool",
-                                  "summary": (f"N9：全跑作业 {job_id} 完成，"
-                                              f"{len(case_names)} 个用例，"
-                                              f"{counts_text(counts)}，"
-                                              f"身份一致={identity['consistent']}")},
-                          refs=[out["evidence_paths"][c] for c in case_names][:6])
-        return out
-    finally:
-        # 铁律：成功 / 失败 / 取消都必须释放单槽，且幂等。
-        if ctx.admission is not None:
-            handoff = ctx.admission.release(job_id=_slot_job_id(ctx))
-            if handoff:
-                ctx.event("admission_granted", node="N9", status="handoff", detail=handoff)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # ---------------------------------------------------------------- N15
@@ -781,217 +781,217 @@ def _full_regression_cases() -> list[str]:
 
 
 async def n15_select(data: Any) -> list[str]:
-    """N15 选择要回归的用例集。
+    """保留流程快照身份的节点入口。"""
+    from ..nodes.n15_select import run
+    return await run(data, _REAL_CASE=_REAL_CASE, _full_regression_cases=_full_regression_cases, ctx_of=ctx_of)
 
-    `full_now` = 全量用例（索引）；`subset_only` / `milestone_only` = 本轮受影响子集。
-    返回纯 list（图上的 `for_each`/后继节点吃序列），元数据落 state。
-    """
-    ctx = ctx_of(data)
-    ctx.node_started("N15_select")
-    decisions = data.get_state("gate_decisions") or {}
-    g3 = ((decisions.get("G3_regression_decision") or {}).get("decision")) or ""
-    n5 = data.get_state("n5_impact") or {}
-    affected = [c for c in (n5.get("must_change_cases") or []) if c]
-    if g3 == "full_now":
-        cases = _full_regression_cases() or affected
-    else:
-        cases = affected
-    if not cases:
-        cases = [_REAL_CASE]
-    await data.async_set_state("n15_set", {"cases": cases, "count": len(cases),
-                                           "mode": ctx.mode, "g3_decision": g3})
-    ctx.node_finished("N15_select", detail={
-        "count": len(cases), "g3": g3,
-        # P-31：列出选中的用例名 + 本轮是否会真跑（real 会跑；drill 演示不跑）
-        "cases": [str(c) for c in cases],
-        "will_really_run": ctx.mode != "drill",
-        "source": "framework",
-        "summary": (f"N15_select：按 G3={g3 or '未签署'} 选出 {len(cases)} 个回归用例"),
-    })
-    return cases
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 async def n15_run(data: Any) -> dict[str, Any]:
-    """N15 全量/分层回归（**单作业串行**，替代旧的 for_each(n15_case)）。
+    """保留流程快照身份的节点入口。"""
+    from ..nodes.n15_run import run
+    return await run(data, _SEED=_SEED, _acquire_slot=_acquire_slot, _combine_counts=_combine_counts, _identity_summary=_identity_summary, _md5_file=_md5_file, _n15_job_id=_n15_job_id, aggregate_evidence=aggregate_evidence, ctx_of=ctx_of)
 
-    - real：G3 集逐例 `run_guarded.sh --mode full`，串成一个作业；图停在 JOB 中断；
-      恢复后逐例证据落盘（经 `host.evidence` 聚合），**不再发 provisional=True**。
-    - drill：显式 `simulated=True` no-op（accept_v1 的 G3=defer 不走本支；单测触发时也不抛错）。
-    - 跨机 `run_tc.py` 未接入 ⇒ 在状态里如实登记 `cross_machine="run_tc.py 未接入（本机串行）"`。
-    """
-    ctx = ctx_of(data)
-    node = "N15"
-    s15 = data.get_state("n15_set") or {}
-    cases = [str(c) for c in (s15.get("cases") or []) if c]
-    g3 = s15.get("g3_decision")
 
-    if ctx.mode == "drill":
-        ctx.node_started(node)
-        out = {
-            "mode": ctx.mode, "simulated": True, "executed": False,
-            "set": cases, "count": len(cases), "g3_decision": g3,
-            "cross_machine": "run_tc.py 未接入（本机串行）",
-            "note": "drill：不真跑仿真；本节点在 drill 下为显式 no-op（不是终值冒充）。",
-        }
-        await data.async_set_state("n15_result", out)
-        ctx.node_finished(node, status="ok", detail={
-            "simulated": True, "count": len(cases), "job_id": None,
-            # P-32：drill 不真跑 ⇒ executed=False / will_really_run=False（不是"未下发"）
-            "cases": [str(c) for c in cases],
-            "executed": False,
-            "failed_cases": [],
-            "will_really_run": False,
-            "source": "framework",
-            "summary": (f"N15：drill 显式 no-op（未真跑回归），回归集 {len(cases)} 个用例，"
-                        f"G3={g3 or '未签署'}"),
-        })
-        return out
 
-    job_state = data.get_state("n15_job") or {}
-    job_id = job_state.get("job_id")
-    submitted_here = False
 
-    if not job_id:
-        ctx.node_started(node)
-        if not cases:
-            ctx.node_failed(node, message="N15 回归集为空")
-            raise RuntimeError("N15：回归集为空（G3 集未产出）⇒ 不得声称已回归")
-        # 目标集：优先用沙箱件（本轮已修订），否则用仓库原件（分层回归的本意）
-        applied = {str(c.get("case")): c for c in (data.get_state("n6_applied") or {}).get("cases") or []}
-        entries: list[dict[str, Any]] = []
-        repo_root = Path(data.require_resource("repo_root"))
-        for case in cases:
-            item = applied.get(case)
-            if item and Path(str(item.get("sandbox_path"))).is_file():
-                entries.append({"case": case, "sandbox_path": str(item["sandbox_path"]),
-                                "md5": str(item.get("md5_after") or "")})
-            else:
-                src = repo_root / "TESTLIB" / f"{case}.sv"
-                if not src.is_file():
-                    ctx.node_failed(node, message=f"回归用例不存在：{src}")
-                    raise FileNotFoundError(f"N15：回归用例不存在：{src}")
-                entries.append({"case": case, "sandbox_path": str(src), "md5": _md5_file(src)})
-        gate = await _acquire_slot(data, ctx, job_id=_n15_job_id(ctx),
-                                   tc=",".join(cases), seed=_SEED, node=node)
-        if gate.get("retry"):
-            return {"status": "slot_retry"}
-        evidence_dir = ctx.run_dir / "evidence"
-        summary_path = ctx.run_dir / "sandbox" / "n15_run_summary.tsv"
-        summary_path.parent.mkdir(parents=True, exist_ok=True)
-        command = _serial_guard_command(entries, sandbox_root=ctx.run_dir / "sandbox",
-                                        evidence_dir=evidence_dir, run_id=ctx.run_id,
-                                        summary_path=summary_path)
-        try:
-            record = ctx.runner.submit(
-                run_id=ctx.run_id, node=node, command=command,
-                cwd=repo_root, tc=",".join(cases), seed=_SEED,
-                note=f"mode=real cases={len(cases)} G3={g3}",
-            )
-        except BaseException:
-            if ctx.admission is not None:
-                ctx.admission.release(job_id=_n15_job_id(ctx))
-            raise
-        md5s = {c["case"]: c["md5"] for c in entries}
-        job_state = {
-            "job_id": record.job_id, "node": node, "phase": "running",
-            "tc": ",".join(cases), "seed": _SEED, "cases": cases,
-            "expected_cases": cases, "md5s": md5s, "target_set": "g3_set",
-            "g3_decision": g3, "started_at": record.started_at,
-            "log_path": record.log_path, "sandbox_root": str(ctx.run_dir / "sandbox"),
-            "evidence_dir": str(evidence_dir), "summary_path": str(summary_path),
-            "cross_machine": "run_tc.py 未接入（本机串行）",
-        }
-        await data.async_set_state("n15_job", job_state)
-        ctx.event("job_submitted", node=node, status="running", detail=job_state,
-                  refs=[record.log_path])
-        # P-33：提交型节点也要有开始事件 + 作业日志 refs（与 job_submitted 同源）。
-        ctx.node_started("N15_submit")
-        ctx.node_finished("N15_submit", detail={
-            "job_id": record.job_id, "cases": len(cases),
-            "source": "kb_tool",
-            "summary": (f"N15_submit：已提交回归作业 {record.job_id}，"
-                        f"覆盖 {len(cases)} 个用例（G3={g3 or '未签署'}）⇒ 图转入停放"),
-        }, refs=[record.log_path])
-        submitted_here = True
-        job_id = record.job_id
 
-    # 停放：本调用刚提交的作业要停；从 SLOT 中断恢复后提交的也要停。
-    # 只有「从 JOB 中断恢复」（job_state 已在、本调用未提交）才直接进入取结局分支。
-    if submitted_here or not getattr(data, "is_resume", False):
-        await data.async_pause_for(
-            type="job_done",
-            interrupt_id=f"JOB:{job_id}",
-            payload={"job_id": job_id, "node": node, "cases": job_state.get("cases"),
-                     "wait_reason": "N15 回归为外部长任务；图必须停放而非阻塞 handler。"},
-            resume_to="self",
-        )
-        return {"status": "waiting", "job_id": job_id}
 
-    # 恢复：权威相位 + 逐例证据（不信任 resume 载荷数字）
-    try:
-        try:
-            phase = ctx.runner.poll(str(job_id)).phase
-        except Exception:
-            phase = (getattr(data, "resume", None) and (data.resume.value or {}).get("phase"))
-        if phase == "dead":
-            ctx.event("dead_job", node=node, status="dead", detail={"job_id": job_id})
-            raise RuntimeError(f"N15：死任务 {job_id}，不得当成功")
-        if phase == "cancelled":
-            raise RuntimeError(f"N15：作业 {job_id} 被取消 ⇒ 不得当回归完成")
-        if phase != "done":
-            raise RuntimeError(f"N15：作业相位 {phase!r} 非终态 ⇒ 不得当完成")
 
-        case_names = [str(c) for c in (job_state.get("expected_cases") or cases)]
-        md5s = {str(k): str(v) for k, v in (job_state.get("md5s") or {}).items()}
-        logs = _collect_case_logs(Path(str(job_state.get("evidence_dir"))), case_names)
-        missing = [c for c in case_names if c not in logs]
-        if missing:
-            ctx.node_failed(node, message=f"N15 缺证据日志：{missing}")
-            raise RuntimeError(f"N15：以下用例没有 run.log：{missing} ⇒ 不得声称回归完成")
-        aggregate = aggregate_evidence(ctx, logs=logs, cases=case_names,
-                                       expected_md5=md5s, seed=_SEED)
-        per_case = aggregate.get("per_case") or {}
-        verdict = aggregate.get("verdict") or {}
-        out = {
-            "job_id": job_id, "mode": ctx.mode, "simulated": False, "executed": True,
-            "set": case_names, "count": len(case_names), "g3_decision": g3,
-            "cases": per_case, "evidence": aggregate,
-            "counts": _combine_counts(per_case),
-            "verdict": verdict,
-            "identity": _identity_summary(aggregate, md5s),
-            "evidence_paths": {c: str(p) for c, p in logs.items()},
-            "cross_machine": "run_tc.py 未接入（本机串行；5机×2LIC 跨机调度未实现）",
-            "authority_note": "终值来自逐例日志聚合；不使用 provisional 临时值。",
-        }
-        await data.async_set_state("n15_result", out)
-        status = "pass" if verdict.get("passed") else "fail"
-        ctx.event("job_finished", node=node, status=status,
-                  detail={"job_id": job_id, "cases": len(case_names),
-                          "passed": verdict.get("passed")},
-                  refs=[out["evidence_paths"][c] for c in case_names][:6])
-        failed_cases = [
-            c for c in case_names
-            if not (((per_case.get(c) or {}).get("verdict") or {}).get("passed"))
-        ]
-        ctx.node_finished(node, status=status,
-                          detail={"cases": [str(c) for c in case_names],
-                                  "case_count": len(case_names),
-                                  "executed": True,
-                                  "failed_cases": failed_cases,
-                                  "will_really_run": True,
-                                  "passed": verdict.get("passed"),
-                                  "job_id": job_id,
-                                  "source": "kb_tool",
-                                  "summary": (f"N15：回归作业 {job_id} 完成，"
-                                              f"{len(case_names)} 个用例，"
-                                              f"passed={verdict.get('passed')}，"
-                                              f"身份一致={out['identity']['consistent']}")})
-        return out
-    finally:
-        if ctx.admission is not None:
-            handoff = ctx.admission.release(job_id=_n15_job_id(ctx))
-            if handoff:
-                ctx.event("admission_granted", node=node, status="handoff", detail=handoff)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 async def n15_case(data: Any) -> dict[str, Any]:

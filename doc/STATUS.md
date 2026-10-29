@@ -6576,3 +6576,71 @@ B2 `test_u1..test_u5`（U1 chip/置灰、U2 原因原文、U3 hint、U4 1280×72
 - 不声称"独立验证"：B1/B2 由两名实现 owner 交付、Lead 复核 diff 并跑门禁；`clean-ws-20261023`
   无 drill 夹具（`runs/` 空）故不作 drill 演示根。
 
+
+## 138 本地 WSL 开发环境准备（2026-10-29）
+
+- 在 Windows 新建项目专用 WSL2 发行版 `fpga-dev`（Ubuntu 24.04），未改变 Docker 发行版；镜像的 SHA-256 与 Ubuntu 提供的清单一致。重启该发行版后默认用户为 `fpga`，Python 为 3.11.18，项目依赖按 `loop/requirements.txt` 安装。系统 apt 索引更新中断，基础工具未声称完成系统更新。
+- Linux 隔离测试副本 `/home/fpga/work/fpga-sim` 来自本机工作区的一次复制，并不自动同步；虚拟环境 `/home/fpga/fpga-venv`，测试副本的 `loop/.venv` 指向该环境。Windows 原仓及数据未由测试脚本清理。WSL 磁盘及下载文件位于本仓 `.local-wsl/`，仅供本机使用。
+- 本轮 `tests/test_evidence.py tests/test_gate_ledger.py tests/test_sv_ports.py`：`23 passed, 4 skipped in 1.78s`；跳过为归档演练轮夹具不存在。补充组合筛选：`3 failed, 27 passed, 4 skipped, 33 deselected in 1.05s`。单独 N7 筛选：`1 failed, 3 passed, 36 deselected in 0.52s`；失败的 `test_n7_real_runs_guarded_compile_only_per_case_and_releases_slot` 因默认 `ENV_ROOT` 路径不存在而报 `FileNotFoundError`，不记为通过，也不据此判定代码缺陷。
+- 未运行完整四门、真实 UVS、模型或内网验收；历史夹具、真实环境与许可证尚未配置。本轮由同一执行者操作和验证，不声称独立复核。当前 Linux 副本不会自动获得 Windows 仓后续修改。
+
+## 139 节点模块化 N7 首切片（2026-10-29，进行中）
+
+- 依据本轮用户要求，先修订环境插件规格及实施计划，再在 Host 保留 N7 的准入、哈希、台账和失败权威，将编译命令参数与日志定位提取到 `loop/host/compile_adapter.py`。其余节点尚未按三层方案重构；规格变更尚需显式评审。
+- Linux 隔离合成数据根：原 `tests/test_fix_real_chain.py` 输出 `2 failed, 38 passed in 8.51s`，失败两项缺历史 drill 夹具；重构前 N7 特征测试 `4 passed, 36 deselected in 0.54s`。新增适配器契约测试先运行，因模块不存在产生 `1 error in 0.09s`；实现后专项 `6 passed, 36 deselected in 0.75s`，保留路径字符串修正后复测 `6 passed, 36 deselected in 0.77s`。更广节点回归排除两项缺夹具测试后 `40 passed, 2 deselected in 6.77s`；该轮在路径字符串修正前，修正后已复测专项。
+- 文档检查在 Windows 上退出 1，输出 `checked=2291 skipped=27801 historical=857 known_missing=12 env_missing=360 missing=195`；环境/数据根缺失且涉及既有文档，未排查或声称零断链。完整单测、kb 自测、端到端及真实环境验收未运行；缺历史夹具/真实环境。无独立验证，本轮不能视作四门完成。
+
+## 140 节点模块化 N9/N15 环境调用切片（2026-10-29，进行中）
+
+- Host 保留 N9/N15 的目标校验、单槽、作业提交、停放恢复、身份核验和台账权威；抽取串行 full 命令生成与运行日志定位到 `loop/host/run_adapter.py`。drill 回放也沿用既有日志命名定位。拓扑、载荷、种子与业务判据未有意变更；真实环境与旧快照跨版本恢复尚未验证。SPEC-03 已增边界，契约仍待显式评审。
+- Linux 合成数据根中，重构前 N9/N15 特征测试 `7 passed, 33 deselected in 0.76s`；新测试先因适配器模块不存在而 `1 error in 0.09s`；实现后专项 `9 passed, 33 deselected in 0.87s`。节点、适配器、单槽与作业器回归 `49 passed, 2 deselected in 8.69s`，两项为历史 drill 夹具缺失而排除。快照洁净与终止状态专项 `2 passed, 30 deselected in 0.58s`。
+- 未运行完整单测、kb 自测或端到端；真实 UVS、历史夹具和完整恢复验收均缺。测试由实现者执行，不称独立复核或四门完成。N0–N6、N8、N10–N14、N16 的模块重构仍待推进。
+
+## 141 节点模块化运行能力注入（2026-10-29，进行中）
+
+- N7/N9/N15 从直接引用具体环境实现改为经 `RunCtx.simulation` 调用；默认 `GuardedSimulation` 复用原命令与日志逻辑，准入、台账、作业及证据判据仍由 Host 拥有。可控替身用于测试，尚无面向用户的环境选择器；恢复仍构造默认实现，定制适配器的版本固定和跨重启恢复未实现，不可宣称新环境已接通。
+- Linux 隔离合成数据根：N9 注入新增用例重构前 `1 failed, 40 deselected in 0.83s`；初版测试因错误假设输入未经规范化 `1 failed, 49 passed, 2 deselected in 9.03s`，修正测试断言后，N7/N9/N15 注入及受影响节点/适配器/单槽/作业器回归 `52 passed, 2 deselected in 8.93s`（两项缺历史 drill 夹具）。模型/上下文相关测试 `195 passed, 13 skipped, 1 warning in 115.51s`；测试文件标记的跳过原因是 Linux 无 Node.js，警告为 Starlette TestClient 弃用提示。
+- 本轮未完成所有节点的模块化、规格显式评审、独立验证、完整四门、历史夹具、真实 UVS 及跨版本恢复；此前文档门缺失仍待排查。禁止声称总体完成或完全可插拔。
+
+## 142 全节点模块拆分与本机验证（2026-10-29，待完整验收）
+
+- 按原 N0–N16 顺序将 Host、模型、人工闸门、长任务与 HALT 的执行实现拆入 `loop/workflows/nodes/`；N6 及 N9/N15 保留各自的内部阶段，G1/G2/G3 共用唯一门处理。原 TriggerFlow 入口模块/名称/行号保留；主流程继续唯一持有拓扑。共享模型请求、Host 校验、kb 业务判据与台账未重写。环境适配提取 N1 暂存布局、N6 用例来源与 SystemVerilog 事实、N7 编译、N9/N15 命令与日志定位；目前只有现有环境，动态选择与定制适配器跨重启恢复未实现。
+- 基线同一路径流程指纹起初因节点源码行号变化而不一致；保留旧入口行号后，基线与重构版均为 `sha256:3a2073563e2860e6f5fd468ebfd1f0daaf37d6dd0c8ef3368eaf5ce274941784`。该值与测试绝对路径相关。原版完整流程空闲快照由新版载入；受控单闸门图的 G1 等待快照可载入并恢复；受控 N9 等待快照可载入，模拟取消按预期失败且模拟槽释放。受控测试采用替身，不代表真实历史轮/真实作业恢复。原版 G1 受控测试与新版分别 `1 passed`；N9 取消测试首次因测试脚本未捕获预期异常而退出，修正测试后通过。
+- 隔离合成数据根的整组节点、模型、闸门、适配器与作业器回归 `366 passed, 2 deselected, 1 warning in 172.18s`；两项排除因缺历史 drill 夹具。后续闸门与图身份专项 `21 passed, 33 deselected in 1.03s`，清理 EOF 后图身份/G1 专项 `2 passed in 0.60s`。Node.js 22.16.0 官方包校验后安装至 WSL 用户目录，先前跳过的上下文测试 `13 passed, 1 warning in 2.75s`。N1/N6 局部基线曾 `1 failed, 21 passed, 21 deselected`，失败为缺历史夹具；环境事实注入先失败，再实现；N6 输入路径额外断言为实现后补充，不伪称先失败。
+- 软件层扩大尝试（不含浏览器、排除 env_layer，设 maxfail=10）在合成空数据根停止：`10 failed, 272 passed, 3 deselected, 1 warning in 178.10s`；失败包含 drill 夹具不全及环境目录不满足测试前提，不能当完整单测门通过。文档检查在相同合成数据根基线和当前版分别为 `missing=130`，清单对比 `added missing: 0`、`removed missing: 0`；两版均退出 1，文档门未通过。
+- 初次运行环境自测入口因 Windows 源脚本 CRLF 失败；仅在隔离 Linux 测试副本按原文本转换 `11` 个脚本换行为 LF（不修改原仓/环境），其脚本测试 `8 passed in 2.28s`。重新调用环境自测入口因真实环境根缺失显式失败，kb 自测及环境层未执行。端到端、真实 UVS、模型 live 与内网验收未执行。
+- 兼容测试材料见 `doc/evidence/NODE_MODULE_COMPAT_20261029/`；外部 md5 清单 `doc/evidence/NODE_MODULE_COMPAT_20261029.md5`：`compat_gate.py` 57ef39088371c34484459fdca6e6411b，`compat_job.py` 53bb97109b1f53ed9290bacac1bbe6a3，`README.md` 7f7e3dec3d5536da6e0c467013ad31c9。Windows 文件只读属性均为 true，WSL `chmod 444` 后 `stat` 显示 555（挂载权限映射），不能声称磁盘模式为 444。
+- 规格仍须显式评审；同一执行者实现与测试，不构成独立复核。缺历史夹具、真实环境/许可证、实际历史等待快照与独立验证；四门未全通过，整体不可称完整验收。
+
+## 143 原版与重构版缺件测试对照（2026-10-29）
+
+- 用户说明暂时无法提供真实 FPGA 环境和许可证，夹具数据将另行提供；真实仿真验收保留待补，不据此停掉与环境无关的验证。
+- 在彼此隔离的空合成数据根，以相同参数运行 `tests/test_api.py tests/test_api_ui_contract.py --maxfail=10`：基线 `10 failed, 4 passed, 1 warning in 1.14s`；重构版 `10 failed, 4 passed, 1 warning in 0.70s`，失败测试 ID 相同。失败包括历史 drill 夹具、基线/环境目录等前置缺失。这是有限的缺件条件对照，不证明全部软件测试无回归，也不把这些失败记为通过。
+- 无真实工程和许可证时继续进行受控验证；取得用户提供的夹具后先确认来源、内容与 md5，再在独立可写数据根执行相应门禁。不得改写归档或把模拟数据冒充真实环境。
+
+## 144 远端主线与本地节点模块化整合（2026-10-29，验证未完成）
+
+- 本地 main 从 `4bb01d3` 快进至远端 `46b4d7c`；原未提交改动以 Git stash 保留。远端与本地同时修改 N6：将 S6 候选通道及导入校验接入拆分节点，沿用环境能力定位源文件，保留旧节点入口位置。原本地 STATUS §106–§111 重编号为 §138–§143，远端章节完整保留。
+- 隔离 WSL 副本专项：初次 `5 failed, 95 passed`（提前停止）；修复依赖接线后 `2 failed, 118 passed`，两项依赖本机缺失的旧 `RUN-20261015-120626` 夹具。扩大回归 `5 failed, 428 passed, 2 skipped, 2 deselected, 1 warning`，提前停止，五项均因默认 drill 夹具不全。
+- 从远端独立夹具分支导出到隔离目录，drill 与 demo 的 md5 校验分别 `35` 和 `103` 个 OK；夹具分支未合入主线。使用 drill 夹具的流程测试 `3 failed, 3 passed` 后提前停止，失败于 N8 无法定位全部变更；同一条件下远端原版对应测试 `1 failed`，报同一错误，仍不能推断全范围无回归。真实环境、旧夹具、独立复核和四门尚未完成。
+- 本次由实现者执行验证，不构成独立复核；未推送。
+- 去除依赖上述缺件的流程文件及两项旧夹具用例后，受影响回归 `482 passed, 2 skipped, 2 deselected, 1 warning in 13.05s`；跳过项未按通过计。
+
+## 145 本地四门尝试与 N8 缺件定位（2026-10-29）
+
+- 合并版隔离 WSL 副本，空可写数据根，已校验的 `drill-real-20261024`，`pytest -q --maxfail=20`：`17 failed, 1179 passed, 48 skipped, 1 warning, 3 errors in 50.89s`；达到上限提前停止，非全量通过。测试包装命令退出码捕获有 shell 引号错误，故此处仅引用 pytest 汇总，不将包装退出码解释为 pytest 退出码。失败涉及旧 run 夹具、基线/冲突数据、环境文件以及配置的 DSH node 不存在；部分原始 shell 脚本在 Windows 复制后为 CRLF，该轮未转换。各失败未逐一归因，不能笼统断言全部是环境问题。
+- N8 失败直接条件：测试使用的合成 ENV_ROOT 中 `TESTLIB/tc_cpu_i2c_03.sv` 不存在，drill 夹具沙箱件存在且为 21612 bytes；N8 对大文件要求比较源件取得变更区间。此为该次测试的可复现缺件，不是对真实环境文件状态的判断。
+- 在派生合成 ENV_ROOT 副本运行环境入口：gate 自测 `PASS=9 FAIL=1`（旧 gates 夹具缺失），N5 自测 `PASS=6 FAIL=1`（旧沙箱夹具缺失），冲突自测 `PASS=28 FAIL=0`；环境层 `1 failed, 24 deselected, 2 errors`，缺 `uvs.setup` 和环境侧 `doc/AGENTS.md`。入口报告原合成 ENV_ROOT 零写入；真实环境未执行。
+- 在隔离副本和独立空数据根执行 `accept_v1_run.sh`（副本 shell 换行转换为 LF），六个 phase 均 `rc=1`；首阶段缺冲突数据，后续未完整收敛，不能算端到端通过。服务端口在完成后未监听。
+- 相同合成根文档检查：上游 `checked=2730 ... missing=123`，合并版 `checked=2740 ... missing=119`，两者均存在缺失，文档门未通过；数目不同不能证明新增引用均正确。受影响专项回归见 §144。
+- 实施者本人执行，无独立复核；真实 FPGA、许可证、完整历史资产和四门均待验收。完整单测日志位于隔离 WSL 副本 `/home/fpga/work/validation-20261029/unit.log`，不当作冻结归档。
+
+## 146 节点合并与内网待验收交接（2026-10-29）
+
+- 新增 [本地补测与内网验收计划](plans/2026-10-29-node-merge-intranet-validation.md)，区分主线提交与未提交节点改动，整理交付前核验、夹具身份、四门、节点与恢复、真实内网、独立复核和证据交接。本文是待执行计划，不代表新增验收通过。
+- 文档中链接及测试文件路径以本次本机核对为准；尚未运行完整文档门，实际测试与限制仍见 §144–§145。
+
+## 147 节点整合分支交付准备（2026-10-29）
+
+- 按用户要求将节点重构、DSH 合并接线和验收交接整理到独立分支；不声称四门、真实环境或独立复核已完成，实测与限制见 §144–§145。
+- 暂存恢复后发现兼容证据换行转换导致内容 md5 不符；从本机原始 Linux 副本恢复，逐项哈希与 §142 原账本一致，并设置 Git 属性保护证据字节。保留原 stash。

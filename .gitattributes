@@ -6,3 +6,7 @@ doc/evidence/AGENT_REVIEW_H2B_20261026/** -text whitespace=cr-at-eol
 # Raw console logs retain their original spacing as evidence.
 doc/evidence/AGENT_REVIEW_H2B_20261026/*.txt -whitespace
 doc/evidence/AGENT_REVIEW_H2B_20261026.md5 -text whitespace=cr-at-eol
+
+# Preserve node compatibility evidence and its checksum across platforms.
+doc/evidence/NODE_MODULE_COMPAT_20261029/** -text whitespace=cr-at-eol,-blank-at-eof
+doc/evidence/NODE_MODULE_COMPAT_20261029.md5 -text whitespace=cr-at-eol

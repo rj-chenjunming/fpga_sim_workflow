@@ -36,16 +36,12 @@ from typing import Any
 from host import evidence as EV
 from host import model_provider as MP
 from host import paths as P
-from host import agent_candidate_import as CI
 from host import agent_memory as AM
 from host import agent_handoff as AH
 from host import agent_review as AR
 
 from ..context import RunCtx, ctx_of
-from .host_steps import (
-    CANDIDATE_BASELINE_KEY, CANDIDATE_EXECUTION_KEY, CANDIDATE_MANIFEST_KEY, CANDIDATE_ROOT_KEY,
-    md5_file, run_kb_tool,
-)
+from .host_steps import md5_file, run_kb_tool
 
 #: Host 侧确定性校验的输出种类（= prompt_key 的前缀）
 _KNOWN_KINDS = frozenset({"n3", "n6", "n8", "n10", "n11", "n12"})
@@ -635,99 +631,99 @@ def _n3_detail(out: dict[str, Any], *, offered_segments_empty: bool) -> dict[str
 
 
 async def n3_digest(data: Any) -> dict[str, Any]:
-    """N3 差异摘要（模型节点）→ 落盘 `run_dir/n3_digest.md`。
+    """保留流程快照身份的节点入口。"""
+    from ..nodes.n3 import run
+    return await run(data, _artifact=_artifact, _compose_n3_markdown=_compose_n3_markdown, _n3_detail=_n3_detail, _standin=_standin, _write_text=_write_text, ctx_of=ctx_of, run_model_node=run_model_node)
 
-    **A21**：模型调用/解析失败必须显式终止本轮，不得只记 problems 继续（空摘要不得进 Gate1）。
-    """
-    ctx = ctx_of(data)
-    ctx.node_started("N3")
-    n2 = data.get_state("n2_diff") or {}
-    diff_path = ctx.run_dir / "n2_diff.json"
-    diffs: list[dict[str, Any]] = []
-    context_error = None
-    try:
-        doc = json.loads(diff_path.read_text(encoding="utf-8"))
-        if not isinstance(doc, dict) or not isinstance(doc.get("diffs"), list) or any(not isinstance(d, dict) for d in doc["diffs"]):
-            raise ValueError("diffs 必须是对象列表")
-        diffs = doc["diffs"]
-    except (OSError, ValueError) as exc:
-        context_error = f"{type(exc).__name__}: {exc}"
-        if ctx.mode == "real":
-            ctx.node_failed("N3", message="N3 上下文缺失或格式错误：" + context_error)
-            raise RuntimeError("N3 上下文缺失或格式错误：" + context_error) from exc
-        diffs = []
 
-    input_data = {
-        "run_id": ctx.run_id,
-        # P-14 ④：`id` / `offsets` 是 N2 产物**已有**的字段，显式下发让模型能说清
-        # "是哪个文件、哪个偏移"（不新增取数、不构造证据）。
-        "diffs": [
-            {**d, "entry_id": d.get("entry_id") or d.get("id"), "id": d.get("id"),
-             "offsets": d.get("offsets") or ([d["offset"]] if d.get("offset") else []),
-             "segment": d.get("segment"),
-             "offset": d.get("offset"), "kind": d.get("kind"),
-             "before": str(d.get("before")), "after": str(d.get("after"))}
-            for d in diffs
-        ],
-        "offered_segments": sorted({str(d.get("segment")) for d in diffs if d.get("segment")}),
-        "coverage": {"scope": "all_differences", "total": len(diffs), "provided": len(diffs),
-                     "complete": context_error is None, "error": context_error},
-    }
-    out = await run_model_node(
-        ctx, "N3", prompt_key="n3_digest", input_data=input_data,
-        offered={"diff_ids": {str(d.get("entry_id") or d.get("id")) for d in diffs},
-                 "segments": set(input_data["offered_segments"])},
-    )
-    if out["mode"] == "standin":
-        out["data"] = _standin(ctx, "N3", "n3_digest.md",
-                               extra={"diff_count": n2.get("diff_count")})
-    elif (out.get("validation") or {}).get("ok") is not True:
-        problems = (out.get("validation") or {}).get("problems") or ["模型输出解析/校验失败"]
-        ctx.node_failed("N3", message=f"N3 校验失败，终止本轮：{problems[:3]}")
-        raise RuntimeError(f"N3：差异摘要校验失败（不得把空摘要送 Gate1）：{problems[:5]}")
 
-    if ctx.mode == "drill":
-        fixture_text = ctx.read_fixture_text("n3_digest.md")
-        text = fixture_text if fixture_text is not None else _compose_n3_markdown(out)
-    elif out["mode"] == "standin":
-        # real 端到端需要 live provider；standin **不冒充**模型结论（禁止用替身摘要进 Gate1）
-        ctx.node_failed(
-            "N3",
-            message="real 模式下 N3 无真实模型输出 ⇒ fail closed（real 端到端需 live provider；"
-                    "standin 不冒充模型结论）",
-        )
-        raise RuntimeError(
-            "N3：real 模式要求 live provider（standin 不得作为差异摘要进入 Gate1；"
-            "real 端到端需 live provider）"
-        )
-    else:
-        text = _compose_n3_markdown(out)
-    digest_path = _artifact(ctx, "n3_digest.md")
-    _write_text(digest_path, text)
-    out["artifact_path"] = str(digest_path)
-    await data.async_set_state("n3_digest", out)
-    # §10.4：模型节点 source 按 live/standin 取。
-    # P-13/P-14：节点摘要**改用模型 summary**，组数降级为关键数字（`groups_count`）；
-    # 没有模型输出（standin/drill）时如实说"模型摘要未下发"，不拿夹具正文冒充。
-    source = "model_live" if out["mode"] == "live" else "model_standin"
-    covered = n2.get("diff_count")
-    detail_fields = _n3_detail(
-        out, offered_segments_empty=not input_data["offered_segments"]
-    )
-    confirmations = detail_fields["digest_confirmations"] or []
-    if detail_fields["digest_summary"]:
-        summary = f"N3：{detail_fields['digest_summary']}"
-        if confirmations:
-            summary += f"（另有 {len(confirmations)} 条需要你确认）"
-    else:
-        summary = (f"N3：模型摘要未下发（{out['mode']} 模式未产出模型结论），"
-                   f"覆盖 {covered if covered is not None else '未下发'} 条差异")
-    ctx.node_finished("N3", status="ok" if out["mode"] in ("live", "standin") else "failed",
-                      detail={"mode": out["mode"], "provider": out.get("provider"),
-                              "problems": (out.get("validation") or {}).get("problems", [])[:3],
-                              "source": source, "summary": summary, **detail_fields},
-                      refs=[str(digest_path)])
-    return out
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # ---------------------------------------------------------------- N6
@@ -750,234 +746,88 @@ def _observation_points(data_out: dict[str, Any] | None) -> list[dict[str, Any]]
     ]
 
 
-# ---------------------------------------------------------------- N6 候选通道（S6/DS-06）
-
-
-def _candidate_contract_path(case: str) -> str:
-    """候选契约路径（G1 冻结口径）：`TESTLIB/<case>.sv`。
-
-    为什么由合同定而不是"扫到什么算什么"：清单键若来自扫描，导入的 `extra_file`（扫描-清单差）
-    与 `hash_mismatch`（快照 vs 导入复算）在真机上就恒假；DS-06 的拒绝矩阵会变成空转。
-    """
-    return "TESTLIB/%s.sv" % case
-
-
-def _candidate_execution_state(out: dict[str, Any]) -> str:
-    """停止确认口径：只有"进程已退出且无 execution_unknown"才给 `stopped`，否则 `unknown`。
-
-    dsh 的 `run_attempt` 只在进程结束且无残留后代后返回；`ExecutionUnknown` 是**抛异常**
-    （没有 out）。所以拿到 live out 即"进程已退出"，但仍按口径复核 payload 标记：
-    非 live / `model_call_failed` / error 含 `execution_unknown` ⇒ `unknown`
-    （**不许**把未知当已停止，DS-05 禁止自动重发）。
-    """
-    if out.get("mode") != "live":
-        return "unknown"
-    if out.get("model_call_failed"):
-        return "unknown"
-    if "execution_unknown" in str(out.get("error") or ""):
-        return "unknown"
-    return "stopped"
-
-
-def _sealed_attempt_workspace(ctx: RunCtx, out: dict[str, Any]) -> dict[str, Any] | None:
-    """从**已封存**的 attempt 请求记录取 `attempt_workspace`（不读任务文本/客户端 hint）。
-
-    记录不完整/校验失败/无本键 ⇒ None（没有候选通道 ⇒ 一个键都不产出，保持 legacy 路径）。
-    """
-    ref = out.get("request_ref")
-    if not isinstance(ref, str) or not ref:
-        return None
-    try:
-        record = AM.verify_attempt((ctx.run_dir / ref).parent)
-    except (OSError, ValueError, KeyError):
-        return None
-    workspace = record["request"].get("attempt_workspace")
-    return workspace if isinstance(workspace, dict) else None
-
-
-def _candidate_root_from_workspace(ctx: RunCtx, workspace: dict[str, Any]) -> Path | None:
-    """布局 `candidate`（封存记录里相对 run_dir）⇒ 绝对路径；越界/缺失/非目录 ⇒ None。"""
-    rel = workspace.get("candidate")
-    if not isinstance(rel, str) or not rel:
-        return None
-    try:
-        root = (ctx.run_dir / rel).resolve()
-    except OSError:
-        return None
-    run_root = ctx.run_dir.resolve()
-    if run_root != root and run_root not in root.parents:
-        return None
-    return root if root.is_dir() else None
-
-
-def _pin_candidate_baseline(data: Any, targets: list[dict[str, Any]]) -> dict[str, str]:
-    """**起 prompt 前** pin 源件 md5（判源漂移 R16）：模型看到的是这份源件，之后变了就是漂移。
-
-    取不到 `repo_root` 或缺件 ⇒ 跳过该件（不猜、不补）；缺项的后果是导入判 `source_drift`
-    （无法证明无漂移 ⇒ 拒），不是静默放行。
-    """
-    try:
-        repo_root = Path(data.require_resource("repo_root"))
-    except (KeyError, TypeError):
-        return {}
-    pinned: dict[str, str] = {}
-    for target in targets:
-        case = str(target.get("case") or "")
-        if not case:
-            continue
-        rel = _candidate_contract_path(case)
-        source = repo_root / str(target.get("file") or rel)
-        if source.is_file() and not source.is_symlink():
-            pinned[rel] = md5_file(source)
-    return pinned
-
-
-def _workspace_hint(ctx: RunCtx, targets: list[dict[str, Any]]) -> dict[str, Any]:
-    """本 attempt 工作区的**绝对路径**与**基线源件位置**（Host 已知事实）。
-
-    为什么给：S6 真机前两次失败都在"模型不知道工作区/拿不到基线全文 ⇒ 去扫宿主机 FS"。
-    路径与 `model_request.run_attempt` 的分配**同源**：`AC.next_attempt`（首个空位预测，
-    Host 串行保证预测=实际；不一致时 model_request 已显式失败）+ `A.workspace_root`
-    （布局唯一实现）；`source_files` 与 `model_request._attempt_sources` 的落点同源
-    （`input/TESTLIB/<basename>`，`stage_sources` 只保留文件名）。本函数只读、不写盘。
-    """
-    from host import agent_control as AC
-    from host.agent_backends import dsh_assets as A
-
-    sequence = AC.next_attempt(ctx.run_dir, "N6")
-    layout = A.AttemptLayout.under(A.workspace_root(ctx.run_dir, "N6", sequence))
-    sources = ["input/TESTLIB/%s" % Path(str(target.get("file") or "")).name
-               for target in targets if str(target.get("file") or "").strip()]
-    return {
-        "cwd": str(layout.work),
-        "candidate": str(layout.candidate),
-        "input": str(layout.input_dir),
-        "source_files": sources,
-        "rule": ("cwd 是你的工作目录；基线源件在 source_files（相对工作区根，只读）；"
-                 "候选 = 该源件的整份内容 + 你的 edits，写到 candidate/TESTLIB/<case>.sv；"
-                 "材料不足写 notes，不要扫描宿主机文件系统"),
-    }
-
-
-def _attach_candidate_channel(ctx: RunCtx, out: dict[str, Any], targets: list[dict[str, Any]],
-                              baseline_pin: dict[str, str]) -> None:
-    """S6/DS-06：dsh 隔离工作区存在时，把四键写进 N6 输出（**要么全给、要么全不给**）。
-
-    - 键名与 `host_steps.candidate_plan` 同一组常量（不写第二份键名）；
-    - `candidate_manifest`：键来自**合同**（`TESTLIB/<case>.sv`）、值来自**停止后快照**；
-    - `baseline`：起 prompt 前 pin 的源件 md5（缺项 ⇒ 导入判源漂移，不静默放行）；
-    - `execution_state`：只在确认停止时 `stopped`，否则 `unknown`。
-    无工作区（agently/drill/旧记录/记录校验失败）⇒ 一个键都不加（legacy 路径，不半给）。
-    """
-    workspace = _sealed_attempt_workspace(ctx, out)
-    if workspace is None or not targets:
-        return
-    candidate_root = _candidate_root_from_workspace(ctx, workspace)
-    if candidate_root is None:
-        return
-    expected = [_candidate_contract_path(str(target.get("case")))
-                for target in targets if target.get("case")]
-    out[CANDIDATE_ROOT_KEY] = str(candidate_root)
-    out[CANDIDATE_MANIFEST_KEY] = CI.snapshot_candidate_manifest(candidate_root, expected)
-    out[CANDIDATE_BASELINE_KEY] = dict(baseline_pin)
-    out[CANDIDATE_EXECUTION_KEY] = _candidate_execution_state(out)
-
-
 async def n6_author(data: Any) -> dict[str, Any]:
-    """N6 修订/补充（模型节点）：只出**结构化 edits**，不自己写文件。
+    """保留流程快照身份的节点入口。"""
+    from ..nodes.n6_author import run
+    return await run(data, AH=AH, AR=AR, _cycles_and_limit=_cycles_and_limit, _observation_points=_observation_points, _standin=_standin, build_n6_targets=build_n6_targets, case_edits_from_output=case_edits_from_output, ctx_of=ctx_of, run_model_node=run_model_node, _workspace_hint=_workspace_hint, _pin_candidate_baseline=_pin_candidate_baseline, _attach_candidate_channel=_attach_candidate_channel)
 
-    写权边界：Host 的 `n6_apply` 只写 `run_dir/sandbox/TESTLIB/`，不写冻结的 `TESTLIB/`。
-    **I7**：本节点不再自增 `n6_n8_cycles`（返工预算只在 N8 判 rework 时消耗）。
-    **S6/DS-06 候选通道**：dsh attempt 隔离工作区存在时，输出带四键（`candidate_root` /
-    `candidate_manifest` / `baseline` / `execution_state`），供 `n6_apply` 先导入再施加；
-    无工作区（agently/drill/旧记录）⇒ 四键**全不给**（legacy 路径），不半给、不降级。
-    """
-    ctx = ctx_of(data)
-    ctx.node_started("N6")
-    cycles, limit = _cycles_and_limit(ctx, data)
-    n5 = data.get_state("n5_impact") or {}
-    n8 = data.get_state("n8_check") or {}
-    n11 = data.get_state("n11_review") or {}
-    cases = list(n5.get("must_change_cases") or [])
 
-    try:
-        rework_handoff = AR.for_author(ctx, data.get_state('n6_author') or {}, n8, n11)
-    except (ValueError, OSError) as exc:
-        ctx.node_failed("N6", message="返工交接来源核验失败", source="framework")
-        raise ValueError("N6 handoff provenance rejected") from exc
-    rework_reasons = [item['text'] for item in rework_handoff['issues']]
 
-    targets = build_n6_targets(ctx, data)
-    rework_assignment = AH.assignment(rework_handoff, targets)
-    await data.async_set_state("n6_targets", {
-        "targets": targets,
-        "count": len(targets),
-        "source": "n5_impact.json + n2_diff.json + ENV_ROOT/TESTLIB 源码摘录",
-        "mode": ctx.mode,
-    })
 
-    input_data = {
-        "run_id": ctx.run_id,
-        "cycle": cycles + 1,
-        "targets": targets,
-        "rework_reasons": rework_reasons,
-        "rework_handoff": rework_handoff,
-        "rework_assignment": rework_assignment,
-        "must_change_count": n5.get("must_change_count"),
-        "rule": ("只针对 targets 的用例；edits.old 必须逐字取自 targets[].excerpt.text 并且唯一；"
-                 "拿不准写进 notes，不要猜。"),
-        # S6/DS-06：写权只在 attempt 隔离工作区的候选目录（模型不能写共享 TESTLIB/沙箱）
-        "write_scope_rule": ("只写本次 attempt 的 candidate/TESTLIB/<case>.sv（与 work/ 同级）；"
-                             "Host 在确认停止后导入候选并落沙箱，模型不得声称已改共享 TESTLIB/沙箱。"),
-        # S6-DS06-02：把 Host 已知的工作区绝对路径 + 基线源件位置直接给模型（前两轮实测：
-        # 模型去 `find / -name TESTLIB` 找材料，120/300 s 内没写候选）。只给路径，不放宽判据。
-        "workspace": _workspace_hint(ctx, targets),
-    }
-    # S6/DS-06：候选基线必须在**起 prompt 之前** pin（模型看到的源件；之后变了就是漂移）。
-    # 只有 real 会产生 attempt 隔离工作区（dsh）；drill/standin 不产生候选通道。
-    baseline_pin = _pin_candidate_baseline(data, targets) if ctx.mode == "real" else {}
-    out = await run_model_node(
-        ctx, "N6", prompt_key="n6_author", input_data=input_data,
-        offered={"cases": set(cases) | {t["case"] for t in targets},
-                 "rework_assignment": rework_assignment},
-    )
-    if out["mode"] == "standin":
-        out["data"] = _standin(ctx, "N6", "N6_author_note.md",
-                               extra={"cycle": cycles + 1,
-                                      "targets": [t["case"] for t in targets],
-                                      "write_scope": str(ctx.run_dir / "sandbox" / "TESTLIB")})
-    elif (out.get("validation") or {}).get("ok") is not True:
-        # P-25：观测点/edits 的 Host 校验失败必须**立刻显式失败**（不得静默继续到 N6_apply），
-        # 与 N3/N8/N11/N12 的 fail-closed 一致；错误里带缺哪个用例 / 哪个 marker。
-        problems = (out.get("validation") or {}).get("problems") or ["模型输出解析/校验失败"]
-        ctx.node_failed("N6", message=f"N6 修订输出校验失败（fail-closed）：{problems[:3]}")
-        raise RuntimeError(f"N6：修订输出未通过 Host 校验（含观测点约束）：{problems[:5]}")
-    # S6/DS-06：实验证通过后接候选通道（四键要么全给、要么全不给）；由 n6_apply 消费。
-    _attach_candidate_channel(ctx, out, targets, baseline_pin)
-    await data.async_set_state("n6_author", out)
-    validation_ok = (out.get("validation") or {}).get("ok")
-    source = "model_live" if out["mode"] == "live" else "model_standin"
-    # P-20：逐用例修改摘要由模型输出**确定性投影**（Host 不猜"改了哪一处"）；
-    # 与 N6_apply 的清单同源（同一函数），没有模型输出时显式 None。
-    case_edits = case_edits_from_output(out.get("data") if isinstance(out.get("data"), dict) else None)
-    observation_points = _observation_points(
-        out.get("data") if isinstance(out.get("data"), dict) else None)
-    ctx.node_finished("N6", status=out["mode"],
-                      detail={"mode": out["mode"], "cycle": cycles + 1,
-                              "targets": len(targets),
-                              "validation_ok": validation_ok,
-                              "source": source,
-                              "case_edits": case_edits,
-                              "case_edits_source": "n6_output",
-                              "observation_points": observation_points,
-                              "summary": (
-                                  f"N6：第 {cycles + 1} 轮修订，目标 {len(targets)} 个用例，"
-                                  "输出校验"
-                                  + ("通过" if validation_ok is True
-                                     else "未通过" if validation_ok is False else "未下发")
-                                  + f"（{out['mode']}）"
-                              )})
-    return out
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # ---------------------------------------------------------------- N8
@@ -1221,390 +1071,390 @@ def _author_handoff(ctx, data, node):
 
 
 async def n8_check(data: Any) -> dict[str, Any]:
-    """N8 静态复核（模型节点）→ 显式分叉到 N6（回边）/ N9 / N13（升级）。
+    """保留流程快照身份的节点入口。"""
+    from ..nodes.n8 import run
+    return await run(data, AR=AR, _CHECKLIST=_CHECKLIST, _author_handoff=_author_handoff, _cycles_and_limit=_cycles_and_limit, _ensure_case_state=_ensure_case_state, _sandbox_code=_sandbox_code, _set_case_state=_set_case_state, _standin=_standin, ctx_of=ctx_of, run_model_node=run_model_node)
 
-    **fail-closed（#1/C3）**：模型调用失败、输出校验失败、verdict 缺失 ⇒ node_failed；
-    绝不再 `verdict = ... or "pass"`。
-    """
-    ctx = ctx_of(data)
-    ctx.node_started("N8")
-    cycles, limit = _cycles_and_limit(ctx, data)
-    n8_prev = data.get_state("n8_check") or {}
-    n6_applied = data.get_state("n6_applied") or {}
 
-    try:
-        sandbox_cases, sandbox_names, sandbox_coverage = _sandbox_code(
-            ctx, Path(data.require_resource("repo_root")), n6_applied.get("cases") or [])
-    except RuntimeError as exc:
-        # 闭锁必须留下显式 node_failed，避免 run.error 退化成泛化信息（复核残余项）。
-        ctx.node_failed("N8", message=str(exc))
-        raise
-    revision_points: list[dict[str, Any]] = []
-    for target in (data.get_state("n6_targets") or {}).get("targets") or []:
-        revision_points.extend(target.get("revision_points") or [])
 
-    applied_edits = [
-        {"case": c.get("case"), "file": c.get("file"), "edits": c.get("edits") or []}
-        for c in (n6_applied.get("cases") or []) if isinstance(c, dict)
-    ]
-    input_data = {
-        "run_id": ctx.run_id,
-        "cycle": cycles,
-        "sandbox_cases": sandbox_cases,
-        "coverage_summary": sandbox_coverage,
-        "revision_points": revision_points,
-        "applied_edits": applied_edits,
-        "author_handoff": _author_handoff(ctx, data, 'N8'),
-        "checklist": _CHECKLIST,
-        "rework_reasons": [str(f) for f in (n8_prev.get("data") or {}).get("must_fix", [])]
-        if isinstance(n8_prev.get("data"), dict) else [],
-        "rule": ("verdict=rework 必须给逐条可核依据；只依据本 input 的材料，不得假设未提供的文件内容。"
-                 "sandbox_cases[].coverage.mode=changed_regions 时只对这些变更区域内的 touched 行负责，"
-                 "coverage_summary 说明全文/片段各多少件。"),
-    }
-    input_data['review_assignment'] = AR.prepare('N8', input_data)
-    out = await run_model_node(ctx, "N8", prompt_key="n8_check",
-                               input_data=input_data,
-                               offered={"cases": set(sandbox_names), 'review_context': input_data})
-    if out["mode"] == "standin":
-        if ctx.mode == "real":
-            ctx.node_failed("N8", message="real 模式下 N8 无真实模型输出 ⇒ 静态复核不得跳过")
-            raise RuntimeError("N8：real 模式要求真实模型复核（standin 不得默认 pass）")
-        # drill：夹具 check_C 的结论（accept_v1 依赖 drill 能继续到 G2）
-        text = ctx.read_fixture_text("check_C.md") or ""
-        rejected = "退回" in text and "通过" not in text
-        out["data"] = _standin(ctx, "N8", "check_C.md", extra={
-            "verdict": "rework" if rejected else "pass",
-            "cycle": cycles, "limit": limit,
-            "reject_basis": [ln for ln in text.splitlines() if "退回" in ln][:3],
-        })
-    elif (out.get("validation") or {}).get("ok") is not True:
-        problems = (out.get("validation") or {}).get("problems") or ["模型输出解析/校验失败"]
-        ctx.node_failed("N8", message=f"N8 校验失败（fail-closed）：{problems[:3]}")
-        raise RuntimeError(f"N8：静态复核校验失败，不得进入 N9：{problems[:5]}")
 
-    data_out = out.get("data") if isinstance(out.get("data"), dict) else {}
-    verdict = str(data_out.get("verdict") or "").strip().lower()
-    # P-23：模型实际检查项数与必须修改项数（Host 只做**计数**，判据仍是模型输出+校验）。
-    # 没有 findings/must_fix（standin/drill 替身）⇒ 显式 None，不拿 0 冒充"检查了 0 项"。
-    findings = data_out.get("findings")
-    must_fix = data_out.get("must_fix")
-    check_count = len(findings) if isinstance(findings, list) else None
-    must_fix_count = len(must_fix) if isinstance(must_fix, list) else None
-    if verdict not in ("pass", "rework"):
-        # 显式缺失/非法 ⇒ 失败（C3：不得默认 pass）
-        ctx.node_failed("N8", message=f"N8 verdict 缺失/非法：{verdict!r}")
-        raise RuntimeError(f"N8：verdict 缺失或非法（{verdict!r}）⇒ 不得放行到 N9")
 
-    cases = [str(c.get("case")) for c in (n6_applied.get("cases") or []) if c.get("case")] or sandbox_names
-    n8_source = "model_live" if out["mode"] == "live" else "model_standin"
-    # drill 的 N8 是**替身复核**（夹具 check_C），不是本轮真实证据；不写本轮用例态台账。
-    # 理由：I2 的 G2 前置把"本轮写入的待验"当阻断，drill 全跑证据必然不合格，
-    # 若替身复核也写「已修订待验」就会把 accept_v1 的 drill 永久堵在 G2（Lead/WS-L 已确认）。
-    write_ledger = ctx.mode == "real"
-    if write_ledger:
-        _ensure_case_state(ctx)
-    else:
-        ctx.event("warning", node="N8", status="drill_ledger_skipped",
-                  detail={"rule": "drill 替身复核不写用例态台账；I2 以 real 证据为准"})
-    if verdict == 'rework' and not write_ledger:
-        out.update(cycle=cycles, limit=limit, escalated=True)
-        await data.async_set_state('n8_check', out)
-        ctx.node_finished('N8', status='escalated', detail={
-            'verdict': 'rework', 'cycle': cycles, 'limit': limit, 'source': n8_source,
-            'escalated': True,
-            'summary': 'N8：drill 静态复核退回，升级人工裁决；无真实返工计数，不自动回环'})
-        await data.async_emit('N8_ESCALATE', out)
-        return out
-    if verdict == "rework" and write_ledger:
-        new_cycles = cycles + 1
-        ledger_cycles = min(new_cycles, limit)  # case_state 拒绝 > limit；==limit 合法（记录已到上限）
-        for idx, case in enumerate(cases):
-            res = _set_case_state(
-                ctx, case, "已退回",
-                rework_cycles=ledger_cycles if idx == 0 else None,
-                static_check="reject",
-                note=f"N8 静态复核退回（第 {new_cycles} 次返工；limit={limit}）",
-                updated_by="loop:N8",
-            )
-            if res["rc"] != 0:
-                ctx.node_failed("N8", message=f"case_state set 失败 rc={res['rc']}")
-                raise RuntimeError(f"N8：用例态台账写失败 rc={res['rc']}: {res['stderr_tail'][-300:]}")
-        escalated = new_cycles >= limit
-        out["cycle"] = new_cycles
-        out["limit"] = limit
-        out["escalated"] = escalated
-        await data.async_set_state("n8_check", out)
-        if escalated:
-            ctx.node_finished("N8", status="escalated",
-                              detail={"verdict": "rework", "cycle": new_cycles,
-                                      "limit": limit, "escalated": True,
-                                      "check_count": check_count,
-                                      "must_fix_count": must_fix_count,
-                                      "reason": "N8 返工超限 ⇒ 升级 N13 人工裁决",
-                                      "source": n8_source,
-                                      "summary": (f"N8：静态复核 rework 第 {new_cycles} 次，"
-                                                  f"已达上限 {limit} ⇒ 升级 N13 人工裁决"
-                                                  f"（{out['mode']}）")})
-            await data.async_emit("N8_ESCALATE", out)
-            return out
-        ctx.node_finished("N8", status="rework",
-                          detail={"verdict": "rework", "cycle": new_cycles, "limit": limit,
-                                  "check_count": check_count,
-                                  "must_fix_count": must_fix_count,
-                                  "source": n8_source,
-                                  "summary": (f"N8：静态复核 rework（第 {new_cycles} 次，"
-                                              f"上限 {limit}）⇒ 回 N6 返工（{out['mode']}）")})
-        await data.async_emit("N8_REWORK", out)
-        return out
 
-    # pass：静态卡点 C 通过（态仍是「已修订待验」，卡点D 之后才能「已验证通过」）
-    if write_ledger:
-        for case in cases:
-            res = _set_case_state(ctx, case, "已修订待验", static_check="pass",
-                                  note="N8 静态复核通过（卡点C=pass；待卡点D）",
-                                  updated_by="loop:N8")
-            if res["rc"] != 0:
-                ctx.node_failed("N8", message=f"case_state set 失败 rc={res['rc']}")
-                raise RuntimeError(f"N8：用例态台账写失败 rc={res['rc']}")
-    out["cycle"] = cycles
-    out["limit"] = limit
-    out["escalated"] = False
-    await data.async_set_state("n8_check", out)
-    ctx.node_finished("N8", status=out["mode"],
-                      detail={"verdict": "pass", "cycle": cycles, "limit": limit,
-                              "check_count": check_count,
-                              "must_fix_count": must_fix_count,
-                              "source": n8_source,
-                              "summary": (f"N8：静态复核 pass（第 {cycles} 轮，上限 {limit}，"
-                                          f"{len(cases)} 个用例；{out['mode']}）")})
-    await data.async_emit("N8_PASS", out)
-    return out
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # ---------------------------------------------------------------- N10（Host 抽数 + 模型分类）
 
 
 async def n10_reconcile(data: Any) -> dict[str, Any]:
-    """N10 结果对账（Host 抽数 + 模型 FAIL 三分类）。
+    """保留流程快照身份的节点入口。"""
+    from ..nodes.n10 import run
+    return await run(data, MP=MP, PENDING_CLASSES=PENDING_CLASSES, _artifact=_artifact, _case_pass_fields=_case_pass_fields, _cases_table=_cases_table, _classification_summary=_classification_summary, _diffs_for_classification=_diffs_for_classification, _per_case_fail_buckets=_per_case_fail_buckets, _persist_pending=_persist_pending, _reconcile_markdown=_reconcile_markdown, _set_case_state=_set_case_state, _write_text=_write_text, counts_text=counts_text, ctx_of=ctx_of, ledger=ledger, run_model_node=run_model_node)
 
-    - **Host 确定性**：两套口径/印记/身份一律来自 `host.evidence` 聚合，模型只对**桶**分类；
-    - **持久化（#18/A9）**：`n10_reconcile.md` + 分类 2/3 → `kb/tools/n10_pending.py`；
-    - **I2**：逐例写用例态（`已验证通过` 走工具合取门槛；证据不全由工具拒绝 ⇒ 本节点失败）；
-    - **C10**：分类校验失败 ⇒ node_failed（阻断 gate2）。
-    """
-    ctx = ctx_of(data)
-    ctx.node_started("N10")
-    diffs = _diffs_for_classification(ctx)
 
-    if ctx.mode == "drill":
-        ev = ctx.evidence()
-        reconcile_text = ctx.read_fixture_text("reconcile.md") or ""
-        from host.evidence import fail_buckets
 
-        log_path = ctx.evidence_log()
-        log_text = log_path.read_text(encoding="utf-8", errors="replace") if log_path.is_file() else ""
-        fb = fail_buckets(log_text, diffs)
-        out = {
-            "run_id": ctx.run_id,
-            "evidence": ev,
-            "counts": ev.get("counts"),
-            "verdict": ev.get("verdict"),
-            "target_cases": ["tc_pcie_rw_02"],
-            "cases": {"tc_pcie_rw_02": {"present": ev.get("present"),
-                                        "counts": ev.get("counts"),
-                                        "imprints": ev.get("imprints"),
-                                        "verdict": ev.get("verdict"),
-                                        "path": ev.get("path")}},
-            "both_zero": (ev.get("counts") or {}).get("both_zero"),
-            "extraction_owner": "host:host/evidence.py（确定性；不经模型）",
-            "fail_buckets": {
-                "bucket_count": fb["bucket_count"],
-                "merged_note": fb["merged_note"],
-                "coverage": fb["coverage"],
-                "revision_points": fb["revision_points"],
-                "any_bucket_overlaps_revision_point": any(
-                    b["overlaps_revision_point"] for b in fb["buckets"]),
-                "extraction_owner": fb["extraction_owner"],
-            },
-        }
-        classify_input = {
-            "run_id": ctx.run_id,
-            "revision_points": fb["revision_points"],
-            "buckets": [
-                {"bucket_id": b["bucket_id"], "channel": b["channel"], "range": b["range"],
-                 "entry_count": b["entry_count"], "address_count": b["address_count"],
-                 "sample_addresses": b["sample_addresses"],
-                 "overlaps_revision_point": b["overlaps_revision_point"]}
-                for b in fb["buckets"]
-            ],
-            "counts": ev.get("counts"),
-            "rule": "数字与分桶由 Host 给出，不得改写；判「本轮引入」必须落在 revision_points 上。",
-        }
-        cls_out = await run_model_node(ctx, "N10", prompt_key="n10_fail_classify",
-                                       input_data=classify_input, offered={"buckets": fb["buckets"]})
-        if cls_out["mode"] == "standin":
-            cls_out["data"] = {
-                "standin": True, "provider": "none",
-                "reason": f"未接入模型（{MP.resolve().reason}）；FAIL 三分类为确定性替身。",
-                "excerpt": reconcile_text[:600],
-                "classes": ["既有缺陷", "本轮引入", "待裁决"],
-                "note": "分桶与计数仍是 Host 确定性的（见 fail_buckets）。",
-            }
-        ctx.event(
-            "warning", node="N10", status="drill_ledger_skipped",
-            detail={"drill_skips_case_state": True,
-                    "reason": ("drill 的卡点D 证据是夹具且必然不合格（口径一≠0），写「已验证通过」"
-                               "既不可能也不诚实；I2 以 real 证据为准")},
-        )
-        out["case_state_written"] = False
-        out["fail_classification"] = cls_out
-        out["pending_items"] = []
-        out["pending_path"] = None
-        reconcile_path = _artifact(ctx, "n10_reconcile.md")
-        _write_text(reconcile_path, _reconcile_markdown(out))
-        out["reconcile_md_path"] = str(reconcile_path)
-        await data.async_set_state("n10_reconcile", out)
-        ctx.node_finished("N10", status="pass" if out["both_zero"] else "fail",
-                          detail={"both_zero": out["both_zero"],
-                                  "cases_table": _cases_table(out.get("cases")),
-                                  "classification": _classification_summary(
-                                      bucket_count=fb.get("bucket_count"), items=None),
-                                  "source": ("model_live" if cls_out["mode"] == "live"
-                                             else "model_standin"),
-                                  "summary": (
-                                      f"N10：{len(out['target_cases'])} 个用例对账，"
-                                      f"{counts_text(out.get('counts'))}，"
-                                      f"both_zero={out['both_zero']}（{cls_out['mode']}）"
-                                  )},
-                          refs=[ev.get("path", ""), str(reconcile_path)])
-        return out
 
-    # ---------------------------------------------------------------- real
-    n9 = data.get_state("n9_result") or {}
-    cases = n9.get("cases") if isinstance(n9.get("cases"), dict) else {}
-    if not cases:
-        ctx.node_failed("N10", message="没有 N9 聚合证据（n9_result 缺失）")
-        raise RuntimeError("N10：缺少 N9 聚合证据，不得对账")
-    target_cases = [str(c) for c in (n9.get("target_cases") or [])]
-    absent = [c for c in target_cases if not (cases.get(c) or {}).get("present")]
-    if absent:
-        ctx.node_failed("N10", message=f"证据不可用：{absent}")
-        raise RuntimeError(f"N10：以下用例证据不可用：{absent}")
 
-    fb = _per_case_fail_buckets(ctx, cases, diffs)
-    classify_input = {
-        "run_id": ctx.run_id,
-        "revision_points": fb["revision_points"],
-        "buckets": [
-            {"bucket_id": b["bucket_id"], "channel": b["channel"], "range": b["range"],
-             "entry_count": b["entry_count"], "address_count": b["address_count"],
-             "sample_addresses": b["sample_addresses"],
-             "overlaps_revision_point": b["overlaps_revision_point"]}
-            for b in fb["buckets"]
-        ],
-        "counts": n9.get("counts"),
-        "rule": "数字与分桶由 Host 给出，不得改写；判「本轮引入」必须落在 revision_points 上。",
-    }
-    cls_out = await run_model_node(ctx, "N10", prompt_key="n10_fail_classify",
-                                   input_data=classify_input, offered={"buckets": fb["buckets"]})
-    if cls_out["mode"] == "standin":
-        ctx.node_failed(
-            "N10",
-            message="real 模式下 N10 无真实模型分类 ⇒ fail closed（real 端到端需 live provider；"
-                    "standin 不冒充，不得放行 gate2）",
-        )
-        raise RuntimeError(
-            "N10：real 模式要求 live provider 的 FAIL 三分类（standin 不冒充；real 端到端需 live provider）"
-        )
-    if (cls_out.get("validation") or {}).get("ok") is not True:
-        problems = (cls_out.get("validation") or {}).get("problems") or ["分类校验失败"]
-        ctx.node_failed("N10", message=f"N10 分类校验失败（阻断 gate2）：{problems[:3]}")
-        raise RuntimeError(f"N10：FAIL 三分类校验失败，阻断 gate2：{problems[:5]}")
 
-    cls_data = cls_out.get("data") if isinstance(cls_out.get("data"), dict) else {}
-    bucket_by_id = {str(b["bucket_id"]): b for b in fb["buckets"]}
-    pending_items: list[dict[str, Any]] = []
-    for bucket in cls_data.get("items") or []:
-        cls = str(bucket.get("classification") or "")
-        if cls not in PENDING_CLASSES:
-            continue
-        src = bucket_by_id.get(str(bucket.get("bucket_id"))) or {}
-        pending_items.append({
-            "bucket_id": str(bucket.get("bucket_id")),
-            "case": str(src.get("case") or ""),
-            "classification": cls,
-            "address_range": str(src.get("range") or ""),
-            "count": int(src.get("entry_count") or 0),
-            "basis": str(bucket.get("basis") or ""),
-            "evidence_path": str((cases.get(str(src.get("case"))) or {}).get("path") or ""),
-        })
-    pending_meta = _persist_pending(ctx, pending_items)
 
-    # I2：逐例写用例态（工具做 I3 合取门槛；被拒 ⇒ 本节点失败，不静默跳过）
-    n7 = data.get_state("n7_compile") or {}
-    n9_md5s = n9.get("run_md5s") or {}
-    n9["run_md5s"] = n9_md5s
-    for case in target_cases:
-        item = cases.get(case) or {}
-        verdict = item.get("verdict") or {}
-        if verdict.get("passed"):
-            fields = _case_pass_fields(ctx, case, item, n7, n9, ledger)
-            res = _set_case_state(ctx, case, "已验证通过", **fields)
-            if res["rc"] != 0:
-                ctx.node_failed(
-                    "N10",
-                    message=f"{case} 判据通过但用例态写入被工具拒绝 rc={res['rc']}",
-                )
-                raise RuntimeError(
-                    f"N10：{case} 证据通过但 case_state 拒绝写入（I3 合取缺项）："
-                    f"{res['stderr_tail'][-400:]}"
-                )
-        else:
-            _set_case_state(ctx, case, "已修订待验",
-                            note="N10：卡点D 判据未通过 ⇒ 保持待验，不得称跑通",
-                            updated_by="loop:N10")
 
-    out = {
-        "run_id": ctx.run_id,
-        "evidence": n9.get("evidence"),
-        "counts": n9.get("counts"),
-        "verdict": n9.get("verdict") or {},
-        "identity": n9.get("identity") or {},
-        "target_cases": target_cases,
-        "cases": cases,
-        "both_zero": (n9.get("counts") or {}).get("both_zero"),
-        "extraction_owner": "host:host/evidence.py（聚合确定性；不经模型）",
-        "fail_buckets": {k: fb[k] for k in ("buckets", "revision_points", "merged_note")},
-        "fail_classification": cls_out,
-        **pending_meta,
-        "pending_items": pending_items,
-    }
-    reconcile_path = _artifact(ctx, "n10_reconcile.md")
-    _write_text(reconcile_path, _reconcile_markdown(out))
-    out["reconcile_md_path"] = str(reconcile_path)
-    await data.async_set_state("n10_reconcile", out)
-    status = "pass" if (n9.get("verdict") or {}).get("passed") else "fail"
-    ctx.node_finished("N10", status=status,
-                      detail={"cases": len(target_cases),
-                              "verdict_passed": (n9.get("verdict") or {}).get("passed"),
-                              "pending": len(pending_items),
-                              # P-26：逐用例表与失败分类摘要（只投影既有证据/模型输出）
-                              "cases_table": _cases_table(cases),
-                              "classification": _classification_summary(
-                                  bucket_count=len(fb.get("buckets") or []),
-                                  items=cls_data.get("items")),
-                              "source": ("model_live" if cls_out["mode"] == "live"
-                                         else "model_standin"),
-                              "summary": (
-                                  f"N10：{len(target_cases)} 个用例对账，"
-                                  f"{counts_text(n9.get('counts'))}，"
-                                  f"verdict_passed={(n9.get('verdict') or {}).get('passed')}，"
-                                  f"待裁决 {len(pending_items)} 项（{cls_out['mode']}）"
-                              )},
-                      refs=[str(reconcile_path)] + [str((cases.get(c) or {}).get("path") or "")
-                                                    for c in target_cases][:4])
-    return out
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # ---------------------------------------------------------------- N11（guardian）
@@ -1646,167 +1496,167 @@ def _identity_table(host_identity: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 async def n11_review(data: Any) -> dict[str, Any]:
-    """N11 证据守护（模型：成链判断；Host：身份四方同值 + 结论交叉核对）。
+    """保留流程快照身份的节点入口。"""
+    from ..nodes.n11 import run
+    return await run(data, AR=AR, _author_handoff=_author_handoff, _cycles_and_limit=_cycles_and_limit, _ensure_case_state=_ensure_case_state, _host_identity=_host_identity, _identity_table=_identity_table, _ledger_summary=_ledger_summary, _set_case_state=_set_case_state, _standin=_standin, ctx_of=ctx_of, ledger=ledger, run_model_node=run_model_node)
 
-    **业务 N11 = guardian**（审计 #15/A10）：
-    - 成链 ⇒ `N11_INTACT` → N12；
-    - 不成链 ⇒ `N11_REWORK` → N6（显式回边），并带返工请求；
-    - Host 事实「不一致」而模型说 intact ⇒ fail closed（模型不得替 Host 掩盖身份错位）。
-    """
-    ctx = ctx_of(data)
-    ctx.node_started("N11")
-    n10 = data.get_state("n10_reconcile") or {}
-    n9 = data.get_state("n9_result") or {}
-    counts = n10.get("counts") or n9.get("counts") or {}
-    evidence = n10.get("evidence") or n9.get("evidence") or {}
 
-    if ctx.mode == "drill":
-        host_identity: dict[str, Any] = {
-            "run_id": ctx.run_id, "consistent": True, "mismatches": [],
-            "cases": [], "mode": "drill",
-            "note": "drill：身份链使用夹具，不做真实四方同值强判（real 才强判）。",
-        }
-    else:
-        host_identity = _host_identity(ctx, data)
 
-    input_data = {
-        "run_id": ctx.run_id,
-        "identity": host_identity,
-        "author_handoff": _author_handoff(ctx, data, 'N11'),
-        "counts": counts,
-        "verdict": n10.get("verdict") or n9.get("verdict"),
-        "evidence": {
-            "path": (evidence or {}).get("path"),
-            "present": (evidence or {}).get("present"),
-            "cases": {
-                case: {
-                    "path": (item or {}).get("path"),
-                    "present": (item or {}).get("present"),
-                    "counts": (item or {}).get("counts"),
-                    "imprints": (item or {}).get("imprints"),
-                    "identity": (item or {}).get("identity"),
-                }
-                for case, item in ((n9.get("cases") or {}) if isinstance(n9.get("cases"), dict) else {}).items()
-            },
-        },
-        "case_states": _ledger_summary(ctx),
-        "rework": ctx.kb.load_rework(ctx.run_dir),
-        "rule": ("只判证据链是否成链：身份四方同值且证据可解析=intact；任一缺失/不一致=broken。"
-                 "任何一项缺失不得判 intact。"),
-    }
-    input_data['review_assignment'] = AR.prepare('N11', input_data)
-    out = await run_model_node(ctx, "N11", prompt_key="n11_review", input_data=input_data,
-                               offered={"counts": counts, 'review_context': input_data})
-    if out["mode"] == "standin":
-        if ctx.mode == "real":
-            ctx.node_failed("N11", message="real 模式下 N11 无真实模型输出 ⇒ 证据守护不得跳过")
-            raise RuntimeError("N11：real 模式要求真实 guardian 判成链（standin 不得判 intact）")
-        out["data"] = _standin(ctx, "N11", "reconcile.md", extra={
-            "chain": "intact",
-            "reasons": ["drill/standin：按夹具证据链视为 intact（非模型结论）"],
-            "rework_requests": [],
-            "caveats": ["drill 替身，不构成真实证据守护结论"],
-        })
-    elif (out.get("validation") or {}).get("ok") is not True:
-        problems = (out.get("validation") or {}).get("problems") or ["模型输出解析/校验失败"]
-        ctx.node_failed("N11", message=f"N11 校验失败（fail-closed）：{problems[:3]}")
-        raise RuntimeError(f"N11：证据守护校验失败：{problems[:5]}")
 
-    data_out = out.get("data") if isinstance(out.get("data"), dict) else {}
-    model_chain = str(data_out.get("chain") or "").strip().lower()
-    if model_chain not in ("intact", "broken"):
-        ctx.node_failed("N11", message=f"N11 chain 缺失/非法：{model_chain!r}")
-        raise RuntimeError("N11：chain 缺失或非法 ⇒ 不得放行 N12")
 
-    host_consistent = bool(host_identity.get("consistent"))
-    if not host_consistent and model_chain == "intact":
-        # Host 事实说不一致，模型却判 intact ⇒ 模型结论不得覆盖 Host 事实
-        ctx.node_failed("N11", message="模型判 intact 但 Host 身份四方同值不成立（不得掩盖身份错位）")
-        raise RuntimeError(
-            "N11：Host 身份校验失败（"
-            + "；".join(host_identity.get("mismatches") or [])[:500]
-            + "），模型不得判 intact"
-        )
-    rework_requests = list(data_out.get("rework_requests") or [])
-    if not host_consistent and not rework_requests:
-        rework_requests = [
-            {"case": c.get("case"), "what": "补齐/重采证据并核对 md5 与 run_id",
-             "basis": "; ".join(host_identity.get("mismatches") or [])[:300]}
-            for c in host_identity.get("cases") or []
-        ]
-    chain_effective = "broken" if (not host_consistent or model_chain == "broken") else "intact"
-    out["host_identity"] = host_identity
-    out["chain_effective"] = chain_effective
-    out["model_chain"] = model_chain
-    out["rework_requests"] = rework_requests
-    # P-27：逐用例身份表 / 未闭环项 / 返工请求条数（三个分支共用同一投影，不各算一套）
-    identity_table = _identity_table(host_identity)
-    unclosed = [str(x) for x in (data_out.get("caveats") or [])]
-    rework_requests_count = len(rework_requests)
-    await data.async_set_state("n11_review", out)
 
-    n11_source = "model_live" if out["mode"] == "live" else "model_standin"
-    if chain_effective == "broken":
-        # I7：证据守护返工同样吃掉返工预算（否则 broken↔N6 会无限循环）
-        cycles, limit = _cycles_and_limit(ctx, data)
-        new_cycles = cycles + 1
-        _ensure_case_state(ctx)
-        for idx, item in enumerate(ledger(ctx).get("cases") or []):
-            case = str(item.get("case") or "")
-            if not case:
-                continue
-            _set_case_state(
-                ctx, case, "已修订待验",
-                rework_cycles=min(new_cycles, limit) if idx == 0 else None,
-                note=f"N11 证据链 broken ⇒ 回 N6 返工（第 {new_cycles} 次；limit={limit}）",
-                updated_by="loop:N11",
-            )
-        out["cycle"] = new_cycles
-        out["limit"] = limit
-        await data.async_set_state("n11_review", out)
-        if new_cycles >= limit:
-            # I7：超限不再直接死掉，而是**升级 N13 人工裁决**（N11_ESCALATE→gate2，lifecycle 加边）
-            ctx.node_finished(
-                "N11", status="escalated",
-                detail={"chain": "broken", "cycle": new_cycles, "limit": limit,
-                        "escalated": True,
-                        "identity_table": identity_table,
-                        "unclosed": unclosed,
-                        "rework_requests_count": rework_requests_count,
-                        "reason": "N11 证据守护返工超限 ⇒ 升级 N13 人工裁决",
-                        "source": n11_source,
-                        "summary": (f"N11：证据链 broken 第 {new_cycles} 次，已达上限 {limit}"
-                                    f" ⇒ 升级 N13 人工裁决（{out['mode']}）")},
-            )
-            await data.async_emit("N11_ESCALATE", out)
-            return out
-        ctx.node_finished("N11", status="broken",
-                          detail={"chain": "broken", "host_consistent": host_consistent,
-                                  "rework": len(rework_requests), "cycle": new_cycles,
-                                  "limit": limit,
-                                  "identity_table": identity_table,
-                                  "unclosed": unclosed,
-                                  "rework_requests_count": rework_requests_count,
-                                  "source": n11_source,
-                                  "summary": (f"N11：证据链 broken（第 {new_cycles} 次，"
-                                              f"上限 {limit}；Host 身份四方同值"
-                                              f"{'成立' if host_consistent else '不成立'}）"
-                                              f"⇒ 回 N6 返工，返工请求 "
-                                              f"{len(rework_requests)} 条（{out['mode']}）")})
-        await data.async_emit("N11_REWORK", out)
-        return out
-    ctx.node_finished("N11", status="intact",
-                      detail={"chain": "intact", "host_consistent": host_consistent,
-                              "identity_table": identity_table,
-                              "unclosed": unclosed,
-                              "rework_requests_count": rework_requests_count,
-                              "source": n11_source,
-                              "summary": (f"N11：证据链 intact（Host 身份四方同值"
-                                          f"{'成立' if host_consistent else '不成立'}，"
-                                          f"返工请求 {len(rework_requests)} 条；"
-                                          f"{out['mode']}）")})
-    await data.async_emit("N11_INTACT", out)
-    return out
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # ---------------------------------------------------------------- N12
@@ -1879,101 +1729,141 @@ def _n12_detail(data_out: dict[str, Any], *, refs: list[str], unresolved: list[s
 
 
 async def n12_report(data: Any) -> dict[str, Any]:
-    """N12 报告（模型节点）→ 落盘 `run_dir/n12_report.md`。
+    """保留流程快照身份的节点入口。"""
+    from ..nodes.n12 import run
+    return await run(data, _artifact=_artifact, _compose_n12_markdown=_compose_n12_markdown, _ledger_summary=_ledger_summary, _n12_detail=_n12_detail, _resolve_ref=_resolve_ref, _standin=_standin, _write_text=_write_text, ctx_of=ctx_of, ledger=ledger, run_model_node=run_model_node)
 
-    **#18/A20**：报告必须落盘；**引用不可解析 ⇒ 拒发（node_failed）**。
-    **#22/I15**：结构化 `claimed_verdict` 与 Host 权威判决逐值比对（删除子串判据）。
+from host import agent_candidate_import as CI
+from .host_steps import CANDIDATE_BASELINE_KEY, CANDIDATE_EXECUTION_KEY, CANDIDATE_MANIFEST_KEY, CANDIDATE_ROOT_KEY
+
+# ---------------------------------------------------------------- N6 候选通道（S6/DS-06）
+
+
+def _candidate_contract_path(case: str) -> str:
+    """候选契约路径（G1 冻结口径）：`TESTLIB/<case>.sv`。
+
+    为什么由合同定而不是"扫到什么算什么"：清单键若来自扫描，导入的 `extra_file`（扫描-清单差）
+    与 `hash_mismatch`（快照 vs 导入复算）在真机上就恒假；DS-06 的拒绝矩阵会变成空转。
     """
-    ctx = ctx_of(data)
-    ctx.node_started("N12")
-    n10 = data.get_state("n10_reconcile") or {}
-    n5 = data.get_state("n5_impact") or {}
-    n11 = data.get_state("n11_review") or {}
-    n9 = data.get_state("n9_result") or {}
-    counts = n10.get("counts") or n9.get("counts") or {}
-    evidence = n10.get("evidence") or n9.get("evidence") or {}
-    conflicts = ctx.kb.load_conflicts()
+    return "TESTLIB/%s.sv" % case
 
-    verdict = n10.get("verdict") or n9.get("verdict") or {}
-    input_data = {
-        "run_id": ctx.run_id,
-        "counts": counts,
-        "verdict": verdict,
-        "imprints": {k: {"consistent": v.get("consistent"),
-                         "verified": v.get("verified_count"),
-                         "observed": v.get("observed"), "expected": v.get("expected")}
-                     for k, v in ((evidence or {}).get("imprints") or {}).items()},
-        "cases": n9.get("cases") or {},
-        "evidence_paths": n9.get("evidence_paths") or {},
-        "chain": n11.get("chain_effective"),
-        "must_change_count": n5.get("must_change_count"),
-        "must_change_cases": n5.get("must_change_cases", []),
-        "case_states": _ledger_summary(ctx),
-        "conflicts": {"total": len(conflicts.get("items", [])),
-                      "blocks_release": len([c for c in conflicts.get("items", [])
-                                             if c.get("blocks_release")])},
-        "rule": ("所有数字逐字引用本 input，禁止手算；claimed_verdict 必须与 input.verdict.passed "
-                 "一致；sections[].refs 必须是可解析的产物路径。"),
+
+def _candidate_execution_state(out: dict[str, Any]) -> str:
+    """停止确认口径：只有"进程已退出且无 execution_unknown"才给 `stopped`，否则 `unknown`。
+
+    dsh 的 `run_attempt` 只在进程结束且无残留后代后返回；`ExecutionUnknown` 是**抛异常**
+    （没有 out）。所以拿到 live out 即"进程已退出"，但仍按口径复核 payload 标记：
+    非 live / `model_call_failed` / error 含 `execution_unknown` ⇒ `unknown`
+    （**不许**把未知当已停止，DS-05 禁止自动重发）。
+    """
+    if out.get("mode") != "live":
+        return "unknown"
+    if out.get("model_call_failed"):
+        return "unknown"
+    if "execution_unknown" in str(out.get("error") or ""):
+        return "unknown"
+    return "stopped"
+
+
+def _sealed_attempt_workspace(ctx: RunCtx, out: dict[str, Any]) -> dict[str, Any] | None:
+    """从**已封存**的 attempt 请求记录取 `attempt_workspace`（不读任务文本/客户端 hint）。
+
+    记录不完整/校验失败/无本键 ⇒ None（没有候选通道 ⇒ 一个键都不产出，保持 legacy 路径）。
+    """
+    ref = out.get("request_ref")
+    if not isinstance(ref, str) or not ref:
+        return None
+    try:
+        record = AM.verify_attempt((ctx.run_dir / ref).parent)
+    except (OSError, ValueError, KeyError):
+        return None
+    workspace = record["request"].get("attempt_workspace")
+    return workspace if isinstance(workspace, dict) else None
+
+
+def _candidate_root_from_workspace(ctx: RunCtx, workspace: dict[str, Any]) -> Path | None:
+    """布局 `candidate`（封存记录里相对 run_dir）⇒ 绝对路径；越界/缺失/非目录 ⇒ None。"""
+    rel = workspace.get("candidate")
+    if not isinstance(rel, str) or not rel:
+        return None
+    try:
+        root = (ctx.run_dir / rel).resolve()
+    except OSError:
+        return None
+    run_root = ctx.run_dir.resolve()
+    if run_root != root and run_root not in root.parents:
+        return None
+    return root if root.is_dir() else None
+
+
+def _pin_candidate_baseline(data: Any, targets: list[dict[str, Any]]) -> dict[str, str]:
+    """**起 prompt 前** pin 源件 md5（判源漂移 R16）：模型看到的是这份源件，之后变了就是漂移。
+
+    取不到 `repo_root` 或缺件 ⇒ 跳过该件（不猜、不补）；缺项的后果是导入判 `source_drift`
+    （无法证明无漂移 ⇒ 拒），不是静默放行。
+    """
+    try:
+        repo_root = Path(data.require_resource("repo_root"))
+    except (KeyError, TypeError):
+        return {}
+    pinned: dict[str, str] = {}
+    for target in targets:
+        case = str(target.get("case") or "")
+        if not case:
+            continue
+        rel = _candidate_contract_path(case)
+        source = repo_root / str(target.get("file") or rel)
+        if source.is_file() and not source.is_symlink():
+            pinned[rel] = md5_file(source)
+    return pinned
+
+
+def _workspace_hint(ctx: RunCtx, targets: list[dict[str, Any]]) -> dict[str, Any]:
+    """本 attempt 工作区的**绝对路径**与**基线源件位置**（Host 已知事实）。
+
+    为什么给：S6 真机前两次失败都在"模型不知道工作区/拿不到基线全文 ⇒ 去扫宿主机 FS"。
+    路径与 `model_request.run_attempt` 的分配**同源**：`AC.next_attempt`（首个空位预测，
+    Host 串行保证预测=实际；不一致时 model_request 已显式失败）+ `A.workspace_root`
+    （布局唯一实现）；`source_files` 与 `model_request._attempt_sources` 的落点同源
+    （`input/TESTLIB/<basename>`，`stage_sources` 只保留文件名）。本函数只读、不写盘。
+    """
+    from host import agent_control as AC
+    from host.agent_backends import dsh_assets as A
+
+    sequence = AC.next_attempt(ctx.run_dir, "N6")
+    layout = A.AttemptLayout.under(A.workspace_root(ctx.run_dir, "N6", sequence))
+    sources = ["input/TESTLIB/%s" % Path(str(target.get("file") or "")).name
+               for target in targets if str(target.get("file") or "").strip()]
+    return {
+        "cwd": str(layout.work),
+        "candidate": str(layout.candidate),
+        "input": str(layout.input_dir),
+        "source_files": sources,
+        "rule": ("cwd 是你的工作目录；基线源件在 source_files（相对工作区根，只读）；"
+                 "候选 = 该源件的整份内容 + 你的 edits，写到 candidate/TESTLIB/<case>.sv；"
+                 "材料不足写 notes，不要扫描宿主机文件系统"),
     }
-    out = await run_model_node(ctx, "N12", prompt_key="n12_report", input_data=input_data,
-                               offered={"counts": counts, "verdict": verdict})
-    if out["mode"] == "standin":
-        if ctx.mode == "real":
-            ctx.node_failed("N12", message="real 模式下 N12 无真实模型输出 ⇒ 不得发布报告")
-            raise RuntimeError("N12：real 模式要求真实报告（standin 不得冒充）")
-        fixture_text = ctx.read_fixture_text("n12_report.md")
-        report_text = fixture_text if fixture_text is not None else (
-            "# N12 评估报告（STANDIN）\n\n> drill 替身；非模型结论。\n")
-        out["data"] = _standin(ctx, "N12", "n12_report.md", extra={
-            "koutou1": (counts.get("koutou1") or {}).get("value"),
-            "koutou2": (counts.get("koutou2") or {}).get("value"),
-            "claimed_verdict": ("passed" if verdict.get("passed") is True
-                                else "not_passed" if verdict.get("passed") is False
-                                else "undetermined"),
-            "number_rule": "报告里所有数字一律由命令输出复制，禁手算（doc/AGENTS.md 红线 10）。",
-        })
-        report_text_written = report_text
-    elif (out.get("validation") or {}).get("ok") is not True:
-        problems = (out.get("validation") or {}).get("problems") or ["模型输出解析/校验失败"]
-        ctx.node_failed("N12", message=f"N12 校验失败（拒发）：{problems[:3]}")
-        raise RuntimeError(f"N12：报告校验失败，拒发：{problems[:5]}")
-    else:
-        report_text_written = _compose_n12_markdown(out)
 
-    data_out = out.get("data") if isinstance(out.get("data"), dict) else {}
-    refs: list[str] = []
-    for section in data_out.get("sections") or []:
-        refs.extend(str(r) for r in (section.get("refs") or []))
-    unresolved = [r for r in refs if _resolve_ref(ctx, r) is None]
-    if unresolved:
-        ctx.node_failed("N12", message=f"报告引用不可解析：{unresolved[:5]}")
-        raise RuntimeError(f"N12：报告引用不可解析，拒发：{unresolved[:5]}")
 
-    if ctx.mode == "drill":
-        # drill：n0 已把夹具报告复制到 run_dir；确保内容与夹具一致（accept_v1 校验存在性/内容）
-        fixture_text = ctx.read_fixture_text("n12_report.md")
-        if fixture_text is not None:
-            report_text_written = fixture_text
+def _attach_candidate_channel(ctx: RunCtx, out: dict[str, Any], targets: list[dict[str, Any]],
+                              baseline_pin: dict[str, str]) -> None:
+    """S6/DS-06：dsh 隔离工作区存在时，把四键写进 N6 输出（**要么全给、要么全不给**）。
 
-    report_path = _artifact(ctx, "n12_report.md")
-    _write_text(report_path, report_text_written)
-    out["report_path"] = str(report_path)
-    out["refs_checked"] = refs
-    out["unresolved_refs"] = unresolved
-    out["authoritative_verdict"] = verdict
-    await data.async_set_state("n12_report", out)
-    # §10.4：detail 内的计数改名为 `ref_count`（`refs` 是**事件顶层**字段，同名会误导消费方）。
-    ctx.node_finished("N12", status=out["mode"],
-                      detail={"mode": out["mode"],
-                              "claimed_verdict": data_out.get("claimed_verdict"),
-                              "ref_count": len(refs),
-                              **_n12_detail(data_out, refs=refs, unresolved=unresolved,
-                                            ledger_cases=ledger(ctx).get("cases") or []),
-                              "source": ("model_live" if out["mode"] == "live"
-                                         else "model_standin"),
-                              "summary": (f"N12：报告 claimed_verdict="
-                                          f"{data_out.get('claimed_verdict')}，"
-                                          f"引用 {len(refs)} 条（不可解析 {len(unresolved)} 条）；"
-                                          f"mode={out['mode']}")},
-                      refs=[str(report_path)] + [str(_resolve_ref(ctx, r)) for r in refs][:4])
-    return out
+    - 键名与 `host_steps.candidate_plan` 同一组常量（不写第二份键名）；
+    - `candidate_manifest`：键来自**合同**（`TESTLIB/<case>.sv`）、值来自**停止后快照**；
+    - `baseline`：起 prompt 前 pin 的源件 md5（缺项 ⇒ 导入判源漂移，不静默放行）；
+    - `execution_state`：只在确认停止时 `stopped`，否则 `unknown`。
+    无工作区（agently/drill/旧记录/记录校验失败）⇒ 一个键都不加（legacy 路径，不半给）。
+    """
+    workspace = _sealed_attempt_workspace(ctx, out)
+    if workspace is None or not targets:
+        return
+    candidate_root = _candidate_root_from_workspace(ctx, workspace)
+    if candidate_root is None:
+        return
+    expected = [_candidate_contract_path(str(target.get("case")))
+                for target in targets if target.get("case")]
+    out[CANDIDATE_ROOT_KEY] = str(candidate_root)
+    out[CANDIDATE_MANIFEST_KEY] = CI.snapshot_candidate_manifest(candidate_root, expected)
+    out[CANDIDATE_BASELINE_KEY] = dict(baseline_pin)
+    out[CANDIDATE_EXECUTION_KEY] = _candidate_execution_state(out)

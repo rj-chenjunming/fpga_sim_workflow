@@ -18,6 +18,7 @@ from host.admission import Admission
 from host.evidence import evidence_view
 from host.job_runner import JobRunner
 from host.progress import ProgressLog
+from host.simulation_adapter import GuardedSimulation, SimulationAdapter
 from host import paths as P
 from services.agent_view import AGENT_ROLES, GATE_NODES
 from services.contracts import KbSources
@@ -126,6 +127,7 @@ class RunCtx:
     fixture: Path = field(default_factory=drill_fixture_run)
     pending: dict[str, Any] = field(default_factory=dict)
     notes: list[str] = field(default_factory=list)
+    environment: SimulationAdapter = field(default_factory=GuardedSimulation)
 
     # ---------- 事件 ----------
 

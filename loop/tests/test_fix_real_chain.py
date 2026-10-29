@@ -29,6 +29,7 @@ import pytest
 
 from host import paths as P
 from host.progress import ProgressLog
+from host.simulation_adapter import GuardedSimulation
 from services.contracts import KbSources
 from workflows.chunks import host_steps, long_jobs, model_steps, n10_semantics
 from workflows.context import RunCtx
@@ -247,6 +248,43 @@ def _write_case_log(ctx: RunCtx, case: str) -> Path:
 # ================================================================ #6/A19 N1
 
 
+async def test_n0_initializes_run_and_reports_gate_failure(ctx: RunCtx, monkeypatch: pytest.MonkeyPatch) -> None:
+    calls = []
+    def gate(tool, args, **kwargs):
+        calls.append((tool, args))
+        return {"rc": 0, "stderr_tail": ""}
+    monkeypatch.setattr(host_steps, "run_kb_tool", gate)
+    data = FakeData(input={"baseline": "v3"})
+    result = await host_steps.n0_baseline(data)
+    assert result["baseline"] == "v3"
+    assert data.get_state("run_meta") == result
+    assert calls == [("gate.py", ["init", "--run", ctx.run_id])]
+    assert any(e["kind"] == "node_finished" and e["node"] == "N0" for e in ctx.progress.read())
+    monkeypatch.setattr(host_steps, "run_kb_tool", lambda *args, **kwargs: {"rc": 1, "stderr_tail": "error"})
+    with pytest.raises(RuntimeError, match="gate.py init rc=1"):
+        await host_steps.n0_baseline(data)
+    assert any(e["kind"] == "node_failed" and e["node"] == "N0" for e in ctx.progress.read())
+
+
+async def test_n1_uses_injected_environment_inputs(ctx: RunCtx, env_repo: Path,
+                                                    monkeypatch: pytest.MonkeyPatch) -> None:
+    calls = []
+
+    class Environment:
+        def staged_inputs(self, run_dir):
+            calls.append(run_dir)
+            return {"present": False, "staged_dir": "custom"}
+
+    ctx.environment = Environment()
+    def fake_tool(tool, args, **kwargs):
+        (ctx.run_dir / "n1_manifest_new.json").write_text('{"parent":"v3"}')
+        return {"cmd": "fake", "rc": 0, "stdout_tail": "", "stderr_tail": ""}
+    monkeypatch.setattr(host_steps, "run_kb_tool", fake_tool)
+    out = await host_steps.n1_manifest(FakeData(state={"run_meta": {"baseline": "v3"}}))
+    assert calls == [ctx.run_dir]
+    assert out["staged"]["staged_dir"] == "custom"
+
+
 async def test_n1_real_passes_required_parent_and_uses_env_defaults(
         ctx: RunCtx, env_repo: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """#6/A19：real 的 stage 必须带 `--parent`（缺它 argparse rc=2，real 必挂）。"""
@@ -336,6 +374,23 @@ async def test_n1_incomplete_staged_fails_closed_without_calling_tool(
 
 
 # ================================================================ #3/A6 N6
+
+
+async def test_n6_uses_injected_source_path(ctx: RunCtx, env_repo: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _n5_n2_for_targets(ctx)
+    calls = []
+    def source_path(root, target):
+        calls.append((root, target["case"]))
+        return env_repo / "TESTLIB" / "tc_demo.sv"
+    monkeypatch.setattr(ctx.environment, "source_case_path", source_path)
+    data = FakeData(resources={"repo_root": env_repo}, state={
+        "n6_targets": {"targets": [{"case": "tc_demo", "file": "TESTLIB/tc_demo.sv"}]},
+        "n6_author": {"mode": "live", "data": {"revisions": [{"case": "tc_demo",
+            "edits": [{"line": 5, "old": "0xdead_beef", "new": "0xdead_c0de", "basis": "test"}]}]},
+            "validation": {"ok": True, "problems": [], "accepted": {}}},
+    })
+    await host_steps.n6_apply(data)
+    assert calls == [(env_repo, "tc_demo")]
 
 
 async def test_n6_apply_writes_sandbox_only_and_freezes_md5_into_ledger(
@@ -432,6 +487,23 @@ async def test_n6_apply_drill_copies_fixture_sandbox_and_never_fails(
 # ================================================================ #7/A5 N7
 
 
+async def test_n7_uses_injected_environment_and_releases_slot(ctx: RunCtx, env_repo: Path) -> None:
+    item = _sandbox_case(ctx)
+    calls = []
+
+    class Environment:
+        def compile_case(self, runner, **kwargs):
+            calls.append(kwargs["case"])
+            return {"cmd": "injected", "rc": 3, "stderr_tail": "failed"}, []
+
+    ctx.environment = Environment()
+    data = FakeData(resources={"repo_root": env_repo}, state={"n6_applied": {"cases": [item]}})
+    with pytest.raises(RuntimeError, match="compile-only rc=3"):
+        await host_steps.n7_compile(data)
+    assert calls == [item["case"]]
+    assert ctx.admission.released
+
+
 async def test_n7_real_runs_guarded_compile_only_per_case_and_releases_slot(
         ctx: RunCtx, env_repo: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """#7/A5：逐例真 compile-only（沙箱件）+ rc 证据；短租约 finally 释放。"""
@@ -504,6 +576,22 @@ async def test_n7_missing_or_changed_sandbox_fails_closed(
 
 
 # ================================================================ #8/A7 N9
+
+
+async def test_n9_uses_injected_environment_command(ctx: RunCtx, env_repo: Path) -> None:
+    item = _sandbox_case(ctx, "tc_demo")
+
+    class Environment:
+        def serial_command(self, cases, **kwargs):
+            assert cases[0]["case"] == item["case"]
+            assert cases[0]["sandbox_path"] == item["sandbox_path"]
+            assert cases[0]["md5"] == item["md5_after"]
+            return "injected-command"
+
+    ctx.environment = Environment()
+    data = FakeData(resources={"repo_root": env_repo}, state={"n6_applied": {"cases": [item]}})
+    await long_jobs.n9_submit(data)
+    assert ctx.runner.submitted[0]["command"] == "injected-command"
 
 
 async def test_n9_real_submits_one_serial_job_for_all_target_cases(
@@ -590,6 +678,19 @@ async def test_n9_park_missing_case_log_is_fail_closed(
 
 
 # ================================================================ #9/A15 N15
+
+
+async def test_n15_uses_injected_environment_command(ctx: RunCtx, env_repo: Path) -> None:
+    class Environment:
+        def serial_command(self, cases, **kwargs):
+            assert [case["case"] for case in cases] == ["tc_demo"]
+            return "injected-regression"
+
+    ctx.environment = Environment()
+    data = FakeData(resources={"repo_root": env_repo},
+                    state={"n15_set": {"cases": ["tc_demo"], "g3_decision": "milestone_only"}})
+    await long_jobs.n15_run(data)
+    assert ctx.runner.submitted[0]["command"] == "injected-regression"
 
 
 async def test_n15_real_submits_serial_job_and_reports_final_not_provisional(
@@ -1166,7 +1267,7 @@ def _n6_fixture(tmp_path: Path, *, include_snapshot: bool = True):
         }) + "\n", encoding="utf-8")
     failed: list[str] = []
 
-    ctx = SimpleNamespace(mode="real", run_dir=run_dir,
+    ctx = SimpleNamespace(mode="real", run_dir=run_dir, environment=GuardedSimulation(),
                           node_failed=lambda *a, **k: failed.append(str(k)))
     data = SimpleNamespace(require_resource=lambda key: str(env) if key == "repo_root" else None)
     return ctx, data, failed
@@ -1200,3 +1301,26 @@ def test_n6_missing_doc_bitdef_still_fails_closed(tmp_path: Path):
     with pytest.raises(RuntimeError, match="拿不到文档位定义"):
         model_steps.build_n6_targets(ctx, data)
     assert failed, "real 模式必须 node_failed，不得把缺事实交给模型编"
+
+
+def test_n6_author_uses_environment_source_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    ctx, data, _ = _n6_fixture(tmp_path)
+    original = ctx.environment.author_case_path
+    calls = []
+    def resolve(root, relative, case):
+        calls.append((relative, case))
+        return original(root, relative, case)
+    monkeypatch.setattr(ctx.environment, "author_case_path", resolve)
+    targets = model_steps.build_n6_targets(ctx, data)
+    assert calls == [("TESTLIB/tc_pcie_rw_02.sv", "tc_pcie_rw_02")]
+    assert targets[0]["case"] == "tc_pcie_rw_02"
+
+
+def test_n6_author_uses_environment_fact_extractors(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    ctx, data, _ = _n6_fixture(tmp_path)
+    calls = []
+    monkeypatch.setattr(ctx.environment, "api_semantics", lambda *args: calls.append("api") or [], raising=False)
+    monkeypatch.setattr(ctx.environment, "rtl_effect", lambda *args: calls.append("rtl") or {"source": "injected"}, raising=False)
+    targets = model_steps.build_n6_targets(ctx, data)
+    assert calls == ["api", "rtl"]
+    assert targets[0]["rtl_effect"]["source"] == "injected"

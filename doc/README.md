@@ -32,6 +32,8 @@
 > 逐级入口：[`../README.md`](../README.md)（项目导航）→ [`../AGENTS.md`](../AGENTS.md)（流程 / 写权 / 红线）
 > → 本文件 → 各子目录 README。
 
+节点模块化合并的待验收交接：[本地补测与内网验收](plans/2026-10-29-node-merge-intranet-validation.md)；含未提交源码交付、四门、节点、真实环境与独立复核前置。
+
 后续工作统一入口：[下一轮 SpecDD 计划](plans/2026-10-22-next-iteration-specdd.md) → [内网验证手册](plans/2026-10-22-intranet-validation.md)（可复制命令、预期结果、失败处理、证据交接）。先收口 R1–R5，再做 F14/F05；本次成册不代表修复已实施。原 [优化与重构执行手册](plans/OPTIMIZATION_PLAYBOOK.md) 保留 F 编号与任务来源，历史实施进度见 STATUS §14 起，最新复核/离线交付见 §35–§36。此前 [优化评估](audit/AUDIT-20261021-specdd-followups.md) 与 [原路线](plans/2026-10-21-specdd-followups.md) 保留为来源。
 
 网页视觉升级：[视觉契约](spec/WEB_UI_SPEC.md#14-全站网页视觉系统2026-10-21) → [实施计划](plans/2026-10-21-desktop-redesign.md) → [预览与验证证据](evidence/WEB_REDESIGN_20261021.md)。范围为浏览器中的现有工作台；状态与本轮实测见 STATUS §12。

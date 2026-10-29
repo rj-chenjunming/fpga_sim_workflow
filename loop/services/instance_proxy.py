@@ -310,6 +310,54 @@ def parse_attempt(value: Any) -> int:
 # ================================================================ 受管目标（§5.2）
 
 
+#: 归属校验的三类失败（`owned_document` 的 **唯一** 返回值；reason 词表由各调用方负责映射）
+OWNERSHIP_MISSING = "missing"
+OWNERSHIP_INVALID = "invalid"
+OWNERSHIP_MISMATCH = "mismatch"
+
+
+class OwnershipError(ValueError):
+    """`(node, attempt)` 归属校验失败。`kind` 只取 `OWNERSHIP_*` 三值。"""
+
+    def __init__(self, kind: str) -> None:
+        self.kind = kind
+        super().__init__(kind)
+
+
+def owned_document(run_dir: Path | str, *, node: str,
+                   attempt: int | None) -> tuple[dict[str, Any], int]:
+    """读受管元数据并校验 `(node, attempt)` 归属 —— **本仓唯一实现**（REV-16 §9-15）。
+
+    为什么抽出来：反代目标解析（`load_target`，reason 走 503 枚举）与会话副本
+    （`session_copy`，reason 走 `session_*` 族）此前各写一遍同一判据；两处语义一旦漂移，
+    "别的节点/别的 attempt 能不能借到元数据"就会不一致（红线 8 的隐患）。
+
+    返回 `(document, effective_attempt)`（`attempt=None` ⇒ 用元数据声明的 attempt 并回显）。
+    失败抛 `OwnershipError`：`missing`=文件不存在 / `invalid`=坏件或缺 attempt /
+    `mismatch`=node 或 attempt 与本请求不符。**映射成哪个 reason 由调用方决定**。
+    """
+    try:
+        raw = (Path(run_dir) / METADATA_NAME).read_text(encoding="utf-8")
+    except FileNotFoundError:
+        raise OwnershipError(OWNERSHIP_MISSING) from None
+    except OSError:
+        raise OwnershipError(OWNERSHIP_INVALID) from None
+    try:
+        document = json.loads(raw)
+    except json.JSONDecodeError:
+        raise OwnershipError(OWNERSHIP_INVALID) from None
+    if not isinstance(document, dict):
+        raise OwnershipError(OWNERSHIP_INVALID)
+    declared = document.get("attempt")
+    if isinstance(declared, bool) or not isinstance(declared, int):
+        raise OwnershipError(OWNERSHIP_INVALID)
+    if str(document.get("node")) != str(node):
+        raise OwnershipError(OWNERSHIP_MISMATCH)
+    if attempt is not None and int(attempt) != declared:
+        raise OwnershipError(OWNERSHIP_MISMATCH)
+    return document, (declared if attempt is None else int(attempt))
+
+
 def load_target(run_dir: Path | str, node: str, attempt: int | None) -> InstanceTarget:
     """从 Host 落账的实例声明读目标；**绝不**接受客户端输入。
 
@@ -320,25 +368,12 @@ def load_target(run_dir: Path | str, node: str, attempt: int | None) -> Instance
     `target_missing` = 文件不存在 / 这条声明不是本 node 本 attempt 的；
     `target_invalid` = 文件坏 / 字段非法；`target_not_loopback` = 目标不在 loopback。
     """
-    path = Path(run_dir) / METADATA_NAME
     try:
-        document = json.loads(path.read_text(encoding="utf-8"))
-    except FileNotFoundError:
-        raise TargetUnavailable("target_missing") from None
-    except json.JSONDecodeError:
-        raise TargetUnavailable("target_invalid") from None
-    except OSError:
-        raise TargetUnavailable("target_invalid") from None
-    if not isinstance(document, dict):
-        raise TargetUnavailable("target_invalid")
-    declared_attempt = document.get("attempt")
-    if isinstance(declared_attempt, bool) or not isinstance(declared_attempt, int):
-        raise TargetUnavailable("target_invalid")
-    if str(document.get("node")) != node:
-        raise TargetUnavailable("target_missing")
-    if attempt is not None and declared_attempt != attempt:
-        raise TargetUnavailable("target_missing")
-    effective_attempt = declared_attempt if attempt is None else attempt
+        document, effective_attempt = owned_document(run_dir, node=node, attempt=attempt)
+    except OwnershipError as exc:
+        # 反代 503 枚举只有两档：坏件 ⇒ target_invalid；缺失/归属不符 ⇒ target_missing
+        raise TargetUnavailable(
+            "target_invalid" if exc.kind == OWNERSHIP_INVALID else "target_missing") from None
     host = document.get("host")
     if not isinstance(host, str) or not host:
         raise TargetUnavailable("target_invalid")
@@ -426,23 +461,13 @@ def session_copy(run_dir: Path | str, *, node: str,
     """
     from host.agent_backends import dsh_sdk
 
-    document: Any
     try:
-        document = json.loads((Path(run_dir) / METADATA_NAME).read_text(encoding="utf-8"))
-    except FileNotFoundError:
-        return _session_unavailable("session_metadata_missing", attempt=attempt)
-    except (OSError, json.JSONDecodeError):
-        return _session_unavailable("session_metadata_invalid", attempt=attempt)
-    if not isinstance(document, dict):
-        return _session_unavailable("session_metadata_invalid", attempt=attempt)
-    declared_attempt = document.get("attempt")
-    if isinstance(declared_attempt, bool) or not isinstance(declared_attempt, int):
-        return _session_unavailable("session_metadata_invalid", attempt=attempt)
-    if str(document.get("node")) != node:
-        return _session_unavailable("session_owner_mismatch", attempt=attempt)
-    if attempt is not None and attempt != declared_attempt:
-        return _session_unavailable("session_owner_mismatch", attempt=attempt)
-    effective_attempt = declared_attempt if attempt is None else attempt
+        document, effective_attempt = owned_document(run_dir, node=node, attempt=attempt)
+    except OwnershipError as exc:
+        reason = {OWNERSHIP_MISSING: "session_metadata_missing",
+                  OWNERSHIP_INVALID: "session_metadata_invalid",
+                  OWNERSHIP_MISMATCH: "session_owner_mismatch"}[exc.kind]
+        return _session_unavailable(reason, attempt=attempt)
 
     log_ref = document.get("session_log")
     if not isinstance(log_ref, str) or not log_ref:

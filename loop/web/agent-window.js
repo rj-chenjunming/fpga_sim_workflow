@@ -362,8 +362,13 @@ window.AgentWindow = (function () {
       var body = $("awSessionCopyBody");
       if (!copy || copy.available !== true) {
         if (body) body.hidden = true;
-        setLine("awEmbedCopyNote", "会话副本不可用：" + (copy && copy.reason
-          ? String(copy.reason) : "服务端未给 reason"));
+        /* REV-16 §9-16：`session_*` reason 族走服务端的唯一映射（`S4View.sessionReason`），
+         * 前端不自己判"能不能导出"，也不直接显示英文枚举。 */
+        var why = copy && copy.reason ? copy.reason : null;
+        var SV = window.S4View;
+        setLine("awEmbedCopyNote", "会话副本不可用："
+          + (SV && SV.sessionReason ? SV.sessionReason(why)
+                                    : String(why || "服务端未给 reason")));
         return;
       }
       /* 稳定键 = {available, reason, kind, facts, bytes, truncated}；**没有**会话正文。

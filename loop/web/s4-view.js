@@ -34,6 +34,17 @@
     embedded_load_failed: "内嵌加载失败（CSP/响应头变化）",
     embed_timeout: "内嵌加载超时"
   };
+  /* §6.2 会话副本专用的 reason 族（REV-16 §9-16：此前前端只映射代理 8 枚举，`session_*` 直接显示英文枚举）。
+   * 只做文案映射，未知 reason 原样显示 —— 前端不重算"能不能导出"。 */
+  var SESSION_REASON = {
+    session_metadata_missing: "会话元数据缺失（Host 尚未落账实例）",
+    session_metadata_invalid: "会话元数据损坏或字段非法",
+    session_owner_mismatch: "该会话不属于本节点/本 attempt（不跨 attempt 借用）",
+    session_log_missing: "元数据未声明会话日志（Host 未落账 session_log）",
+    session_log_invalid: "会话日志路径非法（越界或符号链接）",
+    session_log_unavailable: "会话日志当前不可读（缺解码器或文件缺失）"
+  };
+
   /* §6.1（S7c 只增）`stream` = 反代的**传输能力事实**：只透传 HTTP，WebSocket 升级不通（§9-2）。
    * 前端只渲染服务端下发的值；旧服务端没下发就不显示这一行（不自己推断"有没有实时流"）。 */
   var STREAM = {
@@ -266,6 +277,14 @@
     return key;
   }
 
+  /* §6.2 会话副本 reason：只做文案映射；未知 reason 原样显示（不折叠成"不可用"这种模糊说法）。 */
+  function sessionReason(reason) {
+    if (!present(reason)) return "原因未知（服务端未给 reason）";
+    var key = String(reason);
+    if (has(SESSION_REASON, key)) return SESSION_REASON[key] + "（" + key + "）";
+    return key;
+  }
+
   /* §6.1 `stream` 的能力说明：未下发 ⇒ 空串（界面不显示、不猜）。
    * 未知枚举原样显示，不折算成"正常"。 */
   function streamNote(stream) {
@@ -310,6 +329,7 @@
     workingMemoryLines: workingMemoryLines,
     experienceLines: experienceLines,
     instanceReason: instanceReason,
+    sessionReason: sessionReason,
     streamNote: streamNote,
     cardLine: cardLine
   };

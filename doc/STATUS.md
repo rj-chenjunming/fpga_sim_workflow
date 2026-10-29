@@ -5635,3 +5635,63 @@ REV-16 §9-10 **实测可收口为"前缀剥离即可"**（spec 正文本轮不�
 - **未定位项（照实记）**：Playwright 采集里有 9 条 `500` 的 URL 未定位（采集只 dump 了 assets/plugins 子集与
   `requestfailed`，未落全量 `(url,status)`）；候选是探针夹具导致看板自身 `/api/…` 500，**未排除**，登记下次补测。
 - 未推送。
+
+## 121 S7d 交付：低成本清理（2026-10-29）
+
+本轮入口：[开工提示词 S7](agents/开工提示词_S7-暴露面收敛与真机收口.md) §3 缺口表（S7d 五行）+ §5-9；计划
+[2026-10-29-s7-exposure-convergence.md](plans/2026-10-29-s7-exposure-convergence.md) §3/§8；
+契约收口记录：[REV-16](spec/SPEC-REV-16-20261028.md) **§10（只增；不改写 §9 原文）**；
+证据档 [`doc/evidence/DSH_S7D_20261029/`](evidence/DSH_S7D_20261029/README.md)（冻结 444 + 目录外 md5）。
+**三件已收口，两件按纪律登记为下一轮**（理由见 121.2，不写成"已实现"）。
+
+### 121.1 已收口（三件）
+
+| §9 条目 | 处置 | 可观察判据 |
+|---|---|---|
+| **§9-15** 归属判据两处实现 | 抽出**唯一实现** `services/instance_proxy.py::owned_document()`（三档 `missing/invalid/mismatch`）；`load_target` 与 `session_copy` 只消费它，reason 词表由调用方各自映射 | 反向抽检：把 `owned_document` 换成"永远 mismatch" ⇒ **两个端点同时**改变行为；三档 kind 在两套词表映射一致（+2 用例） |
+| **§9-16** 前端未映射 `session_*` reason | `web/s4-view.js::sessionReason()` 六个 reason 中文映射 + **未知值原样显示**；`web/agent-window.js` 经它渲染（不再直出英文枚举） | 浏览器：中文说明可见 + 枚举仍可核；未知值不折成"原因未知"（+1 用例、强化 1 条） |
+| **§9-17** `test_p2_httpx_*` docstring/顺序耦合 | 拆三条（泄漏 / import 期契约 / 级别翻转幂等）+ 补**子进程对照**证明"不装压级时 token 确实进日志"⇒ 泄漏断言不可能空转 | 4 条用例（+1 条对照） |
+
+### 121.2 仍开（两件，登记为下一轮，**不声称已解决**）
+
+| §9 条目 | 为什么本轮不做 |
+|---|---|
+| **§9-8** 事件 `ts` 与注入时钟不同源 | 属**共享判据面**变更（§4 要求"单独变更 + 留证"）：改 `host/progress.py::ProgressLog.append` 的时间源会同时改变事件流、无进展判据与**所有 drill 夹具**的时间语义 ⇒ 必须走"改规格 → 特征测试 → 迁移 → 留证"的单独变更。现行为仍是"差值夹 0，不产生假告警" |
+| **§9-12** 角色卡 `identity.attempt/session_id` 恒 null | 需把**已封存记录**（`agent_memory` 选中 attempt 的 request/result）冷读进 `build_agents` 再喂给已有的 `progress_view(request=…, result=…)`（窗口端点已这么做）= 跨层接线的独立小片。界面继续显示"尝试未知"（诚实值） |
+
+**判断依据**：这两条不是"廉价清理"——一条动共享判据面、一条动跨层冷读；为它们各开一片并单独留证，
+比塞进窗口尾部更符合 SpecDD。登记在 REV-16 §10 与本计划 §8。
+
+### 121.3 交付物
+
+`loop/services/instance_proxy.py`（`owned_document` + `OwnershipError` + 三常量；`load_target`/`session_copy` 改消费，
+**reason 取值逐条不变**）、`loop/web/s4-view.js`（`SESSION_REASON` + `sessionReason()`）、
+`loop/web/agent-window.js`（会话副本文案改经 `sessionReason`）、
+`loop/tests/test_instance_proxy.py`（+2 归属 + 拆 3 条 P2 + 1 对照）、
+`loop/tests/browser/test_s4_projection_ui.py`（+1、强化 1）、
+`doc/spec/SPEC-REV-16-20261028.md`（**§10 未决收口记录，只增**）。
+
+### 121.4 收口门（数字从输出复制）
+
+| 门 | 结果 |
+|---|---|
+| 单测（可写数据根） | `3 failed, 1770 passed, 1 warning, 141 errors in 431.96s`；3 failed 全部是既有 `env_layer`；141 errors = 浏览器缺 Chromium（140 既有 + 1 条新增浏览器用例） |
+| kb 自测 + env layer | `PASS=10` / `PASS=9` / `PASS=28`，`FAIL=0`；**原 ENV_ROOT 零写入** |
+| 端到端（drill） | `phase 1–5 + 4b` 全 `rc=0`，`=> ALL PASS` |
+| 文档门 | `65 passed in 2.48s` |
+| **浏览器门（改了界面，必跑）** | **`142 passed in 150.19s`**（S7c 141 + 1） |
+
+差量对账：S7c 树 `1766 passed`/`140 errors` → S7d 树 **`1770 passed`/`141 errors`**（+4 单测用例；
++1 浏览器用例在无 Chromium 的机器上计入 errors）；`failed 3=3`、`warnings 1=1`，**零新增失败**。
+
+### 121.5 纪律核对
+
+- **写权**：`doc/spec/**` 只由 Lead 改且**只增 §10**（不改写 §9 原文）；`kb/**` 零改动；`doc/evidence/**` 只增。
+- **唯一判据（红线 8）**：§9-15 是**消除**第二份判据（不是新增）；reason 映射只在 `s4-view.js` 一处，前端仍不重算判据。
+- **可观察行为未变**：`load_target`/`session_copy` 的 reason 取值逐条保持（missing/invalid/mismatch 三档均有用例）。
+- **独立复核**：**无**。
+
+### 121.6 未做 / 不声称
+
+- **不声称 §9-8 / §9-12 已解决**（见 121.2）。
+- 不声称独立复核；未推送；`default_backend` 仍 `agently`；`kb/**` 零改动。

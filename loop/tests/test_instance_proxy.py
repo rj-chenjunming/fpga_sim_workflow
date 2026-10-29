@@ -20,6 +20,7 @@ import logging
 import shutil
 import socket
 import subprocess
+import sys
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -1051,24 +1052,63 @@ def test_p2_httpx_info_logging_never_prints_managed_token(
     client: TestClient, run_dir: Path, upstream: FakeUpstream,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """P2-3：httpx 在 INFO 会打印完整 URL（受管 token 在 query 里）⇒ 显式压到 WARNING。
+    """P2-3：真实请求在 **INFO 级别**下日志里也没有受管 token（断言不空转）。
 
-    两半都要测：① import 时就显式配置了 httpx/httpcore（不能靠第三方库碰巧设过级别）；
-    ② 真实请求在 INFO 级别下日志里也没有 token。
+    **职责拆分（S7d / REV-16 §9-17）**：本用例只管"真实请求 + 日志无 token"这一半；
+    "import 期就显式配置 httpx/httpcore"由 `test_p2_import_time_silencing_is_explicit` 覆盖
+    （import-time spy），不再与本用例的级别翻转顺序耦合。
+    "未压级别时 token **确实会**进日志"由一个子进程对照用例
+    `test_p2_control_without_silencing_token_reaches_info_log` 钉住 —— 否则本用例可能在
+    httpx 根本不打 URL 的情况下空转通过。
     """
-    # ① 幂等且可恢复：别人把级别放开后，我们的函数仍把它压回 WARNING
-    logging.getLogger("httpx").setLevel(logging.INFO)   # 模拟第三方库放开
-    instance_proxy.silence_http_client_logging()
-    assert logging.getLogger("httpx").level >= logging.WARNING
-    assert logging.getLogger("httpcore").level >= logging.WARNING
-
-    # ② 真实请求：管理 token 真的注入到上游 query，但日志（含 INFO）里没有它
+    # 真实请求：受管 token 真的注入到上游 query，但日志（含 INFO）里没有它
     caplog.set_level(logging.INFO)
     write_instance(run_dir, port=upstream.port, token=SEKRET)
     response = client.get(f"/instance/{RUN_ID}/{NODE}/1/")
     assert response.status_code == 200, response.text
     assert upstream.last()["path"].endswith(f"token={SEKRET}"), upstream.last()["path"]
     assert SEKRET not in caplog.text
+
+
+def test_p2_silencing_is_idempotent_and_recoverable() -> None:
+    """P2-3 ①（原挂在泄漏用例里的第二件事，S7d 拆开）：别人把级别放开后，函数仍压回 WARNING。"""
+    logging.getLogger("httpx").setLevel(logging.INFO)   # 模拟第三方库/部署方放开
+    instance_proxy.silence_http_client_logging()
+    assert logging.getLogger("httpx").level >= logging.WARNING
+    assert logging.getLogger("httpcore").level >= logging.WARNING
+
+
+def test_p2_control_without_silencing_token_reaches_info_log() -> None:
+    """**对照（防空转）**：不装本模块的压级时，httpx 在 INFO 确实会把 token 打进日志。
+
+    若这条不成立，"日志里没有 token"的断言就可能是因为 httpx 根本不打 URL 才通过 ——
+    那样压级这条安全边界就成了空话。子进程里**不 import** `services.instance_proxy`。
+    """
+    script = r"""
+import http.server, logging, sys, threading
+logging.basicConfig(level=logging.INFO, stream=sys.stdout, format="%(name)s %(message)s")
+logging.getLogger("httpx").setLevel(logging.INFO)
+class H(http.server.BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200); self.end_headers(); self.wfile.write(b"ok")
+    def log_message(self, *a):
+        pass
+srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), H)
+threading.Thread(target=srv.serve_forever, daemon=True).start()
+import httpx
+url = "http://127.0.0.1:" + str(srv.server_address[1]) + "/?token=CONTROL-TOKEN-abcdef123456"
+import httpx
+# trust_env=False：本机 NO_PROXY 含带方括号的 `[::1]`，httpx 0.28 会把 no_proxy 条目当 URL 解析
+# 而抛 InvalidURL（与本用例要验的事无关；也不让对照依赖宿主代理配置）。
+with httpx.Client(timeout=5, trust_env=False) as client:
+    client.get(url)
+"""
+    result = subprocess.run([sys.executable, "-c", script], capture_output=True, text=True,
+                            timeout=60)
+    assert result.returncode == 0, result.stderr[-800:]
+    assert "CONTROL-TOKEN-abcdef123456" in result.stdout, (
+        "对照失败：httpx 在 INFO 下竟然不打印带 token 的 URL —— 本仓的压级用例可能空转。"
+        " stdout=%r" % result.stdout[-500:])
 
 
 def test_p2_import_time_silencing_is_explicit(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -1332,3 +1372,61 @@ def test_s7c_token_redaction_is_idempotent() -> None:
     instance_proxy.install_token_redaction()
     after = len([item for item in logger.filters if isinstance(item, instance_proxy.TokenRedactFilter)])
     assert before == after == 1
+
+
+# ---------------------------------------------------------------- S7d：归属判据唯一实现（§9-15）
+
+def test_s7d_ownership_judgement_is_shared_by_proxy_and_session_copy(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """反向抽检：把唯一实现 `owned_document` 弄坏，**两个端点都必须跟着变**。
+
+    若任一端点自己有第二份归属判据，它的行为就不会被这次 monkeypatch 影响 ⇒ 该用例会红。
+    """
+    (tmp_path / "agent_instance.json").write_text(json.dumps({
+        "node": "N3", "attempt": 1, "host": "127.0.0.1", "port": 8099,
+        "token": None, "session_log": "sessions/s.jsonl"}, ensure_ascii=False), encoding="utf-8")
+
+    # 正例：默认实现下两个端点都接受这次归属
+    assert instance_proxy.load_target(tmp_path, "N3", 1).port == 8099
+    # 归属通过、但 session_log 指向的文件不存在 ⇒ 在"读事实"阶段显式不可用（不是归属失败）
+    assert instance_proxy.session_copy(tmp_path, node="N3", attempt=1)["reason"] \
+        == "session_log_unavailable"
+
+    calls: list[str] = []
+
+    def _broken(run_dir, *, node, attempt):
+        calls.append(node)
+        raise instance_proxy.OwnershipError(instance_proxy.OWNERSHIP_MISMATCH)
+
+    monkeypatch.setattr(instance_proxy, "owned_document", _broken)
+    with pytest.raises(instance_proxy.TargetUnavailable) as info:
+        instance_proxy.load_target(tmp_path, "N3", 1)
+    assert info.value.reason == "target_missing"
+    copy = instance_proxy.session_copy(tmp_path, node="N3", attempt=1)
+    assert copy["reason"] == "session_owner_mismatch" and copy["available"] is False
+    assert calls == ["N3", "N3"], "两个端点都必须经同一个 owned_document"
+
+
+def test_s7d_ownership_kind_maps_to_each_reason_vocabulary(tmp_path: Path) -> None:
+    """三档 kind（missing/invalid/mismatch）在两套 reason 词表里各自映射一致。"""
+    # missing
+    with pytest.raises(instance_proxy.TargetUnavailable) as a:
+        instance_proxy.load_target(tmp_path, "N3", 1)
+    assert a.value.reason == "target_missing"
+    assert instance_proxy.session_copy(tmp_path, node="N3", attempt=1)["reason"] \
+        == "session_metadata_missing"
+    # invalid
+    (tmp_path / "agent_instance.json").write_text("{not json", encoding="utf-8")
+    with pytest.raises(instance_proxy.TargetUnavailable) as b:
+        instance_proxy.load_target(tmp_path, "N3", 1)
+    assert b.value.reason == "target_invalid"
+    assert instance_proxy.session_copy(tmp_path, node="N3", attempt=1)["reason"] \
+        == "session_metadata_invalid"
+    # mismatch（node 不符）
+    (tmp_path / "agent_instance.json").write_text(json.dumps({
+        "node": "N9", "attempt": 1, "host": "127.0.0.1", "port": 8099}), encoding="utf-8")
+    with pytest.raises(instance_proxy.TargetUnavailable) as c:
+        instance_proxy.load_target(tmp_path, "N3", 1)
+    assert c.value.reason == "target_missing"
+    assert instance_proxy.session_copy(tmp_path, node="N3", attempt=1)["reason"] \
+        == "session_owner_mismatch"

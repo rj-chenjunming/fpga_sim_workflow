@@ -450,12 +450,31 @@ def test_proxy_rejected_http_code_is_shown_verbatim(ui):
 
 
 def test_unavailable_session_copy_explains_reason(ui):
+    """REV-16 §9-16（S7d）：`session_*` reason 必须给**中文说明**，不再直接甩英文枚举。
+
+    枚举本身仍要可核（排障要靠它），所以两边都断言。
+    """
     page, _ = setup(ui, inst=instance(available=False, state='unavailable',
                                       reason='target_missing', url=None),
                     copy=session_copy(available=False, reason='session_log_missing',
                                       kind=None, facts=None, bytes=None))
     page.locator('#awSessionCopy').click()
-    pw.expect(page.locator('#awEmbedCopyNote')).to_contain_text('session_log_missing')
+    note = page.locator('#awEmbedCopyNote')
+    pw.expect(note).to_contain_text('session_log_missing')
+    pw.expect(note).to_contain_text('元数据未声明会话日志')
+    pw.expect(note).to_contain_text('会话副本不可用')
+
+
+def test_unknown_session_reason_is_shown_verbatim_not_folded(ui):
+    """未知 `session_*` 值原样显示（不折成"未知/不可用"这种模糊说法，也不猜含义）。"""
+    page, _ = setup(ui, inst=instance(available=False, state='unavailable',
+                                      reason='target_missing', url=None),
+                    copy=session_copy(available=False, reason='session_future_value',
+                                      kind=None, facts=None, bytes=None))
+    page.locator('#awSessionCopy').click()
+    note = page.locator('#awEmbedCopyNote')
+    pw.expect(note).to_contain_text('session_future_value')
+    assert '原因未知' not in note.text_content(), note.text_content()
 
 
 def test_session_copy_without_kind_never_claims_full_text(ui):

@@ -8,6 +8,9 @@
   该入口禁写字节码，`kb/tools/` 是冻结目录）。
 - **失败显式**：`missing`/`errors` 为空才算有效；坏件不抛 500，也不拿空数组冒充成功。
 - **身份一致**：`manifest.baseline` 必须等于目录名；parent 链必须可回放（成环/超深即拒）。
+- **派生数据根**：清单按环境仓根写成 `kb/…`，而 `kb/` 就是数据根自身的名字；数据根被复制成
+  目录名不再是 `kb` 的派生副本时由第三条候选兜底（§3.1.1，2026-10-29）。字面候选仍优先，
+  边界/指纹判据对三条候选完全相同。
 
 七件套的判据来源是 manifest 自身（`kb/schema/manifest.schema.json` 的 6 个 artifact 字段
 + `evidence_index`），本模块不另定义一份清单，只按声明路径核验落盘与指纹。
@@ -105,13 +108,16 @@ def _artifact_path(workspace_root: Path, raw: Any) -> Path | None:
     """解析 manifest 内 artifact 路径（**唯一**的路径边界判据，R2）。
 
     清单内路径按**环境仓根**书写（如 `kb/baselines/v0/rtl_snapshot.tar`）；拆分数据根后
-    也可能出现相对 `<WORKSPACE_ROOT>` 的写法。相对路径解析基准：
-    `<root>/<path>` → `<root>/../<path>`（后者兼容按环境根书写的清单）。
+    也可能出现相对 `<WORKSPACE_ROOT>` 的写法。相对路径解析基准（编排规格 §3.1 第 4 条）：
+    `<root>/<path>` → `<root>/../<path>` → `<root>/<去掉前导 kb/ 的 path>`
+    （第三条是 2026-10-29 的显式契约变更，理由与判据见 §3.1.1：`kb/` 那一段是**数据根自身的
+    名字**，数据根被复制成目录名不再叫 `kb` 的派生副本后它不再出现在前缀里；只在相对路径
+    **首段恰为 `kb` 且还有剩余段**时兜底启用，字面候选仍优先）。
 
     **统一边界判据（R2）**：绝对与相对候选都先 `resolve()`（跟随符号链接），再判是否落在
     允许根集合（见 `_allowed_roots`），**先判边界再读/哈希**。`..` 越界、相对符号链接逃逸、
-    断链/循环链接与绝对越界走**同一条**判据 ⇒ `None`（调用方计入 `missing`）。
-    返回值是**已 resolve** 的目标：读/哈希只碰判定过的位置。
+    断链/循环链接与绝对越界走**同一条**判据 ⇒ `None`（调用方计入 `missing`）；第三条候选
+    不享受任何放宽。返回值是**已 resolve** 的目标：读/哈希只碰判定过的位置。
     """
     if not isinstance(raw, str) or not raw.strip():
         return None
@@ -120,9 +126,12 @@ def _artifact_path(workspace_root: Path, raw: Any) -> Path | None:
         candidates: tuple[Path, ...] = (candidate,)
     else:
         candidates = tuple(base / candidate for base in (workspace_root, workspace_root.parent))
+        # §3.1.1 第三条（仅兜底）：首段恰为 `kb` 且还有剩余段 ⇒ 去掉那段数据根名再拼。
+        if candidate.parts[:1] == ("kb",) and len(candidate.parts) > 1:
+            candidates += (workspace_root / Path(*candidate.parts[1:]),)
     roots = _allowed_roots(workspace_root)
     # 解析顺序保持不变：先取存在的候选；都不存在时回退到第一个「合法根内」候选，
-    # 让调用方按 missing 报出声明路径（越界/断链仍是 None）。
+    # 让调用方按 missing 报出**声明路径原文**（越界/断链仍是 None）。
     fallback: Path | None = None
     for item in candidates:
         resolved = _resolved_or_none(item)

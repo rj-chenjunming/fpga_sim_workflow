@@ -6502,3 +6502,77 @@ S8b 真机结论是「D3 机制达成、**产品内嵌路径**被 `remote.mux` W
 - 不声称"最新会话"就是 agent 主会话：同一 attempt 的 cwd 下多会话时取 mtime 最新（REV-19 §5 已登记未决）。
 - 不声称 S5 的 `session_log` 落账已完成；落账后仍优先元数据，本解析器只作兜底。
 - 不声称浏览器门"零失败"（唯一失败项已用单跑证明与本片无关）；不声称独立复核；未推送。
+
+## 137 派生数据根准入（§3.1.1）+ 「无可用基线」显式原因（人反馈 8199；2026-10-29）
+
+入口：人在 8199（S8f 演示实例）看到「选择基线版本 0 个可用 / 1 个，`v0（不可用）`」，问"为啥不可用"。
+归因后按人裁决做 **B（治本）**：规格先行 + TDD + 四道门。计划
+[`plans/2026-10-29-derived-root-admission-and-ui-reason.md`](plans/2026-10-29-derived-root-admission-and-ui-reason.md)。
+
+### 137.1 事实与归因
+
+| 判据 | 实测 |
+|---|---|
+| 8199 的 `GET /api/baselines`（改动前） | `workspace_root=<repo>/.demo-ws`；`v0 valid=false`，`missing` 恰六件（`rtl_snapshot / allfiles_manifest / cases_freeze / conflicts_snapshot / doc_fingerprint / evidence_index`），`errors=[]` |
+| 文件是否在副本里 | 在：`.demo-ws/baselines/v0/rtl_snapshot.tar` = `2570240` 字节（九件齐全） |
+| 根因 | manifest 按**环境仓根**写成 `kb/baselines/v0/...`；数据根复制成目录名不再是 `kb` 的派生副本后，`<root>/<path>` 与 `<root>/../<path>` 双双落空 |
+| 同批文件换数据根 | 默认 `ENV_ROOT/kb` 与 `workspaces/real-ws`（新布局 manifest）均 `valid=true`；`.demo-ws`、`.dev-ws-s8d`、`workspaces/<env>-sandbox` 均 `valid=false`（前六件 missing） |
+| 页面侧缺口 | 无 `valid=true` 项时前端把选中值清空 ⇒ meta 走「未选择基线」，`manifest 不可用 + missing` 分支不可达 ⇒ 用户无法自查 |
+| 人此前走通的那轮 | 2026-10-22 real 轮数据根是 `workspaces/real-ws`（新布局）⇒ 不受影响；本次是派生副本形态暴露的缺口 |
+
+### 137.2 规格与实现（SpecDD）
+
+| 项 | 落点 |
+|---|---|
+| 契约 | `spec/LOOP_ORCHESTRATION_SPEC.md` §3.1 第 4 条 + 新增 **§3.1.1**（第三条候选 `<root>/<去掉前导 kb/ 的 path>`，显式契约变更；不采用改写副本 manifest 字节/自引用软链，理由见 §3.1.1）；`spec/WEB_UI_SPEC.md` §3.1「无可用项必须给原因」 |
+| B1 实现 | `host/baseline.py::_artifact_path`：仅当相对声明路径首段恰为 `kb` 且还有剩余段时追加第三条**兜底**候选；字面候选仍优先；三条候选共用同一 `_resolved_or_none` + `_inside_roots`；`missing` 仍报声明原文 |
+| B2 实现 | `web/app.js::renderBaselineMeta` + `firstUnavailableWhenNoValid()`：无 valid 可选时用**首个不可用条目**渲染字段 + `chip.bad`「没有可用基线版本」+ `missing`/`errors` 原文（可换行 `span.muted`）；valid 渲染/下拉/`startHint` 未动 |
+| 手册 | `UI_RUNBOOK.md` §1.2 旧 `kb -> .` 软链标为历史兼容（不再需要）；§4.1 增「meta 给原因」 |
+
+### 137.3 测试（先红后绿）
+
+| 片 | 红 | 绿 |
+|---|---|---|
+| B1 | 新 2 条用例：`2 failed, 3 passed, 24 deselected`（派生副本与篡改两条红；c/d/e 为不变量守卫） | `tests/test_baseline_admission.py` `29 passed in 0.72s`；加 `test_api_baseline_detail.py` 合计 **34 passed, 1 warning in 0.96s** |
+| B2 | 新 5 条用例：`2 failed, 3 passed in 15.45s`（实际值 `未选择基线`——正是缺口） | `tests/browser/test_setup_baseline_reason.py tests/browser/test_web_layout.py` → **17 passed in 16.50s** |
+
+新增用例：B1 `test_derived_workspace_root_with_kb_prefixed_manifest_is_valid` /
+`_tampered_artifact_is_still_invalid` / `_symlink_escape_is_rejected` /
+`test_literal_candidate_takes_priority_over_kb_stripped_one` / `test_missing_reports_declared_path_not_stripped`；
+B2 `test_u1..test_u5`（U1 chip/置灰、U2 原因原文、U3 hint、U4 1280×720 无溢出、U5 混合列表不阻断）。
+
+### 137.4 门禁（本工作树实测，命令输出复制）
+
+| 门 | 命令 | 实测 |
+|---|---|---|
+| 单测 | `cd loop && bash spikes/run_software_checks.sh --ignore=tests/browser` | `1898 passed, 3 deselected, 1 warning in 255.43s (0:04:15)` |
+| 浏览器（界面改动必须单独跑） | `cd loop && PLAYWRIGHT_BROWSERS_PATH=<repo>/.pw-browsers HOME=<repo>/.chrome-home TMPDIR=<repo>/.chrome-tmp .venv/bin/python -m pytest -q tests/browser` | `154 passed in 159.12s (0:02:39)` |
+| kb 自测 + 环境层 | `cd loop && bash spikes/run_env_layer_checks.sh --with-kb-selftests` | `PASS=10 FAIL=0` / `PASS=9 FAIL=0` / `PASS=28 FAIL=0`；`3 passed, 24 deselected in 7.77s`；原 ENV_ROOT `find -newer` 命中 **0** |
+| 端到端 | `cd loop && LOOP_WORKSPACE=<repo>/.dev-ws-e2e LOOP_PORT=8099 bash spikes/accept_v1_run.sh` | phase `1/2/3/4/4b/5` = `PASS=50/27/18/8/8/6`（**117**）`FAIL=0` → `=> ALL PASS` |
+| 文档 | `python3 doc/audit/check_doc_links.py` | `checked=2910 skipped=41574 historical=857 known_missing=12 env_missing=34 missing=0`（rc=0） |
+
+### 137.5 自愈证据（不写任何冻结件字节）
+
+- 改动后 `B.list_baselines` 只读核对：`.demo-ws`、`.dev-ws-s8d`、`workspaces/simenv-tcs9620-64ch-sandbox`、
+  `ENV_ROOT/kb`、`workspaces/real-ws` 五处 `v0` 全部 `valid=true`、`missing=[]`、`errors=[]`、
+  `rtl_snapshot_bytes=2570240`；`.demo-ws` 前后 **5600 个文件 md5 全同 / 5843 条目录树全同**。
+- 独立端口（8123）以 `LOOP_WORKSPACE=<repo>/.demo-ws` 起服务：`GET /api/baselines` 现返回
+  `valid: true, missing: [], errors: []` —— 8199 那条「0 个可用」的根因已消除（8199 进程需重启才加载新判据）。
+- **人重启 8199 后实测**（2026-10-29，本会话无头浏览器直连 `http://127.0.0.1:8199/`）：
+  `GET /api/baselines` → `valid: true, missing: [], errors: []`；配置页 chip `1 个可用 / 1 个`、
+  下拉 `v0 · 2026-10-15 12:05`（未置灰）、`select=v0`、meta `manifest 有效`、
+  hint `校验通过，可启动`、`#btnStart` 可用、`pageerror=0`。原截图问题闭环。
+
+### 137.6 未做 / 不声称 / 登记
+
+- **8199 已由人重启并实测**（见 §137.5 最后一条）：不需要再重启；重启前该外部进程仍跑旧判据，属预期。
+- **e2e 的数据根不能放 `/tmp`**：本环境每次 bash 调用是新的 bwrap（`--tmpfs /tmp`），跨调用即丢失；
+  首次 e2e 因此报「drill 夹具不完整」。最终实测用仓内派生根 `<repo>/.dev-ws-e2e`（跑完已
+  `provision_dev_workspace.sh --cleanup` 删除）。
+- **文档门污染（未修，登记）**：浏览器门按手册把 `TMPDIR` 指到 `<repo>/.chrome-tmp`，
+  pytest 临时夹具会落在仓内，而 `doc/audit/check_doc_links.py` 的 `SKIP_PREFIXES` 未含
+  `.chrome-tmp`/`.chrome-home`/`.pw-browsers` ⇒ 未清理时文档门多出 4 条 `[MISSING]`、rc=1。
+  本轮清理后 `missing=0`；建议下一片把三个前缀加入跳过表（本轮不扩写域）。
+- 不声称"独立验证"：B1/B2 由两名实现 owner 交付、Lead 复核 diff 并跑门禁；`clean-ws-20261023`
+  无 drill 夹具（`runs/` 空）故不作 drill 演示根。
+

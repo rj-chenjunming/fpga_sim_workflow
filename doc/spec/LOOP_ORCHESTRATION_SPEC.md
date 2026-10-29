@@ -117,7 +117,8 @@
 4. **七件套齐全**：manifest 声明路径可解析且落盘存在，声明指纹与实际内容一致——
    `rtl_snapshot`（含 `rtl_files.md5` 的 `manifest_sha256`）、`allfiles_manifest`、`doc_fingerprint`、
    `cases_freeze`、`conflicts_snapshot`、`evidence_index`。清单内路径按环境仓根书写，
-   解析顺序 `<WORKSPACE_ROOT>/<path>` → `<WORKSPACE_ROOT>/../<path>`。
+   解析顺序 `<WORKSPACE_ROOT>/<path>` → `<WORKSPACE_ROOT>/../<path>` →
+   `<WORKSPACE_ROOT>/<去掉前导 kb/ 的 path>`（第三条 2026-10-29 显式契约变更，理由与判据见 §3.1.1）。
    **统一边界判据（R2，2026-10-22）**：无论清单写绝对路径还是相对路径，候选都先 `resolve()`
    （跟随符号链接）再判定必须落在允许根集合内（`<WORKSPACE_ROOT>`、其父、环境根），**然后**才读取/哈希；
    `..` 越界、相对符号链接逃逸、断链/循环链接与绝对越界使用**同一条**判据，不得出现第二套近似规则。
@@ -137,6 +138,25 @@
 
 **失败语义**：`missing` 列缺失件、`errors` 列结构性违规（schema / 身份 / 指纹 / parent 链），
 二者都不得用空数组冒充成功；列表端点对坏件返回 `valid=false` + 原因，**不抛 500**。
+
+#### 3.1.1 派生数据根的 `kb/` 前缀（2026-10-29 显式契约变更）
+
+**问题**：manifest 按环境仓根书写成 `kb/baselines/<id>/…`；默认数据根正是 `ENV_ROOT/kb`，
+前两条候选可解。但把数据根复制成目录名**不再叫 `kb`** 的派生副本（`<repo>/.demo-ws`、
+`<repo>/.dev-ws*`、`workspaces/<env>-sandbox`）后，前两条候选双双落空 ⇒ 七件套全 `missing`
+⇒ `valid=false`，界面「0 个可用 / 1 个」（2026-10-29 实测：`.demo-ws` 与 `.dev-ws-s8d` 均为 6 件 missing；
+同批文件实际就在副本里）。
+
+**裁决**：第三条候选只在**相对路径首段恰为 `kb`** 时启用 —— `<WORKSPACE_ROOT>/<去掉 kb/ 的 path>`。
+理由：`kb/` 那一段就是**数据根自身的名字**，数据根换了位置后它不再出现在前缀里；这是既有语义的补全，
+不是第二套判据（实现仍只有 `loop/host/baseline.py` 一处，仍走 R2 同一边界判据）。
+
+**不采用**：① 复制时改写派生副本的 `manifest.json` 字节 —— 会破坏副本与冻结件（`FIXTURE_IDENTITY.md`
+的 md5 身份）的可比性；② 要求用户建自引用软链 `kb -> .` —— 把人工动作留在新旧数据根上，且目录树出现自环
+（旧兼容做法见 `doc/UI_RUNBOOK.md` §1.2，自本裁决起不再需要）。
+
+**判据顺序不变**：字面路径优先（`<root>/<path>` → `<root>/../<path>`），第三条仅兜底；都不存在时
+`missing` 仍报**声明路径**原文，不得改写成去前缀后的路径。边界/指纹/身份判据对三条候选完全相同。
 
 ---
 

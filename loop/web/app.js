@@ -958,6 +958,19 @@
     return b && b.valid ? b : null;
   }
 
+  // 一个 valid 项都没有时，返回首个不可用条目供 meta 给原因（WEB_UI_SPEC §3.1，
+  // 2026-10-29 裁决）；列表里存在 valid 项时返回 null —— 原因分支只在「无可用项」可达。
+  function firstUnavailableWhenNoValid() {
+    var fallback = null;
+    for (var i = 0; i < state.baselines.length; i++) {
+      var b = state.baselines[i];
+      if (!b) continue;
+      if (b.valid) return null;
+      if (!fallback) fallback = b;
+    }
+    return fallback;
+  }
+
   function renderBaselineMeta() {
     var host = $("setupBaselineMeta");
     if (!host) return;
@@ -967,10 +980,12 @@
       return;
     }
     if (!state.baselines.length) {
-      host.appendChild(h("span", "muted", state.baselinesLoading ? "加载中…" : "没有可用的基线版本"));
+      host.appendChild(h("span", "muted", state.baselinesLoading ? "加载中…" : "没有可用基线版本"));
       return;
     }
-    var b = findBaseline(state.setup.baseline);
+    // 没有可被选中的 valid 项时，用首个不可用条目渲染：字段照旧 + 显式「没有可用基线版本」
+    // + 服务端 missing/errors 原文。前端不猜、不合成、不改写路径原文。
+    var b = findValidBaseline(state.setup.baseline) || firstUnavailableWhenNoValid();
     if (!b) {
       host.appendChild(h("span", "muted", "未选择基线"));
       return;
@@ -981,11 +996,13 @@
     host.appendChild(spanKV("RTL 快照", bytesText(b.rtl_snapshot_bytes)));
     if (b.valid) {
       host.appendChild(chipEl("manifest 有效", "ok"));
-    } else {
-      var missing = b.missing && b.missing.length ? "：" + b.missing.join("、") : "";
-      var why = b.errors && b.errors.length ? "（" + b.errors.join("；") + "）" : "";
-      host.appendChild(chipEl("manifest 不可用" + missing + why, "bad"));
+      return;
     }
+    host.appendChild(chipEl("没有可用基线版本", "bad"));
+    var missing = b.missing || [];
+    var errors = b.errors || [];
+    if (missing.length) host.appendChild(h("span", "muted", "missing：" + missing.join("、")));
+    if (errors.length) host.appendChild(h("span", "muted", "errors：" + errors.join("；")));
   }
 
   function renderProjectMeta() {

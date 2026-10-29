@@ -144,14 +144,15 @@ bash loop/remote/seed-sandbox-workspace.sh      # 从 ENV_ROOT/kb 复制（只�
 如果随后 `/api/baselines` 显示 `valid=false`，且 `missing` 正好是
 `rtl_snapshot / allfiles_manifest / cases_freeze / conflicts_snapshot / doc_fingerprint / evidence_index`
 六件，**不是数据坏了，是数据根布局问题**：这些基线 manifest 里的路径按环境仓根写成了
-`kb/baselines/...`。旧布局的兼容做法（**只对一次性演示副本**，不要动 `ENV_ROOT/kb`）：
+`kb/baselines/...`。**2026-10-29 起这个布局已被准入兼容**（[编排规格 §3.1.1](spec/LOOP_ORCHESTRATION_SPEC.md)：
+`kb/` 前缀会按数据根自身解析），直接 `curl` 复核即可：
 
 ```bash
-WS="$PWD/workspaces/simenv-tcs9620-64ch-sandbox"
-test -e "$WS/kb" || ln -s . "$WS/kb"    # 让 <WS>/kb/baselines/... 解析回 <WS>/baselines/...
 curl -s http://127.0.0.1:8099/api/baselines | python3 -m json.tool | head -30
 ```
 
+> 历史兼容做法（**2026-10-29 之前**、仅一次性演示副本、不要动 `ENV_ROOT/kb`）：
+> `ln -s . "$WS/kb"`。现在**不需要**；若旧副本里已存在该软链，留着也无害（前两条候选仍优先）。
 > 另一条路：直接用一份**新布局**的数据根（baseline manifest 里写 `baselines/v0/...`），
 > 例如本机已存在的 `workspaces/real-ws`（复制一份再用）。不要把 `ENV_ROOT/kb` 当草稿本。
 
@@ -338,8 +339,10 @@ curl -s http://127.0.0.1:8099/openapi.json | python3 -c 'import json,sys;print("
 - 「浏览…」打开目录浏览器（只列基线版本，`valid=false` 置灰）；「刷新」重新拉取。
 - **通过条件**：必须选一个 `valid=true` 的版本；否则「确认并启动」永远灰，hint 显示「请选择有效基线」。
 - 本机示例（写手册时）：`v0`、162 用例、RTL 快照 2.45 MB、`manifest 有效`（`created_at` 视数据根而定）。
+- 全部不可用时 meta 区直接给出原因（**首个不可用条目**的 `created_at`/`parent`/用例数 +
+  「没有可用基线版本」+ `missing`/`errors`），不再只显示「未选择基线」（WEB_UI_SPEC §3.1，2026-10-29）。
 
-若列表为空或全部不可用：看 `/api/baselines` 的 `missing`，按 §1.2 处理数据根布局。
+若列表为空或全部不可用：先看页面上 meta 给的 `missing`，再按 §1.2 核数据根布局。
 
 ### 4.2 选择要修订的项目目录
 

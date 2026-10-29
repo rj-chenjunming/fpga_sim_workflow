@@ -369,6 +369,124 @@ def test_broken_and_looping_symlink_artifacts_are_structured(tmp_path: Path) -> 
     assert _has_reason(loop_record, "allfiles_manifest"), loop_record
 
 
+# ------------------------------- 派生数据根的 `kb/` 前缀（编排规格 §3.1.1，2026-10-29）
+#
+# 契约：manifest 按**环境仓根**写成 `kb/baselines/<id>/…`；把数据根复制成目录名不再是
+# `kb` 的派生副本（`<repo>/.demo-ws`、`<repo>/.dev-ws*`、`workspaces/<env>-sandbox`）后，
+# 第三条候选 `<WORKSPACE_ROOT>/<去掉 kb/ 的 path>` 兜底。字面候选仍优先；三条候选走
+# **同一条** R2 边界判据；都不存在时 `missing` 仍报声明路径原文。这组用例只从公开入口观察。
+
+
+_KB_PREFIXED_FIELDS = (
+    "rtl_snapshot",
+    "allfiles_manifest",
+    "doc_fingerprint",
+    "cases_freeze",
+    "conflicts_snapshot",
+)
+
+
+def _prefix_declared_paths_with_kb(baseline_dir: Path) -> None:
+    """把六个声明路径统一加 `kb/` 前缀（模拟按环境仓根书写的清单，文件字节不动）。"""
+    manifest_path = baseline_dir / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    for field in _KB_PREFIXED_FIELDS:
+        assert not manifest[field]["path"].startswith("kb/"), f"{field} 已带前缀：{manifest[field]}"
+        manifest[field]["path"] = f"kb/{manifest[field]['path']}"
+    assert not manifest["evidence_index"].startswith("kb/"), manifest["evidence_index"]
+    manifest["evidence_index"] = f"kb/{manifest['evidence_index']}"
+    manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=1), encoding="utf-8")
+
+
+def _declared(workspace_root: Path, baseline_id: str, field: str) -> str:
+    """读 manifest 里某条声明路径原文（断言 missing 报原文时用）。"""
+    manifest = json.loads(
+        (workspace_root / "baselines" / baseline_id / "manifest.json").read_text(encoding="utf-8")
+    )
+    return manifest[field]["path"] if field in _KB_PREFIXED_FIELDS else manifest[field]
+
+
+def test_derived_workspace_root_with_kb_prefixed_manifest_is_valid(tmp_path: Path) -> None:
+    """§3.1.1 红灯：派生数据根（目录名不是 `kb`）+ 清单写 `kb/…` ⇒ 第三条候选命中。
+
+    旧实现只有 `<root>/<path>` 与 `<root>/../<path>` 两条候选，派生副本里两条都落空，
+    七件套全 `missing`（2026-10-29 实测 `.demo-ws` / `.dev-ws-s8d` 各 6 件 missing）。
+    """
+    derived = tmp_path / "derived"
+    baseline_dir = make_baseline(derived, "v1")
+    _prefix_declared_paths_with_kb(baseline_dir)
+    assert (derived / "baselines" / "v1" / "rtl_snapshot.tar").is_file(), "用例前提：字节都在副本里"
+
+    record = _entry(derived, "v1")
+    assert record["valid"] is True, f"派生数据根仍被判坏：{record}"
+    assert record["missing"] == [] and record["errors"] == [], record
+
+
+def test_derived_workspace_root_tampered_artifact_is_still_invalid(tmp_path: Path) -> None:
+    """§3.1.1 不变量：第三条候选**不放宽指纹判据**——篡改 rtl_snapshot 仍 `valid=false`。"""
+    derived = tmp_path / "derived"
+    baseline_dir = make_baseline(derived, "v1", tamper="rtl_snapshot.tar")
+    _prefix_declared_paths_with_kb(baseline_dir)
+
+    record = _entry(derived, "v1")
+    assert record["valid"] is False, record
+    assert any("rtl_snapshot" in error and "指纹不符" in error for error in record["errors"]), record
+
+
+def test_derived_workspace_root_symlink_escape_is_rejected(tmp_path: Path) -> None:
+    """§3.1.1 不变量：第三条候选走**同一条** R2 边界判据——链接逃逸仍按 missing 拒绝。"""
+    outside = _outside_dir(tmp_path)
+    outside_file = outside / "leak.md5"
+    outside_file.write_bytes(b"outside-data")
+
+    derived = tmp_path / "derived"
+    baseline_dir = make_baseline(derived, "v1")
+    _prefix_declared_paths_with_kb(baseline_dir)
+    link = baseline_dir / "allfiles.md5"
+    link.unlink()
+    link.symlink_to(outside_file)
+    # 声明指纹**就是**根外文件的指纹：只有边界判据能拒它 ⇒ 放宽第三条候选必被这条用例抓住。
+    _set_artifact_path(
+        baseline_dir, "allfiles_manifest", "kb/baselines/v1/allfiles.md5", _sha256(outside_file)
+    )
+    assert _declared(derived, "v1", "allfiles_manifest") == "kb/baselines/v1/allfiles.md5"
+
+    record = _entry(derived, "v1")
+    assert record["valid"] is False, f"第三条候选放宽了边界判据：{record}"
+    assert any("allfiles_manifest" in item for item in record["missing"]), record
+
+
+def test_literal_candidate_takes_priority_over_kb_stripped_one(tmp_path: Path) -> None:
+    """§3.1.1 判据顺序不变：字面候选优先，第三条只在字面候选不存在时兜底。"""
+    derived = tmp_path / "derived"
+    baseline_dir = make_baseline(derived, "v1")
+    _prefix_declared_paths_with_kb(baseline_dir)
+    # 两条候选同时存在：字面 `<root>/kb/…` 放错误字节，第三条 `<root>/…`（声明指纹对应）不动。
+    literal = derived / "kb" / "baselines" / "v1" / "rtl_snapshot.tar"
+    literal.parent.mkdir(parents=True)
+    literal.write_bytes(b"wrong-bytes-in-literal-candidate")
+    assert (baseline_dir / "rtl_snapshot.tar").is_file()
+
+    record = _entry(derived, "v1")
+    assert record["valid"] is False, f"第三条抢在字面候选之前：{record}"
+    assert any("rtl_snapshot" in error and "指纹不符" in error for error in record["errors"]), record
+
+
+def test_missing_reports_declared_path_not_stripped(tmp_path: Path) -> None:
+    """§3.1.1 报错口径不变：三条候选都不存在 ⇒ `missing` 报**声明路径**原文。"""
+    derived = tmp_path / "derived"
+    baseline_dir = make_baseline(derived, "v1")
+    _prefix_declared_paths_with_kb(baseline_dir)
+    declared = _declared(derived, "v1", "rtl_snapshot")
+    assert declared == "kb/baselines/v1/rtl_snapshot.tar"
+    (baseline_dir / "rtl_snapshot.tar").unlink()
+
+    record = _entry(derived, "v1")
+    assert record["valid"] is False, record
+    assert f"rtl_snapshot: {declared!r}" in record["missing"], record
+    assert not any("rtl_snapshot" in error for error in record["errors"]), record
+
+
 # ---------------------------------------------------------------- 准入：零副作用
 
 

@@ -1,0 +1,122 @@
+# S8b 真机验收 v2（0 token）
+
+## 0) 环境与判据自检
+dsh 版本 = 0.2.1-rc.2 ；bin_sha256 = 80112efe368e…
+仓内 SETTINGS：dsh.web.enabled = True（裁决 B3 的默认开）；host = 127.0.0.1
+DS-09 宿主凭据值集合 = 1 条（只记条数，值/长度不回显）
+编码自检（S7b 素材）：projcache 记录 cwd = `/home/work/chenjunming/change-impact-loop/loop/.logs/s7b/boot2/attempt/work` ；正算目录名 == 实际目录名 = True
+说明：目录名把 `/`→`-` 是**不可逆**编码（`change-impact-loop` 与 `change/impact/loop` 同形） ⇒ 会话 cwd 只认 projcache 的 `identity.cwd`，不从目录名反解。
+
+## 1) 在生产 attempt 布局里跑 0-token boot（会话 cwd = 本 attempt 的 work）
+attempt root = run/RUN-20261029-S8B/agent_workspaces/N6/attempt-000001
+attempt home = agent_workspaces/N6/attempt-000001/dsh-home ；attempt work(cwd) = agent_workspaces/N6/attempt-000001/work
+boot 结果 = raised / ProcessFailed ；耗时 = 2.691 s
+boot 失败原文（脱敏；证明是**凭据缺失**而非模型被调用）= attempt RUN-20261029-S8B/N6/1 dsh 退出码 1：dsh: MISSING_CREDENTIAL: llm-deepseek: no API key for provider route "deepseek-official"; store DEEPSEEK_API_KEY through the credentials service (the web Models page writes it), or export DEEPSEEK_API_KEY in the launching environment
+session_id = c5e16802-0f2f-49fe-a5bf-1c635f50de48
+会话目录名 `sessions/--home-work-chenjunming-change-impact-loop-loop-.logs-s8b-run-RUN-20261029-S8B-agent_workspaces-N6-attempt-000001-work--`
+会话记录的 cwd（projcache identity.cwd）= /home/work/chenjunming/change-impact-loop/loop/.logs/s8b/run/RUN-20261029-S8B/agent_workspaces/N6/attempt-000001/work
+本 attempt 的 work（绝对路径）= /home/work/chenjunming/change-impact-loop/loop/.logs/s8b/run/RUN-20261029-S8B/agent_workspaces/N6/attempt-000001/work
+**判据 1**：会话 cwd == 本 attempt work = True ；目录名 == encode(本 attempt work) = True
+
+## 2) 起 Web 实例：home = attempt `dsh-home`、cwd = attempt `work`
+起实例耗时 = 3.468 s ；pid = 23 ；startup_s = 3.355 ；authority = 127.0.0.1:46399 ；reused = False
+**判据 2**：实例 home == attempt dsh-home = True ；实例 cwd == attempt work = True
+agent_instance.json：keys = ['attempt', 'host', 'node', 'port', 'token', 'written_at'] ；attempt = 1 ；mode = 0o600 ；token = <redacted 43 chars>
+**判据 3**（DS-09）：problems = [] ；record = [{"name": ".credentials.yaml", "source": "dsh_generated", "basis": "键集合符合 dsh 自生成登记：records.client-connection/browser-session"}]
+dsh 自生成件 = True（161 B）；含宿主凭据值 = False
+
+## 3) 看板 + 同源反代 + Playwright：DOM 断言会话列表含该 session_id
+可用性端点（带 ?attempt=）= HTTP 200 {"available": true, "state": "ready", "reason": null, "url": "/instance/RUN-20261029-S8B/N6/1/", "embed": "iframe", "authority": "projection", "stream": "http_only", "attempt": 1}
+顶层反代：title = 'DeepSeek Harness' ；baseURI = http://127.0.0.1:8099/instance/RUN-20261029-S8B/N6/1/
+顶层反代：会话列表含 session_id = **False** ；`No sessions yet` 标记 = True ；`Choose workspace` 标记 = True ；body 文本长度 = 168
+顶层反代：命中元素 = []
+顶层反代 body.innerText（前 900 字）：
+New Session
+Plugins
+Automation tasks
+Workspaces
+No sessions yet
+More
+Reconnecting...
+Into the Unknown
+Preview
+Choose workspace
+Standard mode
+Choose a workspace to start
+iframe URL = http://127.0.0.1:8099/instance/RUN-20261029-S8B/N6/1/
+iframe：会话列表含 session_id = **False** ；`No sessions yet` = True ；body 文本长度 = 168
+iframe：命中元素 = []
+iframe body.innerText（前 900 字）：
+New Session
+Plugins
+Automation tasks
+Workspaces
+No sessions yet
+More
+Reconnecting...
+Into the Unknown
+Preview
+Choose workspace
+Standard mode
+Choose a workspace to start
+截图 = iframe.png + proxy_top.png ；像素 = 1280x860
+直连实例（不经反代）：会话列表含 session_id = **False** ；`No sessions yet` = False ；body 文本长度 = 1001
+直连实例：命中元素 = []
+直连实例：DOM HTML 含 session_id = True ；href/data-* 命中 = [] ；会话标题『只回复 OK』元素 = [{"tag": "SPAN", "cls": "YDXeBa_title"}]
+直连实例：可见会话行的祖先含 session_id = {"found": true, "hops": 1, "tag": "DIV", "cls": "YDXeBa_sessionRow"}
+直连实例 body.innerText（前 900 字）：
+New Session
+Plugins
+Automation tasks
+Workspaces
+work
+New Session
+只回复 OK
+now
+More
+Into the Unknown
+Preview
+work
+Standard mode
+Describe what you want to build, / commands, @ files or sessions
+Workspace Write
+Select model
+Preview Notice
+DeepSeek Harness 0.2 is still in preview, and many areas need continued improvement and refinement. We welcome feedback and suggestions from all developers and users. The new desktop app now targets a broad range of users, while developer-related advanced features can be enabled in the settings. DeepSeek Harness’s product features and plugin APIs are expected to continue rapid iteration and evolution, and will gradually stabilize over time.
+We look forward to exploring the limits of intelligence together with users and developers around the world, building on open-source, reusable, and composable infrastructure. We welcome everyone to bring their ideas to li
+直连实例：页面上没有 `Choose workspace` 文本可点（形态不同）
+反代 live channel 证据：
+  `/plugins/events`（SSE）经反代的状态 = [('http://127.0.0.1:8099/instance/RUN-20261029-S8B/N6/1/plugins/events', 200, 'text/event-stream'), ('http://127.0.0.1:8099/instance/RUN-20261029-S8B/N6/1/plugins/events', 200, 'text/event-stream')]
+  `remote.mux`（WebSocket 升级）console 原文（脱敏，前 2 条）=
+    [error] WebSocket connection to 'ws://127.0.0.1:8099/instance/RUN-20261029-S8B/N6/1/api/remote.mux' failed: Error during WebSocket handshake: Unexpected response code: 405
+    [error] WebSocket connection to 'ws://127.0.0.1:8099/instance/RUN-20261029-S8B/N6/1/api/remote.mux' failed: Error during WebSocket handshake: Unexpected response code: 405
+说明：`/instance/**` 的 >=400 响应 0 条；console 里的 3 条 500 是**探针看板自身**的接口（FakeManager 缺件）⇒ 属 S8c 的 9×500 账，不是反代/实例的失败面
+非 2xx（>=400）响应逐条 dump（脱敏，共 0 条）：
+网络（经反代，非 200 的前 12 条）：[["http://127.0.0.1:8099/instance/RUN-20261029-S8B/N6/1/", 303, ""]]
+**服务端返回的 JSON 里出现该 session_id** = False
+requestfailed 0 条（脱敏，前 5）：
+console 36 条（脱敏，末 5）：
+  [warning] [connection] connection lost, retry #5
+  [error] WebSocket connection to 'ws://127.0.0.1:8099/instance/RUN-20261029-S8B/N6/1/api/remote.mux' failed: Error during WebSocket handshake: Unexpected response code: 405
+  [error] Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+  [warning] [connection] connection lost, retry #6
+  [warning] [connection] generation is still not ready after 3000ms
+收尾：实例已停 = True ；元数据已删 = True
+
+## 4) D3 判定
+会话 cwd == attempt work = True（判据 1：素材正确性）
+实例 home/cwd 正确 = True（判据 2）
+DS-09 放行 dsh 自生成件 = True（判据 3）
+顶层反代 DOM 含 session_id = False ；同源 iframe DOM 含 session_id = False ；直连实例 DOM 含该会话语义（标题/HTML/路由）= True ；服务端 JSON 含 session_id = False
+直连实例旁证（不经反代）={"sessionInText": false, "sessionInHtml": true, "sessionInHref": [], "sessionTitles": [{"tag": "SPAN", "cls": "YDXeBa_title"}]}
+**D3 判定（直连实例，不经反代）= achieved**
+**D3 判定（同源反代 iframe，产品路径）= blocked_by_missing_live_channel**（依据：`remote.mux` WebSocket 握手 405 ⇒ 前端 live channel 起不来 ⇒ 会话列表取不到数据；属 REV-16 §9-2 未决，本轮不做）
+
+## 5) 真机失败路径：实例起不来 ⇒ attempt 照常装配（降级为不可内嵌）
+prepare_attempt（mode=real）返回正常 ；耗时 = 5.601 s（真实 spawn + 0.5 s 超时）
+attempt 记录里的 Web 事实 = {"state": "unavailable", "reason": "start_timeout", "embed": "new_tab_only", "node": "N6", "attempt": 1}
+attempt 目录可用 = work=True home=True input=True candidate=True
+失败时是否写了落账 = False（必须 False）
+共用 home 未写凭据件 = True
+残留 `dsh --profile web` 进程 = (none)
+判定：失败不阻断 attempt（不可内嵌 + 原因 + 无落账 + 无残留）= True

@@ -49,17 +49,24 @@ loop:
         accept_bash: true
         # true = deny + 收窄 agent 可见面（模型只看到 7 项）；false = 只 deny（模型仍看到 26 项）
         enforce_visibility: true
-      # S7c 常驻 DSH Web 实例（同源反代的内嵌目标；REV-16 §5.2 #1 的落账写入方）。
-      # **不自启动**：`enabled` 只是"允许被启动"，真的要起必须显式调用
-      # `python -m host.web_instance_ctl start --run-dir <run> --node N6 --attempt 1 --enable`
-      # （或未来编排钩子）。`enabled: false` 时连显式调用也拒（`web_disabled`），
-      # 确保"不因内嵌成功就改默认运行行为"。
+      # S7c/S8b 常驻 DSH Web 实例（同源反代的内嵌目标；REV-16 §5.2 #1 的落账写入方）。
+      # **S8b 裁决 B3（2026-10-29）：默认开** —— `mode=real` 的 attempt 在装配点自动起一个
+      # loopback Web 实例，让 iframe 里真的能看到**该 attempt 的会话**（REV-14 D3）。
+      # 三条伴随纪律（都在 `host/agent_backends/dsh.py::prepare_attempt` 里落地）：
+      #   ① 起失败**不阻断** attempt（Web 只是观测面，降级为"不可内嵌 + 原因"）；
+      #   ② `agent_instance.json` 按当前 `(node, attempt)` 重写；
+      #   ③ attempt 结束**不 stop**（人还要看）。
+      # 回退：`enabled: false` ⇒ 回到 S7 的"不起实例"行为（显式 CLI 调用也会被拒 `web_disabled`）。
       web:
-        enabled: false
-        # 空 ⇒ <WORKSPACE_ROOT>/dsh-web-home；实际启动时**总被改写成
-        # `<attempt>/dsh-web-home`**（与 attempt 的 dsh-home 并列，理由见 web_instance_ctl docstring：
-        # dsh web 会在 home 自生成 .credentials.yaml，与 DS-09 的 FORBIDDEN_HOME_ENTRIES 冲突）
+        enabled: true
+        # 空 ⇒ "未归属"兜底目录 <WORKSPACE_ROOT>/dsh-web-instance（**只**用于单独装配/诊断）。
+        # 生产路径**总被改写成 `<attempt>/dsh-home`**（与 attempt 共用同一 home；S7c 的并列目录
+        # `dsh-web-home` 已退场，理由见 REV-14 §9 + `host/web_instance_ctl.py` docstring）
         home: ""
+        # 实例进程的 cwd。空 ⇒ "未归属"兜底 `<repo>`（**只**用于单独装配/诊断）；
+        # 生产路径**总被改写成 `<attempt>/work`** —— dsh 的会话存储按 **cwd 编码的目录**分组，
+        # cwd 停在仓根就永远只看到"仓根这个 workspace"的会话（D3 落不了地，真机实测 2026-10-29）。
+        workdir: ""
         host: "127.0.0.1"      # 只接受 loopback（解析期拒绝 0.0.0.0）
         preferred_port: 0      # 0=OS 随机；>0 先 bind 试探，占用则**起进程前**回落（不重试）
         start_timeout_s: 30

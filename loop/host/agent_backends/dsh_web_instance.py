@@ -21,9 +21,19 @@
 `dsh web: http://127.0.0.1:<实际端口>/?token=<43 chars>`；匿名 `GET /` ⇒ 401；
 `?token=` ⇒ 303 + `dsh-auth-…` cookie；带 cookie `GET /` ⇒ 200 且**无** XFO/CSP。
 
-**不声称**：不声称 WebSocket/Upgrade 可透传（反代侧 405，REV-16 §9-2）；
-不声称"人在 GUI 里看得到 attempt 会话"——那还取决于 attempt `DSH_HOME` 是否与 Web 实例共用
-（REV-14 D3，属 attempt 布局 owner）；本模块只把 `home` 作为**显式配置**传入，不擅自改布局。
+**home / cwd 归属（S8b 收口）**：实例 home 必须等于该 attempt 的 `dsh-home`（REV-14 §3-D3 / §9.3），
+**进程 cwd 必须等于该 attempt 的 `work`**（`workdir`）——dsh 按 **cwd 编码的目录**分组会话，
+cwd 停在仓根就只列"仓根这个 workspace"的会话（真机实测 2026-10-29：画面恒 `No sessions yet`）。
+两者都由接线层 `web_instance_ctl`（`home_for_attempt` / `workdir_for_attempt`）从
+`dsh_assets.AttemptLayout` 显式传入；本模块**只接显式配置**，不自己拼路径、不擅自改布局。
+SETTINGS 里 `home`/`workdir` 留空时的回落（`dsh-web-instance` / 仓根）只是"未归属"兜底
+（单独装配/诊断用），生产路径**总会被**接线层改写成 `<attempt>/dsh-home` 与 `<attempt>/work`。
+**实测结论（2026-10-29，0 token）**：cwd 修好后，直连实例侧栏自动出现 workspace `work` 与
+本次 0-token boot 的会话，`session-<uuid>` 在该列表行 DOM 内；无需人工选 workspace。
+
+**不声称**：不声称 WebSocket/Upgrade 可透传（反代侧 405，REV-16 §9-2）；不声称 Web 是执行通道。
+`dsh --profile web` 会在 home 里自生成 `.credentials.yaml`（会话签名 secret）；它在共用 home 里
+被判 `dsh_generated` 放行（判据 `dsh_assets.home_provenance`，REV-14 §9），本模块不参与那个判定。
 """
 
 from __future__ import annotations
@@ -50,7 +60,7 @@ from host import paths as P
 LOG = logging.getLogger(__name__)
 
 #: `loop.agent_runtime.dsh.web` 允许字段（多一个就拒绝：不悄悄接受未实现开关）
-WEB_CONFIG_KEYS = frozenset({"enabled", "home", "host", "preferred_port",
+WEB_CONFIG_KEYS = frozenset({"enabled", "home", "workdir", "host", "preferred_port",
                              "start_timeout_s", "stop_grace_s"})
 SETTINGS_FILE = P.LOOP_DIR / "SETTINGS.yaml"
 
@@ -105,6 +115,11 @@ class WebInstanceConfig:
     bin: Path
     version: str
     home: Path
+    #: 实例进程的 cwd（S8b）；**必须是该 attempt 的 `work` 目录**（由接线层从 `AttemptLayout` 取）。
+    #: 为什么：dsh 的会话存储按 **cwd 编码的目录** 分组（真机实测目录名形如
+    #: `--home-…-attempt-work--`）⇒ 进程 cwd 若不是该 attempt 的 `work`，
+    #: Web 列的就是"另一个 workspace"的会话，人在 GUI 里看不到本 attempt 的会话（D3 落不了地）。
+    workdir: Path | None = None
     host: str = "127.0.0.1"
     preferred_port: int = 0
     start_timeout_s: float = 30.0
@@ -118,6 +133,10 @@ class WebInstanceConfig:
             if not Path(path).is_file():
                 raise WebConfigError("missing_binary", f"{label} 不存在：{path}")
         self.validate_values()
+        # cwd 必须真的存在：目录布局的创建属 `dsh_assets.AttemptLayout`（本模块不擅自造 attempt 目录）
+        if self.workdir is not None and not Path(self.workdir).is_dir():
+            raise WebConfigError("missing_workdir",
+                                 f"workdir 不是已存在目录：{self.workdir}（应由 AttemptLayout 物化）")
 
     def validate_values(self) -> None:
         """**值的形状**（与 enabled / 文件是否存在无关）：host 必须 loopback、端口/超时合法。
@@ -164,11 +183,17 @@ def config_from_settings(document: dict[str, Any] | None = None, *,
     if unknown:
         raise WebConfigError("unknown_keys", f"agent_runtime.dsh.web 含未知字段：{sorted(unknown)}")
     home_raw = raw.get("home")
-    home = Path(str(home_raw)) if home_raw else (P.WORKSPACE_ROOT / "dsh-web-home")
+    # 空 ⇒ "未归属"兜底目录：生产路径由 `web_instance_ctl.ensure` 改写成 `<attempt>/dsh-home`
+    # （S8b 收口后**没有**并列的 `dsh-web-home` 了，这里也不再沿用那个名字）。
+    home = Path(str(home_raw)) if home_raw else (P.WORKSPACE_ROOT / "dsh-web-instance")
+    # 空 ⇒ "未归属"兜底 cwd（单独装配/诊断用）；生产路径由 `web_instance_ctl.ensure`
+    # 改写成 `<attempt>/work`（会话按 cwd 分组，见 `WebInstanceConfig.workdir`）
+    workdir_raw = raw.get("workdir")
+    workdir = Path(str(workdir_raw)) if workdir_raw else Path(P.TOOL_ROOT)
     config = WebInstanceConfig(
         enabled=bool(raw.get("enabled", False)),
         node=Path(str(base.node)), bin=Path(str(base.bin)), version=str(base.version),
-        home=home,
+        home=home, workdir=workdir,
         host=str(raw.get("host") or "127.0.0.1"),
         preferred_port=int(raw.get("preferred_port") or 0),
         start_timeout_s=float(raw.get("start_timeout_s") or 30.0),
@@ -321,12 +346,13 @@ class WebInstance:
         self.config.home.mkdir(parents=True, exist_ok=True)
         self.port_requested, self.port_fallback = resolve_port(self.config.preferred_port)
         argv = build_argv(self.config, self.port_requested)
-        LOG.info("dsh web instance start: host=%s port_requested=%s fallback=%s home=%s",
-                 self.config.host, self.port_requested, self.port_fallback, self.config.home)
+        LOG.info("dsh web instance start: host=%s port_requested=%s fallback=%s home=%s cwd=%s",
+                 self.config.host, self.port_requested, self.port_fallback, self.config.home,
+                 self.config.workdir)
         begun = time.monotonic()
         try:
             self._proc = subprocess.Popen(  # noqa: S603 - argv 数组，无 shell
-                argv, cwd=str(P.TOOL_ROOT), env=build_env(self.config),
+                argv, cwd=str(self.config.workdir or P.TOOL_ROOT), env=build_env(self.config),
                 stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                 text=True, bufsize=1, start_new_session=True)
         except OSError as exc:

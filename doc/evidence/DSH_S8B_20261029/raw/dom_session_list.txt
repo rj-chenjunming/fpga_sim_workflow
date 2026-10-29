@@ -1,0 +1,49 @@
+### 顶层反代 body.innerText
+New Session
+Plugins
+Automation tasks
+Workspaces
+No sessions yet
+More
+Reconnecting...
+Into the Unknown
+Preview
+Choose workspace
+Standard mode
+Choose a workspace to start
+
+### iframe body.innerText
+New Session
+Plugins
+Automation tasks
+Workspaces
+No sessions yet
+More
+Reconnecting...
+Into the Unknown
+Preview
+Choose workspace
+Standard mode
+Choose a workspace to start
+
+### 直连实例 body.innerText
+New Session
+Plugins
+Automation tasks
+Workspaces
+work
+New Session
+只回复 OK
+now
+More
+Into the Unknown
+Preview
+work
+Standard mode
+Describe what you want to build, / commands, @ files or sessions
+Workspace Write
+Select model
+Preview Notice
+DeepSeek Harness 0.2 is still in preview, and many areas need continued improvement and refinement. We welcome feedback and suggestions from all developers and users. The new desktop app now targets a broad range of users, while developer-related advanced features can be enabled in the settings. DeepSeek Harness’s product features and plugin APIs are expected to continue rapid iteration and evolution, and will gradually stabilize over time.
+We look forward to exploring the limits of intelligence together with users and developers around the world, building on open-source, reusable, and composable infrastructure. We welcome everyone to bring their ideas to life with DeepSeek Harness and participate in the community to enrich the plugin ecosystem.
+Continue

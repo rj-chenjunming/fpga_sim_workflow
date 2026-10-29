@@ -167,10 +167,15 @@ def _doc(**web) -> dict:
     return {"loop": {"agent_runtime": {"dsh": {"version": "0.2.1-rc.2", "web": web}}}}
 
 
-def test_config_defaults_disabled_and_home_derived_from_workspace_root():
+def test_config_defaults_disabled_and_home_has_unnamed_fallback():
+    """文档缺 `enabled` ⇒ 默认关（fail-closed）；缺 `home` ⇒ "未归属"兜底目录。
+
+    S8b 收口后**没有**并列的 `dsh-web-home` 了（实例 home 与 attempt `dsh-home` 共用，
+    由 `web_instance_ctl.home_for_attempt` 决定）；这里的兜底只在单独装配/诊断时用。
+    """
     config = WI.config_from_settings(_doc(), base=BASE)
     assert config.enabled is False
-    assert config.home == Path(__import__("host.paths", fromlist=["paths"]).WORKSPACE_ROOT) / "dsh-web-home"
+    assert config.home == Path(__import__("host.paths", fromlist=["paths"]).WORKSPACE_ROOT) / "dsh-web-instance"
     assert (config.node, config.bin, config.version) == (BASE.node, BASE.bin, BASE.version)
 
 
@@ -402,3 +407,29 @@ def test_stop_can_remove_metadata(tmp_path):
     assert (run_dir / "agent_instance.json").is_file()
     instance.stop(remove_metadata=run_dir)
     assert not (run_dir / "agent_instance.json").exists()
+
+
+def test_start_requires_an_existing_workdir(tmp_path: Path) -> None:
+    """S8b：cwd 必须已存在（attempt 目录布局的物化归 `dsh_assets.AttemptLayout`，本模块不擅自造）。"""
+    stub = _stub(tmp_path)
+    config = _config(tmp_path, stub, workdir=tmp_path / "no-such-attempt" / "work")
+    instance = WI.WebInstance(config)
+    with pytest.raises(WI.WebConfigError) as info:
+        instance.start()
+    assert info.value.reason == "missing_workdir"
+    assert instance.is_running() is False
+
+
+def test_start_uses_the_configured_workdir_as_cwd(tmp_path: Path) -> None:
+    """S8b：真实 spawn 的 cwd 就是 `workdir`（会话按 cwd 分组 ⇒ 这是 D3 的前提）。"""
+    stub = _stub(tmp_path)
+    workdir = tmp_path / "attempt" / "work"
+    workdir.mkdir(parents=True)
+    instance = WI.WebInstance(_config(tmp_path, stub, workdir=workdir))
+    try:
+        instance.start()
+        assert instance.config.workdir == workdir
+        assert instance.is_running() is True
+    finally:
+        instance.stop()
+    assert instance.is_running() is False

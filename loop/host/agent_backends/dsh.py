@@ -16,6 +16,13 @@
 attempt 目录（`dsh_assets` 负责物化，本模块只读用）：bwrap 包裹把宿主 home 遮蔽，
 插件与 patch 必须落在 attempt 目录内，侧信道 `DSH_SELFCHECK_DIR` 也在这里。
 
+**随 attempt 自动起 Web 实例**（S8b 收口，REV-14 §3-D3 / §9.3；裁决 B3）：`prepare_attempt`
+在 `mode=real` 且 `SETTINGS.dsh.web.enabled=true` 时调 `web_instance_ctl.ensure(...)`，
+实例 home **就是**该 attempt 的 `dsh-home`（人在 GUI 里因此能看到这次 attempt 的会话）。
+三条纪律：① 起失败**绝不阻断** attempt（Web 只是观测面）——记录里落 `web={state,reason,embed}`；
+② 落账由 `ensure` 按当前 `(node, attempt)` 重写 `agent_instance.json`；③ attempt 结束**不 stop**
+（人还要看）。
+
 **attempt 隔离工作区**（S5-C2a，REV-13 §5.4）：`<run>/agent_workspaces/<node>/attempt-00000N/`
 下 `{work, dsh-home, candidate, input}`；`cwd`/`home` **只由 Host 传入**（不许从任务文本或
 客户端 hint 拼），`input/` 只放白名单材料（拷入前算 md5 进 attempt 记录）。`candidate/` 本片
@@ -26,9 +33,10 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+import logging
 import os
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -36,13 +44,15 @@ import yaml
 
 from host import model_provider as MP
 from host import paths as P
-from . import BackendConfigurationError, BackendUnavailable
+from . import BackendConfigurationError, BackendUnavailable, current_run_mode
 from . import dsh_allowlist as AL
 from . import dsh_assets as A
 from . import dsh_process as DP
 from . import dsh_protocol as DPR
 from . import dsh_selfcheck as SC
 from .base import CONTRACT_VERSION, BackendInfo, BackendRequest, ExecutionUnknown
+
+LOG = logging.getLogger(__name__)
 
 #: 配置允许字段（多一个就拒绝：避免"悄悄接受未实现开关"）
 CONFIG_KEYS = frozenset({"enabled", "version", "node", "bin", "bin_sha256", "profile",
@@ -407,6 +417,10 @@ class AttemptWorkspace:
     root: Path
     layout: A.AttemptLayout
     materials: tuple[dict[str, Any], ...] = ()
+    #: S8b：随 attempt 起的 Web 实例事实（**不含 token**）。
+    #: `{state: ready|unavailable|disabled, reason, embed: iframe|new_tab_only, node, attempt, ...}`。
+    #: 起不来只是"不可内嵌"，attempt 照常跑（REV-14 §9.3 / 裁决 B3）。
+    web: dict[str, Any] = field(default_factory=dict)
 
     def execute_kwargs(self) -> dict[str, Any]:
         """传给 `DshBackend.execute` 的关键字（cwd/home 来自 Host，不来自任务文本）。"""
@@ -426,7 +440,12 @@ class AttemptWorkspace:
         return {"attempt_key": self.attempt_key, "root": rel(self.root),
                 "work": rel(self.layout.work), "home": rel(self.layout.home),
                 "candidate": rel(self.layout.candidate), "input": rel(self.layout.input_dir),
-                "materials": list(self.materials)}
+                "materials": list(self.materials),
+                # S8b：随 attempt 起的 Web 实例（起不来 ⇒ 不可内嵌 + 原因；不含 token）
+                "web": dict(self.web),
+                # REV-14 §9.2：准入记录里的 home 来源判定（`[{name, source, basis}]`，
+                # **零回显**：只有文件名/来源枚举/不含值的描述）。缺失 = 未判定（不等于通过）。
+                "home_provenance": A.home_provenance(self.layout.home).record()}
 
 
 def stage_inputs(layout: A.AttemptLayout, run_dir: Path | str, *,
@@ -662,8 +681,63 @@ class DshBackend:
             # 外部只读源件（N6 目标用例源件）：**逐个显式声明**，不整目录、不跟随链接
             staged.extend(A.stage_sources(layout, tuple(sources)))
         key = attempt_key or "%s/%s/%d" % (Path(run_dir).name, node, int(sequence))
+        # **DS-09 必须先于起资源**（独立复核 P1；AGENTS §2「拒绝发生在提交前」+ REV-14 §9.3）：
+        # 起 Web 实例会让一个 dsh 进程**读这个 home**，所以 home 里若已有该拒的宿主件，
+        # 必须在起进程**之前**拒（否则"先读了再拒"，隔离意图已破）。判据只有一处
+        # （`dsh_assets.home_problems`，本模块不重算）。
+        # 顺序效果：首次 attempt home 为空 ⇒ 无问题 ⇒ 起实例 ⇒ dsh 自生成 `.credentials.yaml`
+        # ⇒ 之后 `materialize`/`_preflight` 判 `dsh_generated` **放行**（共用 home 的落地前提）；
+        # 预先复制了宿主 `settings.yaml`/宿主凭据 ⇒ **起进程前**就显式失败。
+        problems = A.home_problems(layout.home)
+        if problems:
+            raise A.AssetError("DS-09 attempt home 不合规（起实例之前就拒）：%s"
+                               % "；".join(problems))
+        # S8b（D3 收口 / 裁决 B3）：随 attempt 起本地 Web 实例。
+        web = self._web_attempt(run_dir, node, int(sequence))
         return AttemptWorkspace(attempt_key=key, root=root, layout=layout,
-                                materials=tuple(staged))
+                                materials=tuple(staged), web=web)
+
+    def _web_attempt(self, run_dir: Path | str, node: str, attempt: int) -> dict[str, Any]:
+        """随 attempt 自动起本地 Web 实例（S8b 收口，REV-14 §3-D3 / §9.3；裁决 B3）。
+
+        准入判据只有两条：`run_mode == "real"` **且** `SETTINGS.dsh.web.enabled=true`
+        （后者由 `web_instance_ctl.ensure` 自己判并抛 `web_disabled`：本模块不复制配置判据）。
+
+        **失败绝不阻断 attempt**（Web 只是"人看/人说"的观测面，不是执行通道）：
+        `WebCtlError` ⇒ 记录 `reason` 枚举；其它异常 ⇒ 记 `web_start_failed` + 异常**类名**
+        （异常消息可能带端点/凭据片段，**不进记录、不回显**）。返回的事实**不含 token**
+        （token 只进受管元数据 `agent_instance.json`）。
+
+        **已知边界（如实登记）**：实例登记表按 `(run, node)` 建键，换 node 不释放先前节点
+        ⇒ 一次 real run 走 N 个节点会同时留 N 个 loopback 实例（进程数随节点数增长）。
+        这是裁决 B3「attempt 结束不 stop（人还要看）」的预期后果；收干净靠
+        `web_instance_ctl.stop_all()` / 逐 `(run, node)` 的 `stop()`。
+        """
+        if current_run_mode() != "real":
+            return {"state": "disabled", "reason": "run_mode_not_real",
+                    "embed": "new_tab_only", "node": node, "attempt": int(attempt)}
+        # 延迟 import：`web_instance_ctl` 反向 import 本模块（模块级 import 会成环）
+        from host import web_instance_ctl as WC
+
+        try:
+            facts = WC.ensure(run_dir, node, int(attempt))
+        except WC.WebCtlError as exc:
+            state = "disabled" if exc.reason == "web_disabled" else "unavailable"
+            LOG.warning("dsh web instance not available: node=%s attempt=%s reason=%s",
+                        node, attempt, exc.reason)
+            return {"state": state, "reason": exc.reason, "embed": "new_tab_only",
+                    "node": node, "attempt": int(attempt)}
+        except Exception as exc:                 # noqa: BLE001 - 观测面失败一律不阻断 attempt
+            LOG.warning("dsh web instance start failed: node=%s attempt=%s error=%s",
+                        node, attempt, type(exc).__name__)
+            return {"state": "unavailable", "reason": "web_start_failed",
+                    "detail": type(exc).__name__, "embed": "new_tab_only",
+                    "node": node, "attempt": int(attempt)}
+        # 只留可审计、无秘密的字段（token/完整 home 路径不进 attempt 记录）
+        return {"state": "ready", "reason": None, "embed": "iframe",
+                "node": node, "attempt": int(attempt),
+                "host": facts.get("host"), "port": facts.get("port"),
+                "reused": bool(facts.get("reused"))}
 
     def _provider(self):
         """本次 attempt 的 provider 解析结果（**唯一来源** `host/model_provider`）。"""

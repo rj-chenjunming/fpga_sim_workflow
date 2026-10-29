@@ -1,0 +1,89 @@
+{
+ "encoding_forward_check": true,
+ "boot": {
+  "api_key_injected": false,
+  "outcome_status": "raised",
+  "outcome_reason": "ProcessFailed",
+  "outcome_message": "attempt RUN-20261029-S8B/N6/1 dsh 退出码 1：dsh: MISSING_CREDENTIAL: llm-deepseek: no API key for provider route \"deepseek-official\"; store DEEPSEEK_API_KEY through the credentials service (the web Models page writes it), or export DEEPSEEK_API_KEY in the launching environment",
+  "elapsed_s": 2.691
+ },
+ "session_id": "c5e16802-0f2f-49fe-a5bf-1c635f50de48",
+ "session_cwd": "/home/work/chenjunming/change-impact-loop/loop/.logs/s8b/run/RUN-20261029-S8B/agent_workspaces/N6/attempt-000001/work",
+ "attempt_work": "/home/work/chenjunming/change-impact-loop/loop/.logs/s8b/run/RUN-20261029-S8B/agent_workspaces/N6/attempt-000001/work",
+ "cwd_equal": true,
+ "encoding_equal": true,
+ "session_log_bytes": 13347,
+ "instance": {
+  "node": "N6",
+  "attempt": 1,
+  "host": "127.0.0.1",
+  "port": 46399,
+  "reused": false,
+  "port_requested": 0,
+  "port_fallback": false,
+  "startup_s": 3.355,
+  "pid": 23,
+  "home": "/home/work/chenjunming/change-impact-loop/loop/.logs/s8b/run/RUN-20261029-S8B/agent_workspaces/N6/attempt-000001/dsh-home",
+  "workdir": "/home/work/chenjunming/change-impact-loop/loop/.logs/s8b/run/RUN-20261029-S8B/agent_workspaces/N6/attempt-000001/work"
+ },
+ "home_ok": true,
+ "workdir_ok": true,
+ "ds09_problems": [],
+ "ds09_record": [
+  {
+   "name": ".credentials.yaml",
+   "source": "dsh_generated",
+   "basis": "键集合符合 dsh 自生成登记：records.client-connection/browser-session"
+  }
+ ],
+ "startup_s": 3.468,
+ "availability": {
+  "available": true,
+  "state": "ready",
+  "reason": null,
+  "url": "/instance/RUN-20261029-S8B/N6/1/",
+  "embed": "iframe",
+  "authority": "projection",
+  "stream": "http_only",
+  "attempt": 1
+ },
+ "direct_row_contains_uuid": true,
+ "picker": {
+  "inputs": null,
+  "layers": null
+ },
+ "proxy_sse_status": [
+  [
+   "http://127.0.0.1:8099/instance/RUN-20261029-S8B/N6/1/plugins/events",
+   200,
+   "text/event-stream"
+  ],
+  [
+   "http://127.0.0.1:8099/instance/RUN-20261029-S8B/N6/1/plugins/events",
+   200,
+   "text/event-stream"
+  ]
+ ],
+ "proxy_mux_console": [
+  "[error] WebSocket connection to 'ws://127.0.0.1:8099/instance/RUN-20261029-S8B/N6/1/api/remote.mux' failed: Error during WebSocket handshake: Unexpected response code: 405",
+  "[error] WebSocket connection to 'ws://127.0.0.1:8099/instance/RUN-20261029-S8B/N6/1/api/remote.mux' failed: Error during WebSocket handshake: Unexpected response code: 405"
+ ],
+ "top_session_visible": false,
+ "iframe_session_visible": false,
+ "direct_session_visible": true,
+ "server_listed": false,
+ "verdict": "blocked_by_missing_live_channel",
+ "proxy_verdict": "blocked_by_missing_live_channel",
+ "direct_verdict": "achieved",
+ "mux_405": true,
+ "no_sessions_marker": true,
+ "choose_workspace_marker": true,
+ "fail_web": {
+  "state": "unavailable",
+  "reason": "start_timeout",
+  "embed": "new_tab_only",
+  "node": "N6",
+  "attempt": 1
+ },
+ "fail_ok": true
+}

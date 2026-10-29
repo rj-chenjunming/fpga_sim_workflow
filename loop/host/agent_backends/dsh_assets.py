@@ -12,9 +12,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
+
+import yaml
 
 #: 仓内插件源码目录（本模块唯一引用点；调用方只给文件名）
 PLUGIN_SOURCE_DIR = Path(__file__).resolve().with_name("dsh_plugin")
@@ -27,8 +30,43 @@ SELFCHECK_NONCE_ENV = "DSH_SELFCHECK_NONCE"
 #: 本次 attempt 标识：报告里回显，Host 做身份 join（同一次 attempt 的事实）
 ATTEMPT_KEY_ENV = "DSH_ATTEMPT_KEY"
 
-#: 宿主侧凭据/设置件：**不得**出现在 attempt home（DS-09；B3 禁止复制宿主 settings）
+#: 宿主侧凭据/设置件：**不得**出现在 attempt home（DS-09；B3 禁止复制宿主 settings）。
+#: **语义不改**（REV-14 §4-B3 / §9.1 不变量 1）：三个名字仍**全部**列在这里；S8b 没有把任何名字
+#: 移出去，只新增"逐条判来源"的判据（`home_provenance`，见 REV-14 §9）。
 FORBIDDEN_HOME_ENTRIES = ("settings.yaml", ".credentials.yaml", ".credentials")
+
+#: DS-09 来源四档（REV-14 §9.1）。**只有 `dsh_generated` 是放行档**，其余三档一律拒绝。
+HOME_SOURCE_HOST_SETTINGS_COPY = "host_settings_copy"
+HOME_SOURCE_HOST_CREDENTIAL_VALUE = "host_credential_value"
+HOME_SOURCE_DSH_GENERATED = "dsh_generated"
+HOME_SOURCE_UNKNOWN = "unknown"
+HOME_SOURCES = (HOME_SOURCE_HOST_SETTINGS_COPY, HOME_SOURCE_HOST_CREDENTIAL_VALUE,
+                HOME_SOURCE_DSH_GENERATED, HOME_SOURCE_UNKNOWN)
+
+#: `dsh` 自己为本次实例生成的 `.credentials.yaml` 的**键路径登记**（"形态"判据）。
+#: 真机实测（2026-10-29，`dsh` 0.2.1-rc.2，`loop/.logs/s7c/home{,2,3}/.credentials.yaml` 三份同形，
+#: 每份 161 B / 0600）：
+#: `version: 1` + `records.client-connection/browser-session.{kind: grant, payload.{version, secret}}`。
+#: **值**不入常量、不入证据（零回显）；只有键路径。换 dsh 版本多/少键 ⇒ 形态判定转 `unknown`
+#: 并**拒绝**（fail-closed），由 `tests/test_ds09_home_provenance.py` 的"常量漂移"用例钉住：
+#: 改常量而不重新录制实测形态 ⇒ 用例红。
+DSH_GENERATED_CREDENTIAL_KEYS = frozenset({
+    "version",
+    "records",
+    "records.client-connection/browser-session",
+    "records.client-connection/browser-session.kind",
+    "records.client-connection/browser-session.payload",
+    "records.client-connection/browser-session.payload.version",
+    "records.client-connection/browser-session.payload.secret",
+})
+#: 自生成形态里**必须存在**的键路径（缺任一 ⇒ 没有判据可用 ⇒ `unknown` ⇒ 拒绝）。
+DSH_GENERATED_CREDENTIAL_REQUIRED = frozenset({
+    "version",
+    "records.client-connection/browser-session.kind",
+    "records.client-connection/browser-session.payload.secret",
+})
+#: 放行档的 `basis` 文案里点名的记录路径（可审计"按哪条形态放行"）
+DSH_GENERATED_RECORD_PATH = "records.client-connection/browser-session"
 
 #: attempt 隔离工作区在 run 内的固定位置（REV-13 §5.4 / S5-C2a）。
 #: **不放进 `agent_calls/**`**：那是封存记录目录（`verify_attempt` 只认 request/result 两种文件名，
@@ -358,15 +396,201 @@ def _link_node_modules(layout: AttemptLayout, node_modules: Path) -> Path:
     return link
 
 
-def home_problems(home: Path | str) -> list[str]:
-    """DS-09：attempt home 不得含宿主 settings/凭据（缺失是正常的，存在才是问题）。"""
+@dataclass(frozen=True)
+class HomeEntry:
+    """attempt home 里**一个**禁止件条目的来源判定结论（`name`/`source`/`basis`）。
+
+    **零回显**（REV-14 §9.1 不变量 4）：本结构只承载文件名、来源枚举与"不含值"的描述，
+    **不含**凭据值或 secret 片段 ⇒ 可以安全进准入记录/日志/证据。
+    """
+
+    name: str
+    source: str
+    basis: str
+
+    @property
+    def allowed(self) -> bool:
+        """只有 `dsh_generated` 放行；其余（含 `unknown`）一律拒绝。"""
+        return self.source == HOME_SOURCE_DSH_GENERATED
+
+
+@dataclass(frozen=True)
+class HomeProvenance:
+    """DS-09 来源判定的**完整结论**（判据唯一实现；调用方只消费，不重算）。
+
+    对齐 REV-14 §9.2：准入记录新增 `home_provenance[]` = `record()` 的形状
+    `[{name, source, basis}]`；缺失 = 未判定（**不等于通过**）。
+    """
+
+    entries: tuple[HomeEntry, ...] = ()
+    problems: tuple[str, ...] = ()
+
+    @property
+    def ok(self) -> bool:
+        return not self.problems
+
+    def record(self) -> list[dict[str, str]]:
+        """准入记录投影（不含凭据值：每个字段都不是值本身）。"""
+        return [{"name": entry.name, "source": entry.source, "basis": entry.basis}
+                for entry in self.entries]
+
+
+def _read_entry_bytes(path: Path) -> bytes | None:
+    """读一个禁止件条目的字节；目录/断链/特殊文件/读失败 ⇒ `None`（由调用方判 `unknown`）。
+
+    符号链接**跟随读**：指向宿主凭据的链接读出来就会命中宿主凭据值 ⇒ 判 `host_credential_value`
+    拒绝（比"链接一律 unknown"更强，且不引入第二档判据）。
+    """
+    try:
+        if not path.is_file():
+            return None
+        return path.read_bytes()
+    except OSError:
+        return None
+
+
+def _flatten_key_paths(document: object, prefix: str = "",
+                       out: dict[str, object] | None = None) -> dict[str, object]:
+    """把 YAML 文档摊平成"键路径 → 值"（形态判据的唯一摊平实现）。
+
+    列表也摊平带下标：否则 `a: [secret1, secret2]` 这种形态能靠一个键名混过键集合判据。
+    """
+    result: dict[str, object] = {} if out is None else out
+
+    def walk(node: object, path: str) -> None:
+        if isinstance(node, dict):
+            for key, value in node.items():
+                name = "%s.%s" % (path, key) if path else str(key)
+                result[name] = value
+                walk(value, name)
+        elif isinstance(node, list):
+            for index, value in enumerate(node):
+                name = "%s[%d]" % (path, index)
+                result[name] = value
+                walk(value, name)
+
+    walk(document, prefix)
+    return result
+
+
+def _credential_hit(raw: bytes, secrets: tuple[str, ...]) -> int | None:
+    """内容里第一个命中的宿主凭据值序号（1-based）；空值不进比对集合。**只在内存比对**。"""
+    for index, value in enumerate(secrets, start=1):
+        if not isinstance(value, str) or not value:
+            continue
+        try:
+            needle = value.encode("utf-8")
+        except UnicodeError:                      # 不可编码的值不算判据（不猜）
+            continue
+        if needle in raw:
+            return index
+    return None
+
+
+def _classify_entry(name: str, path: Path, secrets: tuple[str, ...]) -> HomeEntry:
+    """单个禁止件条目的来源判定（DS-09 四档；顺序本身是契约，别重排）。"""
+    if name == "settings.yaml":
+        # 不变量 1：**无例外**。Host 侧不存在任何写入路径，dsh 也不生成该名 ⇒ 不看向容直接拒。
+        return HomeEntry(name=name, source=HOME_SOURCE_HOST_SETTINGS_COPY,
+                         basis="文件名命中 settings.yaml（Host 侧无写入路径，dsh 不生成该名）")
+    raw = _read_entry_bytes(path)
+    if raw is None:
+        return HomeEntry(name=name, source=HOME_SOURCE_UNKNOWN,
+                         basis="读不到内容（不是可读普通文件）")
+    hit = _credential_hit(raw, secrets)
+    if hit is not None:
+        # 不变量 2：凭据值**优先于形态**（形态再像自生成也照拒）。
+        return HomeEntry(name=name, source=HOME_SOURCE_HOST_CREDENTIAL_VALUE,
+                         basis="宿主凭据第 %d 条命中（值不回显）" % hit)
+    try:
+        document = yaml.safe_load(raw.decode("utf-8"))
+    except (UnicodeDecodeError, yaml.YAMLError):
+        return HomeEntry(name=name, source=HOME_SOURCE_UNKNOWN, basis="内容不是 UTF-8 YAML")
+    if not isinstance(document, dict):
+        return HomeEntry(name=name, source=HOME_SOURCE_UNKNOWN, basis="内容不是 mapping")
+    keys = frozenset(_flatten_key_paths(document))
+    extra = keys - DSH_GENERATED_CREDENTIAL_KEYS
+    if extra:
+        return HomeEntry(name=name, source=HOME_SOURCE_UNKNOWN,
+                         basis="键集合不在 dsh 自生成登记内（多出 %d 个键路径）" % len(extra))
+    missing = DSH_GENERATED_CREDENTIAL_REQUIRED - keys
+    if missing:
+        return HomeEntry(name=name, source=HOME_SOURCE_UNKNOWN,
+                         basis="缺 dsh 自生成登记的必需键（%d 个）" % len(missing))
+    return HomeEntry(name=name, source=HOME_SOURCE_DSH_GENERATED,
+                     basis="键集合符合 dsh 自生成登记：%s" % DSH_GENERATED_RECORD_PATH)
+
+
+def _entry_problem(entry: HomeEntry) -> str:
+    """拒绝档的可读原因（**零回显**：只有文件名 / source 枚举 / 不含值的描述）。"""
+    if entry.source == HOME_SOURCE_HOST_SETTINGS_COPY:
+        return ("attempt home 含宿主件 %s（source=host_settings_copy：Host 侧没有任何写入路径、"
+                "dsh 也不生成该名；B3 无例外）" % entry.name)
+    if entry.source == HOME_SOURCE_HOST_CREDENTIAL_VALUE:
+        return ("attempt home 含宿主件 %s（source=host_credential_value：%s；拒绝）"
+                % (entry.name, entry.basis))
+    return ("attempt home 含宿主件 %s（source=unknown：%s ⇒ fail-closed 拒绝）"
+            % (entry.name, entry.basis))
+
+
+def host_credential_values() -> tuple[str, ...]:
+    """Host 在**内存中**持有的宿主凭据值集合（DS-09 逐条子串比对用；不落盘、不打印、不回显）。
+
+    来源只有一处：`host/model_provider`（它已经是 provider/凭据的**唯一**解析实现）：解析出的
+    `_api_key` + 其 `api_key_env` 指向的进程 env 值；再补 `LOOP_LLM_API_KEY`（同一实现的
+    优先级链里它就排第一）。顺序稳定（provider 值在前）⇒ "第 N 条命中"可复算。
+    """
+    values: list[str] = []
+
+    def add(value: object) -> None:
+        if isinstance(value, str) and value and value not in values:
+            values.append(value)
+
+    try:
+        from host import model_provider as MP
+
+        config = MP.resolve()
+    except Exception:                            # 凭据层异常不影响"判定仍要 fail-closed"
+        config = None
+    if config is not None:
+        add(getattr(config, "_api_key", None))
+        name = getattr(config, "api_key_env", None)
+        if isinstance(name, str) and name:
+            add(os.environ.get(name))
+    add(os.environ.get("LOOP_LLM_API_KEY"))
+    return tuple(values)
+
+
+def home_provenance(home: Path | str, *,
+                    host_secrets: tuple[str, ...] | None = None) -> HomeProvenance:
+    """DS-09 来源判定（**唯一实现**，REV-14 §9；红线 8：调用方只消费结论，不重算）。
+
+    逐条判定 attempt home 里出现的每个 `FORBIDDEN_HOME_ENTRIES` 条目（缺失是正常的，出现才判）：
+    `host_settings_copy` / `host_credential_value` / `dsh_generated` / `unknown`，
+    只有 `dsh_generated` 放行；`unknown` 一律拒绝（fail-closed）。
+
+    `host_secrets` 缺省走 `host_credential_values()`（Host 内存里的凭据值集合）；
+    显式传入只用于用例/诊断，生产调用方不自己拼这份集合（避免第二套凭据来源，红线 8）。
+    """
     home = Path(home)
-    problems: list[str] = []
+    secrets = host_credential_values() if host_secrets is None else tuple(host_secrets)
+    entries: list[HomeEntry] = []
     for name in FORBIDDEN_HOME_ENTRIES:
         path = home / name
         if path.exists() or path.is_symlink():
-            problems.append("attempt home 含宿主件 %s（禁止复制宿主 settings/凭据）" % path)
-    return problems
+            entries.append(_classify_entry(name, path, secrets))
+    problems = tuple(_entry_problem(entry) for entry in entries if not entry.allowed)
+    return HomeProvenance(entries=tuple(entries), problems=problems)
+
+
+def home_problems(home: Path | str, *,
+                  host_secrets: tuple[str, ...] | None = None) -> list[str]:
+    """DS-09 的**兼容外壳**：只要拒绝原因（判据本身在 `home_provenance`，不在这里重算）。
+
+    既有调用方（`materialize`、`dsh_selfcheck.verify_home`）用的就是这个形状；需要
+    `{name, source, basis}` 准入记录的调用方读 `home_provenance(...).record()`。
+    """
+    return list(home_provenance(home, host_secrets=host_secrets).problems)
 
 
 def _insert_patch(entry_id: str, source: Path) -> str:

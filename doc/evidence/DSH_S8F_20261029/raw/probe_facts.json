@@ -1,0 +1,28 @@
+{
+  "run_id": "RUN-20261029-S8B",
+  "node": "N6",
+  "attempt": 1,
+  "instance": {
+    "host": "127.0.0.1",
+    "port": 38063
+  },
+  "availability": {
+    "available": true,
+    "state": "ready",
+    "reason": null,
+    "url": "/instance/RUN-20261029-S8B/N6/1/",
+    "embed": "iframe",
+    "authority": "projection",
+    "stream": "http_only",
+    "attempt": 1
+  },
+  "has_direct_url": true,
+  "direct_url_has_token": true,
+  "proxy_url_has_token": false,
+  "final_url_has_token": false,
+  "session_rows": 2,
+  "session_title_visible": true,
+  "session_block_absent": true,
+  "verdict": "achieved",
+  "body_text_head": "New Session\nPlugins\nAutomation tasks\nWorkspaces\nwork\nNew Session\n只回复 OK\n1h\nMore\nInto the Unknown\nPreview\nwork\nStandard mode\nDescribe what you want to build, / commands, @ files or sessions\nWorkspace Write\nSelect model\nPreview Notice\n\nDeepSeek Harness 0.2 is still in preview, and many areas need continued improvement and refinement. We welcome feedback and suggestions from all developers and users."
+}

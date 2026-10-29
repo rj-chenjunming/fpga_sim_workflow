@@ -367,6 +367,33 @@ def test_available_instance_embeds_same_origin_url(ui):
     assert api['proxy_reads'] >= 1
 
 
+def test_s8f_new_tab_prefers_direct_instance_url(ui):
+    """S8f（REV-16 §6.1）：服务端给了 `direct_url` ⇒「在新标签页打开」指向**直连实例**。
+
+    为什么不是反代 URL：反代只透传 HTTP，实时通道 `WS /api/remote.mux` 仍 405（§9-2）
+    ⇒ 新标签页里的反代页面同样看不到会话列表。直连实例才有原生 WebSocket。
+    """
+    direct = 'http://127.0.0.1:43581/?token=T0KEN-managed'
+    page, _ = setup(ui, inst=instance(direct_url=direct))
+    link = page.locator('#awEmbedNewTab')
+    assert link.get_attribute('href') == direct
+    title = link.get_attribute('title')
+    assert '直连' in title
+    # 如实披露：token 会短暂进地址栏、仅本机可用
+    assert 'token' in title
+    assert '本机' in title
+    # 内嵌仍然是同源反代 URL（不改内嵌语义）
+    assert page.locator('#awEmbedFrame').get_attribute('src').endswith('/instance/A/N3/2/')
+
+
+def test_s8f_new_tab_falls_back_to_proxy_url_without_direct(ui):
+    """旧服务端/旧记录没有 `direct_url` ⇒ 退回反代 URL（不因为缺新字段就不给链接）。"""
+    page, _ = setup(ui, inst=instance())
+    link = page.locator('#awEmbedNewTab')
+    assert link.get_attribute('href').endswith('/instance/A/N3/2/')
+    assert '反代' in link.get_attribute('title')
+
+
 def test_embedded_instance_discloses_websocket_stream_gap(ui):
     """S7c：内嵌成功 ≠ 完全可用 —— 必须**如实**说"实时流未接通"，不得静默半死。
 

@@ -860,7 +860,9 @@ def instance_availability_api(run_id: str, node: str,
     省略则由受管元数据决定并在响应 `attempt` 回显（多 attempt 不能钉死 1）。
     """
     root = _agent_root(run_id, node)
-    return instance_proxy.availability(root, run_id=run_id, node=node, attempt=attempt)
+    payload = instance_proxy.availability(root, run_id=run_id, node=node, attempt=attempt)
+    # S8f（REV-16 §6.1 第 4 条）：响应含 `direct_url`（承载受管 token）⇒ 不得进任何缓存层。
+    return JSONResponse(payload, headers={"cache-control": "no-store"})
 
 
 @app.get("/api/runs/{run_id}/agents/{node}/session-copy")

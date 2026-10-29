@@ -6055,3 +6055,70 @@ REV-16 §9-10 **实测可收口为"前缀剥离即可"**（spec 正文本轮不�
 - **冻结件只增不改**：两处更正件 + 新增三个证据档；原清单 `md5sum -c` 更正后仍全绿。
 - **数字**：全部从命令输出复制；`doc/STATUS.md` 仍是唯一数字源。
 - **失败显式**：无把崩溃/降级伪装成"在等人工"；DS-09 `unknown` 即拒；Web 起不来记 `unavailable`+reason。
+
+## 129 S8f 交付：`direct_url` 直连实例 —— D3 产品路径达成（2026-10-29）
+
+本轮入口：人裁决（2026-10-29 本窗口，**选项 B**）——「在新标签页打开」改为指向**直连实例**；
+契约 [REV-16 §6.1](spec/SPEC-REV-16-20261028.md) `direct_url` 条（**只增**，并显式声明它**不**推翻
+"反代面不返回 token"那条，只约束 §5.2/§5.4 的反代面）；证据档
+[`doc/evidence/DSH_S8F_20261029/`](evidence/DSH_S8F_20261029/README.md)（冻结 4 件，md5 目录外）。
+实现 + 真机验证同一人 ⇒ **不声称独立复核**。
+
+### 129.1 为什么做（补 S8b 的缺口）
+
+S8b 真机结论是「D3 机制达成、**产品内嵌路径**被 `remote.mux` WebSocket 405 挡住」（§9-2 本轮不做）。
+**现有「在新标签页打开」指向的是反代 URL**（`/instance/…`）⇒ 新标签页里同样没有 live channel ⇒
+会话列表仍空。改成**直连实例**（dsh 自带 `?token=` → 303 + cookie）后，WebSocket 原生可用 ⇒ 人真的看得见会话。
+
+### 129.2 变更
+
+| 文件 | 变更 | 条款 |
+|---|---|---|
+| `services/instance_proxy.py` | 新增 `direct_url(target)`（**唯一生成实现**：无 token / 非 loopback / 端口非法 ⇒ `None`，不猜）；`availability()` 两个分支都下发 `direct_url` | §6.1 第 1–3 条 |
+| `services/api.py` | 可用性端点改回 `JSONResponse(..., headers={"cache-control": "no-store"})`（token 不得进缓存） | §6.1 第 4 条 |
+| `loop/web/agent-window.js` | 新增 `preferredNewTab(meta)`：**优先 `direct_url`**、缺则退回反代 `url`；工具提示如实写"直连…地址栏会短暂出现 token，随后被 303 剥掉；仅本机可用" | §6.1 第 5/6 条 |
+| `tests/test_instance_proxy.py` | 新增 5 条（`s8f_*`）；**改写 2 条旧断言**（`availability_endpoint_ready` 原来钉"不返回 token"、`..._unavailable` 原缺新键） | 各条 TDD |
+| `tests/browser/test_s4_projection_ui.py` | 新增 2 条（优先 direct_url / 缺省退回反代 URL） | §6.1 |
+
+**旧断言的作废是显式的**：`test_availability_endpoint_ready` 原文 `assert SEKRET not in json.dumps(payload)` ——
+这条在裁决 B 下**必须**改。改为：token **只在** `direct_url` 里、反代 `url` 仍不带 token、
+其它端点（`session-copy`、反代响应头）仍零回显（`test_s8f_token_appears_only_in_direct_url_not_in_other_endpoints`）。
+
+### 129.3 真机验收（0 token，证据档 §1）
+
+| 判据 | 实测 |
+|---|---|
+| availability 下发 `direct_url` / 含 token | `true` / `true` |
+| 反代 `url` 不带 token（§5.4 不变） | `false` |
+| 打开后**最终地址栏**不含 token（dsh 303 剥掉） | `false` |
+| **会话列表出现** | `session_rows=2`、标题「只回复 OK」可见 |
+| `No sessions yet` 消失 | `true` |
+| **判定** | **`achieved`** |
+
+复放：`loop/.logs/s8f/probe_direct_url.py`（脚本随证据档 `raw/` 保留）；夹具 = S8b 的 attempt（会话 cwd == 该 attempt `work`）。
+**0 token 佐证**：不进入 execute、不注入 api_key，只起 `dsh --profile web` + Playwright。
+
+### 129.4 收口门（最终树，命令输出复制）
+
+| 门 | 结果 |
+|---|---|
+| 单测（可写数据根） | `3 failed, 1851 passed, 1 warning, 143 errors in 459.70s`；3 failed 全是既有 `env_layer`；143 errors = 浏览器缺 Chromium（141 既有 + 2 条新增浏览器用例） |
+| kb 自测 + env layer | `PASS=10` / `PASS=9` / `PASS=28`，`FAIL=0`；env layer `3 passed, 24 deselected in 10.43s`；**原 ENV_ROOT 零写入** |
+| 端到端（drill） | phase `1/2/3/4/4b/5` 全 `rc=0`，`=> ALL PASS` |
+| 文档门 | `65 passed in 3.02s`；全库扫描 `missing=0` |
+| 浏览器门（改界面，必跑） | `144 passed in 154.56s` |
+
+差量：§127 的 `1846 passed / 141 errors` → **`1851 passed / 143 errors`**（+5 单测、+2 浏览器用例）；
+`failed 3=3`、`warnings 1=1`，**零新增失败**。
+
+### 129.5 已裁决接受的风险（**不隐去**）
+
+- **token 会出现在前端 JSON 与 DOM 的 `href`**（选项 B 的代价）。可接受前提：**看板只 bind loopback、无远程暴露面**
+  （能读看板的人本就能操作本机实例）。若将来看板对外开放，**必须**改回"服务端 302 交换"（§128.3 的 A 方案）或随 WS 升级取消。
+- `direct_url` 是 `127.0.0.1:<port>` ⇒ **只在浏览器与服务同机**时可达；远程访问形态不可用（界面仍保留反代降级块）。
+- 首次导航 URL 带 token（随后 303 剥掉），可能进浏览器历史 / **dsh 自身访问日志**；反代 `TokenRedactFilter` 覆盖不到后者。
+
+### 129.6 未做 / 不声称
+
+- **不声称 iframe 内嵌可用**：内嵌仍是反代 URL，`remote.mux` 仍 **405**（§9-2 仍开）。
+- 不声称远程可用形态；不声称 token 无痕；不声称独立复核。未推送。

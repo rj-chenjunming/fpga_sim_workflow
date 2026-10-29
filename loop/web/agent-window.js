@@ -235,15 +235,25 @@ window.AgentWindow = (function () {
     setLine("awEmbedCopyNote", note || "");
     if ($("awEmbedFrame")) $("awEmbedFrame").hidden = true;
   }
-  /* 无可用 URL 时"新标签页打开"保持可见但不导航（§6.2 要求降级块给出该路径）。 */
-  function setNewTab(url) {
+  /* 无可用 URL 时"新标签页打开"保持可见但不导航（§6.2 要求降级块给出该路径）。
+     S8f（REV-16 §6.1）：优先用服务端下发的**直连实例** `direct_url` —— 反代 URL 在新标签页里
+     同样拿不到 WebSocket 实时通道（§9-2），只有直连实例才看得见会话列表并说话。
+     直连会把 token 短暂放进地址栏（随后 dsh 303 剥掉），因此提示里如实写明"仅本机可用"。 */
+  function preferredNewTab(meta) {
+    if (!meta || typeof meta !== "object") return { url: "", direct: false };
+    if (meta.direct_url) return { url: String(meta.direct_url), direct: true };
+    return { url: meta.url ? String(meta.url) : "", direct: false };
+  }
+  function setNewTab(url, direct) {
     instanceUrl = url || "";
     var link = $("awEmbedNewTab");
     if (!link) return;
     if (instanceUrl) {
       link.setAttribute("href", instanceUrl);
       link.removeAttribute("aria-disabled");
-      link.title = "在新标签页打开同源反代实例";
+      link.title = direct
+        ? "在新标签页打开直连实例（会话可实时更新；地址栏会短暂出现 token，随后被 303 剥掉；仅本机可用）"
+        : "在新标签页打开同源反代实例（实时流未接通，见 §9-2）";
     } else {
       link.setAttribute("href", "#");
       link.setAttribute("aria-disabled", "true");
@@ -309,7 +319,8 @@ window.AgentWindow = (function () {
     function stale() { return token !== undefined && token !== instanceToken; }
     if (!meta || typeof meta !== "object") { degradeEmbed("metadata_unavailable"); return; }
     if (meta.available === true && meta.state === "ready" && meta.url) {
-      setNewTab(String(meta.url));
+      var tab = preferredNewTab(meta);
+      setNewTab(tab.url, tab.direct);
       /* 先显示"正在确认"，探测通过才写"已内嵌"——避免失败时瞬闪成已嵌入（P2-5）。 */
       setLine("awEmbedState", "正在确认可内嵌性");
       return probeInstance(String(meta.url)).then(function (probe) {
@@ -327,7 +338,8 @@ window.AgentWindow = (function () {
       });
     }
     if (stale()) return;
-    setNewTab(meta.url ? String(meta.url) : "");
+    var fallbackTab = preferredNewTab(meta);
+    setNewTab(fallbackTab.url, fallbackTab.direct);
     setLine("awEmbedState", meta.embed === "new_tab_only" ? "仅新标签页" : "不可内嵌");
     setLine("awEmbedStream", "");
     var S = window.S4View;

@@ -248,6 +248,23 @@ class Rejected(Exception):
         self.detail = detail
 
 
+def direct_url(target: InstanceTarget) -> str | None:
+    """直连实例地址：`http://<loopback>:<port>/?token=<受管值>`（S8f / REV-16 §6.1）。
+
+    为什么需要它：同源反代只透传 HTTP，dsh 的实时通道 `WS /api/remote.mux` 仍是 **405**
+    （§9-2 未决）⇒ iframe（含新标签页里的反代 URL）会话列表取不到数据。**直连实例**时
+    WebSocket 原生可用，人才真的看得见该 attempt 的会话并说话。
+
+    返回 `None` 的三种情况（都**不猜**）：没有受管 token（匿名直连必然 401）、目标不是 loopback
+    （`load_target` 已保证，这里防御性复查）、端口非法。
+    """
+    if not target.token:
+        return None
+    if target.host not in LOOPBACK_HOSTS or not (1 <= int(target.port) <= 65535):
+        return None
+    return "%s/?token=%s" % (target.origin, quote(target.token, safe=""))
+
+
 class TargetUnavailable(Exception):
     """§5.5 不可用（R9–R13）：503 + reason，显式状态。"""
 
@@ -489,11 +506,16 @@ def availability(run_dir: Path | str, *, run_id: str, node: str,
     except TargetUnavailable as exc:
         return {"available": False, "state": "unavailable", "reason": exc.reason,
                 "url": None, "embed": "new_tab_only", "authority": "projection",
-                "stream": STREAM_HTTP_ONLY, "attempt": attempt}
+                "stream": STREAM_HTTP_ONLY, "attempt": attempt,
+                # S8f（§6.1 第 4 条）：不可用不凭空给直连地址
+                "direct_url": None}
     return {"available": True, "state": "ready", "reason": None,
             "url": instance_prefix(run_id, node, target.attempt), "embed": "iframe",
             "authority": "projection", "stream": STREAM_HTTP_ONLY,
-            "attempt": target.attempt}
+            "attempt": target.attempt,
+            # S8f（§6.1 第 5/6 条）：新标签页用直连实例（dsh 自带 `?token=` → 303 + cookie）。
+            # **只**在本端点下发；已裁决接受 "token 进前端 JSON/DOM"，前提是看板只 bind loopback。
+            "direct_url": direct_url(target)}
 
 
 def _resolve_session_log(run_dir: Path | str, ref: str) -> Path:

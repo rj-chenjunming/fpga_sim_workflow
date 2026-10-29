@@ -746,7 +746,13 @@ def test_unreachable_error_does_not_echo_token(client: TestClient, run_dir: Path
 
 
 def test_availability_endpoint_ready(client: TestClient, run_dir: Path, upstream: FakeUpstream) -> None:
-    """§6.1：可用时给出 url/embed；**不返回** token 与端口之外的宿主细节。"""
+    """§6.1（S8f 契约变化）：可用时给出**反代** `url`（内嵌用）与**直连** `direct_url`（新标签页用）。
+
+    **本条已按人裁决 B（2026-10-29）改写**：旧断言"可用性端点不返回 token"作废 ——
+    `direct_url` 现在**承载受管 token**（形状 `http://<loopback>:<port>/?token=<受管值>`），
+    且**只**在本端点出现。已裁决接受的风险与前提见 REV-16 §6.1 第 6 条
+    （看板只 bind loopback、无远程暴露面）。
+    """
     write_instance(run_dir, port=upstream.port, token=SEKRET)
     payload = client.get(f"/api/runs/{RUN_ID}/agents/{NODE}/instance").json()
     assert payload == {
@@ -754,8 +760,11 @@ def test_availability_endpoint_ready(client: TestClient, run_dir: Path, upstream
         "url": PREFIX, "embed": "iframe", "authority": "projection",
         # S7c 只增字段（§6.1）：反代只透传 HTTP，WebSocket 升级不通 ⇒ 界面如实说"实时流未接通"
         "stream": instance_proxy.STREAM_HTTP_ONLY, "attempt": 1,
+        # S8f 只增字段（§6.1）：直连实例（dsh 自带 `?token=` → 303 + cookie），新标签页用
+        "direct_url": f"http://127.0.0.1:{upstream.port}/?token={SEKRET}",
     }
-    assert SEKRET not in json.dumps(payload)
+    # 反代 URL 本身仍不得带 token（§5.4）
+    assert SEKRET not in payload["url"]
 
 
 def test_availability_endpoint_unavailable(client: TestClient, run_dir: Path) -> None:
@@ -765,6 +774,8 @@ def test_availability_endpoint_unavailable(client: TestClient, run_dir: Path) ->
         "available": False, "state": "unavailable", "reason": "target_missing",
         "url": None, "embed": "new_tab_only", "authority": "projection",
         "stream": instance_proxy.STREAM_HTTP_ONLY, "attempt": None,
+        # S8f 只增字段（§6.1）：不可用 ⇒ 不凭空给直连地址
+        "direct_url": None,
     }
 
 
@@ -1582,3 +1593,61 @@ def test_s8e_session_copy_never_passes_sdk_free_text_reason(
     dumped = json.dumps(payload, ensure_ascii=False)
     assert "/home/work" not in dumped, dumped
     assert "secret-proj" not in dumped, dumped
+
+
+# ================================================================ S8f：直连实例 direct_url（§6.1）
+
+def test_s8f_direct_url_is_absent_when_unavailable(client: TestClient, run_dir: Path) -> None:
+    """不可用 ⇒ `direct_url=null`（不得凭空给一个连不上的直连地址）。"""
+    payload = client.get(f"/api/runs/{RUN_ID}/agents/{NODE}/instance").json()
+    assert payload["available"] is False
+    assert payload["direct_url"] is None
+
+
+def test_s8f_direct_url_scoped_to_the_same_attempt(
+        client: TestClient, run_dir: Path, upstream: FakeUpstream) -> None:
+    """§6.1：归属不符 ⇒ `target_missing` 且 `direct_url=null`（不跨 attempt 借用实例）。"""
+    write_instance(run_dir, port=upstream.port, token=SEKRET, attempt=1)
+    payload = client.get(f"/api/runs/{RUN_ID}/agents/{NODE}/instance?attempt=2").json()
+    assert payload["available"] is False
+    assert payload["reason"] == "target_missing"
+    assert payload["direct_url"] is None
+    assert SEKRET not in json.dumps(payload)
+
+
+def test_s8f_direct_url_is_absent_without_managed_token(
+        client: TestClient, run_dir: Path, upstream: FakeUpstream) -> None:
+    """元数据没有受管 token ⇒ 不给 `direct_url`（匿名直连必然 401，给了只会骗人）。"""
+    write_instance(run_dir, port=upstream.port, token=None)
+    payload = client.get(f"/api/runs/{RUN_ID}/agents/{NODE}/instance").json()
+    assert payload["available"] is True
+    assert payload["direct_url"] is None
+
+
+def test_s8f_availability_response_is_not_cacheable(
+        client: TestClient, run_dir: Path, upstream: FakeUpstream) -> None:
+    """带 token 的响应必须 `Cache-Control: no-store`（不得进任何缓存层）。"""
+    write_instance(run_dir, port=upstream.port, token=SEKRET)
+    response = client.get(f"/api/runs/{RUN_ID}/agents/{NODE}/instance")
+    assert response.headers.get("cache-control") == "no-store"
+
+
+def test_s8f_token_appears_only_in_direct_url_not_in_other_endpoints(
+        client: TestClient, run_dir: Path, upstream: FakeUpstream) -> None:
+    """§6.1 不变量 1：token **只**在可用性端点的 `direct_url` 里；其余端点/反代都不许回显。"""
+    write_instance(run_dir, port=upstream.port, token=SEKRET, session_log="s.log")
+
+    # 1) 可用性端点：只在 direct_url 这一处
+    availability = client.get(f"/api/runs/{RUN_ID}/agents/{NODE}/instance").json()
+    assert availability["direct_url"].count(SEKRET) == 1
+    without_direct = {k: v for k, v in availability.items() if k != "direct_url"}
+    assert SEKRET not in json.dumps(without_direct)
+
+    # 2) 会话副本端点：不含 token
+    copy = client.get(f"/api/runs/{RUN_ID}/agents/{NODE}/session-copy")
+    assert SEKRET not in copy.text
+    assert SEKRET not in json.dumps(dict(copy.headers), ensure_ascii=False)
+
+    # 3) 反代本身：首跳注入 token 到**上游**，但不回到浏览器可见面
+    proxied = client.get(f"{PREFIX}", follow_redirects=False)
+    assert SEKRET not in json.dumps(dict(proxied.headers), ensure_ascii=False)

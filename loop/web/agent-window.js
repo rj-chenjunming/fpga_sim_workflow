@@ -244,6 +244,22 @@ window.AgentWindow = (function () {
     if (meta.direct_url) return { url: String(meta.direct_url), direct: true };
     return { url: meta.url ? String(meta.url) : "", direct: false };
   }
+  /* S8g：内嵌成功（画面可能是空会话列表，因 WS 405）时也要露出**直连实例**入口 ——
+     否则唯一能用的路被藏在降级块里、人点不到。只有 `direct_url` 才显示（没有就不给假入口）。 */
+  function setDirectLink(meta) {
+    var el = $("awEmbedDirect");
+    if (!el) return;
+    var tab = preferredNewTab(meta);
+    if (tab.direct && tab.url) {
+      el.setAttribute("href", tab.url);
+      el.hidden = false;
+      el.title = "打开直连实例（会话可实时更新；地址栏会短暂出现 token，随后被 303 剥掉；仅本机可用）";
+    } else {
+      el.setAttribute("href", "#");
+      el.hidden = true;
+      el.removeAttribute("title");
+    }
+  }
   function setNewTab(url, direct) {
     instanceUrl = url || "";
     var link = $("awEmbedNewTab");
@@ -265,6 +281,7 @@ window.AgentWindow = (function () {
     instanceKey = "";
     instanceUrl = "";
     setNewTab("");
+    setDirectLink(null);
     setLine("awEmbedState", "读取中");
     setLine("awEmbedStream", "");
     if ($("awEmbedFrame")) {
@@ -321,6 +338,7 @@ window.AgentWindow = (function () {
     if (meta.available === true && meta.state === "ready" && meta.url) {
       var tab = preferredNewTab(meta);
       setNewTab(tab.url, tab.direct);
+      setDirectLink(meta);
       /* 先显示"正在确认"，探测通过才写"已内嵌"——避免失败时瞬闪成已嵌入（P2-5）。 */
       setLine("awEmbedState", "正在确认可内嵌性");
       return probeInstance(String(meta.url)).then(function (probe) {
@@ -340,6 +358,7 @@ window.AgentWindow = (function () {
     if (stale()) return;
     var fallbackTab = preferredNewTab(meta);
     setNewTab(fallbackTab.url, fallbackTab.direct);
+    setDirectLink(meta);
     setLine("awEmbedState", meta.embed === "new_tab_only" ? "仅新标签页" : "不可内嵌");
     setLine("awEmbedStream", "");
     var S = window.S4View;

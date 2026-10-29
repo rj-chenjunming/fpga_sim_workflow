@@ -6122,3 +6122,39 @@ S8b 真机结论是「D3 机制达成、**产品内嵌路径**被 `remote.mux` W
 
 - **不声称 iframe 内嵌可用**：内嵌仍是反代 URL，`remote.mux` 仍 **405**（§9-2 仍开）。
 - 不声称远程可用形态；不声称 token 无痕；不声称独立复核。未推送。
+
+## 130 S8g 交付：内嵌成功时露出「直连实例」入口（2026-10-29，S8f 的可用性补丁）
+
+本轮入口：人裁决 B（S8f）之后的**实操验证**——按 S8f 落地后走真 UI 发现：
+`#awEmbedNewTab` 只存在于**降级块**（`#awEmbedFallback`）里，而反代 iframe 在"内嵌成功"分支是可见的
+（`state=ready`/`已内嵌`）⇒ **唯一能用的路（直连实例）在 UI 上点不到**：内嵌那半因 `WS /api/remote.mux` 405
+本来就是空会话列表（REV-16 §9-2），降级块又不显示。**这使 S8f 等于不可用**，故补此片。
+
+### 130.1 变更
+
+| 文件 | 变更 | 说明 |
+|---|---|---|
+| `loop/web/index.html` | 「内嵌实例」区新增常驻入口 `#awEmbedDirect`（「在新标签页打开直连实例 ↗」，默认 `hidden`） | 不再依赖降级块 |
+| `loop/web/agent-window.js` | 新增 `setDirectLink(meta)`：**仅当**服务端下发 `direct_url` 时显示并设置 `href`/提示；`resetEmbed()` 隐藏 | 没有 `direct_url` 就给"无假入口"；提示如实写 token 短暂进地址栏/仅本机 |
+| `tests/browser/test_s4_projection_ui.py` | +2 条：内嵌成功时入口可见且 `href == direct_url`、无 `direct_url` 时隐藏 | 各条 TDD |
+
+### 130.2 收口门（命令输出复制；**含一次假红，照实登记**）
+
+| 门 | 结果 |
+|---|---|
+| 单测（可写数据根） | `3 failed, 1851 passed, 1 warning, 145 errors in 460.08s`；145 errors = 浏览器缺 Chromium（141 既有 + S8f 2 + S8g 2） |
+| kb 自测 + env layer | `PASS=10` / `PASS=9` / `PASS=28`，`FAIL=0`；env_layer `3 passed`；**原 ENV_ROOT 零写入** |
+| 端到端（drill） | **首次失败**：`[driver] [FAIL] 起第 1 代之前 http://127.0.0.1:8099 已有服务在响应（重启不成立）`；**根因 = 我为试用效果起的演示看板占用了 8099**（不是代码回归）。停掉演示后**重跑 ⇒ `phase 1–5 + 4b` 全 `rc=0`、`=> ALL PASS`** |
+| 文档门 | `65 passed in 3.78s`；全库扫描**首跑 `missing=1`**（`loop/spikes/.accept_v1_state.json` —— e2e 运行期状态文件，本次 e2e 失败早退未生成），**归入运行时产物跳过**后 `missing=0` |
+| 浏览器门（改界面，必跑） | `146 passed in 196.11s`（144 + 2） |
+
+**两条照实登记的处置**：
+1. **假红**：E2E 的一次失败是演示看板占端口，**不是**回归；已停演示后重跑全绿。**教训**：演示/探针不得占用门的既定端口（8099）。
+2. **文档门分类补充**（不改任何源文件/文档路径的判定）：`loop/spikes/.accept_v1_state` 与 `.demo-ws` 归入
+   "运行期产物/派生数据根"跳过（前者由 `accept_v1_run.sh` 起跑前删、跑完写；后者是 `provision_dev_workspace.sh` 的副本）。
+
+### 130.3 未做 / 不声称
+
+- 不声称 iframe 内嵌会话可见：`remote.mux` WebSocket 仍 **405**（§9-2 仍开）。
+- 不声称远程浏览器可用：`direct_url` 仍是 `127.0.0.1:<port>`（远程形态需 S9a/S9b 或隧道，未做）。
+- 不声称独立复核。

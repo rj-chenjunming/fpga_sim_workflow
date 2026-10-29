@@ -386,6 +386,27 @@ def test_s8f_new_tab_prefers_direct_instance_url(ui):
     assert page.locator('#awEmbedFrame').get_attribute('src').endswith('/instance/A/N3/2/')
 
 
+def test_s8g_direct_entry_visible_when_embedded(ui):
+    """S8g：内嵌成功也要露出**直连实例**入口。
+
+    反代只透传 HTTP（`WS /api/remote.mux` 405，§9-2）⇒ 内嵌画面里的会话列表是空的；
+    唯一能用的路是直连实例。S8f 只把它放在降级块里 ⇒ 内嵌"成功"时人点不到，这里必须常驻可见。
+    """
+    direct = 'http://127.0.0.1:43581/?token=T0KEN-managed'
+    page, _ = setup(ui, inst=instance(direct_url=direct))
+    pw.expect(page.locator('#awEmbedFrame')).to_be_visible()
+    entry = page.locator('#awEmbedDirect')
+    pw.expect(entry).to_be_visible()
+    assert entry.get_attribute('href') == direct
+    assert 'token' in entry.get_attribute('title')
+
+
+def test_s8g_direct_entry_hidden_without_direct_url(ui):
+    """没有 `direct_url`（旧服务端/无受管 token）⇒ 入口隐藏，不给假链接。"""
+    page, _ = setup(ui, inst=instance())
+    pw.expect(page.locator('#awEmbedDirect')).to_be_hidden()
+
+
 def test_s8f_new_tab_falls_back_to_proxy_url_without_direct(ui):
     """旧服务端/旧记录没有 `direct_url` ⇒ 退回反代 URL（不因为缺新字段就不给链接）。"""
     page, _ = setup(ui, inst=instance())

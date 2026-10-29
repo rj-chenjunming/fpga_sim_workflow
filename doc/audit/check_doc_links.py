@@ -59,9 +59,15 @@ SKIP_PREFIXES = ["loop/state", "loop/.logs", "loop/.venv", "loop/.pytest_cache",
                  # 也可写成从 `loop/` 视角的 `loop/.dev-ws`（`AGENTS.md` §4 的命令正是后者）。
                  # 它是 gitignored 的运行时数据根、不是仓内文档 ⇒ 与上面的 `.dev-ws` 同类。
                  "loop/.dev-ws",
+                 # 演示数据根（S8f/S8g 试效果用；与 `.dev-ws` 同类：`provision_dev_workspace.sh`
+                 # 生成的运行时副本，内含环境文档拷贝，不是仓内文档）。
+                 ".demo-ws",
                  # 生成物目录：`__pycache__/` 下的 .pyc 由 Python 生成、不入库；只在历史审计报告
                  # 的命令誊写里出现（AUDIT-20261026-a-group.md §298），不构成文档断链。
                  # **只跳生成目录**，不放过任何源文件/文档路径。
+                 # e2e 运行期状态：`spikes/accept_v1_run.sh` 起跑前删、跑完写；不跑 e2e 时不存在。
+                 # 历史审计报告里誊写过该路径 ⇒ 属运行时产物，不是仓内文档。
+                 "loop/spikes/.accept_v1_state",
                  "__pycache__/",
                  # S0 真实环境验证的一次性派生副本（`host/s0.py` 的 work_env / rtl_source / 记录根）
                  ".s0-",
@@ -241,7 +247,7 @@ def scan(roots: Roots, docs_root: Path | None = None) -> Report:
         rel = md.relative_to(base).as_posix()
         # 派生数据根/环境副本（`loop/spikes/*.sh` 预置）内含环境文档副本，不是本仓文档。
         if rel.startswith((".git/", "loop/.venv/", "workspaces/",
-                           ".env-copy/", ".dev-ws", ".wsp", ".tmp-", ".s0-")):
+                           ".env-copy/", ".dev-ws", ".demo-ws", ".wsp", ".tmp-", ".s0-")):
             continue
         is_historical = any(rel.startswith(p) for p in HISTORICAL_FILES)
         try:

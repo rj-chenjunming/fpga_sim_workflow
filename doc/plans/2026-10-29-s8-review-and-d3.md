@@ -140,6 +140,22 @@
 **不合并口径**：loop 侧 steer/pause（`agent_controls` 人工指令）**不**并入本计数，仍由窗口「指令回执与生效」三列表呈现；
 两者若做"人参与总览"需另立判据（REV-18 §5 已登记）。
 
+## 8.3 S8l 切片（2026-10-29，人反馈：刷新后"人参与"不涨）
+
+**现象**：人 2026-10-29「刷新了，咋没涨？」。**根因不是刷新逻辑**，而是 `agent_instance.json` **从来没有**
+`session_log` 字段（写入方 S5 未落账）⇒ 真实 attempt 一律 `session_log_missing`，执行结果恒「不可用」；
+演示里我挂的是一份**快照副本**，人在实例里新说的话当然进不了那份副本。
+
+| 项 | 落点 | 验收 |
+|---|---|---|
+| 解析规则 | `dsh_sdk.session_dir_name`（cwd 编码唯一实现）+ `dsh_sdk.find_latest_session_log`（只认该 attempt cwd 目录；同目录取 mtime 最新、并列取名字最大；符号链接/非普通文件跳过） | 单测 8 条（`tests/test_session_log_discovery.py`） |
+| 兜底来源 | `services/instance_proxy.py::_discover_session_log`（路径取 `dsh_assets.AttemptLayout`，不另拼）+ `session_copy` 元数据缺失时用它；仍要求结果在 run_dir 内 | proxy 用例：元数据缺 + 活会话日志在盘 ⇒ `available=True`、`session_log_source="newest_mtime"`、`facts.human_messages=1` |
+| 字段只增 | 可用响应增 `session_log_source`（`"metadata"`/`"newest_mtime"`）；**不可用响应保持六键不变** | 元数据用例断言 `"metadata"`；不可用用例既有断言不变 |
+| 规格 | `doc/spec/SPEC-REV-19-20261029.md`（新增 `OBS-11`） | 实现与规格逐条对齐；REV-16 §5.2/§6.2 原文不改写 |
+
+**不声称**：不声称"最新会话"就是 agent 主会话（同一 cwd 多会话时取 mtime 最新，REV-19 §5 已登记未决）；
+不声称 S5 落账工作已完成（落账后本解析器只作兜底）。
+
 ## 9 验证门（每片收口各自跑；`AGENTS.md` §4 是权威；**Lead 独占、串行**）
 
 ```bash

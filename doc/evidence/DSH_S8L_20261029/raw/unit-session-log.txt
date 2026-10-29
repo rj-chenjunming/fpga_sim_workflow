@@ -1,0 +1,7 @@
+$ pytest -q tests/test_session_log_discovery.py
+........                                                                 [100%]
+8 passed in 0.62s
+
+$ pytest -q tests/test_instance_proxy.py -k session
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+8 passed, 66 deselected, 1 warning in 0.90s

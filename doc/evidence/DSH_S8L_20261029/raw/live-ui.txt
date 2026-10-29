@@ -1,0 +1,21 @@
+{
+  "run_id": "RUN-DEMO-S8F",
+  "node": "N6",
+  "base": "http://127.0.0.1:8199",
+  "state": "实例就绪",
+  "title": "实例就绪；实例页面用下方按钮打开",
+  "reason": "",
+  "stream": "实时事件流走 WebSocket，反代暂不支持升级（REV-16 §9-2）：页面可打开、可读快照，实时更新可能停；需要实时请用「打开真实用例（实例窗口）」。",
+  "facts": "执行结果（session_log_facts）：压缩成功 0 次 · 记录 0 条 · 错误 0 条 · 起止 0→0 · 剪枝 0 次 · 人参与 3 次",
+  "copy_note": "副本 534 B",
+  "direct_visible": true,
+  "direct_href": "http://127.0.0.1:42810/?token=<redacted>",
+  "direct_title": "打开真实用例的直连实例（会话可实时更新；地址栏会短暂出现 token，随后被 303 剥掉；仅本机可用）",
+  "iframe_count": 0,
+  "object_count": 0,
+  "raw_block_hidden": true,
+  "raw_block_visible_after_click": true,
+  "raw_body_head": "kind=session_log_facts · 服务端解析事实（非会话原文）\n{\n  \"availability\": \"ok\",\n  \"count\": 0,\n  \"records\": [],\n  \"errors\": [],\n  \"start_count\": 0,\n  \"end_count\": 0,\n  \"prune_count\": 0,\n  \"reason\": null,\n  \"path\": \"",
+  "page_errors": [],
+  "verdict": "no_embed_surface"
+}

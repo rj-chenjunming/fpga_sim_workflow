@@ -1,0 +1,74 @@
+# S8l 收口门记录（2026-10-29，Lead 实测；数字逐条从命令输出复制）
+
+## 1 本片用例
+
+```bash
+$ pytest -q tests/test_session_log_discovery.py
+8 passed in 0.62s
+
+$ pytest -q tests/test_instance_proxy.py -k session
+8 passed, 66 deselected, 1 warning in 0.90s
+```
+
+## 2 单测门（主树；provision → pytest → cleanup）
+
+```bash
+$ LOOP_WORKSPACE=<repo>/.dev-ws LOOP_LLM_MODE=standin pytest -q
+3 failed, 1894 passed, 1 warning, 148 errors in 459.01s
+```
+
+- `148 errors` = 本机无 Chromium 的浏览器用例（环境缺件）。
+- `3 failed` 归因（同一份 provisioned 数据根上单独跑，输出原文）：
+
+```bash
+$ pytest -q tests/test_archive_e2.py tests/test_projection_and_frozen.py
+E       AssertionError: guard rc=3
+E       FileNotFoundError: [Errno 2] No such file or directory: '/tmp/pytest-of-chenjunming/pytest-0/test_guard_archive_is_bounded_0/evidence/archive'
+FAILED tests/test_archive_e2.py::test_guard_compile_only_archives_evidence_readonly
+FAILED tests/test_archive_e2.py::test_guard_archive_is_bounded_and_excludes_guard_log
+FAILED tests/test_projection_and_frozen.py::test_frozen_witness_before_after_drill_run
+3 failed, 24 passed in 6.76s
+```
+
+⇒ 环境/数据根问题（旧格式互斥量 + 归档夹具缺件），与本片无关（S8h 基线与 S8k 收口同 3 条）。
+
+## 3 浏览器门（主树）
+
+```bash
+$ pytest -q tests/browser
+1 failed, 148 passed in 163.14s
+```
+
+- 失败项 = `tests/browser/test_run_sessions.py::test_refresh_failure_does_not_rebuild_gate_form_or_lose_draft`。
+  单独跑：
+
+```bash
+$ pytest -q tests/browser/test_run_sessions.py::test_refresh_failure_does_not_rebuild_gate_form_or_lose_draft
+1 passed in 1.59s
+
+$ pytest -q tests/browser/test_run_sessions.py
+26 passed in 26.41s
+```
+
+## 4 文档门
+
+```bash
+$ pytest -q tests/test_doc_links.py
+65 passed in 2.43s
+```
+
+## 5 端到端（drill）
+
+```bash
+$ bash spikes/accept_v1_run.sh
+phase 1 rc=0 / phase 2 rc=0 / phase 3 rc=0 / phase 4 rc=0 / phase 4b rc=0 / phase 5 rc=0
+=> ALL PASS
+```
+
+## 6 真机（端点原文，0 token）
+
+```bash
+$ curl -fsS "http://127.0.0.1:8199/api/runs/RUN-DEMO-S8F/agents/N6/session-copy?attempt=1"
+```
+见 `raw/live-api.txt`（`available=true`、`session_log_source="newest_mtime"`、`facts.human_messages=3`）；
+界面侧见 `raw/live-ui.txt`（`人参与 3 次`）。

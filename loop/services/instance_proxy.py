@@ -540,6 +540,33 @@ def _resolve_session_log(run_dir: Path | str, ref: str) -> Path:
     return resolved
 
 
+def _discover_session_log(run_dir: Path | str, *, node: str, attempt: int) -> Path | None:
+    """REV-19 §2：元数据未声明 `session_log`（S5 尚未落账）⇒ 在**该 attempt** 的 dsh-home 下解析最新会话日志。
+
+    为什么必须回到 attempt 布局：dsh 按 **cwd 编码目录**分组会话；只按 run 目录猜路径会借到别的
+    attempt 的会话（人参与次数/压缩事实会串）。路径与编码都取唯一实现
+    （`dsh_assets.AttemptLayout` + `dsh_sdk.session_dir_name`，本函数不另拼、不另编码，红线 8）。
+    解析结果仍要过"在 run_dir 内"的判据（防符号链接逃逸）。
+    """
+    from host.agent_backends import dsh_assets, dsh_sdk
+
+    base = Path(run_dir).resolve()
+    try:
+        layout = dsh_assets.AttemptLayout.under(
+            dsh_assets.workspace_root(base, str(node), int(attempt)))
+    except (TypeError, ValueError):
+        return None
+    found = dsh_sdk.find_latest_session_log(layout.home, work=layout.work)
+    if found is None:
+        return None
+    try:
+        resolved = found.resolve()
+        resolved.relative_to(base)
+    except (OSError, ValueError):
+        return None
+    return resolved
+
+
 def session_copy(run_dir: Path | str, *, node: str,
                  attempt: int | None) -> dict[str, Any]:
     """§6.2 会话副本：只返回 **session log 的解析事实**（`kind="session_log_facts"`）。
@@ -552,8 +579,10 @@ def session_copy(run_dir: Path | str, *, node: str,
     任意节点窗口不能借这个端点导出别节点/别 attempt 的会话事实。
     `attempt` 省略 ⇒ 用元数据声明的 attempt 并在响应 `attempt` 里回显。
 
-    来源 = `agent_instance.json.session_log`（相对 run_dir，越界/符号链接拒绝，写入方属 S5）；
-    缺失即 `session_log_missing`。
+    来源（REV-19 §2 只增）：优先 `agent_instance.json.session_log`（相对 run_dir，越界/符号链接拒绝，
+    写入方属 S5）；元数据**没声明**时按 attempt 布局解析 dsh 的会话目录
+    （`<attempt>/dsh-home/sessions/<cwd 编码>/session-*/session.v4.jsonl.zstd`，取 mtime 最新），
+    响应 `session_log_source` 回显 `"metadata"` / `"newest_mtime"`；都解析不到仍 `session_log_missing`。
     """
     from host.agent_backends import dsh_sdk
 
@@ -566,13 +595,20 @@ def session_copy(run_dir: Path | str, *, node: str,
         return _session_unavailable(reason, attempt=attempt)
 
     log_ref = document.get("session_log")
-    if not isinstance(log_ref, str) or not log_ref:
-        return _session_unavailable("session_log_missing", attempt=effective_attempt)
-
-    try:
-        log_path = _resolve_session_log(run_dir, log_ref)
-    except ValueError:
-        return _session_unavailable("session_log_invalid", attempt=effective_attempt)
+    source = "metadata"
+    if isinstance(log_ref, str) and log_ref:
+        try:
+            log_path = _resolve_session_log(run_dir, log_ref)
+        except ValueError:
+            return _session_unavailable("session_log_invalid", attempt=effective_attempt)
+    else:
+        # REV-19 §2：元数据没声明 `session_log`（S5 尚未落账）⇒ 在该 attempt 自己的 dsh-home 下找会话日志。
+        # 没有这条兜底，真实 attempt 的执行结果恒为「不可用」，`人参与` 永远出不来（人 2026-10-29 反馈）。
+        discovered = _discover_session_log(run_dir, node=node, attempt=effective_attempt)
+        if discovered is None:
+            return _session_unavailable("session_log_missing", attempt=effective_attempt)
+        log_path = discovered
+        source = "newest_mtime"
     try:
         facts = dsh_sdk.read_session_log(log_path)
     except (dsh_sdk.SessionLogError, OSError):
@@ -591,7 +627,9 @@ def session_copy(run_dir: Path | str, *, node: str,
         encoded = json.dumps(payload, ensure_ascii=False, default=str).encode("utf-8")
     return {"available": True, "reason": None, "kind": "session_log_facts",
             "facts": payload, "bytes": len(encoded), "truncated": truncated,
-            "attempt": effective_attempt}
+            "attempt": effective_attempt,
+            # REV-19 §3：来源只增；不可用响应保持六键不变
+            "session_log_source": source}
 
 
 def _session_unavailable(reason: str, *, attempt: int | None) -> dict[str, Any]:

@@ -840,8 +840,35 @@ def test_session_copy_returns_session_log_facts(
     # `time-context` 注入不算人说的
     assert facts["human_messages"] == 1, facts
     assert facts["human_messages_basis"] == "source.kind=user,dedupe=id|rpcId,skipped=0"
+    assert payload["session_log_source"] == "metadata", "声明的来源必须如实回显（REV-19 §3）"
     assert payload["attempt"] == 1
     assert "content" not in payload, "不得返回未经验证的会话原文"
+
+
+def test_session_copy_discovers_attempt_session_when_metadata_omits_it(
+    client: TestClient, run_dir: Path
+) -> None:
+    """REV-19 §2：元数据没声明 `session_log`（S5 未落账）⇒ 按 attempt 的 dsh-home 解析最新会话日志。
+
+    这是"真实 attempt 也能看到执行结果/人参与次数"的前提；声明了 `session_log` 时仍优先元数据。
+    """
+    if shutil.which("zstd") is None:
+        pytest.skip("zstd 不可用（环境缺件，不是代码缺陷）")
+    from host.agent_backends import dsh_assets
+    from host.agent_backends import dsh_sdk as SDK
+
+    compressed = _write_session_log(run_dir)
+    layout = dsh_assets.AttemptLayout.under(dsh_assets.workspace_root(run_dir, NODE, 1))
+    directory = layout.home / "sessions" / SDK.session_dir_name(layout.work) / "session-000001"
+    directory.mkdir(parents=True)
+    shutil.move(str(compressed), str(directory / SDK.SESSION_LOG_NAME))
+    write_instance(run_dir, port=_free_port())          # 故意不带 session_log
+
+    payload = client.get(f"/api/runs/{RUN_ID}/agents/{NODE}/session-copy").json()
+    assert payload["available"] is True, payload
+    assert payload["session_log_source"] == "newest_mtime"
+    assert payload["kind"] == "session_log_facts"
+    assert payload["facts"]["human_messages"] == 1
 
 
 def test_session_copy_rejects_absolute_and_escaping_paths(

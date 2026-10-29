@@ -94,6 +94,9 @@ Agent 历史读取（`read_view` + 与 API 同口径的事件列表）先测量�
 同一区块的**执行结果行**按 [REV18 §3](SPEC-REV-18-20261029.md) 追加「人参与 N 次」：
 口径 = 会话日志里 `source.kind == "user"` 的消息条数（唯一判据在 `dsh_sdk`，按 `id`→`rpcId` 去重），
 界面只渲染 `facts.human_messages`；缺字段显示「未知」，`0` 显示 0。loop 侧 steer/pause 不入此计数。
+`session-copy` 的来源按 [REV19](SPEC-REV-19-20261029.md) §2 兜底：元数据没声明 `session_log` 时，
+按该 attempt 的 dsh-home（cwd 编码目录、取 mtime 最新）解析会话日志，响应以 `session_log_source`
+回显来源；解析不到仍是 `session_log_missing`（界面「执行结果：不可用」）。
 
 ## 会话旁路与写句柄（2026-10-28，未实现）
 

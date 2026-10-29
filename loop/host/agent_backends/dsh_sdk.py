@@ -1029,3 +1029,58 @@ def read_session_log(path: Path | str, *, zstd: str | None = None,
         return CompactionFacts.unavailable(
             "session log 解出非 UTF-8 内容：%s（%s）" % (exc, log_path), path=str(log_path))
     return parse_session_log_lines(text.splitlines(), path=str(log_path))
+
+
+# ==================================================================== 会话日志发现（SPEC-REV-19 §2）
+
+#: 会话日志文件名（dsh v4 会话存储：`<home>/sessions/<cwd 编码>/session-<id>/session.v4.jsonl.zstd`）
+SESSION_LOG_NAME = "session.v4.jsonl.zstd"
+
+#: 会话存储的根目录名（在 `DSH_HOME` 下）
+SESSION_DIR_ROOT = "sessions"
+
+
+def session_dir_name(cwd: Path | str) -> str:
+    """dsh 会话存储的 **cwd 编码目录名**：`/<a>/<b>` → `--a-b--`（去前导 `/`、`/`→`-`、前后各 `--`）。
+
+    **唯一实现**（SPEC-REV-19 §2-2）：attempt 的 `work` 路径 → 会话目录名只在这里算，
+    `services/instance_proxy.py` 不另写一份（红线 8）。编码不可逆（与路径里真实的 `-` 混淆）。
+    """
+    return "--" + str(cwd).lstrip("/").replace("/", "-") + "--"
+
+
+def find_latest_session_log(home: Path | str, *, work: Path | str) -> Path | None:
+    """在 `<home>/sessions/<cwd 编码>/session-*/session.v4.jsonl.zstd` 里找**该 attempt 的**会话日志。
+
+    只认目录名逐字等于 `session_dir_name(work)` 的会话（别的 cwd = 别的 workspace/attempt，
+    借用会把别人说的话算成这里的"人参与"）；同一 cwd 下多条会话 ⇒ 取 **mtime 最新**
+    （并列取会话目录名最大，保证确定性）；符号链接 / 非普通文件一律跳过（不扩大读取面）。
+    找不到 ⇒ `None`（调用方给既有 `session_log_missing`，不编造空会话）。
+    """
+    root = Path(home) / SESSION_DIR_ROOT
+    try:
+        if root.is_symlink() or not root.is_dir():
+            return None
+        wanted = session_dir_name(work)
+        found: list[tuple[float, str, Path]] = []
+        for directory in sorted(root.iterdir()):
+            try:
+                if directory.is_symlink() or not directory.is_dir():
+                    continue
+                if directory.name != wanted:
+                    continue
+            except OSError:
+                continue
+            for path in sorted(directory.glob("session-*/" + SESSION_LOG_NAME)):
+                try:
+                    if path.is_symlink() or not path.is_file():
+                        continue
+                    found.append((path.stat().st_mtime, path.parent.name, path))
+                except OSError:
+                    continue
+    except OSError:
+        return None
+    if not found:
+        return None
+    found.sort(key=lambda item: (item[0], item[1]))
+    return found[-1][2]

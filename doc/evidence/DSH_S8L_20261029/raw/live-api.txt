@@ -1,0 +1,22 @@
+{
+    "available": true,
+    "reason": null,
+    "kind": "session_log_facts",
+    "facts": {
+        "availability": "ok",
+        "count": 0,
+        "records": [],
+        "errors": [],
+        "start_count": 0,
+        "end_count": 0,
+        "prune_count": 0,
+        "reason": null,
+        "path": "/home/work/chenjunming/change-impact-loop/.demo-ws/runs/RUN-DEMO-S8F/agent_workspaces/N6/attempt-000001/dsh-home/sessions/--home-work-chenjunming-change-impact-loop-.demo-ws-runs-RUN-DEMO-S8F-agent_workspaces-N6-attempt-000001-work--/session-1b43037d-e0fd-44be-8fba-5bdb727bb19e/session.v4.jsonl.zstd",
+        "human_messages": 3,
+        "human_messages_basis": "source.kind=user,dedupe=id|rpcId,skipped=0"
+    },
+    "bytes": 534,
+    "truncated": false,
+    "attempt": 1,
+    "session_log_source": "newest_mtime"
+}

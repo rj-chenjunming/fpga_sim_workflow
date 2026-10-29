@@ -2794,7 +2794,69 @@
     renderMaterialExtras(host, pending);
   }
 
+  /* ---------------- 双栏独立滚动：重绘协调（WEB_UI_SPEC §5 / A11，2026-10-29） ----------------
+   * 人反馈「闸门材料 / 闸门操作 要能分别上下滚动，方便对照处理」。CSS 只给上限与 overflow；
+   * 真正成立的前提是**跨重绘保持**：每 1.5 s 一次 `renderLive()` 会 `clearEl` 重建材料栏，
+   * 不保持就会每 1.5 s 把人滚回顶部（等于功能不成立）。
+   * 判定（身份/该回填到哪/是否真溢出）唯一在 `web/pane-scroll.js`；这里只持有 DOM 与
+   * 每栏的 `{identity, top}` 记忆、包两个渲染入口、回填 scrollTop 并同步 Tab 停靠点。
+   * 身份 = run_id + 闸门 + 轮次：同身份保持位置，换身份回顶。视图隐藏时（clientHeight=0、
+   * scrollTop 会被钳 0）只记位置不采信实时值，切回来再回填。
+   * ------------------------------------------------------------------------ */
+  var paneMemory = Object.create(null);
+  var paneWired = Object.create(null);
+
+  function paneMemoryOf(hostId) {
+    if (!paneMemory[hostId]) paneMemory[hostId] = {identity: null, top: 0};
+    return paneMemory[hostId];
+  }
+
+  function paneIdentityFor(pending) {
+    if (!window.PaneScroll) return "";
+    return pending
+      ? window.PaneScroll.identity(state.runId, pending.gate, pending.cycle)
+      : window.PaneScroll.identity(state.runId, null, null);
+  }
+
+  function wirePane(host, hostId) {
+    if (!host || paneWired[hostId]) return;
+    paneWired[hostId] = true;
+    /* 用户用滚轮/键盘滚动时同步记忆；否则「隐藏→可见」回来时只剩渲染时刻的旧值。 */
+    host.addEventListener("scroll", function () {
+      paneMemoryOf(hostId).top = host.scrollTop || 0;
+    });
+  }
+
+  function syncPaneTabStop(host) {
+    if (!host) return;
+    var scrollable = window.PaneScroll
+      ? window.PaneScroll.isScrollable(host.scrollHeight, host.clientHeight) : false;
+    /* 可滚动区域必须能用键盘滚（§5 第 4 条）：只在**实际溢出**时给 Tab 停靠点。 */
+    if (scrollable) host.setAttribute("tabindex", "0");
+    else host.removeAttribute("tabindex");
+  }
+
+  function renderPanePreservingScroll(hostId, pending, paint) {
+    var host = $(hostId);
+    if (!host) { paint(); return; }
+    wirePane(host, hostId);
+    var key = paneIdentityFor(pending);
+    var mem = paneMemoryOf(hostId);
+    if (host.clientHeight > 0) mem.top = host.scrollTop || 0;
+    var top = window.PaneScroll
+      ? window.PaneScroll.restore({identity: mem.identity, top: mem.top}, key) : 0;
+    paint();
+    mem.identity = key;
+    host.scrollTop = top;
+    if (host.clientHeight > 0) mem.top = host.scrollTop || 0;
+    syncPaneTabStop(host);
+  }
+
   function renderGateMaterial(v) {
+    renderPanePreservingScroll("gateMaterial", pendingInfo(v), function () { paintGateMaterial(v); });
+  }
+
+  function paintGateMaterial(v) {
     var host = $("gateMaterial");
     if (!host) return;
     clearEl(host);
@@ -2902,6 +2964,10 @@
   }
 
   function renderGatePanel(v) {
+    renderPanePreservingScroll("gatePanel", pendingInfo(v), function () { paintGatePanel(v); });
+  }
+
+  function paintGatePanel(v) {
     var host = $("gatePanel");
     if (!host) return;
     if (!state.runId) {

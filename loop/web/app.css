@@ -668,7 +668,10 @@ textarea.input{height:auto;padding:11px 13px;line-height:1.7}
    overscroll-behavior:contain 让滚到栏底后不把整页顶走。单列断点（≤1100px）
    不启用局部滚动：单列没有并排对照，嵌套滚动只会和页面滚动抢手势。 */
 .gate-pane{
-  max-height:clamp(300px, calc(100dvh - 340px), 720px);
+  /* 规格口径（§5 第 2 条 / §14）：上限是**一个** token，两栏同源；判定值
+     = clamp(300px, 100dvh - 340px, 720px)。用例对 token 与解析值双向断言。 */
+  --gate-pane-max-h:clamp(300px, calc(100dvh - 340px), 720px);
+  max-height:var(--gate-pane-max-h);
   overflow-x:auto;overflow-y:auto;
   overscroll-behavior:contain;
   scrollbar-gutter:stable;

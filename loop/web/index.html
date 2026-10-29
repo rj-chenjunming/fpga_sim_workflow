@@ -333,11 +333,13 @@
         <div class="grid2 run-grid">
           <div class="card">
             <div class="card-head"><h2>闸门材料</h2><span class="sub">核对差异、证据与未决条目</span></div>
-            <div class="card-body" id="gateMaterial"></div>
+            <!-- A11（WEB_UI_SPEC §5，2026-10-29）：两栏各自独立滚动，便于并排对照；卡片头不滚，
+                 实际溢出时才补 tabindex=0（不溢出不产生 Tab 停靠点）。 -->
+            <div class="card-body gate-pane" id="gateMaterial" role="region" aria-label="闸门材料"></div>
           </div>
           <div class="card">
             <div class="card-head"><h2>闸门操作</h2><span class="sub">人工复核与决策</span></div>
-            <div class="card-body" id="gatePanel"></div>
+            <div class="card-body gate-pane" id="gatePanel" role="region" aria-label="闸门操作"></div>
           </div>
         </div>
       </section>
@@ -598,6 +600,7 @@
 </dialog>
 <noscript><div class="banner bad">本界面需要启用 JavaScript。</div></noscript>
 <script src="run-view-state.js"></script>
+<script src="pane-scroll.js"></script>
 <script src="gate-session.js"></script>
 <script src="capabilities.js"></script>
 <script src="context-explain.js"></script>

@@ -6342,3 +6342,93 @@ S8b 真机结论是「D3 机制达成、**产品内嵌路径**被 `remote.mux` W
 - 不声称这是"人审次数/业务反馈质量"的判据；只数"人说过几次话"。
 - 不声称覆盖 loop 侧 steer/pause（另口径，REV-18 §5 已登记）；`source.kind` 的新取值需单独确认后再纳入。
 - 不声称独立复核；未推送。
+
+## 135 闸门视图「材料 / 操作」双栏独立滚动（A11 交付，2026-10-29）
+
+本轮入口：人对闸门视图截图反馈「闸门材料 / 闸门操作 这两块我觉得做成可以分别上下滚动的东西，
+方便对照处理」→ 按 SpecDD 走：**先规格**（§5 四条 + §10 A11 + §14）、**再计划**
+（[2026-10-29-gate-panes-scroll.md](plans/2026-10-29-gate-panes-scroll.md)）、**先失败用例**、再实现，
+四道门 + 浏览器门 + **独立复核**（`verifier-gatepanes`，只报告不改）。
+
+### 135.1 契约与判据（规格先于实现）
+
+| 项 | 落点 |
+|---|---|
+| 规格 | [WEB_UI_SPEC](spec/WEB_UI_SPEC.md) §5「材料/操作双栏独立滚动（2026-10-29 增补）」四条 + §10 **A11** + §14「闸门双栏局部滚动」 |
+| 计划 | [2026-10-29-gate-panes-scroll.md](plans/2026-10-29-gate-panes-scroll.md)（§2 为什么必须做重绘保持；§4 判据 B1–B7） |
+| 用例 | `loop/tests/test_pane_scroll.py`（node 纯函数 6 条，含红线 8 结构守卫）、`loop/tests/browser/test_gate_panes.py`（Playwright B1–B7，8 条 = B1×3 视口 + B3/B4/B5/B6/B7） |
+
+**关键设计（不是「加个 overflow」就完事）**：本页每 1.5 s 一次 `renderLive()`（§9 全量重绘），
+材料栏每次都被 `clearEl` 重建 ⇒ 不保持 `scrollTop` 就每 1.5 s 把人滚回顶部、功能不成立。
+故判定抽到 `web/pane-scroll.js`（纯函数 `identity / restore / isScrollable`），`app.js` 只做重绘包装；
+**身份 = `run_id + 闸门 + 轮次(cycle)`**：同身份跨重绘保持、换身份回顶。
+
+### 135.2 实现落点（唯一 writer：Lead）
+
+| 文件 | 改动 |
+|---|---|
+| `loop/web/pane-scroll.js` | **新增**：三个纯判定（身份 / 回填目标 / 是否真溢出） |
+| `loop/web/index.html` | 两栏加 `class="card-body gate-pane"` + `role="region"` + `aria-label`（与卡片标题同文）；引入 `pane-scroll.js`（先于 `app.js`） |
+| `loop/web/app.css` | `.gate-pane`：`--gate-pane-max-h:clamp(300px,calc(100dvh - 340px),720px)` + `max-height:var(--gate-pane-max-h)`、`overflow-y/x:auto`、`overscroll-behavior:contain`、`scrollbar-gutter:stable`；`@media(max-width:1100px)` 回退自然流 |
+| `loop/web/app.js` | 新增 `paneMemory/paneIdentityFor/wirePane/syncPaneTabStop/renderPanePreservingScroll`；`renderGateMaterial`/`renderGatePanel` 拆 wrapper + `paint*`（+66 行，2 个 hunk） |
+
+**未改**：后端与 API 形状、`POST …/gates/{gate_id}/decision` 提交路径、草稿身份（`gate-session.js` 零改动）、
+`legacy.html` / `mockup.html`、任何业务字段（`git diff` 无对应行；探针全程 `posts=[]`）。
+
+### 135.3 反向抽检（用例抓得住吗；源文件每次抽检后恢复）
+
+| 变异 | 实测 |
+|---|---|
+| 把回填改成恒 `0`（不保持） | `1 failed, 7 passed`（B4 红） |
+| 删掉 `.gate-pane` 规则 | `7 failed, 1 passed`（B7 单列本就期望"无规则"形态） |
+| 去掉 `overscroll-behavior` + `scrollbar-gutter` 且 `overflow-x:hidden` | `3 failed, 5 passed`（B1 三视口红） |
+| 身份接线写死常量（复核 M4） | `1 failed, 7 passed`（B5 红）——**这是复核发现后补的**：原 B5 只用"切运行"，会被中间的加载态重绘掩盖成假绿 |
+| `app.js` 里自写第二套溢出判据（复核 M12） | `1 failed, 5 passed`（结构守卫红）——**同样是复核发现后补的** |
+
+### 135.4 四道门 + 浏览器门（命令输出复制）
+
+| 门 | 命令 | 结果 |
+|---|---|---|
+| 单测（可写影子数据根，含浏览器用例） | `cd loop && PLAYWRIGHT_BROWSERS_PATH=<repo>/.pw-browsers bash spikes/run_software_checks.sh` | **`2033 passed, 3 deselected, 1 warning in 495.59s`** |
+| 浏览器门（单独跑，`LOOP_VISUAL_ARTIFACTS`) | `… .venv/bin/python -m pytest -q tests/browser` | **`149 passed in 221.56s`** |
+| kb 自测 + env layer | `bash spikes/run_env_layer_checks.sh --with-kb-selftests` | `PASS=10` / `PASS=9` / `PASS=28`，`FAIL=0`；env_layer `3 passed, 24 deselected in 7.77s`；**原 ENV_ROOT 零写入（`find -newer` 命中 0）** |
+| 端到端（drill） | `DEST=<repo>/loop/.dev-ws-e2e bash spikes/provision_dev_workspace.sh && LOOP_WORKSPACE=<repo>/loop/.dev-ws-e2e LOOP_PORT=8197 bash spikes/accept_v1_run.sh` | phase `1/2/3/4/4b/5` 全 `rc=0`，`=> ALL PASS`；跑完删数据根 |
+| 文档 | `cd loop && .venv/bin/python -m pytest -q tests/test_doc_links.py` | **`65 passed in 2.58s`** |
+
+### 135.5 独立复核（`verifier-gatepanes`，只报告不改；不声称本轮独立性来自实现者）
+
+复核基线 md5：`app.css 41434f70`、`app.js bfba54f3`、`index.html c7dec7e3`、`pane-scroll.js d8e1385c`（复核后 Lead 又改了 token/用例，见下）。
+复核自写探针 + 13 个变异抽检（副本上做，源文件零改动），**无 P0**。发现与处置：
+
+| 复核发现 | 处置 |
+|---|---|
+| **P1-1 半入库**：`f724d77`（并发切片 S8j）只把 `.gate-pane` CSS 带进了 HEAD，`index.html`/`app.js`/`pane-scroll.js` 未入库；Lead 先前"HEAD 引用了未入库 `pane-scroll.js`"的描述被纠正为「HEAD 多一条死 CSS」 | 本片 §135.9 一次性补入库（含 CSS token），并在提交说明登记 `f724d77` 含本片 CSS 底座 |
+| **P1-2 回归门曾红**：`index.html:337` 注释出现字面 `app.js`，撞上 `test_gate_session.py` 用 `html.index("app.js")` 判脚本顺序 | 已改注释（现 `9 passed`）；**断言脆弱性登记为既有问题**（建议按 `<script src=…>` 标签序判定），本片不改该用例 |
+| **P1-3 既有时序 flake**：`test_run_sessions.py::open_gate` 在「已有 10+ 浏览器实例后」偶发不跳闸门视图（组合跑 6 次 4 红），路径不在本片 diff 内 | 如实登记为**既有竞态、非本片回归**；本轮串行单跑 + 全量浏览器门均绿（`2033 passed` / `149 passed`） |
+| **P2-1 硬不符**：§5/§14/A11 点名的 `--gate-pane-max-h` 代码里不存在（computed 为空串） | **已修**：CSS 定义该 token 并 `var()` 使用；用例双向断言（token 非空 + 解析值 = `min(max(300, vh-340), 720)`） |
+| **P2-2 覆盖缺口 4 条**：`scrollbar-gutter`、`overflow-x`、`overscroll-behavior`、**身份接线** 变异不红；缺红线 8 结构守卫 | **已修**：B1 增三项 computed 断言；B5 主判据改「切轮次（内容不变）」；新增结构守卫用例（`app.js` 只转调、`scrollHeight >` 零出现、脚本顺序）。四项变异复测全部变红（见 §135.3） |
+| **P2-3 文档口径**：计划写 B1–B6、函数名 `renderPane`，与用例/实现不一致 | **已修**：计划改 B1–B7 + `renderPanePreservingScroll(hostId, pending, paint)` |
+| **P2-5 视觉/几何**：≥1600px 断点下 `-340px` 是固定推导，1920×1080 栏底略越视口下沿；横向溢出滚动条在 headless 为覆盖式、真机未验 | **如实登记为已知限制**，不改常数（改常数=改规格承诺，需人裁） |
+| **P2-6 溯源**：`f724d77` 含 Lead 的最小修复（`agent-window.js` 补回 `var instanceKey = "", instanceToken = 0;`） | 已在此登记；复核用删行 A/B 复现了 `instanceKey is not defined`，判定语义中性 |
+| 复核未验证项 | 真实内网/真机闸门数据、非 headless 滚动条与惯性、跨浏览器 `overscroll-behavior`/`scrollbar-gutter`、100+ 条目重绘性能、全量四道门（复核按要求未跑） |
+
+### 135.6 不声称 / 未验证
+
+- 浏览器判据用**受控替身**（`test_run_sessions.py` 的 `ui` fixture：12 条自造差异 + 服务端选项）：
+  证明展示层可观察行为，**不证明真实闸门材料可判**。
+- 未在真实内网环境验证；`LOOP_VISUAL_ARTIFACTS` 截图（`loop/.logs/gate-panes/`，gitignored）只作视觉检查，不作通过判据。
+- 不声称对空/加载/失败态做了视觉打磨（沿用既有空态文案）；移动端断言沿用既有窄屏用例。
+
+### 135.7 并发切片事实（必须留痕）
+
+本轮期间同一工作区有另一路并发切片在跑（S8j `f724d77`、S8k `9017887`），它们各自提交、README 无关文件被带走/编号被占用：
+
+- `f724d77`（S8j 提交）把本片 `.gate-pane` CSS 带进 HEAD（半入库，见 §135.5 P1-1）；其提交信息还把本片早先注释引起的 2 条红（后被 Lead 修掉）记为"并发切片触发"——属实，已在 §135.5 P1-2 登记。
+- `9017887`（S8k）占用 `STATUS §134`，故本片用 **§135**。
+- 并发期间 Lead 曾把 `HOME/TMPDIR` 指到仓库内跑门，导致 `test_dsh_selfcheck` 的 bwrap 遮蔽断言假红、`test_doc_links` CLI 用例在并发 env 复制下 `StopIteration`；**两者单独跑/最终串行跑均通过**，最终数字见 §135.4（数字只取最终串行那一轮）。
+- Lead 未提交、未 revert 任何他人改动；本片提交只含 §135.9 列出的文件。
+
+### 135.8 抓不住的（覆盖缺口，下一步）
+
+- 「滚到栏底继续滚不带动页面」在 headless 下与"页面本来就不可滚"不可区分 ⇒ 目前由 `overscroll-behavior-y:contain` 的 computed 值兜（风格级判据，不是行为级）；真机需人眼看一次。
+- `tabindex` 同步发生在渲染后一次测量：字体/内容在渲染后异步变化（图片、远端字体）理论上可能让"该有停靠点"滞后一轮；本页无异步字图，现状未复现。

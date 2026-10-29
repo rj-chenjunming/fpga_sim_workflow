@@ -61,6 +61,44 @@ def silence_http_client_logging() -> None:
 # 不依赖部署时的 uvicorn 默认日志级别（uvicorn 不配置 httpx logger）。
 silence_http_client_logging()
 
+#: S7c 真机发现（P2，2026-10-29）：**uvicorn 的 access log** 会把首跳
+#: `GET /instance/<run>/<node>/<n>/?token=<43 chars>` 的完整 request line 打进日志。
+#: 那条 `?token=` 是浏览器首跳的交换入口（REV-16 §5.4 的设计），但 §5.4 同时要求
+#: token **永不出现在本服务日志**。任何 HTTP 服务器的访问日志都会记 query ⇒ 必须**在日志层脱敏**
+#: （不是放宽判据、也不是不记日志）。覆盖 `uvicorn.access` / `uvicorn.error` 与 root，
+#: 逐条把 `token=<值>` 换成 `token=<redacted>`（保留参数名，便于排障）。
+_TOKEN_IN_LOG = re.compile(r"(token=)[^&\s\"'>]+")
+#: 需要装脱敏过滤器的 logger（uvicorn access 是独立 logger，不冒泡到 root 前就要处理）
+TOKEN_REDACT_LOGGERS = ("uvicorn.access", "uvicorn.error", "uvicorn", "")
+
+
+def _redact_token_text(value: Any) -> Any:
+    return _TOKEN_IN_LOG.sub(r"\1<redacted>", value) if isinstance(value, str) else value
+
+
+class TokenRedactFilter(logging.Filter):
+    """日志记录级脱敏：**只改日志文本**，不改请求/响应/元数据（token 仍只进受管元数据）。"""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        record.msg = _redact_token_text(record.msg)
+        if isinstance(record.args, tuple):
+            record.args = tuple(_redact_token_text(item) for item in record.args)
+        elif isinstance(record.args, dict):
+            record.args = {key: _redact_token_text(item) for key, item in record.args.items()}
+        return True
+
+
+def install_token_redaction() -> None:
+    """给 uvicorn/root logger 装上 token 脱敏过滤器（幂等：重复调用不会叠加多个）。"""
+    for name in TOKEN_REDACT_LOGGERS:
+        logger = logging.getLogger(name)
+        if not any(isinstance(item, TokenRedactFilter) for item in logger.filters):
+            logger.addFilter(TokenRedactFilter())
+
+
+# 与 `silence_http_client_logging` 同一纪律：import 即生效，不依赖部署方记得配。
+install_token_redaction()
+
 #: 反代前缀（与 SPEC-REV-16 §5.1 路由一致）
 PREFIX = "/instance"
 #: 受管元数据文件名（Host 落账；本片只读）
@@ -106,6 +144,11 @@ REASONS = frozenset({
     "upstream_unreachable", "upstream_timeout", "upstream_auth",
     "upstream_error", "health_unknown",
 })
+
+#: S7c（真机取证后只增）：**反代的传输能力事实** —— 只透传 HTTP，不透传 WebSocket/Upgrade
+#: （§5.1 拒绝矩阵与 §9-2 未决）。为什么由服务端下发而不是前端自己写死：这是反代 owner 的事实，
+#: 界面只渲染；`available=True` 只表示"目标元数据可用且 loopback"，**不**表示 iframe 内实时流已通。
+STREAM_HTTP_ONLY = "http_only"
 
 _REASON_TEXT = {
     "target_missing": "实例未登记（Host 尚未落账 agent_instance.json）",
@@ -327,16 +370,21 @@ def availability(run_dir: Path | str, *, run_id: str, node: str,
     `available=true` 只表示"目标元数据可用且 loopback"；上游是否活着由反代请求本身暴露
     （iframe 加载失败 ⇒ 界面降级，§6.2）。`embed="iframe"` 只表示"值得尝试内嵌"，
     **不**表示已验证页面资源路径（§9-10：本片不做 HTML 重写；资源断走新标签页）。
+
+    `stream`（S7c 只增字段）：反代只透传 HTTP，**不透传** WebSocket/Upgrade ⇒ iframe 内的实时
+    事件流（DSH 的 `WS /api/remote.mux`）不通。这是能力事实而非健康判据，两个分支都下发，
+    界面据此如实显示"实时流未接通"，不得把 `ready` 显示成"完全可用"。
     """
     try:
         target = load_target(run_dir, node, attempt)
     except TargetUnavailable as exc:
         return {"available": False, "state": "unavailable", "reason": exc.reason,
                 "url": None, "embed": "new_tab_only", "authority": "projection",
-                "attempt": attempt}
+                "stream": STREAM_HTTP_ONLY, "attempt": attempt}
     return {"available": True, "state": "ready", "reason": None,
             "url": instance_prefix(run_id, node, target.attempt), "embed": "iframe",
-            "authority": "projection", "attempt": target.attempt}
+            "authority": "projection", "stream": STREAM_HTTP_ONLY,
+            "attempt": target.attempt}
 
 
 def _resolve_session_log(run_dir: Path | str, ref: str) -> Path:

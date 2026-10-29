@@ -1,0 +1,219 @@
+== 清理运行时状态 ==
+== 第 1 代：phase 1 ==
+[driver] 服务已起 pid=5167（第 1 代）
+
+########## phase 1 ##########
+== phase 1：投影 / 拒绝矩阵 / G1 签署 / N9 停放 ==
+  [val ] health = {'ok': True, 'agently': '4.1.4.8', 'python': '3.11.7'}
+  [ok  ] A1 health.ok
+  [ok  ] A2 agently 版本是钉住的 4.1.4.8
+  [ok  ] A3 llm 状态不含密钥字段值
+  [ok  ] A4 启动即做恢复（有 restore_report）
+  [val ] llm = {'available': False, 'plugin': None, 'family': 'forced-standin', 'base_url': None, 'model': None, 'api_key_env': None, 'max_tokens': 8000, 'timeout_s': 180, 'proxy': None, 'key_source': None, 'config_source': None, 'reason': 'LOOP_LLM_MODE=standin：本进程被显式要求离线（用确定性替身）', 'has_api_key': False}
+  [ok  ] A5 前端可达
+  [ok  ] A6 前端零外链
+  [ok  ] A7 前端渲染服务端下发的闸门枚举（不自造）
+  [val ] kb/baselines 内容摘要(前) = 34aa3b60d40f7890be375d1eb50d6786e25708201ccbdae56b9f10c83a9603db
+  [ok  ] A8 建 run 返回 200
+  [val ] run_id = RUN-20261029-104600
+  [val ] status = waiting_gate
+  [val ] gate1 interrupt = {'id': 'G1_diff_confirm:0', 'gate': 'G1_diff_confirm'}
+  [val ] blockers = [('I1_UNRESOLVED_ENTRIES', 'warning'), ('I3_EVIDENCE_MISSING', 'blocker'), ('F_N16_04_STAGING_RESIDUE', 'warning'), ('I4_CONFLICTS_UNCLEARED', 'blocker')]
+  [val ] gate_options = {'G1_diff_confirm': ['confirmed', 'ignored', 'disputed'], 'G2_report_accept': ['accept', 'rework'], 'G3_regression_decision': ['full_now', 'subset_only', 'milestone_only', 'defer']}
+  [val ] conflicts = {'total': 72, 'expected_total': 72, 'blocks_release': 72, 'open': 72, 'source': '/home/work/chenjunming/change-impact-loop/.dev-ws/conflicts/conflicts.json', 'consistent': True}
+  [val ] rework = {'n6_n8_cycles': 0, 'g2_rework_cycles': 0, 'limit': 3, 'source': '/home/work/chenjunming/change-impact-loop/.dev-ws/runs/RUN-20261029-104600/rework_cycles.json', 'case_state_source': '/home/work/chenjunming/change-impact-loop/.dev-ws/runs/RUN-20261029-104600/case_states.json', 'missing': False}
+  [val ] can = {'judge_pass': False, 'promote': False}
+  [ok  ] A9 首个中断是 G1_diff_confirm
+  [ok  ] A10 状态是 waiting_gate（不是 running）
+  [ok  ] A11 闸门历史此时为空
+  [ok  ] A12 服务端下发的枚举 == kb_lib 权威
+  [ok  ] A13 pending 不作为可提交动作
+  [ok  ] A14 G1 阶段 I3 以「证据缺失」形态阻断
+  [ok  ] A15 I4 冲突未清零被投影为 blocker
+  [ok  ] A16 I7 未达上限时不误报
+  [ok  ] A17 conflicts 总数与 expected_total 一致
+  [ok  ] A18 judge_pass 此时为 false（blocker 存在）
+  [val ] gates_authority(G1 未签) = {'present': True, 'anchor_ok': True, 'anchor_detail': '锚一致（471e779b9a3d…）', 'human_signed_all': False, 'divergences': []}
+  [ok  ] A40 视图带权威闸门态（不是只有事件流）
+  [ok  ] A41 权威锚可复算且一致（gates.sha256）
+  [ok  ] A42 权威态覆盖全部三道闸门
+  [ok  ] A43 未签的 G1 在权威里 human_signed=false
+  [ok  ] A44 事件流投影确实缺 human_signed（这正是必须有权威态的原因）
+-- 拒绝矩阵（I6 / 枚举 / I4 / 缺 actor），关键是都不能消耗中断 --
+  [val ] 非人类 actor = {'status': 403, 'err': "I6：闸门决策只接受 human actor（actor 必须以 'human' 开头）"}
+  [ok  ] A19 非人类 actor 被拒 403（I6）
+  [val ] 自造枚举 = {'status': 400, 'err': "闸门 G1_diff_confirm 不接受决策 'full_regression'；权威枚举（kb_lib.GATE_DECISIONS）= ['confir"}
+  [ok  ] A20 自造枚举被拒 400
+  [val ] I4 越权 = {'status': 403, 'err': 'I4：冲突未清零（72 项 blocks_release）⇒ 不得选 full_now；闸门保持待决策，可改选 milestone_only / defer。'}
+  [ok  ] A21 冲突未清零时 full_now 被拒 403（I4）
+  [val ] 缺 actor = {'status': 400, 'err': "必须提供 actor，且必须以 'human' 开头（I6）。"}
+  [ok  ] A22 缺 actor 被拒 400
+  [ok  ] A23 四次拒绝后仍 waiting_gate
+  [ok  ] A24 四次拒绝后中断仍是同一个（未被消耗）
+  [ok  ] A25 四次拒绝后闸门历史仍为空（没有半签）
+  [ok  ] A45 四次拒绝后权威账本仍是一张白纸（human_signed_all=false）
+  [val ] human 签 G1 = {'status': 200, 'body': {'ok': True, 'decision': 'confirmed', 'gate': 'G1_diff_confirm', 'gate_state': {'decision': 'confirmed', 'status': 'signed', 'actor': 'human:chenjunming', 'actor_kind': 'human', 'human_signed': True, 'signed_at': '2026-10-29T10:46:03+0800', 'note': '2 条差异已逐条核对', 'rework_target': None, 'history_len': 1, 'history': [{'at': '2026-10-29T10:46:03+0800', 'decision': 'confirmed', 'actor': 'human:chenjunming', 'actor_kind': 'human', 'human_signed': True, 'note': '2 条差异已逐条核对'}]}, 'gates_authority': {'present': True, 'run_id': 'RUN-20261029-104600', 'source': '/home/work/chenjunming/change-impact-loop/.dev-ws/runs/RUN-20261029-104600/gates.json', 'schema': 'kb/gate-state', 'version': 1, 'updated_at': '2026-10-29T10:46:03+0800', 'gates': {'G1_diff_confirm': {'decision': 'confirmed', 'status': 'signed', 'actor': 'human:chenjunming', 'actor_kind': 'human', 'human_signed': True, 'signed_at': '2026-10-29T10:46:03+0800', 'note': '2 条差异已逐条核对', 'rework_target': None, 'history_len': 1, 'history': [{'at': '2026-10-29T10:46:03+0800', 'decision': 'confirmed', 'actor': 'human:chenjunming', 'actor_kind': 'human', 'human_signed': True, 'note': '2 条差异已逐条核对'}]}, 'G2_report_accept': {'decision': 'pending', 'status': 'pending', 'actor': None, 'actor_kind': None, 'human_signed': False, 'signed_at': None, 'note': None, 'rework_target': None, 'history_len': 0, 'history': []}, 'G3_regression_decision': {'decision': 'pending', 'status': 'pending', 'actor': None, 'actor_kind': None, 'human_signed': False, 'signed_at': None, 'note': None, 'rework_target': None, 'history_len': 0, 'history': []}}, 'all_signed': False, 'human_signed_all': False, 'anchor_ok': True, 'anchor_detail': '锚一致（7456cd8cc1bd…）'}, 'gate_tool': {'cmd': '/home/work/chenjunming/change-impact-loop/loop/.venv/bin/python -B /home/work/chenjunming/change-impact-loop/kb/tools/gate.py sign G1_diff_confirm --run RUN-20261029-104600 --decision confirmed --actor human:chenjunming --actor-kind human --note 2 条差异已逐条核对 --artifact n2_diff.json md5=4a830f5f3d834264c79118d9ec74a1f8 --artifact n3_digest.md md5=ad58e9c6b8042a519b2ccf280dd00f02', 'rc': 0, 'stdout_tail': '[kb] 已写入 runs/RUN-20261029-104600/gates.json\n[kb] G1_diff_confirm: decision=confirmed      status=signed  actor=human:chenjunming actor_kind=human     human_signed=True\n[kb] human_signed=true（actor_kind=human，actor=human:chenjunming）\n[kb] note=2 条差异已逐条核对\n[kb] artifacts=n2_diff.json md5=4a830f5f3d834264c79118d9ec74a1f8, n3_digest.md md5=ad58e9c6b8042a519b2ccf280dd00f02\n', 'stderr_tail': ''}, 'entries': {'0x0000#0x0004': {'decision': 'confirmed', 'reason': '2 条差异已逐条核对', 'source': 'drill_reason_attestation', 'legacy_drill_fixture': False}, 'RTL/SRC/imports/SRC/reg/sys_reg.v': {'decision': 'confirmed', 'reason': '2 条差异已逐条核对', 'source': 'drill_reason_attestation', 'legacy_drill_fixture': True}}, 'warnings': ['drill：未决条目按 reason attestation 处置（夹具历史件）']}}
+  [ok  ] A26 人类签 G1 成功
+  [ok  ] A27 响应里的 gate_state 是**权威闸门态**（human_signed=true，不再是子进程记录）
+  [ok  ] A28 actor 记录了人名
+  [ok  ] A28b 子进程调用记录另立 gate_tool（字段名与内容相符）
+  [val ] gates_authority(G1 已签) = {'decision': 'confirmed', 'status': 'signed', 'actor': 'human:chenjunming', 'actor_kind': 'human', 'human_signed': True, 'signed_at': '2026-10-29T10:46:03+0800', 'note': '2 条差异已逐条核对', 'rework_target': None, 'history_len': 1, 'history': [{'at': '2026-10-29T10:46:03+0800', 'decision': 'confirmed', 'actor': 'human:chenjunming', 'actor_kind': 'human', 'human_signed': True, 'note': '2 条差异已逐条核对'}]}
+  [ok  ] A46 权威里 G1 human_signed=true / actor_kind=human
+  [ok  ] A47 权威 history 长度=1（append-only 起点）
+  [ok  ] A48 签署后锚仍一致
+  [ok  ] A49 事件流与权威无分歧
+  [val ] job = {'job_id': 'JOB-d499dd2e52c7', 'node': 'N9', 'phase': 'done', 'rc': 0, 'tc': 'tc_pcie_rw_02', 'seed': '1', 'log_path': '/home/work/chenjunming/change-impact-loop/loop/state/jobs/JOB-d499dd2e52c7.log'}
+  [ok  ] A29 N9 已提交外部作业（看板有 job）
+  [ok  ] A31 作业 ETA 外显（长任务不得静默）
+  [ok  ] A32 作业有日志路径（验收要能追到证据）
+  [ok  ] A33 事件流记了 job_submitted
+  [ok  ] A51 当前停放已落盘且是可恢复的干净快照
+  [val ] E-2 archive 探测（冻结见证，故意为空） = {'exists': False, 'path': '/home/work/chenjunming/change-impact-loop/.dev-ws/runs/RUN-20261015-120626/evidence/archive', 'is_dir': True, 'entries': 0, 'note': '目录为空 ⇒ 按 E-2 显示为证据缺失'}
+  [ok  ] A50 空归档目录被判为「证据缺失」而非静默通过
+  [ok  ] A35 缺失证据被显式标为缺失（不是 404）
+  [ok  ] A36 缺失证据带解释（E-2）
+  [val ] 事件 = {'n': 40, 'kinds': ['admission_granted', 'gate_decided', 'gate_pending', 'job_finished', 'job_submitted', 'node_finished', 'node_started', 'run_started', 'warning']}
+  [ok  ] A37 事件 kind 全在白名单内
+  [ok  ] A38 事件 refs 不含解析器内部路径
+  [ok  ] A39 事件流有单调 seq
+
+===== phase 1：PASS=50 FAIL=0 =====
+spikes/accept_v1_run.sh: line 66:  5167 Terminated              ./run.sh >> "$LOG/server.out" 2>&1
+[driver] 已停 uvicorn pid=5167（未触碰长任务）
+== 第 2 代：phase 2 / 3（真重启后重附着 + 收敛） ==
+[driver] 服务已起 pid=5250（第 2 代）
+
+########## phase 2 ##########
+== phase 2：重启后重新附着 + G2 + G3 ==
+  [val ] restore_report = {'restored': ['RUN-20261029-104600'], 'failed': [], 'jobs': {'running': 0, 'done': 1, 'dead': 0, 'undelivered': 0}}
+  [ok  ] B1 重启后从快照恢复了本 run
+  [ok  ] B2 恢复无失败项
+  [val ] 重附着后的 job = {'job_id': 'JOB-d499dd2e52c7', 'phase': 'done', 'rc': 0, 'elapsed_s': 0.2}
+  [ok  ] B3 重新附着到**同一个**作业
+  [ok  ] B4 单槽状态与作业相位自洽（运行中⇒占锁 / 终态⇒不占）
+  [ok  ] B5 gate_history 仍恰好一次 G1（重启不重复记账）
+  [val ] G2 状态 = waiting_gate
+  [ok  ] B6 到达 G2_report_accept
+  [val ] counts = {'koutou1': {'label': '口径一（`*E` 文本行数）', 'value': 1687, 'zero': False, 'refs': ['line 359: UVM_INFO pcie_sequence.sv(598) @ 153.513 us [PCIE_REG_RD@3DW] *E @ADDR[0x84] -> DATA[0x0] != EXP[0xffffffff]', 'line 362: UVM_INFO pcie_sequence.sv(598) @ 153.833 us [PCIE_REG_RD@3DW] *E @ADDR[0x84] -> DATA[0x0] != EXP[0x55555555]', 'line 365: UVM_INFO pcie_sequence.sv(598) @ 154.153 us [PCIE_REG_RD@3DW] *E @ADDR[0x84] -> DATA[0x0] != EXP[0xaaaaaaaa]', 'line 368: UVM_INFO pcie_sequence.sv(598) @ 154.473 us [PCIE_REG_RD@3DW] *E @ADDR[0x84] -> DATA[0x0] != EXP[0x12345678]', 'line 376: UVM_INFO pcie_sequence.sv(598) @ 155.353 us [PCIE_REG_RD@3DW] *E @ADDR[0x88] -> DATA[0xff] != EXP[0x3]']}, 'koutou2': {'label': '口径二（UVM Report Summary）', 'value': {'UVM_INFO': 34933, 'UVM_WARNING': 0, 'UVM_ERROR': 0, 'UVM_FATAL': 0}, 'zero': True, 'refs': ['line 35154: UVM_INFO :34933', 'line 35155: UVM_WARNING :    0', 'line 35156: UVM_ERROR :    0', 'line 35157: UVM_FATAL :    0']}, 'both_zero': False, 'single_source': True, 'note': '两套口径分别取、分别存，不得互相替代（doc/AGENTS.md 红线 3 / spec I3）。'}
+  [val ] verdict = {'passed': False, 'reasons': ['口径一 = 1687 ≠ 0'], 'criterion': 'PASS ⟺ 两套口径皆 0 ∧ UVM Report Summary 出现 ∧ 期望观测点印记三向一致', 'must_not': '口径二为 0 不足以判绿：口径一非 0 或印记不一致时**不得**判跑通。'}
+  [val ] imprints = {'N6_FPGA_DATE_PCIE': {'verified_count': 5, 'failed_count': 0, 'consistent': True}}
+  [val ] job(终) = {'phase': 'done', 'rc': 0, 'elapsed_s': 0.2}
+  [val ] slot(终) = {'locked': False, 'holder': None, 'holder_alive': None, 'holder_alive_known': False, 'holder_job_id': None, 'holder_job_pid': None, 'holder_phase': None, 'format_version': None, 'queued': [], 'queue_depth': 0}
+  [ok  ] B7 两套口径并列呈现（一个不能替代另一个）
+  [ok  ] B8 口径一 = 1687（夹具实测值）
+  [ok  ] B9 口径二 UVM_ERROR=0 且判零
+  [ok  ] B10 两口径分歧 ⇒ both_zero 必须为 false
+  [ok  ] B11 分歧时不得判绿（verdict.passed=False）
+  [ok  ] B12 verdict 明说「不得把跑通当结论」
+  [ok  ] B13 印记三向一致
+  [ok  ] B14 作业终态 rc==0（该用例本身跑得完）
+  [ok  ] B15 作业结束后单槽已释放
+  [ok  ] B16 G2 自造枚举被拒 400
+  [ok  ] B17 G2 非人类 actor 被拒 403
+  [ok  ] B18 拒绝后仍停在 G2（中断未被消耗）
+  [val ] human 签 G2 = {'status': 200, 'decision': 'accept'}
+  [ok  ] B19 人类签 G2 成功
+  [ok  ] B20 到达 G3_regression_decision
+  [val ] gate_history 计数 = {'G1_diff_confirm': 1, 'G2_report_accept': 1}
+  [ok  ] B21 G1/G2 各恰好一次
+  [val ] G3 material = {'blockers': [('I1_UNRESOLVED_ENTRIES', 'warning'), ('I3_KOUTOU1_NONZERO', 'blocker'), ('F_N16_04_STAGING_RESIDUE', 'warning'), ('I4_CONFLICTS_UNCLEARED', 'blocker')], 'can': {'judge_pass': False, 'promote': False}}
+  [ok  ] B22 G3 材料里冲突未清零仍是 blocker
+  [ok  ] B23 冲突未清零时 full_now 被拒 403（I4 在提交前判）
+  [ok  ] B24 subset_only 同样被 I4 拒 403
+  [ok  ] B25 G3 非人类 actor 被拒 403
+  [ok  ] B26 三次拒绝后仍停在 G3
+  [ok  ] B27 人类选 defer 成功（I4 允许的选项）
+
+===== phase 2：PASS=27 FAIL=0 =====
+
+########## phase 3 ##########
+== phase 3：终态 / 闸门恰好一次 / N16 零副作用 ==
+  [val ] 终态 = {'status': 'finished', 'error': None, 'current_node': None}
+  [ok  ] C1 跑到终态
+  [ok  ] C2 终态是 finished（不是 failed）
+  [ok  ] C3 无执行错误
+  [val ] gate_history = {'G1_diff_confirm': 1, 'G2_report_accept': 1, 'G3_regression_decision': 1}
+  [ok  ] C4 三道闸门各恰好一次（事件流）
+  [val ] gates_authority(终态) = {'G1_diff_confirm': {'decision': 'confirmed', 'status': 'signed', 'human_signed': True, 'actor_kind': 'human', 'history_len': 1}, 'G2_report_accept': {'decision': 'accept', 'status': 'signed', 'human_signed': True, 'actor_kind': 'human', 'history_len': 1}, 'G3_regression_decision': {'decision': 'defer', 'status': 'signed', 'human_signed': True, 'actor_kind': 'human', 'history_len': 1}}
+  [ok  ] C5 权威账本：三道闸门均为人类签署
+  [ok  ] C5b 权威账本 all_signed=true
+  [ok  ] C5c 终态锚仍一致（全程未被外部改动）
+  [ok  ] C5d 事件流与权威账本无分歧
+  [val ] node_history = ['N0', 'N1', 'N2', 'N3', 'N4', 'N5', 'N6', 'N6_apply', 'N7', 'N8', 'N9', 'N9_submit', 'N10', 'N11', 'N12', 'N13', 'N14', 'HALT']
+  [ok  ] C6 节点历史覆盖 N0 起点
+  [ok  ] C7 节点历史到达终止节点（HALT 或 N16）
+  [ok  ] C7b defer ⇒ 终点是 HALT 且未走 N16（不发版）
+  [ok  ] C8 节点历史无 failed
+  [ok  ] C8b HALT 是显式中止而非假装收敛（事件 status=halted）
+  [val ] kb/baselines 内容摘要(前/后) = {'before': '34aa3b60d40f7890be375d1eb50d6786e25708201ccbdae56b9f10c83a9603db', 'after': '34aa3b60d40f7890be375d1eb50d6786e25708201ccbdae56b9f10c83a9603db'}
+  [ok  ] C9 N16 dry-run 对 kb/baselines 零副作用（内容 md5 逐行不变）
+  [ok  ] C10 promote 能力被 I4/I3 正确判否
+  [ok  ] C11 全流程事件 kind 仍在白名单
+  [ok  ] C12 事件 seq 严格递增且连续
+  [ok  ] C13 run 列表含本 run
+  [val ] run 列表 = [{'run_id': 'RUN-20261029-104600', 'status': 'finished', 'mode': 'drill', 'baseline': 'v0', 'updated_at': '2026-10-29T10:46:31.214838', 'current_node': 'HALT'}]
+
+===== phase 3：PASS=18 FAIL=0 =====
+spikes/accept_v1_run.sh: line 66:  5250 Terminated              ./run.sh >> "$LOG/server.out" 2>&1
+[driver] 已停 uvicorn pid=5250（未触碰长任务）
+== 第 3 代：phase 4（起长任务并停放；不取消） ==
+[driver] 服务已起 pid=5288（第 3 代）
+
+########## phase 4 ##########
+== phase 4：长任务停放（作业仍在跑） ==
+  [val ] 本次启动的恢复报告 = {'restored': [], 'failed': []}
+  [ok  ] D-1 已 finished 的 run 不会被重启反复恢复（僵尸 run 不再堆积）
+  [ok  ] 建 run(scenario=cancel)
+  [ok  ] 签 G1(scenario=cancel)
+  [ok  ] 作业已提交(scenario=cancel)
+  [val ] 停放态 = {'status': 'waiting_job', 'slot': {'locked': True, 'holder': {'format_version': 2, 'owner_pid': 5288, 'owner_start': '801356162', 'job_id': 'N9-RUN-20261029-104633', 'tc': 'tc_pcie_rw_02', 'seed': '1', 'acquired_at': 1793242003.2357285, 'note': None, 'job_pid': 5310, 'job_pid_start': '801357301', 'job_record_id': 'JOB-04c576ee9e50', 'start_ts': 1793242003.2357285}, 'holder_alive': True, 'holder_alive_known': True, 'holder_job_id': 'N9-RUN-20261029-104633', 'holder_job_pid': 5310, 'holder_phase': 'running', 'format_version': 2, 'queued': [], 'queue_depth': 0}, 'pending_payload': {'job_id': 'JOB-04c576ee9e50', 'node': 'N9', 'tc': 'tc_pcie_rw_02', 'log_path': '/home/work/chenjunming/change-impact-loop/loop/state/jobs/JOB-04c576ee9e50.log', 'cases': ['tc_pcie_rw_02'], 'wait_reason': '全跑为外部长任务；图必须停放而非阻塞 handler。', 'entry_decisions_required': False}}
+  [ok  ] D0 作业运行期执行处于**停放**（waiting_job，不是 running 到不可快照）
+  [ok  ] D0b 单槽被该作业持有（uvs.setup 是全局单文件 ⇒ 单槽）
+  [ok  ] D0c 停放的中断带 job_id（可被看护/补投递认领）
+  [ok  ] D0d 停放时执行快照已落盘（重启恢复的前提）
+
+===== phase 4：PASS=8 FAIL=0 =====
+spikes/accept_v1_run.sh: line 66:  5288 Terminated              ./run.sh >> "$LOG/server.out" 2>&1
+[driver] 已停 uvicorn pid=5288（未触碰长任务）
+== 第 4 代：phase 4b（重附着到仍在跑的长任务 + 取消）/ 5（死任务） ==
+[driver] 服务已起 pid=5365（第 4 代）
+
+########## phase 4b ##########
+== phase 4b：重启后长任务仍在跑 + 取消（界面第二个写动作） ==
+  [val ] restore_report = {'restored': ['RUN-20261029-104633'], 'failed': [], 'jobs': {'running': 1, 'done': 1, 'dead': 0, 'undelivered': 0}}
+  [ok  ] D1 重启后本长任务 run 被恢复
+  [ok  ] D1b 重启时确有作业在跑（re-attach 才有意义）
+  [val ] 重启后 = {'status': 'waiting_job', 'job': 'JOB-04c576ee9e50', 'phase': 'running', 'slot': {'locked': True, 'holder': {'format_version': 2, 'owner_pid': 5288, 'owner_start': '801356162', 'job_id': 'N9-RUN-20261029-104633', 'tc': 'tc_pcie_rw_02', 'seed': '1', 'acquired_at': 1793242003.2357285, 'note': None, 'job_pid': 5310, 'job_pid_start': '801357301', 'job_record_id': 'JOB-04c576ee9e50', 'start_ts': 1793242003.2357285}, 'holder_alive': True, 'holder_alive_known': True, 'holder_job_id': 'N9-RUN-20261029-104633', 'holder_job_pid': 5310, 'holder_phase': 'running', 'format_version': 2, 'queued': [], 'queue_depth': 0}}
+  [ok  ] D2 仍重新附着到**同一个**在跑作业
+  [ok  ] D3 跨重启单槽**没有丢**（活动锁不得被重启误清）
+  [ok  ] D4 重启后仍处于停放（waiting_job：可以再恢复，不会 fail-closed）
+  [val ] cancel 响应 = {'ok': True, 'job_id': 'JOB-04c576ee9e50'}
+  [ok  ] D5 取消请求被接受
+  [val ] 取消后 = {'status': 'failed', 'job': 'cancelled', 'slot': {'locked': False, 'holder': None, 'holder_alive': None, 'holder_alive_known': False, 'holder_job_id': None, 'holder_job_pid': None, 'holder_phase': None, 'format_version': None, 'queued': [], 'queue_depth': 0}}
+  [ok  ] D6 取消后 run 不是成功态
+  [ok  ] D7 取消后单槽已释放（终态必须释放，否则会把一次失败放大成全体挂起）
+
+===== phase 4b：PASS=8 FAIL=0 =====
+
+########## phase 5 ##########
+== phase 5：死任务必须判死（无 rc 不得当成功） ==
+  [ok  ] 建 run(scenario=dead_job)
+  [ok  ] 签 G1(scenario=dead_job)
+  [ok  ] 作业已提交(scenario=dead_job)
+  [val ] 死任务后 = {'status': 'failed', 'job': {'job_id': 'JOB-0bebe65a2258', 'node': 'N9', 'phase': 'dead', 'rc': None, 'tc': 'tc_pcie_rw_02', 'seed': '1', 'started_at': 1793242015.7247188, 'elapsed_s': 0.1, 'eta_seconds': None, 'eta_human': '未知（本作业未登记仿真时长）', 'basis': '实测模型 3.79 µs sim / 1 s wall（n=2，低置信）', 'confidence': 'none', 'log_path': '/home/work/chenjunming/change-impact-loop/loop/state/jobs/JOB-0bebe65a2258.log', 'log_tail': [], 'note': 'mode=drill scenario=dead_job DRILL FIXTURE'}, 'error': '投递失败：RuntimeError: 死任务 JOB-0bebe65a2258：进程已终结但未留下 rc ⇒ 不得当成功，走失败分支。'}
+  [ok  ] E1 死任务判为 failed（不得静默当成功）
+  [ok  ] E2 死任务后单槽已释放（否则失败会被放大成全体挂起）
+  [ok  ] E3 事件流记了 dead_job
+
+===== phase 5：PASS=6 FAIL=0 =====
+spikes/accept_v1_run.sh: line 66:  5365 Terminated              ./run.sh >> "$LOG/server.out" 2>&1
+[driver] 已停 uvicorn pid=5365（未触碰长任务）
+
+================= 驱动汇总 =================
+  phase 1    rc=0
+  phase 2    rc=0
+  phase 3    rc=0
+  phase 4    rc=0
+  phase 4b   rc=0
+  phase 5    rc=0
+  => ALL PASS

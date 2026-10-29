@@ -78,7 +78,12 @@ def _asgi_call(path: str, raw_path: str, *, method: str = "GET", query: str = ""
 
 
 class FakeUpstream:
-    """可编程的 loopback 上游；记录每次请求的方法/路径/头/体（真跑，不是 mock）。"""
+    """可编程的 loopback 上游；记录每次请求的方法/路径/头/体（真跑，不是 mock）。
+
+    `router`（S7c 新增，可选）：`callable(path, headers) -> (status, headers, body)`，
+    用来冒充**真实 DSH Web 的行为链**（`?token=` → 303 + Set-Cookie → 带 cookie 200）。
+    为 `None` 时行为与 S4 完全一致（既有用例不受影响）。
+    """
 
     def __init__(self) -> None:
         self.calls: list[dict] = []
@@ -86,6 +91,7 @@ class FakeUpstream:
         self.headers: list[tuple[str, str]] = [("Content-Type", "text/html; charset=utf-8")]
         self.body = b"<html><body>fake-dsh</body></html>"
         self.delay_s = 0.0
+        self.router = None
         outer = self
 
         class _Handler(BaseHTTPRequestHandler):
@@ -102,11 +108,15 @@ class FakeUpstream:
                 })
                 if outer.delay_s:
                     time.sleep(outer.delay_s)
-                payload = b"" if self.command == "HEAD" else outer.body
-                self.send_response(outer.status)
-                for name, value in outer.headers:
+                status, headers, body = outer.status, outer.headers, outer.body
+                if outer.router is not None:
+                    status, headers, body = outer.router(
+                        self.path, {k.lower(): v for k, v in self.headers.items()})
+                payload = b"" if self.command == "HEAD" else body
+                self.send_response(status)
+                for name, value in headers:
                     self.send_header(name, value)
-                self.send_header("Content-Length", str(len(outer.body)))
+                self.send_header("Content-Length", str(len(body)))
                 self.end_headers()
                 if payload:
                     self.wfile.write(payload)
@@ -740,7 +750,9 @@ def test_availability_endpoint_ready(client: TestClient, run_dir: Path, upstream
     payload = client.get(f"/api/runs/{RUN_ID}/agents/{NODE}/instance").json()
     assert payload == {
         "available": True, "state": "ready", "reason": None,
-        "url": PREFIX, "embed": "iframe", "authority": "projection", "attempt": 1,
+        "url": PREFIX, "embed": "iframe", "authority": "projection",
+        # S7c 只增字段（§6.1）：反代只透传 HTTP，WebSocket 升级不通 ⇒ 界面如实说"实时流未接通"
+        "stream": instance_proxy.STREAM_HTTP_ONLY, "attempt": 1,
     }
     assert SEKRET not in json.dumps(payload)
 
@@ -750,7 +762,8 @@ def test_availability_endpoint_unavailable(client: TestClient, run_dir: Path) ->
     payload = client.get(f"/api/runs/{RUN_ID}/agents/{NODE}/instance").json()
     assert payload == {
         "available": False, "state": "unavailable", "reason": "target_missing",
-        "url": None, "embed": "new_tab_only", "authority": "projection", "attempt": None,
+        "url": None, "embed": "new_tab_only", "authority": "projection",
+        "stream": instance_proxy.STREAM_HTTP_ONLY, "attempt": None,
     }
 
 
@@ -1073,3 +1086,249 @@ def test_p2_import_time_silencing_is_explicit(monkeypatch: pytest.MonkeyPatch) -
     importlib.reload(instance_proxy)
     assert "httpx" in seen, f"import 时没有配置 httpx logger：{seen}"
     assert "httpcore" in seen, f"import 时没有配置 httpcore logger：{seen}"
+
+
+# ================================================================ S7c：真机形态（REV-16 §9-1/§9-10/§9-2）
+
+#: S7c 探针 #1 实测的 `index.html` 关键形态（`loop/.logs/s7c/index.html`，37512 B）：
+#: 上游注入 `<base href="./">`，全部资源引用**相对**（0 条绝对 `/…`），插件按 `plugins/??…` 批量取。
+_REAL_INDEX_HTML = (
+    '<!doctype html><html lang="en"><head><base href="./"><link rel="manifest" '
+    'href="./manifest.webmanifest" /><link rel="icon" href="./favicon.svg" />'
+    '<title>DeepSeek Harness</title>'
+    '<script type="module" crossorigin src="./assets/index-CN7NIWNw.js"></script>'
+    '<link rel="modulepreload" crossorigin href="./assets/vendor-DcuzkuQH.js">'
+    '</head><body><div id="root"></div></body></html>'
+).encode()
+
+
+def test_s7c_real_index_html_forwarded_byte_identical(client: TestClient, run_dir: Path,
+                                                      upstream: FakeUpstream) -> None:
+    """§9-10 的落地事实：上游 `index.html` **相对引用 + `<base href="./">`** ⇒ 前缀剥离即可。
+
+    因此反代**不重写 HTML**（不加前缀、不注入 base、不改上游内容）：这里逐字节锁住，
+    防止后来者用"HTML 前缀化改写"去修一个并不存在的问题（B3 的 (a) 方案）。
+    """
+    write_instance(run_dir, port=upstream.port)
+    upstream.body = _REAL_INDEX_HTML
+    response = client.get(f"/instance/{RUN_ID}/{NODE}/1/", headers={"Accept": "text/html"})
+    assert response.status_code == 200
+    assert response.content == _REAL_INDEX_HTML, "反代不得改写上游 HTML"
+    assert upstream.last()["path"] == "/"
+    assert upstream.last()["headers"]["accept"] == "text/html"
+
+    # 相对资源引用（`./assets/...`）在浏览器里解析成 `<前缀>/assets/...` ⇒ 走同一条前缀剥离
+    asset = client.get(f"/instance/{RUN_ID}/{NODE}/1/assets/index-CN7NIWNw.js")
+    assert asset.status_code == 200
+    assert upstream.last()["path"] == "/assets/index-CN7NIWNw.js"
+
+
+def test_s7c_batched_plugin_module_url_survives_verbatim(client: TestClient, run_dir: Path,
+                                                         upstream: FakeUpstream) -> None:
+    """真实前端用 `plugins/??<id>,<id>&rev=<hash>` 批量取模块：`??` 与 query 必须**逐字**透传。
+
+    S7c 探针实测最长批量 query = **2813** 字符（57 个模块 id + `rev`），必须仍在 R8 的
+    `MAX_QUERY_LEN` 之内；这里用真实的 57 条 id 形态，而不是手搓短样例。
+    """
+    ids = [f"@deepseek-ai/dsh-client-ui-plugin-{index}-abcdefghij" for index in range(57)]
+    query = "?" + ",".join(f"{module_id}/client.js" for module_id in ids) + "&rev=57e1decf52e2"
+    assert len(query) >= 2800, len(query)
+    write_instance(run_dir, port=upstream.port)
+    upstream.body = b"/* module batch */"
+
+    response = client.get(f"/instance/{RUN_ID}/{NODE}/1/plugins/{query}")
+    assert response.status_code == 200, response.text
+    assert response.content == b"/* module batch */"
+    assert upstream.last()["path"] == f"/plugins/{query}", upstream.last()["path"]
+
+
+def test_s7c_index_loads_without_cookie(client: TestClient, run_dir: Path,
+                                        upstream: FakeUpstream) -> None:
+    """P8 实测：**静态资源公开**（无 cookie 也 200）⇒ 反代不得替上游"顺手加鉴权"。"""
+    write_instance(run_dir, port=upstream.port)
+    upstream.body = b"body{color:red}"
+    response = client.get(f"/instance/{RUN_ID}/{NODE}/1/assets/index-BxpfOGf3.css")
+    assert response.status_code == 200
+    assert upstream.last()["headers"].get("cookie") is None, "无 cookie 的请求不应被反代凭空加上 cookie"
+
+
+def test_s7c_token_to_cookie_handshake_end_to_end(client: TestClient, run_dir: Path,
+                                                  upstream: FakeUpstream,
+                                                  caplog: pytest.LogCaptureFixture) -> None:
+    """**S7c 主链路**：`?token=` → 303 + 签名 cookie → 带 cookie 得 200（上游逻辑真跑）。
+
+    上游按 P8 实测形态实现三态：匿名 401 / `path=/?token=<launch>` 换 cookie / 带 cookie 200。
+    反代侧必须做到：① 无 cookie 时注入受管 token；② `Location` 收回同源前缀且**不含 token**；
+    ③ `Set-Cookie` 的 `Path` 收到实例前缀（cookie 只在实例前缀内投递）；④ token 不出现在任何响应面。
+    """
+    caplog.set_level(logging.DEBUG)
+    launch = "Z" * 43
+    cookie_name = "dsh-auth-uo7ZLgk0z9HuRlMCBeqBDQAC1VbqiPIRHxGt2tlui-k"
+    cookie_value = "v1.eyJ2ZXJzaW9uIjoxfQ.Ar97r55bP-4faS2IfKtRmUmcQW1rRnmbUGT0ArvShww"
+
+    def router(path: str, headers: dict[str, str]):
+        has_cookie = cookie_name in (headers.get("cookie") or "")
+        if path == f"/?token={launch}":
+            return (303, [("Location", "./"), ("Referrer-Policy", "no-referrer"),
+                          ("Set-Cookie",
+                           f"{cookie_name}={cookie_value}; Max-Age=2592000; Path=/; HttpOnly; SameSite=Strict"),
+                          ("Content-Type", "text/plain; charset=utf-8")], b"")
+        if path.startswith("/?token="):
+            return (401, [("Content-Type", "text/plain; charset=utf-8")],
+                    b"dsh web authentication required\n")
+        if not has_cookie:
+            return (401, [("Content-Type", "text/plain; charset=utf-8")],
+                    b"dsh web authentication required\n")
+        if path in ("/", "/?"):
+            return (200, [("Content-Type", "text/html; charset=utf-8")], _REAL_INDEX_HTML)
+        return (200, [("Content-Type", "application/json")], b'{"ok":true}')
+
+    write_instance(run_dir, port=upstream.port, token=launch)
+    upstream.router = router
+
+    # ① 首次导航（无 cookie）：反代注入受管 token ⇒ 上游换 cookie 并 303
+    first = client.get(f"/instance/{RUN_ID}/{NODE}/1/", headers={"Accept": "text/html"})
+    assert first.status_code == 303, first.text
+    assert upstream.last()["path"] == f"/?token={launch}"
+    assert first.headers["location"] == f"/instance/{RUN_ID}/{NODE}/1/"
+    set_cookie = first.headers["set-cookie"]
+    assert f"Path=/instance/{RUN_ID}/{NODE}/1/" in set_cookie, set_cookie
+    assert "HttpOnly" in set_cookie and "SameSite=Strict" in set_cookie
+    assert launch not in set_cookie and launch not in str(dict(first.headers))
+
+    # ② 浏览器带 cookie 回前缀根：反代不再注入 token，上游 200 给出 index
+    second = client.get(f"/instance/{RUN_ID}/{NODE}/1/",
+                        headers={"Accept": "text/html", "Cookie": f"{cookie_name}={cookie_value}"})
+    assert second.status_code == 200, second.text
+    assert second.content == _REAL_INDEX_HTML
+    assert "token=" not in upstream.last()["path"], upstream.last()["path"]
+    assert launch not in caplog.text
+
+
+def test_s7c_api_rpc_post_reaches_upstream_with_same_origin_fences(
+        client: TestClient, run_dir: Path, upstream: FakeUpstream) -> None:
+    """iframe 内 `/api` 不 403 的前半（另一半点名在 R7 的 Host 白名单侧）。
+
+    真实前端 `POST api/<endpoint>`（**相对** URL，见 `dsh-client-connection` 的
+    ``send(`${channel}/${endpoint}`.slice(1))``）⇒ 反代必须原样转发方法/体，并把
+    `Origin`/`Referer`/`Sec-Fetch-Site` 还原成"看起来同源"的上游语义。
+    """
+    write_instance(run_dir, port=upstream.port)
+    upstream.body = b'{"type":"server-response","rpcId":"p-2","result":{"ok":true}}'
+    upstream.headers = [("Content-Type", "application/json")]
+    body = '{"type":"client-request","rpcId":"p-2","method":"session/list","payload":{"args":{"_request":{}}}}'
+    response = client.post(
+        f"/instance/{RUN_ID}/{NODE}/1/api/session/list",
+        content=body.encode(), headers={
+            "Content-Type": "application/json", "Accept": "*/*",
+            "Origin": BOARD, "Referer": f"{BOARD}/runs/{RUN_ID}",
+            "Sec-Fetch-Site": "same-origin", "Cookie": "dsh-auth-x=v1.a.b"})
+    assert response.status_code == 200, response.text
+    call = upstream.last()
+    assert call["method"] == "POST"
+    assert call["path"] == "/api/session/list"
+    assert call["body"] == body.encode()
+    assert call["headers"]["origin"] == f"http://{upstream.authority}"
+    assert call["headers"]["referer"] == f"http://{upstream.authority}/"
+    assert call["headers"]["sec-fetch-site"] == "same-origin"
+    assert call["headers"]["host"] == upstream.authority
+
+
+def test_s7c_websocket_mux_is_405_but_plain_http_still_forwarded(
+        client: TestClient, run_dir: Path, upstream: FakeUpstream) -> None:
+    """§9-2（S7c 真机确认）：实时事件流走 `WS /api/remote.mux` ⇒ 反代 **405**（不静默半死）。
+
+    同时锁住"只挡升级、不挡普通请求"：同路径的普通 HTTP 请求仍原样转发
+    （真实上游对该路径返回 404，反代不得把它变成 405 —— 那会把"上游没有"写成"反代不支持"）。
+    """
+    write_instance(run_dir, port=upstream.port)
+    upgrade = client.get(f"/instance/{RUN_ID}/{NODE}/1/api/remote.mux",
+                         headers={"Upgrade": "websocket", "Connection": "Upgrade"})
+    assert upgrade.status_code == 405, upgrade.text
+    assert "websocket" in upgrade.text.lower() or "upgrade" in upgrade.text.lower()
+    assert not upstream.calls, "升级请求不得转发"
+
+    upstream.status = 404
+    upstream.body = b"not found"
+    plain = client.get(f"/instance/{RUN_ID}/{NODE}/1/api/remote.mux", headers={"Accept": "*/*"})
+    assert plain.status_code == 404, plain.text
+    assert upstream.last()["path"] == "/api/remote.mux"
+
+
+def test_s7c_connect_relative_location_rewritten_into_prefix(client: TestClient, run_dir: Path,
+                                                             upstream: FakeUpstream) -> None:
+    """`GET /connect?token=` ⇒ 上游 302 `location: ./api/remote.mux`（相对）⇒ 收回**同源前缀**。
+
+    这是 R15 的相对分支：不处理就会把浏览器送到看板根的 `/api/remote.mux`（404 面）。
+    """
+    write_instance(run_dir, port=upstream.port)
+    upstream.status = 302
+    upstream.headers = [("Location", "./api/remote.mux"),
+                        ("Set-Cookie", "dsh-auth-x=v2.a.b; Path=/; HttpOnly; SameSite=Strict"),
+                        ("Content-Type", "text/plain")]
+    response = client.get(f"/instance/{RUN_ID}/{NODE}/1/connect")
+    assert response.status_code == 302, response.text
+    assert response.headers["location"] == f"/instance/{RUN_ID}/{NODE}/1/api/remote.mux"
+    assert response.headers["set-cookie"].startswith("dsh-auth-x=v2.a.b; "
+                                                     f"Path=/instance/{RUN_ID}/{NODE}/1/")
+
+
+def test_s7c_availability_declares_websocket_stream_gap(client: TestClient, run_dir: Path,
+                                                        upstream: FakeUpstream) -> None:
+    """§6.1 只增字段 `stream`：反代**不透传** WebSocket 升级 ⇒ 界面必须能显式说"实时流未接通"。
+
+    为什么放在服务端：这是**反代的传输能力事实**（§5.1/§9-2），不是前端可以自己推断的业务判据；
+    `ready` 仍然只表示"目标元数据可用且 loopback"，不能被读成"iframe 内实时流已通"。
+    两个分支（可用/不可用）形状一致 —— 界面读同一字段。
+    """
+    assert instance_proxy.STREAM_HTTP_ONLY == "http_only"
+    write_instance(run_dir, port=upstream.port, token=SEKRET)
+    ready = client.get(f"/api/runs/{RUN_ID}/agents/{NODE}/instance").json()
+    assert ready["available"] is True and ready["state"] == "ready"
+    assert ready["stream"] == instance_proxy.STREAM_HTTP_ONLY
+
+    absent = instance_proxy.availability(run_dir, run_id=RUN_ID, node=NODE, attempt=9)
+    assert absent["available"] is False and absent["reason"] == "target_missing"
+    assert absent["stream"] == instance_proxy.STREAM_HTTP_ONLY
+
+
+# ---------------------------------------------------------------- S7c：token 日志脱敏（真机发现）
+
+def test_s7c_token_in_uvicorn_access_line_is_redacted() -> None:
+    """S7c 真机发现：uvicorn access log 会把首跳 `?token=<43 chars>` 的完整 request line 记下来。
+
+    REV-16 §5.4 要求 token **永不出现在本服务日志** ⇒ 必须在日志层脱敏（不改请求/响应/元数据）。
+    判据：渲染后的日志行不再含 token 值，但保留 `token=<redacted>` 便于排障。
+    """
+    import logging
+
+    secret = "A" * 43
+    record = logging.LogRecord(
+        "uvicorn.access", logging.INFO, __file__, 1,
+        '%s - "%s %s HTTP/%s" %d',
+        ("127.0.0.1:5555", "GET", f"/instance/RUN-X/N6/1/?token={secret}", "1.1", 303), None)
+    assert instance_proxy.TokenRedactFilter().filter(record) is True
+    rendered = record.getMessage()
+    assert secret not in rendered
+    assert "token=<redacted>" in rendered
+
+
+def test_s7c_token_redaction_is_installed_at_import_time() -> None:
+    """与 httpx 压级同一纪律：`from services import instance_proxy` 就生效，不靠部署方记得配。"""
+    import logging
+
+    for name in ("uvicorn.access", "uvicorn.error"):
+        assert any(isinstance(item, instance_proxy.TokenRedactFilter)
+                   for item in logging.getLogger(name).filters), name
+
+
+def test_s7c_token_redaction_is_idempotent() -> None:
+    """重复安装不叠加过滤器（否则同一条日志会被改多次、也看不出装了几遍）。"""
+    import logging
+
+    logger = logging.getLogger("uvicorn.access")
+    before = len([item for item in logger.filters if isinstance(item, instance_proxy.TokenRedactFilter)])
+    instance_proxy.install_token_redaction()
+    instance_proxy.install_token_redaction()
+    after = len([item for item in logger.filters if isinstance(item, instance_proxy.TokenRedactFilter)])
+    assert before == after == 1

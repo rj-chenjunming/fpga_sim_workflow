@@ -256,6 +256,7 @@ window.AgentWindow = (function () {
     instanceUrl = "";
     setNewTab("");
     setLine("awEmbedState", "读取中");
+    setLine("awEmbedStream", "");
     if ($("awEmbedFrame")) {
       $("awEmbedFrame").hidden = true;
       $("awEmbedFrame").removeAttribute("src");
@@ -274,6 +275,7 @@ window.AgentWindow = (function () {
     }
     var S = window.S4View;
     setLine("awEmbedState", "不可内嵌");
+    setLine("awEmbedStream", "");
     showFallback("不可内嵌", "原因：" + (S ? S.instanceReason(reason) : String(reason || "未知")), "");
   }
   function embedReady(url) {
@@ -314,6 +316,10 @@ window.AgentWindow = (function () {
         if (stale()) return;
         if (probe && probe.ok) {
           setLine("awEmbedState", "已内嵌");
+          /* 内嵌成功 ≠ 完全可用：实时流走 WebSocket，反代不透传升级（§9-2）。
+             文案由服务端 `stream` 字段驱动，前端不自己判。 */
+          var SV = window.S4View;
+          setLine("awEmbedStream", SV ? SV.streamNote(meta.stream) : "");
           embedReady(String(meta.url));
           return;
         }
@@ -323,6 +329,7 @@ window.AgentWindow = (function () {
     if (stale()) return;
     setNewTab(meta.url ? String(meta.url) : "");
     setLine("awEmbedState", meta.embed === "new_tab_only" ? "仅新标签页" : "不可内嵌");
+    setLine("awEmbedStream", "");
     var S = window.S4View;
     var reason = meta.reason ? String(meta.reason) : "target_missing";
     showFallback("不可内嵌", "原因：" + (S ? S.instanceReason(reason) : reason), "");

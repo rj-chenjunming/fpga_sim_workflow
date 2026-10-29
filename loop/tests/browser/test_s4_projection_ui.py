@@ -107,7 +107,9 @@ def agent_view(payload_progress=None, payload_explain=None, **over):
 def instance(**over):
     data = {'available': True, 'state': 'ready', 'reason': None,
             'url': '/instance/A/' + NODE + '/2/', 'embed': 'iframe',
-            'authority': 'projection'}
+            'authority': 'projection',
+            # §6.1（S7c 只增）：反代只透传 HTTP，WebSocket 升级不通（§9-2）
+            'stream': 'http_only'}
     data.update(over)
     return data
 
@@ -363,6 +365,40 @@ def test_available_instance_embeds_same_origin_url(ui):
     assert src.endswith('/instance/A/N3/2/')
     pw.expect(page.locator('#awEmbedFallback')).to_be_hidden()
     assert api['proxy_reads'] >= 1
+
+
+def test_embedded_instance_discloses_websocket_stream_gap(ui):
+    """S7c：内嵌成功 ≠ 完全可用 —— 必须**如实**说"实时流未接通"，不得静默半死。
+
+    判据来源是服务端 `stream` 字段（能力事实），前端只渲染；断言文本含 WebSocket 与 §9-2，
+    同时 iframe 仍然可见（不因实时流缺失就整块降级：页面可打开、可读快照）。
+    """
+    page, api = setup(ui, inst=instance())
+    pw.expect(page.locator('#awEmbedFrame')).to_be_visible()
+    pw.expect(page.locator('#awEmbedState')).to_contain_text('已内嵌')
+    note = page.locator('#awEmbedStream')
+    pw.expect(note).to_be_visible()
+    pw.expect(note).to_contain_text('WebSocket')
+    pw.expect(note).to_contain_text('§9-2')
+    pw.expect(note).to_contain_text('在新标签页打开')
+    assert not api['posts']
+
+
+def test_old_metadata_without_stream_field_claims_nothing(ui):
+    """旧服务端/旧记录没有 `stream` 字段 ⇒ 不显示这一行（不自己推断"有实时流"）。"""
+    payload = instance()
+    payload.pop('stream')
+    page, _ = setup(ui, inst=payload)
+    pw.expect(page.locator('#awEmbedFrame')).to_be_visible()
+    pw.expect(page.locator('#awEmbedStream')).to_have_text('')
+
+
+def test_degraded_instance_clears_stream_note(ui):
+    page, _ = setup(ui, inst=instance(available=False, state='unavailable',
+                                      reason='target_missing', url=None,
+                                      embed='new_tab_only'))
+    pw.expect(page.locator('#awEmbedFallback')).to_be_visible()
+    pw.expect(page.locator('#awEmbedStream')).to_have_text('')
 
 
 def test_unavailable_instance_degrades_with_reason_new_tab_and_session_copy(ui):

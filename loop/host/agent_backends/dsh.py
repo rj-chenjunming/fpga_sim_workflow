@@ -47,7 +47,10 @@ from .base import CONTRACT_VERSION, BackendInfo, BackendRequest, ExecutionUnknow
 #: 配置允许字段（多一个就拒绝：避免"悄悄接受未实现开关"）
 CONFIG_KEYS = frozenset({"enabled", "version", "node", "bin", "bin_sha256", "profile",
                          "timeout_s", "stop_grace_s", "wrap", "patches", "api_key_env",
-                         "tool_allowlist"})
+                         "tool_allowlist",
+                         # S7c：常驻 Web 实例的配置块（REV-16 §5.2 #2 / §9-6）。
+                         # 只是"允许被启动"；**没有任何代码自启动它**（见 host/web_instance_ctl.py）。
+                         "web"})
 SETTINGS_FILE = P.LOOP_DIR / "SETTINGS.yaml"
 
 #: 提交插件（B1：结构化结果的唯一通道；入口 id 由 `dsh_assets` 写进 patch 的 insert）
@@ -67,6 +70,18 @@ ATTEMPT_PINS = A.ATTEMPT_PINS
 DSH_PACKAGE = "@deepseek-ai/dsh"
 #: 准入记录里的稳定 code（可判；界面/证据按它区分"按 mode 替身"与"准入失败"）
 ADMITTED = "admitted"
+
+
+def web_config_from_settings(document: dict | None = None):
+    """S7c 适配层：把 `SETTINGS.dsh.web` 装成 `dsh_web_instance.WebInstanceConfig`。
+
+    为什么在这里：`DshConfig` 是 frozen dataclass（不能挂属性），而 Web 实例配置要复用
+    `dsh` 的 `node`/`bin`/`version`（版本锁定与指纹校验都在 `DshConfig`）。**不另立第二份
+    node/bin 解析**（红线 8）；`dsh_web_instance` 有意不 import 本模块（避免双向依赖）。
+    """
+    from . import dsh_web_instance as WI
+
+    return WI.config_from_settings(document, base=config_from_settings(document))
 
 
 def _attest_probe_file() -> Path | None:

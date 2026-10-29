@@ -459,6 +459,8 @@
             <button class="btn btn-sm" id="awSessionCopy" type="button">导出会话副本</button>
           </div>
         </div>
+        <!-- S7c：反代只透传 HTTP（WebSocket 升级不通，REV-16 §9-2）⇒ 内嵌成功也要如实说"实时流未接通"。 -->
+        <p class="tiny muted" id="awEmbedStream"></p>
         <iframe id="awEmbedFrame" class="aw-embed-frame" title="Agent 实例会话（同源反代）" hidden></iframe>
         <pre class="aw-session-copy" id="awSessionCopyBody" hidden>—</pre>
       </section>

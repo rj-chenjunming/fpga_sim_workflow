@@ -1,0 +1,71 @@
+{
+  "run_id": "RUN-20261029-103000",
+  "node": "N6",
+  "attempt": 1,
+  "view_doc_written": "/home/work/chenjunming/change-impact-loop/loop/.logs/s7a/ws/runs/RUN-20261029-103000/view.json",
+  "instance": {
+    "node": "N6",
+    "attempt": 1,
+    "host": "127.0.0.1",
+    "port": 35379,
+    "reused": false,
+    "port_requested": 0,
+    "port_fallback": false,
+    "startup_s": 3.181,
+    "pid": 7,
+    "home": "/home/work/chenjunming/change-impact-loop/loop/.logs/s7a/ws/runs/RUN-20261029-103000/agent_workspaces/N6/attempt-000001/dsh-web-home",
+    "metadata": "/home/work/chenjunming/change-impact-loop/loop/.logs/s7a/ws/runs/RUN-20261029-103000/agent_instance.json"
+  },
+  "token_len": 43,
+  "tokens_echoed": [],
+  "availability": {
+    "status": 200,
+    "body": {
+      "available": true,
+      "state": "ready",
+      "reason": null,
+      "url": "/instance/RUN-20261029-103000/N6/1/",
+      "embed": "iframe",
+      "authority": "projection",
+      "stream": "http_only",
+      "attempt": 1
+    }
+  },
+  "first_hop": {
+    "status": 303,
+    "location": "/instance/RUN-20261029-103000/N6/1/",
+    "set_cookie_path_has_prefix": true,
+    "body_len": 0
+  },
+  "index": {
+    "status": 200,
+    "bytes": 37512,
+    "has_base_dot": true,
+    "absolute_refs": [],
+    "ref_count": 11
+  },
+  "api_post": {
+    "status": 200,
+    "body": "{\"type\":\"server-response\",\"rpcId\":\"invalid-request\",\"result\":{\"ok\":false,\"error\":{\"code\":\"gateway/bad-request\",\"message\":\"invalid client-request message\",\"details\":{\"issues\":[{\"code\":\"invalid_value\",\""
+  },
+  "session_copy": {
+    "status": 200,
+    "available": true,
+    "kind": "session_log_facts"
+  },
+  "after_stop": {
+    "status": 200,
+    "body": {
+      "available": false,
+      "state": "unavailable",
+      "reason": "target_missing",
+      "url": null,
+      "embed": "new_tab_only",
+      "authority": "projection",
+      "stream": "http_only",
+      "attempt": 1
+    },
+    "metadata_exists": false
+  },
+  "token_in_dashboard_log": 0
+}

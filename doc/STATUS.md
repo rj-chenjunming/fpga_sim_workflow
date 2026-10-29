@@ -5544,3 +5544,94 @@ usage 168/550/83968/84686、`validation.ok=True`、submit accepted、`execution_
   `working_directory` 继续拒（收窄档下模型不可见）。
 - **`enforce_visibility` 的 fail-closed 代价**：收窄失败 ⇒ 准入失败、attempt 被挡（宁可挡也不静默退化）。
 - 未推送；`default_backend` 仍 `agently`。
+
+## 120 S7c 交付：DSH Web 实例落账 + 同源反代真机（2026-10-29）
+
+本轮入口：[开工提示词 S7](agents/开工提示词_S7-暴露面收敛与真机收口.md) §4.3；计划
+[2026-10-29-s7-exposure-convergence.md](plans/2026-10-29-s7-exposure-convergence.md) §2-B3/§6/§8-9..13；
+契约沿用 [REV-16](spec/SPEC-REV-16-20261028.md) §5/§6/§9-1/§9-2/§9-10、[REV-14](spec/SPEC-REV-14-20261028.md) §3-D3/§4-B6
+（**未新写替代契约**）；证据档 [`doc/evidence/DSH_S7C_20261029/`](evidence/DSH_S7C_20261029/README.md)（冻结 444 + 目录外 md5）。
+实现 owner：`s7c-proxy`（模块 + 反代/界面 + 真机 HTTP/Playwright 取证）；Lead 负责 `dsh.py`/`SETTINGS.yaml` 接线、
+编排入口 `host/web_instance_ctl.py`、接线后整链真机复核、门/证据/STATUS/提交。**本片无独立复核者**（不声称独立验证）。
+
+### 120.1 结论（逐条对开工提示词 §4.3-3）
+
+| # | 验收项 | 结论 |
+|---|---|---|
+| ① | 可用性端点 `ready` + `url` 指向正确 attempt | **通过**：`state=ready`、`url=/instance/RUN-20261029-103000/N6/1/`、`attempt=1` |
+| ② | iframe 加载真实页面 | **通过**：反代取回 `index.html` 200 / 37512 B、`<base href="./">`、11 条引用 0 条绝对；真实 Chromium 内 `title='DeepSeek Harness'`、`#root` 39916 字符 DOM、按钮 14/12 enabled、`elementFromPoint` 8/8 无遮罩、`pageerror 0`；截图 `raw/iframe.png`（1280×860） |
+| ③ | `/api` 不 403 | **通过**：经反代 `POST …/api/session/list` ⇒ **200**（穿过 Origin/`sec-fetch-site` 围栏到上游 RPC 网关）；合法 envelope 另取到 `200 {"ok":true,…}` |
+| ④ | cookie 由同源投递 | **通过**：首跳 `?token=` ⇒ **303**、`location` 已剥离 token、`Set-Cookie` 的 Path 收到实例前缀 |
+| ⑤ | token 不出现在日志/响应/错误页 | **通过（含一条真机修掉的 P2，见 120.3）**：`tokens_echoed=[]`、`token_in_dashboard_log=0` |
+| ⑥ | 目标缺失/上游挂 ⇒ 显式降级 | **通过**：实例停后 ⇒ `unavailable`/`target_missing`/`embed=new_tab_only`，元数据已清 |
+| 附 | 会话副本（`session_log` 接线） | **通过**：`/session-copy?attempt=1` ⇒ `available=true`、`kind=session_log_facts`（只给解析事实，不声称原文全文，§9-11） |
+
+### 120.2 上游绝对路径（B3 三方案 → 实测结论）
+
+真机 `index.html`：**11 条资源引用全部相对、0 条以 `/` 开头**；`<base href="./">` 由**服务端自己注入**；
+客户端 API/WS 也按 `document.baseURI` 相对解析。`--public-url` **无**路由语义（`dsh-web-app/README.md`
+原文："advertises the HTTP(S) root … configures no listener, routing, or cookie scope"）。
+⇒ **(b) 不存在、(c) 不必要、(a) 不需要也不应做**（B3 授权过的 HTML 前缀化改写**未启用**）。
+REV-16 §9-10 **实测可收口为"前缀剥离即可"**（spec 正文本轮不改，登记于此）。
+逐字节锁住"反代不改写 HTML"：`test_s7c_real_index_html_forwarded_byte_identical`。
+
+### 120.3 交付物
+
+| 文件 | 变更 | 契约 |
+|---|---|---|
+| `loop/host/agent_backends/dsh_web_instance.py`（新 533 行） | 起/停 `dsh --profile web`；从 stdout 解析**实际** host/port/launch token；健康检查（匿名 `GET /` 必须 401，不是"进程起来当就绪"）；原子写元数据（tmp+fsync+`os.replace`、0600）；`stop` 可重入、进程组一起收；token 不进日志/repr | REV-16 §5.2 #1（§9-1 写入方）/§5.5 |
+| `loop/host/web_instance_ctl.py`（新，Lead 编排入口） | 给哪个 `(run,node,attempt)` 起、home 落点、实例替换、清落账；CLI `start/stop/status`；**不自启动** | REV-16 §5.2；计划 §6 |
+| `loop/services/instance_proxy.py` | `availability()` 两分支都下发 `stream="http_only"`（能力事实，非健康判据）；**新增 `TokenRedactFilter`**（真机 P2：uvicorn access log 记录首跳 `?token=`） | REV-16 §6.1；§5.4 |
+| `loop/web/{s4-view.js,agent-window.js,index.html}` | 内嵌成功时也如实披露"实时流未接通"（`#awEmbedStream`，文案由服务端字段驱动） | REV-16 §9-2；红线 8 |
+| `loop/host/agent_backends/dsh.py`（Lead 接线） | `CONFIG_KEYS` 加 `web`；`web_config_from_settings()` 复用 `DshConfig` 的 node/bin/version（不另立第二份解析） | REV-16 §9-6 |
+| `loop/SETTINGS.yaml`（Lead 接线） | `dsh.web: {enabled: false, home: "", host: 127.0.0.1, preferred_port: 0, start_timeout_s: 30, stop_grace_s: 5}` | 裁决 B3 |
+| 测试 | `test_dsh_web_instance.py`(30) + `test_instance_proxy.py`(+8 与 +3 脱敏；S4 原 45 **零回归**) + `test_web_instance_ctl.py`(9) + `tests/browser/test_s4_projection_ui.py`(+3) | 各条 TDD |
+
+**真机修掉的 P2**：接线后整链复核时"token 不得出现在看板日志"断言**首次为红** —— uvicorn access log
+记录了首跳完整 URL 里的 `?token=<43 chars>`。REV-16 §5.4 要求 token **永不出现**在服务日志 ⇒
+新增 `TokenRedactFilter`（import 即生效、幂等，把 `token=<值>` 渲染成 `token=<redacted>`；只改日志文本，
+不改请求/响应/元数据）。修复后同一断言转绿（`token_in_dashboard_log=0`）。
+
+### 120.4 收口门（数字从输出复制）
+
+| 门 | 结果 |
+|---|---|
+| 单测（可写数据根） | `3 failed, 1766 passed, 1 warning, 140 errors in 430.39s`；3 failed 全部是既有 `env_layer`；140 errors = 浏览器缺 Chromium（137 既有 + 3 条 S7c 新增浏览器用例） |
+| kb 自测 + env layer | `PASS=10` / `PASS=9` / `PASS=28`，`FAIL=0`；env_layer `3 passed`；**原 ENV_ROOT 零写入** |
+| 端到端（drill） | `phase 1–5 + 4b` 全 `rc=0`，`=> ALL PASS` |
+| 文档门 | `65 passed in 2.39s` |
+| **浏览器门（S7c 改了界面，必跑）** | **`141 passed in 148.08s`**（S4 收口 138 + 3） |
+
+差量对账：S7b 树 `1716 passed` → S7c 树 **`1766 passed`**（**+50** = 30 `test_dsh_web_instance` +
+9 `test_web_instance_ctl` + 8 `test_instance_proxy` 新例 + 3 token 脱敏）；`failed 3=3`；
+`errors 137→140`（+3 条新增浏览器用例）；`warnings 1=1`，**零新增失败**。
+
+**一次假红（照实登记，非回归）**：本片单测门首跑出现 `72 failed, 1691 passed, 6 skipped, 140 errors`，
+根因是 **`.dev-ws` 数据根被前面的探针留成半成品**（drill 夹具 `RUN-20261015-120626` 缺件 ⇒
+`drill 夹具不完整`，连带 `test_flow`/`test_fix_lifecycle`/浏览器用例集体红）。
+`provision_dev_workspace.sh --cleanup` 重建后同一棵树复跑即 `3 failed/1766 passed`（上表数字）。
+
+### 120.5 纪律核对
+
+- **写权**：`dsh.py`/`SETTINGS.yaml` 只由 Lead 改；`kb/**` 零改动；`doc/evidence/**` 只增。
+- **唯一判据（红线 8）**：反代 R1–R20 一处未放宽；目标来源仍只 `<run_dir>/agent_instance.json`（**不接受客户端目标**）；
+  归属判据仍只在 `instance_proxy.load_target`；界面只渲染服务端 `stream` 字段。
+- **时间口径**：`agent_instance.json.written_at` 走 `paths.now_iso`（§4 唯一入口）。
+- **失败显式**：起不来/健康检查失败/落账失败 ⇒ 收干净进程再抛 `WebCtlError`（不留半死实例、不留指向死端口的元数据）；
+  不可用态 503 + reason 枚举，不伪装 ready。
+- **真实调用**：本片真机 = 本地起 `dsh --profile web` 3 次（`s7c-proxy`）+ 接线后整链复核 2 次（Lead），**不调模型、不烧 token**。
+- **独立复核**：**无**。
+
+### 120.6 未做 / 不声称
+
+- **不声称 WebSocket/SSE 可用**：`WS /api/remote.mux` 实测确需升级，反代仍 **405**（§9-2），界面已如实披露
+  "实时流未接通"；真机判定为**"只缺实时流"而非白屏半死**（截图 + `elementFromPoint` 8/8 + 按钮可点 + console 原文留档）。
+- **D3「人在 GUI 里看到 attempt 会话并说话」未落地**：Web 实例 home = `<attempt>/dsh-web-home`，
+  不与该 attempt 的 `dsh-home` 共用。原因（实测）：`dsh web` 会在 home 自生成 `.credentials.yaml`，
+  与 `dsh_assets.FORBIDDEN_HOME_ENTRIES` 冲突（共用 ⇒ 下次 attempt 被 DS-09 判"含宿主件"）。
+  治法两条（改 DS-09 判据 / attempt layout 收敛）**本轮都不做**，登记计划 §8-9。
+- **不自启动**：`dsh.web.enabled=false`（仓内默认）；起实例必须显式 CLI `--enable` ⇒ 未改默认运行行为。
+- **Web 实例未套 bwrap**（登记未做）；**未声称**把 Web 实例当执行通道；**未因内嵌成功改默认后端**。
+- **未定位项（照实记）**：Playwright 采集里有 9 条 `500` 的 URL 未定位（采集只 dump 了 assets/plugins 子集与
+  `requestfailed`，未落全量 `(url,status)`）；候选是探针夹具导致看板自身 `/api/…` 500，**未排除**，登记下次补测。
+- 未推送。

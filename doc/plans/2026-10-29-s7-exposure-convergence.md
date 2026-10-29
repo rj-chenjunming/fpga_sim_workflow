@@ -115,3 +115,23 @@
 8. **全局 `toolNames` 收敛不成立**：引擎明确拒绝全局 `tools.restrict`
    （`dsh-tools/lib/index.js`：`tools.restrict() requires a scoped context …`）
    ⇒ 可收敛的是 **agent 作用域面**；自检同时回显"全局 26 项"与"agent 有效面 7 项"，两者都如实记录。
+
+## 11 S7c 落地后补登（照实登记，不改裁决文字）
+
+9. **D3「人在 GUI 里看到并在说话」未落地**：Web 实例 home = `<attempt>/dsh-web-home`，**不与该 attempt 的
+   `dsh-home` 共用**。实测原因：`dsh --profile web` 会在自己的 home 里自生成 `.credentials.yaml`
+   （cookie 签名 secret），而 `dsh_assets.FORBIDDEN_HOME_ENTRIES` 把它判成"attempt home 含宿主件"
+   ⇒ 若共用，**下一次复用该 home 的 attempt 会在 DS-09 准入阶段失败**。改成并列目录即可，
+   **不改 DS-09 判据**（判据变更要单独变更 + 留证）。会话共享的两种可行后续：
+   ① 把"dsh 自生成的会话签名 secret"与"Host 复制来的宿主凭据"在 DS-09 里显式区分（判据变更，单独变更）；
+   ② attempt home 收敛到 web home（attempt 布局 owner 的变更，影响面更大）。**本轮都不做。**
+10. **REV-16 §9-10（iframe 内上游绝对路径）实测可收口**：真机 `index.html` 11 条资源引用**全相对** +
+    服务端自注入 `<base href="./">`；`--public-url` 无路由语义。⇒ 只需前缀剥离，**不需要** HTML 改写 /
+    `<base>` 注入；B3 授权过的 (a) 方案**未启用**。spec 正文本轮不改，登记到 STATUS §120。
+11. **`dsh.web.enabled` 默认 `false` 且不自启动**：起实例必须显式
+    `python -m host.web_instance_ctl start --run-dir <run> --node <N> --attempt <n> --enable`。
+    "自动随 attempt 起实例"需要 attempt 布局与生命周期接线（与 §11-9 同一决策面），本轮不做。
+12. **uvicorn access log 会记首跳 `?token=`**（真机 P2）：已在 `services/instance_proxy.py` 用
+    `TokenRedactFilter` 在日志层脱敏（import 即生效、幂等）；只改日志文本，不改请求/响应/元数据。
+13. **Web 实例未套 bwrap**：它要读安装树与自己的 home，env 无凭据、不调模型、不 bind 通配地址；
+    与 attempt 一致的包裹需额外 bind 清单，本轮不做（登记未做）。

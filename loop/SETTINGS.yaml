@@ -49,6 +49,21 @@ loop:
         accept_bash: true
         # true = deny + 收窄 agent 可见面（模型只看到 7 项）；false = 只 deny（模型仍看到 26 项）
         enforce_visibility: true
+      # S7c 常驻 DSH Web 实例（同源反代的内嵌目标；REV-16 §5.2 #1 的落账写入方）。
+      # **不自启动**：`enabled` 只是"允许被启动"，真的要起必须显式调用
+      # `python -m host.web_instance_ctl start --run-dir <run> --node N6 --attempt 1 --enable`
+      # （或未来编排钩子）。`enabled: false` 时连显式调用也拒（`web_disabled`），
+      # 确保"不因内嵌成功就改默认运行行为"。
+      web:
+        enabled: false
+        # 空 ⇒ <WORKSPACE_ROOT>/dsh-web-home；实际启动时**总被改写成
+        # `<attempt>/dsh-web-home`**（与 attempt 的 dsh-home 并列，理由见 web_instance_ctl docstring：
+        # dsh web 会在 home 自生成 .credentials.yaml，与 DS-09 的 FORBIDDEN_HOME_ENTRIES 冲突）
+        home: ""
+        host: "127.0.0.1"      # 只接受 loopback（解析期拒绝 0.0.0.0）
+        preferred_port: 0      # 0=OS 随机；>0 先 bind 试探，占用则**起进程前**回落（不重试）
+        start_timeout_s: 30
+        stop_grace_s: 5
   llm:
     # 留空 = 用宿主声明的 api family（本机为 openai-responses）。
     # 可选值：openai-responses | chat（= chat/completions）

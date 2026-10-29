@@ -1,0 +1,54 @@
+### 1) 用本片模块起实例（argv 见 build_argv；token 只在受管元数据里）
+argv = /home/soft/DSH/node/bin/node /home/soft/DSH/versions/0.2.1-rc.2/node_modules/@deepseek-ai/dsh/lib/bin.js --profile web --host 127.0.0.1 --port 18799 --no-open
+env keys = DSH_HOME, DSH_PROFILE, HOME, LANG, PATH, PYTHONDONTWRITEBYTECODE
+describe() = {"host": "127.0.0.1", "port": 18799, "pid": 6, "running": true, "port_requested": 18799, "port_fallback": false, "startup_s": 3.179, "stderr_tail": []}
+startup_s(模块测) = 3.179 ；脚本测 = 3.365
+实际监听 = 127.0.0.1:18799 ；token 长度 = 43 ；字符集 = [A-Za-z0-9_-]
+port_requested = 18799 ；port_fallback = False
+### 2) 原子落账 agent_instance.json（字段集 = REV-16 §5.2）
+path = /home/work/chenjunming/change-impact-loop/loop/.logs/s7c/run/S7C-RUN-0001/agent_instance.json
+mode = 0o600 ；keys = ['attempt', 'host', 'node', 'port', 'token', 'written_at']
+document(token 脱敏) = {"attempt": 1, "host": "127.0.0.1", "node": "N3", "port": 18799, "token": "<redacted 43 chars>", "written_at": "2026-10-29T10:00:53.615398"}
+### 3) 起看板（uvicorn 包装，仅替换 _manager）
+看板 = http://127.0.0.1:8098
+### 4) 可用性端点（§6.1）
+availability = {"available": true, "state": "ready", "reason": null, "url": "/instance/S7C-RUN-0001/N3/1/", "embed": "iframe", "authority": "projection", "attempt": 1}
+### 5) 首跳：无 cookie ⇒ 反代注入受管 token（上游 303 + cookie）
+status = 303
+  date: Thu, 29 Oct 2026 02:00:54 GMT
+  server: uvicorn
+  cache-control: no-store
+  location: /instance/S7C-RUN-0001/N3/1/
+  referrer-policy: no-referrer
+  set-cookie: dsh-auth-BL3MBkovS2mOOHjZR3CQmM763W3xteHKPgMijjGgNcE=v1.eyJ2ZXJzaW9uIjoxLCJhdXRob3JpdHkiOiIxMjcuMC4wLjE6MTg3OTkiLCJpc3N1ZWRBdCI6MTc5MzIzOTI1NDY3OCwiZXhwaXJlc0F0IjoxNzk1ODMxMjU0Njc4fQ.l2uNyW2hwVDLPkZ6_8yvw2zjmueobZCJAD1W0KcZii8; Path=/instance/S7C-RUN-0001/N3/1/; Max-Age=2592000; Expires=Sat, 28 Nov 2026 02:00:54 GMT; HttpOnly; SameSite=Strict
+  date: Thu, 29 Oct 2026 02:00:54 GMT
+  transfer-encoding: chunked
+cookie 名 = dsh-auth-BL3MBkovS2mOOHjZR3CQmM763W3xteHKPgMijjGgNcE ；Path 已收到实例前缀 = True
+token 出现在响应里？ = False
+### 6) 第二跳：带 cookie 取 index.html（判据：200 + 相对引用）
+status = 200 ；content-type = text/html; charset=utf-8 ；bytes = 37512
+含 <base href="./"> = True
+引用总数 = 11 ；以 / 开头的绝对引用 = 0
+相对引用样例 = ["./", "./manifest.webmanifest", "./favicon-dark.svg", "./favicon.svg", "./assets/index-CN7NIWNw.js", "./assets/vendor-DcuzkuQH.js"]
+XFO = None ；CSP = None
+### 7) 相对资源经反代可取（资源断/不断的确证）
+  ./assets/index-CN7NIWNw.js         -> 200 text/javascript; charset=utf-8   939867 B
+  ./assets/index-BxpfOGf3.css        -> 200 text/css; charset=utf-8    77343 B
+  ./manifest.webmanifest             -> 200 application/manifest+json      255 B
+  ./favicon.svg                      -> 200 image/svg+xml     3634 B
+### 8) 批量插件 URL（`plugins/??...&rev=`，S7c 最长 query = 2813 字符）
+  query 长度 = 2809
+  -> 200 text/javascript; charset=utf-8  9198843 B
+### 9) `/api` 不 403（判据主体）：POST session/list 经反代
+status = 200 ；body 前 200 = {"type":"server-response","rpcId":"s7c-1","result":{"ok":true,"value":{"items":[]}}}
+是 403 吗 = False
+### 10) 匿名直连上游 vs 经反代（token 门未削弱）
+直连上游匿名 GET / = 401（期望 401）
+### 11) WebSocket 升级面（§9-2：反代 405，不静默半死）
+升级请求 -> 405 ；x-instance-proxy = rejected
+同路径普通 GET -> 404（上游对非升级请求的真实回答）
+### 12) 反代零写入自证：run 目录里除受管元数据外新增了什么
+  run_dir 文件 = ["agent_instance.json"]
+### 13) 收尾
+实例 running = False ；元数据已删 = True
+残留 node 进程 = (none)

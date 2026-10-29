@@ -1,0 +1,99 @@
+### 1) 第 3 次启动（模块起实例；不调模型）
+stdout 公告行（token 打码）= dsh web: http://127.0.0.1:18799/?token=<redacted 43 chars>
+实际端口 = 18799 ；startup_s = 3.08 ；describe() = {"host": "127.0.0.1", "port": 18799, "pid": 6, "running": true, "port_requested": 18799, "port_fallback": false, "startup_s": 3.08, "stderr_tail": []}
+agent_instance.json: keys = ['attempt', 'host', 'node', 'port', 'token', 'written_at'] ；mode = 0o600 ；token = <redacted 43 chars> ；host:port = 127.0.0.1:18799
+### 2) 起看板（uvicorn 包装）
+看板 = http://127.0.0.1:8098 ；可用性端点 = {"available": true, "state": "ready", "reason": null, "url": "/instance/S7C-RUN-0001/N3/1/", "embed": "iframe", "authority": "projection", "stream": "http_only", "attempt": 1}
+### 3) Playwright 真机采集
+#### A. 顶层打开经反代的 URL
+title = 'DeepSeek Harness' ；base = './' ；baseURI = http://127.0.0.1:8098/instance/S7C-RUN-0001/N3/1/
+readyState = complete ；#root 存在 = True ；#root.children = 1 ；#root.innerHTML = 39916 字符
+body.innerText 长度 = 168 ；darkTheme = False ；scrollHeight = 900
+body.innerText（前 700 字）：
+New Session
+Plugins
+Automation tasks
+Workspaces
+No sessions yet
+More
+Reconnecting...
+Into the Unknown
+Preview
+Choose workspace
+Standard mode
+Choose a workspace to start
+按钮 total/enabled = 14/12
+#### B. 同源 iframe（看板页面里嵌 /instance/…）
+iframe URL = http://127.0.0.1:8098/instance/S7C-RUN-0001/N3/1/
+title = 'DeepSeek Harness' ；base = './'
+#root 存在 = True ；#root.children = 1 ；#root.innerHTML = 39916 字符 ；body.innerText 长度 = 168
+iframe body.innerText（前 700 字）：
+New Session
+Plugins
+Automation tasks
+Workspaces
+No sessions yet
+More
+Reconnecting...
+Into the Unknown
+Preview
+Choose workspace
+Standard mode
+Choose a workspace to start
+按钮 total/enabled = 14/12
+按钮命中测试（elementFromPoint；'button' = 没被遮罩盖住）：
+  ''                           -> button
+  ''                           -> button
+  'New Session'                -> button
+  'Plugins'                    -> button
+  'Automation tasks'           -> button
+  ''                           -> button
+  ''                           -> button
+  ''                           -> button
+error/alert 元素 = []
+截图 = /home/work/chenjunming/change-impact-loop/loop/.logs/s7c/iframe.png ；像素 = 1280x860 ；bytes = 40349
+#### C. 网络
+`assets/*` 响应 8 条，全部 200 = True ；非 200 = []
+assets 明细：[["index-BxpfOGf3.css", 200], ["index-CN7NIWNw.js", 200], ["vendor-DV2921Zo.css", 200], ["vendor-DcuzkuQH.js", 200]]
+`plugins/??…` 批量响应 9 条，状态分布 = [200]
+requestfailed 1 条：
+  GET http://127.0.0.1:8098/instance/S7C-RUN-0001/N3/1/plugins/events :: net::ERR_INCOMPLETE_CHUNKED_ENCODING
+WebSocket 事件 14 条：["open ws://127.0.0.1:8098/instance/S7C-RUN-0001/N3/1/api/remote.mux", "open ws://127.0.0.1:8098/instance/S7C-RUN-0001/N3/1/api/remote.mux", "open ws://127.0.0.1:8098/instance/S7C-RUN-0001/N3/1/api/remote.mux", "open ws://127.0.0.1:8098/instance/S7C-RUN-0001/N3/1/api/remote.mux", "open ws://127.0.0.1:8098/instance/S7C-RUN-0001/N3/1/api/remote.mux", "open ws://127.0.0.1:8098/instance/S7C-RUN-0001/N3/1/api/remote.mux", "open ws://127.0.0.1:8098/instance/S7C-RUN-0001/N3/1/api/remote.mux", "open ws://127.0.0.1:8098/instance/S7C-RUN-0001/N3/1/api/remote.mux", "open ws://127.0.0.1:8098/instance/S7C-RUN-0001/N3/1/api/remote.mux", "open ws://127.0.0.1:8098/instance/S7C-RUN-0001/N3/1/api/remote.mux", "open ws://127.0.0.1:8098/instance/S7C-RUN-0001/N3/1/api/remote.mux", "open ws://127.0.0.1:8098/instance/S7C-RUN-0001/N3/1/api/remote.mux", "open ws://127.0.0.1:8098/instance/S7C-RUN-0001/N3/1/api/remote.mux", "open ws://127.0.0.1:8098/instance/S7C-RUN-0001/N3/1/api/remote.mux"]
+console 34 条（逐字）：
+  [error] WebSocket connection to 'ws://127.0.0.1:8098/instance/S7C-RUN-0001/N3/1/api/remote.mux' failed: Error during WebSocket handshake: Unexpected response code: 405
+  [error] WebSocket connection to 'ws://127.0.0.1:8098/instance/S7C-RUN-0001/N3/1/api/remote.mux' failed: Error during WebSocket handshake: Unexpected response code: 405
+  [warning] [connection] connection lost, retry #1
+  [error] WebSocket connection to 'ws://127.0.0.1:8098/instance/S7C-RUN-0001/N3/1/api/remote.mux' failed: Error during WebSocket handshake: Unexpected response code: 405
+  [warning] [connection] connection lost, retry #2
+  [error] WebSocket connection to 'ws://127.0.0.1:8098/instance/S7C-RUN-0001/N3/1/api/remote.mux' failed: Error during WebSocket handshake: Unexpected response code: 405
+  [warning] [connection] connection lost, retry #3
+  [error] WebSocket connection to 'ws://127.0.0.1:8098/instance/S7C-RUN-0001/N3/1/api/remote.mux' failed: Error during WebSocket handshake: Unexpected response code: 405
+  [warning] [connection] connection lost, retry #4
+  [error] WebSocket connection to 'ws://127.0.0.1:8098/instance/S7C-RUN-0001/N3/1/api/remote.mux' failed: Error during WebSocket handshake: Unexpected response code: 405
+  [warning] [connection] connection lost, retry #5
+  [error] WebSocket connection to 'ws://127.0.0.1:8098/instance/S7C-RUN-0001/N3/1/api/remote.mux' failed: Error during WebSocket handshake: Unexpected response code: 405
+  [error] Failed to load resource: net::ERR_INCOMPLETE_CHUNKED_ENCODING
+  [error] Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+  [error] Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+  [error] WebSocket connection to 'ws://127.0.0.1:8098/instance/S7C-RUN-0001/N3/1/api/remote.mux' failed: Error during WebSocket handshake: Unexpected response code: 405
+  [error] WebSocket connection to 'ws://127.0.0.1:8098/instance/S7C-RUN-0001/N3/1/api/remote.mux' failed: Error during WebSocket handshake: Unexpected response code: 405
+  [warning] [connection] connection lost, retry #1
+  [error] WebSocket connection to 'ws://127.0.0.1:8098/instance/S7C-RUN-0001/N3/1/api/remote.mux' failed: Error during WebSocket handshake: Unexpected response code: 405
+  [warning] [connection] connection lost, retry #2
+  [error] WebSocket connection to 'ws://127.0.0.1:8098/instance/S7C-RUN-0001/N3/1/api/remote.mux' failed: Error during WebSocket handshake: Unexpected response code: 405
+  [error] Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+  [error] Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+  [warning] [connection] connection lost, retry #3
+  [error] WebSocket connection to 'ws://127.0.0.1:8098/instance/S7C-RUN-0001/N3/1/api/remote.mux' failed: Error during WebSocket handshake: Unexpected response code: 405
+  [error] Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+  [error] Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+  [warning] [connection] connection lost, retry #4
+  [error] WebSocket connection to 'ws://127.0.0.1:8098/instance/S7C-RUN-0001/N3/1/api/remote.mux' failed: Error during WebSocket handshake: Unexpected response code: 405
+  [error] Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+  [error] Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+  [error] Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+  [warning] [connection] connection lost, retry #5
+  [warning] [connection] generation is still not ready after 3000ms
+pageerror 0 条（逐字）：
+### 4) 收尾
+实例 running = False ；元数据已删 = True ；残留 = (none)

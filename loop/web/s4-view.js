@@ -34,6 +34,12 @@
     embedded_load_failed: "内嵌加载失败（CSP/响应头变化）",
     embed_timeout: "内嵌加载超时"
   };
+  /* §6.1（S7c 只增）`stream` = 反代的**传输能力事实**：只透传 HTTP，WebSocket 升级不通（§9-2）。
+   * 前端只渲染服务端下发的值；旧服务端没下发就不显示这一行（不自己推断"有没有实时流"）。 */
+  var STREAM = {
+    http_only: "实时事件流走 WebSocket，反代暂不支持升级（REV-16 §9-2）：页面可打开、"
+      + "可读快照，实时更新可能停；需要实时请用「在新标签页打开」。"
+  };
   var UNSET = "未记录";
 
   function has(map, key) {
@@ -260,6 +266,15 @@
     return key;
   }
 
+  /* §6.1 `stream` 的能力说明：未下发 ⇒ 空串（界面不显示、不猜）。
+   * 未知枚举原样显示，不折算成"正常"。 */
+  function streamNote(stream) {
+    if (!present(stream)) return "";
+    var key = String(stream);
+    if (has(STREAM, key)) return STREAM[key];
+    return "实时流能力：" + key + "（服务端未登记该值的含义）";
+  }
+
   /* 角色卡一行摘要：与窗口同一份投影字段，不另算判据。 */
   function cardLine(progress) {
     if (!progress || typeof progress !== "object") {
@@ -295,6 +310,7 @@
     workingMemoryLines: workingMemoryLines,
     experienceLines: experienceLines,
     instanceReason: instanceReason,
+    streamNote: streamNote,
     cardLine: cardLine
   };
   if (typeof module !== "undefined" && module.exports) module.exports = api;

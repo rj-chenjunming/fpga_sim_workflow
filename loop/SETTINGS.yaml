@@ -31,7 +31,9 @@ loop:
       bin: "/home/soft/DSH/versions/0.2.1-rc.2/node_modules/@deepseek-ai/dsh/lib/bin.js"
       bin_sha256: "80112efe368efb1a39720c7ada0af00442e5131fb2744edaaff8a3e8bb499e6f"
       profile: headless
-      timeout_s: 600
+      # S7a（2026-10-29 人工裁决 B1）：单次真实调用授权上限 = 300 s。配置必须与授权**同一个数**
+      # （S5 有过"文档写 120 s、实际 600 s"的违规，已记档）；探针在真机前 `assert` 本值 == 300。
+      timeout_s: 300
       stop_grace_s: 5
       wrap: true
       patches: []

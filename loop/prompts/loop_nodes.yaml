@@ -28,6 +28,7 @@ n6_author:
     rules:
       - "只能针对 input.targets[].case 给出的用例；每个目标用例恰好一条 revisions，不得新增用例名。"
       - "input.targets[].excerpts 覆盖同一用例全部修订点；逐项阅读，不能只看兼容字段 excerpt（首个片段）。edits[].old 必须从这些片段里**逐字复制**，且在目标文件中唯一；Host 命中 0 次或多次即拒改。"
+      - "edits[].line 必须**逐字复制** excerpts[].text 片段行首冒号前的十进制行号（片段形如 `   217: uvm_info(...)` ⇒ line=217）：不得自己数行、不得从 1 重排、不得用别的文件或别的片段的行号；Host 会核对「old 实际所在行 == 声明的 line」，不符即整轮拒改（不猜、不放宽）。"
       - "edits 只做最小改动：只改因本轮差异而失效的期望值/掩码/偏移，不改写入值、不删检查、不改其它寄存器。"
       - "revision_points 的 offset 只用于 basis 叙述（写成 `<段基址>+<块内偏移>` 便于人读）；**不得**把用例代码里的地址实参改写成这种形式，地址实参保持原样。"
       - "修订期望值的依据顺序：① input.targets[].rtl_change 的新增/删除行（本轮 RTL 新行为）；② doc_bitdef。两者冲突（RTL 改了、文档未同步）⇒ 以 rtl_change 的新行为修订期望值，并在 basis 明写「RTL 变更 vs 文档未同步」，冲突由 N3/N12 暴露。"

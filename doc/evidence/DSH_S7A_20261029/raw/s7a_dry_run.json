@@ -1,0 +1,45 @@
+{
+  "mode": "dry-run",
+  "run_id": "RUN-20261029-S7A-01",
+  "target": "tc_bmc_i2c_03",
+  "target_line": 222,
+  "material_face": {
+    "attempt_root": "/home/work/chenjunming/change-impact-loop/loop/.logs/s7a/ws/runs/RUN-20261029-S7A-01/agent_workspaces/N6/attempt-000001",
+    "staged": [
+      {
+        "name": "TESTLIB/tc_bmc_i2c_03.sv",
+        "size": 15470,
+        "md5": "ab8132db1bf51c0f0782451d5047c777"
+      },
+      {
+        "name": "n6_impact_summary.json",
+        "size": 1287,
+        "md5": "948a9f3c9b7189e686545472ec97af24"
+      }
+    ],
+    "total_bytes": 16757,
+    "materials": [
+      {
+        "name": "n6_impact_summary.json",
+        "present": true,
+        "md5": "948a9f3c9b7189e686545472ec97af24",
+        "size": 1287,
+        "derived_from": {
+          "name": "n5_impact.json",
+          "md5": "dd1306a4e8584e7a7f0f43cb1a83e87e",
+          "size": 345638
+        }
+      },
+      {
+        "name": "TESTLIB/tc_bmc_i2c_03.sv",
+        "source": "/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/TESTLIB/tc_bmc_i2c_03.sv",
+        "present": true,
+        "md5": "ab8132db1bf51c0f0782451d5047c777",
+        "size": 15470
+      }
+    ]
+  },
+  "task_chars": 17562,
+  "task_head": "[task] 以下是本次任务。\n\n[instruct]\n- 对每个目标用例逐条给出 edits：line 取 excerpts 中对应片段的行号、old 逐字复制、new 给替换文本、basis 给依据（引用 rtl_change 的具体行、doc_bitdef 的字段，或 api_semantics 的参数名如 data_expmask）。\n- 观测点打印形态（示例；**<marker> 是 UVM_INFO 的 ID（第一个字符串实参），不是消息前缀**，值必须带 `0x`——印记解析器按 `0x` 识别值）：`uvm_info(\"<marker>\", $sformatf(\"OK <addr>+<off> <name> = 0x%08h\", actual), UVM_LOW)`；例如文档条目 `fpga_date`、`0x0000+0x04` ⇒ `uvm_info(\"N6_fpga_",
+  "config_timeout_s": 300.0
+}

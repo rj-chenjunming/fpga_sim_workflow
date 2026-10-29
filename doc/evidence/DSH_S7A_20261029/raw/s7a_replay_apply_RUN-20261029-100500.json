@@ -1,0 +1,120 @@
+{
+  "mode": "replay-apply",
+  "run_id": "RUN-20261029-100500",
+  "source_result": "/home/work/chenjunming/change-impact-loop/loop/.logs/s7a/raw/s7a_live_RUN-20261029-100500.json",
+  "targets": [
+    "tc_bmc_i2c_03",
+    "tc_bmc_i2c_04_dfx",
+    "tc_bmc_spi_03",
+    "tc_cpu_i2c_03",
+    "tc_pcie_rw_02"
+  ],
+  "manifest": {
+    "TESTLIB/tc_bmc_i2c_03.sv": {
+      "md5": "9aa1fe462ddb5284ee0b1cfdf502230e",
+      "size": 15717
+    },
+    "TESTLIB/tc_bmc_i2c_04_dfx.sv": {
+      "md5": "5966e4db7863c43af0dba5f8cda91127",
+      "size": 25236
+    },
+    "TESTLIB/tc_bmc_spi_03.sv": {
+      "md5": "311ad42141f0270d0d2e98161c67f285",
+      "size": 17461
+    },
+    "TESTLIB/tc_cpu_i2c_03.sv": {
+      "md5": "5096ea096e9365dbcfb9e7c25b72836c",
+      "size": 21529
+    },
+    "TESTLIB/tc_pcie_rw_02.sv": {
+      "md5": "ec3c3242d8705c514bc255ab4b98349d",
+      "size": 20375
+    }
+  },
+  "status": "applied",
+  "candidate_import": {
+    "ok": true,
+    "reason": null,
+    "detail": "",
+    "execution_state": "stopped",
+    "resend_allowed": true,
+    "drift_checked": true,
+    "total_bytes": 100318,
+    "files": [
+      {
+        "path": "TESTLIB/tc_bmc_i2c_03.sv",
+        "case": "tc_bmc_i2c_03",
+        "md5": "9aa1fe462ddb5284ee0b1cfdf502230e",
+        "size": 15717,
+        "baseline_md5": "ab8132db1bf51c0f0782451d5047c777"
+      },
+      {
+        "path": "TESTLIB/tc_bmc_i2c_04_dfx.sv",
+        "case": "tc_bmc_i2c_04_dfx",
+        "md5": "5966e4db7863c43af0dba5f8cda91127",
+        "size": 25236,
+        "baseline_md5": "72dd785717ff8af0073fc74d91475035"
+      },
+      {
+        "path": "TESTLIB/tc_bmc_spi_03.sv",
+        "case": "tc_bmc_spi_03",
+        "md5": "311ad42141f0270d0d2e98161c67f285",
+        "size": 17461,
+        "baseline_md5": "77ea7436139da6e5512f666a88e0c51c"
+      },
+      {
+        "path": "TESTLIB/tc_cpu_i2c_03.sv",
+        "case": "tc_cpu_i2c_03",
+        "md5": "5096ea096e9365dbcfb9e7c25b72836c",
+        "size": 21529,
+        "baseline_md5": "74ea6e5d6ead2408753a727ab2055f40"
+      },
+      {
+        "path": "TESTLIB/tc_pcie_rw_02.sv",
+        "case": "tc_pcie_rw_02",
+        "md5": "ec3c3242d8705c514bc255ab4b98349d",
+        "size": 20375,
+        "baseline_md5": "eab350bb81d14bb9987bd6691a26df54"
+      }
+    ],
+    "problems": []
+  },
+  "cases": [
+    {
+      "case": "tc_bmc_i2c_03",
+      "source": "candidate_import",
+      "md5_before": "ab8132db1bf51c0f0782451d5047c777",
+      "md5_after": "9aa1fe462ddb5284ee0b1cfdf502230e",
+      "edits": 1
+    },
+    {
+      "case": "tc_bmc_i2c_04_dfx",
+      "source": "candidate_import",
+      "md5_before": "72dd785717ff8af0073fc74d91475035",
+      "md5_after": "5966e4db7863c43af0dba5f8cda91127",
+      "edits": 1
+    },
+    {
+      "case": "tc_bmc_spi_03",
+      "source": "candidate_import",
+      "md5_before": "77ea7436139da6e5512f666a88e0c51c",
+      "md5_after": "311ad42141f0270d0d2e98161c67f285",
+      "edits": 1
+    },
+    {
+      "case": "tc_cpu_i2c_03",
+      "source": "candidate_import",
+      "md5_before": "74ea6e5d6ead2408753a727ab2055f40",
+      "md5_after": "5096ea096e9365dbcfb9e7c25b72836c",
+      "edits": 1
+    },
+    {
+      "case": "tc_pcie_rw_02",
+      "source": "candidate_import",
+      "md5_before": "eab350bb81d14bb9987bd6691a26df54",
+      "md5_after": "ec3c3242d8705c514bc255ab4b98349d",
+      "edits": 1
+    }
+  ],
+  "error": null
+}

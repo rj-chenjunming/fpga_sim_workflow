@@ -5369,3 +5369,99 @@ S7 的对象（按优先级）：① **N6 收口 + DS-06 真机**（六节点 6/
 
 **人工前置门（见提示词 §4.4）**：真实调用授权（分片额度 + 单次/总额停止线）、工具允许/拒绝清单（含 `bash`/`subagent*`）、
 是否允许反代层 HTML 前缀化改写、**推送授权 + 凭据**、公平对照是否要做（阈值看结果前登记）、E（内网）环境可用性。
+
+## 118 S7a 交付：N6 收口 + DS-06 真机（2026-10-29）
+
+本轮入口：[开工提示词 S7](agents/开工提示词_S7-暴露面收敛与真机收口.md) §4.1；计划
+[2026-10-29-s7-exposure-convergence.md](plans/2026-10-29-s7-exposure-convergence.md) §2-B1/§4；
+契约沿用 [REV-13](spec/SPEC-REV-13-20261026.md) §4/§10（`DS-06`）、[REV-14](spec/SPEC-REV-14-20261028.md) §4 B1/B3、
+[SPEC-08](spec/DSH_AGENT_RUNTIME_SPEC.md) §5/§10（D04）/§12（**未新写替代契约**）；
+证据档 [`doc/evidence/DSH_S7A_20261029/`](evidence/DSH_S7A_20261029/README.md)（冻结 444 + 目录外 md5）。
+
+### 118.1 开工基线与人工裁决
+
+基线 = `492d4e0`（`git log --oneline -3` / `git status --short` 核对过，工作树干净）。五道门实测与 §116.4
+**逐项相符、零新增失败**：单测 `3 failed, 1643 passed, 1 warning, 137 errors in 402.75s`（3 failed = 既有 `env_layer`，
+137 errors = 浏览器缺 Chromium）；kb `PASS=10/9/28` + `3 passed` + 原 ENV_ROOT 零写入；e2e `ALL PASS`；文档 `65 passed`；
+浏览器门 `138 passed in 144.17s`。
+
+| # | 裁决（2026-10-29 本窗口，人已拍） | 落地 |
+|---|---|---|
+| **B1 真实调用授权** | **全部授权**：S7a ≤4、S7b ≤2、S7c ≤2（S7c 不烧 token）；单次 >300 s 或 >60k tokens 停手报人 | 首跑 `totalTokens=72379`（output 仅 651，cacheRead 71552）**触及 60k 停手线 ⇒ 停手报人**；人裁决**「额度不限制」**后继续；仍逐次记账 |
+| **B2 工具白名单** | 允许 `read/list/grep/glob/write/edit/apply_patch` + `submit_result` + selfcheck；**`bash` 保留并单独登记为已接受暴露面**；拒绝 `web_search/web_fetch/subagent*/workflow/send_message/present/job_*` | S7b；`list`/`apply_patch` 在 `0.2.1-rc.2` **不存在**，按真实 7 项落地（差异登记于 S7b 节） |
+| **B3 上游绝对路径** | 优先 (b) base path → (c) 第二 loopback 端口；(b)(c) 都不可行时**授权 (a) HTML 前缀化改写** | 实测：上游 11 条资源引用**全相对** + 服务端自注入 `<base href="./">` ⇒ (a) **不需要也不应做**（S7c 节） |
+| **B4 其余三项** | 不推送；不做公平对照（沿用 A4）；E（内网）记"未验证" | 全片遵守 |
+
+### 118.2 交付物
+
+| 文件 | 变更 | 契约 |
+|---|---|---|
+| `loop/host/agent_backends/dsh_assets.py` | 新增 `N6_SUMMARY_NAME`/`N6_SUMMARY_SCHEMA`/`DERIVED_MATERIALS`/`NODE_MATERIALS`/`materials_for(node)`/`derive_material()`：**每节点材料面的唯一来源** | S7a §4.1-1 |
+| `loop/host/agent_backends/dsh.py` | `stage_inputs` 支持**派生物**（记 `derived_from{name,md5,size}`；源件坏/缺/链接一律显式失败）；`prepare_attempt` 材料缺省走 `materials_for(node)`；`_compose_task` 明确"payload 必须是对象、不是字符串" | REV-14 B1 / DS-02 |
+| `.../dsh_plugin/submit_result.mjs` | `payload` 参数描述：**必须是 JSON 对象**，不要传字符串化 JSON | 判据未变（只改模型可见说明） |
+| `loop/host/agent_backends/dsh_protocol.py` | payload 非对象 ⇒ 写"期望 object / 实际类型 / 字符串修正提示" | DS-02（判据未变） |
+| `loop/workflows/chunks/host_steps.py` | `apply_edits` 行号漂移错误信息点名字段/声明值/实际行号/"line 该从哪来" | **判据未变** |
+| `loop/prompts/loop_nodes.yaml` | `n6_author` 增规则：`line` **逐字复制** `excerpts[].text` 片段行首行号 | 模型输入文本 |
+| `loop/SETTINGS.yaml` | `dsh.timeout_s` **600 → 300**：与裁决 B1 的单次上限**同一个数** | 裁决 B1 |
+| 测试 | `test_n6_material_face.py`（新 12 例）+ `test_fix_real_chain.py` 1 条旧断言改钉"字段+实际行号" | 各条 TDD |
+
+**材料面瘦身（生产性改动）**：N6 的 `input/` **528122 B → 16757 B（−96.8%）**；run 产物原件一个字节没动
+（`n5_impact.json` 仍 345638 B 当 Host 侧事实源）。派生摘要 1287 B，记录写明"派生自 `n5_impact.json`
+（md5 `dd1306a4…`）"，只投影 targets 消费的字段，**不含原文 hunk/文档正文、不做判定**（不是第二套判据）。
+
+### 118.3 真机结果（1 次调用 / 额度 4；证据档 §5）
+
+| 项 | 值 |
+|---|---|
+| run/attempt | `RUN-20261029-100500` / `N6/1` |
+| exit / wall | `completed` / **127.234 s**（`assert config.timeout_s == 300` 调用前通过） |
+| usage | input 176 / output 651 / cacheRead 71552 / **total 72379**（>60k ⇒ 停手报人，人裁决不限制） |
+| 提交门 | **`validation.ok=True`、`problems=[]`、submit accepted** ⇒ **N6 收口** |
+| 候选通道 | `execution_state=stopped`；模型自主为夹具 5 个目标各写 1 份候选（15717/25236/17461/21529/20375 B） |
+| 压缩事实 | session log `availability=ok`，`compaction/summary` **0 条**（未压缩，如实计 0 而非 unknown） |
+| 工具面 | 自检回显 `toolNames` **26 项全量** ⇒ **本片不声称工具面收敛**（属 S7b） |
+
+**六节点：6/6**（N3/N8/N10/N11/N12 见 §115.3；N6 = 本节）。
+
+**DS-06 = 通过（含限定）**：同 run 内第一次 `n6_apply` `failed`（`revision 含非目标用例`）——根因是
+**探针 bug**（只喂 1 个 target，而 `n6_author` 按夹具产出 5 个），Host 判据**正确 fail-closed**；
+按该次 attempt 的候选与封存输出**重放** `n6_apply`（不调模型、不新起 attempt）⇒ `applied`、
+`candidate_import.ok=True`、5/5 `source=candidate_import`、`md5_after` 与模型真实候选清单逐件相同。
+原 `attempts.jsonl` 不回填，更正走 `attempts_corrections.jsonl`。**不把该限定隐去**。
+
+**修掉的三个 S6 根因**：① 材料面 345 KB 诱导解析（瘦身 ⇒ 127 s 自然完成）；② `payload` 传字符串
+（任务文本 + 工具描述双重要求对象 + `BadSubmission` 写期望类型 ⇒ 一次通过）；③ `line` 漂移
+（prompt 钉"逐字复制片段行首行号" + 错误信息可定位 ⇒ 5 条 edits 全命中）。
+
+**照实说的观察**：模型本次 edits **业务上可疑**（新增 `SPI_MST(pid).set_read` 观测块，签名在材料里无依据，
+模型自己在 `notes[3]` 承认）。Host 只判结构与契约，**业务正确性属 N8/N12 与人工闸门**；本片**不把
+"Host 校验通过"写成"业务正确"**，该观察移交 N8 复核。
+
+### 118.4 收口门（干净 S7a 树：S7b/S7c 改动 `git stash` 后跑；数字从输出复制）
+
+| 门 | 结果 |
+|---|---|
+| 单测（可写数据根） | `3 failed, 1655 passed, 1 warning, 137 errors in 396.97s`；3 failed 全部是既有 `env_layer`；137 errors = 浏览器缺 Chromium |
+| kb 自测 + env layer | `PASS=10` / `PASS=9` / `PASS=28`，`FAIL=0`；`3 passed, 24 deselected in 13.23s`；**原 ENV_ROOT 零写入** |
+| 端到端（drill） | `phase 1–5 + 4b` 全 `rc=0`，`=> ALL PASS` |
+| 文档门 | `65 passed in 2.44s` |
+| 浏览器门 | **未跑**：S7a 未改 `loop/web/**` 与 `services/contracts.py` 界面字段 |
+
+差量对账：基线 `1643 passed` → S7a `1655 passed`（**+12 = 新增用例文件**）；`failed 3=3`、`errors 137=137`、
+`warnings 1=1`，**零新增失败**。
+
+### 118.5 纪律核对
+
+- **真实调用**：1 次；`attempts.jsonl` 只增不改；usage 全拿到（非 unknown）；探针不入库，参数/上限/材料 md5 已落 raw。
+- **超时真的生效**：`SETTINGS.dsh.timeout_s=300` + 调用前 `assert`。
+- **写权**：`kb/**` 零改动；`doc/evidence/**` 只增；`adjudication/agent_experiences.json` 未碰。
+- **唯一判据（红线 8）**：材料面只有 `materials_for`；派生物只有 `derive_material`；`apply_edits`/`_validate`/导入判据**一处未加**。
+- **失败显式**：探针 bug 导致的 `n6_apply failed` 如实记为 Host 正确 fail-closed，用 `attempts_corrections.jsonl` 更正。
+- **独立复核**：**无**（实现 + 真机 + 收口同由 Lead 完成；**不声称独立验证**）。
+
+### 118.6 未做 / 不声称
+
+- **不声称工具白名单**（真机 `toolNames` 仍 26 项全量；S7b 落地前不声称）。
+- **不声称业务正确**（Host 只判结构与契约）；**不声称对照收益**（无对照组）。
+- **不声称 DS-06 的"真机换件"**：拒绝矩阵的真机证据沿用 S6 §4 补充证据，本片不重做、不冒充。
+- **不声称 E（内网业务验收）**；未推送；`default_backend` 仍 `agently`。

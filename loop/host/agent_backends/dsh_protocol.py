@@ -255,8 +255,13 @@ def _submission(call: SubmissionCall, verdict: dict[str, Any], *, expect_task_id
     if not isinstance(summary, str) or not summary:
         raise BadSubmission("submit_result 输入缺 summary（必须是非空字符串）")
     if not isinstance(payload, dict):
+        # 判据不变（payload 必须是对象）；错误信息补"哪个字段/期望什么/收到什么"，
+        # 便于人一眼定位（S6 第 4 次真机把 payload 传成 JSON 字符串，模型看不到这条）。
+        hint = ("（收到的是字符串：请把对象本身作为 payload 参数传入，不要 stringify）"
+                if isinstance(payload, str) else "")
         raise BadSubmission(
-            "submit_result 输入的 payload 必须是 JSON 对象（实际 %r）" % (type(payload).__name__,))
+            "submit_result 输入的 payload 必须是 JSON 对象（期望 object，实际 %r）%s"
+            % (type(payload).__name__, hint))
     if expect_task_id is not None and task_id != expect_task_id:
         raise IdentityMismatch(
             "提交的 task_id 与本次 attempt 不符：期望 %r 实际 %r" % (expect_task_id, task_id))

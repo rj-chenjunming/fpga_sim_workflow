@@ -21,7 +21,9 @@ export function apply(ctx) {
     parameters: {
       task_id: { type: 'string', required: true, description: '本次 attempt 标识（逐字复制任务里的 task_id）' },
       summary: { type: 'string', required: true, description: '一句话结论' },
-      payload: { type: 'json', description: '结构化成果（JSON 对象，必须符合任务里的 schema）' },
+      payload: { type: 'json', description: '结构化成果：**必须是 JSON 对象**（直接把对象传进来；'
+        + '不要传字符串化后的 JSON —— 字符串会被 Host 提交门以 BadSubmission 拒绝）。'
+        + '内容必须符合任务里给出的 schema。' },
     },
     output: {
       schema: { type: 'string' },

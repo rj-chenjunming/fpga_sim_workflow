@@ -383,12 +383,15 @@ def stage_inputs(layout: A.AttemptLayout, run_dir: Path | str, *,
     1. 源只能是**本 run 目录内**的普通文件（`..`/绝对路径/符号链接越界 ⇒ 抛错）；
     2. 只有白名单名字进得来（整目录拷贝被禁止）；
     3. 缺失的白名单材料**不补、不猜**，也不让整个 attempt 因此失败（该节点本来就不需要它），
-       但缺件事实会记进 `materials` 便于下游判断"模型看到的是什么"。
+       但缺件事实会记进 `materials` 便于下游判断"模型看到的是什么"；
+    4. **派生物**（`dsh_assets.DERIVED_MATERIALS`）由 Host 从 run 产物投影而来（S7a：N6 不塞
+       `n5_impact.json` 全文），记录里写明"派生自哪个源件 + 源件 md5/size"，源件坏/缺一律显式。
     """
     run_root = Path(run_dir).resolve()
     layout.input_dir.mkdir(parents=True, exist_ok=True)
     staged: list[dict[str, Any]] = []
-    for name in materials:
+
+    def _read_material(name: str) -> bytes | None:
         if Path(name).name != name or name in ("", ".", ".."):
             raise BackendConfigurationError(
                 "dsh input 材料名非法（只接受 run 目录下的裸文件名）：%r" % (name,))
@@ -397,17 +400,41 @@ def stage_inputs(layout: A.AttemptLayout, run_dir: Path | str, *,
             raise BackendConfigurationError(
                 "dsh input 材料是符号链接（拒绝逃逸）：%s" % source)
         if not source.is_file():
-            staged.append({"name": name, "present": False, "md5": None, "size": None})
-            continue
+            return None
         try:
             if source.resolve() != (run_root / name).resolve():
                 raise BackendConfigurationError("dsh input 材料越界：%s" % source)
-            payload = source.read_bytes()
+            return source.read_bytes()
         except OSError as exc:
             raise BackendConfigurationError(
                 "dsh input 材料不可读（%s）：%s" % (source, exc)) from None
-        target = layout.input_dir / name
-        target.write_bytes(payload)
+
+    for name in materials:
+        derived_from = A.DERIVED_MATERIALS.get(name)
+        if derived_from is not None:
+            payload = _read_material(derived_from)
+            if payload is None:
+                staged.append({"name": name, "present": False, "md5": None, "size": None,
+                               "derived_from": {"name": derived_from, "md5": None, "size": None}})
+                continue
+            try:
+                produced = A.derive_material(name, payload)
+            except A.AssetError as exc:
+                raise BackendConfigurationError(
+                    "dsh input 派生物 %r 生成失败（源件 %r）：%s" % (name, derived_from, exc)
+                ) from None
+            (layout.input_dir / name).write_bytes(produced)
+            staged.append({"name": name, "present": True,
+                           "md5": hashlib.md5(produced).hexdigest(), "size": len(produced),
+                           "derived_from": {"name": derived_from,
+                                            "md5": hashlib.md5(payload).hexdigest(),
+                                            "size": len(payload)}})
+            continue
+        payload = _read_material(name)
+        if payload is None:
+            staged.append({"name": name, "present": False, "md5": None, "size": None})
+            continue
+        (layout.input_dir / name).write_bytes(payload)
         staged.append({"name": name, "present": True,
                        "md5": hashlib.md5(payload).hexdigest(), "size": len(payload)})
     return tuple(staged)
@@ -456,7 +483,9 @@ def _compose_task(request: BackendRequest, *, attempt_key: str) -> str:
             "本次任务按失败处理（不会因为回复文本而被当成完成）：\n"
             "- task_id：必须逐字等于 %r（本次 attempt 标识，不得改写/缩写/省略）\n"
             "- summary：一句话结论\n"
-            "- payload：JSON 对象，必须符合下面的 schema\n"
+            "- payload：**JSON 对象**（直接把对象作为参数传进来；**不要**传字符串化后的 JSON —— "
+            "字符串会被提交门以 BadSubmission 拒绝，不得把结构化结果当字符串），"
+            "必须符合下面的 schema\n"
             "[schema]\n%s\n"
             % (request.instruct, request.info,
                json.dumps(request.input_data, ensure_ascii=False, indent=1),
@@ -557,7 +586,7 @@ class DshBackend:
 
     def prepare_attempt(self, run_dir: Path | str, node: str, sequence: int, *,
                         attempt_key: str | None = None,
-                        materials: tuple[str, ...] = A.INPUT_MATERIALS,
+                        materials: tuple[str, ...] | None = None,
                         sources: tuple[tuple[Path, str], ...] = ()) -> AttemptWorkspace:
         """分配（并物化）一次 attempt 的隔离工作区；**cwd/home 的唯一来源**。
 
@@ -565,12 +594,16 @@ class DshBackend:
         Host（`model_request`）只负责"给哪个 run/node/第几次尝试 + attempt 身份"，
         **不**各自拼路径、**不**各自拼 attempt 身份（`attempt_key` 由 Host 传，缺省才派生：
         提交门的 `task_id` join 与 A2 `identity.attempt_key` 必须是同一个值，不许两处漂移）。
+
+        `materials` 缺省走**每节点白名单** `dsh_assets.materials_for(node)`（S7a：N6 只拿派生
+        摘要，不拿 345 KB 的 `n5_impact.json` 全文）；显式传入只用于用例/诊断，生产调用方不拼。
         `agent_calls/**` 是封存记录目录，这里绝不往里放工作区（见 `A.WORKSPACE_DIRNAME`）。
         """
         root = A.workspace_root(run_dir, node, int(sequence))
         layout = A.AttemptLayout.under(root)
         layout.prepare()
-        staged = list(stage_inputs(layout, run_dir, materials=materials))
+        chosen = A.materials_for(node) if materials is None else tuple(materials)
+        staged = list(stage_inputs(layout, run_dir, materials=chosen))
         if sources:
             # 外部只读源件（N6 目标用例源件）：**逐个显式声明**，不整目录、不跟随链接
             staged.extend(A.stage_sources(layout, tuple(sources)))

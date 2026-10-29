@@ -1,0 +1,1 @@
+{"attempt_key":"RUN-20261029-100500/N6/1","field":"apply_status","observed":"applied","reason":"探针 bug：live 模式只把 1 个 target 喂给 n6_apply，而 n6_author 按夹具构建全部 5 个目标并产出 5 份候选 ⇒ Host 正确 fail-closed（revision 含非目标用例）。按同一次真实 attempt 的候选与封存输出重放 n6_apply ⇒ applied（raw/s7a_replay_apply_RUN-20261029-100500.json）。原行不回填。","path":"agent_workspaces/N6/attempt-000001/work/candidate/TESTLIB/"}

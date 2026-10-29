@@ -595,8 +595,12 @@ def apply_edits(text: str, edits: list[dict[str, Any]], *, case: str) -> tuple[s
             )
         actual = _line_of(text, hits[0])
         if actual != line:
+            # 判据不变（old 必须唯一且落在声明行）；只把"人一眼能定位"的信息补全：
+            # 哪个字段、声明值、实际值、line 该从哪来（S6 第 4 次真机 218≠217，模型看不到报错）。
             raise ValueError(
-                f"{case}: edits[{i}].old 实际位于第 {actual} 行，与声明的 line={line} 不符（不猜）"
+                f"{case}: edits[{i}].line 声明 {line}，但 edits[{i}].old 实际位于第 {actual} 行"
+                f"（不猜；line 必须逐字复制 excerpts[].text 片段行首「{actual}: 」里的行号，"
+                f"不得自己数行、不得从 1 重排）"
             )
         validated.append((line, old, new, edit))
 

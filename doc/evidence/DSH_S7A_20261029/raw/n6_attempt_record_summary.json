@@ -1,0 +1,104 @@
+{
+  "attempt_key": null,
+  "prompt_key": "n6_author",
+  "cycle": 1,
+  "input_keys": [
+    "cycle",
+    "must_change_count",
+    "rework_assignment",
+    "rework_handoff",
+    "rework_reasons",
+    "rule",
+    "run_id",
+    "targets",
+    "working_memory",
+    "workspace",
+    "write_scope_rule"
+  ],
+  "targets": [
+    "tc_bmc_i2c_03",
+    "tc_bmc_i2c_04_dfx",
+    "tc_bmc_spi_03",
+    "tc_cpu_i2c_03",
+    "tc_pcie_rw_02"
+  ],
+  "attempt_workspace": {
+    "attempt_key": "RUN-20261029-100500/N6/1",
+    "candidate": "agent_workspaces/N6/attempt-000001/work/candidate",
+    "home": "agent_workspaces/N6/attempt-000001/dsh-home",
+    "input": "agent_workspaces/N6/attempt-000001/input",
+    "materials": [
+      {
+        "derived_from": {
+          "md5": "dd1306a4e8584e7a7f0f43cb1a83e87e",
+          "name": "n5_impact.json",
+          "size": 345638
+        },
+        "md5": "948a9f3c9b7189e686545472ec97af24",
+        "name": "n6_impact_summary.json",
+        "present": true,
+        "size": 1287
+      },
+      {
+        "md5": "ab8132db1bf51c0f0782451d5047c777",
+        "name": "TESTLIB/tc_bmc_i2c_03.sv",
+        "present": true,
+        "size": 15470,
+        "source": "/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/TESTLIB/tc_bmc_i2c_03.sv"
+      },
+      {
+        "md5": "72dd785717ff8af0073fc74d91475035",
+        "name": "TESTLIB/tc_bmc_i2c_04_dfx.sv",
+        "present": true,
+        "size": 24985,
+        "source": "/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/TESTLIB/tc_bmc_i2c_04_dfx.sv"
+      },
+      {
+        "md5": "77ea7436139da6e5512f666a88e0c51c",
+        "name": "TESTLIB/tc_bmc_spi_03.sv",
+        "present": true,
+        "size": 17214,
+        "source": "/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/TESTLIB/tc_bmc_spi_03.sv"
+      },
+      {
+        "md5": "74ea6e5d6ead2408753a727ab2055f40",
+        "name": "TESTLIB/tc_cpu_i2c_03.sv",
+        "present": true,
+        "size": 21282,
+        "source": "/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/TESTLIB/tc_cpu_i2c_03.sv"
+      },
+      {
+        "md5": "eab350bb81d14bb9987bd6691a26df54",
+        "name": "TESTLIB/tc_pcie_rw_02.sv",
+        "present": true,
+        "size": 20130,
+        "source": "/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/TESTLIB/tc_pcie_rw_02.sv"
+      }
+    ],
+    "root": "agent_workspaces/N6/attempt-000001",
+    "work": "agent_workspaces/N6/attempt-000001/work"
+  },
+  "request_sha256": "1f4f2ceb1228e62d3f82a4b700f1fdbc6fc45822df41afb6edc7509f3ca483a7",
+  "result_sha256": "44bbf54ac580139eed5479840c1a814b44a666b4ef7f30dd895983a36e5c7ce7",
+  "result_status": "validated",
+  "result_payload_keys": [
+    "contract",
+    "data",
+    "isolation",
+    "plugin",
+    "provider",
+    "selfcheck",
+    "session_id",
+    "standin",
+    "summary",
+    "task_id",
+    "usage"
+  ],
+  "usage": {
+    "cacheReadTokens": 71552,
+    "inputTokens": 176,
+    "outputTokens": 651,
+    "totalTokens": 72379
+  },
+  "session_id": "session-3f1df466-cab1-4c83-b45e-369d5f37e30a"
+}

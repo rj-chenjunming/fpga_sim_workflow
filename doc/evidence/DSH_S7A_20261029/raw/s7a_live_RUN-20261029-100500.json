@@ -1,0 +1,172 @@
+{
+  "mode": "live",
+  "run_id": "RUN-20261029-100500",
+  "exit": "completed",
+  "error": null,
+  "wall_s": 127.234,
+  "timeout_s": 300.0,
+  "usage": {
+    "inputTokens": 176,
+    "outputTokens": 651,
+    "totalTokens": 72379,
+    "cacheReadTokens": 71552
+  },
+  "session_id": "session-3f1df466-cab1-4c83-b45e-369d5f37e30a",
+  "validation": {
+    "ok": true,
+    "problems": [],
+    "accepted": {
+      "revisions": [
+        {
+          "case": "tc_bmc_i2c_03",
+          "edits": [
+            {
+              "line": 222,
+              "old": "        `I2C_MST(pid).reg_field_test(base_addr+'h04  ,32'h0000_0000, `REG_FPGA_DATE, 1);",
+              "new": "        `I2C_MST(pid).reg_field_test(base_addr+'h04  ,32'h0000_0000, 32'h2026_0708, 1);\n        begin\n            bit[31:0] fpga_date_rd;\n            `I2C_MST(pid).set_read(base_addr+'h04, fpga_date_rd);\n            `uvm_info(\"N6_bmc_i2c_03_fpga_date\", $sformatf(\"OK 0x0000+0x04 fpga_date = 0x%08h\", fpga_date_rd), UVM_LOW)\n        end",
+              "basis": "input.targets[tc_bmc_i2c_03].revision_points[0] entry_id=0x0000#0x0004 display=0x0000+0x4: doc_bitdef name=fpga_date, segment=0x0000, offset_global=0x0004, reset=2026_0708, rw=R, bytes=4, bitdef_present=true ⇒ expected readback 32'h2026_0708; old third argument `REG_FPGA_DATE macro is not doc-synchronised in the provided materials (macro definition absent). api_semantics I2C_MST(pid) reg_field_test: task reg_field_test(addr, data_expmask, initial_dat='0, only_r=0); body data_rdexp = only_r ? initial_dat : test_data & data_expmask ⇒ with only_r=1 the third argument (initial_dat) is the expected read value, so only that argument changes; write value 32'h0000_0000 (data_expmask slot) and addr 0x04 are untouched. rtl_change for RTL/SRC/imports/SRC/reg/sys_reg.v lists no changed lines (lines=[], hunk=null), so doc_bitdef.reset is the authoritative basis."
+            }
+          ],
+          "rationale": "offset 0x0000+0x4 (entry 0x0000#0x0004) is fpga_date per doc_bitdef (reset=2026_0708, R, 4B). The case previously compared the read against the unversioned `REG_FPGA_DATE macro; the edit pins the expected value to the documented reset 32'h2026_0708 and adds one observation block that reads the register back via I2C_MST(pid).set_read and prints the actual value with marker N6_bmc_i2c_03_fpga_date. No write value, address, mask or other register check is changed."
+        },
+        {
+          "case": "tc_bmc_i2c_04_dfx",
+          "edits": [
+            {
+              "line": 385,
+              "old": "        `I2C_MST(pid).reg_field_test(base_addr+'h04  ,32'h0000_0000, `REG_FPGA_DATE, 1);",
+              "new": "        `I2C_MST(pid).reg_field_test(base_addr+'h04  ,32'h0000_0000, 32'h2026_0708, 1);\n        begin\n            bit[31:0] fpga_date_rd;\n            `I2C_MST(pid).set_read(base_addr+'h04, fpga_date_rd);\n            `uvm_info(\"N6_bmc_i2c_04_dfx_fpga_date\", $sformatf(\"OK 0x0000+0x04 fpga_date = 0x%08h\", fpga_date_rd), UVM_LOW)\n        end",
+              "basis": "input.targets[tc_bmc_i2c_04_dfx].revision_points[0] entry_id=0x0000#0x0004 display=0x0000+0x4: doc_bitdef name=fpga_date, segment=0x0000, offset_global=0x0004, reset=2026_0708, rw=R, bytes=4, bitdef_present=true ⇒ expected readback 32'h2026_0708; old third argument `REG_FPGA_DATE macro is not doc-synchronised in the provided materials. api_semantics I2C_MST(pid) reg_field_test: data_expmask/initial_dat roles; body data_rdexp = only_r ? initial_dat : test_data & data_expmask ⇒ only_r=1 means initial_dat (third argument) is the expected value, so only it changes; write value and addr 0x04 untouched. rtl_change for sys_reg.v has no line hunks (lines=[], hunk=null) ⇒ doc_bitdef.reset is authoritative. The readback uses I2C_MST(pid).set_read, an API already used in this same file at line 227."
+            }
+          ],
+          "rationale": "offset 0x0000+0x4 (entry 0x0000#0x0004) is fpga_date per doc_bitdef (reset=2026_0708, R, 4B). Expected value pinned to 32'h2026_0708 instead of the unversioned macro, plus one observation block reading 0x04 via the I2C agent's set_read (already used in this file) and printing marker N6_bmc_i2c_04_dfx_fpga_date. No write value, address, mask or other register check is changed."
+        },
+        {
+          "case": "tc_bmc_spi_03",
+          "edits": [
+            {
+              "line": 163,
+              "old": "        `SPI_MST(pid).reg_field_test(base_addr+'h04  ,32'h0000_0000, `REG_FPGA_DATE, 1);",
+              "new": "        `SPI_MST(pid).reg_field_test(base_addr+'h04  ,32'h0000_0000, 32'h2026_0708, 1);\n        begin\n            bit[31:0] fpga_date_rd;\n            `SPI_MST(pid).set_read(base_addr+'h04, fpga_date_rd);\n            `uvm_info(\"N6_bmc_spi_03_fpga_date\", $sformatf(\"OK 0x0000+0x04 fpga_date = 0x%08h\", fpga_date_rd), UVM_LOW)\n        end",
+              "basis": "input.targets[tc_bmc_spi_03].revision_points[0] entry_id=0x0000#0x0004 display=0x0000+0x4: doc_bitdef name=fpga_date, segment=0x0000, offset_global=0x0004, reset=2026_0708, rw=R, bytes=4, bitdef_present=true ⇒ expected readback 32'h2026_0708; old third argument `REG_FPGA_DATE macro is not doc-synchronised in the provided materials. api_semantics reg_field_test(addr, data_expmask, initial_dat='0, only_r=0); body data_rdexp = only_r ? initial_dat : test_data & data_expmask ⇒ only_r=1 makes the third argument (initial_dat) the expected value; write value 32'h0000_0000 and addr 0x04 untouched. rtl_change for sys_reg.v has no line hunks (lines=[], hunk=null) ⇒ doc_bitdef.reset authoritative."
+            }
+          ],
+          "rationale": "offset 0x0000+0x4 (entry 0x0000#0x0004) is fpga_date per doc_bitdef (reset=2026_0708, R, 4B). Expected value pinned to 32'h2026_0708; one observation block reads 0x04 through the SPI master agent and prints marker N6_bmc_spi_03_fpga_date. Address base_addr+'h04, write value and all other register checks unchanged."
+        },
+        {
+          "case": "tc_cpu_i2c_03",
+          "edits": [
+            {
+              "line": 228,
+              "old": "        `I2C_MST(pid).reg_field_test(base_addr+'h04  ,32'h0000_0000, `REG_FPGA_DATE, 1);",
+              "new": "        `I2C_MST(pid).reg_field_test(base_addr+'h04  ,32'h0000_0000, 32'h2026_0708, 1);\n        begin\n            bit[31:0] fpga_date_rd;\n            `I2C_MST(pid).set_read(base_addr+'h04, fpga_date_rd);\n            `uvm_info(\"N6_cpu_i2c_03_fpga_date\", $sformatf(\"OK 0x0000+0x04 fpga_date = 0x%08h\", fpga_date_rd), UVM_LOW)\n        end",
+              "basis": "input.targets[tc_cpu_i2c_03].revision_points[0] entry_id=0x0000#0x0004 display=0x0000+0x4: doc_bitdef name=fpga_date, segment=0x0000, offset_global=0x0004, reset=2026_0708, rw=R, bytes=4, bitdef_present=true ⇒ expected readback 32'h2026_0708; old third argument `REG_FPGA_DATE macro not defined in provided materials. api_semantics I2C_MST(pid) reg_field_test(addr, data_expmask, initial_dat='0, only_r=0) with data_rdexp = only_r ? initial_dat : test_data & data_expmask ⇒ only_r=1 selects initial_dat (third arg) as the expected value; write value and addr 0x04 untouched. rtl_change for sys_reg.v has no line hunks (lines=[], hunk=null) ⇒ doc_bitdef.reset authoritative."
+            }
+          ],
+          "rationale": "offset 0x0000+0x4 (entry 0x0000#0x0004) is fpga_date per doc_bitdef (reset=2026_0708, R, 4B). Expected value pinned to 32'h2026_0708; one observation block reads 0x04 via I2C_MST(pid).set_read and prints marker N6_cpu_i2c_03_fpga_date. No write value, address, mask or other register check is changed."
+        },
+        {
+          "case": "tc_pcie_rw_02",
+          "edits": [
+            {
+              "line": 137,
+              "old": "        reg_field_test(m_pcie_seq, base_addr+'h04  ,32'h0000_0000, `REG_FPGA_DATE, 1);",
+              "new": "        reg_field_test(m_pcie_seq, base_addr+'h04  ,32'h0000_0000, 32'h2026_0708, 1);\n        begin\n            bit[31:0] fpga_date_rd;\n            set_read(m_pcie_seq, base_addr+'h04, fpga_date_rd);\n            `uvm_info(\"N6_pcie_rw_02_fpga_date\", $sformatf(\"OK 0x0000+0x04 fpga_date = 0x%08h\", fpga_date_rd), UVM_LOW)\n        end",
+              "basis": "input.targets[tc_pcie_rw_02].revision_points[0] entry_id=0x0000#0x0004 display=0x0000+0x4: doc_bitdef name=fpga_date, segment=0x0000, offset_global=0x0004, reset=2026_0708, rw=R, bytes=4, bitdef_present=true ⇒ expected readback 32'h2026_0708; old third argument `REG_FPGA_DATE macro not defined in provided materials. api_semantics case-local reg_field_test(m_pcie_seq, addr, data_expmask, initial_dat='0, only_r=0); body data_rdexp = only_r ? initial_dat : test_data & data_expmask ⇒ only_r=1 makes the third argument (initial_dat) the expected value; write value 32'h0000_0000 and addr 0x04 untouched. rtl_change for sys_reg.v has no line hunks (lines=[], hunk=null) ⇒ doc_bitdef.reset authoritative. Readback uses the case-local set_read(m_pcie_seq, addr, output rdata), which byte-swaps PCIE_REG_RD into register order."
+            }
+          ],
+          "rationale": "offset 0x0000+0x4 (entry 0x0000#0x0004) is fpga_date per doc_bitdef (reset=2026_0708, R, 4B). Expected value pinned to 32'h2026_0708; one observation block reads 0x04 with the case-local set_read wrapper and prints marker N6_pcie_rw_02_fpga_date. No write value, address, mask or other register check is changed."
+        }
+      ],
+      "rework_resolution": [],
+      "notes": [
+        "input.targets[].rtl_change for RTL/SRC/imports/SRC/reg/sys_reg.v contains no line hunks (lines=[], offsets=[], hunk=null); the revised expectation 0x20260708 is therefore taken from doc_bitdef.reset=2026_0708, not from a visible RTL diff. If the RTL reset differs from the document, N3/N12 must expose that conflict.",
+        "`REG_FPGA_DATE is a TB macro whose definition is not included in the provided materials; it was replaced by the explicit documented literal 32'h2026_0708 instead of assuming the macro's current value.",
+        "The readback is a separate access after reg_field_test(): the I2C cases use I2C_MST(pid).set_read(addr, rdata), the same API already used at tc_bmc_i2c_04_dfx.sv line 227; tc_pcie_rw_02 uses the case-local task set_read(m_pcie_seq, addr, output rdata) which byte-swaps the PCIE read into register order.",
+        "For tc_bmc_spi_03 the SPI agent's set_read(addr, rdata) is assumed to mirror the I2C agent API; spi_m.sv is not part of the provided input, so this signature is not directly evidenced. It is used instead of any PCIE read because the SPI test does not run PCIE_REG_RW before SPI_MST_RW(2).",
+        "Adding the observation block is a pure addition (begin/end with a local variable, one read call, one UVM_INFO); no existing check, write value, address argument or other register line is modified. The register is read-only (rw=R), so the extra read cannot alter DUT state.",
+        "No rework issues were assigned (rework_assignment.issues and rework_reasons are empty); no issue_response is applicable."
+      ],
+      "observation_points": [
+        {
+          "case": "tc_bmc_i2c_03",
+          "marker": "N6_bmc_i2c_03_fpga_date",
+          "addr": "0x0000",
+          "offset": "0x04",
+          "expected_value": "0x20260708",
+          "basis": "revision_points[0] entry_id=0x0000#0x0004 display=0x0000+0x4; doc_bitdef name=fpga_date, segment=0x0000, offset_global=0x0004, reset=2026_0708 (=0x20260708), rw=R, bytes=4. rtl_change for sys_reg.v has no line hunks, so the documented reset is the expected readback. The inserted line reads base_addr+'h04 via I2C_MST(pid).set_read into fpga_date_rd and prints that actual value under marker N6_bmc_i2c_03_fpga_date."
+        },
+        {
+          "case": "tc_bmc_i2c_04_dfx",
+          "marker": "N6_bmc_i2c_04_dfx_fpga_date",
+          "addr": "0x0000",
+          "offset": "0x04",
+          "expected_value": "0x20260708",
+          "basis": "revision_points[0] entry_id=0x0000#0x0004 display=0x0000+0x4; doc_bitdef name=fpga_date, segment=0x0000, offset_global=0x0004, reset=2026_0708 (=0x20260708), rw=R, bytes=4. rtl_change has no line hunks. The inserted line reads base_addr+'h04 via I2C_MST(pid).set_read (API already used at line 227 of this file) and prints the actual value under marker N6_bmc_i2c_04_dfx_fpga_date."
+        },
+        {
+          "case": "tc_bmc_spi_03",
+          "marker": "N6_bmc_spi_03_fpga_date",
+          "addr": "0x0000",
+          "offset": "0x04",
+          "expected_value": "0x20260708",
+          "basis": "revision_points[0] entry_id=0x0000#0x0004 display=0x0000+0x4; doc_bitdef name=fpga_date, segment=0x0000, offset_global=0x0004, reset=2026_0708 (=0x20260708), rw=R, bytes=4. rtl_change has no line hunks. The inserted line reads base_addr+'h04 via SPI_MST(pid).set_read into fpga_date_rd and prints the actual value under marker N6_bmc_spi_03_fpga_date."
+        },
+        {
+          "case": "tc_cpu_i2c_03",
+          "marker": "N6_cpu_i2c_03_fpga_date",
+          "addr": "0x0000",
+          "offset": "0x04",
+          "expected_value": "0x20260708",
+          "basis": "revision_points[0] entry_id=0x0000#0x0004 display=0x0000+0x4; doc_bitdef name=fpga_date, segment=0x0000, offset_global=0x0004, reset=2026_0708 (=0x20260708), rw=R, bytes=4. rtl_change has no line hunks. The inserted line reads base_addr+'h04 via I2C_MST(pid).set_read into fpga_date_rd and prints the actual value under marker N6_cpu_i2c_03_fpga_date."
+        },
+        {
+          "case": "tc_pcie_rw_02",
+          "marker": "N6_pcie_rw_02_fpga_date",
+          "addr": "0x0000",
+          "offset": "0x04",
+          "expected_value": "0x20260708",
+          "basis": "revision_points[0] entry_id=0x0000#0x0004 display=0x0000+0x4; doc_bitdef name=fpga_date, segment=0x0000, offset_global=0x0004, reset=2026_0708 (=0x20260708), rw=R, bytes=4. rtl_change has no line hunks. The inserted line reads base_addr+'h04 via the case-local set_read(m_pcie_seq, addr, output rdata) and prints the actual value under marker N6_pcie_rw_02_fpga_date."
+        }
+      ],
+      "issue_responses": []
+    }
+  },
+  "channel": {
+    "candidate_root": "/home/work/chenjunming/change-impact-loop/loop/.logs/s7a/ws/runs/RUN-20261029-100500/agent_workspaces/N6/attempt-000001/work/candidate",
+    "candidate_manifest": {
+      "TESTLIB/tc_bmc_i2c_03.sv": {
+        "md5": "9aa1fe462ddb5284ee0b1cfdf502230e",
+        "size": 15717
+      },
+      "TESTLIB/tc_bmc_i2c_04_dfx.sv": {
+        "md5": "5966e4db7863c43af0dba5f8cda91127",
+        "size": 25236
+      },
+      "TESTLIB/tc_bmc_spi_03.sv": {
+        "md5": "311ad42141f0270d0d2e98161c67f285",
+        "size": 17461
+      },
+      "TESTLIB/tc_cpu_i2c_03.sv": {
+        "md5": "5096ea096e9365dbcfb9e7c25b72836c",
+        "size": 21529
+      },
+      "TESTLIB/tc_pcie_rw_02.sv": {
+        "md5": "ec3c3242d8705c514bc255ab4b98349d",
+        "size": 20375
+      }
+    },
+    "baseline": {
+      "TESTLIB/tc_bmc_i2c_03.sv": "ab8132db1bf51c0f0782451d5047c777",
+      "TESTLIB/tc_bmc_i2c_04_dfx.sv": "72dd785717ff8af0073fc74d91475035",
+      "TESTLIB/tc_bmc_spi_03.sv": "77ea7436139da6e5512f666a88e0c51c",
+      "TESTLIB/tc_cpu_i2c_03.sv": "74ea6e5d6ead2408753a727ab2055f40",
+      "TESTLIB/tc_pcie_rw_02.sv": "eab350bb81d14bb9987bd6691a26df54"
+    },
+    "execution_state": "stopped"
+  },
+  "apply_status": "failed",
+  "candidate_import": null,
+  "apply_error": "ValueError: N6_apply：revision 含非目标用例：['tc_bmc_i2c_04_dfx', 'tc_bmc_spi_03', 'tc_cpu_i2c_03', 'tc_pcie_rw_02']",
+  "apply_cases": []
+}

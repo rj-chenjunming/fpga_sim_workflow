@@ -1,0 +1,43 @@
+{
+  "mode": "offline-chain",
+  "run_id": "RUN-20261029-114500",
+  "candidate": {
+    "path": "work/candidate/TESTLIB/tc_bmc_i2c_03.sv",
+    "size": 15647,
+    "md5": "53f06f1ba2d7ba51d087ebcf44f7125e",
+    "origin": "S6 run4 real candidate"
+  },
+  "edits_line_correction": {
+    "submitted_by_model": 218,
+    "actual_file_line": 217
+  },
+  "status": "applied",
+  "cases": [
+    {
+      "case": "tc_bmc_i2c_03",
+      "source": "candidate_import",
+      "md5_before": "ab8132db1bf51c0f0782451d5047c777",
+      "md5_after": "53f06f1ba2d7ba51d087ebcf44f7125e",
+      "edits": 2
+    }
+  ],
+  "candidate_import": {
+    "ok": true,
+    "reason": null,
+    "detail": "",
+    "execution_state": "stopped",
+    "resend_allowed": true,
+    "drift_checked": true,
+    "total_bytes": 15647,
+    "files": [
+      {
+        "path": "TESTLIB/tc_bmc_i2c_03.sv",
+        "case": "tc_bmc_i2c_03",
+        "md5": "53f06f1ba2d7ba51d087ebcf44f7125e",
+        "size": 15647,
+        "baseline_md5": "ab8132db1bf51c0f0782451d5047c777"
+      }
+    ],
+    "problems": []
+  }
+}

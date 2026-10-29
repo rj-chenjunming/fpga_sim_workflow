@@ -11,6 +11,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
@@ -58,6 +59,73 @@ INPUT_MATERIALS = ("n1_manifest_new.json", "n2_diff.json", "n2_diff.md",
 #: attempt `input/` 里"外部只读源件"的子目录（N6 目标用例源件等）：与 run 产物白名单分开，
 #: 便于审计"哪些是 Host 从环境只读拷进来的"（`input/TESTLIB/<case>.sv`）。
 SOURCE_SUBDIR = "TESTLIB"
+
+
+#: N6 的**派生材料名**（S7a）。为什么不给 `n5_impact.json` 全文：S5/S6 真机实测（345638 B）
+#: 诱导模型反复解析影响面、300 s 没进入写候选；而 N6 真正需要的事实已由 `build_n6_targets`
+#: 有界签发进任务文本（excerpts / rtl_change / api_semantics / doc_bitdef）。
+N6_SUMMARY_NAME = "n6_impact_summary.json"
+#: 派生摘要的 schema 标签（与 Host 业务 schema 无关，仅用于识别"这是派生物"）。
+N6_SUMMARY_SCHEMA = "loop/n6_impact_summary"
+#: 派生物 → 源件名（Host 从 run 产物派生进 `input/`，不塞原文）。
+#: 新增一项 = 评审动作：它决定模型看到哪份派生事实，且必须在记录里留"派生自哪个源件 + md5"。
+DERIVED_MATERIALS: dict[str, str] = {N6_SUMMARY_NAME: "n5_impact.json"}
+
+#: 每节点进 `input/` 的材料名（**单一来源**；`dsh.prepare_attempt` 只调本函数，不各自拼）。
+#: 未列节点 ⇒ `INPUT_MATERIALS`（默认白名单，行为不变）。
+NODE_MATERIALS: dict[str, tuple[str, ...]] = {}
+
+
+def materials_for(node: str) -> tuple[str, ...]:
+    """一次 attempt 该进 `input/` 的材料名（唯一实现）。"""
+    key = str(node or "").strip()
+    return NODE_MATERIALS.get(key, INPUT_MATERIALS)
+
+
+def derive_material(name: str, payload: bytes) -> bytes:
+    """按 `DERIVED_MATERIALS` 把源件字节**投影**成派生物字节（纯函数，确定性输出）。
+
+    判据：
+    1. 只接受登记过的派生物名（未登记 ⇒ `AssetError`，不猜）；
+    2. 源件必须是 JSON 对象（否则 `AssetError`：不生成空摘要糊过去）；
+    3. 只投影 `build_n6_targets` 实际消费的字段（case/file/line/entry_id/segment/offset/
+       rtl_files）+ 计数，**不复制原文 hunk、不复制文档正文、不做任何判定**（不是第二套判据）。
+    输出按键排序 + 固定缩进 ⇒ 同源件同 md5（证据可复算）。
+    """
+    if name != N6_SUMMARY_NAME:
+        raise AssetError("未登记的派生物名：%r（只认 %r）"
+                        % (name, sorted(DERIVED_MATERIALS)))
+    try:
+        document = json.loads(payload.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise AssetError("%s 的源件不是 UTF-8 JSON：%s" % (name, exc)) from None
+    if not isinstance(document, dict):
+        raise AssetError("%s 的源件不是 JSON 对象（实际 %s）"
+                         % (name, type(document).__name__))
+    items = [item for item in (document.get("must_change") or []) if isinstance(item, dict)]
+    cases: list[dict[str, object]] = []
+    for item in items:
+        case = str(item.get("case") or "").strip()
+        if not case:
+            continue
+        projected: dict[str, object] = {"case": case,
+                                        "file": str(item.get("file") or ""),
+                                        "line": item.get("line"),
+                                        "entry_id": str(item.get("entry_id") or ""),
+                                        "segment": str(item.get("segment") or ""),
+                                        "offset": str(item.get("offset") or ""),
+                                        "rtl_files": [str(x) for x in (item.get("rtl_files") or [])]}
+        cases.append(projected)
+    count = document.get("must_change_count")
+    summary = {"schema": N6_SUMMARY_SCHEMA, "version": 1,
+               "source": DERIVED_MATERIALS[name],
+               "must_change_count": count if isinstance(count, int) else len(cases),
+               "cases": cases}
+    return (json.dumps(summary, ensure_ascii=False, sort_keys=True, indent=1) + "\n").encode("utf-8")
+
+
+NODE_MATERIALS["N6"] = (N6_SUMMARY_NAME,)
+N6_MATERIALS: tuple[str, ...] = NODE_MATERIALS["N6"]
 
 
 def check_layout(layout: AttemptLayout) -> None:

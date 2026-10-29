@@ -398,7 +398,8 @@ async def test_n6_apply_rejects_line_mismatch_and_missing_revision(
                           "validation": {"ok": True, "problems": [], "accepted": {}}},
         })
 
-    with pytest.raises(ValueError, match="与声明的 line"):
+    # S7a：判据不变（old 必须落在声明行），只把错误信息改成点名"字段/声明值/实际值/line 该从哪来"
+    with pytest.raises(ValueError, match=r"edits\[0\]\.line 声明 3.*实际位于第 5 行"):
         await host_steps.n6_apply(payload(3, [{
             "case": "tc_demo",
             "edits": [{"line": 3, "old": "0xdead_beef", "new": "0x1", "basis": "b"}],

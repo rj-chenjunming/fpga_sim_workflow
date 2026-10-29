@@ -5717,3 +5717,49 @@ REV-16 §9-10 **实测可收口为"前缀剥离即可"**（spec 正文本轮不�
 
 **本轮明确交出去、不是我做**：N6 真机 `edits` **业务可疑**（`SPI_MST(pid).set_read` 签名在材料里无依据，
 模型自己在 `notes[3]` 承认）⇒ 业务正确性属 **N8/N12 + 人工闸门**；「六节点 6/6」是**机制收口**，不是业务正确。
+
+## 123 S8 开工基线与人工裁决（2026-10-29）
+
+本轮入口：[开工提示词 S8](agents/开工提示词_S8-复核与D3收口.md) §1/§6；计划
+[2026-10-29-s8-review-and-d3.md](plans/2026-10-29-s8-review-and-d3.md)（SpecDD ②：四片切片、写权、验证门、未决）。
+
+### 123.1 现场核对
+
+`HEAD=7b38c0e`（= 交接时点 `31a3c04` + S8 开工提示词提交）；`git status --short` 空；
+`git rev-list --count origin/main..HEAD` = **27**（= 交接文档记的 26 + 本提示词自身提交 1，**非漂移**）；
+**未推送**（人未授权）。
+
+### 123.2 基线门（本轮实测，命令输出复制；与 §121.4 逐项相符，零新增失败）
+
+| 门 | 结果 |
+|---|---|
+| 单测（可写数据根 `<repo>/.dev-ws`） | `3 failed, 1770 passed, 1 warning, 141 errors in 427.28s`；3 failed 全是既有 `@pytest.mark.env_layer`，141 errors = `tests/browser/**` 缺 Chromium |
+| kb 自测 + env layer | `PASS=10` / `PASS=9` / `PASS=28`，`FAIL=0`；env_layer `3 passed, 24 deselected in 11.73s`；**原 ENV_ROOT 零写入** |
+| 端到端（drill） | phase `1`/`2`/`3`/`4`/`4b`/`5` 全 `rc=0`，`=> ALL PASS` |
+| 文档门 | `65 passed in 2.27s` |
+| 浏览器门（三组 env） | `142 passed in 153.02s` |
+
+### 123.3 人工裁决（本窗口，人已拍；计划 §2 同一记录）
+
+| # | 裁决 | 落地 |
+|---|---|---|
+| **B1 S8b · DS-09** | 授权**治 (i)**：保留 B3 禁令语义，**新增"来源判定"**，区分 `dsh` 自生成的会话签名 secret 与 Host 复制来的宿主凭据 | [REV-14](spec/SPEC-REV-14-20261028.md) **§9（只增）**；`dsh-web-home` 并列目录取消，home 回到 D3 共用 |
+| **B2 S8d · 共享判据面** | 授权**按单独变更走**（改规格 → 特征测试 → 迁移 → 留证） | [REV-16](spec/SPEC-REV-16-20261028.md) **§4 只增一条"事件时间源（S8d 收口）"** |
+| **B3 `dsh.web.enabled` 默认值** | **改默认为 `true`**：随 real attempt 自动起本地 Web 服务；失败不阻断 attempt；结束后保留实例 | `loop/SETTINGS.yaml` + `dsh.py` 装配点（**改默认运行行为，已授权并单独登记**） |
+| **B4 其余三项** | 不推送 / E（内网）记"**未验证**" / 不做公平对照（沿用 §118.1 B4） | 全片遵守 |
+
+**未放宽**：`default_backend` 仍 `agently`；`select()` 之外不放开入口；`apply_edits`/`DS-06` 拒绝矩阵不放宽；
+反代 R1–R20 与目标来源判据不动；`kb/**` 零改动；不 bind `0.0.0.0`。
+
+### 123.4 本轮契约变更（SpecDD ①，先于实现）
+
+1. [REV-14 §9](spec/SPEC-REV-14-20261028.md)：`DS-09` 来源判定四档（`host_settings_copy` / `host_credential_value` /
+   `dsh_generated` / `unknown`）+ 四条不变量（`settings.yaml` 无例外、凭据值优先于形态、`unknown` 即拒绝、零回显）。
+2. [REV-16 §4](spec/SPEC-REV-16-20261028.md)：事件 `ts` 必须经 `now_epoch()`；同源后 `silence_s` 自然非负；
+   不同源（`ts > now`）⇒ `unknown` + `unavailable_reason="ts_source_mismatch"`，不得告警；历史事件不回填。
+
+### 123.5 未做 / 不声称
+
+- **不声称**本轮已完成任何切片：S8a–S8d 均在执行中，收口数字见后续各节。
+- 未推送；`default_backend` 仍 `agently`；E（内网业务验收）**未验证**。
+- N6 真机 `edits` 业务可疑（§118.3）仍由 **N8/人**判断，本轮不冒充"已验证业务正确"。

@@ -6272,3 +6272,22 @@ S8b 真机结论是「D3 机制达成、**产品内嵌路径**被 `remote.mux` W
   不声称会话原文可导出（结果块是 `session_log_facts` 解析事实，§9-11 仍开）。
 - 反代转发面当前**无界面消费者**（入口走直连）：S9a/S9b 若启用远程访问需重新评估 token/入口形态。
 - 不声称独立复核；未推送。
+
+### 133.4 真机界面实测（0 token，只读；演示看板 `127.0.0.1:8199`）
+
+探针 `loop/.logs/s8j/probe_ui.py`（gitignored，可复放）：看板 → `RUN-DEMO-S8F` → `N6` 工作窗口 → 读 DOM + 截图
+`loop/.logs/s8j/agent-window-s8j.png`，事实 `loop/.logs/s8j/probe_ui_facts.json`。
+
+| 判据 | 实测 |
+|---|---|
+| 内嵌面 | `iframe_count=0`、`object_count=0`（`verdict=no_embed_surface`） |
+| 状态 | chip `实例就绪`；标题「实例就绪；实例页面用下方按钮打开」 |
+| 实时流能力 | `stream=http_only` 文案含 `WebSocket` + `REV-16 §9-2` |
+| 执行结果 | `执行结果（session_log_facts）：压缩成功 0 次 · 记录 0 条 · 错误 0 条 · 起止 0→0 · 剪枝 0 次`；`副本 263 B` |
+| 入口 | `#awEmbedDirect` 可见，`href=http://127.0.0.1:42810/?token=<redacted>`（token 只在 DOM `href`，`title` 披露短暂入地址栏 + 仅本机） |
+| 原始事实 | 首屏隐藏；点「刷新执行结果」后可见 `kind=session_log_facts` 解析事实 |
+| 页面错误 | `0` |
+
+**演示夹具说明（不入库，`loop/.logs/s8j`）**：为让"执行结果"有真数字，把该 attempt 的 DSH 会话日志
+（`dsh-home/sessions/…/session.v4.jsonl.zstd`）复制进 attempt 目录并在 `agent_instance.json` 增写 `session_log`
+（相对 run_dir，过 §5.2 越界/符号链接判据）；`0 次` 是**该会话真实解析事实**，不是占位值。

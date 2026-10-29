@@ -6432,3 +6432,17 @@ S8b 真机结论是「D3 机制达成、**产品内嵌路径**被 `remote.mux` W
 
 - 「滚到栏底继续滚不带动页面」在 headless 下与"页面本来就不可滚"不可区分 ⇒ 目前由 `overscroll-behavior-y:contain` 的 computed 值兜（风格级判据，不是行为级）；真机需人眼看一次。
 - `tabindex` 同步发生在渲染后一次测量：字体/内容在渲染后异步变化（图片、远端字体）理论上可能让"该有停靠点"滞后一轮；本页无异步字图，现状未复现。
+
+### 135.9 本片提交清单（归档 ⑤）
+
+`1fd776a feat(A11): 闸门视图「材料 / 操作」双栏独立滚动（便于并排对照，SpecDD 全片）`，9 个文件：
+`doc/STATUS.md`（本 §135）、`doc/spec/WEB_UI_SPEC.md`（§5 + §10 A11 + §14）、
+`doc/plans/2026-10-29-gate-panes-scroll.md`、`loop/web/pane-scroll.js`（新增）、
+`loop/web/app.css`（`--gate-pane-max-h` token）、`loop/web/app.js`（重绘包装）、
+`loop/web/index.html`（两栏结构 + script）、`loop/tests/test_pane_scroll.py`（新增）、
+`loop/tests/browser/test_gate_panes.py`（新增）。
+
+**未入库（他人并发在飞，本片不碰）**：`loop/host/agent_backends/dsh_sdk.py`、`loop/services/instance_proxy.py`、
+`loop/tests/test_instance_proxy.py`、`loop/web/agent-window.js`、`doc/spec/AGENT_WINDOW_SPEC.md`、
+`doc/spec/SPEC-REV-18/19*`、`doc/plans/2026-10-29-s8-review-and-d3.md`、`loop/tests/test_session_human_messages.py`、
+`loop/tests/test_session_log_discovery.py`（S8k/S8l 片自己的写权范围）。

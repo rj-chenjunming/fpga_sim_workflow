@@ -1,0 +1,34 @@
+# S8c 500 定位探针（一次 Playwright，全量 (url,status)）
+
+实例：http://127.0.0.1:43381（port=43381, startup_s=3.109）
+run_dir=/home/work/chenjunming/change-impact-loop/loop/.logs/s8/ws/runs/S8C-RUN-0001；workspace=/home/work/chenjunming/change-impact-loop/loop/.logs/s8/ws；prefix=/instance/S8C-RUN-0001/N3/1/
+
+## mode=fake
+响应总数=78；500 分桶：看板=15、iframe=0、其它=0
+  [board] 15x GET /api/runs (fetch)
+看板页：readyState=complete root=False bodyText='跳到工作区\nFPGA\nFlow\n/\n仿真工作台\nsimenv-tcs9620-64ch\n插件面齐全 · 数据缺 1 项 · agently 4.1.4.8\n旧版操作台 ↗\n通知 已拒绝\n当前工作空间\nF\n仿真与验证\nSimulation workspace\n⌄\n＋\n新建运行\n工作台\nWORKBENCH\n▧\n环境准备\nS'
+iframe：readyState=complete rootHtmlLen=39916 bodyText='New Session\nPlugins\nAutomation tasks\nWorkspaces\nNo sessions yet\nMore\nReconnecting...\nInto the Unknown\nPreview\nChoose workspace\nStandard mode\nChoose a workspace '
+requestfailed=[{"phase": "A_top_proxied", "frame": "main", "method": "GET", "url": "http://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/plugins/events", "failure": "net::ERR_INCOMPLETE_CHUNKED_ENCODING", "resource_type": "eventsource"}, {"phase": "B_iframe", "frame": "iframe", "method": "GET", "url": "http://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/plugins/events", "failure": "net::ERR_INCOMPLETE_CHUNKED_ENCODING", "resource_type": "eventsource"}]
+websockets=["A_top_proxied open ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux", "A_top_proxied open ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux", "A_top_proxied open ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux", "A_top_proxied open ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux", "A_top_proxied open ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux", "A_top_proxied open ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux", "A_top_proxied open ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux", "B_iframe open ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux", "B_iframe open ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux", "B_iframe open ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux", "B_iframe open ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux", "B_iframe open ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux", "B_iframe open ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux", "B_iframe open ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux"]
+  console[B_board][error] Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+  console[B_board][error] Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+  console[B_board][error] Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+  console[B_iframe][error] Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+  console[B_iframe][error] Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+  console[B_iframe][error] Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+  console[B_iframe][error] Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+  console[B_iframe][error] Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+  console[B_iframe][error] Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+  console[B_iframe][error] Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+  console[B_iframe][error] Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+  console[B_iframe][error] Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+  console[B_iframe][error] Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+  console[B_iframe][error] Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+  console[B_iframe][error] Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+
+## mode=real
+响应总数=78；500 分桶：看板=0、iframe=0、其它=0
+看板页：readyState=complete root=False bodyText='跳到工作区\nFPGA\nFlow\n/\n仿真工作台\nsimenv-tcs9620-64ch\n插件面齐全 · 数据缺 1 项 · agently 4.1.4.8\n旧版操作台 ↗\n通知 已拒绝\n当前工作空间\nF\n仿真与验证\nSimulation workspace\n⌄\n＋\n新建运行\n工作台\nWORKBENCH\n▧\n环境准备\nS'
+iframe：readyState=complete rootHtmlLen=39916 bodyText='New Session\nPlugins\nAutomation tasks\nWorkspaces\nNo sessions yet\nMore\nReconnecting...\nInto the Unknown\nPreview\nChoose workspace\nStandard mode\nChoose a workspace '
+requestfailed=[{"phase": "A_top_proxied", "frame": "main", "method": "GET", "url": "http://127.0.0.1:44069/instance/S8C-RUN-0001/N3/1/plugins/events", "failure": "net::ERR_INCOMPLETE_CHUNKED_ENCODING", "resource_type": "eventsource"}, {"phase": "B_iframe", "frame": "iframe", "method": "GET", "url": "http://127.0.0.1:44069/instance/S8C-RUN-0001/N3/1/plugins/events", "failure": "net::ERR_INCOMPLETE_CHUNKED_ENCODING", "resource_type": "eventsource"}]
+websockets=["A_top_proxied open ws://127.0.0.1:44069/instance/S8C-RUN-0001/N3/1/api/remote.mux", "A_top_proxied open ws://127.0.0.1:44069/instance/S8C-RUN-0001/N3/1/api/remote.mux", "A_top_proxied open ws://127.0.0.1:44069/instance/S8C-RUN-0001/N3/1/api/remote.mux", "A_top_proxied open ws://127.0.0.1:44069/instance/S8C-RUN-0001/N3/1/api/remote.mux", "A_top_proxied open ws://127.0.0.1:44069/instance/S8C-RUN-0001/N3/1/api/remote.mux", "A_top_proxied open ws://127.0.0.1:44069/instance/S8C-RUN-0001/N3/1/api/remote.mux", "A_top_proxied open ws://127.0.0.1:44069/instance/S8C-RUN-0001/N3/1/api/remote.mux", "B_iframe open ws://127.0.0.1:44069/instance/S8C-RUN-0001/N3/1/api/remote.mux", "B_iframe open ws://127.0.0.1:44069/instance/S8C-RUN-0001/N3/1/api/remote.mux", "B_iframe open ws://127.0.0.1:44069/instance/S8C-RUN-0001/N3/1/api/remote.mux", "B_iframe open ws://127.0.0.1:44069/instance/S8C-RUN-0001/N3/1/api/remote.mux", "B_iframe open ws://127.0.0.1:44069/instance/S8C-RUN-0001/N3/1/api/remote.mux", "B_iframe open ws://127.0.0.1:44069/instance/S8C-RUN-0001/N3/1/api/remote.mux", "B_iframe open ws://127.0.0.1:44069/instance/S8C-RUN-0001/N3/1/api/remote.mux"]

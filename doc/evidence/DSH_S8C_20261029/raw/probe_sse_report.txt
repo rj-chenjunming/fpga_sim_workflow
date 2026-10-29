@@ -1,0 +1,45 @@
+# S8c `plugins/events` SSE 截断 A/B（客户端无读超时）
+
+反代 = http://127.0.0.1:40611/instance/S8C-RUN-0001/N3/1/plugins/events
+直连 = http://127.0.0.1:33057/plugins/events（同 cookie）
+
+## first_hop
+{
+  "status": 303,
+  "cookie_name": "dsh-auth-f0a97mHwjEsG-rGfRfAJMA6agkedEAE3mZAfghSj6sk"
+}
+
+## A_proxy
+{
+  "label": "A_proxy",
+  "url": "http://127.0.0.1:40611/instance/S8C-RUN-0001/N3/1/plugins/events",
+  "status": 200,
+  "headers": {
+    "content-type": "text/event-stream",
+    "cache-control": "no-cache",
+    "transfer-encoding": "chunked"
+  },
+  "chunks": 2,
+  "bytes": 30121,
+  "first_chunk_s": 0.01,
+  "end_s": 15.02,
+  "end": "RemoteProtocolError: peer closed connection without sending complete message body (incomplete chunked read)"
+}
+
+## B_upstream
+{
+  "label": "B_upstream",
+  "url": "http://127.0.0.1:33057/plugins/events",
+  "status": 200,
+  "headers": {
+    "content-type": "text/event-stream",
+    "cache-control": "no-cache",
+    "connection": "keep-alive",
+    "transfer-encoding": "chunked"
+  },
+  "chunks": 2,
+  "bytes": 30121,
+  "first_chunk_s": 0.0,
+  "end_s": 35.04,
+  "end": "ReadTimeout: timed out"
+}

@@ -5818,3 +5818,131 @@ REV-16 §9-10 **实测可收口为"前缀剥离即可"**（spec 正文本轮不�
 - **不声称** S7 已"独立验证业务正确"：复核对象是**机制与证据**，不含 N6 `edits` 的业务正确性（仍属 N8/人）。
 - **不声称** SSE 修复让界面实时流可用：WS 升级仍 405。
 - 本轮未推送；`default_backend` 仍 `agently`。
+
+## 125 S8b 交付：D3 会话共享 + 随 attempt 自动起实例（2026-10-29）
+
+本轮入口：[开工提示词 S8](agents/开工提示词_S8-复核与D3收口.md) §5.2；裁决 B1（治 i：来源判定）/ B3（默认开）；
+契约 [REV-14 §9](spec/SPEC-REV-14-20261028.md)（**本轮新写：DS-09 来源判定四档**）+ §3-D3 / §4-B3、
+[REV-16 §5](spec/SPEC-REV-16-20261028.md) §6.1 §9-6 §10；证据档
+[`doc/evidence/DSH_S8B_20261029/`](evidence/DSH_S8B_20261029/README.md)（冻结 `444`/`555`，7 件，md5 目录外）。
+实现 owner：`s8b-impl`；Lead 复核 DS-09 判据（独立抽查 §125.2）与最终 diff。**本片无独立复核者**（不声称独立验证）。
+
+### 125.1 结论（逐条对 §5.2 验收）
+
+| # | 验收项 | 结论 |
+|---|---|---|
+| ① | iframe 内会话列表含该 attempt 的 `session_id` | **未达成（产品路径）**，原因见 §125.3：`remote.mux` **WebSocket 405**（REV-16 §9-2，已裁决本轮不做）⇒ 前端 live channel 起不来 ⇒ 列表取不到数据。**不为凑绿去实现 WS 升级** |
+| ② | attempt 切换后元数据跟随 | **通过**：`agent_instance.json` 按 `(node, attempt)` 重写；`ensure` 建键 `(run,node)`、旧实例替换 |
+| ③ | Web 起失败时 attempt 仍正常（降级"不可内嵌"） | **通过（真机）**：真 spawn + 0.5 s 真超时 ⇒ `start_timeout`，`prepare_attempt` **5.60 s 正常返回**，记录 `web={"state":"unavailable","reason":"start_timeout","embed":"new_tab_only"}`，**未写** `agent_instance.json`、无残留 `--profile web` 进程 |
+| ④ | DS-09 仍能挡住**真正**的宿主凭据复制 | **通过**：四档判定 + 四个方向用例；Lead 独立抽查 5 组（§125.2） |
+| 附 | **D3 机制**（人所见 = 该 attempt 的会话） | **达成**（直连实例，不经反代）：侧栏自动出现 `Workspaces → work → 「只回复 OK」`，`Choose workspace` 标记 = False；DOM 断言**可见会话行自身含 `session_id`**（`{"found": true, "hops": 1, "cls": "YDXeBa_sessionRow"}`）；`documentElement.innerHTML` 含 `session_id` |
+
+### 125.2 DS-09 来源判定（Lead 独立抽查，不依赖实现者自测）
+
+| 场景 | 期望 | 实测 |
+|---|---|---|
+| 空 home | 放行 | `ok=True` |
+| 宿主 `settings.yaml` 复制件 | 拒 `host_settings_copy` | `ok=False`，`source=host_settings_copy`，**问题文本不含值** |
+| 凭据文件内容含宿主 secret | 拒 `host_credential_value` | `ok=False`，`source=host_credential_value`，**零回显** |
+| `dsh` 自生成形态 | 放行 `dsh_generated` | `ok=True`，`source=dsh_generated` |
+| 形态不认识（二进制） | 拒 `unknown`（fail-closed） | `ok=False`，`source=unknown` |
+| **形态像自生成但 secret 是宿主凭据** | 拒（不变量 2：值优先于形态） | `ok=False`，`source=host_credential_value`，**零回显** |
+
+**准入顺序**（Lead 要求的 P1 修复）：`prepare_attempt` = `layout.prepare()` → `stage_inputs()` →
+**`home_problems`（唯一判据，先拒）** → `_web_attempt()`（起进程）。有用例
+`test_ds09_rejection_happens_before_the_web_instance_starts`（预置宿主 settings ⇒ 抛错 + 不起实例 + 不落账）。
+
+### 125.3 真机 D3 三选一（0 token，不调模型）
+
+| 路径 | 判定 | 依据 |
+|---|---|---|
+| 直连实例（不经反代） | **`achieved`** | 会话行含 `session_id`；侧栏自动列出该 attempt 的 workspace 与标题；无需人工选 workspace |
+| 同源反代 iframe（**产品路径**） | **`blocked_by_missing_live_channel`** | `/plugins/events`（SSE）经反代 **200 `text/event-stream`**（S8e 修复生效）；`remote.mux` **WebSocket 握手 405**（console 原文两条）⇒ generation 未就绪 ⇒ `No sessions yet` / `Reconnecting…`；`/instance/**` 的 ≥400 响应 **0 条** |
+
+**0 token 佐证**：attempt 内 boot 失败原文 `dsh: MISSING_CREDENTIAL: … no API key for provider route …` ⇒ 模型从未被调用。
+
+**判据修正（实现者自我更正，照实登记）**：会话目录名把 `/` 映射成 `-` **不可逆**（`change-impact-loop`
+与 `change/impact/loop` 同形）⇒ **不能从目录名反解 cwd**；cwd 只认 projcache `identity.cwd`（raw 报告已改成正算方向）。
+
+### 125.4 交付物
+
+| 文件 | 变更 | 契约 |
+|---|---|---|
+| `loop/host/agent_backends/dsh_assets.py`（+230/−6） | `home_provenance` **唯一判据**（四档）+ `HomeEntry`/`HomeProvenance.record()`；`home_problems` 仅兼容外壳；`DSH_GENERATED_CREDENTIAL_KEYS`/`_REQUIRED` 真机登记 + 漂移用例；`host_credential_values()` 内存取名 | REV-14 §9 |
+| `loop/host/web_instance_ctl.py`（+101/−19） | `layout_for_attempt`/`home_for_attempt`/`workdir_for_attempt`（**单一来源** = `AttemptLayout`）；`ensure` 先物化布局、**起进程前**消费 DS-09、`home/workdir` 显式 replace；`dsh-web-home` 只读兼容 | REV-14 §9.3 / §3-D3 |
+| `loop/host/agent_backends/dsh_web_instance.py`（+40） | `WebInstanceConfig.workdir`（`Popen(cwd=…)`）、缺目录显式失败；docstring 写实测结论 | D3 |
+| `loop/host/agent_backends/dsh.py`（+78/−4） | `prepare_attempt` 顺序（DS-09 先拒再起）；`_web_attempt` 仅 `run_mode=real` 且全异常收住；`AttemptWorkspace.web` + `record()` 增 `web`/`home_provenance`（零回显）；结束**不 stop** | 裁决 B3 / REV-14 §9.2 |
+| `loop/SETTINGS.yaml` | **`dsh.web.enabled: true`**（改默认运行行为，裁决 B3）+ `web.workdir` | 裁决 B3 |
+| 测试 | `test_ds09_home_provenance.py`（新 19）+ `test_web_instance_ctl.py`（默认 true/回退/单一来源/legacy/先拒再起）+ `test_dsh_backend.py`（+7 自动起/不阻断/非 real 不起/结束不 stop/顺序/自生成放行）+ `test_dsh_web_instance.py`（workdir） | 各条 TDD |
+
+### 125.5 收口门（本轮实测，命令输出复制；树 = S8b + S8c + S8e 三片已提交 `d69201b`/`9b42694`/`6db2c93`）
+
+| 门 | 结果 |
+|---|---|
+| 单测（可写数据根） | `3 failed, 1828 passed, 1 warning, 141 errors in 455.05s`；3 failed 全是既有 `env_layer`；141 errors = 浏览器缺 Chromium |
+| kb 自测 + env layer | `PASS=10` / `PASS=9` / `PASS=28`，`FAIL=0`；env layer `3 passed, 24 deselected in 14.79s`；**原 ENV_ROOT 零写入** |
+| 端到端（drill） | phase `1/2/3/4/4b/5` 全 `rc=0`，`=> ALL PASS` |
+| 文档门 | `65 passed in 2.60s` |
+| 浏览器门（改界面字段，必跑） | `142 passed in 158.34s` |
+
+差量对账：基线 `1770 passed` → **`1828 passed`**（**+58** = S8b 37 + S8c 13 + S8e 8）；
+`failed 3=3`、`errors 141=141`、`warnings 1=1`，**零新增失败**。
+
+### 125.6 纪律核对
+
+- **写权**：`doc/spec/**` 只由 Lead 写（§9 先于实现）；`loop/SETTINGS.yaml` 依裁决 B3 **唯一 writer = s8b-impl**（Lead 复核 diff）；`kb/**` 零改动。
+- **唯一判据（红线 8）**：来源判定只在 `dsh_assets.home_provenance`；调用方只消费；`FORBIDDEN_HOME_ENTRIES` 语义未改。
+- **零回显**：凭据值只内存比对，问题文本/记录/repr 只含 `source` 枚举、文件名、"第 N 条命中"。
+- **失败显式**：来源 `unknown` ⇒ 拒绝；web 起不来 ⇒ `unavailable` + reason（**不伪装 ready、不阻断 attempt**）。
+- **时间口径**：`agent_instance.json.written_at` 仍走 `paths.now_iso`。
+- **真实调用**：本片真机 **0 token**（boot 阶段 `MISSING_CREDENTIAL`，模型从未被调用）。
+- **独立复核**：**无**（不声称）。
+
+### 125.7 未做 / 不声称
+
+- **不声称 D3 产品目标已交付**：内嵌（iframe）路径被 `remote.mux` WebSocket 405 挡住（§9-2 未决）。
+  **机制 + 实例自身 UI 已达成**，这是两个不同的事实，不得混写。可选后续（**需人裁决**）：① 做 WS 升级（§9-2 收口）；
+  ② 把"在新标签页打开"指向直连实例（human 可看可说，但不内嵌）。本轮**都不做**。
+- **多节点实例累积**：`_REGISTRY` 按 `(run,node)` 建键 ⇒ 一次 real run 走 N 节点会留 N 个 loopback 实例
+  （`stop_all()`/`stop()` 可收）。已写进 docstring，登记为已知行为（非缺陷）。
+- **DS-09 不挡**"home 内伪造自生成形态"（`bwrap` 与凭据只经 env 注入仍是隔离主体）；换 dsh 版本必须重录键集合常量（漂移用例会红 ⇒ fail-closed）。
+- **Web 实例未套 bwrap**（S7C §7-5 遗留，非阻断）。
+- 未推送；`default_backend` 仍 `agently`。
+
+## 126 S8c 交付：角色卡 `identity` 冷读 + 9 条 `500` 定位（2026-10-29）
+
+本轮入口：[开工提示词 S8](agents/开工提示词_S8-复核与D3收口.md) §5.3；契约
+[REV-16 §2.1](spec/SPEC-REV-16-20261028.md)（identity 来源）/ §6.2 / §10 §9-12 行；证据档
+[`doc/evidence/DSH_S8C_20261029/`](evidence/DSH_S8C_20261029/README.md)（冻结 7 件，md5 目录外）。
+实现 owner：`s8c-impl`；Lead 跑收口门与提交。**本片无独立复核者**（不声称独立验证）。
+
+### 126.1 §9-12 收口（identity）
+
+- `services/agent_view.py::build_agents` 新增 `_agent_records()` + `_record_note()`，把选中 attempt 的
+  `request/result/live` 喂给**同一** `progress_view(request=…, result=…)`；卡片与窗口 identity **整份逐字相等**
+  （`json.dumps(progress, sort_keys=True)` 比对，含 `last_error`）。**未写第二份 identity 判据**（红线 8）。
+- 旧记录/缺记录 ⇒ `null`（**不回填**）；记录损坏 ⇒ identity 未知 + 卡片 `note` 显式写"agent 记录不可读：
+  …"（**不静默当没有记录**；窗口仍按既有 422 口径报错 —— 一张卡读不出来不该让整块看板失效，docstring 写明理由）。
+- 投影成本（实现者实测）：最坏样例 45.4 ms/次、无 `agent_calls` 的 run 5.98 ms/次 ⇒ 按 REV-16 §8「F07 阈值未达前不加缓存」**本轮不加缓存**。
+
+### 126.2 9 条 `500` 的定位结论：**非产品缺陷**（S7c 探针夹具缺陷）
+
+全量 `(url, status)` dump（fake/real 各 78 条响应）：
+`mode=fake` ⇒ `{303:1, 200:62, 500:15}`，500 全在**看板主帧** `GET /api/runs`，根因原文
+`services/api.py:266 list_runs → AttributeError: 'FakeManager' object has no attribute 'list_runs'`
+（S7c 的 `probe2_app.py::FakeManager` 只给了 `docs`/`_progress`；看板每 1.5 s 轮询 ⇒ 每次一条）。
+`mode=real`（真 `RunManager`）⇒ `{303:1, 200:77}`，**零 500**；iframe 内上游端点 0 条 500。
+**S7c 记 9 条只是轮询窗口更短**（同根因）。⇒ 已给 S7C 证据档加**只增更正件**
+[`DSH_S7C_20261029/CORRECTION.md`](evidence/DSH_S7C_20261029/CORRECTION.md)（原冻结件不回填），
+本片**不声称**"产品里有 500"。
+
+### 126.3 收口门
+
+见 §125.5（三片同树实测；S8c 单片的受影响面实测由实现者给出：view 侧 **141 passed**、api/投影侧 **107 passed in 149.68s**、
+新增 **13 passed**、浏览器门 **142 passed in 147.32s**）。
+
+### 126.4 未做 / 不声称
+
+- 不声称独立复核；不声称投影性能达标（未做基准，只给单次实测）。
+- **不加缓存**（REV-16 §8 触发阈值未达）。
+- 未改 `services/contracts.py` 界面字段语义（`state/blockers/gates` 不动，投影不是权威，有用例钉住）。

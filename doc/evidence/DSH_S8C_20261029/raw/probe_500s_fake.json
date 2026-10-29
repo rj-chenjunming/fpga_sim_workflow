@@ -1,0 +1,925 @@
+{
+  "mode": "fake",
+  "base": "http://127.0.0.1:49421",
+  "prefix": "/instance/S8C-RUN-0001/N3/1/",
+  "responses": [
+    {
+      "phase": "A_top_proxied",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/",
+      "status": 303,
+      "resource_type": "document"
+    },
+    {
+      "phase": "A_top_proxied",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/",
+      "status": 200,
+      "resource_type": "document"
+    },
+    {
+      "phase": "A_top_proxied",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/plugins/??@deepseek-ai/dsh-client-modules/client.js&rev=089404108e2a",
+      "status": 200,
+      "resource_type": "script"
+    },
+    {
+      "phase": "A_top_proxied",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/assets/vendor-DV2921Zo.css",
+      "status": 200,
+      "resource_type": "stylesheet"
+    },
+    {
+      "phase": "A_top_proxied",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/assets/index-BxpfOGf3.css",
+      "status": 200,
+      "resource_type": "stylesheet"
+    },
+    {
+      "phase": "A_top_proxied",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/plugins/??@deepseek-ai/dsh-client-ui-trajectory/client.js,@deepseek-ai/dsh-api-remote-access/client.js,@deepseek-ai/dsh-session-log-export/client.js,@deepseek-ai/dsh-client-file-upload/client.js,@deepseek-ai/dsh-api-remotes/client.js,@deepseek-ai/dsh-client-ui-deliverables/client.js,@deepseek-ai/dsh-typert-registry/client.js,@deepseek-ai/dsh-client-connection/client.js,@deepseek-ai/dsh-api-workspace-controller/client.js,@deepseek-ai/dsh-api-session-controller/client.js,@deepseek-ai/dsh-client-ui-directory-picker-browse/client.js&rev=66bee40d69ad",
+      "status": 200,
+      "resource_type": "script"
+    },
+    {
+      "phase": "A_top_proxied",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/assets/index-CN7NIWNw.js",
+      "status": 200,
+      "resource_type": "script"
+    },
+    {
+      "phase": "A_top_proxied",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/assets/vendor-DcuzkuQH.js",
+      "status": 200,
+      "resource_type": "script"
+    },
+    {
+      "phase": "A_top_proxied",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/plugins/??@deepseek-ai/dsh-api-gateway/client.js,@deepseek-ai/dsh-client-ui-open-in-app/client.js,@deepseek-ai/dsh-api-job-controller/client.js,@deepseek-ai/dsh-api-terminal-controller/client.js,@deepseek-ai/dsh-api-workspace-files/client.js,@deepseek-ai/dsh-client-ui-settings-account/client.js,@deepseek-ai/dsh-client-hmr/client.js,@deepseek-ai/dsh-cordis-client-runner/client.js,@deepseek-ai/dsh-client-ui-theme/client.js,@deepseek-ai/dsh-client-locale/client.js,@deepseek-ai/dsh-client-shortcuts/client.js,@deepseek-ai/dsh-client-ui-shortcuts/client.js,@deepseek-ai/dsh-client-ui-layout/client.js,@deepseek-ai/dsh-client-ui-renderer/client.js,@deepseek-ai/dsh-client-ui-session/client.js,@deepseek-ai/dsh-client-resources/client.js,@deepseek-ai/dsh-client-ui-sidebar/client.js,@deepseek-ai/dsh-client-ui-sidebar-right/client.js,@deepseek-ai/dsh-client-ui-sidebar-documentpreview/client.js,@deepseek-ai/dsh-client-ui-sidebar-terminal/client.js,@deepseek-ai/dsh-client-ui-sidebar-files/client.js,@deepseek-ai/dsh-client-ui-settings/client.js,@deepseek-ai/dsh-client-ui-settings-general/client.js,@deepseek-ai/dsh-client-ui-settings-models/client.js,@deepseek-ai/dsh-client-ui-plugin-manager/client.js,@deepseek-ai/dsh-client-ui-settings-plugin-inventory/client.js,@deepseek-ai/dsh-client-ui-conversation/client.js,@deepseek-ai/dsh-client-ui-approval/client.js,@deepseek-ai/dsh-client-ui-chat/client.js,@deepseek-ai/dsh-client-ui-brand-official/client.js,@deepseek-ai/dsh-client-ui-attachment/client.js,@deepseek-ai/dsh-client-ui-tool/client.js,@deepseek-ai/dsh-client-ui-cordis/client.js,@deepseek-ai/dsh-client-ui-workspace/client.js,@deepseek-ai/dsh-client-ui-workflow-run/client.js,@deepseek-ai/dsh-client-ui-input-trigger/client.js,@deepseek-ai/dsh-client-ui-commands/client.js,@deepseek-ai/dsh-client-ui-skill/client.js,@deepseek-ai/dsh-client-ui-subagent/client.js,@deepseek-ai/dsh-client-ui-reference/client.js,@deepseek-ai/dsh-client-ui-secret-mask/client.js,@deepseek-ai/dsh-client-ui-jobs/client.js,@deepseek-ai/dsh-client-ui-schedule/client.js,@deepseek-ai/dsh-client-ui-goal/client.js,@deepseek-ai/dsh-client-ui-message-feedback/client.js,@deepseek-ai/dsh-client-ui-model-selection/client.js,@deepseek-ai/dsh-client-ui-deepseek-model-label-1017/client.js,@deepseek-ai/dsh-client-ui-permission-presets/client.js,@deepseek-ai/dsh-client-ui-agent-preset/client.js,@deepseek-ai/dsh-client-ui-settings-session-log/client.js,@deepseek-ai/dsh-client-ui-settings-plugins/client.js,@deepseek-ai/dsh-client-ui-settings-shell/client.js,@deepseek-ai/dsh-client-ui-settings-agent-loop/client.js,@deepseek-ai/dsh-client-ui-settings-subagent/client.js,@deepseek-ai/dsh-client-ui-settings-web-search/client.js,@deepseek-ai/dsh-client-ui-plan/client.js,@deepseek-ai/dsh-client-ui-user-questions/client.js&rev=57e1decf52e2",
+      "status": 200,
+      "resource_type": "script"
+    },
+    {
+      "phase": "A_top_proxied",
+      "frame": "main",
+      "method": "POST",
+      "url": "http://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/settings/describe",
+      "status": 200,
+      "resource_type": "fetch"
+    },
+    {
+      "phase": "A_top_proxied",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/open-in-app/apps",
+      "status": 200,
+      "resource_type": "fetch"
+    },
+    {
+      "phase": "A_top_proxied",
+      "frame": "main",
+      "method": "POST",
+      "url": "http://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/dynamicCordisRunner/syncInspectManifest",
+      "status": 200,
+      "resource_type": "fetch"
+    },
+    {
+      "phase": "A_top_proxied",
+      "frame": "main",
+      "method": "POST",
+      "url": "http://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/credentials/describe",
+      "status": 200,
+      "resource_type": "fetch"
+    },
+    {
+      "phase": "A_top_proxied",
+      "frame": "main",
+      "method": "POST",
+      "url": "http://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/dynamicCordisRunner/inventory",
+      "status": 200,
+      "resource_type": "fetch"
+    },
+    {
+      "phase": "A_top_proxied",
+      "frame": "main",
+      "method": "POST",
+      "url": "http://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/session/modelCatalog",
+      "status": 200,
+      "resource_type": "fetch"
+    },
+    {
+      "phase": "A_top_proxied",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/plugins/events",
+      "status": 200,
+      "resource_type": "eventsource"
+    },
+    {
+      "phase": "A_top_proxied",
+      "frame": "main",
+      "method": "POST",
+      "url": "http://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/agentPresets/list",
+      "status": 200,
+      "resource_type": "fetch"
+    },
+    {
+      "phase": "A_top_proxied",
+      "frame": "main",
+      "method": "POST",
+      "url": "http://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/credentials/describe",
+      "status": 200,
+      "resource_type": "fetch"
+    },
+    {
+      "phase": "A_top_proxied",
+      "frame": "main",
+      "method": "POST",
+      "url": "http://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/credentials/describe",
+      "status": 200,
+      "resource_type": "fetch"
+    },
+    {
+      "phase": "A_top_proxied",
+      "frame": "main",
+      "method": "POST",
+      "url": "http://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/credentials/describe",
+      "status": 200,
+      "resource_type": "fetch"
+    },
+    {
+      "phase": "B_board",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/",
+      "status": 200,
+      "resource_type": "document"
+    },
+    {
+      "phase": "B_board",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/tokens.css",
+      "status": 200,
+      "resource_type": "stylesheet"
+    },
+    {
+      "phase": "B_board",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/app.css",
+      "status": 200,
+      "resource_type": "stylesheet"
+    },
+    {
+      "phase": "B_board",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/gate-session.js",
+      "status": 200,
+      "resource_type": "script"
+    },
+    {
+      "phase": "B_board",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/run-view-state.js",
+      "status": 200,
+      "resource_type": "script"
+    },
+    {
+      "phase": "B_board",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/wait-center.js",
+      "status": 200,
+      "resource_type": "script"
+    },
+    {
+      "phase": "B_board",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/context-explain.js",
+      "status": 200,
+      "resource_type": "script"
+    },
+    {
+      "phase": "B_board",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/capabilities.js",
+      "status": 200,
+      "resource_type": "script"
+    },
+    {
+      "phase": "B_board",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/operator.js",
+      "status": 200,
+      "resource_type": "script"
+    },
+    {
+      "phase": "B_board",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/run-stream.js",
+      "status": 200,
+      "resource_type": "script"
+    },
+    {
+      "phase": "B_board",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/event-filter.js",
+      "status": 200,
+      "resource_type": "script"
+    },
+    {
+      "phase": "B_board",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/session-url.js",
+      "status": 200,
+      "resource_type": "script"
+    },
+    {
+      "phase": "B_board",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/s0.js",
+      "status": 200,
+      "resource_type": "script"
+    },
+    {
+      "phase": "B_board",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/job-status.js",
+      "status": 200,
+      "resource_type": "script"
+    },
+    {
+      "phase": "B_board",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/s4-view.js",
+      "status": 200,
+      "resource_type": "script"
+    },
+    {
+      "phase": "B_board",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/agent-results.js",
+      "status": 200,
+      "resource_type": "script"
+    },
+    {
+      "phase": "B_board",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/report-viewer.js",
+      "status": 200,
+      "resource_type": "script"
+    },
+    {
+      "phase": "B_board",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/agent-window.js",
+      "status": 200,
+      "resource_type": "script"
+    },
+    {
+      "phase": "B_board",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/node-detail.js",
+      "status": 200,
+      "resource_type": "script"
+    },
+    {
+      "phase": "B_board",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/app.js",
+      "status": 200,
+      "resource_type": "script"
+    },
+    {
+      "phase": "B_board",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/api/s0",
+      "status": 200,
+      "resource_type": "fetch"
+    },
+    {
+      "phase": "B_board",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/api/health",
+      "status": 200,
+      "resource_type": "fetch"
+    },
+    {
+      "phase": "B_board",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/api/baselines",
+      "status": 200,
+      "resource_type": "fetch"
+    },
+    {
+      "phase": "B_board",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/api/runs",
+      "status": 500,
+      "resource_type": "fetch"
+    },
+    {
+      "phase": "B_board",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/api/env/check?path=%2Fhome%2Fwork%2Fchenjunming%2FFPGA_SIM%2FSimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES",
+      "status": 200,
+      "resource_type": "fetch"
+    },
+    {
+      "phase": "B_board",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/api/runs",
+      "status": 500,
+      "resource_type": "fetch"
+    },
+    {
+      "phase": "B_board",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/api/runs",
+      "status": 500,
+      "resource_type": "fetch"
+    },
+    {
+      "phase": "B_iframe",
+      "frame": "iframe",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/",
+      "status": 200,
+      "resource_type": "document"
+    },
+    {
+      "phase": "B_iframe",
+      "frame": "iframe",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/plugins/??@deepseek-ai/dsh-client-ui-trajectory/client.js,@deepseek-ai/dsh-api-remote-access/client.js,@deepseek-ai/dsh-session-log-export/client.js,@deepseek-ai/dsh-client-file-upload/client.js,@deepseek-ai/dsh-api-remotes/client.js,@deepseek-ai/dsh-client-ui-deliverables/client.js,@deepseek-ai/dsh-typert-registry/client.js,@deepseek-ai/dsh-client-connection/client.js,@deepseek-ai/dsh-api-workspace-controller/client.js,@deepseek-ai/dsh-api-session-controller/client.js,@deepseek-ai/dsh-client-ui-directory-picker-browse/client.js&rev=66bee40d69ad",
+      "status": 200,
+      "resource_type": "script"
+    },
+    {
+      "phase": "B_iframe",
+      "frame": "iframe",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/plugins/??@deepseek-ai/dsh-client-modules/client.js&rev=089404108e2a",
+      "status": 200,
+      "resource_type": "script"
+    },
+    {
+      "phase": "B_iframe",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/api/runs",
+      "status": 500,
+      "resource_type": "fetch"
+    },
+    {
+      "phase": "B_iframe",
+      "frame": "iframe",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/assets/vendor-DV2921Zo.css",
+      "status": 200,
+      "resource_type": "stylesheet"
+    },
+    {
+      "phase": "B_iframe",
+      "frame": "iframe",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/assets/index-BxpfOGf3.css",
+      "status": 200,
+      "resource_type": "stylesheet"
+    },
+    {
+      "phase": "B_iframe",
+      "frame": "iframe",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/assets/vendor-DcuzkuQH.js",
+      "status": 200,
+      "resource_type": "script"
+    },
+    {
+      "phase": "B_iframe",
+      "frame": "iframe",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/assets/index-CN7NIWNw.js",
+      "status": 200,
+      "resource_type": "script"
+    },
+    {
+      "phase": "B_iframe",
+      "frame": "iframe",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/plugins/??@deepseek-ai/dsh-api-gateway/client.js,@deepseek-ai/dsh-client-ui-open-in-app/client.js,@deepseek-ai/dsh-api-job-controller/client.js,@deepseek-ai/dsh-api-terminal-controller/client.js,@deepseek-ai/dsh-api-workspace-files/client.js,@deepseek-ai/dsh-client-ui-settings-account/client.js,@deepseek-ai/dsh-client-hmr/client.js,@deepseek-ai/dsh-cordis-client-runner/client.js,@deepseek-ai/dsh-client-ui-theme/client.js,@deepseek-ai/dsh-client-locale/client.js,@deepseek-ai/dsh-client-shortcuts/client.js,@deepseek-ai/dsh-client-ui-shortcuts/client.js,@deepseek-ai/dsh-client-ui-layout/client.js,@deepseek-ai/dsh-client-ui-renderer/client.js,@deepseek-ai/dsh-client-ui-session/client.js,@deepseek-ai/dsh-client-resources/client.js,@deepseek-ai/dsh-client-ui-sidebar/client.js,@deepseek-ai/dsh-client-ui-sidebar-right/client.js,@deepseek-ai/dsh-client-ui-sidebar-documentpreview/client.js,@deepseek-ai/dsh-client-ui-sidebar-terminal/client.js,@deepseek-ai/dsh-client-ui-sidebar-files/client.js,@deepseek-ai/dsh-client-ui-settings/client.js,@deepseek-ai/dsh-client-ui-settings-general/client.js,@deepseek-ai/dsh-client-ui-settings-models/client.js,@deepseek-ai/dsh-client-ui-plugin-manager/client.js,@deepseek-ai/dsh-client-ui-settings-plugin-inventory/client.js,@deepseek-ai/dsh-client-ui-conversation/client.js,@deepseek-ai/dsh-client-ui-approval/client.js,@deepseek-ai/dsh-client-ui-chat/client.js,@deepseek-ai/dsh-client-ui-brand-official/client.js,@deepseek-ai/dsh-client-ui-attachment/client.js,@deepseek-ai/dsh-client-ui-tool/client.js,@deepseek-ai/dsh-client-ui-cordis/client.js,@deepseek-ai/dsh-client-ui-workspace/client.js,@deepseek-ai/dsh-client-ui-workflow-run/client.js,@deepseek-ai/dsh-client-ui-input-trigger/client.js,@deepseek-ai/dsh-client-ui-commands/client.js,@deepseek-ai/dsh-client-ui-skill/client.js,@deepseek-ai/dsh-client-ui-subagent/client.js,@deepseek-ai/dsh-client-ui-reference/client.js,@deepseek-ai/dsh-client-ui-secret-mask/client.js,@deepseek-ai/dsh-client-ui-jobs/client.js,@deepseek-ai/dsh-client-ui-schedule/client.js,@deepseek-ai/dsh-client-ui-goal/client.js,@deepseek-ai/dsh-client-ui-message-feedback/client.js,@deepseek-ai/dsh-client-ui-model-selection/client.js,@deepseek-ai/dsh-client-ui-deepseek-model-label-1017/client.js,@deepseek-ai/dsh-client-ui-permission-presets/client.js,@deepseek-ai/dsh-client-ui-agent-preset/client.js,@deepseek-ai/dsh-client-ui-settings-session-log/client.js,@deepseek-ai/dsh-client-ui-settings-plugins/client.js,@deepseek-ai/dsh-client-ui-settings-shell/client.js,@deepseek-ai/dsh-client-ui-settings-agent-loop/client.js,@deepseek-ai/dsh-client-ui-settings-subagent/client.js,@deepseek-ai/dsh-client-ui-settings-web-search/client.js,@deepseek-ai/dsh-client-ui-plan/client.js,@deepseek-ai/dsh-client-ui-user-questions/client.js&rev=57e1decf52e2",
+      "status": 200,
+      "resource_type": "script"
+    },
+    {
+      "phase": "B_iframe",
+      "frame": "iframe",
+      "method": "POST",
+      "url": "http://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/settings/describe",
+      "status": 200,
+      "resource_type": "fetch"
+    },
+    {
+      "phase": "B_iframe",
+      "frame": "iframe",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/open-in-app/apps",
+      "status": 200,
+      "resource_type": "fetch"
+    },
+    {
+      "phase": "B_iframe",
+      "frame": "iframe",
+      "method": "POST",
+      "url": "http://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/dynamicCordisRunner/syncInspectManifest",
+      "status": 200,
+      "resource_type": "fetch"
+    },
+    {
+      "phase": "B_iframe",
+      "frame": "iframe",
+      "method": "POST",
+      "url": "http://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/credentials/describe",
+      "status": 200,
+      "resource_type": "fetch"
+    },
+    {
+      "phase": "B_iframe",
+      "frame": "iframe",
+      "method": "POST",
+      "url": "http://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/dynamicCordisRunner/inventory",
+      "status": 200,
+      "resource_type": "fetch"
+    },
+    {
+      "phase": "B_iframe",
+      "frame": "iframe",
+      "method": "POST",
+      "url": "http://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/session/modelCatalog",
+      "status": 200,
+      "resource_type": "fetch"
+    },
+    {
+      "phase": "B_iframe",
+      "frame": "iframe",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/plugins/events",
+      "status": 200,
+      "resource_type": "eventsource"
+    },
+    {
+      "phase": "B_iframe",
+      "frame": "iframe",
+      "method": "POST",
+      "url": "http://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/agentPresets/list",
+      "status": 200,
+      "resource_type": "fetch"
+    },
+    {
+      "phase": "B_iframe",
+      "frame": "iframe",
+      "method": "POST",
+      "url": "http://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/credentials/describe",
+      "status": 200,
+      "resource_type": "fetch"
+    },
+    {
+      "phase": "B_iframe",
+      "frame": "iframe",
+      "method": "POST",
+      "url": "http://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/credentials/describe",
+      "status": 200,
+      "resource_type": "fetch"
+    },
+    {
+      "phase": "B_iframe",
+      "frame": "iframe",
+      "method": "POST",
+      "url": "http://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/credentials/describe",
+      "status": 200,
+      "resource_type": "fetch"
+    },
+    {
+      "phase": "B_iframe",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/api/runs",
+      "status": 500,
+      "resource_type": "fetch"
+    },
+    {
+      "phase": "B_iframe",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/api/runs",
+      "status": 500,
+      "resource_type": "fetch"
+    },
+    {
+      "phase": "B_iframe",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/api/runs",
+      "status": 500,
+      "resource_type": "fetch"
+    },
+    {
+      "phase": "B_iframe",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/api/runs",
+      "status": 500,
+      "resource_type": "fetch"
+    },
+    {
+      "phase": "B_iframe",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/api/runs",
+      "status": 500,
+      "resource_type": "fetch"
+    },
+    {
+      "phase": "B_iframe",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/api/runs",
+      "status": 500,
+      "resource_type": "fetch"
+    },
+    {
+      "phase": "B_iframe",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/api/runs",
+      "status": 500,
+      "resource_type": "fetch"
+    },
+    {
+      "phase": "B_iframe",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/api/runs",
+      "status": 500,
+      "resource_type": "fetch"
+    },
+    {
+      "phase": "B_iframe",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/api/runs",
+      "status": 500,
+      "resource_type": "fetch"
+    },
+    {
+      "phase": "B_iframe",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/api/runs",
+      "status": 500,
+      "resource_type": "fetch"
+    },
+    {
+      "phase": "B_iframe",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/api/runs",
+      "status": 500,
+      "resource_type": "fetch"
+    }
+  ],
+  "requestfailed": [
+    {
+      "phase": "A_top_proxied",
+      "frame": "main",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/plugins/events",
+      "failure": "net::ERR_INCOMPLETE_CHUNKED_ENCODING",
+      "resource_type": "eventsource"
+    },
+    {
+      "phase": "B_iframe",
+      "frame": "iframe",
+      "method": "GET",
+      "url": "http://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/plugins/events",
+      "failure": "net::ERR_INCOMPLETE_CHUNKED_ENCODING",
+      "resource_type": "eventsource"
+    }
+  ],
+  "console": [
+    {
+      "phase": "A_top_proxied",
+      "type": "error",
+      "text": "WebSocket connection to 'ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux' failed: Error during WebSocket handshake: Unexpected response code: 405"
+    },
+    {
+      "phase": "A_top_proxied",
+      "type": "error",
+      "text": "WebSocket connection to 'ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux' failed: Error during WebSocket handshake: Unexpected response code: 405"
+    },
+    {
+      "phase": "A_top_proxied",
+      "type": "warning",
+      "text": "[connection] connection lost, retry #1"
+    },
+    {
+      "phase": "A_top_proxied",
+      "type": "error",
+      "text": "WebSocket connection to 'ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux' failed: Error during WebSocket handshake: Unexpected response code: 405"
+    },
+    {
+      "phase": "A_top_proxied",
+      "type": "warning",
+      "text": "[connection] connection lost, retry #2"
+    },
+    {
+      "phase": "A_top_proxied",
+      "type": "error",
+      "text": "WebSocket connection to 'ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux' failed: Error during WebSocket handshake: Unexpected response code: 405"
+    },
+    {
+      "phase": "A_top_proxied",
+      "type": "warning",
+      "text": "[connection] connection lost, retry #3"
+    },
+    {
+      "phase": "A_top_proxied",
+      "type": "error",
+      "text": "WebSocket connection to 'ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux' failed: Error during WebSocket handshake: Unexpected response code: 405"
+    },
+    {
+      "phase": "A_top_proxied",
+      "type": "warning",
+      "text": "[connection] connection lost, retry #4"
+    },
+    {
+      "phase": "A_top_proxied",
+      "type": "error",
+      "text": "WebSocket connection to 'ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux' failed: Error during WebSocket handshake: Unexpected response code: 405"
+    },
+    {
+      "phase": "A_top_proxied",
+      "type": "warning",
+      "text": "[connection] connection lost, retry #5"
+    },
+    {
+      "phase": "A_top_proxied",
+      "type": "error",
+      "text": "WebSocket connection to 'ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux' failed: Error during WebSocket handshake: Unexpected response code: 405"
+    },
+    {
+      "phase": "A_top_proxied",
+      "type": "error",
+      "text": "Failed to load resource: net::ERR_INCOMPLETE_CHUNKED_ENCODING"
+    },
+    {
+      "phase": "B_board",
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+    },
+    {
+      "phase": "B_board",
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+    },
+    {
+      "phase": "B_board",
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+    },
+    {
+      "phase": "B_iframe",
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+    },
+    {
+      "phase": "B_iframe",
+      "type": "error",
+      "text": "WebSocket connection to 'ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux' failed: Error during WebSocket handshake: Unexpected response code: 405"
+    },
+    {
+      "phase": "B_iframe",
+      "type": "error",
+      "text": "WebSocket connection to 'ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux' failed: Error during WebSocket handshake: Unexpected response code: 405"
+    },
+    {
+      "phase": "B_iframe",
+      "type": "warning",
+      "text": "[connection] connection lost, retry #1"
+    },
+    {
+      "phase": "B_iframe",
+      "type": "error",
+      "text": "WebSocket connection to 'ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux' failed: Error during WebSocket handshake: Unexpected response code: 405"
+    },
+    {
+      "phase": "B_iframe",
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+    },
+    {
+      "phase": "B_iframe",
+      "type": "warning",
+      "text": "[connection] connection lost, retry #2"
+    },
+    {
+      "phase": "B_iframe",
+      "type": "error",
+      "text": "WebSocket connection to 'ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux' failed: Error during WebSocket handshake: Unexpected response code: 405"
+    },
+    {
+      "phase": "B_iframe",
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+    },
+    {
+      "phase": "B_iframe",
+      "type": "warning",
+      "text": "[connection] connection lost, retry #3"
+    },
+    {
+      "phase": "B_iframe",
+      "type": "error",
+      "text": "WebSocket connection to 'ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux' failed: Error during WebSocket handshake: Unexpected response code: 405"
+    },
+    {
+      "phase": "B_iframe",
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+    },
+    {
+      "phase": "B_iframe",
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+    },
+    {
+      "phase": "B_iframe",
+      "type": "warning",
+      "text": "[connection] connection lost, retry #4"
+    },
+    {
+      "phase": "B_iframe",
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+    },
+    {
+      "phase": "B_iframe",
+      "type": "error",
+      "text": "WebSocket connection to 'ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux' failed: Error during WebSocket handshake: Unexpected response code: 405"
+    },
+    {
+      "phase": "B_iframe",
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+    },
+    {
+      "phase": "B_iframe",
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+    },
+    {
+      "phase": "B_iframe",
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+    },
+    {
+      "phase": "B_iframe",
+      "type": "warning",
+      "text": "[connection] connection lost, retry #5"
+    },
+    {
+      "phase": "B_iframe",
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+    },
+    {
+      "phase": "B_iframe",
+      "type": "error",
+      "text": "WebSocket connection to 'ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux' failed: Error during WebSocket handshake: Unexpected response code: 405"
+    },
+    {
+      "phase": "B_iframe",
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+    },
+    {
+      "phase": "B_iframe",
+      "type": "error",
+      "text": "Failed to load resource: net::ERR_INCOMPLETE_CHUNKED_ENCODING"
+    },
+    {
+      "phase": "B_iframe",
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+    }
+  ],
+  "pageerrors": [],
+  "websockets": [
+    "A_top_proxied open ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux",
+    "A_top_proxied open ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux",
+    "A_top_proxied open ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux",
+    "A_top_proxied open ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux",
+    "A_top_proxied open ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux",
+    "A_top_proxied open ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux",
+    "A_top_proxied open ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux",
+    "B_iframe open ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux",
+    "B_iframe open ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux",
+    "B_iframe open ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux",
+    "B_iframe open ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux",
+    "B_iframe open ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux",
+    "B_iframe open ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux",
+    "B_iframe open ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux"
+  ],
+  "top": {
+    "title": "DeepSeek Harness",
+    "readyState": "complete",
+    "rootExists": true,
+    "rootHtmlLen": 39916,
+    "bodyTextLen": 168,
+    "bodyText": "New Session\nPlugins\nAutomation tasks\nWorkspaces\nNo sessions yet\nMore\nReconnecting...\nInto the Unknown\nPreview\nChoose workspace\nStandard mode\nChoose a workspace to start",
+    "buttonTotal": 14,
+    "scrollHeight": 900
+  },
+  "board": {
+    "title": "FPGA Flow · 仿真工作台",
+    "readyState": "complete",
+    "rootExists": false,
+    "rootHtmlLen": null,
+    "bodyTextLen": 1637,
+    "bodyText": "跳到工作区\nFPGA\nFlow\n/\n仿真工作台\nsimenv-tcs9620-64ch\n插件面齐全 · 数据缺 1 项 · agently 4.1.4.8\n旧版操作台 ↗\n通知 已拒绝\n当前工作空间\nF\n仿真与验证\nSimulation workspace\n⌄\n＋\n新建运行\n工作台\nWORKBENCH\n▧\n环境准备\nS0\n⊞\n运行配置\n01\n◴\n运行监控\n02\n◇\n人工闸门\n03\n在等我\nATTENTION\n无待办\n最近运行\nHISTORY\n读取运行列表失败：/api/runs → Internal Server Error\nTOOL_ROOT · /home/work/chenjunming/change-impact-loop\n数据根 · /home/work/chenjunming/change-impact-loop/loop/.logs/s8/ws\n模型 · —\n工作台\n/\n环境准备\n环境准备\n从只读基线派生工作副本，让每一次验证都有据可查\nSIMULATION WORKBENCH\nS0\n轮询连接失败：/api/runs → Internal Server Error\nSIMULATION / ENVIRONMENT\n让每一次验证，\n都有可靠的起点。\n从基线派生独立工作副本，替换新版 RTL，逐项核对准备证据。\n基线只读\n独立副本\n内容校验\nCONTROLLED DERI",
+    "buttonTotal": 54,
+    "scrollHeight": 2009
+  },
+  "iframe": {
+    "title": "DeepSeek Harness",
+    "readyState": "complete",
+    "rootExists": true,
+    "rootHtmlLen": 39916,
+    "bodyTextLen": 168,
+    "bodyText": "New Session\nPlugins\nAutomation tasks\nWorkspaces\nNo sessions yet\nMore\nReconnecting...\nInto the Unknown\nPreview\nChoose workspace\nStandard mode\nChoose a workspace to start",
+    "buttonTotal": 14,
+    "scrollHeight": 820
+  },
+  "buckets": {
+    "board": {
+      "count": 15,
+      "paths": [
+        {
+          "method": "GET",
+          "path": "/api/runs",
+          "type": "fetch",
+          "n": 15
+        }
+      ]
+    },
+    "iframe": {
+      "count": 0,
+      "paths": []
+    },
+    "other": {
+      "count": 0,
+      "paths": []
+    }
+  },
+  "board_health": "ok"
+}

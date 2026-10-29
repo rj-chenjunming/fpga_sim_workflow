@@ -1,0 +1,241 @@
+{
+  "started": {
+    "origin": "http://127.0.0.1:43381",
+    "port": 43381,
+    "startup_s": 3.109,
+    "metadata": "/home/work/chenjunming/change-impact-loop/loop/.logs/s8/ws/runs/S8C-RUN-0001/agent_instance.json"
+  },
+  "run_dir": "/home/work/chenjunming/change-impact-loop/loop/.logs/s8/ws/runs/S8C-RUN-0001",
+  "workspace": "/home/work/chenjunming/change-impact-loop/loop/.logs/s8/ws",
+  "modes": {
+    "fake": {
+      "board_port": 49421,
+      "board_page": {
+        "title": "FPGA Flow · 仿真工作台",
+        "readyState": "complete",
+        "rootExists": false,
+        "rootHtmlLen": null,
+        "bodyTextLen": 1637,
+        "bodyText": "跳到工作区\nFPGA\nFlow\n/\n仿真工作台\nsimenv-tcs9620-64ch\n插件面齐全 · 数据缺 1 项 · agently 4.1.4.8\n旧版操作台 ↗\n通知 已拒绝\n当前工作空间\nF\n仿真与验证\nSimulation workspace\n⌄\n＋\n新建运行\n工作台\nWORKBENCH\n▧\n环境准备\nS0\n⊞\n运行配置\n01\n◴\n运行监控\n02\n◇\n人工闸门\n03\n在等我\nATTENTION\n无待办\n最近运行\nHISTORY\n读取运行列表失败：/api/runs → Internal Server Error\nTOOL_ROOT · /home/work/chenjunming/change-impact-loop\n数据根 · /home/work/chenjunming/change-impact-loop/loop/.logs/s8/ws\n模型 · —\n工作台\n/\n环境准备\n环境准备\n从只读基线派生工作副本，让每一次验证都有据可查\nSIMULATION WORKBENCH\nS0\n轮询连接失败：/api/runs → Internal Server Error\nSIMULATION / ENVIRONMENT\n让每一次验证，\n都有可靠的起点。\n从基线派生独立工作副本，替换新版 RTL，逐项核对准备证据。\n基线只读\n独立副本\n内容校验\nCONTROLLED DERI",
+        "buttonTotal": 54,
+        "scrollHeight": 2009
+      },
+      "iframe": {
+        "title": "DeepSeek Harness",
+        "readyState": "complete",
+        "rootExists": true,
+        "rootHtmlLen": 39916,
+        "bodyTextLen": 168,
+        "bodyText": "New Session\nPlugins\nAutomation tasks\nWorkspaces\nNo sessions yet\nMore\nReconnecting...\nInto the Unknown\nPreview\nChoose workspace\nStandard mode\nChoose a workspace to start",
+        "buttonTotal": 14,
+        "scrollHeight": 820
+      },
+      "buckets": {
+        "board": {
+          "count": 15,
+          "paths": [
+            {
+              "method": "GET",
+              "path": "/api/runs",
+              "type": "fetch",
+              "n": 15
+            }
+          ]
+        },
+        "iframe": {
+          "count": 0,
+          "paths": []
+        },
+        "other": {
+          "count": 0,
+          "paths": []
+        }
+      },
+      "response_total": 78,
+      "requestfailed": [
+        {
+          "phase": "A_top_proxied",
+          "frame": "main",
+          "method": "GET",
+          "url": "http://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/plugins/events",
+          "failure": "net::ERR_INCOMPLETE_CHUNKED_ENCODING",
+          "resource_type": "eventsource"
+        },
+        {
+          "phase": "B_iframe",
+          "frame": "iframe",
+          "method": "GET",
+          "url": "http://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/plugins/events",
+          "failure": "net::ERR_INCOMPLETE_CHUNKED_ENCODING",
+          "resource_type": "eventsource"
+        }
+      ],
+      "websockets": [
+        "A_top_proxied open ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux",
+        "A_top_proxied open ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux",
+        "A_top_proxied open ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux",
+        "A_top_proxied open ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux",
+        "A_top_proxied open ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux",
+        "A_top_proxied open ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux",
+        "A_top_proxied open ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux",
+        "B_iframe open ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux",
+        "B_iframe open ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux",
+        "B_iframe open ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux",
+        "B_iframe open ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux",
+        "B_iframe open ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux",
+        "B_iframe open ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux",
+        "B_iframe open ws://127.0.0.1:49421/instance/S8C-RUN-0001/N3/1/api/remote.mux"
+      ],
+      "console_500": [
+        {
+          "phase": "B_board",
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+        },
+        {
+          "phase": "B_board",
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+        },
+        {
+          "phase": "B_board",
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+        },
+        {
+          "phase": "B_iframe",
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+        },
+        {
+          "phase": "B_iframe",
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+        },
+        {
+          "phase": "B_iframe",
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+        },
+        {
+          "phase": "B_iframe",
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+        },
+        {
+          "phase": "B_iframe",
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+        },
+        {
+          "phase": "B_iframe",
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+        },
+        {
+          "phase": "B_iframe",
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+        },
+        {
+          "phase": "B_iframe",
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+        },
+        {
+          "phase": "B_iframe",
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+        },
+        {
+          "phase": "B_iframe",
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+        },
+        {
+          "phase": "B_iframe",
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+        },
+        {
+          "phase": "B_iframe",
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+        }
+      ]
+    },
+    "real": {
+      "board_port": 44069,
+      "board_page": {
+        "title": "FPGA Flow · 仿真工作台",
+        "readyState": "complete",
+        "rootExists": false,
+        "rootHtmlLen": null,
+        "bodyTextLen": 1587,
+        "bodyText": "跳到工作区\nFPGA\nFlow\n/\n仿真工作台\nsimenv-tcs9620-64ch\n插件面齐全 · 数据缺 1 项 · agently 4.1.4.8\n旧版操作台 ↗\n通知 已拒绝\n当前工作空间\nF\n仿真与验证\nSimulation workspace\n⌄\n＋\n新建运行\n工作台\nWORKBENCH\n▧\n环境准备\nS0\n⊞\n运行配置\n01\n◴\n运行监控\n02\n◇\n人工闸门\n03\n在等我\nATTENTION\n无待办\n最近运行\nHISTORY\nS8C-RUN-0001\ndrill\n·\nunknown\n·\n刚刚\nTOOL_ROOT · /home/work/chenjunming/change-impact-loop\n数据根 · /home/work/chenjunming/change-impact-loop/loop/.logs/s8/ws\n模型 · —\n工作台\n/\n环境准备\n环境准备\n从只读基线派生工作副本，让每一次验证都有据可查\nSIMULATION WORKBENCH\nS0\nSIMULATION / ENVIRONMENT\n让每一次验证，\n都有可靠的起点。\n从基线派生独立工作副本，替换新版 RTL，逐项核对准备证据。\n基线只读\n独立副本\n内容校验\nCONTROLLED DERIVATION\n▧\nBASELINE\n只读基线\n派生 & 核验\n⊞\nWORKSPACE\n独立工作副本\n",
+        "buttonTotal": 55,
+        "scrollHeight": 1949
+      },
+      "iframe": {
+        "title": "DeepSeek Harness",
+        "readyState": "complete",
+        "rootExists": true,
+        "rootHtmlLen": 39916,
+        "bodyTextLen": 168,
+        "bodyText": "New Session\nPlugins\nAutomation tasks\nWorkspaces\nNo sessions yet\nMore\nReconnecting...\nInto the Unknown\nPreview\nChoose workspace\nStandard mode\nChoose a workspace to start",
+        "buttonTotal": 14,
+        "scrollHeight": 820
+      },
+      "buckets": {
+        "board": {
+          "count": 0,
+          "paths": []
+        },
+        "iframe": {
+          "count": 0,
+          "paths": []
+        },
+        "other": {
+          "count": 0,
+          "paths": []
+        }
+      },
+      "response_total": 78,
+      "requestfailed": [
+        {
+          "phase": "A_top_proxied",
+          "frame": "main",
+          "method": "GET",
+          "url": "http://127.0.0.1:44069/instance/S8C-RUN-0001/N3/1/plugins/events",
+          "failure": "net::ERR_INCOMPLETE_CHUNKED_ENCODING",
+          "resource_type": "eventsource"
+        },
+        {
+          "phase": "B_iframe",
+          "frame": "iframe",
+          "method": "GET",
+          "url": "http://127.0.0.1:44069/instance/S8C-RUN-0001/N3/1/plugins/events",
+          "failure": "net::ERR_INCOMPLETE_CHUNKED_ENCODING",
+          "resource_type": "eventsource"
+        }
+      ],
+      "websockets": [
+        "A_top_proxied open ws://127.0.0.1:44069/instance/S8C-RUN-0001/N3/1/api/remote.mux",
+        "A_top_proxied open ws://127.0.0.1:44069/instance/S8C-RUN-0001/N3/1/api/remote.mux",
+        "A_top_proxied open ws://127.0.0.1:44069/instance/S8C-RUN-0001/N3/1/api/remote.mux",
+        "A_top_proxied open ws://127.0.0.1:44069/instance/S8C-RUN-0001/N3/1/api/remote.mux",
+        "A_top_proxied open ws://127.0.0.1:44069/instance/S8C-RUN-0001/N3/1/api/remote.mux",
+        "A_top_proxied open ws://127.0.0.1:44069/instance/S8C-RUN-0001/N3/1/api/remote.mux",
+        "A_top_proxied open ws://127.0.0.1:44069/instance/S8C-RUN-0001/N3/1/api/remote.mux",
+        "B_iframe open ws://127.0.0.1:44069/instance/S8C-RUN-0001/N3/1/api/remote.mux",
+        "B_iframe open ws://127.0.0.1:44069/instance/S8C-RUN-0001/N3/1/api/remote.mux",
+        "B_iframe open ws://127.0.0.1:44069/instance/S8C-RUN-0001/N3/1/api/remote.mux",
+        "B_iframe open ws://127.0.0.1:44069/instance/S8C-RUN-0001/N3/1/api/remote.mux",
+        "B_iframe open ws://127.0.0.1:44069/instance/S8C-RUN-0001/N3/1/api/remote.mux",
+        "B_iframe open ws://127.0.0.1:44069/instance/S8C-RUN-0001/N3/1/api/remote.mux",
+        "B_iframe open ws://127.0.0.1:44069/instance/S8C-RUN-0001/N3/1/api/remote.mux"
+      ],
+      "console_500": []
+    }
+  }
+}

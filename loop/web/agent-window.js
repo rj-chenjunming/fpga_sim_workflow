@@ -326,7 +326,10 @@ window.AgentWindow = (function () {
       "记录 " + (records === null ? "未知" : records + " 条"),
       "错误 " + (errors === null ? "未知" : errors + " 条"),
       "起止 " + numberText(facts.start_count) + "→" + numberText(facts.end_count),
-      "剪枝 " + countText(facts.prune_count, "次")
+      "剪枝 " + countText(facts.prune_count, "次"),
+      /* S8k（SPEC-REV-18 §3）：人参与反馈次数 —— 只渲染服务端 `facts.human_messages`；
+         缺字段 ⇒ 「未知」（旧服务端/旧记录不补 0），`0` 是真实值必须显示 0。 */
+      "人参与 " + countText(facts.human_messages, "次")
     ];
     var line = "执行结果（" + kind + "）：" + parts.join(" · ");
     if (copy.truncated) line += " · 已截断（服务端上限）";

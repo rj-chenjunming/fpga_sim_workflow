@@ -1,0 +1,71 @@
+# S8k 收口门记录（2026-10-29，Lead 实测；数字逐条从命令输出复制）
+
+> 归因前提：本机同一工作区另有**并发切片**在写（闸门双栏独立滚动：`web/pane-scroll.js`、`web/app.js`、
+> `tests/test_pane_scroll.py`、`tests/browser/test_gate_panes.py`）。本片只碰
+> `host/agent_backends/dsh_sdk.py`、`web/agent-window.js`、本片测试与本片文档。
+
+## 1 本片用例
+
+```bash
+$ pytest -q tests/test_session_human_messages.py
+15 passed in 0.65s
+
+$ pytest -q tests/test_instance_proxy.py -k session_copy
+7 passed, 66 deselected, 1 warning in 0.89s
+
+$ pytest -q tests/browser/test_s4_projection_ui.py
+27 passed in 26.51s
+```
+
+## 2 单测门（主树；provision → pytest → cleanup）
+
+```bash
+$ LOOP_WORKSPACE=<repo>/.dev-ws LOOP_LLM_MODE=standin pytest -q
+3 failed, 1884 passed, 1 warning, 148 errors in 488.50s
+```
+
+- `148 errors` = 本机无 Chromium 的浏览器用例（环境缺件）。
+- `3 failed` 归因（同一条命令内单独跑，输出原文）：
+
+```bash
+$ pytest -q tests/test_archive_e2.py tests/test_projection_and_frozen.py
+E       AssertionError: guard rc=3
+E         [FAIL] 互斥量 owner 无法解析/旧格式（VER=缺，PID=）⇒ 按**未知**处理：**不清锁**、rc=3（宁可拒绝也不误清活跃锁，N9-3）。
+E       FileNotFoundError: [Errno 2] No such file or directory: '/tmp/pytest-of-chenjunming/pytest-0/test_guard_archive_is_bounded_0/evidence/archive'
+FAILED tests/test_archive_e2.py::test_guard_compile_only_archives_evidence_readonly
+FAILED tests/test_archive_e2.py::test_guard_archive_is_bounded_and_excludes_guard_log
+FAILED tests/test_projection_and_frozen.py::test_frozen_witness_before_after_drill_run
+3 failed, 24 passed in 7.08s
+```
+
+⇒ 三条都是**环境/数据根**问题（旧格式互斥量 + 归档夹具缺件），与本片改动无关（S8h 基线同 3 条）。
+
+## 3 浏览器门（主树）
+
+```bash
+$ pytest -q tests/browser
+1 failed, 148 passed in 203.68s
+```
+
+- 失败项 = **并发切片**的 `tests/browser/test_gate_panes.py::test_identity_change_resets_scroll_to_top`。
+  该文件单独跑：
+
+```bash
+$ pytest -q tests/browser/test_gate_panes.py
+8 passed in 14.40s
+```
+
+## 4 文档门
+
+```bash
+$ pytest -q tests/test_doc_links.py
+65 passed in 7.67s
+```
+
+## 5 端到端（drill）
+
+```bash
+$ bash spikes/accept_v1_run.sh
+phase 1 rc=0 / phase 2 rc=0 / phase 3 rc=0 / phase 4 rc=0 / phase 4b rc=0 / phase 5 rc=0
+=> ALL PASS
+```

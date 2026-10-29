@@ -133,6 +133,20 @@ COMPACTION_KINDS = frozenset({COMPACTION_START, COMPACTION_SUMMARY,
 AVAILABILITY_OK = "ok"
 AVAILABILITY_UNAVAILABLE = "unavailable"
 
+# ==================================================================== S8k 人参与词表（SPEC-REV-18 §2）
+
+#: 承载「人类消息」的两类事件：落盘消息 与 D3 旁路插入（同一条会两边各出现一次 ⇒ 按 id 去重）
+HUMAN_MESSAGE_KIND = "user/message"
+HUMAN_SPLICED_KIND = "agent/inbox/spliced"
+HUMAN_KINDS = frozenset({HUMAN_MESSAGE_KIND, HUMAN_SPLICED_KIND})
+
+#: 只认这一个来源：`source.kind == "user"`（实测带 `rpcId`/`clientTimeZone` = 浏览器人输入）。
+#: 其余来源（`time-context`/`system-reminder`/`runtime-context`…）是注入上下文，不是人说的 ⇒ 不计数。
+HUMAN_SOURCE_KIND = "user"
+
+#: 计数依据前缀（写进 `human_messages_basis`，让界面/审计能解释这个数怎么来的）
+HUMAN_BASIS = "source.kind=user,dedupe=id|rpcId"
+
 #: zstd 解压单次上限（多帧一次解全；超时按 unavailable 处理，不编数）
 SESSION_LOG_TIMEOUT_S = 120.0
 
@@ -262,11 +276,14 @@ class CompactionError:
 
 @dataclass(frozen=True)
 class CompactionFacts:
-    """D2 压缩事实。
+    """D2 压缩事实 + S8k 人参与反馈次数（同一份会话日志、同一遍解析，唯一实现）。
 
     口径：`count` = `compaction/summary` 条数 = 成功压缩次数；
     `prune_count` = 不调模型的剪枝次数（单列，不混算成功次数）；
     `failed` = 存在显式失败形态；`availability="unavailable"` 时全零且必须给 `reason`（不编数）。
+
+    `human_messages`（SPEC-REV-18 §2）= **人发出的消息条数**：只认 `source.kind == "user"`，
+    按 `id` → `rpcId` 去重；`human_messages_basis` 是计数依据（可核）。源不可用时为 0 且不给依据。
     """
 
     availability: str
@@ -278,15 +295,23 @@ class CompactionFacts:
     prune_count: int = 0
     reason: str | None = None
     path: str | None = None
+    human_messages: int = 0
+    human_messages_basis: str | None = None
 
     def __post_init__(self) -> None:
         if self.availability not in (AVAILABILITY_OK, AVAILABILITY_UNAVAILABLE):
             raise ValueError("availability 只能是 %r/%r：%r"
                              % (AVAILABILITY_OK, AVAILABILITY_UNAVAILABLE, self.availability))
+        if isinstance(self.human_messages, bool) or not isinstance(self.human_messages, int):
+            raise ValueError("human_messages 必须是整数：%r" % (self.human_messages,))
+        if self.human_messages < 0:
+            raise ValueError("human_messages 不得为负：%r" % (self.human_messages,))
         if self.availability == AVAILABILITY_UNAVAILABLE:
             if any((self.count, self.records, self.errors, self.start_count,
-                    self.end_count, self.prune_count)):
+                    self.end_count, self.prune_count, self.human_messages)):
                 raise ValueError("source 不可用时不得给出任何计数（不编数）")
+            if self.human_messages_basis is not None:
+                raise ValueError("source 不可用时不得给出计数依据")
             if not self.reason:
                 raise ValueError("source 不可用必须给 reason")
         elif self.reason is not None:
@@ -825,13 +850,55 @@ def _compaction_event_data(event: Mapping[str, Any], *, where: str) -> Mapping[s
     return data
 
 
+# ---------------------------------------------------------------- S8k：人参与反馈计数
+
+def _human_items(kind: str, data: Any) -> tuple[Mapping[str, Any], ...]:
+    """从一条事件里取「可能是人发的」消息条目。
+
+    `user/message` ⇒ `data` 本身；`agent/inbox/spliced` ⇒ `data.inserted[]`。
+    结构不认识 ⇒ 返回空元组（不猜、不抛：这些事件不参与压缩计数，坏件不该让整份事实失败）。
+    """
+    if not isinstance(data, dict):
+        return ()
+    if kind == HUMAN_MESSAGE_KIND:
+        return (data,)
+    inserted = data.get("inserted")
+    if not isinstance(inserted, list):
+        return ()
+    return tuple(item for item in inserted if isinstance(item, dict))
+
+
+def _is_human_message(item: Mapping[str, Any]) -> bool:
+    """`source.kind == "user"` 才算人发的；其余来源是注入上下文，不计数。"""
+    source = item.get("source")
+    return isinstance(source, dict) and source.get("kind") == HUMAN_SOURCE_KIND
+
+
+def _human_key(item: Mapping[str, Any]) -> str | None:
+    """去重键：`id` → 缺则 `rpcId`（条目顶层或 `source.rpcId`，实测在 source 里）。
+
+    D3 插入与落盘是同一条消息 ⇒ 只计一次；两个键都没有 ⇒ None（调用方不计数，只记 `skipped`）。
+    """
+    for value in (item.get("id"), item.get("rpcId")):
+        if isinstance(value, str) and value.strip():
+            return value
+    source = item.get("source")
+    if isinstance(source, dict):
+        value = source.get("rpcId")
+        if isinstance(value, str) and value.strip():
+            return value
+    return None
+
+
 def parse_session_log_lines(lines: Iterable[str], *,
                             path: str | None = None) -> CompactionFacts:
-    """纯函数：把 session log 的 JSONL 行折成压缩事实（不改文件、不猜数）。
+    """纯函数：把 session log 的 JSONL 行折成压缩事实 + 人参与反馈次数（不改文件、不猜数）。
 
     口径见模块 docstring：成功次数 = `compaction/summary` 条数；
     `compaction/end.data.error` 非空 ⇒ 显式失败登记；
     `compaction/prune`（不调模型的剪枝）与 `compaction/start` 单列计数，不混算成功次数。
+    人参与（SPEC-REV-18 §2）：`user/message` / `agent/inbox/spliced.inserted[]` 里 `source.kind=="user"`
+    的条目按 `id`→`rpcId` 去重计数；其它来源不计；缺两个键的条目不计数但记 `skipped`。
 
     行纪律：整行空白 ⇒ 跳过（帧边界，无事实可计）；**非 JSON / 非对象 / 缺 type**
     ⇒ `SessionLogError`（宁可显式失败，也不静默少计数）。头行
@@ -840,6 +907,8 @@ def parse_session_log_lines(lines: Iterable[str], *,
     records: list[CompactionRecord] = []
     errors: list[CompactionError] = []
     start_count = end_count = prune_count = 0
+    human_keys: set[str] = set()
+    human_skipped = 0
 
     for lineno, raw in enumerate(lines, 1):
         text = raw.strip()
@@ -855,6 +924,16 @@ def parse_session_log_lines(lines: Iterable[str], *,
         kind = event.get("type")
         if not isinstance(kind, str) or not kind:
             raise SessionLogError("第 %d 行缺 type：%r" % (lineno, text[:120]))
+        if kind in HUMAN_KINDS:
+            for item in _human_items(kind, event.get("data")):
+                if not _is_human_message(item):
+                    continue                      # 注入上下文/未知来源：不是人说的
+                key = _human_key(item)
+                if key is None:
+                    human_skipped += 1            # 无 id/rpcId ⇒ 不计数，但记进 basis
+                    continue
+                human_keys.add(key)
+            continue
         if kind not in COMPACTION_KINDS:
             continue                              # 其它事件不参与压缩计数
 
@@ -899,7 +978,9 @@ def parse_session_log_lines(lines: Iterable[str], *,
     return CompactionFacts(availability=AVAILABILITY_OK, count=len(records),
                            records=tuple(records), errors=tuple(errors),
                            start_count=start_count, end_count=end_count,
-                           prune_count=prune_count, path=path)
+                           prune_count=prune_count, path=path,
+                           human_messages=len(human_keys),
+                           human_messages_basis="%s,skipped=%d" % (HUMAN_BASIS, human_skipped))
 
 
 def _resolve_zstd(zstd: str | None) -> str | None:

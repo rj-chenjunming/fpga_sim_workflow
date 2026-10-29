@@ -1,0 +1,7 @@
+$ pytest -q tests/test_session_human_messages.py
+...............                                                          [100%]
+15 passed in 0.65s
+
+$ pytest -q tests/test_instance_proxy.py -k session_copy
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+7 passed, 66 deselected, 1 warning in 0.89s

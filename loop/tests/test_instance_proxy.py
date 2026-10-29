@@ -789,12 +789,24 @@ def test_session_copy_unavailable_reason(client: TestClient, run_dir: Path) -> N
 
 
 def _write_session_log(run_dir: Path) -> Path:
-    """造一份真 zstd session log（真跑 `zstd -dc` + `parse_session_log_lines`，不 mock 解码）。"""
+    """造一份真 zstd session log（真跑 `zstd -dc` + `parse_session_log_lines`，不 mock 解码）。
+
+    含 S8k（SPEC-REV-18）的三类人参与样本：单条人类消息、D3 spliced 的同一条（须去重）、
+    以及 `time-context` 注入（**不是**人说的 ⇒ 不计数）。
+    """
     plain = run_dir / "session.jsonl"
     plain.write_text(
         '{"type":"session","id":"s-1"}\n'
         '{"type":"compaction/summary","time":1770000000,"seq":1,'
-        '"data":{"compactionId":"c-1","shadowedTokenCount":123}}\n',
+        '"data":{"compactionId":"c-1","shadowedTokenCount":123}}\n'
+        '{"type":"user/message","seq":2,"time":1770000001,"data":{"id":"m-1","role":"user",'
+        '"source":{"kind":"user","rpcId":"rpc-1"},"content":[{"type":"text","text":"值回复 ok"}]}}\n'
+        '{"type":"agent/inbox/spliced","seq":3,"time":1770000002,"data":{"target":"next-turn",'
+        '"start":0,"inserted":[{"id":"m-1","role":"user","source":{"kind":"user","rpcId":"rpc-1"},'
+        '"content":[{"type":"text","text":"值回复 ok"}]}]}}\n'
+        '{"type":"user/message","seq":4,"time":1770000003,"data":{"role":"user",'
+        '"source":{"kind":"time-context","form":"snapshot"},'
+        '"content":[{"type":"text","text":"Time sampled while preparing turn 1"}]}}\n',
         encoding="utf-8",
     )
     compressed = run_dir / "session.jsonl.zst"
@@ -824,6 +836,10 @@ def test_session_copy_returns_session_log_facts(
     assert facts["records"] == [{"compaction_id": "c-1", "time": 1770000000,
                                  "seq": 1, "shadowed_token_count": 123}]
     assert facts["start_count"] == 0 and facts["end_count"] == 0
+    # S8k（SPEC-REV-18 §2）：人参与反馈次数随同一份 facts 下发；同 id 的 spliced 不重复计，
+    # `time-context` 注入不算人说的
+    assert facts["human_messages"] == 1, facts
+    assert facts["human_messages_basis"] == "source.kind=user,dedupe=id|rpcId,skipped=0"
     assert payload["attempt"] == 1
     assert "content" not in payload, "不得返回未经验证的会话原文"
 

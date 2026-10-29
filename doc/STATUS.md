@@ -6291,3 +6291,54 @@ S8b 真机结论是「D3 机制达成、**产品内嵌路径**被 `remote.mux` W
 **演示夹具说明（不入库，`loop/.logs/s8j`）**：为让"执行结果"有真数字，把该 attempt 的 DSH 会话日志
 （`dsh-home/sessions/…/session.v4.jsonl.zstd`）复制进 attempt 目录并在 `agent_instance.json` 增写 `session_log`
 （相对 run_dir，过 §5.2 越界/符号链接判据）；`0 次` 是**该会话真实解析事实**，不是占位值。
+
+## 134 S8k：执行结果补「人参与反馈次数」（2026-10-29）
+
+契约：`doc/spec/SPEC-REV-18-20261029.md`（新增 `OBS-10`）+ `AGENT_WINDOW_SPEC.md` 指针；
+计划：`doc/plans/2026-10-29-s8-review-and-d3.md` §8.2；证据：`doc/evidence/DSH_S8K_20261029/`。
+
+### 134.1 裁决与做法
+
+- 人 2026-10-29（看过 S8j 的执行结果块后）：「执行结果能不能补充人参与的反馈次数呢」。
+- 口径 = **该 attempt 的 DSH 会话里人说了几次话**（D3 旁路：人在实例 GUI 输入）；**不合并** loop 侧
+  steer/pause（那是 `agent_controls` 的人工指令，已由窗口「指令回执与生效」三列表呈现；两个口径混成一个数会失去可解释性）。
+- **唯一判据**在 `host/agent_backends/dsh_sdk.py`（会话日志唯一解码者）：同一遍解析里统计
+  `user/message` 与 `agent/inbox/spliced.inserted[]` 中 `source.kind == "user"` 的条目，按 `id` → `rpcId` 去重
+  （D3 插入与落盘是同一条消息 ⇒ 只计一次）；其它来源（`time-context`/`system-reminder`/`runtime-context`/缺 `source`）
+  **不计**（不猜）；两键都没有 ⇒ 不计数但 `skipped=N` 记进依据。
+- 契约**只增**：`session-copy.facts` 增 `human_messages`(int) 与 `human_messages_basis`(str\|null)；
+  源不可用 ⇒ `0` 且不给依据（沿用 REV-16 §6.2 的"不出数"）。
+- 界面：`#awEmbedFacts` 在「剪枝 …」后追加「人参与 N 次」；缺字段 ⇒ 「未知」（旧服务端/旧记录不补 0），`0` 显示 0。
+
+### 134.2 验证（数字从命令输出复制；证据 `raw/gates.txt`）
+
+| 门 | 结果 |
+|---|---|
+| 本片单测 | `tests/test_session_human_messages.py` **15 passed**；`tests/test_instance_proxy.py -k session_copy` **7 passed** |
+| 本片浏览器 | `tests/browser/test_s4_projection_ui.py` **27 passed**（24 + 3 条 S8k） |
+| 单测门（主树） | `3 failed, 1884 passed, 1 warning, 148 errors in 488.50s` |
+| 浏览器门（主树） | `1 failed, 148 passed in 203.68s` |
+| 文档门 | `65 passed` |
+| 端到端（drill） | phase `1/2/3/4/4b/5` 全 `rc=0` → `=> ALL PASS` |
+
+**归因**：单测 `3 failed` = 环境/数据根（`guard rc=3`：「互斥量 owner 无法解析/旧格式（VER=缺，PID=）」+ 归档夹具缺件），
+与本片无关（S8h 基线同 3 条，输出原文见证据）；浏览器那 1 failed = **并发切片**的
+`test_gate_panes.py::test_identity_change_resets_scroll_to_top`，该文件单独跑 `8 passed`。
+
+### 134.3 真机界面实测（0 token，只读；看板 `127.0.0.1:8199` → `RUN-DEMO-S8F` / `N6`）
+
+| 判据 | 实测 |
+|---|---|
+| `session-copy.facts` | `human_messages=1`、`basis=source.kind=user,dedupe=id|rpcId,skipped=0` |
+| 界面执行结果行 | `… · 剪枝 0 次 · 人参与 1 次` |
+| 入口 | `http://127.0.0.1:42810/?token=<redacted>`（**固定端口 42810 已收回**，重启后 `port_fallback=false`） |
+| 内嵌面 | `iframe_count=0`、`object_count=0`；页面错误 `0` |
+
+数据来源是该 attempt 的真实 DSH 会话日志（人在 GUI 说的那句在 `inbox/spliced` 与 `user/message` 各一次、同 `id`
+⇒ 计数为 **1** 而非 2）。演示夹具（复制会话日志 + `session_log` 字段）只活在 gitignored `.demo-ws`，不入库。
+
+### 134.4 未做 / 不声称
+
+- 不声称这是"人审次数/业务反馈质量"的判据；只数"人说过几次话"。
+- 不声称覆盖 loop 侧 steer/pause（另口径，REV-18 §5 已登记）；`source.kind` 的新取值需单独确认后再纳入。
+- 不声称独立复核；未推送。

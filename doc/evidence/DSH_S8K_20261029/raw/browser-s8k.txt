@@ -1,0 +1,3 @@
+$ pytest -q tests/browser/test_s4_projection_ui.py
+...........................                                              [100%]
+27 passed in 26.51s

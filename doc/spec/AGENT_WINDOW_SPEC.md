@@ -91,6 +91,9 @@ Agent 历史读取（`read_view` + 与 API 同口径的事件列表）先测量�
 `#awEmbed` 区块改为「实例执行结果」：实例状态 + 实时流能力 + 会话事实（`session-copy.facts` 只读渲染）
 +「打开真实用例（实例窗口）」入口（`direct_url`，缺则回退反代 `url`）。
 契约见 [REV17 §2](SPEC-REV-17-20261029.md)；`/instance`、`/session-copy`、反代转发面与 `reason` 族不变。
+同一区块的**执行结果行**按 [REV18 §3](SPEC-REV-18-20261029.md) 追加「人参与 N 次」：
+口径 = 会话日志里 `source.kind == "user"` 的消息条数（唯一判据在 `dsh_sdk`，按 `id`→`rpcId` 去重），
+界面只渲染 `facts.human_messages`；缺字段显示「未知」，`0` 显示 0。loop 侧 steer/pause 不入此计数。
 
 ## 会话旁路与写句柄（2026-10-28，未实现）
 

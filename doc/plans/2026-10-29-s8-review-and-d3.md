@@ -125,6 +125,21 @@
 **不做/不声称**：不删反代转发面（R1–R20、token 脱敏、SSE 读超时口径保留）；不声称内嵌可用；不声称远程浏览器可用；
 `embed` 字段保留但界面不再消费（REV-17 §5 已登记为未决）。
 
+## 8.2 S8k 切片（2026-10-29，人裁决：执行结果补「人参与反馈次数」）
+
+**背景**：人 2026-10-29 ——「执行结果能不能补充人参与的反馈次数呢」。演示里人在实例 GUI 说过一句话
+（D3 旁路会话），执行结果块看不到"人参与了几下"。
+
+| 项 | 落点 | 验收 |
+|---|---|---|
+| 唯一判据 | `host/agent_backends/dsh_sdk.py`（会话日志唯一解码者）：`user/message` 与 `agent/inbox/spliced.inserted[]` 中 `source.kind=="user"` 的条目，按 `id`→`rpcId` 去重计数 | 单测：单条=1、spliced+落盘同 id=1、不同 id=2、非人来源（`time-context`/`system-reminder`/`runtime-context`/缺 source）=0、缺 id 用 rpcId、两者皆缺⇒不计数且 `skipped` 记进 basis |
+| 契约只增 | `session-copy.facts` 增 `human_messages`(int) + `human_messages_basis`(str\|null)；源不可用 ⇒ 0 且不给依据（沿用 REV-16 §6.2） | `tests/test_instance_proxy.py::test_session_copy_returns_session_log_facts` 断言 1 + basis 字面 |
+| 界面 | `#awEmbedFacts` 在「剪枝 …」后追加「人参与 N 次」；缺字段 ⇒ 「未知」；`0` 显示 0 | 浏览器：`人参与 1 次` / `人参与 0 次` / 缺字段 `人参与 未知`（且不出现 0） |
+| 规格 | `doc/spec/SPEC-REV-18-20261029.md`（新增 `OBS-10`）+ `AGENT_WINDOW_SPEC.md` 指针 | 实现与规格逐条对齐；REV-17 §2/REV-16 §6.2 原文不改写 |
+
+**不合并口径**：loop 侧 steer/pause（`agent_controls` 人工指令）**不**并入本计数，仍由窗口「指令回执与生效」三列表呈现；
+两者若做"人参与总览"需另立判据（REV-18 §5 已登记）。
+
 ## 9 验证门（每片收口各自跑；`AGENTS.md` §4 是权威；**Lead 独占、串行**）
 
 ```bash

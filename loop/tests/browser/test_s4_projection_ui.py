@@ -125,7 +125,10 @@ def session_copy(**over):
                       'records': [{'kind': 'compaction', 'ts': 1.0},
                                   {'kind': 'compaction', 'ts': 2.0}],
                       'errors': [], 'start_count': 3, 'end_count': 5, 'prune_count': 1,
-                      'reason': None, 'path': '/host/sessions/s.log'},
+                      'reason': None, 'path': '/host/sessions/s.log',
+                      # S8k（SPEC-REV-18）：人参与反馈次数与计数依据，同一份 facts 下发
+                      'human_messages': 1,
+                      'human_messages_basis': 'source.kind=user,dedupe=id|rpcId,skipped=0'},
             'bytes': 41, 'truncated': False, 'attempt': 2}
     data.update(over)
     return data
@@ -392,7 +395,7 @@ def test_s8j_ready_instance_shows_status_facts_and_direct_entry(ui):
     pw.expect(page.locator('#awEmbedState')).to_have_text('实例就绪')
     facts = page.locator('#awEmbedFacts').inner_text()
     for piece in ('压缩成功 2 次', '记录 2 条', '错误 0 条', '起止 3→5', '剪枝 1 次',
-                  'session_log_facts'):
+                  '人参与 1 次', 'session_log_facts'):
         assert piece in facts, (piece, facts)
     pw.expect(page.locator('#awEmbedCopyNote')).to_contain_text('41 B')
     entry = page.locator('#awEmbedDirect')
@@ -503,6 +506,41 @@ def test_s8j_attempt_switch_rereads_both_endpoints_scoped_by_attempt(ui):
     page.locator('#awAttempt').select_option('')
     pw.expect(page.locator('#awEmbedState')).to_have_text('实例就绪')
     pw.expect(page.locator('#awEmbedDirect')).to_be_visible()
+
+
+def test_s8k_human_feedback_count_is_rendered(ui):
+    """S8k（SPEC-REV-18 §3）：执行结果行补「人参与 N 次」；数字与依据都来自服务端 `facts`。
+
+    口径 = 会话日志里 `source.kind == "user"` 的消息条数（唯一判据在 `dsh_sdk`），界面只渲染。
+    """
+    page, _ = setup(ui, inst=instance(direct_url=DIRECT))
+    facts = page.locator('#awEmbedFacts')
+    pw.expect(facts).to_contain_text('人参与 1 次')
+    text = facts.inner_text()
+    assert '压缩成功 2 次' in text, text
+
+
+def test_s8k_human_count_zero_is_a_real_value(ui):
+    """`0` 是真实值（会话里没人说话）：必须显示 0，不得折成「未知」。"""
+    page, _ = setup(ui, inst=instance(direct_url=DIRECT),
+                    copy=session_copy(facts={'availability': 'ok', 'count': 0,
+                                             'records': [], 'errors': [],
+                                             'start_count': 0, 'end_count': 0,
+                                             'prune_count': 0, 'human_messages': 0,
+                                             'human_messages_basis':
+                                                 'source.kind=user,dedupe=id|rpcId,skipped=0'}))
+    pw.expect(page.locator('#awEmbedFacts')).to_contain_text('人参与 0 次')
+
+
+def test_s8k_human_count_unknown_when_field_absent(ui):
+    """旧服务端/旧记录没有 `human_messages` ⇒ 显示「未知」，不得补 0、不得猜。"""
+    payload = session_copy()
+    payload['facts'].pop('human_messages')
+    payload['facts'].pop('human_messages_basis')
+    page, _ = setup(ui, inst=instance(direct_url=DIRECT), copy=payload)
+    pw.expect(page.locator('#awEmbedFacts')).to_contain_text('人参与 未知')
+    text = page.locator('#awEmbedFacts').inner_text()
+    assert '人参与 0' not in text, text
 
 
 def test_s8j_missing_endpoint_is_explicit_not_blank(ui):

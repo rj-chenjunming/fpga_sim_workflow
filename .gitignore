@@ -13,6 +13,10 @@ __pycache__/
 # ── 运行时快照（spike 的一次性产物，不是源码）
 loop/spikes/snap.json
 
+# ── 本机夹具 worktree 缓存（外部工具创建：完整 repo 副本 + 冻结夹具，约 260 MB，可重建，不入库）
+# 出现时 git status 会把它当未跟踪目录；它不是仓内产物，也不得提交。
+.wt-fixtures/
+
 # ---- 软件管理的每环境数据（体积大、属运行产物，不入库）----
 # 当前 default 环境的数据仍在 ENV_ROOT/kb（见 environments.json）；
 # 若将来把数据迁入 workspaces/<env-id>/，本规则保证它不入库。

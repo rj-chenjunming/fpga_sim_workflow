@@ -433,3 +433,45 @@ def test_start_uses_the_configured_workdir_as_cwd(tmp_path: Path) -> None:
     finally:
         instance.stop()
     assert instance.is_running() is False
+
+
+# ---------------------------------------------------------------- S8h：继承 provider 运行时（REV-14 §9.4）
+
+def test_s8h_argv_carries_provider_patch_and_env_extra(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Web 实例必须带 provider overlay（`--patch`）与模型凭据/代理（env）。"""
+    from host.agent_backends import dsh_web_instance as WI
+
+    patch = tmp_path / "01-provider.yml"
+    patch.write_text("- id: llm-pi-ai\n  config:\n    providers: {}\n", encoding="utf-8")
+    cfg = WI.WebInstanceConfig(
+        enabled=True, node=Path(sys.executable), bin=_stub(tmp_path),
+        version="0.2.1-rc.2", home=tmp_path / "home",
+        patches=(patch,),
+        env_extra={"PUBLIC_API_KEY": "sk-test-not-a-real-key",
+                   "HTTPS_PROXY": "http://127.0.0.1:3128"},
+    )
+    argv = WI.build_argv(cfg, 12345)
+    assert "--patch" in argv, argv
+    assert str(patch) in argv, argv
+    env = WI.build_env(cfg)
+    assert env["PUBLIC_API_KEY"] == "sk-test-not-a-real-key"
+    assert env["HTTPS_PROXY"] == "http://127.0.0.1:3128"
+    # 白名单语义不变：宿主 env 不被整体继承
+    assert env["HOME"] == str(cfg.home)
+    assert env["DSH_HOME"] == str(cfg.home)
+    assert "PATH" in env
+
+
+def test_s8h_missing_patch_file_is_explicit(tmp_path: Path) -> None:
+    """overlay 文件不存在 ⇒ 起进程前显式失败（不静默当成"没配置"）。"""
+    from host.agent_backends import dsh_web_instance as WI
+
+    cfg = WI.WebInstanceConfig(
+        enabled=True, node=Path(sys.executable), bin=_stub(tmp_path),
+        version="0.2.1-rc.2", home=tmp_path / "home",
+        patches=(tmp_path / "nope.yml",),
+    )
+    with pytest.raises(WI.WebConfigError) as excinfo:
+        cfg.verify()
+    assert excinfo.value.reason == "missing_patch"

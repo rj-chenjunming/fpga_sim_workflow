@@ -349,3 +349,41 @@ def test_ensure_refuses_to_start_on_a_non_compliant_home(
     assert info.value.reason == "home_not_compliant"
     assert started == [], "home 不合规时不许起进程"
     assert not (run_dir / IP.METADATA_NAME).exists()
+
+
+# ---------------------------------------------------------------- S8h：provider 运行时继承（REV-14 §9.4）
+
+def test_s8h_provider_launch_writes_overlay_and_env(tmp_path: Path,
+                                                   monkeypatch: pytest.MonkeyPatch) -> None:
+    """`provider_launch` 落 overlay 文件 + 返回 env（唯一来源是 `dsh_assets.provider_runtime`）。"""
+    from host.agent_backends import dsh_assets as A
+
+    layout = A.AttemptLayout.under(A.workspace_root(tmp_path / "RUN-X", "N6", 1))
+    layout.prepare()
+    overlay = A.ProviderOverlay(text="- id: llm-pi-ai\n", filename="01-provider.yml")
+    monkeypatch.setattr(A, "provider_runtime",
+                        lambda **_kw: (overlay, {"PUBLIC_API_KEY": "k-not-real"}))
+    patches, env_extra, state = C.provider_launch(layout)
+    assert state["state"] == "ready"
+    assert len(patches) == 1 and patches[0].is_file()
+    assert patches[0].read_text(encoding="utf-8") == "- id: llm-pi-ai\n"
+    assert env_extra == {"PUBLIC_API_KEY": "k-not-real"}
+
+
+def test_s8h_provider_unavailable_does_not_block_the_instance(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """provider 不可用 ⇒ 仍可起实例（观测面不消失），但状态必须如实记为 unavailable。"""
+    from host.agent_backends import dsh_assets as A
+
+    layout = A.AttemptLayout.under(A.workspace_root(tmp_path / "RUN-Y", "N6", 1))
+    layout.prepare()
+
+    def boom(**_kw):
+        raise A.AssetError("model_provider 不可用：缺端点")
+
+    monkeypatch.setattr(A, "provider_runtime", boom)
+    patches, env_extra, state = C.provider_launch(layout)
+    assert patches == () and env_extra == {}
+    assert state["state"] == "unavailable"
+    assert state["reason"] == "provider_unavailable"
+    assert "缺端点" in state["detail"]

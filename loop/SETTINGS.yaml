@@ -68,7 +68,10 @@ loop:
         # cwd 停在仓根就永远只看到"仓根这个 workspace"的会话（D3 落不了地，真机实测 2026-10-29）。
         workdir: ""
         host: "127.0.0.1"      # 只接受 loopback（解析期拒绝 0.0.0.0）
-        preferred_port: 0      # 0=OS 随机；>0 先 bind 试探，占用则**起进程前**回落（不重试）
+        # 端口固定（2026-10-29 人裁决：为了让"人本机用 ssh -L 转发"有稳定号码，不必每次改命令）。
+        # 语义不变：>0 先 bind 试探，占用则**起进程前**回落（`port_fallback=true`），不重试、不静默。
+        # 并发多节点实例会争同一端口 ⇒ 后起的那个回落随机端口，落账里能看出 `port_fallback`。
+        preferred_port: 42810
         start_timeout_s: 30
         stop_grace_s: 5
   llm:

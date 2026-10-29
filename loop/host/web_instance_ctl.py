@@ -80,6 +80,33 @@ def layout_for_attempt(run_dir: Path | str, node: str, attempt: int) -> A.Attemp
     return A.AttemptLayout.under(A.workspace_root(run_dir, node, int(attempt)))
 
 
+#: Web 实例专用 patch 落点（与 attempt 的 `patches/` 分开：Web 只挂 provider overlay，
+#: 不挂 attempt 的提交/自检插件 —— 那会把"执行面"的工具塞进人看的 GUI）。
+WEB_PATCH_DIRNAME = "patches-web"
+
+
+def provider_launch(layout: A.AttemptLayout) -> tuple[tuple[Path, ...], dict[str, str], dict[str, Any]]:
+    """Web 实例要继承的 provider 运行时（REV-14 §9.4 / S8h）。
+
+    返回 `(patches, env_extra, state)`：
+    - `patches`：生成的 provider overlay 文件（`--patch` 传入；**唯一生成实现**是
+      `dsh_assets.provider_overlay`，本函数只落盘）；
+    - `env_extra`：模型凭据 + 代理（仍只走 env，不落文件）；
+    - `state`：`{"state": "ready"|"unavailable", "reason", "detail"}` —— **provider 不可用不阻断
+      起实例**（观测面不该因配置问题消失），但必须如实记录，界面显示"模型未配置"。
+    """
+    try:
+        overlay, env = A.provider_runtime()
+    except A.AssetError as exc:
+        return (), {}, {"state": "unavailable", "reason": "provider_unavailable",
+                        "detail": str(exc)[:300]}
+    directory = Path(layout.root) / WEB_PATCH_DIRNAME
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / overlay.filename
+    path.write_text(overlay.text, encoding="utf-8")
+    return (path,), env, {"state": "ready", "reason": None, "detail": None}
+
+
 def home_for_attempt(run_dir: Path | str, node: str, attempt: int) -> Path:
     """实例 home = **该 attempt 的** `dsh-home`（D3：人与模型共用同一实例 home）。
 
@@ -155,8 +182,11 @@ def ensure(run_dir: Path | str, node: str, attempt: int, *, session_log: str | N
     if existing is not None:
         previous = read_declared_attempt(run_dir)
         if previous == int(attempt):
-            return describe(existing, run_dir=run_dir, node=node, attempt=int(attempt),
-                            reused=True)
+            facts = describe(existing, run_dir=run_dir, node=node, attempt=int(attempt),
+                             reused=True)
+            # 复用已起实例：它的 provider 配置是**起那一刻**的决定，这里不重算、不假装知道。
+            facts["provider"] = {"state": "unchanged", "reason": None, "detail": None}
+            return facts
         LOG.info("dsh web instance replace: node=%s attempt %s -> %s", node, previous, attempt)
         stop(run_dir, node)
     layout = layout_for_attempt(run_dir, node, int(attempt))
@@ -169,7 +199,11 @@ def ensure(run_dir: Path | str, node: str, attempt: int, *, session_log: str | N
     problems = A.home_problems(layout.home)
     if problems:
         raise WebCtlError("home_not_compliant", "；".join(problems))
-    config = dataclasses.replace(config, home=layout.home, workdir=layout.work)
+    # S8h（REV-14 §9.4）：把 attempt 的 provider 运行时带给 Web 实例（人才能在 GUI 里说话）。
+    # provider 不可用**不阻断**起实例：观测面不该因配置问题消失，但状态照实记录。
+    patches, env_extra, provider_state = provider_launch(layout)
+    config = dataclasses.replace(config, home=layout.home, workdir=layout.work,
+                                 patches=patches, env_extra=env_extra)
     try:
         instance = WI.start(config)
     except WI.WebInstanceError as exc:
@@ -180,7 +214,9 @@ def ensure(run_dir: Path | str, node: str, attempt: int, *, session_log: str | N
     except (WI.WebInstanceError, OSError) as exc:
         stop(run_dir, node)
         raise WebCtlError("metadata_write_failed", type(exc).__name__) from None
-    return describe(instance, run_dir=run_dir, node=node, attempt=int(attempt), reused=False)
+    facts = describe(instance, run_dir=run_dir, node=node, attempt=int(attempt), reused=False)
+    facts["provider"] = provider_state
+    return facts
 
 
 def describe(instance: WI.WebInstance, *, run_dir: Path | str, node: str,

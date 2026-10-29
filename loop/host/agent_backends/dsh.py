@@ -737,6 +737,8 @@ class DshBackend:
         return {"state": "ready", "reason": None, "embed": "iframe",
                 "node": node, "attempt": int(attempt),
                 "host": facts.get("host"), "port": facts.get("port"),
+                # S8h（REV-14 §9.4）：GUI 里的模型配置是否已继承（不可用时界面如实提示）
+                "provider": facts.get("provider"),
                 "reused": bool(facts.get("reused"))}
 
     def _provider(self):

@@ -314,6 +314,40 @@ def stage_sources(layout: AttemptLayout, sources: tuple[tuple[Path, str], ...], 
     return tuple(staged)
 
 
+def provider_runtime(*, model_options: dict[str, object] | None = None
+                     ) -> tuple["ProviderOverlay", dict[str, str]]:
+    """Web 实例要继承的 provider 运行时：`(overlay, env)`（REV-14 §9.4，S8h）。
+
+    为什么要有它：D3 要求"人可在 GUI 对会话说话" ⇒ Web 实例必须能调模型。S7c 起实例时
+    **刻意不带** provider/凭据（当时假设"Web 面不调模型"），真机结果是人一进 GUI 就卡在
+    `Could not sign in / Add API Key`。
+
+    **唯一来源**（红线 8）：解析只经 `host/model_provider`，overlay 只经 `provider_overlay`；
+    本函数不解析端点、不读第二份配置。密钥仍**只进进程 env**（D1 投放方式），不落文件。
+    **风险**：凭据因此进入第二个进程的 env（D1 残余风险扩大，见 REV-14 §9.4）。
+    """
+    import os as _os
+
+    from host import model_provider as MP
+
+    cfg = MP.resolve()
+    if not getattr(cfg, "available", False):
+        raise AssetError("生成 provider 运行时失败：model_provider 不可用：%s"
+                         % (getattr(cfg, "reason", None) or "原因未给出"))
+    overlay = provider_overlay(family=cfg.family, base_url=cfg.base_url, model=cfg.model,
+                               api_key_env=cfg.api_key_env, model_options=model_options)
+    env: dict[str, str] = {}
+    name = getattr(cfg, "api_key_env", None)
+    key = (_os.environ.get(name) if name else None) or getattr(cfg, "_api_key", None)
+    if name and key:
+        env[str(name)] = str(key)
+    proxy = (getattr(cfg, "proxy", None) or "").strip()
+    if proxy:
+        env.update({"HTTPS_PROXY": proxy, "HTTP_PROXY": proxy,
+                    "https_proxy": proxy, "http_proxy": proxy})
+    return overlay, env
+
+
 @dataclass(frozen=True)
 class ProviderOverlay:
     """一次 attempt 的 **provider overlay**（Host 生成；内容可审计，**不含密钥值**）。"""

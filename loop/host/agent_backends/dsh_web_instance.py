@@ -48,9 +48,9 @@ import subprocess
 import threading
 import time
 from collections import deque
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 from urllib.parse import parse_qs, urlsplit
 
 import httpx
@@ -124,6 +124,11 @@ class WebInstanceConfig:
     preferred_port: int = 0
     start_timeout_s: float = 30.0
     stop_grace_s: float = 5.0
+    #: S8h（REV-14 §9.4）：Web 实例要继承的 provider overlay（`--patch`，唯一生成实现仍是
+    #: `dsh_assets.provider_overlay`）。空 ⇒ 不带任何 overlay（GUI 会提示"模型未配置"，如实）。
+    patches: tuple[Path, ...] = ()
+    #: S8h：要注入 Web 进程的额外 env（模型凭据 + 代理）。**仍走白名单**：只加这里显式给的键。
+    env_extra: Mapping[str, str] = field(default_factory=dict)
 
     def verify(self) -> None:
         """准入：启用 + node/bin 在 + home 是目录（缺目录就建——它只装 DSH 自己的状态）。"""
@@ -137,6 +142,10 @@ class WebInstanceConfig:
         if self.workdir is not None and not Path(self.workdir).is_dir():
             raise WebConfigError("missing_workdir",
                                  f"workdir 不是已存在目录：{self.workdir}（应由 AttemptLayout 物化）")
+        for patch in self.patches:
+            if not Path(patch).is_file():
+                raise WebConfigError("missing_patch",
+                                     f"provider overlay 不存在：{patch}（应由接线层生成后传入）")
 
     def validate_values(self) -> None:
         """**值的形状**（与 enabled / 文件是否存在无关）：host 必须 loopback、端口/超时合法。
@@ -205,15 +214,24 @@ def config_from_settings(document: dict[str, Any] | None = None, *,
 
 def build_argv(config: WebInstanceConfig, port: int) -> list[str]:
     """argv 用数组（绝不拼 shell 字符串）：只起 Web 面，`--no-open` 不开宿主浏览器。"""
-    return [str(config.node), str(config.bin), "--profile", "web",
-            "--host", config.host, "--port", str(port), "--no-open"]
+    argv = [str(config.node), str(config.bin), "--profile", "web"]
+    # **启动器级**选项 `--patch` 必须排在 app 参数**之前**（实测放在 `--no-open` 之后会被
+    # 当成 app 选项：`error: unknown option '--patch'`，进程 rc=1 在公告行之前退出）。
+    # 顺序即 patch 顺序；Web 只需要 provider overlay（不挂 attempt 的提交/自检插件）。
+    for patch in config.patches:
+        argv += ["--patch", str(patch)]
+    argv += ["--host", config.host, "--port", str(port), "--no-open"]
+    return argv
 
 
 def build_env(config: WebInstanceConfig) -> dict[str, str]:
-    """白名单环境：**不继承宿主**，**不传任何凭据**（Web 面不调模型，P8 实测无凭据可起）。
+    """白名单环境：**不继承宿主**；只加 `config.env_extra` 里**显式**给的键。
 
-    与 `dsh_process.build_env` 的差别是刻意的：attempt 进程要凭据（模型调用），
-    Web 实例不要 —— 少一个秘密在进程里，就少一份 `/proc/<pid>/environ` 的暴露面。
+    S8h 更正（REV-14 §9.4）：旧实现刻意不给凭据（理由"Web 面不调模型"），但 D3 要求
+    "人可在 GUI 说话" ⇒ 人一进 GUI 就卡在 `Could not sign in / Add API Key`。
+    现在由接线层经 `env_extra` 显式注入**同一份** provider 凭据与代理（仍只走 env、不落文件）。
+    **代价**：凭据进入第二个进程的 env（D1 残余风险扩大）；白名单语义不变 —— 宿主 env
+    仍不整体继承，只多出调用方显式列出的键。
     """
     env = {"PATH": "/usr/bin:/bin", "HOME": str(config.home), "DSH_HOME": str(config.home),
            "DSH_PROFILE": "web", "PYTHONDONTWRITEBYTECODE": "1"}
@@ -221,6 +239,9 @@ def build_env(config: WebInstanceConfig) -> dict[str, str]:
         value = os.environ.get(key)
         if value:
             env[key] = value
+    for key, value in (config.env_extra or {}).items():
+        if value is not None and str(value) != "":
+            env[str(key)] = str(value)
     return env
 
 

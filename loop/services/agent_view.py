@@ -436,10 +436,11 @@ def progress_view(
     **附加可读字段**（`compaction.reason`、`no_progress.reason` 等）非契约必需：只用于给人解释
     "为什么是 unknown"，**消费方不得据此判定完成/失败/状态**（判据仍是 §2.1/§3 的 state 与阈值）。
 
-    **已知未决（REV-16 未决清单，Lead 2026-10-28 复核 P2-2）**：角色卡调用本函数时不带
-    `request`/`result`（`build_agents` 只有事件与产物），因此卡片上的 `identity.attempt`、
-    `identity.session_id`、`last_error`(记录来源) 为 `null` —— 这是**诚实值**，不是缺陷；
-    补齐需在 `run_view` 里按节点读 `agent_memory`（跨层接线，另开小片）。
+    **`request`/`result` 的来源（REV-16 §9-12，S8c 收口）**：Agent 窗口把
+    `agent_control.read_view(...)` 的结果直接传进来；角色卡由 `build_agents` 用**同一个**
+    `read_view` 冷读选中尝试后传入（选择判据一份）。两者都不在这里判断"哪个 attempt 被选中"，
+    本函数只按传入记录填 `identity`/`last_error`/`silence_s`/`compaction`。
+    没有记录（旧 run/未开始）⇒ 相关字段保持 `None`（诚实值，不回填历史）。
 
     时间源口径（契约 §4，Lead 2026-10-28 裁决）：事件 `ts` 由 `host.progress.ProgressLog` 写入
     （真实运行 = 系统时钟）；`now` 只来自注入入口。两者**不同源**时（drill 固定了 `LOOP_NOW`）
@@ -657,6 +658,50 @@ def window_annotation(view: dict[str, Any], *, node: str, root: Path,
     return {"progress": progress, "explain": explain_view(view, root=Path(root))}
 
 
+def _agent_records(node: str, run_dir: Path | None
+                   ) -> tuple[dict[str, Any], str | None]:
+    """冷读该节点**选中尝试**的 `{request, result, live}`（REV-16 §9-12）。
+
+    **选择判据只有一份**：`agent_control.read_view`（窗口端点同源，红线 8）。
+    本函数不自己扫目录、不自己决定"哪个 attempt 是选中的"——那会是与窗口并行的第二套判据。
+
+    返回值第二项是**不可读原因**（`None` = 正常）：
+
+    - 没有 run 目录 / 没有记录 ⇒ 三个 `None`，原因 `None`（未知保持未知，**不回填历史**）；
+    - 记录损坏、校验和不匹配、路径越界/符号链接 ⇒ 三个 `None` + 原因。
+
+    为什么损坏时不让投影抛错（而窗口端点仍是 422）：本函数是**看板**的角色卡来源，
+    一张卡读不出来不该让整块看板（其它 4 个角色、闸门材料、blockers）一起失效——
+    与 `contracts._read_artifact` 的投影容错同一纪律。但**不静默**：原因由
+    `build_agents` 写进该卡的 `note`（界面已渲染该字段），identity 按未知下发。
+    """
+
+    blank = {"request": None, "result": None, "live": None}
+    if run_dir is None:
+        return blank, None
+    from host import agent_control as AC  # 唯一选择判据（窗口端点同一实现）
+
+    try:
+        view = AC.read_view(Path(run_dir), node)
+    except (KeyError, OSError, ValueError) as exc:
+        # KeyError：该节点不是可观察模型节点；OSError：记录半写/读失败；ValueError：校验和/越界。
+        return blank, f"{type(exc).__name__}: {exc}"
+    return {
+        "request": view.get("request") if isinstance(view.get("request"), dict) else None,
+        "result": view.get("result") if isinstance(view.get("result"), dict) else None,
+        "live": view.get("live") if isinstance(view.get("live"), dict) else None,
+    }, None
+
+
+def _record_note(note: str | None, record_error: str | None) -> str | None:
+    """把冷读失败原因并进卡片 `note`（既有字段；有原因就显式说，不静默）。"""
+    if record_error is None:
+        return note
+    message = (f"agent 记录不可读：{record_error}"
+               "（尝试/会话按未知下发，不等同于『没有记录』）")
+    return f"{note}；{message}" if note else message
+
+
 def build_agents(
     events: list[dict[str, Any]],
     *,
@@ -669,6 +714,12 @@ def build_agents(
 
     `progress` = 每张卡的总结投影（SPEC-REV-16 §2.1），与 Agent 窗口**同一实现**；
     `now` 必须是 Host 注入的 epoch 秒（`contracts.run_view` 经 `host/paths.py::now_iso` 取）。
+
+    REV-16 §9-12（S8c 收口）：卡片不再"只有事件与产物"——本函数按 `active_node` 冷读
+    `agent_memory`/`agent_calls` 里**选中尝试**的 request/result/live（选择判据唯一：
+    `agent_control.read_view`，与窗口端点同源），再交给同一个 `progress_view`，因此
+    `identity.attempt`/`identity.session_id` 与记录来源的 `last_error` 是真值；没有记录
+    （旧 run/未开始）仍是 `None`（不回填历史）。记录不可读 ⇒ identity 未知 + `note` 说明原因。
     """
     states = _collect(events)
     result: list[dict[str, Any]] = []
@@ -677,7 +728,9 @@ def build_agents(
         state = states.get(node)
         status = _status(node, state, pending_interrupt, job)
         summary, evidence = _summary(node, run_dir)
-        note = GUARDIAN_NOTE if role["role"] == "guardian" else None
+        records, record_error = _agent_records(node, run_dir)
+        note = _record_note(GUARDIAN_NOTE if role["role"] == "guardian" else None,
+                            record_error)
         if role["role"] == "guardian" and status == "idle":
             summary = GUARDIAN_IDLE_SUMMARY
         result.append(
@@ -698,8 +751,10 @@ def build_agents(
                 "note": note,
                 "capabilities": _capabilities(role, state, status),
                 "progress": progress_view(
-                    node, events=events, run_dir=run_dir, pending_interrupt=pending_interrupt,
-                    job=job, now=now,
+                    node, events=events, run_dir=run_dir,
+                    request=records["request"], result=records["result"],
+                    live=records["live"],
+                    pending_interrupt=pending_interrupt, job=job, now=now,
                 ),
             }
         )

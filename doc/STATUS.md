@@ -5946,3 +5946,112 @@ REV-16 §9-10 **实测可收口为"前缀剥离即可"**（spec 正文本轮不�
 - 不声称独立复核；不声称投影性能达标（未做基准，只给单次实测）。
 - **不加缓存**（REV-16 §8 触发阈值未达）。
 - 未改 `services/contracts.py` 界面字段语义（`state/blockers/gates` 不动，投影不是权威，有用例钉住）。
+
+## 127 S8d 交付：事件 `ts` 与注入时钟同源（2026-10-29，**共享判据面，单独变更**）
+
+本轮入口：[开工提示词 S8](agents/开工提示词_S8-复核与D3收口.md) §5.4；裁决 B2（授权按"单独变更"走）；
+契约 [REV-16 §4](spec/SPEC-REV-16-20261028.md)「事件时间源（S8d 收口）」+ **§9-18 新登记** + §10 收口行（只增）；
+证据档 [`doc/evidence/DSH_S8D_20261029/`](evidence/DSH_S8D_20261029/README.md)（冻结 `444`/`555`，10 件，md5 目录外）。
+实现 owner：`s8d-impl`；Lead 写契约、跑收口门、提交。**本片无独立复核者**（不声称独立验证）。
+
+### 127.1 变更与契约条款
+
+| 文件 | 变更 | 条款 |
+|---|---|---|
+| `loop/host/progress.py` | `ProgressLog.append` 默认 `ts` → `host/paths.py::now_epoch()`（**唯一时间入口**）；删 `import time`；显式 `ts=` 不变 | REV-16 §4 ①②；红线 7 |
+| `loop/services/agent_view.py` | 新增 `TS_SOURCE_MISMATCH` + **唯一判据** `_ts_ahead_of_now`（严格 `>`）；`age_s`/`silence_s` 不同源 ⇒ `null` + `unavailable_reason`；`no_progress` ⇒ `unknown` + 可读 reason，**永不 warn**；`max(0,…)` 仅作防御 | §4 ②③；§3 OBS-03 |
+| `loop/tests/test_progress_ts_source.py`（新 18 条） | 特征 3（2 条按新契约改写）+ 新契约 12 + 迁移 3 | §7 |
+| `loop/tests/test_agent_view_projection.py`（改 4 条） | `test_no_progress_silence_clamped_non_negative` → `..._silence_unknown_when_ts_source_differs`（**钉旧行为 → 钉新契约**）+ 3 条增量字段断言 | §2.1/§3.1 |
+
+### 127.2 TDD 与 drill 对照（证据档 §1/§2/§3）
+
+| 步 | 实测 |
+|---|---|
+| 特征测试（旧实现上跑绿，钉旧行为） | `3 passed` |
+| 新契约用例在旧实现上 | `12 failed, 5 passed` |
+| 实现后本文件 | `18 passed in 0.67s` |
+| 受影响面 7 文件 | `207 passed, 1 deselected in 19.73s` |
+| 软件层全量自查（实现者，不含 browser/env_layer） | `1845 passed, 3 deselected, 1 warning in 419.77s` |
+| 浏览器 OBS-03/窗口子集 | `37 passed in 37.44s` |
+| **红线 grep** | `grep -c "time.time()" loop/host/progress.py` = **0**；`^import time` 无命中 |
+
+**drill 对照（`LOOP_NOW=2026-10-28T12:00:00`）**：改前事件 `ts` 走墙钟（比注入 `now` 晚 **94250.27 s**）、
+`silence_s=0`（**夹出来的**）、旧 run 冷读伪装成 `ok`；改后 `ts == now_epoch()`、同源 0 s、
+注入 `now+700` ⇒ `silence_s=700` 且 `warn`「无进展 11 分钟」；冷读历史墙钟事件 ⇒ `silence_s=None` +
+`unavailable_reason="ts_source_mismatch"` + `no_progress.state="unknown"` 且**不告警**；事件文件 **md5 前后一致**（不回填）。
+
+### 127.3 迁移影响面（逐项判定，证据档 §4）
+
+1. 事件流键/格式不变，只换默认时间源；注入时钟不可解析 ⇒ **显式 `ValueError`**（不回退墙钟）。
+2. 无进展判据只新增 `null`+reason 分支与 warn 抑制；**判据仍只在 `agent_view` 一处**（红线 8）；**前端未改**。
+3. **drill 夹具零改动**：实测夹具不含 ProgressLog 事件流（事件在 `STATE_DIR/events`，不随夹具分发）；变的只是 drill 期间**新写出**的 `ts`。
+4. 固定 `LOOP_NOW` 的流程用例逐个查（全绿）：此前"假静默"达数十年量级，现差值为 0 —— **这正是要修掉的假告警**。
+5. 浏览器时间断言全为 `page.route` 桩数据 ⇒ 不受影响（OBS-03 子集 37 passed）。
+6. **`_choose` 增 `seq` tie-break（迁移修复，已在 REV-16 §4 补一条迁移说明，非新判据）**：`ts` 同源后 drill 里同 run 事件 `ts` 全相同，只按 `ts` 会让卡片指旧节点；改为 `max((last_ts, last_seq))`，**`ts` 不同时行为逐字不变**，有用例。
+
+### 127.4 收口门（**最终树**，四片全在；命令输出复制）
+
+| 门 | 结果 |
+|---|---|
+| 单测（可写数据根） | **`3 failed, 1846 passed, 1 warning, 141 errors in 450.04s`**；3 failed 全是既有 `env_layer`；141 errors = 浏览器缺 Chromium |
+| kb 自测 + env layer | `PASS=10` / `PASS=9` / `PASS=28`，`FAIL=0`；env layer `3 passed, 24 deselected in 27.06s`；**原 ENV_ROOT 零写入** |
+| 端到端（drill） | phase `1/2/3/4/4b/5` 全 `rc=0`，`=> ALL PASS` |
+| 文档门 | `65 passed in 2.47s`；**另跑全库扫描** `check_doc_links.py` ⇒ `missing=0`（只有 `[ENV-MISSING]`，属环境缺件） |
+| 浏览器门 | `142 passed in 162.18s` |
+
+差量对账：基线 `1770 passed` → **`1846 passed`**（**+76** = S8b 37 + S8c 13 + S8e 8 + S8d 18）；
+`failed 3=3`、`errors 141=141`、`warnings 1=1`，**零新增失败**。
+
+### 127.5 未做 / 不声称
+
+- **不声称前端已渲染 `unavailable_reason` 的中文**：前端未改（本轮靠 `state=unknown` + `silence_s=null` 显示"未知"）。
+- **方向性限制**（REV-16 §9-18）：只有"事件 `ts` 晚于注入 `now`"可**直接判别**；反方向与"真的长期静止"不可区分 ⇒ `unknown`、不猜、不告警。
+- **`elapsed_s` 未纳入 null 面**（§4 只点名 `silence_s`/`last_event_age_s`）；纳入须单独变更 + 留证。
+- 不声称独立复核；未推送。
+
+## 128 S8 总收口（2026-10-29）
+
+### 128.1 四片 + 一片附带的处置
+
+| 片 | 交付 | 提交 | 状态 |
+|---|---|---|---|
+| **S8a** | S7 四片独立复核（P0=0 / P1=2 / P2=13）+ 发现处置 | `d35d29b`（复核报告）、`bad1079`（契约/计划） | **收口**：P1-1 更正件、P1-2/SSE/P2-5/P2-12 修复（S8e）、P2-13 断链修，其余登记 |
+| **S8e** | 反代硬化（由 S8a 发现派生；**不在原四片内**） | `6db2c93` | **收口**：脱敏覆盖面 / SSE 读超时 / reason 枚举 / 错误页转义 |
+| **S8b** | D3 会话共享 + 随 attempt 自动起实例（DS-09 来源判定） | `d69201b` | **机制收口；产品内嵌路径未达成**（WS 405，§9-2）—— 两个事实分开写 |
+| **S8c** | `identity` 冷读（§9-12）+ 9 条 `500` 定位 | `9b42694` | **收口**（500 = 探针夹具缺陷，非产品缺陷） |
+| **S8d** | 事件 `ts` 同源（§9-8，共享判据面） | `6756e82` | **收口** |
+| 证据/文档 | 四个新证据档 + 两个只增更正件 + STATUS §123–§128 | `9fdd76f` 等 | 冻结 `444`/`555`，**8 份 md5 清单全部 `md5sum -c` OK** |
+
+**本轮未推送**（人未授权）；`default_backend` 仍 `agently`；`kb/**` 零改动。
+
+### 128.2 逐项结论（哪些达成、哪些没达成 —— 不许混写）
+
+| 项 | 结论 |
+|---|---|
+| S7 四片的独立复核 | **达成**（P0=0；但复核只覆盖机制与证据，**不覆盖业务正确性**） |
+| 材料面数字口径 | **已更正**（−84.00% 同口径 / −99.76% run 产物面；原 −96.8% 作废） |
+| token 永不进日志 | **已按契约覆盖面修复**（子 logger / `extra=` / traceback / 参数化形态），5 条新用例钉住 |
+| SSE 事件流 | **已修**（不再被 15 s 读超时掐断）；**WebSocket 仍 405** |
+| 角色卡 `identity` | **已收口**（§9-12），卡片与窗口逐字同源 |
+| 9 条 `500` | **已定位为探针缺陷**，产品面零 500 |
+| D3「人看到该 attempt 的会话」 | **机制达成**（直连实例真机可见会话行）；**产品内嵌路径未达成**（`remote.mux` WS 405，REV-16 §9-2） |
+| 随 attempt 自动起实例 | **达成**（real + `web.enabled: true`；失败不阻断、结束保留） |
+| 事件 `ts` 同源 | **达成**（drill 下 `silence_s` 不再夹 0；不同源 `unknown` 且不告警） |
+| E（内网业务验收） | **未验证**（人裁决，不伪造环境） |
+| N6 `edits` 业务正确性 | **未判**（N8/人；机制层不判） |
+
+### 128.3 剩下的关键决策（**需要人拍**）
+
+1. **D3 产品路径二选一**：① 收口 REV-16 §9-2（做 WebSocket 升级，工作量大、本轮明示不做）；
+   ② 把"在新标签页打开"指向**直连实例**（人可看可说，但不内嵌；改动小、需安全评审 token 在地址栏的形态）。
+2. **推送**：本轮又新增 **7** 个提交（累计 **34** 个未推送，= 交接时 27 + 本轮 7；`git rev-list --count origin/main..HEAD`）；需授权 + 凭据（`$HOME` 只读 ⇒ PAT 只能用后即删并作废重建）。
+3. **多节点实例累积**：`stop_all()`/`stop()` 可收；是否要在 run 结束时自动收，需裁决（会改变"人还要看"的语义）。
+
+### 128.4 本轮纪律自查
+
+- **SpecDD 顺序**：S8b/S8d/S8e 都是**先改 `doc/spec/**` 再改实现**（`bad1079` 在前；S8e 的澄清在 `6db2c93` 前）。
+- **TDD**：S8b/S8c/S8d/S8e 均先失败用例后实现（证据档 raw 里有 RED 转录）。
+- **独立复核**：S8a 由独立 agent 完成，**只报告不改**；其发现的修复由 Lead/s8b 完成，**不冒充独立复核修复**。
+- **冻结件只增不改**：两处更正件 + 新增三个证据档；原清单 `md5sum -c` 更正后仍全绿。
+- **数字**：全部从命令输出复制；`doc/STATUS.md` 仍是唯一数字源。
+- **失败显式**：无把崩溃/降级伪装成"在等人工"；DS-09 `unknown` 即拒；Web 起不来记 `unavailable`+reason。

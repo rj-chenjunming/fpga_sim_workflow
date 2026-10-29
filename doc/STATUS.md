@@ -6158,3 +6158,74 @@ S8b 真机结论是「D3 机制达成、**产品内嵌路径**被 `remote.mux` W
 - 不声称 iframe 内嵌会话可见：`remote.mux` WebSocket 仍 **405**（§9-2 仍开）。
 - 不声称远程浏览器可用：`direct_url` 仍是 `127.0.0.1:<port>`（远程形态需 S9a/S9b 或隧道，未做）。
 - 不声称独立复核。
+
+## 132 S8h 收官：Web 实例继承模型配置（裁决 A：人授权凭据库）（2026-10-29）
+
+本轮入口：人反馈「跳转实例后还要我配置，模型配置没同步」→ 排查 → 人裁决 **A**（放宽 DS-09 允许
+"人授权的 dsh 凭据库"）。契约：[REV-14 §9.4](spec/SPEC-REV-14-20261028.md)（Web 继承模型配置）
++ **§9.1a（人授权凭据库，只增，不改写 §9.1）**。实现 + 真机验证同一人 ⇒ **不声称独立复核**。
+
+### 132.1 根因（为什么会"没同步"）
+
+| 层 | 事实 |
+|---|---|
+| 配置层 | 我们的 provider overlay **确实生效**（`--dump-config` 可见 `agent-default-model`/`llm-pi-ai` 指向 `loop` + 真机 baseURL；无 warning） |
+| 运行时 | 但 DSH **Web 的模型选择器只认 `dsh-credentials-local` 的存储**（`<home>/.credentials.yaml` 的 `llm-pi-ai/<provider>` 记录），**不认 env**：只注入 env 时界面是 **`No models available.`**（真机实测） |
+| 冲突 | 该文件正是 `DS-09` 禁件：存宿主 key ⇒ `host_credential_value` 拒；存别的 ⇒ `unknown` 拒 ⇒ **GUI 里加 key 会毒化后续 attempt** |
+
+**第一次踩的坑（照实登记）**：`--patch` 是**启动器级**选项，必须排在 `--host/--port` **之前**；
+放在 `--no-open` 之后会被当 app 选项（`error: unknown option '--patch'`、rc=1、起不来）。
+
+### 132.2 裁决 A 的落地（规则尽量窄）
+
+- `DS-09` 新增放行档 **`host_authorized_store`**（判据 5 条，见 REV-14 §9.1a）：
+  文件名 `.credentials.yaml` + 凭据库形态 + 记录键 `<scope>/<id>` + `kind ∈ {api-key, grant}` 且字段不超登记 +
+  **`api-key` 的 key/env 值逐字等于宿主已有凭据** + `grant` 的 payload ⊆ 已登记自生成键且不含宿主凭据值。
+- **未放宽**：`settings.yaml` 仍无例外拒；非凭据库形态的 `.credentials*` 含宿主凭据值仍判
+  `host_credential_value` 拒；形态不认识 ⇒ `unknown` 拒；**零回显**不变。
+- Host 等价动作：`web_instance_ctl.seed_provider_credential()` 在起 Web 实例前把宿主 key 写进
+  `llm-pi-ai/<provider>` 记录（0600 + 原子替换 + 保留既有记录）；凭据库**读不懂不覆盖**（`credential_store_unreadable`）。
+- Web 实例仍继承 `provider_overlay`（`--patch`，启动器级顺序已修）+ 凭据/代理 env（§9.4）。
+
+### 132.3 真机验收（0 token，仅起 Web 实例 + Playwright）
+
+| 判据 | 实测 |
+|---|---|
+| 凭据库记录 | `records = ['client-connection/browser-session', 'llm-pi-ai/loop']`，`kind=api-key`，文件 0600 |
+| DS-09（真实模式，provider 可用） | **`ok=True`、`source=host_authorized_store`** ⇒ 下次 attempt 不会被拒 |
+| GUI 引导弹窗 | **不再出现**（有凭据即无 "Add API Key" 门） |
+| 模型选择器 | **`No models available` 消失**，界面直接显示 `origin-deepseek-v4-1-flash` |
+| WebSocket | `ws://127.0.0.1:42810/api/remote.mux` 已连通，0 console error（直连页） |
+| 会话列表 | `只回复 OK` 仍在（`session_rows≥1`，`No sessions yet` 不出现） |
+
+**模式差异（照实登记）**：`LOOP_LLM_MODE=standin` 会强制 provider 离线 ⇒ `host_credential_values()` 为空
+⇒ 授权库判 `host_credential_value` 拒、种子被跳过（`provider_credential_unavailable`）。这是**模式语义**
+（standin = 无网/无凭据），不是缺陷；真实模式（`real`）下判据与种子都正常。
+
+### 132.4 收口门（最终树，命令输出复制）
+
+| 门 | 结果 |
+|---|---|
+| 单测（可写数据根） | `3 failed, 1864 passed, 1 warning, 145 errors in 455.80s`（3 failed = 既有 env_layer；145 errors = 缺 Chromium） |
+| kb 自测 + env layer | `PASS=10` / `PASS=9` / `PASS=28`，`FAIL=0`；env_layer `3 passed`；**原 ENV_ROOT 零写入** |
+| 端到端（drill） | phase `1/2/3/4/4b/5` 全 `rc=0`，`=> ALL PASS` |
+| 文档门 | `65 passed in 2.71s`；全库扫描 `missing=0` |
+| 浏览器门 | `146 passed in 151.50s` |
+
+差量：S8g 树 `1851` → S8h 树 `1855` → 本树 **`1864 passed`**（+9 = 5 条凭据库档 + 4 条种子用例）；
+`failed 3=3`、`errors 145=145`，**零新增失败**。
+
+### 132.5 已裁决接受的风险（**不隐去**）
+
+- **D1 被有意放宽**：宿主自己的 key 现在以 **0600 文件**落在**共用 home**（`$DSH_HOME/.credentials.yaml`），
+  同一 OS 用户的 agent 工具进程可读。这是"让人在 GUI 里能用模型"的必要代价（人裁决 A）。
+  **不声称**凭据隔离因此变好；`bwrap`/`/proc` 残余风险（D1）仍按原样登记。
+- 若人将来用**另一个** key 在该 GUI 里保存 ⇒ 判 `host_credential_value` **拒绝**（不引入陌生秘密）；
+  届时需人确认后扩展，不由实现自行放宽。
+
+### 132.6 未做 / 不声称
+
+- **不声称 iframe 内嵌可用**：反代仍不支持 WS（`remote.mux` 405，§9-2 仍开）；内嵌侧旧 cookie 失效会
+  显示 `upstream_auth`（**已登记为未决**：反代"有 cookie 就不注入 token"，实例轮换 token 后旧 cookie 即失效）。
+- 不声称远程浏览器可用（`direct_url` 仍是 `127.0.0.1:<port>`；需隧道或 S9a/S9b）。
+- 不声称独立复核；未推送。

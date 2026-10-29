@@ -387,3 +387,82 @@ def test_s8h_provider_unavailable_does_not_block_the_instance(
     assert state["state"] == "unavailable"
     assert state["reason"] == "provider_unavailable"
     assert "缺端点" in state["detail"]
+
+
+# ---------------------------------------------------------------- S8h/裁决 A：把宿主 key 落进凭据库
+
+def _seed_env(monkeypatch: pytest.MonkeyPatch, credential):
+    from host.agent_backends import dsh_assets as A
+    monkeypatch.setattr(A, "provider_credential", lambda: credential)
+
+
+def test_s8h_seed_writes_api_key_record_without_echoing(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """种子 = 等价于 GUI 的 "Add API Key"：写 `llm-pi-ai/<provider>` 记录（0600），返回值不含 key。"""
+    from host.agent_backends import dsh_assets as A
+    import yaml
+
+    layout = C.layout_for_attempt(tmp_path / "RUN-S", "N6", 1) if False else None
+    layout = A.AttemptLayout.under(A.workspace_root(tmp_path / "RUN-S", "N6", 1))
+    layout.prepare()
+    _seed_env(monkeypatch, ("PUBLIC_API_KEY", "sk-test-not-a-real-key"))
+    state = C.seed_provider_credential(layout)
+    assert state["state"] == "seeded"
+    assert state["record"] == "llm-pi-ai/%s" % A.PROVIDER_NAME
+    assert "sk-test-not-a-real-key" not in str(state)
+    path = Path(layout.home) / A.CREDENTIAL_STORE_NAME
+    assert oct(path.stat().st_mode & 0o777) == "0o600"
+    document = yaml.safe_load(path.read_text(encoding="utf-8"))
+    record = document["records"]["llm-pi-ai/%s" % A.PROVIDER_NAME]
+    assert record == {"kind": "api-key", "key": "sk-test-not-a-real-key"}
+
+
+def test_s8h_seed_preserves_existing_records_and_is_idempotent(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """已存在的 dsh 自生成 grant 记录必须保留；重复种子不产生重复键。"""
+    from host.agent_backends import dsh_assets as A
+    import yaml
+
+    layout = A.AttemptLayout.under(A.workspace_root(tmp_path / "RUN-T", "N6", 1))
+    layout.prepare()
+    path = Path(layout.home) / A.CREDENTIAL_STORE_NAME
+    path.write_text(yaml.safe_dump({"version": 1, "records": {
+        "client-connection/browser-session": {"kind": "grant", "payload": {"version": 1, "secret": "x"}}}}),
+        encoding="utf-8")
+    _seed_env(monkeypatch, ("PUBLIC_API_KEY", "k"))
+    C.seed_provider_credential(layout)
+    C.seed_provider_credential(layout)
+    document = yaml.safe_load(path.read_text(encoding="utf-8"))
+    assert "client-connection/browser-session" in document["records"]
+    assert list(document["records"]).count("llm-pi-ai/%s" % A.PROVIDER_NAME) == 1
+
+
+def test_s8h_seed_skips_when_provider_credential_unavailable(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """拿不到宿主凭据 ⇒ 跳过（不造一个假 key）。"""
+    from host.agent_backends import dsh_assets as A
+
+    layout = A.AttemptLayout.under(A.workspace_root(tmp_path / "RUN-U", "N6", 1))
+    layout.prepare()
+    _seed_env(monkeypatch, None)
+    state = C.seed_provider_credential(layout)
+    assert state["state"] == "skipped"
+    assert state["reason"] == "provider_credential_unavailable"
+    assert not (Path(layout.home) / A.CREDENTIAL_STORE_NAME).exists()
+
+
+def test_s8h_seed_never_overwrites_an_unreadable_store(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """凭据库读不懂 ⇒ **不覆盖**（否则会毁掉已有登录态），如实报原因。"""
+    from host.agent_backends import dsh_assets as A
+
+    layout = A.AttemptLayout.under(A.workspace_root(tmp_path / "RUN-V", "N6", 1))
+    layout.prepare()
+    path = Path(layout.home) / A.CREDENTIAL_STORE_NAME
+    path.write_text("not: [a, credential, store\n", encoding="utf-8")
+    before = path.read_text(encoding="utf-8")
+    _seed_env(monkeypatch, ("PUBLIC_API_KEY", "k"))
+    state = C.seed_provider_credential(layout)
+    assert state["state"] == "skipped"
+    assert state["reason"] == "credential_store_unreadable"
+    assert path.read_text(encoding="utf-8") == before

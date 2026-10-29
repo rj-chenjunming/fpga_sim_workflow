@@ -39,6 +39,7 @@ import argparse
 import dataclasses
 import json
 import logging
+import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -105,6 +106,45 @@ def provider_launch(layout: A.AttemptLayout) -> tuple[tuple[Path, ...], dict[str
     path = directory / overlay.filename
     path.write_text(overlay.text, encoding="utf-8")
     return (path,), env, {"state": "ready", "reason": None, "detail": None}
+
+
+def seed_provider_credential(layout: A.AttemptLayout) -> dict[str, Any]:
+    """把宿主自己的 provider key 写进 dsh 凭据库（裁决 A，REV-14 §9.1a / S8h）。
+
+    为什么需要：DSH Web 的**模型选择器**只认 `dsh-credentials-local` 的存储
+    （`<home>/.credentials.yaml` 的 `llm-pi-ai/<provider>` 记录），不认 env；只给 env 会得到
+    `No models available.`。写进去等价于人在 GUI 里点一次 "Add API Key"。
+
+    **安全边界（人已裁决 A，2026-10-29）**：这是**故意**把宿主凭据落到共用 home 的磁盘文件，
+    因此 DS-09 新增 `host_authorized_store` 档只放行"值全是宿主已有凭据"的凭据库；
+    陌生秘密仍拒。文件 0600、原子替换、**零回显**（本函数返回值里不含 key）。
+    """
+    credential = A.provider_credential()
+    if credential is None:
+        return {"state": "skipped", "reason": "provider_credential_unavailable", "record": None}
+    _env_name, key = credential
+    path = Path(layout.home) / A.CREDENTIAL_STORE_NAME
+    record_key = "llm-pi-ai/%s" % A.PROVIDER_NAME
+    import yaml
+
+    document: dict[str, Any] = {"version": 1, "records": {}}
+    if path.is_file():
+        try:
+            loaded = yaml.safe_load(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, yaml.YAMLError):
+            loaded = None
+        if not isinstance(loaded, dict) or not isinstance(loaded.get("records"), dict):
+            # 不认识的凭据库 ⇒ 不擅自覆盖（那会毁掉已有的登录态）；如实报，交给 DS-09 判。
+            return {"state": "skipped", "reason": "credential_store_unreadable",
+                    "record": None}
+        document = {"version": loaded.get("version", 1), "records": dict(loaded["records"])}
+    document["records"][record_key] = {"kind": "api-key", "key": key}
+    payload = yaml.safe_dump(document, sort_keys=False, allow_unicode=True).encode("utf-8")
+    tmp = path.with_name(".%s.tmp-%d" % (path.name, os.getpid()))
+    tmp.write_bytes(payload)
+    os.chmod(tmp, 0o600)
+    os.replace(tmp, path)
+    return {"state": "seeded", "reason": None, "record": record_key}
 
 
 def home_for_attempt(run_dir: Path | str, node: str, attempt: int) -> Path:
@@ -202,6 +242,11 @@ def ensure(run_dir: Path | str, node: str, attempt: int, *, session_log: str | N
     # S8h（REV-14 §9.4）：把 attempt 的 provider 运行时带给 Web 实例（人才能在 GUI 里说话）。
     # provider 不可用**不阻断**起实例：观测面不该因配置问题消失，但状态照实记录。
     patches, env_extra, provider_state = provider_launch(layout)
+    # 裁决 A：把宿主自己的 key 写进 dsh 凭据库（GUI 的模型选择器只认它）。写在 DS-09 检查**之后**：
+    # 本 attempt 的准入按"起进程那一刻"的 home 判定，写进去的记录从下一次 attempt 起由
+    # `host_authorized_store` 档放行（有用例钉住）。
+    provider_state = {**provider_state,
+                      "credential": seed_provider_credential(layout)}
     config = dataclasses.replace(config, home=layout.home, workdir=layout.work,
                                  patches=patches, env_extra=env_extra)
     try:

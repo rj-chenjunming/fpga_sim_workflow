@@ -39,9 +39,24 @@ FORBIDDEN_HOME_ENTRIES = ("settings.yaml", ".credentials.yaml", ".credentials")
 HOME_SOURCE_HOST_SETTINGS_COPY = "host_settings_copy"
 HOME_SOURCE_HOST_CREDENTIAL_VALUE = "host_credential_value"
 HOME_SOURCE_DSH_GENERATED = "dsh_generated"
+#: S8h/裁决 A（2026-10-29）：**人授权**的 dsh 凭据库。GUI 里"加 API Key"会把宿主自己的 key
+#: 写进共用 home 的 `.credentials.yaml`（`dsh-credentials-local` 的存储），这是人在 GUI 里授权
+#: 模型访问的**唯一**途径 ⇒ 允许，但规则尽量窄（见 `_classify_credential_store`）。
+HOME_SOURCE_HOST_AUTHORIZED_STORE = "host_authorized_store"
 HOME_SOURCE_UNKNOWN = "unknown"
 HOME_SOURCES = (HOME_SOURCE_HOST_SETTINGS_COPY, HOME_SOURCE_HOST_CREDENTIAL_VALUE,
-                HOME_SOURCE_DSH_GENERATED, HOME_SOURCE_UNKNOWN)
+                HOME_SOURCE_DSH_GENERATED, HOME_SOURCE_HOST_AUTHORIZED_STORE,
+                HOME_SOURCE_UNKNOWN)
+#: **只有这两档放行**（其余一律拒绝）。`dsh_generated` = dsh 自生成的会话签名件；
+#: `host_authorized_store` = 人经 GUI 授权、且值**全部**是宿主已有凭据的 dsh 凭据库。
+HOME_SOURCES_ALLOWED = frozenset({HOME_SOURCE_DSH_GENERATED, HOME_SOURCE_HOST_AUTHORIZED_STORE})
+
+#: dsh 凭据库文件名（`dsh-credentials-local` 的默认落点）
+CREDENTIAL_STORE_NAME = ".credentials.yaml"
+#: 凭据库记录允许的字段（阅读自 `dsh-credentials-local`：api-key 只要 kind/key/env，grant 只要 kind/payload）
+CREDENTIAL_RECORD_KINDS = frozenset({"api-key", "grant"})
+_CREDENTIAL_API_KEY_FIELDS = frozenset({"kind", "key", "env"})
+_CREDENTIAL_GRANT_FIELDS = frozenset({"kind", "payload"})
 
 #: `dsh` 自己为本次实例生成的 `.credentials.yaml` 的**键路径登记**（"形态"判据）。
 #: 真机实测（2026-10-29，`dsh` 0.2.1-rc.2，`loop/.logs/s7c/home{,2,3}/.credentials.yaml` 三份同形，
@@ -314,6 +329,28 @@ def stage_sources(layout: AttemptLayout, sources: tuple[tuple[Path, str], ...], 
     return tuple(staged)
 
 
+def provider_credential() -> tuple[str, str] | None:
+    """宿主 provider 的 `(apiKeyEnv 名, 密钥值)`；不可用/无值 ⇒ `None`（不猜、不造）。
+
+    用途（裁决 A / REV-14 §9.1a）：把**宿主自己的** key 写进 dsh 凭据库
+    （`<home>/.credentials.yaml` 的 `llm-pi-ai/<provider>` 记录），等价于人在 GUI 里点
+    "Add API Key"——GUI 的模型选择器只认凭据库，不认 env。
+    **只返回给 Host 自己用**：不打印、不进记录、不进证据；调用方负责零回显。
+    """
+    import os as _os
+
+    from host import model_provider as MP
+
+    cfg = MP.resolve()
+    if not getattr(cfg, "available", False):
+        return None
+    name = getattr(cfg, "api_key_env", None)
+    key = (_os.environ.get(name) if name else None) or getattr(cfg, "_api_key", None)
+    if not name or not key:
+        return None
+    return str(name), str(key)
+
+
 def provider_runtime(*, model_options: dict[str, object] | None = None
                      ) -> tuple["ProviderOverlay", dict[str, str]]:
     """Web 实例要继承的 provider 运行时：`(overlay, env)`（REV-14 §9.4，S8h）。
@@ -444,8 +481,8 @@ class HomeEntry:
 
     @property
     def allowed(self) -> bool:
-        """只有 `dsh_generated` 放行；其余（含 `unknown`）一律拒绝。"""
-        return self.source == HOME_SOURCE_DSH_GENERATED
+        """放行档：`dsh_generated` 与 `host_authorized_store`；其余（含 `unknown`）一律拒绝。"""
+        return self.source in HOME_SOURCES_ALLOWED
 
 
 @dataclass(frozen=True)
@@ -521,6 +558,107 @@ def _credential_hit(raw: bytes, secrets: tuple[str, ...]) -> int | None:
     return None
 
 
+#: 当前这次判定使用的宿主凭据集合（单次调用内有效；**不跨调用缓存**，避免过期/泄漏）。
+_HOST_SECRETS: list[tuple[str, ...]] = [()]
+
+
+def _looks_like_credential_store(document: object) -> bool:
+    """是否 `dsh-credentials-local` 的存储形态：`{version: int, records: mapping}`。"""
+    return (isinstance(document, dict) and isinstance(document.get("version"), int)
+            and isinstance(document.get("records"), dict))
+
+
+def _classify_generated_credentials(document: dict,
+                                    secrets: tuple[str, ...] = ()) -> HomeEntry | None:
+    """纯 `dsh` 自生成形态（**精确键集合**）⇒ `dsh_generated`；不是则 `None`（交给授权库判定）。
+
+    之所以抽出来：裁决 A 让 `.credentials.yaml` 多了一种"人授权库"形态，但**纯自生成件**必须
+    仍报 `dsh_generated`（历史口径与既有证据不变）。
+    """
+    keys = frozenset(_flatten_key_paths(document))
+    extra = keys - DSH_GENERATED_CREDENTIAL_KEYS
+    missing = DSH_GENERATED_CREDENTIAL_REQUIRED - keys
+    if extra or missing:
+        return None
+    # 不变量 2：形态再像自生成，**值**是宿主凭据也一样拒（裁决 A 不放宽这一条）。
+    for value in _flatten_key_paths(document).values():
+        if isinstance(value, str) and value in secrets:
+            return HomeEntry(name=CREDENTIAL_STORE_NAME,
+                             source=HOME_SOURCE_HOST_CREDENTIAL_VALUE,
+                             basis="自生成形态但含宿主凭据值（不因形态放行）")
+    return HomeEntry(name=CREDENTIAL_STORE_NAME, source=HOME_SOURCE_DSH_GENERATED,
+                     basis="键集合符合 dsh 自生成登记：%s" % DSH_GENERATED_RECORD_PATH)
+
+
+def _classify_credential_store(document: dict) -> HomeEntry | None:
+    """**人授权**的 dsh 凭据库判定（裁决 A，2026-10-29，REV-14 §9.1a）。
+
+    规则（尽量窄，全部满足才放行；任一不满足 ⇒ 不在本档处理，退回通用判据）：
+    1. 每个记录键必须是 `<scope>/<id>` 两段（与 `credentials-local` 的 `parseCredentialKey` 同形）；
+    2. 每条记录的 `kind ∈ {api-key, grant}`，且字段集合不超过该 kind 的已登记字段；
+    3. `api-key` 的 `key`（若有）与 `env` 的**每个值**都必须是**宿主已有凭据值**（逐字相等）——
+       即"人只是把宿主自己的 key 授权给 GUI"，没有引入新秘密；
+    4. `grant` 记录的 payload 键路径必须落在已登记的 dsh 自生成记录里（会话签名件）。
+
+    返回 `None` 表示"形态不是可放的授权库"（调用方继续走通用判据，保持 fail-closed）。
+    返回 **拒绝档** 表示"确认是人授权库形态但内容不合规"（如引用了陌生 secret）。
+    """
+    records = document.get("records")
+    if not isinstance(records, dict) or not records:
+        return None
+    for record_key, record in records.items():
+        if not isinstance(record_key, str) or len(str(record_key).split("/")) != 2:
+            return HomeEntry(name=CREDENTIAL_STORE_NAME, source=HOME_SOURCE_UNKNOWN,
+                             basis="凭据库记录键不是 <scope>/<id> 形态")
+        if not isinstance(record, dict):
+            return HomeEntry(name=CREDENTIAL_STORE_NAME, source=HOME_SOURCE_UNKNOWN,
+                             basis="凭据库记录不是 mapping")
+        kind = record.get("kind")
+        if kind not in CREDENTIAL_RECORD_KINDS:
+            return HomeEntry(name=CREDENTIAL_STORE_NAME, source=HOME_SOURCE_UNKNOWN,
+                             basis="凭据库记录 kind 不在登记内")
+        allowed_fields = _CREDENTIAL_API_KEY_FIELDS if kind == "api-key" else _CREDENTIAL_GRANT_FIELDS
+        if set(record) - allowed_fields:
+            return HomeEntry(name=CREDENTIAL_STORE_NAME, source=HOME_SOURCE_UNKNOWN,
+                             basis="凭据库记录字段超出该 kind 的登记")
+        if kind == "api-key":
+            values: list[str] = []
+            key_value = record.get("key")
+            if key_value is not None:
+                if not isinstance(key_value, str) or not key_value:
+                    return HomeEntry(name=CREDENTIAL_STORE_NAME, source=HOME_SOURCE_UNKNOWN,
+                                     basis="api-key 记录 key 不是非空字符串")
+                values.append(key_value)
+            env = record.get("env")
+            if env is not None:
+                if not isinstance(env, dict) or not all(
+                        isinstance(v, str) and v for v in env.values()):
+                    return HomeEntry(name=CREDENTIAL_STORE_NAME, source=HOME_SOURCE_UNKNOWN,
+                                     basis="api-key 记录 env 不是非空字符串映射")
+                values.extend(env.values())
+            for value in values:
+                if value not in _HOST_SECRETS[0]:
+                    return HomeEntry(name=CREDENTIAL_STORE_NAME,
+                                     source=HOME_SOURCE_HOST_CREDENTIAL_VALUE,
+                                     basis="凭据库含有**不是宿主已有**的凭据值（拒绝：不引入新秘密）")
+        else:  # grant
+            payload = record.get("payload") or {}
+            payload_keys = frozenset(
+                "records.%s.payload.%s" % (record_key, key)
+                for key in _flatten_key_paths(payload))
+            if not payload_keys <= DSH_GENERATED_CREDENTIAL_KEYS:
+                return HomeEntry(name=CREDENTIAL_STORE_NAME, source=HOME_SOURCE_UNKNOWN,
+                                 basis="grant 记录超出 dsh 自生成登记")
+            # 不变量 2 仍成立：grant 里出现**宿主凭据值** ⇒ 不是自生成件，而是复制/改写
+            for value in _flatten_key_paths(payload).values():
+                if isinstance(value, str) and value in _HOST_SECRETS[0]:
+                    return HomeEntry(name=CREDENTIAL_STORE_NAME,
+                                     source=HOME_SOURCE_HOST_CREDENTIAL_VALUE,
+                                     basis="grant 记录含宿主凭据值（不是 dsh 自生成件）")
+    return HomeEntry(name=CREDENTIAL_STORE_NAME, source=HOME_SOURCE_HOST_AUTHORIZED_STORE,
+                     basis="dsh 凭据库，记录仅含宿主已有凭据与已登记的自生成 grant")
+
+
 def _classify_entry(name: str, path: Path, secrets: tuple[str, ...]) -> HomeEntry:
     """单个禁止件条目的来源判定（DS-09 四档；顺序本身是契约，别重排）。"""
     if name == "settings.yaml":
@@ -531,6 +669,25 @@ def _classify_entry(name: str, path: Path, secrets: tuple[str, ...]) -> HomeEntr
     if raw is None:
         return HomeEntry(name=name, source=HOME_SOURCE_UNKNOWN,
                          basis="读不到内容（不是可读普通文件）")
+    # 裁决 A（2026-10-29）：**先**认人授权的 dsh 凭据库，再走通用"凭据值优先"判据。
+    if name == CREDENTIAL_STORE_NAME:
+        try:
+            document = yaml.safe_load(raw.decode("utf-8"))
+        except (UnicodeDecodeError, yaml.YAMLError):
+            document = None
+        if _looks_like_credential_store(document):
+            # 先认"纯 dsh 自生成"（精确键集合），再认"人授权库"——顺序是契约：
+            # 自生成形态先命中时仍报 `dsh_generated`（历史口径不变）。
+            generated = _classify_generated_credentials(document, secrets)
+            if generated is not None:
+                return generated
+            _HOST_SECRETS[0] = tuple(secrets)
+            try:
+                decision = _classify_credential_store(document)
+            finally:
+                _HOST_SECRETS[0] = ()
+            if decision is not None:
+                return decision
     hit = _credential_hit(raw, secrets)
     if hit is not None:
         # 不变量 2：凭据值**优先于形态**（形态再像自生成也照拒）。

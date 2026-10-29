@@ -81,8 +81,10 @@ def test_forbidden_home_entries_semantics_are_unchanged() -> None:
     """B3 的历史语义不改：三个名字仍都列在常量里（S8b 只加"来源"，没把任何名字移出去）。"""
     assert A.FORBIDDEN_HOME_ENTRIES == ("settings.yaml", ".credentials.yaml", ".credentials")
     assert A.HOME_SOURCE_DSH_GENERATED in A.HOME_SOURCES
+    # S8h/裁决 A（2026-10-29）：新增人授权档；**放行档只有两个**（其余仍拒）
     assert set(A.HOME_SOURCES) == {"host_settings_copy", "host_credential_value",
-                                   "dsh_generated", "unknown"}
+                                   "dsh_generated", "host_authorized_store", "unknown"}
+    assert A.HOME_SOURCES_ALLOWED == {"dsh_generated", "host_authorized_store"}
 
 
 # ================================================================ 不变量 2：凭据值优先于形态
@@ -272,3 +274,72 @@ def test_preflight_side_channel_still_passes_for_shared_home(tmp_path: Path) -> 
     assert SC.verify_home(home) == []
     (home / "settings.yaml").write_text("x: 1\n", encoding="utf-8")
     assert SC.verify_home(home), "真宿主件仍必须被挡住"
+
+
+# ================================================================ 裁决 A：人授权的 dsh 凭据库（S8h）
+
+_HOST_KEY = "sk-host-own-key-0123456789"
+
+
+def _store(records: dict) -> str:
+    import yaml
+    return yaml.safe_dump({"version": 1, "records": records}, sort_keys=False)
+
+
+def test_host_authorized_store_with_host_own_key_is_allowed(tmp_path: Path) -> None:
+    """人经 GUI 把**宿主自己的** key 授权给 dsh 凭据库 ⇒ 放行（裁决 A，REV-14 §9.1a）。"""
+    home = _home(tmp_path)
+    _write(home, ".credentials.yaml", _store({
+        "client-connection/browser-session": {
+            "kind": "grant",
+            "payload": {"version": 1, "secret": SAMPLE_SECRET}},
+        "llm-pi-ai/loop": {"kind": "api-key", "key": _HOST_KEY},
+    }))
+    provenance = A.home_provenance(home, host_secrets=(_HOST_KEY,))
+    assert provenance.ok, provenance.problems
+    entry = provenance.entries[0]
+    assert entry.source == A.HOME_SOURCE_HOST_AUTHORIZED_STORE
+    # 零回显：记录/问题里都没有 key 值
+    assert _HOST_KEY not in str(provenance.record()) + str(provenance.problems)
+
+
+def test_host_authorized_store_with_foreign_secret_is_rejected(tmp_path: Path) -> None:
+    """授权库里出现**不是宿主已有**的凭据值 ⇒ 拒绝（不因"是凭据库"就放行陌生秘密）。"""
+    home = _home(tmp_path)
+    _write(home, ".credentials.yaml", _store({
+        "llm-pi-ai/loop": {"kind": "api-key", "key": "sk-someone-elses-key"},
+    }))
+    provenance = A.home_provenance(home, host_secrets=(_HOST_KEY,))
+    assert not provenance.ok
+    assert provenance.entries[0].source == A.HOME_SOURCE_HOST_CREDENTIAL_VALUE
+
+
+def test_host_authorized_store_rejects_unregistered_record_shape(tmp_path: Path) -> None:
+    """记录 kind/字段超出 dsh 登记 ⇒ `unknown` 拒绝（fail-closed）。"""
+    home = _home(tmp_path)
+    _write(home, ".credentials.yaml", _store({
+        "llm-pi-ai/loop": {"kind": "api-key", "key": _HOST_KEY, "surprise": "x"},
+    }))
+    provenance = A.home_provenance(home, host_secrets=(_HOST_KEY,))
+    assert not provenance.ok
+    assert provenance.entries[0].source == A.HOME_SOURCE_UNKNOWN
+
+
+def test_host_authorized_store_rejects_bad_record_key_shape(tmp_path: Path) -> None:
+    """记录键不是 `<scope>/<id>` ⇒ `unknown` 拒绝。"""
+    home = _home(tmp_path)
+    _write(home, ".credentials.yaml", _store({
+        "no-slash-key": {"kind": "api-key", "key": _HOST_KEY},
+    }))
+    provenance = A.home_provenance(home, host_secrets=(_HOST_KEY,))
+    assert not provenance.ok
+    assert provenance.entries[0].source == A.HOME_SOURCE_UNKNOWN
+
+
+def test_non_store_credentials_file_still_rejects_host_key(tmp_path: Path) -> None:
+    """**不是**凭据库形态的 `.credentials`（旧式平铺文件）含宿主 key ⇒ 仍按复制件拒绝。"""
+    home = _home(tmp_path)
+    _write(home, ".credentials", "apiKey: %s\n" % _HOST_KEY)
+    provenance = A.home_provenance(home, host_secrets=(_HOST_KEY,))
+    assert not provenance.ok
+    assert provenance.entries[0].source == A.HOME_SOURCE_HOST_CREDENTIAL_VALUE

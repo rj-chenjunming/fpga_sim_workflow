@@ -1,0 +1,37 @@
+{
+ "what": "真机 boot 内由一次性实验插件 `exp/probe_submit.mjs` 直接 `tools.execute()` 派发 `submit_result`（**不经模型**），验证 allowlist 生效时提交通道仍可用。",
+ "pluginSource": "loop/.logs/s7b/exp/probe_submit.mjs",
+ "dispatchResult": {
+  "isError": false,
+  "content": [
+   {
+    "type": "text",
+    "text": "{\"accepted\":true,\"problems\":[]}"
+   }
+  ],
+  "value": "{\"accepted\":true,\"problems\":[]}",
+  "code": null
+ },
+ "pluginError": null,
+ "sessionEventTypes": {
+  "session": 1,
+  "permission/preset": 1,
+  "sandbox/mode": 1,
+  "approval/policy": 1,
+  "agent/inbox/spliced": 2,
+  "turn/start": 1,
+  "step/start": 1,
+  "system/message": 1,
+  "user/message": 2,
+  "request/header": 1,
+  "request/context": 1,
+  "session/title": 1,
+  "session/title-llm-request": 1,
+  "assistant/attempt": 1,
+  "step/end": 1,
+  "turn/end": 1
+ },
+ "durability": "session log 里**没有** `tool/result` 事件 ⇒ 旁路派发不进会话日志/提交记账；durable 写入只有 agent loop（`dsh-agent-loop/lib/index.js:697`），旁路 `tools.execute` 只触发进程内 `tools/result` 事件。",
+ "sessionLog": "exp/boot/attempt/dsh-home/sessions/--home-work-chenjunming-change-impact-loop-loop-.logs-s7b-exp-boot-attempt-work--/session-e8a30919-5b56-4506-ad29-763b01c7031d/session.v4.jsonl.zstd",
+ "sessionLogMd5": "03c043c9c4eae38b70f58dc81752b2ed"
+}

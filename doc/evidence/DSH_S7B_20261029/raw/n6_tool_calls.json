@@ -1,0 +1,9 @@
+{
+  "tool_calls_by_name": {
+    "bash": 13,
+    "read": 9,
+    "submit_result": 1
+  },
+  "denied_or_error_results": [],
+  "tool_result_total": 23
+}

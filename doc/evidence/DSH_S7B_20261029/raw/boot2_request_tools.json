@@ -1,0 +1,20 @@
+{
+ "sessionLog": "boot2/attempt/dsh-home/sessions/--home-work-chenjunming-change-impact-loop-loop-.logs-s7b-boot2-attempt-work--/session-48ac2ea2-6fc4-4531-bb23-c23cb811e79c/session.v4.jsonl.zstd",
+ "md5": "abae12e98b351cfaceeb2cb585456720",
+ "requestHeaders": [
+  {
+   "seq": 10,
+   "toolCount": 7,
+   "tools": [
+    "bash",
+    "edit",
+    "glob",
+    "grep",
+    "read",
+    "submit_result",
+    "write"
+   ]
+  }
+ ],
+ "note": "`request/header.data.header.tools` = 引擎实际发给模型的工具清单；boot2（enforce_visibility=true）应为 7 项允清单，boot3（false）应为 26 项全量 harness。"
+}

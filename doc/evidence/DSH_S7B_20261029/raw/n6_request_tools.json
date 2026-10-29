@@ -1,0 +1,36 @@
+{
+  "source": "session log request/header.data.header.tools（引擎实际发给模型的工具清单）",
+  "session_log": "agent_workspaces/N6/attempt-000001/dsh-home/sessions/--home-work-chenjunming-change-impact-loop-loop-.logs-s7a-ws-runs-RUN-20261029-103000-agent_workspaces-N6-attempt-000001-work--/session-4b23d229-8383-4348-a73a-d0b50321d1dc/session.v4.jsonl.zstd",
+  "session_log_md5": "2c100f29ca2a638fac9a47010b8e6a0a",
+  "tools_count": 7,
+  "tools": [
+    "bash",
+    "edit",
+    "glob",
+    "grep",
+    "read",
+    "submit_result",
+    "write"
+  ],
+  "event_types": {
+    "session": 1,
+    "permission/preset": 1,
+    "sandbox/mode": 1,
+    "approval/policy": 1,
+    "agent/inbox/spliced": 2,
+    "turn/start": 1,
+    "step/start": 19,
+    "system/message": 1,
+    "user/message": 2,
+    "request/header": 1,
+    "request/context": 1,
+    "session/title": 1,
+    "assistant/message": 19,
+    "tool/call": 23,
+    "job/registered": 13,
+    "job/settled": 13,
+    "tool/result": 23,
+    "step/end": 19,
+    "turn/end": 1
+  }
+}

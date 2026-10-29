@@ -1,0 +1,244 @@
+{
+  "mode": "live",
+  "run_id": "RUN-20261029-103000",
+  "exit": "completed",
+  "error": null,
+  "wall_s": 164.266,
+  "timeout_s": 300.0,
+  "usage": {
+    "inputTokens": 168,
+    "outputTokens": 550,
+    "totalTokens": 84686,
+    "cacheReadTokens": 83968
+  },
+  "session_id": "session-4b23d229-8383-4348-a73a-d0b50321d1dc",
+  "validation": {
+    "ok": true,
+    "problems": [],
+    "accepted": {
+      "revisions": [
+        {
+          "case": "tc_bmc_i2c_03",
+          "edits": [
+            {
+              "line": 222,
+              "old": "        `I2C_MST(pid).reg_field_test(base_addr+'h04  ,32'h0000_0000, `REG_FPGA_DATE, 1);",
+              "new": "        `I2C_MST(pid).reg_field_test(base_addr+'h04  ,32'h0000_0000, 32'h2026_0708, 1);\n        begin: n6_fpga_date_chk_i2c03\n            bit[31:0] n6_rdata;\n            `I2C_MST(pid).set_read(base_addr+'h04, n6_rdata);\n            `uvm_info(\"N6_fpga_date_bmc_i2c03\", $sformatf(\"OK 0x0000+0x04 fpga_date = 0x%08h\", n6_rdata), UVM_LOW)\n        end",
+              "basis": "targets[tc_bmc_i2c_03].revision_points entry 0x0000#0x0004 (segment 0x0000 + offset 0x4, display 0x0000+0x4) 命中本行 base_addr+'h04；doc_bitdef fpga_date: reset=2026_0708, rw=R, bytes=4, bitdef_present=true ⇒ 期望读回值改为 32'h2026_0708；该实参位置是 api_semantics.reg_field_test 的 initial_dat（签名第3参），body 中 data_rdexp = only_r ? initial_dat : test_data & data_expmask，本行 only_r=1 ⇒ 只有 initial_dat 生效，data_expmask=32'h0000_0000 与写入 test_data 均属写入值/掩码之外，未改动。rtl_change 的 lines/offsets 为空（Hunk=null），无 RTL 新增/删除行可引，故期望值依据取 doc_bitdef.reset。"
+            }
+          ],
+          "rationale": "fpga_date(0x0000+0x4) 文档位定义 reset=2026_0708 且 rw=R；原用例用 `REG_FPGA_DATE 作为 initial_dat(only_r=1 时即期望读回值)，宏定义不在本次可写范围内，故按 doc_bitdef.reset 就地替换为 32'h2026_0708；同时在原行后追加一段带声明块的观测代码，用寄存器 master 的 set_read 实际读回 base_addr+'h04 并按 P-25 形态打印 UVM_INFO（ID=marker，消息含 0x0000+0x04 fpga_date = 0x%08h），不修改任何写入值/地址实参，也不删除原有的 reg_field_test 检查；新增观测 UVM_INFO 的 ID 为 N6_fpga_date_bmc_i2c03。"
+        },
+        {
+          "case": "tc_bmc_i2c_04_dfx",
+          "edits": [
+            {
+              "line": 385,
+              "old": "        `I2C_MST(pid).reg_field_test(base_addr+'h04  ,32'h0000_0000, `REG_FPGA_DATE, 1);",
+              "new": "        `I2C_MST(pid).reg_field_test(base_addr+'h04  ,32'h0000_0000, 32'h2026_0708, 1);\n        begin: n6_fpga_date_chk_i2c04\n            bit[31:0] n6_rdata;\n            `I2C_MST(pid).set_read(base_addr+'h04, n6_rdata);\n            `uvm_info(\"N6_fpga_date_bmc_i2c04_dfx\", $sformatf(\"OK 0x0000+0x04 fpga_date = 0x%08h\", n6_rdata), UVM_LOW)\n        end",
+              "basis": "targets[tc_bmc_i2c_04_dfx].revision_points entry 0x0000#0x0004 (segment 0x0000 + offset 0x4, display 0x0000+0x4) 命中本行 base_addr+'h04；doc_bitdef fpga_date: reset=2026_0708, rw=R, bytes=4, bitdef_present=true ⇒ 期望读回值改为 32'h2026_0708；该实参位置是 api_semantics.reg_field_test 的 initial_dat（签名第3参），body 中 data_rdexp = only_r ? initial_dat : test_data & data_expmask，本行 only_r=1 ⇒ 只有 initial_dat 生效，data_expmask=32'h0000_0000 与写入 test_data 均属写入值/掩码之外，未改动。rtl_change 的 lines/offsets 为空（Hunk=null），无 RTL 新增/删除行可引，故期望值依据取 doc_bitdef.reset。"
+            }
+          ],
+          "rationale": "fpga_date(0x0000+0x4) 文档位定义 reset=2026_0708 且 rw=R；原用例用 `REG_FPGA_DATE 作为 initial_dat(only_r=1 时即期望读回值)，宏定义不在本次可写范围内，故按 doc_bitdef.reset 就地替换为 32'h2026_0708；同时在原行后追加一段带声明块的观测代码，用寄存器 master 的 set_read 实际读回 base_addr+'h04 并按 P-25 形态打印 UVM_INFO（ID=marker，消息含 0x0000+0x04 fpga_date = 0x%08h），不修改任何写入值/地址实参，也不删除原有的 reg_field_test 检查；新增观测 UVM_INFO 的 ID 为 N6_fpga_date_bmc_i2c04_dfx。"
+        },
+        {
+          "case": "tc_bmc_spi_03",
+          "edits": [
+            {
+              "line": 163,
+              "old": "        `SPI_MST(pid).reg_field_test(base_addr+'h04  ,32'h0000_0000, `REG_FPGA_DATE, 1);",
+              "new": "        `SPI_MST(pid).reg_field_test(base_addr+'h04  ,32'h0000_0000, 32'h2026_0708, 1);\n        begin: n6_fpga_date_chk_spi03\n            bit[31:0] n6_rdata;\n            `SPI_MST(pid).set_read(base_addr+'h04, n6_rdata);\n            `uvm_info(\"N6_fpga_date_bmc_spi03\", $sformatf(\"OK 0x0000+0x04 fpga_date = 0x%08h\", n6_rdata), UVM_LOW)\n        end",
+              "basis": "targets[tc_bmc_spi_03].revision_points entry 0x0000#0x0004 (segment 0x0000 + offset 0x4, display 0x0000+0x4) 命中本行 base_addr+'h04；doc_bitdef fpga_date: reset=2026_0708, rw=R, bytes=4, bitdef_present=true ⇒ 期望读回值改为 32'h2026_0708；该实参位置是 api_semantics.reg_field_test 的 initial_dat（签名第3参），body 中 data_rdexp = only_r ? initial_dat : test_data & data_expmask，本行 only_r=1 ⇒ 只有 initial_dat 生效，data_expmask=32'h0000_0000 与写入 test_data 均属写入值/掩码之外，未改动。rtl_change 的 lines/offsets 为空（Hunk=null），无 RTL 新增/删除行可引，故期望值依据取 doc_bitdef.reset。"
+            }
+          ],
+          "rationale": "fpga_date(0x0000+0x4) 文档位定义 reset=2026_0708 且 rw=R；原用例用 `REG_FPGA_DATE 作为 initial_dat(only_r=1 时即期望读回值)，宏定义不在本次可写范围内，故按 doc_bitdef.reset 就地替换为 32'h2026_0708；同时在原行后追加一段带声明块的观测代码，用寄存器 master 的 set_read 实际读回 base_addr+'h04 并按 P-25 形态打印 UVM_INFO（ID=marker，消息含 0x0000+0x04 fpga_date = 0x%08h），不修改任何写入值/地址实参，也不删除原有的 reg_field_test 检查；新增观测 UVM_INFO 的 ID 为 N6_fpga_date_bmc_spi03。"
+        },
+        {
+          "case": "tc_cpu_i2c_03",
+          "edits": [
+            {
+              "line": 228,
+              "old": "        `I2C_MST(pid).reg_field_test(base_addr+'h04  ,32'h0000_0000, `REG_FPGA_DATE, 1);",
+              "new": "        `I2C_MST(pid).reg_field_test(base_addr+'h04  ,32'h0000_0000, 32'h2026_0708, 1);\n        begin: n6_fpga_date_chk_cpu03\n            bit[31:0] n6_rdata;\n            `I2C_MST(pid).set_read(base_addr+'h04, n6_rdata);\n            `uvm_info(\"N6_fpga_date_cpu_i2c03\", $sformatf(\"OK 0x0000+0x04 fpga_date = 0x%08h\", n6_rdata), UVM_LOW)\n        end",
+              "basis": "targets[tc_cpu_i2c_03].revision_points entry 0x0000#0x0004 (segment 0x0000 + offset 0x4, display 0x0000+0x4) 命中本行 base_addr+'h04；doc_bitdef fpga_date: reset=2026_0708, rw=R, bytes=4, bitdef_present=true ⇒ 期望读回值改为 32'h2026_0708；该实参位置是 api_semantics.reg_field_test 的 initial_dat（签名第3参），body 中 data_rdexp = only_r ? initial_dat : test_data & data_expmask，本行 only_r=1 ⇒ 只有 initial_dat 生效，data_expmask=32'h0000_0000 与写入 test_data 均属写入值/掩码之外，未改动。rtl_change 的 lines/offsets 为空（Hunk=null），无 RTL 新增/删除行可引，故期望值依据取 doc_bitdef.reset。"
+            }
+          ],
+          "rationale": "fpga_date(0x0000+0x4) 文档位定义 reset=2026_0708 且 rw=R；原用例用 `REG_FPGA_DATE 作为 initial_dat(only_r=1 时即期望读回值)，宏定义不在本次可写范围内，故按 doc_bitdef.reset 就地替换为 32'h2026_0708；同时在原行后追加一段带声明块的观测代码，用寄存器 master 的 set_read 实际读回 base_addr+'h04 并按 P-25 形态打印 UVM_INFO（ID=marker，消息含 0x0000+0x04 fpga_date = 0x%08h），不修改任何写入值/地址实参，也不删除原有的 reg_field_test 检查；新增观测 UVM_INFO 的 ID 为 N6_fpga_date_cpu_i2c03。"
+        },
+        {
+          "case": "tc_pcie_rw_02",
+          "edits": [
+            {
+              "line": 137,
+              "old": "        reg_field_test(m_pcie_seq, base_addr+'h04  ,32'h0000_0000, `REG_FPGA_DATE, 1);",
+              "new": "        reg_field_test(m_pcie_seq, base_addr+'h04  ,32'h0000_0000, 32'h2026_0708, 1);\n        begin: n6_fpga_date_chk_pcie02\n            bit[31:0] n6_rdata;\n            set_read(m_pcie_seq, base_addr+'h04, n6_rdata);\n            `uvm_info(\"N6_fpga_date_pcie02\", $sformatf(\"OK 0x0000+0x04 fpga_date = 0x%08h\", n6_rdata), UVM_LOW)\n        end",
+              "basis": "targets[tc_pcie_rw_02].revision_points entry 0x0000#0x0004 (segment 0x0000 + offset 0x4, display 0x0000+0x4) 命中本行 base_addr+'h04；doc_bitdef fpga_date: reset=2026_0708, rw=R, bytes=4, bitdef_present=true ⇒ 期望读回值改为 32'h2026_0708；该实参位置是 api_semantics.reg_field_test 的 initial_dat（签名第3参），body 中 data_rdexp = only_r ? initial_dat : test_data & data_expmask，本行 only_r=1 ⇒ 只有 initial_dat 生效，data_expmask=32'h0000_0000 与写入 test_data 均属写入值/掩码之外，未改动。rtl_change 的 lines/offsets 为空（Hunk=null），无 RTL 新增/删除行可引，故期望值依据取 doc_bitdef.reset。"
+            }
+          ],
+          "rationale": "fpga_date(0x0000+0x4) 文档位定义 reset=2026_0708 且 rw=R；原用例用 `REG_FPGA_DATE 作为 initial_dat(only_r=1 时即期望读回值)，宏定义不在本次可写范围内，故按 doc_bitdef.reset 就地替换为 32'h2026_0708；同时在原行后追加一段带声明块的观测代码，用寄存器 master 的 set_read 实际读回 base_addr+'h04 并按 P-25 形态打印 UVM_INFO（ID=marker，消息含 0x0000+0x04 fpga_date = 0x%08h），不修改任何写入值/地址实参，也不删除原有的 reg_field_test 检查；新增观测 UVM_INFO 的 ID 为 N6_fpga_date_pcie02。"
+        }
+      ],
+      "rework_resolution": [],
+      "notes": [
+        "input.rework_reasons 为空、rework_assignment.issues 为空 ⇒ 无返工项，issue_responses/rework_resolution 为空，本轮从原始 targets 重建候选。",
+        "所有 target 的 rtl_change.lines/offsets 均为空、hunk=null：没有可引用的 RTL 新增/删除行，期望值唯一依据是 doc_bitdef.reset=2026_0708（fpga_date, rw=R, 0x0000+0x4）；若 RTL 实际日期值与文档不一致，属 RTL 变更 vs 文档未同步，由 N3/N12 暴露。",
+        "`REG_FPGA_DATE` 宏定义在 macros_pkg.sv（不在本次 candidate 可写范围内），因此就地改为 SV 字面量 32'h2026_0708，保持 initial_dat（only_r=1 时的期望读回值）语义。",
+        "观测点通过寄存器 master 的 set_read 实读回值：I2C_MST 的 set_read(addr, rdata) 用法在 tc_bmc_i2c_04_dfx.sv:227 有既有样例；SPI_MST 的 set_read 未在本用例集中出现，推断其与 I2C_MST 共享同一 set_write/set_rdchk 接口（signature 完全一致），此点存在不确定性，已在此说明。",
+        "tc_pcie_rw_02 用本文件 set_read(m_pcie_seq,...)（tc_pcie_rw_02.sv:360-365，内部对 PCIE_REG_RD 结果做字节交换），与 reg_field_test 中 set_write/PCIE_REG_RDCHK 的取值约定一致，故打印的是判定期望所用的内部值而非原始总线字节序。",
+        "观测点读取发生在 reg_field_test 之后；fpga_date 为 R(只读)，写入 sequence 不影响其读回值。"
+      ],
+      "observation_points": [
+        {
+          "case": "tc_bmc_i2c_03",
+          "marker": "N6_fpga_date_bmc_i2c03",
+          "addr": "0x0000",
+          "offset": "0x04",
+          "expected_value": "0x20260708",
+          "basis": "revision_points[0]: segment=0x0000, offset=0x4, entry_id=0x0000#0x0004, doc_bitdef.name=fpga_date, doc_bitdef.reset=2026_0708, doc_bitdef.rw=R, bytes=4；rtl_effect=null、rtl_change.lines=[]（无掩码/无新增删除行），故 expected_value=0x20260708 直接取 doc_bitdef.reset；用例内该观测点实读 base_addr+'h04（base_addr=32'h0）的返回值。"
+        },
+        {
+          "case": "tc_bmc_i2c_04_dfx",
+          "marker": "N6_fpga_date_bmc_i2c04_dfx",
+          "addr": "0x0000",
+          "offset": "0x04",
+          "expected_value": "0x20260708",
+          "basis": "revision_points[0]: segment=0x0000, offset=0x4, entry_id=0x0000#0x0004, doc_bitdef.name=fpga_date, doc_bitdef.reset=2026_0708, doc_bitdef.rw=R, bytes=4；rtl_effect=null、rtl_change.lines=[]（无掩码/无新增删除行），故 expected_value=0x20260708 直接取 doc_bitdef.reset；用例内该观测点实读 base_addr+'h04（base_addr=32'h0）的返回值。"
+        },
+        {
+          "case": "tc_bmc_spi_03",
+          "marker": "N6_fpga_date_bmc_spi03",
+          "addr": "0x0000",
+          "offset": "0x04",
+          "expected_value": "0x20260708",
+          "basis": "revision_points[0]: segment=0x0000, offset=0x4, entry_id=0x0000#0x0004, doc_bitdef.name=fpga_date, doc_bitdef.reset=2026_0708, doc_bitdef.rw=R, bytes=4；rtl_effect=null、rtl_change.lines=[]（无掩码/无新增删除行），故 expected_value=0x20260708 直接取 doc_bitdef.reset；用例内该观测点实读 base_addr+'h04（base_addr=32'h0）的返回值。"
+        },
+        {
+          "case": "tc_cpu_i2c_03",
+          "marker": "N6_fpga_date_cpu_i2c03",
+          "addr": "0x0000",
+          "offset": "0x04",
+          "expected_value": "0x20260708",
+          "basis": "revision_points[0]: segment=0x0000, offset=0x4, entry_id=0x0000#0x0004, doc_bitdef.name=fpga_date, doc_bitdef.reset=2026_0708, doc_bitdef.rw=R, bytes=4；rtl_effect=null、rtl_change.lines=[]（无掩码/无新增删除行），故 expected_value=0x20260708 直接取 doc_bitdef.reset；用例内该观测点实读 base_addr+'h04（base_addr=32'h0）的返回值。"
+        },
+        {
+          "case": "tc_pcie_rw_02",
+          "marker": "N6_fpga_date_pcie02",
+          "addr": "0x0000",
+          "offset": "0x04",
+          "expected_value": "0x20260708",
+          "basis": "revision_points[0]: segment=0x0000, offset=0x4, entry_id=0x0000#0x0004, doc_bitdef.name=fpga_date, doc_bitdef.reset=2026_0708, doc_bitdef.rw=R, bytes=4；rtl_effect=null、rtl_change.lines=[]（无掩码/无新增删除行），故 expected_value=0x20260708 直接取 doc_bitdef.reset；用例内该观测点实读 base_addr+'h04（base_addr=32'h0）的返回值。"
+        }
+      ],
+      "issue_responses": []
+    }
+  },
+  "channel": {
+    "candidate_root": "/home/work/chenjunming/change-impact-loop/loop/.logs/s7a/ws/runs/RUN-20261029-103000/agent_workspaces/N6/attempt-000001/work/candidate",
+    "candidate_manifest": {
+      "TESTLIB/tc_bmc_i2c_03.sv": {
+        "md5": "32eb1b2072ac6ff57337469789ecc5bb",
+        "size": 15728
+      },
+      "TESTLIB/tc_bmc_i2c_04_dfx.sv": {
+        "md5": "88f768df307761fabcedb2e4ed626f7d",
+        "size": 25247
+      },
+      "TESTLIB/tc_bmc_spi_03.sv": {
+        "md5": "32fff0e84b7abc61ef6dfbd5c342c145",
+        "size": 17472
+      },
+      "TESTLIB/tc_cpu_i2c_03.sv": {
+        "md5": "0019bf36be8bb2b3dce886bbe6e70505",
+        "size": 21540
+      },
+      "TESTLIB/tc_pcie_rw_02.sv": {
+        "md5": "791ccd45d8d00b121f38db7792b05bc0",
+        "size": 20384
+      }
+    },
+    "baseline": {
+      "TESTLIB/tc_bmc_i2c_03.sv": "ab8132db1bf51c0f0782451d5047c777",
+      "TESTLIB/tc_bmc_i2c_04_dfx.sv": "72dd785717ff8af0073fc74d91475035",
+      "TESTLIB/tc_bmc_spi_03.sv": "77ea7436139da6e5512f666a88e0c51c",
+      "TESTLIB/tc_cpu_i2c_03.sv": "74ea6e5d6ead2408753a727ab2055f40",
+      "TESTLIB/tc_pcie_rw_02.sv": "eab350bb81d14bb9987bd6691a26df54"
+    },
+    "execution_state": "stopped"
+  },
+  "apply_status": "applied",
+  "candidate_import": {
+    "ok": true,
+    "reason": null,
+    "detail": "",
+    "execution_state": "stopped",
+    "resend_allowed": true,
+    "drift_checked": true,
+    "total_bytes": 100371,
+    "files": [
+      {
+        "path": "TESTLIB/tc_bmc_i2c_03.sv",
+        "case": "tc_bmc_i2c_03",
+        "md5": "32eb1b2072ac6ff57337469789ecc5bb",
+        "size": 15728,
+        "baseline_md5": "ab8132db1bf51c0f0782451d5047c777"
+      },
+      {
+        "path": "TESTLIB/tc_bmc_i2c_04_dfx.sv",
+        "case": "tc_bmc_i2c_04_dfx",
+        "md5": "88f768df307761fabcedb2e4ed626f7d",
+        "size": 25247,
+        "baseline_md5": "72dd785717ff8af0073fc74d91475035"
+      },
+      {
+        "path": "TESTLIB/tc_bmc_spi_03.sv",
+        "case": "tc_bmc_spi_03",
+        "md5": "32fff0e84b7abc61ef6dfbd5c342c145",
+        "size": 17472,
+        "baseline_md5": "77ea7436139da6e5512f666a88e0c51c"
+      },
+      {
+        "path": "TESTLIB/tc_cpu_i2c_03.sv",
+        "case": "tc_cpu_i2c_03",
+        "md5": "0019bf36be8bb2b3dce886bbe6e70505",
+        "size": 21540,
+        "baseline_md5": "74ea6e5d6ead2408753a727ab2055f40"
+      },
+      {
+        "path": "TESTLIB/tc_pcie_rw_02.sv",
+        "case": "tc_pcie_rw_02",
+        "md5": "791ccd45d8d00b121f38db7792b05bc0",
+        "size": 20384,
+        "baseline_md5": "eab350bb81d14bb9987bd6691a26df54"
+      }
+    ],
+    "problems": []
+  },
+  "apply_error": null,
+  "apply_cases": [
+    {
+      "case": "tc_bmc_i2c_03",
+      "source": "candidate_import",
+      "md5_after": "32eb1b2072ac6ff57337469789ecc5bb"
+    },
+    {
+      "case": "tc_bmc_i2c_04_dfx",
+      "source": "candidate_import",
+      "md5_after": "88f768df307761fabcedb2e4ed626f7d"
+    },
+    {
+      "case": "tc_bmc_spi_03",
+      "source": "candidate_import",
+      "md5_after": "32fff0e84b7abc61ef6dfbd5c342c145"
+    },
+    {
+      "case": "tc_cpu_i2c_03",
+      "source": "candidate_import",
+      "md5_after": "0019bf36be8bb2b3dce886bbe6e70505"
+    },
+    {
+      "case": "tc_pcie_rw_02",
+      "source": "candidate_import",
+      "md5_after": "791ccd45d8d00b121f38db7792b05bc0"
+    }
+  ]
+}

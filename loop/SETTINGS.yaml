@@ -38,6 +38,17 @@ loop:
       wrap: true
       patches: []
       api_key_env: PUBLIC_API_KEY
+      # S7b 工具白名单（人工裁决 B2，2026-10-29）：把真机工具面从 26 项全量 harness 收到显式允清单。
+      # 判据唯一实现在 `host/agent_backends/dsh_allowlist.py`；插件只执行判据（`dsh_plugin/tool_allowlist.mjs`）。
+      # `enabled: false` ⇒ 插件根本不挂 + 不渲染 env + 不进出指纹 = 与 S6 行为**逐字相同**（可一键回退）。
+      # `bash` 保留并单独登记为**已接受暴露面**（N6 实测用 `ls`/`md5sum`；禁掉显著降成功率）。
+      # 注意：`list`/`apply_patch` 在 0.2.1-rc.2 的 26 项里不存在 ⇒ 按真实名单落地（见 STATUS §119、
+      # 计划 §8-6）；清单里写不存在的工具名会让准入**显式失败**（不静默忽略）。
+      tool_allowlist:
+        enabled: true
+        accept_bash: true
+        # true = deny + 收窄 agent 可见面（模型只看到 7 项）；false = 只 deny（模型仍看到 26 项）
+        enforce_visibility: true
   llm:
     # 留空 = 用宿主声明的 api family（本机为 openai-responses）。
     # 可选值：openai-responses | chat（= chat/completions）

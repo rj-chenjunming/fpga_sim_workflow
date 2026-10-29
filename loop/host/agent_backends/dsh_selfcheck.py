@@ -8,7 +8,11 @@
   （单钉会被覆盖：P3 实测只钉 `mode` 时 `defaultPreset: danger-full-access` 仍然越界写 `rc=0`）；
 - **DS-09**：attempt home 不得含宿主 `settings.yaml`/凭据（判据复用 `dsh_assets.home_problems`）；
 - **DS-10**：用**同一套**隔离参数（`dsh_process.build_wrap_argv`）跑一个不调模型的探针，
-  证明宿主 home 不可读、白名单外的 env 不继承。
+  证明宿主 home 不可读、白名单外的 env 不继承；
+- **S7b 工具白名单**（人工裁决 B2）：`allowlist_policy` 给定时，把自检报告里的 `allowlist`
+  回显交给 `dsh_allowlist.verify_echo` 判（插件真的激活了 / 清单逐字一致 / 有效面与可见面
+  分区一致 / **一次真 deny 取证**）。判据只有那一份实现，本模块只做接线；不给策略时
+  行为与 S6 完全一致（既有判据不换口径）。
 
 边界（不声称）：
 - **不检查** `/proc/<pid>/environ`：同 uid 下它仍可读出 key（P0 实测 `LEAK:/proc/6/environ`），
@@ -27,6 +31,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from . import dsh_allowlist as AL
 from . import dsh_assets as A
 from . import dsh_process as DP
 
@@ -168,7 +173,8 @@ async def _read_report_async(path: Path,
 def _evaluate(layout: Any, path: Path, facts: dict[str, Any], *,
               expected_mode: str, expected_preset: str,
               expected_nonce: str | None = None,
-              expected_attempt_key: str | None = None) -> SelfCheckResult:
+              expected_attempt_key: str | None = None,
+              allowlist_policy: "AL.AllowlistPolicy | None" = None) -> SelfCheckResult:
     """把准入快照判成结论（B2/B3/DS-09 的唯一判据实现；sync/async 入口共用）。
 
     `expected_nonce`/`expected_attempt_key` 给定时必须与报告逐字一致：没有这层身份 join，
@@ -219,6 +225,13 @@ def _evaluate(layout: Any, path: Path, facts: dict[str, Any], *,
                         % (home, str(expected_home)))
     problems += ["DS-09：%s" % problem for problem in verify_home(expected_home)]
 
+    # S7b 工具白名单：判据只在 `dsh_allowlist.verify_echo` 一份（红线 8），这里只做接线。
+    # 为什么必须在准入里判：白名单插件加载失败同样只出 `warning: … did not activate`，
+    # 不阻断启动 ⇒ "进程起来了 / env 里有配置"都不能证明清单外调用真的被拒（B2 的同一纪律）。
+    if allowlist_policy is not None:
+        problems += list(AL.verify_echo(facts.get(AL.REPORT_KEY), allowlist_policy,
+                                        tool_names=facts.get("toolNames")))
+
     return SelfCheckResult(path=path, facts=facts, problems=tuple(problems))
 
 
@@ -226,7 +239,8 @@ def verify_session(layout: Any, *, expected_mode: str = A.DEFAULT_SANDBOX_MODE,
                    expected_preset: str = A.DEFAULT_PRESET,
                    timeout_s: float = 5.0,
                    expected_nonce: str | None = None,
-                   expected_attempt_key: str | None = None) -> SelfCheckResult:
+                   expected_attempt_key: str | None = None,
+                   allowlist_policy: "AL.AllowlistPolicy | None" = None) -> SelfCheckResult:
     """B2/B3/DS-09：把 `selfcheck.json` 的运行时事实判成准入结论。
 
     参数期望值默认取 `dsh_assets` 的钉死值（不抄字面量）。缺报告/坏 JSON/超时/任一不一致
@@ -242,14 +256,16 @@ def verify_session(layout: Any, *, expected_mode: str = A.DEFAULT_SANDBOX_MODE,
     return _evaluate(layout, path, facts, expected_mode=expected_mode,
                      expected_preset=expected_preset,
                      expected_nonce=expected_nonce,
-                     expected_attempt_key=expected_attempt_key)
+                     expected_attempt_key=expected_attempt_key,
+                     allowlist_policy=allowlist_policy)
 
 
 async def averify_session(layout: Any, *, expected_mode: str = A.DEFAULT_SANDBOX_MODE,
                           expected_preset: str = A.DEFAULT_PRESET,
                           timeout_s: float = 5.0,
                           expected_nonce: str | None = None,
-                          expected_attempt_key: str | None = None) -> SelfCheckResult:
+                          expected_attempt_key: str | None = None,
+                          allowlist_policy: "AL.AllowlistPolicy | None" = None) -> SelfCheckResult:
     """`verify_session` 的 async 版：给 `dsh_process.run_attempt(on_start=...)` 用（不阻塞收帧）。"""
     path = Path(layout.selfcheck_file())
     facts, error = await _read_report_async(path, timeout_s)
@@ -258,7 +274,8 @@ async def averify_session(layout: Any, *, expected_mode: str = A.DEFAULT_SANDBOX
     return _evaluate(layout, path, facts, expected_mode=expected_mode,
                      expected_preset=expected_preset,
                      expected_nonce=expected_nonce,
-                     expected_attempt_key=expected_attempt_key)
+                     expected_attempt_key=expected_attempt_key,
+                     allowlist_policy=allowlist_policy)
 
 
 # ------------------------------------------------------------------ DS-10：包裹自证

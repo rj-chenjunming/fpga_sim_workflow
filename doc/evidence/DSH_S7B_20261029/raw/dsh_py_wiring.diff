@@ -1,0 +1,175 @@
+--- a/loop/host/agent_backends/dsh.py
++++ b/loop/host/agent_backends/dsh.py
+@@ -37,6 +37,7 @@
+ from host import model_provider as MP
+ from host import paths as P
+ from . import BackendConfigurationError, BackendUnavailable
++from . import dsh_allowlist as AL
+ from . import dsh_assets as A
+ from . import dsh_process as DP
+ from . import dsh_protocol as DPR
+@@ -45,13 +46,17 @@
+ 
+ #: 配置允许字段（多一个就拒绝：避免"悄悄接受未实现开关"）
+ CONFIG_KEYS = frozenset({"enabled", "version", "node", "bin", "bin_sha256", "profile",
+-                         "timeout_s", "stop_grace_s", "wrap", "patches", "api_key_env"})
++                         "timeout_s", "stop_grace_s", "wrap", "patches", "api_key_env",
++                         "tool_allowlist"})
+ SETTINGS_FILE = P.LOOP_DIR / "SETTINGS.yaml"
+ 
+ #: 提交插件（B1：结构化结果的唯一通道；入口 id 由 `dsh_assets` 写进 patch 的 insert）
+ SUBMIT_PLUGIN = A.Plugin("s2-submit-result", "submit_result.mjs")
+ #: 启动自检插件（B2/B3；必须排在提交插件**之后**，deferred 快照才看得到 `submit_result`）
+ SELFCHECK_PLUGIN = A.Plugin("s2-selfcheck", "selfcheck.mjs")
++#: S7b 工具白名单插件（裁决 B2；dispatch 钩子 + 收窄 agent 可见面）。
++#: 只挂**一个**插件：开关关 ⇒ 不挂（= S6 现状），不靠插件内部"什么都不做"。
++ALLOWLIST_PLUGIN = A.Plugin(AL.PLUGIN_ID, AL.PLUGIN_FILE)
+ #: 自检预算：插件 deferred 快照在 boot 后立刻写，20 s 是"给慢机留量"，超时即显式失败
+ SELFCHECK_TIMEOUT_S = 20.0
+ #: 生产 attempt 的钉死档位（B3/DS-09：`mode` + `defaultPreset` 双钉 workspace-write）。
+@@ -93,6 +98,8 @@
+     wrap: bool = True
+     patches: tuple[Path, ...] = ()
+     api_key_env: str = "PUBLIC_API_KEY"
++    #: S7b 工具白名单策略（缺省 = 未启用 = S6 现状；判据全在 `dsh_allowlist`，本类只持有）
++    tool_allowlist: AL.AllowlistPolicy = AL.DISABLED_POLICY
+ 
+     def verify(self, *, wrap_required: bool = True) -> None:
+         """准入：enabled + 文件在 + 指纹匹配 + 版本声明 + **bwrap 包裹**。
+@@ -142,6 +149,11 @@
+         return raw[name]
+ 
+     patches = tuple(Path(p) for p in (raw.get("patches") or ()))
++    try:
++        tool_allowlist = AL.policy_from_settings(raw.get("tool_allowlist"))
++    except AL.AllowlistConfigError as exc:
++        raise BackendConfigurationError(
++            "agent_runtime.dsh.tool_allowlist 非法：%s" % exc) from None
+     config = DshConfig(
+         enabled=bool(_req("enabled")), version=str(_req("version")),
+         node=Path(str(_req("node"))), bin=Path(str(_req("bin"))),
+@@ -149,7 +161,8 @@
+         timeout_s=float(raw.get("timeout_s") or 600.0),
+         stop_grace_s=float(raw.get("stop_grace_s") or 5.0),
+         wrap=bool(raw.get("wrap", True)), patches=patches,
+-        api_key_env=str(raw.get("api_key_env") or "PUBLIC_API_KEY"))
++        api_key_env=str(raw.get("api_key_env") or "PUBLIC_API_KEY"),
++        tool_allowlist=tool_allowlist)
+     return config
+ 
+ 
+@@ -186,10 +199,31 @@
+                "profile": config.profile,
+                "pins": {"sandbox_mode": ATTEMPT_PINS.sandbox_mode,
+                         "default_preset": ATTEMPT_PINS.default_preset}}
++    # S7b：白名单策略进指纹（A2）。**只在启用时**加键 —— 开关关时保持 S6 旧指纹，
++    # 让历史 attempt 记录仍可比；开关一变指纹必变，旧探测不再代表当前运行时。
++    if config.tool_allowlist.enabled:
++        payload["tool_allowlist"] = AL.policy_fingerprint(config.tool_allowlist)
+     blob = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+     return "sha256:" + hashlib.sha256(blob.encode("utf-8")).hexdigest()
+ 
+ 
++def allowlist_record(facts: dict[str, Any], policy: "AL.AllowlistPolicy"
++                     ) -> dict[str, Any] | None:
++    """attempt 记录里白名单的可复核投影（有消费者的最小集；开关关 ⇒ None，不留空字段）。"""
++    if not policy.enabled:
++        return None
++    echo = facts.get(AL.REPORT_KEY)
++    if not isinstance(echo, dict):
++        return None
++    scope = echo.get("agentScope") if isinstance(echo.get("agentScope"), dict) else {}
++    probe = echo.get("probe") if isinstance(echo.get("probe"), dict) else {}
++    return {"enabled": echo.get("enabled"), "allowed": echo.get("allowed"),
++            "effective": echo.get("effective"),
++            "deniedCount": len(echo.get("denied") or []),
++            "agentScope": scope.get("names"), "probeCode": probe.get("code"),
++            "policyFingerprint": AL.policy_fingerprint(policy)}
++
++
+ @dataclass(frozen=True)
+ class StaticSelfcheck:
+     """准入期的 DS-08/DS-09 静态判定结果（不起进程）。`ok` 只由 `problems` 决定。"""
+@@ -236,15 +270,20 @@
+     elif table[0] != pins.sandbox_mode:
+         problems.append("DS-09：preset %r 的沙箱档 %r ≠ 钉死沙箱档 %r（双钉自相矛盾）"
+                         % (pins.default_preset, table[0], pins.sandbox_mode))
++    mounted = [(SUBMIT_PLUGIN, "工具清单里不会有 submit_result")]
++    if config.tool_allowlist.enabled:
++        mounted.append((ALLOWLIST_PLUGIN,
++                        "工具白名单不会生效（清单外调用不会被拒、可见面也不会收窄）"))
++    mounted.append((SELFCHECK_PLUGIN, "启动自检不会回显工具清单/档位"))
+     plugins = []
+-    for plugin in (SUBMIT_PLUGIN, SELFCHECK_PLUGIN):
++    for plugin, consequence in mounted:
+         source = A.PLUGIN_SOURCE_DIR / plugin.filename
+         plugins.append({"entry": plugin.entry_id, "source": str(source),
+                         "present": source.is_file()})
+         if not source.is_file():
+             problems.append(
+                 "DS-08：插件源码缺失 %s（实测表现：`dsh: warning: 1 entry did not activate` "
+-                "不阻断启动，但工具清单里不会有 submit_result）" % source)
++                "不阻断启动，但%s）" % (source, consequence))
+     node_modules = A.node_modules_for(config.bin)
+     if node_modules is None:
+         problems.append(
+@@ -654,6 +693,16 @@
+                 "（cwd.parent=%s，home.parent=%s）" % (root, Path(home).parent))
+         return A.AttemptLayout.under(root)
+ 
++    def _plugins(self) -> tuple[A.Plugin, ...]:
++        """本次 attempt 要挂的插件。顺序固定：提交 → 白名单（启用时）→ 自检。
++
++        为什么自检必须最后：它的 deferred 快照要看到 `submit_result` 工具与
++        `s7ToolAllowlist` 服务（白名单插件 apply 时 provide）；顺序反了自检只会回显 None。
++        """
++        if self._config.tool_allowlist.enabled:
++            return (SUBMIT_PLUGIN, ALLOWLIST_PLUGIN, SELFCHECK_PLUGIN)
++        return (SUBMIT_PLUGIN, SELFCHECK_PLUGIN)
++
+     def _spec(self, request: BackendRequest, *, attempt_key: str,
+               cwd: Path, home: Path) -> DP.AttemptSpec:
+         """attempt 资产物化 + 进程规格。
+@@ -677,7 +726,7 @@
+         assets = A.materialize(layout, pins=ATTEMPT_PINS,
+                                provider=(None if self._diagnostic_unwrapped
+                                          else self._provider_overlay()),
+-                               plugins=(SUBMIT_PLUGIN, SELFCHECK_PLUGIN),
++                               plugins=self._plugins(),
+                                extra_patches=tuple(self._config.patches),
+                                node_modules=A.node_modules_for(self._config.bin))
+         # nonce 是本次 attempt 的一次性身份：插件必须回显，Host 逐字比对
+@@ -698,7 +747,10 @@
+             proxy_env=({} if self._diagnostic_unwrapped else self._proxy_env()),
+             env_extra={A.SELFCHECK_DIR_ENV: str(layout.selfcheck_dir),
+                        A.SELFCHECK_NONCE_ENV: nonce,
+-                       A.ATTEMPT_KEY_ENV: attempt_key},
++                       A.ATTEMPT_KEY_ENV: attempt_key,
++                       # S7b：策略只经 env 传给插件（唯一编码实现 `AL.render_env`；
++                       # 关掉时返回 {}，进程 env 与 S6 逐字相同）
++                       **AL.render_env(self._config.tool_allowlist)},
+             # `input/` 是**授权材料面**：与 patch/插件资产分开（语义不同），同样以 `--ro-bind`
+             # 进包裹 —— 模型只能读材料，不能改材料（attempt 目录也可能落在被 tmpfs 遮蔽的位置）。
+             asset_dirs=(layout.plugin_dir, layout.patch_dir),
+@@ -780,7 +832,9 @@
+                     expected_mode=ATTEMPT_PINS.sandbox_mode,
+                     expected_preset=ATTEMPT_PINS.default_preset,
+                     expected_nonce=expected_nonce,
+-                    expected_attempt_key=expected_attempt)
++                    expected_attempt_key=expected_attempt,
++                    # S7b：白名单回显也进准入（缺回显/无效面/无 deny 取证 ⇒ 显式失败）
++                    allowlist_policy=self._config.tool_allowlist)
+                 result.require_ok()
+                 facts = result.facts
+                 echo = facts.get("presetEcho") if isinstance(facts.get("presetEcho"), dict) else {}
+@@ -791,7 +845,9 @@
+                              "presetEcho": facts.get("presetEcho"),
+                              "pinnedMode": ATTEMPT_PINS.sandbox_mode,
+                              "pinnedPreset": ATTEMPT_PINS.default_preset,
+-                             "echoedPreset": echo.get("preset")}
++                             "echoedPreset": echo.get("preset"),
++                             "toolAllowlist": allowlist_record(
++                                 facts, self._config.tool_allowlist)}
+ 
+         try:
+             outcome = await DP.run_attempt(spec, on_start=on_start)

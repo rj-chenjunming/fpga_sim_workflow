@@ -5465,3 +5465,82 @@ S7 的对象（按优先级）：① **N6 收口 + DS-06 真机**（六节点 6/
 - **不声称业务正确**（Host 只判结构与契约）；**不声称对照收益**（无对照组）。
 - **不声称 DS-06 的"真机换件"**：拒绝矩阵的真机证据沿用 S6 §4 补充证据，本片不重做、不冒充。
 - **不声称 E（内网业务验收）**；未推送；`default_backend` 仍 `agently`。
+
+## 119 S7b 交付：tool-allowlist 暴露面收敛（2026-10-29）
+
+本轮入口：[开工提示词 S7](agents/开工提示词_S7-暴露面收敛与真机收口.md) §4.2；计划
+[2026-10-29-s7-exposure-convergence.md](plans/2026-10-29-s7-exposure-convergence.md) §2-B2/§5/§8-6..8；
+契约沿用 [REV-14](spec/SPEC-REV-14-20261028.md) §3 D4/§4 B2、[SPEC-08](spec/DSH_AGENT_RUNTIME_SPEC.md) §5/§10 D04/§12
+（**未新写替代契约**）；证据档 [`doc/evidence/DSH_S7B_20261029/`](evidence/DSH_S7B_20261029/README.md)（冻结 444 + 目录外 md5）。
+实现 owner：`s7b-allowlist`（插件 + Host 判据 + 用例 + 0-token boot 取证）；Lead 负责 `dsh.py`/`SETTINGS.yaml` 接线、
+真机带模型复核、门/证据/STATUS/提交。**本片无独立复核者**（不声称独立验证）。
+
+### 119.1 结论（三态）
+
+| 项 | 结论 |
+|---|---|
+| 工具面收敛 | **通过（真机，请求体层面）**：引擎发给模型的 `request/header.data.header.tools` = **7 项**（S6 为 26 项） |
+| 越权调用 | **通过（真机）**：`job_list` 被 `tools/pre-execute` deny，`code=TOOL_NOT_ALLOWLISTED` + 可读原因，工具体**未执行** |
+| `submit_result` 仍可用 | **通过（真机 + 旁路）**：真机 attempt 内 `tool/result` 23 条全 `ok`、`isError 0`；旁路 `tools.execute('submit_result')` 返回 `{"accepted":true,"problems":[]}` 且**不写会话日志** |
+| 可回退 | **通过**：`enabled:false` ⇒ 不挂插件、不渲染 env、**不进运行时指纹** ⇒ 与 S6 逐字相同（回退档请求体仍是 26 项，已取证） |
+
+### 119.2 交付物
+
+| 文件 | 变更 | 契约 |
+|---|---|---|
+| `loop/host/agent_backends/dsh_allowlist.py`（新） | **Host 唯一判据（纯函数零 I/O）**：`DEFAULT_ALLOWED`/`ACCEPTED_EXPOSURE`/`DECISION_REJECTED`、`policy_from_settings`、`render_env`、`policy_fingerprint`、`verify_echo` | 裁决 B2；REV-14 D4；红线 8 |
+| `.../dsh_plugin/tool_allowlist.mjs`（新） | `tools/pre-execute` deny（带 `info{name,code,reason}`）+ `agent/created` → `agent.ctx.tools.restrict({allow})` 收窄 agent 可见面 + `ctx.provide('s7ToolAllowlist')` 发布状态 | REV-14 D4 |
+| `.../dsh_plugin/selfcheck.mjs` | 回显 `allowlist`（清单/有效面/被拒面/`unknownAllowed`/`configError`/`agentScope`）+ 两份取证（`probe` 必被拒 / `allowedProbe` 必不被白名单拒），回显纳入"就绪" | DS-08 |
+| `loop/host/agent_backends/dsh_selfcheck.py` | 新增 `allowlist_policy=None`：非空时 `problems += verify_echo(...)`；**不传时与 S6 逐字相同** | DS-08 |
+| `loop/host/agent_backends/dsh.py`（Lead 接线） | `CONFIG_KEYS` 加 `tool_allowlist`；`DshConfig.tool_allowlist` 默认 `DISABLED_POLICY`；`_plugins()` 顺序 `SUBMIT→ALLOWLIST→SELFCHECK`；`env_extra` 展开 `**render_env()`（关掉 `{}`）；`static_selfcheck` 并入 allowlist 插件（缺源码=不起进程就失败）；`runtime_fingerprint` **只在 enabled 时**加键（A2）；`on_start` 传策略 + `allowlist_record()` 进 attempt 记录 | 裁决 B2；A2 |
+| `loop/SETTINGS.yaml`（Lead 接线） | `dsh.tool_allowlist: {enabled: true, accept_bash: true, enforce_visibility: true}` | 裁决 B2 |
+| `loop/tests/test_dsh_tool_allowlist.py`（新 61 例） | Host 判据 37 + 真内核离线派发 12 + 真 dsh 3 + 自检接线 3 + 常量漂移 1 + 配置矩阵 | 各条 TDD |
+
+### 119.3 真机证据（关键：**请求体层面**，不是推断）
+
+**带模型 1 次**（`RUN-20261029-103000/N6/1`，production wiring）：`completed`、wall **164.266 s**、
+usage 168/550/83968/84686、`validation.ok=True`、submit accepted、`execution_state=stopped`；
+**发给模型的工具 = 7 项**（`bash, edit, glob, grep, read, submit_result, write`）；
+模型实际调用 `bash`×13 / `read`×9 / `submit_result`×1，`tool/result` 23 条 **`isError` 0**；
+`n6_apply = applied`（⇒ `submit_result` 收窄后真的可用；顺带把 DS-06 端到端一次跑通，见 §118.3 的限定由此可解）。
+
+自检回显（同一次 attempt）：`allowed`=7、`effective`=7、`agentScope.names`=7、`denied`=**19 项**、
+`unknownAllowed=[]`、`toolNames`（**全局注册表**）=26。
+
+**无模型预算的 boot 取证**（`s7b-allowlist`，0 token，`MISSING_CREDENTIAL` 发生在 boot/插件/agent 创建/请求组装之后）：
+`boot2_echo`（收窄开）与 `boot3_echo`（收窄关）逐字对比；`boot{2,3}_request_tools` 给出 **7 vs 26**；
+`submit_result_dispatch` 给出旁路派发返回 + 该 boot 的 session log **无 `tool/result`**（不污染提交记账）。
+
+### 119.4 收口门（干净 S7b 树：S7c 改动 `git stash` 后跑；数字从输出复制）
+
+| 门 | 结果 |
+|---|---|
+| 单测（可写数据根） | `3 failed, 1716 passed, 1 warning, 137 errors in 401.43s`；3 failed 全部是既有 `env_layer`；137 errors = 浏览器缺 Chromium |
+| kb 自测 + env layer | `PASS=10` / `PASS=9` / `PASS=28`，`FAIL=0`；env_layer `3 passed`；**原 ENV_ROOT 零写入** |
+| 端到端（drill） | `phase 1–5 + 4b` 全 `rc=0`，`=> ALL PASS` |
+| 文档门 | `65 passed in 2.47s` |
+| 浏览器门 | **未跑**：S7b 未改 `loop/web/**` 与界面字段 |
+
+差量对账：S7a 树 `1655 passed` → S7b 树 **`1716 passed`**（**+61 = `test_dsh_tool_allowlist.py`**）；
+`failed 3=3`、`errors 137=137`、`warnings 1=1`，**零新增失败**。
+
+### 119.5 纪律核对
+
+- **写权**：`dsh.py`/`SETTINGS.yaml` 只由 Lead 改；`kb/**` 零改动；`doc/evidence/**` 只增。
+- **唯一判据（红线 8）**：允/拒清单、指纹、回显校验只在 `dsh_allowlist` 一处；插件只执行判据；记录/界面只消费。
+- **A2**：开关 ON/OFF 指纹必然不同（enabled 才加键），旧记录只读兼容。
+- **失败显式**：清单写不存在的工具名（`unknownAllowed` 非空）/ 收窄失败 / 回显缺失 ⇒ **准入显式失败**，
+  不静默退化、不静默少放行。
+- **真实调用**：本片 1 次带模型 attempt（额度 2 内）+ 3 次 boot（0 token）；usage 已记账。
+- **独立复核**：**无**。
+
+### 119.6 未做 / 不声称
+
+- **不声称隔离**：白名单是"准入 + 显式拒绝"，不代替效果隔离（REV-13 §5.4 / REV-14 A8）；bwrap/双钉未放宽，未给 `danger-full-access`。
+- **`bash` 保留 = 已接受暴露面**（裁决 B2）：能读 `/proc/self/environ`、workspace 内任意读写、宿主有网能联网；白名单**不收窄 bash 的效果**。
+- **全局注册表仍是 26 项**：引擎明确拒绝全局 `tools.restrict`（"a context-global restriction would mask every agent"）⇒
+  收敛的是 **agent 作用域面**（实测 = 清单）；自检同时回显两者，不把"作用域收敛"写成"全局收敛"。
+- **裁决措辞与 harness 的差异已登记**（计划 §8-6..8）：`list`/`apply_patch` 在 0.2.1-rc.2 不存在 ⇒ 按真实 7 项落地；
+  `working_directory` 继续拒（收窄档下模型不可见）。
+- **`enforce_visibility` 的 fail-closed 代价**：收窄失败 ⇒ 准入失败、attempt 被挡（宁可挡也不静默退化）。
+- 未推送；`default_backend` 仍 `agently`。

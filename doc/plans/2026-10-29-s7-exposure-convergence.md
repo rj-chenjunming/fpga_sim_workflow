@@ -102,3 +102,16 @@
 
 §117 是交接节，本窗口起递增：**S7a = §118、S7b = §119、S7c = §120、S7d = §121**（实际使用节号以 STATUS 为准，
 若某片合并则顺延并在 STATUS 登记差异，不静默改口径）。
+
+## 10 S7b 落地后补登的差异（照实登记，不改裁决文字）
+
+6. **裁决清单里的 `list` / `apply_patch` 在 dsh `0.2.1-rc.2` 的 26 项工具里不存在**
+   （`apply_patch` 属未挂载的 `dsh-tool-str-replace-editor`）。实际落地按真实 7 项：
+   `read/write/edit/glob/grep/bash/submit_result`；目录列举由 `glob`/`bash` 承担。
+   `dsh_allowlist.verify_echo` 的 `unknownAllowed` 判据让"清单里写不存在的名字"⇒ **准入显式失败**（不静默忽略）。
+7. **`working_directory` 继续拒**（不在裁决清单，未获授权）：`enforce_visibility=true` 时模型**看不到**它
+   （工具描述里"or change it with cd"也随之不可见）；只有回退档（deny-only）才会看到并可能浪费一个回合。
+   ——这是**已接受的代价**，不自行加进允清单。
+8. **全局 `toolNames` 收敛不成立**：引擎明确拒绝全局 `tools.restrict`
+   （`dsh-tools/lib/index.js`：`tools.restrict() requires a scoped context …`）
+   ⇒ 可收敛的是 **agent 作用域面**；自检同时回显"全局 26 项"与"agent 有效面 7 项"，两者都如实记录。

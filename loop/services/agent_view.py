@@ -50,13 +50,14 @@ GUARDIAN_IDLE_SUMMARY = "待命：本次尚未进入 N11"
 
 
 class _NodeState:
-    __slots__ = ("started_ts", "finished_ts", "last_ts", "last_kind", "last_status",
+    __slots__ = ("started_ts", "finished_ts", "last_ts", "last_seq", "last_kind", "last_status",
                  "failed", "failed_message", "mode")
 
     def __init__(self) -> None:
         self.started_ts: float | None = None
         self.finished_ts: float | None = None
         self.last_ts: float | None = None
+        self.last_seq: int = 0
         self.last_kind: str | None = None
         self.last_status: str | None = None
         self.failed = False
@@ -95,6 +96,9 @@ def _collect(events: list[dict[str, Any]]) -> dict[str, _NodeState]:
             state.failed_message = detail.get("message")
         if kind in ("node_started", "node_finished", "node_failed") and isinstance(ts, (int, float)):
             state.last_ts = float(ts)
+            # 事件流顺序（`seq`）：同一 `ts` 内的次序（drill 固定 `LOOP_NOW` ⇒ ts 全相同，
+            # "最近活跃"只能靠它判；ts 不同时不参与比较）。
+            state.last_seq = int(event.get("seq") or 0)
             state.last_kind = str(kind)
             state.last_status = str(status) if status is not None else None
         mode = detail.get("mode")
@@ -107,7 +111,12 @@ def _choose(nodes: list[str], states: dict[str, _NodeState]) -> str:
     present = [n for n in nodes if n in states]
     if not present:
         return nodes[0]
-    return max(present, key=lambda n: states[n].last_ts or 0.0)
+    # 「最近活跃节点」：先比 `last_ts`，**同一 ts 再比事件流 `seq`**（tie-break）。
+    # 为什么需要 tie-break：S8d 事件 `ts` 改走注入时钟后，drill 固定 `LOOP_NOW` 的 run 里
+    # 同一 run 的所有事件 ts 完全相同 ⇒ 只按 ts 取 max 会退化成"按声明的节点顺序取第一个"，
+    # 卡片会指着旧节点。`seq` 是事件流的真实先后（不是新判据，只是同 ts 内的次序）。
+    # ts 不同时行为与改造前逐字相同。
+    return max(present, key=lambda n: (states[n].last_ts or 0.0, states[n].last_seq or 0))
 
 
 def _status(node: str, state: _NodeState | None, pending_interrupt: dict[str, Any] | None,
@@ -247,6 +256,12 @@ def _summary(node: str, run_dir: Path | None) -> tuple[str, list[str]]:
 #: 无进展告警阈值（秒）：**单一来源**，界面只显示服务端下发的 `threshold_s`，不自己带数。
 NO_PROGRESS_THRESHOLD_S = 600
 
+#: 时间不同源的原因枚举（SPEC-REV-16 §4「事件时间源（S8d 收口）」）：
+#: 事件/记录的 `ts` 晚于注入 `now` ⇒ 两个时钟不同源 ⇒ 差值类字段**不可算**。
+#: 受影响的 `silence_s`/`last_event.age_s` 取 `null` 并带本原因；`no_progress` 落 `unknown`，
+#: **不得**夹成 0 冒充"真的没有进展"，也**不得**告警（`warn` 只由同源 now + 显式阈值产生）。
+TS_SOURCE_MISMATCH = "ts_source_mismatch"
+
 #: 受管元数据里的 session log 相对引用键（S5 落账前**没有生产者** ⇒ 压缩次数恒 `unknown`）。
 #: 只接受相对 run_dir 的路径；绝对路径 / `..` / 符号链接一律拒绝（不开放任意路径读取）。
 SESSION_LOG_REF_KEY = "session_log_ref"
@@ -266,16 +281,37 @@ def _node_events(node: str, events: list[dict[str, Any]]) -> list[dict[str, Any]
             or str(event.get("node", "")).startswith(node + "_")]
 
 
+def _ts_ahead_of_now(ts: float | None, now: float | None) -> bool:
+    """`ts` 晚于注入 `now` ⇒ 两个时钟不同源（SPEC-REV-16 §4 S8d 的**唯一判据**）。
+
+    为什么只有这一条：不同源时唯一能**直接判别**的方向就是"事件时间落在注入时钟的未来"
+    （drill 固定 `LOOP_NOW` 在过去、而旧实现用墙钟写事件时就是这个形状）。
+    反方向（事件 ts 远早于 now）与"真的很久没有进展"在数据上不可区分 ⇒ **不猜**，
+    按"未知保持未知"处理（见 `_no_progress` 的 `unknown` 分支，不臆造不同源/不臆造告警）。
+    """
+    return ts is not None and now is not None and ts > now
+
+
 def _last_event(node_events: list[dict[str, Any]], now: float | None) -> dict[str, Any] | None:
-    """事件流里该节点的**最后一条**事件（任意 kind，含 warning），带年龄。"""
+    """事件流里该节点的**最后一条**事件（任意 kind，含 warning），带年龄。
+
+    `age_s`（= 距读取的秒数）与 `ts` 必须**同源**才算：事件 `ts` 晚于注入 `now`（不同源）
+    ⇒ `age_s=null` + `unavailable_reason="ts_source_mismatch"`，**不得**夹成 0；
+    `ts` 本身照实下发（时间戳是真的，只是"年龄"不可算）。
+    """
     if not node_events:
         return None
     event = node_events[-1]
     ts = _num(event.get("ts"))
     age = None
+    reason = None
     if ts is not None and now is not None:
-        age = max(0, int(float(now) - ts))
-    return {"kind": event.get("kind"), "status": event.get("status"), "ts": ts, "age_s": age}
+        if _ts_ahead_of_now(ts, now):
+            reason = TS_SOURCE_MISMATCH
+        else:
+            age = max(0, int(float(now) - ts))  # 防御：同源时差值为正，不会用到夹紧
+    return {"kind": event.get("kind"), "status": event.get("status"), "ts": ts,
+            "age_s": age, "unavailable_reason": reason}
 
 
 def _result_ts(result: dict[str, Any] | None) -> float | None:
@@ -307,10 +343,15 @@ def _last_error(node_events: list[dict[str, Any]], result: dict[str, Any] | None
 
 
 def _silence(now: float | None, last_event: dict[str, Any] | None,
-             result: dict[str, Any] | None) -> tuple[int | None, float | None]:
-    """`(silence_s, t_last)`：`t_last = max(最后事件 ts, 最后结果 ts)`；缺哪个用哪个。"""
+             result: dict[str, Any] | None) -> tuple[int | None, float | None, bool]:
+    """`(silence_s, t_last, 不同源?)`：`t_last = max(最后事件 ts, 最后结果 ts)`；缺哪个用哪个。
+
+    同源（事件 `ts` 与投影 `now` 都经时间唯一入口）时差值**自然非负**，`max(0, …)` 只是
+    防御（浮点/时钟微调），**不再**是掩盖不同源的手段：`t_last` 晚于 `now` 时直接返回
+    `silence_s=None` + 不同源标记，由 `_no_progress` 落 `unknown`（不告警、不冒充 0）。
+    """
     if now is None:
-        return None, None
+        return None, None, False
     candidates = []
     if last_event is not None and last_event.get("ts") is not None:
         candidates.append(last_event["ts"])
@@ -318,22 +359,33 @@ def _silence(now: float | None, last_event: dict[str, Any] | None,
     if result_ts is not None:
         candidates.append(result_ts)
     if not candidates:
-        return None, None
+        return None, None, False
     t_last = max(candidates)
-    return max(0, int(float(now) - t_last)), t_last
+    if _ts_ahead_of_now(t_last, now):
+        return None, t_last, True
+    return max(0, int(float(now) - t_last)), t_last, False
 
 
 def _no_progress(status: str, now: float | None, silence_s: int | None,
-                 t_last: float | None) -> dict[str, Any]:
+                 t_last: float | None, mismatch: bool = False) -> dict[str, Any]:
     """无进展**只告警**（体检表 §2 裁决 #12）：不收敛、不终止、不重发。
 
     `n/a` 也给 `reason`（说明为什么不适用的状态），界面直接显示，不再自己判。
+
+    `OBS-03`：`warn` 只由"**同源** `now` + 显式阈值"产生 —— `mismatch=True`（事件 `ts`
+    晚于注入 `now`，两个时钟不同源）时一律 `unknown` + `unavailable_reason`，
+    即使差值"看起来"早就越过阈值也**不得**告警。
     """
     threshold = NO_PROGRESS_THRESHOLD_S
-    cell = {"since_ts": t_last, "silence_s": silence_s, "threshold_s": threshold}
+    cell = {"since_ts": t_last, "silence_s": silence_s, "threshold_s": threshold,
+            "unavailable_reason": TS_SOURCE_MISMATCH if mismatch else None}
     if status != "working":
         return {"state": "n/a", **cell,
                 "reason": f"状态不是 working（当前 {status}），不做无进展判定"}
+    if mismatch:
+        return {"state": "unknown", **cell,
+                "reason": ("事件时间与注入时钟不同源（事件 ts 晚于注入 now），"
+                           "静默时长不可算 ⇒ 不判定无进展、不告警")}
     if now is None:
         return {"state": "unknown", **cell,
                 "reason": "没有注入 now，无法判定无进展（不使用墙钟）"}
@@ -424,14 +476,19 @@ def progress_view(
     参数：
     - `events`：ProgressLog 事件（ts 为 epoch 秒）；`request`/`result`：`agent_control.read_view`
       选中的封存记录（或 `None`）；`live`：活跃会话视图（只取 `session_id`）；
-    - `now`：**Host 注入**的 epoch 秒（`host/paths.py::now_iso` 唯一入口）。`None` ⇒ 时间类字段保持未知；
+    - `now`：**Host 注入**的 epoch 秒（`host/paths.py::now_epoch` —— `now_iso` 的唯一 epoch
+      形态；调用方是 `contracts.now_epoch()`）。`None` ⇒ 时间类字段保持未知；
     - `session_log`：Host 进程内已知的 session log 路径；缺省时用记录里的 `session_log_ref`。
 
     返回字段（契约冻结；`None` = 未知，不是 0/空完成）：
-    `identity{run_id,node,attempt,session_id}`、`state`、`current_action`、`last_event`、
+    `identity{run_id,node,attempt,session_id}`、`state`、`current_action`、
+    `last_event{kind,status,ts,age_s,unavailable_reason}`、
     `last_tool`（**恒 `None`**：工具事件尚无 Host 落账方，S5 接入后才有来源，不猜近似值）、
-    `last_error`、`elapsed_s`、`silence_s`、`no_progress{state,since_ts,silence_s,threshold_s,reason}`、
+    `last_error`、`elapsed_s`、`silence_s`、
+    `no_progress{state,since_ts,silence_s,threshold_s,reason,unavailable_reason}`、
     `compaction{source,count,error,reason,path}`、`execution`、`authority="projection"`。
+    `unavailable_reason` 是 §4 S8d 的**不同源**说明字段（`null` = 可算；目前唯一取值
+    `"ts_source_mismatch"`），只解释"为什么这个差值类字段是 `null`"，不是新判据。
 
     **附加可读字段**（`compaction.reason`、`no_progress.reason` 等）非契约必需：只用于给人解释
     "为什么是 unknown"，**消费方不得据此判定完成/失败/状态**（判据仍是 §2.1/§3 的 state 与阈值）。
@@ -442,9 +499,12 @@ def progress_view(
     本函数只按传入记录填 `identity`/`last_error`/`silence_s`/`compaction`。
     没有记录（旧 run/未开始）⇒ 相关字段保持 `None`（诚实值，不回填历史）。
 
-    时间源口径（契约 §4，Lead 2026-10-28 裁决）：事件 `ts` 由 `host.progress.ProgressLog` 写入
-    （真实运行 = 系统时钟）；`now` 只来自注入入口。两者**不同源**时（drill 固定了 `LOOP_NOW`）
-    差值夹到 0、不得因此产生假告警；真实运行不注入时钟，两者同源。
+    时间源口径（契约 §4「事件时间源（S8d 收口）」，2026-10-29）：
+    事件 `ts` 由 `host.progress.ProgressLog` 经 `host/paths.py::now_epoch()` 写入，
+    与投影 `now`（`contracts.now_epoch()` → 同一入口）**同源** ⇒ 差值自然非负。
+    冷读**既有/历史**事件时若 `ts` 晚于注入 `now`（不同源可直接判别）⇒ 受影响的
+    `silence_s`/`last_event.age_s` 取 `null` + `unavailable_reason="ts_source_mismatch"`，
+    `no_progress` 落 `unknown` 且**不告警**（不夹 0 冒充"真的没有进展"，不回填历史）。
     """
     states = _collect(events)
     state = states.get(node)
@@ -456,7 +516,7 @@ def progress_view(
     if state is not None and state.last_kind:
         current_action = {"kind": state.last_kind, "status": state.last_status,
                           "ts": _num(state.last_ts)}
-    silence_s, t_last = _silence(now, last_event, result)
+    silence_s, t_last, mismatch = _silence(now, last_event, result)
 
     request_record = request if isinstance(request, dict) else None
     result_record = result if isinstance(result, dict) else None
@@ -490,7 +550,7 @@ def progress_view(
         "last_error": _last_error(node_events, result_record),
         "elapsed_s": _elapsed(state, status, now),
         "silence_s": silence_s,
-        "no_progress": _no_progress(status, now, silence_s, t_last),
+        "no_progress": _no_progress(status, now, silence_s, t_last, mismatch),
         "compaction": _compaction_view(
             _session_log_path(run_dir, request_record, result_record, session_log)),
         "execution": _execution(state, status),

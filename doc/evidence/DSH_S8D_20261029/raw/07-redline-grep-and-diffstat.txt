@@ -1,0 +1,26 @@
+$ grep -n "time.time()" loop/host/progress.py
+[exit=1] (1 = 0 命中)
+
+$ grep -c "time.time()" loop/host/progress.py
+0
+
+$ grep -n "^import time\|^from time" loop/host/progress.py
+[exit=1] (1 = 0 命中)
+
+$ grep -n "now_epoch" loop/host/progress.py
+12:**同源**——默认值一律经 `host/paths.py::now_epoch()`（`LOOP_NOW`/`KB_NOW`/系统时钟），
+112:                # 事件时间**必须**经时间唯一入口取（`host/paths.py::now_epoch`：优先
+116:                ts=P.now_epoch() if ts is None else ts,
+
+$ git diff --stat
+ loop/host/progress.py                    |  13 +++-
+ loop/services/agent_view.py              | 100 ++++++++++++++++++++++++-------
+ loop/tests/test_agent_view_projection.py |  30 +++++++---
+ 3 files changed, 114 insertions(+), 29 deletions(-)
+
+$ git status --short
+ M loop/host/progress.py
+ M loop/services/agent_view.py
+ M loop/tests/test_agent_view_projection.py
+?? doc/evidence/DSH_S8D_20261029/
+?? loop/tests/test_progress_ts_source.py

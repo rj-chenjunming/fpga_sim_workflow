@@ -1,0 +1,253 @@
+...FFF.FFFFFF.FFF                                                        [100%]
+=================================== FAILURES ===================================
+_________________ test_new_event_ts_comes_from_injected_clock __________________
+
+tmp_path = PosixPath('/tmp/pytest-of-chenjunming/pytest-0/test_new_event_ts_comes_from_i0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f5000adb050>
+
+    def test_new_event_ts_comes_from_injected_clock(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """新契约（§4 S8d）：事件 `ts` 必须经 `now_epoch()` ⇒ drill 下等于注入时刻。"""
+        monkeypatch.setenv("LOOP_NOW", DRILL_NOW)
+        injected = P.now_epoch()
+        log = ProgressLog(tmp_path / "events", RUN_ID)
+    
+        event = log.append("node_started", node=NODE, status="running")
+    
+>       assert event.ts == injected, "事件 ts 必须是注入时钟（同源），不是墙钟"
+E       AssertionError: 事件 ts 必须是注入时钟（同源），不是墙钟
+E       assert 1793254295.4564323 == 1793160000.0
+E        +  where 1793254295.4564323 = Event(seq=1, ts=1793254295.4564323, run_id='RUN-20261028-120000', node='N6', kind='node_started', status='running', detail={}, refs=[], provisional=False).ts
+
+tests/test_progress_ts_source.py:145: AssertionError
+________________ test_new_event_ts_follows_injected_clock_moves ________________
+
+tmp_path = PosixPath('/tmp/pytest-of-chenjunming/pytest-0/test_new_event_ts_follows_inje0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f5000ad1910>
+
+    def test_new_event_ts_follows_injected_clock_moves(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """注入时钟前进 ⇒ 后写的事件 `ts` 跟着前进（不是一次性冻结的常量）。"""
+        monkeypatch.setenv("LOOP_NOW", DRILL_NOW)
+        log = ProgressLog(tmp_path / "events", RUN_ID)
+        first = log.append("node_started", node=NODE, status="running", ts=None)
+        later_now = _advance(monkeypatch, 90)
+        second = log.append("job_progress", node=NODE, ts=None)
+>       assert first.ts == _drill_now()
+E       AssertionError: assert 1793254295.50115 == 1793160000.0
+E        +  where 1793254295.50115 = Event(seq=1, ts=1793254295.50115, run_id='RUN-20261028-120000', node='N6', kind='node_started', status='running', detail={}, refs=[], provisional=False).ts
+E        +  and   1793160000.0 = _drill_now()
+
+tests/test_progress_ts_source.py:158: AssertionError
+______________ test_new_progress_module_has_no_direct_wall_clock _______________
+
+    def test_new_progress_module_has_no_direct_wall_clock() -> None:
+        """红线 7 的**结构断言**：`host/progress.py` 与投影层都不得直接取墙钟。
+    
+        与 `grep "time.time()" loop/host/progress.py` 等价（交付要求该 grep 归零）；
+        写成用例是为了让"有人日后加回墙钟"立刻变红。
+        """
+        root = Path(__file__).resolve().parents[1]
+        progress_src = (root / "host" / "progress.py").read_text(encoding="utf-8")
+        agent_view_src = (root / "services" / "agent_view.py").read_text(encoding="utf-8")
+>       assert "time.time()" not in progress_src
+E       assert 'time.time()' not in '"""稳定应用事件投影...hs", "os"]\n'
+E         
+E         'time.time()' is contained here:
+E                  ts=time.time() if ts is None else ts,
+E         ?           +++++++++++
+E                           run_id=self.run_id,
+E                           node=node,
+E                           kind=kind,...
+E         
+E         ...Full output truncated (47 lines hidden), use '-vv' to show
+
+tests/test_progress_ts_source.py:172: AssertionError
+__________ test_new_drill_silence_is_naturally_nonnegative_and_warns ___________
+
+tmp_path = PosixPath('/tmp/pytest-of-chenjunming/pytest-0/test_new_drill_silence_is_natu0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f50007c7510>
+
+    def test_new_drill_silence_is_naturally_nonnegative_and_warns(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """drill 同源后 `silence_s` **自然非负**：能真的数出 700 秒并越过阈值告警。
+    
+        这条是"不再靠 `max(0, …)`"的证据：700 是算出来的真值，不是夹出来的。
+        """
+        monkeypatch.setenv("LOOP_NOW", DRILL_NOW)
+        log = ProgressLog(tmp_path / "events", RUN_ID)
+        log.append("node_started", node=NODE, status="running")
+    
+        same = progress_view(NODE, events=log.read(), now=P.now_epoch())
+        assert same["silence_s"] == 0
+        assert same["no_progress"]["state"] == "ok"
+>       assert same["no_progress"]["unavailable_reason"] is None
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'unavailable_reason'
+
+tests/test_progress_ts_source.py:207: KeyError
+____________ test_new_mismatch_yields_null_with_reason_and_no_warn _____________
+
+    def test_new_mismatch_yields_null_with_reason_and_no_warn() -> None:
+        """不同源（`ts > now`）⇒ 受影响字段 `null` + `unavailable_reason`，**不告警**。
+    
+        契约 §4 第二条：不得夹成 0 冒充"真的没有进展"。
+        """
+        now = 1_800_000_000.0
+        ahead = now + 500.0
+        progress = progress_view(NODE, events=[_ev(1, ahead, NODE, "node_started", "running")],
+                                now=now)
+    
+        assert progress["state"] == "working", "投影不改状态（告警/未知都不是状态）"
+>       assert progress["silence_s"] is None, "不得夹成 0"
+E       AssertionError: 不得夹成 0
+E       assert 0 is None
+
+tests/test_progress_ts_source.py:232: AssertionError
+_______________ test_new_mismatch_never_warns_even_for_huge_skew _______________
+
+    def test_new_mismatch_never_warns_even_for_huge_skew() -> None:
+        """OBS-03：`warn` 只由"同源 now + 显式阈值"产生；差得再离谱也不得告警。"""
+        now = 1_800_000_000.0
+        progress = progress_view(
+            NODE, events=[_ev(1, now + 10 ** 9, NODE, "node_started", "running")], now=now)
+        assert progress["no_progress"]["state"] != "warn"
+>       assert progress["no_progress"]["state"] == "unknown"
+E       AssertionError: assert 'ok' == 'unknown'
+E         
+E         - unknown
+E         + ok
+
+tests/test_progress_ts_source.py:251: AssertionError
+________ test_new_same_source_boundary_ts_equal_now_is_zero_not_unknown ________
+
+    def test_new_same_source_boundary_ts_equal_now_is_zero_not_unknown() -> None:
+        """边界：`ts == now` 是**同源**（差 0），不得误判成不同源（判据是严格 `>`）。"""
+        now = 1_800_000_000.0
+        progress = progress_view(NODE, events=[_ev(1, now, NODE, "node_started", "running")],
+                                 now=now)
+        assert progress["silence_s"] == 0
+        assert progress["no_progress"]["state"] == "ok"
+>       assert progress["no_progress"]["unavailable_reason"] is None
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'unavailable_reason'
+
+tests/test_progress_ts_source.py:262: KeyError
+_______________ test_new_mismatch_can_come_from_result_ts_alone ________________
+
+    def test_new_mismatch_can_come_from_result_ts_alone() -> None:
+        """记录侧（`result.ts`）不同源同样必须判为不可算（不只看事件）。"""
+        now = 1_800_000_000.0
+        root = Path("/tmp/does-not-matter")
+        result = {"run_id": RUN_ID, "node": NODE, "attempt": 1, "ts": now + 300.0}
+        progress = progress_view(NODE, events=[], run_dir=root, result=result, now=now)
+>       assert progress["silence_s"] is None
+E       assert 0 is None
+
+tests/test_progress_ts_source.py:272: AssertionError
+___________ test_new_run_view_card_reports_mismatch_unknown_not_warn ___________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f500074a5d0>
+tmp_path = PosixPath('/tmp/pytest-of-chenjunming/pytest-0/test_new_run_view_card_reports0')
+
+    def test_new_run_view_card_reports_mismatch_unknown_not_warn(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """接线（`contracts.run_view`）：旧 run 的墙钟事件 + 注入 now ⇒ 卡片 `unknown`，不告警。"""
+        monkeypatch.setenv("LOOP_NOW", DRILL_NOW)
+        epoch = _drill_now()
+        root = tmp_path / RUN_ID
+        root.mkdir()
+        events = [_ev(1, epoch + 3600.0, NODE, "node_started", "running")]  # 墙钟 = 注入 + 1h
+        run_doc = {"run_id": root.name, "run_dir": str(root), "status": "running",
+                   "mode": "drill", "node_history": []}
+        view = contracts.run_view(run_doc=run_doc, kb=_kb(tmp_path), slot_status={},
+                                  job=None, evidence=None, events=events)
+        author = next(card for card in view["agents"] if card["role"] == "author")
+        assert author["status"] == "working"
+>       assert author["progress"]["silence_s"] is None
+E       assert 0 is None
+
+tests/test_progress_ts_source.py:292: AssertionError
+__________ test_migration_frozen_wall_clock_events_are_not_backfilled __________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f50007e4690>
+tmp_path = PosixPath('/tmp/pytest-of-chenjunming/pytest-0/test_migration_frozen_wall_clo0')
+
+    def test_migration_frozen_wall_clock_events_are_not_backfilled(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """§4 第三条：已冻结的历史事件（墙钟 `ts`）**不回填、不改写**；冷读走 `unknown`。"""
+        monkeypatch.setenv("LOOP_NOW", DRILL_NOW)
+        epoch = _drill_now()
+        events_dir = tmp_path / "events"
+        path = events_dir / f"{RUN_ID}.jsonl"
+        _write_frozen_events(path, [_ev(1, epoch + 94250.0, NODE, "node_started", "running")])
+        digest_before = hashlib.md5(path.read_bytes()).hexdigest()
+    
+        log = ProgressLog(events_dir, RUN_ID)          # 冷读既有事件流（append 之前）
+        progress = progress_view(NODE, events=log.read(), now=P.now_epoch())
+    
+>       assert progress["silence_s"] is None
+E       assert 0 is None
+
+tests/test_progress_ts_source.py:333: AssertionError
+___________ test_migration_old_run_cold_read_never_fakes_no_progress ___________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f50007f2c50>
+tmp_path = PosixPath('/tmp/pytest-of-chenjunming/pytest-0/test_migration_old_run_cold_re0')
+
+    def test_migration_old_run_cold_read_never_fakes_no_progress(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """旧 run（墙钟事件）+ 注入 now 在过去 ⇒ 既不说"没进展"也不说"在推进"，只说不确定。"""
+        monkeypatch.setenv("LOOP_NOW", DRILL_NOW)
+        epoch = _drill_now()
+        events = [_ev(1, epoch + 86400.0, NODE, "node_started", "running")]
+        progress = progress_view(NODE, events=events, now=epoch)
+>       assert progress["no_progress"]["state"] == "unknown"
+E       AssertionError: assert 'ok' == 'unknown'
+E         
+E         - unknown
+E         + ok
+
+tests/test_progress_ts_source.py:347: AssertionError
+____________ test_migration_frozen_clock_tie_breaks_by_event_order _____________
+
+tmp_path = PosixPath('/tmp/pytest-of-chenjunming/pytest-0/test_migration_frozen_clock_ti0')
+
+    def test_migration_frozen_clock_tie_breaks_by_event_order(tmp_path: Path) -> None:
+        """drill 冻结时钟 ⇒ 同一 run 事件 `ts` 全相同；"最近活跃节点"只能靠事件流顺序判。
+    
+        迁移取向：`_choose` 保持原语义（最近活跃节点），**同一 ts 时用 `seq` 次序**做 tie-break；
+        ts 不同时行为不变（见 `test_choose_latest_node_or_first_declared`）。
+        """
+        epoch = 1_800_000_000.0
+        events = [_ev(1, epoch, "N8", "node_started", "running"),
+                  _ev(2, epoch, "N10", "node_started", "running")]
+        cards = build_agents(events, run_dir=None, now=epoch)
+        checker = next(card for card in cards if card["role"] == "checker")
+>       assert checker["active_node"] == "N10"
+E       AssertionError: assert 'N8' == 'N10'
+E         
+E         - N10
+E         + N8
+
+tests/test_progress_ts_source.py:365: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_progress_ts_source.py::test_new_event_ts_comes_from_injected_clock
+FAILED tests/test_progress_ts_source.py::test_new_event_ts_follows_injected_clock_moves
+FAILED tests/test_progress_ts_source.py::test_new_progress_module_has_no_direct_wall_clock
+FAILED tests/test_progress_ts_source.py::test_new_drill_silence_is_naturally_nonnegative_and_warns
+FAILED tests/test_progress_ts_source.py::test_new_mismatch_yields_null_with_reason_and_no_warn
+FAILED tests/test_progress_ts_source.py::test_new_mismatch_never_warns_even_for_huge_skew
+FAILED tests/test_progress_ts_source.py::test_new_same_source_boundary_ts_equal_now_is_zero_not_unknown
+FAILED tests/test_progress_ts_source.py::test_new_mismatch_can_come_from_result_ts_alone
+FAILED tests/test_progress_ts_source.py::test_new_run_view_card_reports_mismatch_unknown_not_warn
+FAILED tests/test_progress_ts_source.py::test_migration_frozen_wall_clock_events_are_not_backfilled
+FAILED tests/test_progress_ts_source.py::test_migration_old_run_cold_read_never_fakes_no_progress
+FAILED tests/test_progress_ts_source.py::test_migration_frozen_clock_tie_breaks_by_event_order
+12 failed, 5 passed in 0.76s

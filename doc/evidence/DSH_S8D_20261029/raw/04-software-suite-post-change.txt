@@ -1,0 +1,14 @@
+# 命令：cd loop && LOOP_WORKSPACE=<repo>/.dev-ws-s8d LOOP_LLM_MODE=standin \
+#        .venv/bin/python -m pytest -q tests --ignore=tests/browser -m "not env_layer"
+# 说明：实现 owner 自查的软件层全量（S8d 改动落地 + 新增用例之后）。**不是** Lead 的四道门；
+#       正式门由 Lead 用 `.dev-ws` 重跑。
+#       （先前一次同名运行在新用例补齐前为 `1844 passed, 3 deselected in 354.15s`；
+#        本次为补齐 `test_new_unparsable_injected_now_fails_explicitly` 之后的最终数字。）
+
+=============================== warnings summary ===============================
+.venv/lib64/python3.11/site-packages/fastapi/testclient.py:1
+  /home/work/chenjunming/change-impact-loop/loop/.venv/lib64/python3.11/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+1845 passed, 3 deselected, 1 warning in 419.77s (0:06:59)

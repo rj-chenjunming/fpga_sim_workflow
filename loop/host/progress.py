@@ -7,6 +7,10 @@
    日志原文只以 `refs`（路径 + 行号）出现。
 2. 临时计数必须能被最终校验值覆盖并降级 `provisional`，否则前端会把
    中间值当结论。
+
+时间口径（SPEC-REV-16 §4「事件时间源（S8d 收口）」+ 红线 7）：事件 `ts` 与投影 `now`
+**同源**——默认值一律经 `host/paths.py::now_epoch()`（`LOOP_NOW`/`KB_NOW`/系统时钟），
+本模块不直接读墙钟；显式传 `ts=` 仍原样采用（回放/重建历史用）。
 """
 
 from __future__ import annotations
@@ -14,10 +18,11 @@ from __future__ import annotations
 import json
 import os
 import threading
-import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Iterable
+
+from host import paths as P
 
 #: 白名单。不在其中的 kind 一律拒绝写入（宁可报错，不要静默产生不可解释的事件）。
 ALLOWED_KINDS: frozenset[str] = frozenset(
@@ -104,7 +109,11 @@ class ProgressLog:
             self._seq += 1
             event = Event(
                 seq=self._seq,
-                ts=time.time() if ts is None else ts,
+                # 事件时间**必须**经时间唯一入口取（`host/paths.py::now_epoch`：优先
+                # `LOOP_NOW`、其次 `KB_NOW`、否则系统时钟）—— SPEC-REV-16 §4
+                # 「事件时间源（S8d 收口）」+ 红线 7。**不得**在这条路径上直接读系统时钟：
+                # 那会让 drill/回放里的事件 ts 与投影 now 不同源（同一页两套时钟）。
+                ts=P.now_epoch() if ts is None else ts,
                 run_id=self.run_id,
                 node=node,
                 kind=kind,

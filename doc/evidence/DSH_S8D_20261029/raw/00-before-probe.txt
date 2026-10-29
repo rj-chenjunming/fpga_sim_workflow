@@ -1,0 +1,16 @@
+injected LOOP_NOW            : 2026-10-28T12:00:00
+injected now_epoch()         : 1793160000.0
+wall clock at append (pre)   : 1793254250.2727888
+event.ts written             : 1793254250.2727916
+wall clock at append (post)  : 1793254250.272936
+event.ts - now_epoch()       : 94250.27279162407
+|event.ts - wall clock| < 5s : True
+silence_s                    : 0
+last_event.age_s             : 0
+last_event keys              : ['age_s', 'kind', 'status', 'ts']
+no_progress.state            : 'ok'
+no_progress keys             : ['reason', 'silence_s', 'since_ts', 'state', 'threshold_s']
+no_progress.silence_s        : 0
+no_progress.reason           : None
+state                        : 'working'
+elapsed_s                    : 0

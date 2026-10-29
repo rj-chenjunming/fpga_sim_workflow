@@ -1,0 +1,17 @@
+injected now_epoch()             : 1793160000.0
+event.ts written (default ts=)   : 1793160000.0   == now ? True
+[同源 now]    silence_s          : 0
+[同源 now]    last_event.age_s   : 0
+[同源 now]    age reason         : None
+[同源 now]    no_progress.state  : 'ok'
+[同源 now+700] silence_s         : 700
+[同源 now+700] no_progress.state : 'warn'
+[同源 now+700] reason            : '无进展 11 分钟（阈值 600 秒，最后事件/结果时间已记录）'
+[历史墙钟事件] silence_s         : None
+[历史墙钟事件] last_event.age_s  : None
+[历史墙钟事件] age reason         : 'ts_source_mismatch'
+[历史墙钟事件] no_progress.state  : 'unknown'
+[历史墙钟事件] unavailable_reason : 'ts_source_mismatch'
+[历史墙钟事件] reason             : '事件时间与注入时钟不同源（事件 ts 晚于注入 now），静默时长不可算 ⇒ 不判定无进展、不告警'
+[历史墙钟事件] now/threshold      : None 600
+constants                        : 600 ts_source_mismatch

@@ -70,8 +70,13 @@ def test_progress_field_set_is_frozen() -> None:
         "elapsed_s", "silence_s", "no_progress", "compaction", "execution", "authority",
     }
     assert set(progress["identity"]) == {"run_id", "node", "attempt", "session_id"}
+    # S8d（SPEC-REV-16 §4「事件时间源」）只增一个说明字段：
+    # `unavailable_reason`（`null` = 可算；目前唯一取值 `"ts_source_mismatch"`）。
     assert set(progress["no_progress"]) == {
-        "state", "since_ts", "silence_s", "threshold_s", "reason"}
+        "state", "since_ts", "silence_s", "threshold_s", "reason", "unavailable_reason"}
+    assert set(progress["last_event"] or {"kind", "status", "ts", "age_s",
+                                         "unavailable_reason"}) >= {
+        "kind", "status", "ts", "age_s", "unavailable_reason"}
     assert progress["authority"] == "projection"
     # **附加**可读字段（契约表未列、非必需）：钉住存在性，防止将来被当成"多余字段"删掉；
     # 它们只解释"为什么是 unknown"，消费方不得据此判定完成/失败（见 progress_view docstring）。
@@ -120,7 +125,7 @@ def test_no_progress_ok_below_threshold() -> None:
     assert progress["silence_s"] == int(NOW - TS)
     assert progress["no_progress"] == {
         "state": "ok", "since_ts": TS, "silence_s": int(NOW - TS),
-        "threshold_s": NO_PROGRESS_THRESHOLD_S, "reason": None,
+        "threshold_s": NO_PROGRESS_THRESHOLD_S, "reason": None, "unavailable_reason": None,
     }
 
 
@@ -185,12 +190,22 @@ def test_no_progress_not_applicable_when_not_working() -> None:
     assert "waiting" in progress["no_progress"]["reason"]
 
 
-def test_no_progress_silence_clamped_non_negative() -> None:
-    """事件 ts 晚于注入 now（两个时钟源不一致）时夹到 0，不产生负时长/假告警。"""
+def test_no_progress_silence_unknown_when_ts_source_differs() -> None:
+    """事件 ts 晚于注入 now（两个时钟源不一致）⇒ 差值**不可算**，不得夹成 0 冒充"没有进展"。
+
+    **旧口径**（S8d 改造前，本用例原名 `test_no_progress_silence_clamped_non_negative`）：
+    `silence_s == 0` + `no_progress.state == "ok"`（用 `max(0, …)` 掩盖不同源）。
+    **新契约**（SPEC-REV-16 §4「事件时间源（S8d 收口）」）：`silence_s=null` +
+    `unavailable_reason="ts_source_mismatch"`、`state="unknown"`，且**不告警**。
+    """
     events = [_ev(1, NOW + 500.0, "N6", "node_started", "running")]
     progress = progress_view("N6", events=events, now=NOW)
-    assert progress["silence_s"] == 0
-    assert progress["no_progress"]["state"] == "ok"
+    assert progress["silence_s"] is None
+    assert progress["last_event"]["age_s"] is None
+    assert progress["last_event"]["unavailable_reason"] == "ts_source_mismatch"
+    assert progress["no_progress"]["state"] == "unknown"
+    assert progress["no_progress"]["unavailable_reason"] == "ts_source_mismatch"
+    assert "不同源" in progress["no_progress"]["reason"]
 
 
 def test_last_event_and_current_action_track_last_node_event() -> None:
@@ -201,7 +216,8 @@ def test_last_event_and_current_action_track_last_node_event() -> None:
     ]
     progress = progress_view("N6", events=events, now=NOW)
     assert progress["last_event"] == {"kind": "node_finished", "status": "validation_failed",
-                                      "ts": NOW - 100, "age_s": 100}
+                                      "ts": NOW - 100, "age_s": 100,
+                                      "unavailable_reason": None}
     assert progress["current_action"] == {"kind": "node_finished",
                                           "status": "validation_failed", "ts": NOW - 100}
 

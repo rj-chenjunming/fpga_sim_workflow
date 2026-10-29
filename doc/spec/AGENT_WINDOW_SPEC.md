@@ -85,6 +85,13 @@ Agent 历史读取（`read_view` + 与 API 同口径的事件列表）先测量�
 现行会话内 /control 语义保持；不能把当前 Session.instructions 视为这些跨尝试能力已实现。
 新端点、CAS 与节点有效指令指纹、取消后的生效条件见 [详细设计](../plans/2026-10-26-cloud-dsh-memory-design.md)。
 
+## 实例区形态（2026-10-29，S8j）
+
+窗口**不再内嵌**实例页面（反代不透传 WebSocket，REV-16 §9-2 仍开 ⇒ 内嵌画面恒为空）。
+`#awEmbed` 区块改为「实例执行结果」：实例状态 + 实时流能力 + 会话事实（`session-copy.facts` 只读渲染）
++「打开真实用例（实例窗口）」入口（`direct_url`，缺则回退反代 `url`）。
+契约见 [REV17 §2](SPEC-REV-17-20261029.md)；`/instance`、`/session-copy`、反代转发面与 `reason` 族不变。
+
 ## 会话旁路与写句柄（2026-10-28，未实现）
 
 [REV14](SPEC-REV-14-20261028.md) D3：人可在 DSH GUI 对会话说话，但**仅限该 attempt 进程退出的空闲期**

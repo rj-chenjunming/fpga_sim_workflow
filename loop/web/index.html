@@ -444,29 +444,25 @@
         </div>
         <p class="tiny muted" id="awS3Source">来源：—</p>
       </section>
-      <!-- S4（SPEC-REV-16 §5/§6）：内嵌实例两态；不可用时不静默白屏，显式降级。 -->
+      <!-- S8j（SPEC-REV-17 §2）：**不再内嵌**实例页面 —— 反代不透传 WebSocket（REV-16 §9-2）
+           ⇒ 内嵌画面恒为空会话列表（人 2026-10-29 裁决）。区块改为「实例执行结果」：
+           实例状态 + 实时流能力 + 会话事实（服务端只读投影）+ 打开真实用例的入口。 -->
       <section class="aw-embed" id="awEmbed" aria-labelledby="awEmbedH">
         <div class="aw-section-head">
-          <h3 id="awEmbedH">内嵌实例 <span>同源反代 /instance/…；不可用时显式降级</span></h3>
+          <h3 id="awEmbedH">实例执行结果 <span>只读投影；实例页面用下方按钮打开</span></h3>
           <span class="chip" id="awEmbedState">读取中</span>
         </div>
-        <div id="awEmbedFallback" class="aw-fallback">
-          <p class="aw-fallback-title" id="awEmbedTitle">正在读取内嵌可用性…</p>
-          <p class="tiny muted" id="awEmbedReason"></p>
-          <p class="aw-note" id="awEmbedCopyNote"></p>
-          <div class="aw-embed-actions">
-            <a class="btn btn-sm" id="awEmbedNewTab" href="#" target="_blank" rel="noopener">在新标签页打开</a>
-            <button class="btn btn-sm" id="awSessionCopy" type="button">导出会话副本</button>
-          </div>
-        </div>
-        <!-- S7c：反代只透传 HTTP（WebSocket 升级不通，REV-16 §9-2）⇒ 内嵌成功也要如实说"实时流未接通"。 -->
+        <p class="aw-embed-title" id="awEmbedTitle">正在读取实例可用性…</p>
+        <p class="tiny muted" id="awEmbedReason"></p>
+        <!-- S7c：反代只透传 HTTP（WebSocket 升级不通，REV-16 §9-2）⇒ 能力字段下发时如实说"实时流未接通"。 -->
         <p class="tiny muted" id="awEmbedStream"></p>
-        <!-- S8g：内嵌成功但实时流不通时，唯一能用的路是**直连实例**（新标签页）。
-             S8f 把这条链接只放在降级块里 ⇒ 内嵌"成功"（画面空白）时反而点不到。这里常驻一个入口。 -->
-        <p class="aw-direct-row">
-          <a class="btn btn-sm" id="awEmbedDirect" href="#" target="_blank" rel="noopener" hidden>在新标签页打开直连实例 ↗</a>
-        </p>
-        <iframe id="awEmbedFrame" class="aw-embed-frame" title="Agent 实例会话（同源反代）" hidden></iframe>
+        <!-- 执行结果：数字一律来自 `/session-copy` 的 `facts`；缺失显示「未知」，0 是真实值。 -->
+        <p class="aw-embed-facts" id="awEmbedFacts">执行结果：读取中…</p>
+        <p class="tiny muted" id="awEmbedCopyNote"></p>
+        <div class="aw-embed-actions">
+          <a class="btn btn-sm" id="awEmbedDirect" href="#" target="_blank" rel="noopener" hidden>打开真实用例（实例窗口）↗</a>
+          <button class="btn btn-sm" id="awSessionCopy" type="button">刷新执行结果</button>
+        </div>
         <pre class="aw-session-copy" id="awSessionCopyBody" hidden>—</pre>
       </section>
     </div>

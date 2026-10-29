@@ -30,9 +30,7 @@
     upstream_auth: "上游鉴权失败（401/403）",
     health_unknown: "实例健康状态未知",
     metadata_unavailable: "可用性元数据读取失败",
-    proxy_unreachable: "同源反代不可达",
-    embedded_load_failed: "内嵌加载失败（CSP/响应头变化）",
-    embed_timeout: "内嵌加载超时"
+    proxy_unreachable: "同源反代不可达"
   };
   /* §6.2 会话副本专用的 reason 族（REV-16 §9-16：此前前端只映射代理 8 枚举，`session_*` 直接显示英文枚举）。
    * 只做文案映射，未知 reason 原样显示 —— 前端不重算"能不能导出"。 */
@@ -49,7 +47,7 @@
    * 前端只渲染服务端下发的值；旧服务端没下发就不显示这一行（不自己推断"有没有实时流"）。 */
   var STREAM = {
     http_only: "实时事件流走 WebSocket，反代暂不支持升级（REV-16 §9-2）：页面可打开、"
-      + "可读快照，实时更新可能停；需要实时请用「在新标签页打开」。"
+      + "可读快照，实时更新可能停；需要实时请用「打开真实用例（实例窗口）」。"
   };
   var UNSET = "未记录";
 

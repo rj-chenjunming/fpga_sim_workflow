@@ -8,7 +8,9 @@ window.AgentWindow = (function () {
   var lastRead = "", resultSignature = "", stopIdentity = null, readError = false;
   /* S4（SPEC-REV-16 §2/§3/§6）：运行摘要 / 无进展红字 / S3 三列 / 内嵌两态。
      投影与解释面只读服务端字段：本文件不重算无进展阈值、不推断指令三态、不另算预算（红线 8）。 */
-  var instanceKey = "", instanceToken = 0, embedTimer = null, instanceUrl = "";
+  /* S8j（SPEC-REV-17 §2）：实例区块不再内嵌 iframe ⇒ 没有加载定时器/内嵌 URL 状态，
+     只剩"当前实例身份键"与"过期保护 token"。 */
+  var instanceKey = "", instanceToken = 0;
   var explainSignature = "";
   var SUMMARY_IDS = ["awSumState", "awSumAction", "awSumLastEvent", "awSumLastTool",
     "awSumLastError", "awSumCompaction", "awSumNoProgress", "awSumExecution", "awSumElapsed",
@@ -208,7 +210,11 @@ window.AgentWindow = (function () {
     setLine("awS3Source", "来源：" + block.source);
   }
 
-  /* ---------------- S4：内嵌实例两态与降级（SPEC-REV-16 §5/§6） ---------------- */
+  /* ---------------- S8j：实例执行结果 + 打开真实用例（SPEC-REV-17 §2） ----------------
+     不再内嵌 iframe：反代只透传 HTTP，DSH 的实时通道 `WS /api/remote.mux` 仍 405（REV-16 §9-2）
+     ⇒ 内嵌画面恒为空会话列表、收益低于复杂度（人 2026-10-29 裁决）。本块只渲染服务端只读投影：
+     `…/instance` 的可用性 + 能力字段、`…/session-copy` 的会话事实；入口按钮指向**直连实例**。
+     数字一律来自服务端 `facts`，不重算、不折算（红线 8）；缺失显示「未知」，`0` 是真实值必须显示 0。 */
   /* 有效 attempt：窗口选中的 attempt / 跟随最新时的活跃 attempt；都没有就不带 query（服务端定）。 */
   function effectiveAttempt() {
     if (attempt) return String(attempt);
@@ -223,147 +229,148 @@ window.AgentWindow = (function () {
   function embedIdentity() {
     return [target.runId, target.node, effectiveAttempt()].join("|");
   }
-  function clearEmbedTimer() {
-    if (embedTimer) { clearTimeout(embedTimer); embedTimer = null; }
+  /* §6.1 六条不变：`direct_url` 优先（原生 WebSocket 可用）；缺失时回退反代 `url`（实时流不通，必须披露）；
+     两者皆无 ⇒ 隐藏入口，不给假链接。 */
+  function entryFor(meta) {
+    if (!meta || typeof meta !== "object") return {url: "", direct: false};
+    if (meta.direct_url) return {url: String(meta.direct_url), direct: true};
+    if (meta.url) return {url: String(meta.url), direct: false};
+    return {url: "", direct: false};
   }
-  function showFallback(title, reason, note) {
-    var block = $("awEmbedFallback");
-    if (!block) return;
-    block.hidden = false;
-    setLine("awEmbedTitle", title);
-    setLine("awEmbedReason", reason || "");
-    setLine("awEmbedCopyNote", note || "");
-    if ($("awEmbedFrame")) $("awEmbedFrame").hidden = true;
-  }
-  /* 无可用 URL 时"新标签页打开"保持可见但不导航（§6.2 要求降级块给出该路径）。
-     S8f（REV-16 §6.1）：优先用服务端下发的**直连实例** `direct_url` —— 反代 URL 在新标签页里
-     同样拿不到 WebSocket 实时通道（§9-2），只有直连实例才看得见会话列表并说话。
-     直连会把 token 短暂放进地址栏（随后 dsh 303 剥掉），因此提示里如实写明"仅本机可用"。 */
-  function preferredNewTab(meta) {
-    if (!meta || typeof meta !== "object") return { url: "", direct: false };
-    if (meta.direct_url) return { url: String(meta.direct_url), direct: true };
-    return { url: meta.url ? String(meta.url) : "", direct: false };
-  }
-  /* S8g：内嵌成功（画面可能是空会话列表，因 WS 405）时也要露出**直连实例**入口 ——
-     否则唯一能用的路被藏在降级块里、人点不到。只有 `direct_url` 才显示（没有就不给假入口）。 */
-  function setDirectLink(meta) {
-    var el = $("awEmbedDirect");
-    if (!el) return;
-    var tab = preferredNewTab(meta);
-    if (tab.direct && tab.url) {
-      el.setAttribute("href", tab.url);
-      el.hidden = false;
-      el.title = "打开直连实例（会话可实时更新；地址栏会短暂出现 token，随后被 303 剥掉；仅本机可用）";
-    } else {
-      el.setAttribute("href", "#");
-      el.hidden = true;
-      el.removeAttribute("title");
-    }
-  }
-  function setNewTab(url, direct) {
-    instanceUrl = url || "";
-    var link = $("awEmbedNewTab");
+  function setEntry(meta) {
+    var link = $("awEmbedDirect");
     if (!link) return;
-    if (instanceUrl) {
-      link.setAttribute("href", instanceUrl);
-      link.removeAttribute("aria-disabled");
-      link.title = direct
-        ? "在新标签页打开直连实例（会话可实时更新；地址栏会短暂出现 token，随后被 303 剥掉；仅本机可用）"
-        : "在新标签页打开同源反代实例（实时流未接通，见 §9-2）";
+    var picked = entryFor(meta);
+    if (picked.url) {
+      link.setAttribute("href", picked.url);
+      link.hidden = false;
+      link.title = picked.direct
+        ? "打开真实用例的直连实例（会话可实时更新；地址栏会短暂出现 token，随后被 303 剥掉；仅本机可用）"
+        : "打开同源反代实例（实时流未接通，见 REV-16 §9-2）";
     } else {
       link.setAttribute("href", "#");
-      link.setAttribute("aria-disabled", "true");
+      link.hidden = true;
       link.title = "服务端未提供可用实例地址";
     }
   }
+  function reasonText(reason) {
+    var SV = window.S4View;
+    if (!reason) return "原因未知（服务端未给 reason）";
+    return SV && SV.instanceReason ? SV.instanceReason(reason) : String(reason);
+  }
+  /* 数字只渲染服务端值：缺失/非数字 ⇒ 「未知」。`0` 是**真实值**，不得折成未知。 */
+  function numberText(value) {
+    return typeof value === "number" && isFinite(value) ? String(value) : "未知";
+  }
+  function countText(value, unit) {
+    var text = numberText(value);
+    return text === "未知" ? text : text + " " + unit;
+  }
   function resetEmbed() {
-    clearEmbedTimer();
     instanceKey = "";
-    instanceUrl = "";
-    setNewTab("");
-    setDirectLink(null);
+    setEntry(null);
     setLine("awEmbedState", "读取中");
+    setLine("awEmbedTitle", "正在读取实例可用性…");
+    setLine("awEmbedReason", "");
     setLine("awEmbedStream", "");
-    if ($("awEmbedFrame")) {
-      $("awEmbedFrame").hidden = true;
-      $("awEmbedFrame").removeAttribute("src");
-    }
-    if ($("awSessionCopyBody")) {
-      $("awSessionCopyBody").hidden = true;
-      $("awSessionCopyBody").textContent = "—";
-    }
-    showFallback("正在读取内嵌可用性…", "", "");
+    setLine("awEmbedFacts", "执行结果：读取中…");
+    setLine("awEmbedCopyNote", "");
+    paintRawCopy(null, false);
   }
-  function degradeEmbed(reason) {
-    clearEmbedTimer();
-    if ($("awEmbedFrame")) {
-      $("awEmbedFrame").hidden = true;
-      $("awEmbedFrame").removeAttribute("src");
+  function applyInstance(meta) {
+    if (!meta || typeof meta !== "object") {
+      setEntry(null);
+      setLine("awEmbedState", "不可用");
+      setLine("awEmbedTitle", "实例不可用");
+      setLine("awEmbedReason", "原因：" + reasonText("metadata_unavailable"));
+      setLine("awEmbedStream", "");
+      return;
     }
-    var S = window.S4View;
-    setLine("awEmbedState", "不可内嵌");
-    setLine("awEmbedStream", "");
-    showFallback("不可内嵌", "原因：" + (S ? S.instanceReason(reason) : String(reason || "未知")), "");
+    setEntry(meta);
+    var ready = meta.available === true && meta.state === "ready";
+    setLine("awEmbedState", ready ? "实例就绪" : "不可用");
+    setLine("awEmbedTitle", ready ? "实例就绪；实例页面用下方按钮打开" : "实例不可用");
+    var reason = meta.reason ? String(meta.reason) : (ready ? "" : "target_missing");
+    setLine("awEmbedReason", reason ? "原因：" + reasonText(reason) : "");
+    /* 能力事实不是健康判据：只在服务端下发时渲染（缺字段 ⇒ 空串，不猜）。 */
+    var SV = window.S4View;
+    setLine("awEmbedStream", meta.stream && SV ? SV.streamNote(meta.stream) : "");
   }
-  function embedReady(url) {
-    var frame = $("awEmbedFrame");
-    if (!frame) return;
-    var fallback = $("awEmbedFallback");
-    if (fallback) fallback.hidden = true;
-    frame.hidden = false;
-    frame.setAttribute("src", url);
-    clearEmbedTimer();
-    /* 加载超时也走同一降级路径：不静默白屏（§6.2）。 */
-    embedTimer = setTimeout(function () { degradeEmbed("embed_timeout"); }, 8000);
+  /* §6.2：会话副本 → 执行结果事实。**只**渲染 `facts`，不重算、不把缺失折成 0。 */
+  function paintFacts(copy) {
+    if (!copy || typeof copy !== "object") {
+      setLine("awEmbedFacts", "执行结果：未记录（服务端未下发会话事实）");
+      return;
+    }
+    if (copy.available !== true) {
+      var SV = window.S4View;
+      var why = copy.reason ? String(copy.reason) : null;
+      setLine("awEmbedFacts", "执行结果：不可用 —— "
+        + (SV && SV.sessionReason ? SV.sessionReason(why) : (why || "服务端未给 reason")));
+      return;
+    }
+    var kind = copy.kind === null || copy.kind === undefined ? "" : String(copy.kind);
+    if (!kind) {
+      setLine("awEmbedFacts", "执行结果：服务端未下发 kind（事实类型未知，不显示内容）");
+      return;
+    }
+    var facts = copy.facts;
+    if (!facts || typeof facts !== "object") {
+      setLine("awEmbedFacts", "执行结果：未记录（kind=" + kind + "，facts 为空）");
+      return;
+    }
+    var records = Array.isArray(facts.records) ? facts.records.length : null;
+    var errors = Array.isArray(facts.errors) ? facts.errors.length : null;
+    var parts = [
+      "压缩成功 " + countText(facts.count, "次"),
+      "记录 " + (records === null ? "未知" : records + " 条"),
+      "错误 " + (errors === null ? "未知" : errors + " 条"),
+      "起止 " + numberText(facts.start_count) + "→" + numberText(facts.end_count),
+      "剪枝 " + countText(facts.prune_count, "次")
+    ];
+    var line = "执行结果（" + kind + "）：" + parts.join(" · ");
+    if (copy.truncated) line += " · 已截断（服务端上限）";
+    setLine("awEmbedFacts", line);
+    setLine("awEmbedCopyNote", copy.bytes === null || copy.bytes === undefined
+      ? "副本字节：未知" : "副本 " + String(copy.bytes) + " B");
   }
-  /* 同源反代的可用性探测：向 §6.1 下发的同源 URL 要 JSON（§5.5 内容协商），
-     不可用时由服务端给 reason —— 前端不自己判"能不能嵌"。 */
-  async function probeInstance(url) {
-    if (typeof fetch !== "function") return { ok: true };
+  /* 原始事实折叠块：只在有 `kind` 时给内容（稳定键契约里没有正文，禁止声称"全文"）。 */
+  function paintRawCopy(copy, show) {
+    var body = $("awSessionCopyBody");
+    if (!body) return;
+    var kind = copy && copy.kind ? String(copy.kind) : "";
+    var facts = copy ? copy.facts : null;
+    if (!show || !kind || facts === null || facts === undefined) {
+      body.hidden = true;
+      body.textContent = "—";
+      return;
+    }
+    var text;
+    try { text = JSON.stringify(facts, null, 2); } catch (e) { text = String(facts); }
+    body.textContent = "kind=" + kind + " · 服务端解析事实（非会话原文）\n" + text;
+    body.hidden = false;
+  }
+  async function loadSessionCopy(showRaw) {
+    if (!target) return;
+    var token = instanceToken;
+    setLine("awEmbedCopyNote", "正在读取会话事实…");
     try {
-      var res = await fetch(url, { headers: { "Accept": "application/json" },
-        credentials: "same-origin", redirect: "follow" });
-      var body = null;
-      try { body = await res.json(); } catch (e1) { body = null; }
-      if (res.ok && (!body || body.available !== false)) return { ok: true };
-      return { ok: false, reason: body && body.reason ? String(body.reason)
-        : "http_" + String(res.status) };
-    } catch (e2) {
-      return { ok: false, reason: "proxy_unreachable" };
+      var copy = await api(withAttempt(base() + "/session-copy"));
+      if (token !== instanceToken || !target) return;
+      paintFacts(copy);
+      paintRawCopy(copy, showRaw === true);
+      if (copy && copy.available === true && copy.kind) return; /* note 已由 paintFacts 写 */
+      if (copy && copy.available === true) {
+        setLine("awEmbedCopyNote", "服务端未下发 kind：无法确定事实类型（不显示内容）");
+      } else {
+        setLine("awEmbedCopyNote", "");
+      }
+    } catch (e) {
+      if (token !== instanceToken || !target) return;
+      paintRawCopy(null, false);
+      setLine("awEmbedFacts", "执行结果：读取失败 —— " + e.message);
+      setLine("awEmbedCopyNote", "");
     }
-  }
-  function applyInstance(meta, token) {
-    function stale() { return token !== undefined && token !== instanceToken; }
-    if (!meta || typeof meta !== "object") { degradeEmbed("metadata_unavailable"); return; }
-    if (meta.available === true && meta.state === "ready" && meta.url) {
-      var tab = preferredNewTab(meta);
-      setNewTab(tab.url, tab.direct);
-      setDirectLink(meta);
-      /* 先显示"正在确认"，探测通过才写"已内嵌"——避免失败时瞬闪成已嵌入（P2-5）。 */
-      setLine("awEmbedState", "正在确认可内嵌性");
-      return probeInstance(String(meta.url)).then(function (probe) {
-        if (stale()) return;
-        if (probe && probe.ok) {
-          setLine("awEmbedState", "已内嵌");
-          /* 内嵌成功 ≠ 完全可用：实时流走 WebSocket，反代不透传升级（§9-2）。
-             文案由服务端 `stream` 字段驱动，前端不自己判。 */
-          var SV = window.S4View;
-          setLine("awEmbedStream", SV ? SV.streamNote(meta.stream) : "");
-          embedReady(String(meta.url));
-          return;
-        }
-        degradeEmbed(probe && probe.reason ? probe.reason : "embedded_load_failed");
-      });
-    }
-    if (stale()) return;
-    var fallbackTab = preferredNewTab(meta);
-    setNewTab(fallbackTab.url, fallbackTab.direct);
-    setDirectLink(meta);
-    setLine("awEmbedState", meta.embed === "new_tab_only" ? "仅新标签页" : "不可内嵌");
-    setLine("awEmbedStream", "");
-    var S = window.S4View;
-    var reason = meta.reason ? String(meta.reason) : "target_missing";
-    showFallback("不可内嵌", "原因：" + (S ? S.instanceReason(reason) : reason), "");
   }
   async function refreshEmbed() {
     if (!target) return;
@@ -377,58 +384,15 @@ window.AgentWindow = (function () {
       meta = await api(withAttempt(base() + "/instance"));
     } catch (e) {
       if (token !== instanceToken || !target) return;
-      degradeEmbed("metadata_unavailable");
+      applyInstance(null);
       var reason = $("awEmbedReason");
       if (reason) reason.textContent = reason.textContent + " · " + e.message;
+      loadSessionCopy(false);
       return;
     }
     if (token !== instanceToken || !target) return;
-    applyInstance(meta, token);
-  }
-  async function loadSessionCopy() {
-    if (!target) return;
-    setLine("awEmbedCopyNote", "正在读取会话副本…");
-    try {
-      var copy = await api(withAttempt(base() + "/session-copy"));
-      var body = $("awSessionCopyBody");
-      if (!copy || copy.available !== true) {
-        if (body) body.hidden = true;
-        /* REV-16 §9-16：`session_*` reason 族走服务端的唯一映射（`S4View.sessionReason`），
-         * 前端不自己判"能不能导出"，也不直接显示英文枚举。 */
-        var why = copy && copy.reason ? copy.reason : null;
-        var SV = window.S4View;
-        setLine("awEmbedCopyNote", "会话副本不可用："
-          + (SV && SV.sessionReason ? SV.sessionReason(why)
-                                    : String(why || "服务端未给 reason")));
-        return;
-      }
-      /* 稳定键 = {available, reason, kind, facts, bytes, truncated}；**没有**会话正文。
-       * 缺 `kind` 时不显示任何"全文"，只如实说无法确定内容类型。 */
-      var kind = copy.kind === null || copy.kind === undefined ? "" : String(copy.kind);
-      if (!kind) {
-        if (body) body.hidden = true;
-        setLine("awEmbedCopyNote", "服务端未下发 kind：无法确定副本内容类型（不显示内容）");
-        return;
-      }
-      var facts = copy.facts;
-      if (body) {
-        body.hidden = false;
-        if (facts === null || facts === undefined) {
-          body.textContent = "（facts 为空；kind=" + kind + "）";
-        } else {
-          var text;
-          try { text = JSON.stringify(facts, null, 2); } catch (e3) { text = String(facts); }
-          body.textContent = "kind=" + kind + " · 服务端解析事实（非会话原文）\n" + text;
-        }
-      }
-      var note = "会话副本 kind=" + kind + " · Bytes=" + (copy.bytes === null || copy.bytes === undefined
-        ? "未知" : String(copy.bytes));
-      if (copy.truncated) note += " · 已截断（服务端上限）";
-      setLine("awEmbedCopyNote", note);
-    } catch (e) {
-      if ($("awSessionCopyBody")) $("awSessionCopyBody").hidden = true;
-      setLine("awEmbedCopyNote", "会话副本读取失败：" + e.message);
-    }
+    applyInstance(meta);
+    loadSessionCopy(false);
   }
 
   /* S4：读取中/重置态（未拿到服务端字段前不显示任何结论，也不留白屏）。 */
@@ -735,15 +699,12 @@ window.AgentWindow = (function () {
     [["awSteer", "steer"], ["awPause", "pause"], ["awResume", "resume"]].forEach(function (pair) {
       $(pair[0]).addEventListener("click", function () { submit(pair[1]); });
     });
-    /* S4（SPEC-REV-16 §6.2）：降级块的新标签页在无可用 URL 时不导航；会话副本走只读端点。 */
-    if ($("awEmbedNewTab")) $("awEmbedNewTab").addEventListener("click", function (event) {
-      if (!instanceUrl) event.preventDefault();
+    /* S8j（SPEC-REV-17 §2-5/§2-7）：入口无可用地址时不导航；「刷新执行结果」重读会话事实并展开原始块。 */
+    if ($("awEmbedDirect")) $("awEmbedDirect").addEventListener("click", function (event) {
+      var href = this.getAttribute("href");
+      if (!href || href === "#") event.preventDefault();
     });
-    if ($("awSessionCopy")) $("awSessionCopy").addEventListener("click", loadSessionCopy);
-    if ($("awEmbedFrame")) {
-      $("awEmbedFrame").addEventListener("load", clearEmbedTimer);
-      $("awEmbedFrame").addEventListener("error", function () { degradeEmbed("embedded_load_failed"); });
-    }
+    if ($("awSessionCopy")) $("awSessionCopy").addEventListener("click", function () { loadSessionCopy(true); });
     /* U2-b：固定轮询已由 syncTransport 的流优先/轮询兜底取代（§7.3）。 */
   }};
   function selectAttempt(value) {

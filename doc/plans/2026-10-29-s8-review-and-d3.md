@@ -109,6 +109,22 @@
    - 同一轮的 P2 修复（不需要新契约，属加固）：`session-copy` 的 reason 收敛到 §6.2 六项枚举（不透传 SDK 自由文本）、
      `_error_page` 插值一律 HTML 转义。
 
+## 8.1 S8j 切片（2026-10-29，人裁决：内嵌 → 执行结果/状态 + 打开真实用例）
+
+**背景**：S8b/S8g 真机实测 —— 反代只透传 HTTP，DSH 的 `WS /api/remote.mux` 仍 405（REV-16 §9-2 仍开）
+⇒ iframe 内画面恒为空会话列表。人 2026-10-29 裁决：内嵌不必要，区块换成"一段执行结果/状态 + 跳转真实用例按键"。
+
+| 项 | 落点 | 验收 |
+|---|---|---|
+| 取消内嵌面 | `loop/web/index.html` 删 `#awEmbedFrame`/`#awEmbedFallback`/`#awEmbedNewTab`；`agent-window.js` 删内嵌探测（`probeInstance`）、加载超时与降级块 | 窗口内 `iframe/object/embed` 计数为 0；`proxy_reads == 0`（探测无消费者，红线 4） |
+| 执行结果块 | `#awEmbedFacts` 渲染 `session-copy.facts`（count/records/errors/start→end/prune + bytes/truncated），`textContent` | 数字与服务端 `facts` 逐字一致；缺字段「未知」；`0` 显示 0；不可用给 `session_*` 中文映射且不出假数 |
+| 打开真实用例 | `#awEmbedDirect`「打开真实用例（实例窗口）↗」：`href=direct_url`，缺则回退 `url`，皆无 ⇒ 隐藏 | title 披露 token 短暂入地址栏 + 仅本机；回退反代时 title 披露实时流未接通 |
+| 自动读取 | 打开/切节点/切 attempt/刷新 ⇒ 各读一次 `instance` + `session-copy`；「刷新执行结果」重读并展开原始事实块 | 两个端点**最新一次**请求都带 `?attempt=` |
+| 契约 | `doc/spec/SPEC-REV-17-20261029.md`（§2 = REV-16 **§6.4**）+ `AGENT_WINDOW_SPEC.md` 指针 | 实现与规格逐条对齐；REV-16 原文不改写 |
+
+**不做/不声称**：不删反代转发面（R1–R20、token 脱敏、SSE 读超时口径保留）；不声称内嵌可用；不声称远程浏览器可用；
+`embed` 字段保留但界面不再消费（REV-17 §5 已登记为未决）。
+
 ## 9 验证门（每片收口各自跑；`AGENTS.md` §4 是权威；**Lead 独占、串行**）
 
 ```bash

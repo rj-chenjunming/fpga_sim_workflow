@@ -1,0 +1,58 @@
+# S8j 收口记录（2026-10-29，Lead 实测；数字逐条从命令输出复制）
+
+> 归因说明：本机同一工作区**另有并发切片在写**（闸门双栏独立滚动：`web/pane-scroll.js` + `web/app.js` +
+> `tests/test_pane_scroll.py` + `tests/browser/test_gate_panes.py` + `index.html` 注释/`<script>`）。
+> 为把本片结论与被污染的主树分开，§0 用 `git worktree` 在 **HEAD 树**上只回放本片改动重跑。
+
+## 0 隔离复核（`git worktree add .s8j-verify HEAD`，仅本片改动 ⇒ 可归因）
+
+```bash
+# (a) 红：HEAD 的 web + 本片新用例（用例先失败）
+$ pytest -q tests/browser/test_s4_projection_ui.py -k s8j
+10 failed, 1 passed, 13 deselected in 109.09s
+# 1 passed = test_s8j_stream_note_absent_when_server_omits_field（旧实现同样"缺字段就不显示"，属保持行为）
+
+# (b) 绿：只放本片 web 改动
+$ pytest -q tests/browser/test_s4_projection_ui.py
+24 passed in 28.91s
+
+# (c) 前端契约用例（含 index.html 的 `<script>` 顺序）在"仅本片"树上通过
+$ pytest -q tests/test_capability_format.py tests/test_gate_session.py
+19 passed in 3.51s
+```
+
+## 1 浏览器门（主树，含并发切片的 6 条用例）
+
+```bash
+$ pytest -q tests/browser
+146 passed in 162.08s
+```
+
+## 2 单测门（主树；可写数据根 provision → cleanup）
+
+```bash
+$ LOOP_WORKSPACE=<repo>/.dev-ws LOOP_LLM_MODE=standin pytest -q
+5 failed, 1867 passed, 1 warning, 145 errors in 555.73s
+```
+
+- `145 errors` = 本机未装 Chromium 的浏览器用例（`pytest -q` 会收集它们，环境缺件）。
+- `5 failed` 归因：3 条为数据根/归档类既有失败（`.dev-ws/tools/gate.py` 缺失、guard rc=3）；
+  2 条（`test_capability_format::test_frontend_has_one_formatter_and_both_consumers_use_it`、
+  `test_gate_session::test_frontend_consumes_single_gate_session_module`）**由并发切片**在
+  `loop/web/index.html` 新增的注释「…实际溢出时由 app.js 补 tabindex=0」触发
+  （用例用 `html.index("app.js")` 取首个位置）。同一用例在 §0(c) 的"仅本片"树上 `19 passed`。
+
+## 3 文档门
+
+```bash
+$ pytest -q tests/test_doc_links.py
+65 passed in 2.46s
+```
+
+## 4 端到端（drill）
+
+```bash
+$ bash spikes/accept_v1_run.sh
+phase 1 rc=0 / phase 2 rc=0 / phase 3 rc=0 / phase 4 rc=0 / phase 4b rc=0 / phase 5 rc=0
+=> ALL PASS
+```

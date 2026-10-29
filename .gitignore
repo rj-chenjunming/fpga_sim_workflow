@@ -23,3 +23,17 @@ loop/spikes/snap.json
 workspaces/*/
 !workspaces/.gitkeep
 !workspaces/README.md
+
+# ── 本机演示/派生数据根（运行产物，可重建，不入库；本机已在 .git/info/exclude 中重复一份）
+.dev-ws*/
+.demo-ws/
+.env-copy/
+.s0-*/
+.pw-browsers/
+.chrome-home*/
+.chrome-tmp*/
+
+# ── 凭据库/密钥：任何位置都不得入库（DSH 凭据库含宿主 api-key；S8h 裁决 A 后它会落在 DSH_HOME）
+.credentials.yaml
+.credentials.yml
+*.credentials.yaml

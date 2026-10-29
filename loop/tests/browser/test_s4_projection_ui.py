@@ -10,7 +10,7 @@
 - 文本一律走 `textContent`：桩里放 HTML 片段，断言页面上没有对应元素。
 
 结构：窗口新增 `#awSummary`（运行摘要）+ `#awNoProgress`（红字告警）+ `#awS3`（accepted/applied/
-effective 三列 + WM/EXP）+ `#awEmbed`（iframe 或降级块）。
+effective 三列 + WM/EXP）+ `#awEmbed`（实例执行结果：状态 + 会话事实 + 直连入口；**无 iframe**，见 SPEC-REV-17 §2）。
 """
 from urllib.parse import urlsplit
 
@@ -115,9 +115,18 @@ def instance(**over):
 
 
 def session_copy(**over):
-    """SPEC-REV-16 §6.2 稳定键：{available, reason, kind, facts, bytes, truncated}（无 content）。"""
+    """SPEC-REV-16 §6.2 稳定键：{available, reason, kind, facts, bytes, truncated}（无 content）。
+
+    `facts` 形状 = `dsh_sdk.CompactionFacts`（§9-11：这是**解析事实**，不是会话原文）。
+    SPEC-REV-17 §2-4 的"执行结果"块逐项渲染 count/records/errors/start→end/prune，不重算。
+    """
     data = {'available': True, 'reason': None, 'kind': 'session_log_facts',
-            'facts': {'compactions': 2, 'turns': 5}, 'bytes': 41, 'truncated': False}
+            'facts': {'availability': 'ok', 'count': 2,
+                      'records': [{'kind': 'compaction', 'ts': 1.0},
+                                  {'kind': 'compaction', 'ts': 2.0}],
+                      'errors': [], 'start_count': 3, 'end_count': 5, 'prune_count': 1,
+                      'reason': None, 'path': '/host/sessions/s.log'},
+            'bytes': 41, 'truncated': False, 'attempt': 2}
     data.update(over)
     return data
 
@@ -357,247 +366,151 @@ def test_missing_explain_shows_not_recorded(ui):
     pw.expect(page.locator('#awS3')).to_contain_text('未记录')
 
 
-# ---------------------------------------------------------------- 内嵌与降级
-def test_available_instance_embeds_same_origin_url(ui):
-    page, api = setup(ui, inst=instance())
-    pw.expect(page.locator('#awEmbedFrame')).to_be_visible()
-    src = page.locator('#awEmbedFrame').get_attribute('src')
-    assert src.endswith('/instance/A/N3/2/')
-    pw.expect(page.locator('#awEmbedFallback')).to_be_hidden()
-    assert api['proxy_reads'] >= 1
+# ---------------------------------------------------------------- S8j 实例执行结果（无 iframe）
+#: SPEC-REV-17 §2：窗口不再内嵌实例页面，改为「执行结果/状态 + 打开真实用例」。
+#: `direct_url` 形状见 REV-16 §6.1：`http://<loopback>:<port>/?token=<受管 token>`。
+DIRECT = 'http://127.0.0.1:43581/?token=T0KEN-managed'
 
 
-def test_s8f_new_tab_prefers_direct_instance_url(ui):
-    """S8f（REV-16 §6.1）：服务端给了 `direct_url` ⇒「在新标签页打开」指向**直连实例**。
+def test_s8j_window_renders_no_embed_surface(ui):
+    """§2-1：窗口**没有**内嵌面。
 
-    为什么不是反代 URL：反代只透传 HTTP，实时通道 `WS /api/remote.mux` 仍 405（§9-2）
-    ⇒ 新标签页里的反代页面同样看不到会话列表。直连实例才有原生 WebSocket。
+    判据与服务端下发什么无关：即便服务端仍写 `embed: "iframe"`，界面也不得渲染
+    iframe/object/embed（内嵌面已取消，反代不透传 WebSocket，REV-16 §9-2）。
     """
-    direct = 'http://127.0.0.1:43581/?token=T0KEN-managed'
-    page, _ = setup(ui, inst=instance(direct_url=direct))
-    link = page.locator('#awEmbedNewTab')
-    assert link.get_attribute('href') == direct
-    title = link.get_attribute('title')
-    assert '直连' in title
-    # 如实披露：token 会短暂进地址栏、仅本机可用
-    assert 'token' in title
-    assert '本机' in title
-    # 内嵌仍然是同源反代 URL（不改内嵌语义）
-    assert page.locator('#awEmbedFrame').get_attribute('src').endswith('/instance/A/N3/2/')
+    page, _ = setup(ui, inst=instance(direct_url=DIRECT))
+    assert page.locator('#agentWindow iframe').count() == 0
+    assert page.locator('#agentWindow object').count() == 0
+    assert page.locator('#agentWindow embed').count() == 0
+    assert page.locator('#awEmbedFrame').count() == 0
+    assert page.locator('#awEmbedFallback').count() == 0
 
 
-def test_s8g_direct_entry_visible_when_embedded(ui):
-    """S8g：内嵌成功也要露出**直连实例**入口。
-
-    反代只透传 HTTP（`WS /api/remote.mux` 405，§9-2）⇒ 内嵌画面里的会话列表是空的；
-    唯一能用的路是直连实例。S8f 只把它放在降级块里 ⇒ 内嵌"成功"时人点不到，这里必须常驻可见。
-    """
-    direct = 'http://127.0.0.1:43581/?token=T0KEN-managed'
-    page, _ = setup(ui, inst=instance(direct_url=direct))
-    pw.expect(page.locator('#awEmbedFrame')).to_be_visible()
+def test_s8j_ready_instance_shows_status_facts_and_direct_entry(ui):
+    """§2-2/4/5：就绪态 = 状态 + 事实（数字逐字来自 `facts`）+ 直连入口（披露 token 与本机限制）。"""
+    page, api = setup(ui, inst=instance(direct_url=DIRECT))
+    pw.expect(page.locator('#awEmbedState')).to_have_text('实例就绪')
+    facts = page.locator('#awEmbedFacts').inner_text()
+    for piece in ('压缩成功 2 次', '记录 2 条', '错误 0 条', '起止 3→5', '剪枝 1 次',
+                  'session_log_facts'):
+        assert piece in facts, (piece, facts)
+    pw.expect(page.locator('#awEmbedCopyNote')).to_contain_text('41 B')
     entry = page.locator('#awEmbedDirect')
     pw.expect(entry).to_be_visible()
-    assert entry.get_attribute('href') == direct
-    assert 'token' in entry.get_attribute('title')
-
-
-def test_s8g_direct_entry_hidden_without_direct_url(ui):
-    """没有 `direct_url`（旧服务端/无受管 token）⇒ 入口隐藏，不给假链接。"""
-    page, _ = setup(ui, inst=instance())
-    pw.expect(page.locator('#awEmbedDirect')).to_be_hidden()
-
-
-def test_s8f_new_tab_falls_back_to_proxy_url_without_direct(ui):
-    """旧服务端/旧记录没有 `direct_url` ⇒ 退回反代 URL（不因为缺新字段就不给链接）。"""
-    page, _ = setup(ui, inst=instance())
-    link = page.locator('#awEmbedNewTab')
-    assert link.get_attribute('href').endswith('/instance/A/N3/2/')
-    assert '反代' in link.get_attribute('title')
-
-
-def test_embedded_instance_discloses_websocket_stream_gap(ui):
-    """S7c：内嵌成功 ≠ 完全可用 —— 必须**如实**说"实时流未接通"，不得静默半死。
-
-    判据来源是服务端 `stream` 字段（能力事实），前端只渲染；断言文本含 WebSocket 与 §9-2，
-    同时 iframe 仍然可见（不因实时流缺失就整块降级：页面可打开、可读快照）。
-    """
-    page, api = setup(ui, inst=instance())
-    pw.expect(page.locator('#awEmbedFrame')).to_be_visible()
-    pw.expect(page.locator('#awEmbedState')).to_contain_text('已内嵌')
-    note = page.locator('#awEmbedStream')
-    pw.expect(note).to_be_visible()
-    pw.expect(note).to_contain_text('WebSocket')
-    pw.expect(note).to_contain_text('§9-2')
-    pw.expect(note).to_contain_text('在新标签页打开')
+    assert entry.get_attribute('href') == DIRECT
+    title = entry.get_attribute('title')
+    assert 'token' in title and '本机' in title, title
+    pw.expect(page.locator('#awEmbedStream')).to_contain_text('WebSocket')
+    pw.expect(page.locator('#awEmbedStream')).to_contain_text('§9-2')
+    # §2-7：打开即读会话事实，不需要先点按钮
+    assert api['copy_reads'] >= 1
     assert not api['posts']
 
 
-def test_old_metadata_without_stream_field_claims_nothing(ui):
-    """旧服务端/旧记录没有 `stream` 字段 ⇒ 不显示这一行（不自己推断"有实时流"）。"""
-    payload = instance()
-    payload.pop('stream')
-    page, _ = setup(ui, inst=payload)
-    pw.expect(page.locator('#awEmbedFrame')).to_be_visible()
-    pw.expect(page.locator('#awEmbedStream')).to_have_text('')
+def test_s8j_zero_is_real_value_and_missing_is_unknown(ui):
+    """§2-4：`0` 是服务端真实值必须显示 0；缺字段显示「未知」，不得折算成 0（红线 8：不自己判）。"""
+    page, _ = setup(ui, inst=instance(direct_url=DIRECT),
+                    copy=session_copy(facts={'availability': 'ok', 'count': 0,
+                                             'records': [], 'errors': [],
+                                             'start_count': 0, 'end_count': 0}))
+    pw.expect(page.locator('#awEmbedFacts')).to_contain_text('压缩成功 0 次')
+    facts = page.locator('#awEmbedFacts').inner_text()
+    assert '压缩成功 0 次' in facts, facts
+    assert '记录 0 条' in facts and '错误 0 条' in facts, facts
+    assert '起止 0→0' in facts, facts
+    assert '剪枝 未知' in facts, facts     # prune_count 缺字段 ⇒ 未知
+    assert '剪枝 0' not in facts, facts
 
 
-def test_degraded_instance_clears_stream_note(ui):
+def test_s8j_unavailable_instance_is_explicit_and_gives_no_fake_entry(ui):
+    """§2-2/4/5：不可用必须给原因；无 `url`/`direct_url` ⇒ 入口隐藏（不给假链接）；不出现 0 假数。"""
     page, _ = setup(ui, inst=instance(available=False, state='unavailable',
-                                      reason='target_missing', url=None,
-                                      embed='new_tab_only'))
-    pw.expect(page.locator('#awEmbedFallback')).to_be_visible()
-    pw.expect(page.locator('#awEmbedStream')).to_have_text('')
-
-
-def test_unavailable_instance_degrades_with_reason_new_tab_and_session_copy(ui):
-    page, api = setup(ui, inst=instance(available=False, state='unavailable',
-                                        reason='target_missing', url=None,
-                                        embed='new_tab_only'))
-    block = page.locator('#awEmbedFallback')
-    pw.expect(block).to_be_visible()
-    pw.expect(block).to_contain_text('不可内嵌')
-    pw.expect(block).to_contain_text('目标实例缺失')
-    pw.expect(block).to_contain_text('在新标签页打开')
-    pw.expect(block).to_contain_text('导出会话副本')
-    pw.expect(page.locator('#awEmbedFrame')).to_be_hidden()
-    # 导出会话副本：内容来自服务端 /session-copy（textContent，不拼 HTML）
-    page.locator('#awSessionCopy').click()
-    body = page.locator('#awSessionCopyBody')
-    pw.expect(body).to_contain_text('session_log_facts')
-    pw.expect(body).to_contain_text('非会话原文')
-    pw.expect(body).to_contain_text('"compactions": 2')
-    pw.expect(page.locator('#awEmbedCopyNote')).to_contain_text('kind=session_log_facts')
-    assert api['copy_reads'] >= 1
-
-
-def test_proxy_auth_failure_uses_same_fallback_not_white_screen(ui):
-    page, api = setup(ui, inst=instance(),
-                      proxy={'status': 503, 'json': {'available': False, 'state': 'unavailable',
-                                                     'reason': 'upstream_auth'}})
-    block = page.locator('#awEmbedFallback')
-    pw.expect(block).to_be_visible()
-    pw.expect(block).to_contain_text('不可内嵌')
-    pw.expect(block).to_contain_text('401')
-    pw.expect(block).to_contain_text('在新标签页打开')
-    pw.expect(block).to_contain_text('导出会话副本')
-    pw.expect(page.locator('#awEmbedFrame')).to_be_hidden()
-    pw.expect(page.locator('#awEmbedState')).not_to_contain_text('已内嵌')
-    # 401 不得显示成"需要人操作才能继续"
-    assert_agent_surface_has_no_human_wait_wording(page)
-
-
-def test_proxy_rejected_http_code_is_shown_verbatim(ui):
-    """反代 400（`X-Instance-Proxy: rejected`）也要落到降级块并显示 HTTP 码，不改写成人工介入。"""
-    page, _ = setup(ui, inst=instance(),
-                    proxy={'status': 400, 'json': {'detail': {'error': 'rejected'}}})
-    block = page.locator('#awEmbedFallback')
-    pw.expect(block).to_contain_text('不可内嵌')
-    pw.expect(block).to_contain_text('HTTP 400')
-    pw.expect(page.locator('#awEmbedFrame')).to_be_hidden()
-    assert_agent_surface_has_no_human_wait_wording(page)
-
-
-def test_unavailable_session_copy_explains_reason(ui):
-    """REV-16 §9-16（S7d）：`session_*` reason 必须给**中文说明**，不再直接甩英文枚举。
-
-    枚举本身仍要可核（排障要靠它），所以两边都断言。
-    """
-    page, _ = setup(ui, inst=instance(available=False, state='unavailable',
-                                      reason='target_missing', url=None),
+                                      reason='target_missing', url=None, direct_url=None),
                     copy=session_copy(available=False, reason='session_log_missing',
                                       kind=None, facts=None, bytes=None))
+    pw.expect(page.locator('#awEmbedState')).to_have_text('不可用')
+    reason = page.locator('#awEmbedReason').inner_text()
+    assert '目标实例缺失' in reason and 'target_missing' in reason, reason
+    facts = page.locator('#awEmbedFacts').inner_text()
+    assert '不可用' in facts and '元数据未声明会话日志' in facts, facts
+    assert '0 条' not in facts and '0 次' not in facts, facts
+    pw.expect(page.locator('#awEmbedDirect')).to_be_hidden()
+    assert_agent_surface_has_no_human_wait_wording(page)
+
+
+def test_s8j_entry_falls_back_to_proxy_url_and_discloses_gap(ui):
+    """§2-5：旧服务端没有 `direct_url` ⇒ 回退反代 `url`，并在 `title` 里披露实时流未接通。"""
+    page, _ = setup(ui, inst=instance())
+    entry = page.locator('#awEmbedDirect')
+    pw.expect(entry).to_be_visible()
+    assert entry.get_attribute('href').endswith('/instance/A/N3/2/')
+    assert '反代' in entry.get_attribute('title')
+
+
+def test_s8j_no_embedding_probe_request(ui):
+    """§2-6：内嵌面取消 ⇒ 探测无消费者：窗口不得再向上游页面要 `Accept: application/json`。"""
+    page, api = setup(ui, inst=instance(direct_url=DIRECT))
+    pw.expect(page.locator('#awEmbedState')).to_have_text('实例就绪')
+    assert api['proxy_reads'] == 0, api['proxy_reads']
+
+
+def test_s8j_stream_note_absent_when_server_omits_field(ui):
+    """§2-3：服务端不下发 `stream` ⇒ 该行空白（不自己推断"有实时流"）。"""
+    payload = instance(direct_url=DIRECT)
+    payload.pop('stream')
+    page, _ = setup(ui, inst=payload)
+    pw.expect(page.locator('#awEmbedStream')).to_have_text('')
+
+
+def test_s8j_refresh_button_rereads_facts_and_unfolds_raw_block(ui):
+    """§2-8：首屏不铺原始 JSON；点「刷新执行结果」重读并展开解析事实（`textContent`，非 HTML）。"""
+    page, api = setup(ui, inst=instance(direct_url=DIRECT))
+    body = page.locator('#awSessionCopyBody')
+    pw.expect(body).to_be_hidden()
+    reads = api['copy_reads']
     page.locator('#awSessionCopy').click()
-    note = page.locator('#awEmbedCopyNote')
-    pw.expect(note).to_contain_text('session_log_missing')
-    pw.expect(note).to_contain_text('元数据未声明会话日志')
-    pw.expect(note).to_contain_text('会话副本不可用')
+    pw.expect(body).to_contain_text('session_log_facts')
+    pw.expect(body).to_contain_text('非会话原文')
+    pw.expect(body).to_contain_text('"prune_count": 1')
+    assert api['copy_reads'] > reads
 
 
-def test_unknown_session_reason_is_shown_verbatim_not_folded(ui):
-    """未知 `session_*` 值原样显示（不折成"未知/不可用"这种模糊说法，也不猜含义）。"""
-    page, _ = setup(ui, inst=instance(available=False, state='unavailable',
-                                      reason='target_missing', url=None),
-                    copy=session_copy(available=False, reason='session_future_value',
-                                      kind=None, facts=None, bytes=None))
-    page.locator('#awSessionCopy').click()
-    note = page.locator('#awEmbedCopyNote')
-    pw.expect(note).to_contain_text('session_future_value')
-    assert '原因未知' not in note.text_content(), note.text_content()
-
-
-def test_session_copy_without_kind_never_claims_full_text(ui):
-    """缺 `kind` 时不得显示"会话副本全文"（稳定键契约里没有正文键）。"""
-    page, _ = setup(ui, inst=instance(available=False, state='unavailable',
-                                      reason='target_missing', url=None),
+def test_s8j_missing_kind_never_claims_content(ui):
+    """§2-4/8：缺 `kind` ⇒ 事实类型未知：不给数字结论，原始块保持隐藏。"""
+    page, _ = setup(ui, inst=instance(direct_url=DIRECT),
                     copy={'available': True, 'reason': None, 'kind': None,
-                          'facts': {'compactions': 1}, 'bytes': 12, 'truncated': False})
+                          'facts': {'count': 1}, 'bytes': 12, 'truncated': False})
     page.locator('#awSessionCopy').click()
-    note = page.locator('#awEmbedCopyNote')
-    pw.expect(note).to_contain_text('kind')
     pw.expect(page.locator('#awSessionCopyBody')).to_be_hidden()
+    facts = page.locator('#awEmbedFacts').inner_text()
+    assert 'kind' in facts and '压缩成功' not in facts, facts
 
 
-def test_instance_and_session_copy_requests_carry_selected_attempt(ui):
-    """P1-1：可用性/会话副本必须按**当前窗口选中的 attempt** 请求（服务端校验归属）。"""
-    page, api = setup(ui, inst=instance(available=False, state='unavailable',
-                                        reason='target_missing', url=None))
-    pw.expect(page.locator('#awEmbedFallback')).to_contain_text('目标实例缺失')
-    instance_urls = [u for u in api['requests'] if u.split('?')[0].endswith('/instance')]
-    assert instance_urls and all('attempt=2' in u for u in instance_urls), instance_urls
-    page.locator('#awSessionCopy').click()
-    pw.expect(page.locator('#awEmbedCopyNote')).to_contain_text('kind')
-    copy_urls = [u for u in api['requests'] if u.split('?')[0].endswith('/session-copy')]
-    assert copy_urls and all('attempt=2' in u for u in copy_urls), copy_urls
-
-
-def test_attempt_scoped_instance_two_states(ui):
-    """attempt=2 可用 / attempt=1 不可用：切 attempt 后重新探并切换渲染（不沿用旧结论）。"""
-    inst = instance()
-    ui_api = ui[1]
-    page, api = setup(ui, inst=inst)
+def test_s8j_attempt_switch_rereads_both_endpoints_scoped_by_attempt(ui):
+    """§2-7 + REV-16 §6.1：切换 attempt 后两个端点都重读，且**都带** `?attempt=`（不跨 attempt 借用）。"""
+    page, api = setup(ui, inst=instance(direct_url=DIRECT))
     api['instance_by_attempt'] = {1: instance(available=False, state='unavailable',
-                                             reason='target_missing', url=None)}
-    pw.expect(page.locator('#awEmbedFrame')).to_be_visible()
+                                             reason='target_missing', url=None,
+                                             direct_url=None)}
     page.locator('#awAttempt').select_option('1')
-    pw.expect(page.locator('#awEmbedFallback')).to_contain_text('目标实例缺失')
-    pw.expect(page.locator('#awEmbedFrame')).to_be_hidden()
-    assert any('attempt=1' in u for u in api['requests']), api['requests']
+    pw.expect(page.locator('#awEmbedState')).to_have_text('不可用')
+    pw.expect(page.locator('#awEmbedDirect')).to_be_hidden()
+    for path in ('/instance', '/session-copy'):
+        urls = [u for u in api['requests'] if u.split('?')[0].endswith(path)]
+        assert urls, path
+        # 切换后**最新**一次读取必须按选中的 attempt 请求（首屏那次是 attempt=2，属正常）
+        assert 'attempt=1' in urls[-1], (path, urls)
     page.locator('#awAttempt').select_option('')
-    pw.expect(page.locator('#awEmbedFrame')).to_be_visible()
+    pw.expect(page.locator('#awEmbedState')).to_have_text('实例就绪')
+    pw.expect(page.locator('#awEmbedDirect')).to_be_visible()
 
 
-def test_probe_pending_does_not_claim_embedded(ui):
-    """P2-5：探测中只能显示"正在确认可内嵌性"，成功后才置"已内嵌"。"""
-    page, api = setup(ui, inst=instance())
-    api['hold_proxy'] = True
-    page.locator('#awRefresh').click()
-    state = page.locator('#awEmbedState')
-    pw.expect(state).to_contain_text('正在确认可内嵌性')
-    pw.expect(state).not_to_contain_text('已内嵌')
-    pw.expect(page.locator('#awEmbedFrame')).to_be_hidden()
-    api['hold_proxy'] = False
-    api['pending_proxy'].pop().fulfill(status=200, json={'available': True})
-    pw.expect(page.locator('#awEmbedFrame')).to_be_visible()
-    pw.expect(state).to_contain_text('已内嵌')
-
-
-def test_refresh_reprobes_instance_and_recovers(ui):
-    """一次不可用不得把同一 run/node 永久标死：刷新后重新读可用性（Lead 2026-10-28 口径）。"""
-    page, api = setup(ui, inst=instance(available=False, state='unavailable',
-                                        reason='target_missing', url=None))
-    pw.expect(page.locator('#awEmbedFallback')).to_contain_text('目标实例缺失')
-    reads_before = api['instance_reads']
-    api['instance'] = instance()   # 服务端此刻已有可用实例
-    page.locator('#awRefresh').click()
-    pw.expect(page.locator('#awEmbedFrame')).to_be_visible()
-    assert api['instance_reads'] > reads_before
-
-
-def test_missing_instance_endpoint_degrades_instead_of_blank(ui):
-    page, _ = setup(ui, inst=None)   # 旧后端没有该端点 ⇒ 404
-    block = page.locator('#awEmbedFallback')
-    pw.expect(block).to_contain_text('不可内嵌')
-    pw.expect(page.locator('#awEmbedFrame')).to_be_hidden()
+def test_s8j_missing_endpoint_is_explicit_not_blank(ui):
+    """旧后端没有 `/instance` ⇒ 明确「不可用」+ 原因，不白屏、不假装就绪。"""
+    page, _ = setup(ui, inst=None)
+    pw.expect(page.locator('#awEmbedState')).to_have_text('不可用')
+    pw.expect(page.locator('#awEmbedReason')).to_contain_text('原因')
+    pw.expect(page.locator('#awEmbedDirect')).to_be_hidden()
 
 
 # ---------------------------------------------------------------- 安全与布局

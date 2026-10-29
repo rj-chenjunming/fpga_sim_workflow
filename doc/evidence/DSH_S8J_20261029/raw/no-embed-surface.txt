@@ -1,0 +1,17 @@
+# S8j：窗口内不得存在内嵌面（SPEC-REV-17 §2-1）
+$ grep -rn 'awEmbedFrame\|awEmbedFallback\|awEmbedNewTab\|<iframe\|<object\|<embed' loop/web/ | grep -v '\.min\.'
+(0 命中)
+
+$ grep -rn 'probeInstance\|degradeEmbed\|embedded_load_failed\|embed_timeout' loop/web/ loop/tests/browser/
+(0 命中)
+
+$ grep -n 'awEmbed' loop/web/index.html
+452:      <section class="aw-embed" id="awEmbed" aria-labelledby="awEmbedH">
+454:          <h3 id="awEmbedH">实例执行结果 <span>只读投影；实例页面用下方按钮打开</span></h3>
+455:          <span class="chip" id="awEmbedState">读取中</span>
+457:        <p class="aw-embed-title" id="awEmbedTitle">正在读取实例可用性…</p>
+458:        <p class="tiny muted" id="awEmbedReason"></p>
+460:        <p class="tiny muted" id="awEmbedStream"></p>
+462:        <p class="aw-embed-facts" id="awEmbedFacts">执行结果：读取中…</p>
+463:        <p class="tiny muted" id="awEmbedCopyNote"></p>
+465:          <a class="btn btn-sm" id="awEmbedDirect" href="#" target="_blank" rel="noopener" hidden>打开真实用例（实例窗口）↗</a>

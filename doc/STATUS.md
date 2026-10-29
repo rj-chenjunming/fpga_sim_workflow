@@ -6229,3 +6229,46 @@ S8b 真机结论是「D3 机制达成、**产品内嵌路径**被 `remote.mux` W
   显示 `upstream_auth`（**已登记为未决**：反代"有 cookie 就不注入 token"，实例轮换 token 后旧 cookie 即失效）。
 - 不声称远程浏览器可用（`direct_url` 仍是 `127.0.0.1:<port>`；需隧道或 S9a/S9b）。
 - 不声称独立复核；未推送。
+
+## 133 S8j：窗口实例区改为「执行结果/状态 + 打开真实用例」（移除 iframe，2026-10-29）
+
+契约：`doc/spec/SPEC-REV-17-20261029.md`（= REV-16 新增 §6.4）+ `AGENT_WINDOW_SPEC.md` 指针；
+计划：`doc/plans/2026-10-29-s8-review-and-d3.md` §8.1；证据：`doc/evidence/DSH_S8J_20261029/`。
+
+### 133.1 裁决与做法
+
+- 人 2026-10-29：「内嵌显示其实没那么必要，只要有一个结果展示就行，具体信息可以通过跳转到实例窗口查看；
+  内嵌那块换成一段执行结果/状态，再加一个跳转真实用例的按键即可。」
+- 依据是 S8b/S8g 真机事实：反代只透传 HTTP，`WS /api/remote.mux` 仍 405（REV-16 §9-2 仍开）⇒ iframe 内恒为空会话列表。
+- **移除**内嵌面：`#awEmbedFrame` / `#awEmbedFallback` / `#awEmbedNewTab`、内嵌探测 `probeInstance`、8 s 加载超时、降级块
+  （源码 `grep` 0 命中，见证据 `raw/no-embed-surface.txt`）。
+- **新增**「实例执行结果」块（全部只读服务端投影）：
+  ① 实例状态 chip（`实例就绪`/`不可用` + `S4View.instanceReason` 映射）；② `stream` 能力行（缺字段不显示）；
+  ③ 执行结果行 `#awEmbedFacts` = `session-copy.facts` 的 `count`/`len(records)`/`len(errors)`/`start→end`/`prune`
+  + `bytes`/`truncated`（缺字段「未知」、`0` 显示 0、不可用给 `session_*` 中文映射且不出 0 假数）；
+  ④ `#awEmbedDirect`「打开真实用例（实例窗口）↗」= `direct_url`（缺则回退反代 `url`，皆无隐藏，title 披露
+  "token 短暂进地址栏/仅本机"）；⑤ 打开窗口/切节点/切 attempt/刷新各读一次 `instance` + `session-copy`（都带 `?attempt=`）。
+- **保留不改**：`/instance` 可用性与 `direct_url` 六条（REV-16 §6.1）、`/session-copy` reason 族与归属校验、反代转发面
+  （R1–R20、token 脱敏、SSE 读超时口径）。`embed` 字段服务端继续下发但**界面不再消费**（REV-17 §5 已登记）。
+
+### 133.2 验证（数字从命令输出复制；证据 `raw/gates.txt`）
+
+| 门 | 结果 |
+|---|---|
+| 隔离复核（`git worktree` at HEAD，仅回放本片改动） | 红 `10 failed, 1 passed` → 绿 `24 passed`；前端契约 `19 passed` |
+| 浏览器门（主树） | `146 passed in 162.08s` |
+| 单测门（主树，provision → cleanup） | `5 failed, 1867 passed, 1 warning, 145 errors in 555.73s` |
+| 文档门 | `65 passed in 2.46s` |
+| 端到端（drill） | phase `1/2/3/4/4b/5` 全 `rc=0`，`=> ALL PASS` |
+
+`145 errors` = 本机无 Chromium 的浏览器用例（环境缺件）。`5 failed` 归因：3 条为数据根/归档类既有失败
+（`.dev-ws/tools/gate.py` 缺失、`guard rc=3`）；**2 条由同工作区的并发切片**（闸门双栏独立滚动）
+在 `loop/web/index.html` 新增注释「…实际溢出时由 app.js 补 tabindex=0」触发（用例以 `html.index("app.js")` 取首位置），
+同一用例在 §133.2 隔离树上 `19 passed` ⇒ **不计入本片回归**。
+
+### 133.3 未做 / 不声称
+
+- 不声称内嵌可用（本片是**取消**内嵌路径，不是修好 WS 405）；不声称远程浏览器可用（`direct_url` 仍 loopback）；
+  不声称会话原文可导出（结果块是 `session_log_facts` 解析事实，§9-11 仍开）。
+- 反代转发面当前**无界面消费者**（入口走直连）：S9a/S9b 若启用远程访问需重新评估 token/入口形态。
+- 不声称独立复核；未推送。

@@ -5763,3 +5763,58 @@ REV-16 §9-10 **实测可收口为"前缀剥离即可"**（spec 正文本轮不�
 - **不声称**本轮已完成任何切片：S8a–S8d 均在执行中，收口数字见后续各节。
 - 未推送；`default_backend` 仍 `agently`；E（内网业务验收）**未验证**。
 - N6 真机 `edits` 业务可疑（§118.3）仍由 **N8/人**判断，本轮不冒充"已验证业务正确"。
+
+## 124 S8a 交付：S7 四片独立复核（只报告不改）+ 发现处置（2026-10-29）
+
+本轮入口：[开工提示词 S8](agents/开工提示词_S8-复核与D3收口.md) §5.1；契约
+[REV-16](spec/SPEC-REV-16-20261028.md) §5/§9/§10、[REV-14](spec/SPEC-REV-14-20261028.md) §3/§4；
+审计报告 [`doc/audit/AUDIT-20261029-s7.md`](audit/AUDIT-20261029-s7.md)（**本轮不修**，只报告）
++ 附录 `parts/s7-evidence-integrity.md` / `s7-mutation-probes.md` / `s7-adhoc-probes.md`。
+
+### 124.1 复核结论（独立复核者：`s8a-reviewer`；Lead 未参与复核）
+
+| 项 | 结果 |
+|---|---|
+| 冻结完整性 | 四份证据档 **70/70 OK、`md5sum -c` 四份 rc=0**（未失败，故继续） |
+| 门数字与冻结日志 | **逐项相符**（1655/1716/1766/1770 passed、141/142 browser、e2e `ALL PASS`、3 failed = env_layer 三条） |
+| 发现计数 | **P0 = 0；P1 = 2；P2 = 13**（含 2 条覆盖缺口），另登记覆盖缺口 G1–G6 |
+| 反向抽检 | 13 条变异（M1–M13）逐条"改→跑→复原"；关键判据（材料面唯一来源、allowlist 回退档、反代 reason、0600/原子写、token 零回显）**判红**；抓不住的登记为覆盖缺口 |
+| 通过项 | 材料面唯一来源 / 派生物不含原文 / 只影响 N6；allowlist 回退档实测回到 S6（plugins 2 项、env 无键、fingerprint == S6 公式、boot3 请求体 26 项）；反代 reason 逐条不变；Web 实例 0600+原子写；S7d §9-15/§9-17 行为未变、§9-16 为有意变化且判别有效 |
+
+**并发风险（照实登记）**：复核者用 `git checkout -- <file>` 复原变异，发生在 S8b/S8c 并行开工之后。
+事后三方核验：S8b（`git diff --stat` 行数 + 8 个用例文件 **213 passed** + 14 处符号）与 S8c（`agent_view.py +62` hunk 逐条 +
+**62 passed**）均确认**无丢失**；复核者亦在报告 §1/§7 记明该残余不确定性。**下一轮复核类变异改用副本/独立 worktree，
+不得再用 `checkout --`**（已写入计划 §未决与开工提示词 §9 的后续条目）。
+
+### 124.2 发现处置（谁修、修没修、怎么验）
+
+| 发现 | 处置 | 证据 |
+|---|---|---|
+| **P1-1** 材料面「−96.8%（16757 B）」口径不成立 | **已更正（只增）**：新增 [`doc/evidence/DSH_S7A_20261029/CORRECTION.md`](evidence/DSH_S7A_20261029/CORRECTION.md)（冻结件**不回填**，目录临时解冻→只增→立即重冻 `555`/`444`，md5 记目录外 `.CORRECTION.md5`）。更正为**双口径**：run 产物面 528122 → 1287 B（**−99.76%**）；同口径 `input/` 627203 → **100368 B**（**−84.00%**，真机 5 目标）。原 `16757` 与 `−96.8%` 是**单目标 dry-run**（`raw/s7a_dry_run.json`）。**机制结论不变** | 本轮独立复算：`raw/n6_attempt_record_summary.json` 的 6 件材料和 = **100368**；`raw/s7a_dry_run.json` `material_face.total_bytes=16757`（2 件）；`md5sum -c` 四份冻结清单更正后仍全绿 |
+| **P1-2** `TokenRedactFilter` 三条漏面（子 logger / `extra=` / `exc_info`）+ 参数化形态泄 stderr | **已修（S8e）**：脱敏下移到 **`logging.Handler.handle`**（每条记录都过），`getMessage()` 先合并再脱敏（避免 logging 内部错误把原值打 stderr）；`extra=` 与 traceback 一并处理。**新增 5 条用例**先红后绿 | `loop/tests/test_instance_proxy.py`：`test_s8e_child_logger_messages_are_redacted` / `..._extra_fields_are_redacted` / `..._exception_traceback_is_redacted` / `..._parameterized_secret_never_reaches_stderr` / `..._redaction_is_installed_at_import_time`；`test_instance_proxy.py` 全文件 **68 passed** |
+| **P2（SSE）** `plugins/events` 被反代 15 s 读超时掐断（S8c A/B 实测：经反代 15.02 s 断 / 直连 35 s 仍开） | **已修（S8e）**：R12 读超时改为**非流式口径**；`Accept: text/event-stream` 请求 `read=None`（连接超时 1 s 仍生效）；响应头已发出后的读失败只允许**干净结束 + 记日志**（不改 503）。规格 REV-16 §5.4 只增澄清 | 新用例 `test_s8e_event_stream_survives_idle_gap_longer_than_read_timeout`（把读超时压到 0.1 s、上游空闲 0.4 s ⇒ 修复前红、修复后绿）；纯函数 `is_event_stream_accept` |
+| **P2-5** `session-copy` 透传 SDK 自由文本 reason（含宿主绝对路径） | **已修**：收敛到 §6.2 六项枚举（`session_log_unavailable`），**不透传自由文本** | 新用例 `test_s8e_session_copy_never_passes_sdk_free_text_reason`（断言输出不含 `/home/work` 与路径片段） |
+| **P2-12** `_error_page` 未转义 `prefix_root`（当前不可达） | **已修（加固）**：所有插值 `html.escape` | 新用例 `test_s8e_error_page_escapes_link_and_text` |
+| **P2-13** 仓库级断链 3 条（含 S7 交接件引入的 `DSH_S7_20261029/`） | **已修**：① S7 交接件指向四份真实证据档（附更正注）；② `check_doc_links.py` 把**生成/运行时**路径归入跳过（`loop/.dev-ws`、任意路径中的 `__pycache__/`），**不放宽任何源文件/文档路径** | `python3 doc/audit/check_doc_links.py` ⇒ `missing=0`；`tests/test_doc_links.py` **65 passed** |
+| **P2-1/P2-2/P2-3/P2-4/P2-7** | **移交 S8b 处置**（`dsh.py`/`dsh_assets.py`/`dsh_web_instance.py` 是其写权） | 见 §125 |
+| **P2-6/P2-10/P2-11 + G4/G6** | **登记为下一轮**（无消费者字段/证据覆盖缺口/命名口径），不声称已解决 | 计划 §未决 |
+| **P2-8** D3 偏离未登记在 REV-14 | **已随 B1 收口**：[REV-14 §9](spec/SPEC-REV-14-20261028.md) 明确"`dsh-web-home` 并列目录取消、回到 D3 共用 home" | 规格 §9.3 |
+| **P2-9** S7D README「`-k p2` = 4 条」实为 5 条 | **登记（冻结件不回填）**：本行即为更正记录；原始 README 不动 | 审计 §4 P2-9 |
+
+### 124.3 纪律核对
+
+- **独立复核（本片核心）**：复核者为独立 agent，**只报告不改**；本轮所有修复由 Lead（S8e）与 S8b 完成，
+  **不冒充独立复核修复**。红线 9 遵守。
+- **先改规格再改代码**：S8e 的两条澄清先写进 [REV-16 §5.4](spec/SPEC-REV-16-20261028.md)（只增，不改写 R12 原文），
+  再实现 + 用例。
+- **冻结件只增不改**：S7A 目录只新增 `CORRECTION.md`，`md5sum -c` 更正后四份清单全绿；目录权限已恢复 `555`。
+- **唯一判据（红线 8）**：脱敏判据仍是"`token=<值>` → `token=<redacted>`"一条（只换挂载点）；
+  `session-copy` reason 只做收敛、不新增判据；`_error_page` 只做转义。
+- **未复现即不声称**：SSE 修复只在单测层验证（0-token 真机 A/B 由 S8c 给出复现），**不声称**"真机实时流已通"——
+  `remote.mux` WebSocket 仍 **405**（§9-2 未决，见 §125）。
+
+### 124.4 未做 / 不声称
+
+- **不声称** S7 已"独立验证业务正确"：复核对象是**机制与证据**，不含 N6 `edits` 的业务正确性（仍属 N8/人）。
+- **不声称** SSE 修复让界面实时流可用：WS 升级仍 405。
+- 本轮未推送；`default_backend` 仍 `agently`。

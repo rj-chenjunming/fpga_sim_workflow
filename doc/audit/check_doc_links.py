@@ -55,6 +55,14 @@ WORKSPACE_PREFIXES = [
 #: 仓内派生数据根/副本（由 `loop/spikes/*.sh` 预置，内含环境文档副本）⇒ 不算本仓文档
 SKIP_PREFIXES = ["loop/state", "loop/.logs", "loop/.venv", "loop/.pytest_cache",
                  "loop/.agently", ".env-copy", ".dev-ws", ".wsp", ".tmp-",
+                 # 2026-10-29（S8 审计 P2-13 处置）：数据根既可写成相对仓根的 `.dev-ws`，
+                 # 也可写成从 `loop/` 视角的 `loop/.dev-ws`（`AGENTS.md` §4 的命令正是后者）。
+                 # 它是 gitignored 的运行时数据根、不是仓内文档 ⇒ 与上面的 `.dev-ws` 同类。
+                 "loop/.dev-ws",
+                 # 生成物目录：`__pycache__/` 下的 .pyc 由 Python 生成、不入库；只在历史审计报告
+                 # 的命令誊写里出现（AUDIT-20261026-a-group.md §298），不构成文档断链。
+                 # **只跳生成目录**，不放过任何源文件/文档路径。
+                 "__pycache__/",
                  # S0 真实环境验证的一次性派生副本（`host/s0.py` 的 work_env / rtl_source / 记录根）
                  ".s0-",
                  "/tmp/", "/home/soft/"]
@@ -170,6 +178,10 @@ def classify(token: str) -> str | None:
     if not clean:
         return None
     if clean.startswith(tuple(SKIP_PREFIXES)):
+        return None
+    # 生成目录不按"前缀"判：`kb/tools/__pycache__/x.pyc` 这类路径以任意仓内目录开头，
+    # 但其中的 `__pycache__/` 段永远是 Python 生成物、不入库（2026-10-29 S8 审计 P2-13 处置）。
+    if "__pycache__/" in clean:
         return None
     if _matches(clean, WORKSPACE_PREFIXES):
         return "workspace"

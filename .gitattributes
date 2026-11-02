@@ -14,3 +14,7 @@ doc/evidence/NODE_MODULE_COMPAT_20261029.md5 -text whitespace=cr-at-eol
 # Preserve local validation evidence byte-for-byte.
 doc/evidence/NODE_LOCAL_VALIDATION_20261102/** -text whitespace=cr-at-eol,-blank-at-eof
 doc/evidence/NODE_LOCAL_VALIDATION_20261102.md5 -text
+
+# Preserve acceptance records across Windows/Linux checkouts.
+doc/evidence/LOCAL_ACCEPTANCE_20261102/** -text whitespace=cr-at-eol,-blank-at-eof
+doc/evidence/LOCAL_ACCEPTANCE_20261102.md5 -text

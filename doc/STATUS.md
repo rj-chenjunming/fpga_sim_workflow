@@ -7301,3 +7301,12 @@ md5 账本：`NO_IMPACT_GATE_20261030.md5`、`KB_GATE_NO_IMPACT_20261030.md5`。
 - 前置问题包括：N8 原始 TESTLIB 缺件，默认历史运行夹具和 staged trace 缺失，基线/冲突数据缺失，DSH 指定安装不可用，合成 ENV_ROOT 缺 uvs.setup 和 doc/AGENTS.md。部分副本脚本因缺 loop/.venv 入口失败或跳过；本轮全量比较保留该共同条件，随后补测单列。浏览器运行时未在本地找到，未执行浏览器门。
 - 新增明确合成的完整图测试，不替代历史夹具：G1_no_impact 等待后重新建立 RunManager 并从盘恢复，分别签 no_impact_end / full_regression；验证 HALT 或跳过 N6/N7/N8 进入 N9 停放，取消后显式失败。专项 `2 passed in 3.07s`。补齐 loop/.venv 入口后，原先跳过的快照指纹脚本测试与新测试合并输出 `6 passed in 4.05s`。只改测试和文档，没有修改运行实现。
 - 新增证据 [NODE_LOCAL_VALIDATION_20261102](evidence/NODE_LOCAL_VALIDATION_20261102/README.md)，目录外 md5 清单保护字节；执行者本人验证，不称独立复核。真实工程/许可证、历史数据与完整四门仍待完成。
+
+## 161 本地验收收口与不能验收清单（2026-11-02）
+
+- 本轮没有修改产品运行实现，源码副本为 3f0f18f，并保留 a63b2f0 新增的合成完整图测试。补齐项目专用 WSL 的 libnss3、libnspr4、libasound2t64（含 libasound2-data）、zstd、bubblewrap；已有 Node.js 路径显式用于测试。浏览器 Python 依赖复制到独立 venv，离线 ensurepip 后按仓库锁文件安装，未改普通测试 venv。随仓离线包平台和 SHA-256 校验通过，真实启动 Chrome 156.0.8078.47 冒烟通过。
+- 浏览器门完整运行首次输出 `199 passed in 223.75s (0:03:43)`，但外层采集脚本出现退出码变量错误；直接运行入口复核输出 `199 passed in 219.11s (0:03:39)`，工具返回 `exit_code=0`。没有跳过或排除；该门在当前离线/合成测试范围通过，不延伸到真实工程与 DSH live。
+- 依赖补齐后投影、DSH 准入/SDK、代理和进程测试组：`234 passed, 3 skipped, 1 warning in 28.63s`，退出码 0；三项跳过依赖指定 DSH 安装中的 SDK 类型、session 词表或真实握手。
+- 软件层完整运行（不含浏览器、未设失败上限、独立数据根）输出 `51 failed, 2048 passed, 26 skipped, 1 warning, 3 errors in 137.35s (0:02:17)`，退出码 1。与 §160 失败/错误 ID 比较：`added: []`，移除 `tests/test_test_layers.py::test_software_entry_excludes_env_layer_at_collection`；本机前置改善不等于完整软件门通过。未逐项得到新环境下的可信真实工程结论。
+- kb/环境、drill 端到端与全仓文档门仍沿用 §159 未通过的范围，关键工程/历史数据前置未变化，本轮未重复执行这些门。新增交接文档内本地链接检查无缺失、代码围栏配对，但不代表全仓零断链。未进行独立复核；默认历史夹具、原始 TESTLIB、基线/冲突数据、真实工程/许可证与 DSH 运行环境仍需交接。
+- 新增 [本地验收结论与剩余清单](plans/2026-11-02-local-acceptance-and-blockers.md)，按 A1–A11 明确状态、缺件、承接角色、后续步骤和完成标准；能力未实现项单列，不伪装成单纯环境缺件。证据见 [LOCAL_ACCEPTANCE_20261102](evidence/LOCAL_ACCEPTANCE_20261102/README.md)，仅新增，目录外 md5。

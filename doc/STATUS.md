@@ -7294,3 +7294,10 @@ md5 账本：`NO_IMPACT_GATE_20261030.md5`、`KB_GATE_NO_IMPACT_20261030.md5`。
 - 隔离数据根 drill 端到端 phase `1/2/3/4/4b/5` 均 `rc=1`，未通过；本机文档检查 `checked=3225 skipped=42244 historical=857 known_missing=16 env_missing=410 missing=240`，`exit=1`，不声称零断链。以上 shell 包装如以末尾 `tail` 退出，其退出码不是被包裹测试退出码；此处按入口自身输出记录。
 - 独立复核、真实 UVS/许可证、DSH live、真实历史快照及完整四门尚未完成；定制环境选择和跨重启恢复仍未实现。
 - 软件层完整入口（不含浏览器，设置 `--maxfail=20`）在隔离数据根达到上限停止：`13 failed, 1222 passed, 27 skipped, 1 warning, 7 errors in 54.98s`；采集副本缺历史数据与部分环境材料，各失败尚未逐一归因，不称完整单测通过。首次采集因复制副本缺文档脚本报错，补齐后重跑；此前一次非最终入口位置版本的结果不作为最终结果。日志为本机 `/home/fpga/work/validation-20261102/software-final.log`，非冻结归档。
+
+## 160 完整源码副本补测与分流恢复（2026-11-02）
+
+- 从完整 Git 提交导出两版源码，修正此前部分复制漏掉仓库证据的测试条件。以相同合成 ENV_ROOT、不同空数据根和同一已核验 drill 夹具执行 `pytest -q -ra --ignore=tests/browser`，不设置失败上限。整合提交 3f0f18f：`52 failed, 2024 passed, 47 skipped, 1 warning, 3 errors in 113.45s (0:01:53)`；远端原版 f710079：`52 failed, 2005 passed, 47 skipped, 1 warning, 3 errors in 116.14s (0:01:56)`。失败/错误用例 ID 差集输出 `added_failure_ids: []`、`removed_failure_ids: []`、`same_failure_ids: True`；不代表完整门禁通过，也不能证明不可执行场景无回归。
+- 前置问题包括：N8 原始 TESTLIB 缺件，默认历史运行夹具和 staged trace 缺失，基线/冲突数据缺失，DSH 指定安装不可用，合成 ENV_ROOT 缺 uvs.setup 和 doc/AGENTS.md。部分副本脚本因缺 loop/.venv 入口失败或跳过；本轮全量比较保留该共同条件，随后补测单列。浏览器运行时未在本地找到，未执行浏览器门。
+- 新增明确合成的完整图测试，不替代历史夹具：G1_no_impact 等待后重新建立 RunManager 并从盘恢复，分别签 no_impact_end / full_regression；验证 HALT 或跳过 N6/N7/N8 进入 N9 停放，取消后显式失败。专项 `2 passed in 3.07s`。补齐 loop/.venv 入口后，原先跳过的快照指纹脚本测试与新测试合并输出 `6 passed in 4.05s`。只改测试和文档，没有修改运行实现。
+- 新增证据 [NODE_LOCAL_VALIDATION_20261102](evidence/NODE_LOCAL_VALIDATION_20261102/README.md)，目录外 md5 清单保护字节；执行者本人验证，不称独立复核。真实工程/许可证、历史数据与完整四门仍待完成。

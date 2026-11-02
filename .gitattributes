@@ -10,3 +10,7 @@ doc/evidence/AGENT_REVIEW_H2B_20261026.md5 -text whitespace=cr-at-eol
 # Preserve node compatibility evidence and its checksum across platforms.
 doc/evidence/NODE_MODULE_COMPAT_20261029/** -text whitespace=cr-at-eol,-blank-at-eof
 doc/evidence/NODE_MODULE_COMPAT_20261029.md5 -text whitespace=cr-at-eol
+
+# Preserve local validation evidence byte-for-byte.
+doc/evidence/NODE_LOCAL_VALIDATION_20261102/** -text whitespace=cr-at-eol,-blank-at-eof
+doc/evidence/NODE_LOCAL_VALIDATION_20261102.md5 -text

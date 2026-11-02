@@ -4,10 +4,36 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>FPGA Flow · 仿真工作台</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="stylesheet" href="tokens.css">
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
+<!-- §14「资产」：图标本地内联 sprite，零外链、零字体依赖、零运行时请求。
+     硬约束：不写 XML 命名空间声明（HTML5 内联 SVG 合法；写了会把命名空间 URI 带进页面，红冒烟用例）。
+     样式（尺寸/描边/颜色）只在 app.css 的 `.icon` 里写一次，符号内不重复声明。 -->
+<svg id="iconSprite" style="display:none" aria-hidden="true" focusable="false">
+  <symbol id="icon-s0" viewBox="0 0 16 16"><path d="M8 1.9 13.8 5 8 8.1 2.2 5z"/><path d="M2.2 5v6L8 14.1l5.8-3.1V5"/><path d="M8 8.1v6"/></symbol>
+  <symbol id="icon-setup" viewBox="0 0 16 16"><path d="M2.5 5.5h11M2.5 10.5h11"/><circle cx="6" cy="5.5" r="1.7"/><circle cx="10.5" cy="10.5" r="1.7"/></symbol>
+  <symbol id="icon-run" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.7"/><path d="M6.7 5.6 10.6 8l-3.9 2.4z"/></symbol>
+  <symbol id="icon-gate" viewBox="0 0 16 16"><path d="M2.5 4.8h11"/><path d="M5 4.8v8.2M11 4.8v8.2"/><path d="M2.5 13h11"/></symbol>
+  <symbol id="icon-chevron" viewBox="0 0 16 16"><path d="M6.2 3.8 10.4 8l-4.2 4.2"/></symbol>
+  <symbol id="icon-next" viewBox="0 0 16 16"><path d="M2.8 8h9.4"/><path d="M8.6 4.4 12.2 8l-3.6 3.6"/></symbol>
+  <symbol id="icon-external" viewBox="0 0 16 16"><path d="M6.6 3.4H3.4v9.2h9.2V9.4"/><path d="M9.2 3.4h3.4v3.4"/><path d="M12.6 3.4 7.6 8.4"/></symbol>
+  <symbol id="icon-panel" viewBox="0 0 16 16"><rect x="2.4" y="3.4" width="11.2" height="9.2" rx="1.6"/><path d="M2.4 6.3h11.2"/></symbol>
+  <symbol id="icon-close" viewBox="0 0 16 16"><path d="M4.4 4.4 11.6 11.6M11.6 4.4 4.4 11.6"/></symbol>
+  <symbol id="icon-check" viewBox="0 0 16 16"><path d="M3.2 8.4 6.4 11.6 12.8 5.2"/></symbol>
+  <symbol id="icon-fail" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.7"/><path d="M5.9 5.9 10.1 10.1M10.1 5.9 5.9 10.1"/></symbol>
+  <symbol id="icon-wait" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.7"/><path d="M8 4.6v4.2"/><path d="M8 11.2v.3"/></symbol>
+  <symbol id="icon-running" viewBox="0 0 16 16"><circle cx="3.2" cy="8" r="1.1" fill="currentColor" stroke="none"/><circle cx="8" cy="8" r="1.1" fill="currentColor" stroke="none"/><circle cx="12.8" cy="8" r="1.1" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="icon-up" viewBox="0 0 16 16"><path d="M8 13V3.2"/><path d="M4.4 6.8 8 3.2l3.6 3.6"/></symbol>
+  <symbol id="icon-valid" viewBox="0 0 16 16"><rect x="3" y="3" width="10" height="10" rx="1.6"/><path d="M5.5 8.2 7.3 10l3.2-3.6"/></symbol>
+  <symbol id="icon-invalid" viewBox="0 0 16 16"><rect x="3" y="3" width="10" height="10" rx="1.6"/><path d="M5.6 10.4 10.4 5.6"/></symbol>
+  <symbol id="icon-agent" viewBox="0 0 16 16"><circle cx="8" cy="5.9" r="2.5"/><path d="M3.6 13.2a4.4 4.4 0 0 1 8.8 0"/></symbol>
+  <symbol id="icon-empty" viewBox="0 0 16 16"><path d="M2.4 9.2h3l1 1.8h3.2l1-1.8h3"/><path d="M2.4 9.2 4.6 3.6A1.6 1.6 0 0 1 6.1 2.6h3.8a1.6 1.6 0 0 1 1.5 1L13.6 9.2V12a1.6 1.6 0 0 1-1.6 1.6H4a1.6 1.6 0 0 1-1.6-1.6z"/></symbol>
+</svg>
+<!-- JS 只克隆这个模板（不拼命名空间 URI 字符串、不走 DOM 命名空间 API：见脚本里的 iconNode）。 -->
+<template id="iconTpl"><svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-s0"></use></svg></template>
 <a class="skip-link" href="#workspace">跳到工作区</a>
 <div id="app">
 
@@ -18,7 +44,7 @@
     <span class="pill" id="hdrEnv"><span class="dot idle" id="hdrDot"></span><span id="hdrEnvText">环境未就绪</span></span>
     <span class="pill mono tiny" id="hdrAddr">—</span>
     <span class="pill tiny" id="hdrHealth">健康检查中…</span>
-    <a class="btn btn-ghost btn-sm" id="lnkLegacy" href="legacy.html">旧版操作台 ↗</a>
+    <a class="btn btn-ghost btn-sm" id="lnkLegacy" href="legacy.html">旧版操作台</a>
     <!-- U1-a（SPEC-REV-07）：等待送达通知开关；不支持 Notification 的浏览器隐藏，降级为标题徽标/闪烁 -->
     <button class="btn btn-ghost btn-sm hidden" id="btnNotify" type="button"
             title="运行进入等待人工/失败/作业结束时浏览器通知；被拒绝时降级为标题闪烁">通知</button>
@@ -30,16 +56,18 @@
     <aside id="sidebar">
       <div class="rail-top">
         <div class="rail-kicker">当前工作空间</div>
-        <button class="btn btn-block rail-entry" id="btnS0"><span class="workspace-icon" aria-hidden="true">F</span><span>仿真与验证<small>Simulation workspace</small></span><span aria-hidden="true">⌄</span></button>
+        <button class="btn btn-block rail-entry" id="btnS0"><span class="workspace-icon" aria-hidden="true">F</span><span>仿真与验证<small>Simulation workspace</small></span><span aria-hidden="true"><svg class="icon" aria-hidden="true" focusable="false" style="transform:rotate(90deg)"><use href="#icon-chevron"></use></svg></span></button>
         <button class="btn btn-primary btn-block" id="btnNew"><span aria-hidden="true">＋</span> 新建运行</button>
       </div>
       <div class="rail-label">工作台 <span>WORKBENCH</span></div>
+      <nav class="rail-nav" aria-label="主导航">
       <div class="seg" id="viewSeg" role="tablist" aria-label="视图切换" aria-orientation="vertical">
-        <button id="segS0" data-view="s0" class="on" role="tab" aria-selected="true" aria-controls="viewS0"><span class="nav-icon" aria-hidden="true">▧</span><span>环境准备</span><small>S0</small></button>
-        <button id="segSetup" data-view="setup" role="tab" aria-selected="false" aria-controls="viewSetup"><span class="nav-icon" aria-hidden="true">⊞</span><span>运行配置</span><small>01</small></button>
-        <button id="segRun" data-view="run" role="tab" aria-selected="false" aria-controls="viewRun"><span class="nav-icon" aria-hidden="true">◴</span><span>运行监控</span><small>02</small></button>
-        <button id="segGate" data-view="gate" role="tab" aria-selected="false" aria-controls="viewGate"><span class="nav-icon" aria-hidden="true">◇</span><span>人工闸门</span><small>03</small></button>
+        <button id="segS0" data-view="s0" class="on" role="tab" aria-selected="true" aria-controls="viewS0"><span class="nav-icon" aria-hidden="true"><svg class="icon" focusable="false"><use href="#icon-s0"></use></svg></span><span>环境准备</span><small>S0</small></button>
+        <button id="segSetup" data-view="setup" role="tab" aria-selected="false" aria-controls="viewSetup"><span class="nav-icon" aria-hidden="true"><svg class="icon" focusable="false"><use href="#icon-setup"></use></svg></span><span>运行配置</span><small>01</small></button>
+        <button id="segRun" data-view="run" role="tab" aria-selected="false" aria-controls="viewRun"><span class="nav-icon" aria-hidden="true"><svg class="icon" focusable="false"><use href="#icon-run"></use></svg></span><span>运行监控</span><small>02</small></button>
+        <button id="segGate" data-view="gate" role="tab" aria-selected="false" aria-controls="viewGate"><span class="nav-icon" aria-hidden="true"><svg class="icon" focusable="false"><use href="#icon-gate"></use></svg></span><span>人工闸门</span><small>03</small></button>
       </div>
+      </nav>
       <!-- U1-b（SPEC-REV-07）：「在等我」行动条 —— 只读聚合等待人工/失败的运行；点击直达 -->
       <div class="rail-label action-label">在等我 <span>ATTENTION</span></div>
       <div class="action-bar" id="actionBar"></div>
@@ -67,18 +95,9 @@
       <div id="banners"></div>
 
       <section id="viewS0" role="tabpanel" aria-labelledby="segS0">
-        <div class="s0-hero">
-          <div><div class="eyebrow">SIMULATION / ENVIRONMENT</div>
-            <h2>让每一次验证，<br>都有可靠的起点。</h2>
-            <p>从基线派生独立工作副本，替换新版 RTL，逐项核对准备证据。</p>
-            <div class="hero-tags"><span>基线只读</span><span>独立副本</span><span>内容校验</span></div>
-          </div>
-          <div class="hero-diagram" aria-hidden="true"><div class="diagram-label">CONTROLLED DERIVATION</div><div class="diagram-flow"><div class="diagram-source"><span>▧</span><b>BASELINE</b><small>只读基线</small></div><div class="diagram-connector"><i></i><span>派生 & 核验</span></div><div class="diagram-target"><span>⊞</span><b>WORKSPACE</b><small>独立工作副本</small></div></div><div class="diagram-caption"><span class="dot"></span> 原始资产保留 · 准备过程可追溯</div></div>
-        </div>
-
         <div class="s0-phases">
           <div class="phase-card" id="s0PhaseA"><span class="phase-index">01</span><div><div class="eyebrow">S0-a / 派生准备</div><h3>复制、替换、核对</h3><p>与差异分析并行，无需等待接口报告。</p></div><span class="chip" id="s0PhaseAStatus">待准备</span></div>
-          <div class="phase-card" id="s0PhaseB"><span class="phase-index">02</span><div><div class="eyebrow">S0-b / 执行前检查</div><h3>接口适配与三库冒烟</h3><p>接口差异、TB 登记及真实编译驱动未接入。</p></div><span class="chip warn">未接入</span></div>
+          <div class="phase-card" id="s0PhaseB"><span class="phase-index">02</span><div><div class="eyebrow">S0-b / 执行前检查</div><h3>接口适配与三库冒烟</h3><p>端口差异逐条确认与副本三库冒烟已接入，由本页一键入口自动承接。</p></div><span class="chip ok">已接入</span></div>
         </div>
 
         <div class="s0-grid">
@@ -86,23 +105,33 @@
             <div class="card">
               <div class="card-head"><span class="section-index">A</span><h2>派生工作副本</h2><span class="sub">S0-a</span></div>
               <form id="s0Form" class="card-body">
-                <div class="form-section-label">来源 / 只读输入</div>
-                <label class="s0-label" for="s0Baseline">基线工程目录 <span>完整 UVS 工程</span></label>
-                <input class="input mono" id="s0Baseline" required placeholder="/sim/项目基线" autocomplete="off">
-                <label class="s0-label" for="s0Version">基线版本 <span>分支、tag 或 commit，由操作者声明</span></label>
-                <input class="input mono" id="s0Version" required placeholder="例如 v1.2 / commit 标识" autocomplete="off">
-                <label class="s0-label" for="s0Rtl">新版 RTL 目录 <span>整体替换副本 RTL/</span></label>
-                <input class="input mono" id="s0Rtl" required placeholder="/project/src/rtl" autocomplete="off">
-                <div class="form-section-label form-divider">目标 / 独立可写副本</div>
-                <label class="s0-label" for="s0Work">新工作副本目录 <span>父目录已存在，目标尚未创建</span></label>
-                <input class="input mono" id="s0Work" required placeholder="/sim/项目基线_wk_v2" autocomplete="off">
-                <div class="s0-boundary"><span>→</span><div>完整继承 TB、TESTLIB、PKG、文档与 run。<br>仅替换新副本 RTL；已有目标不会覆盖。</div></div>
-                <details class="adv s0-access"><summary>可访问的目录范围</summary><div class="mono tiny" id="s0AllowedRoots">由服务端配置；路径必须位于允许根内。</div></details>
+                <div class="form-section-label">来源 / 二选一（填一个即可）</div>
+                <div id="s0Mode" role="radiogroup" aria-label="派生输入方式">
+                  <label class="s0-label" for="s0ModeRtl"><span><input type="radio" id="s0ModeRtl" name="s0Mode" value="rtl" checked> 新版 RTL 文件夹</span><span>目录名须为 RTL 或 SRC；只发 rtl_source</span></label>
+                  <label class="s0-label" for="s0ModeEnv"><span><input type="radio" id="s0ModeEnv" name="s0Mode" value="env"> 环境项目目录</span><span>整套工程 RTL/TB/PKG/TESTLIB/文档/kb；只发 baseline</span></label>
+                </div>
+                <div id="s0ModeRtlPanel">
+                  <label class="s0-label" for="s0Rtl">新版 RTL 文件夹 <span>环境资产取原始环境根；整体替换副本 RTL</span></label>
+                  <input class="input mono" id="s0Rtl" required placeholder="/project/src/RTL" autocomplete="off">
+                </div>
+                <div id="s0ModeEnvPanel" class="hidden">
+                  <label class="s0-label" for="s0EnvDir">环境项目目录 <span>整套工程 RTL/TB/PKG/TESTLIB/文档/kb；RTL 用项目自带的，不替换</span></label>
+                  <input class="input mono" id="s0EnvDir" required placeholder="/sim/项目环境根" autocomplete="off">
+                </div>
                 <div id="s0Error" role="alert"></div>
-                <div class="s0-form-actions"><span class="muted tiny" id="s0SubmitHint">准备完成后仍需 S0-b 与 GATE-1</span><button class="btn btn-primary" id="s0Prepare" type="submit">派生并校验 <span aria-hidden="true">→</span></button></div>
+                <div class="s0-form-actions"><span class="muted tiny" id="s0SubmitHint">准出与切换由服务端判定；准备完成后仍需 S0-b 接口复核</span><button class="btn btn-primary" id="s0Prepare" type="submit">派生并校验 <svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-next"></use></svg></button></div>
+                <details class="adv s0-advanced" id="s0Advanced">
+                  <summary>高级（可改）<span>留空 = 服务端默认值</span></summary>
+                  <label class="s0-label" for="s0Version">基线版本 <span>留空 = RTL@/ENV@文件夹名+时间戳（操作者声明，不伪装已验证 commit）</span></label>
+                  <input class="input mono" id="s0Version" placeholder="例如 v1.2 / commit 标识" autocomplete="off">
+                  <label class="s0-label" for="s0Work">新工作副本目录 <span>留空 = TOOL_ROOT/workspaces/原环境名-derived-时间戳</span></label>
+                  <input class="input mono" id="s0Work" placeholder="/sim/项目基线_wk_v2" autocomplete="off">
+                </details>
+                <div class="s0-boundary"><span><svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-next"></use></svg></span><div>「新版 RTL 文件夹」= 环境资产取原始环境根并整体替换 RTL；「环境项目目录」= 整套工程选择性复制成副本、RTL 不替换。<br>按 S0 §9.3 选择性复制；已有目标不会覆盖；跳过项在阶段回执里逐条列出。</div></div>
+                <details class="adv s0-access"><summary>可访问的目录范围</summary><div class="mono tiny" id="s0AllowedRoots">由服务端配置；路径必须位于允许根内。</div></details>
               </form>
             </div>
-            <details class="card s0-history"><summary>准备记录 <span class="muted tiny">查看历史派生与重新核验</span></summary><div class="card-body" id="s0History">加载中…</div></details>
+            <details class="card s0-history"><summary>准备记录 <span class="muted tiny">查看历史派生与重新核验</span></summary><div class="card-body" id="s0History"><div class="sk-line w80"></div><div class="sk-line w60"></div></div></details>
             <div class="card s0-rehearsal">
               <div class="card-head"><span class="section-index">R</span><h2>S0 演练</h2><span class="sub">S0-rehearsal</span></div>
               <div class="card-body">
@@ -128,19 +157,58 @@
                 <div id="s0Result" class="s0-result"><div class="receipt-empty">每次派生，都有一份记录。</div><p class="muted tiny">填写左侧路径，生成工作副本与逐文件指纹。准备记录可随时重新核验。</p></div>
                 <ol class="s0-checks" id="s0Checks">
                   <li><span>01</span><div>完整派生工作副本<small>保留完整工程结构</small></div><b>待执行</b></li>
-                  <li><span>02</span><div>新版 RTL 整体替换<small>逐文件 MD5 一致</small></div><b>待执行</b></li>
+                  <li><span>02</span><div>RTL 根部替换<small>环境资产入口取原始根；环境项目入口不替换（逐文件 MD5 一致）</small></div><b>待执行</b></li>
                   <li><span>03</span><div>非 RTL 初检一致<small>复制不得污染继承资产</small></div><b>待执行</b></li>
-                  <li><span>04</span><div>接口核对与 TB 登记<small>仅限 top.sv 接口适配</small></div><b>未接入</b></li>
-                  <li><span>05</span><div>副本三库编译冒烟<small>0 error + warning 评估</small></div><b>未接入</b></li>
+                  <li><span>04</span><div>端口差异确认<small>仅限 top.sv 接口适配</small></div><b>已接入</b></li>
+                  <li><span>05</span><div>自动冒烟<small>0 error + warning 评估</small></div><b>已接入</b></li>
                   <li><span>06</span><div>基线零写入见证<small>派生前后全量指纹</small></div><b>待执行</b></li>
                 </ol>
-                <a class="btn btn-block hidden" id="s0Report">下载准备报告 ↗</a>
+                <a class="btn btn-block hidden" id="s0Report">下载准备报告 <svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-external"></use></svg></a>
               </div>
             </div>
-            <div class="s0-blockers"><div class="eyebrow">BEFORE EXECUTION / 执行前</div><h3>还需要完成什么</h3><div id="s0Blockers"><p>接口核对与逐 hunk 变更登记、真实三库冒烟尚未接入。</p><p>完成 S0 两段及 GATE-1 后才能进入新版执行。</p></div></div>
+            <div class="s0-blockers"><div class="eyebrow">BEFORE EXECUTION / 执行前</div><h3>还需要完成什么</h3><div id="s0Blockers"><p>派生成功后端口差异与三库冒烟由本页承接；无记录时以服务端结论为准。</p><p>完成 S0 两段（含 S0-b 接口复核与准出判定）后才能进入新版执行。</p></div></div>
           </div>
         </div>
-        <div class="s0-scope">本页对应修订稿 S0。运行配置、运行监控与人工闸门仍属于现有闭环；新版执行入口尚未接入。</div>
+
+        <!-- T3（WEB_UI_SPEC §13）：一键入口的阶段回执 / 端口差异 / 环境切换 / 副本清单。
+             全部只渲染服务端 record 字段，界面不新增判定口径。 -->
+        <div class="s0-entry" id="s0Entry">
+          <div class="card">
+            <div class="card-head"><span class="section-index">C</span><h2>阶段回执</h2><span class="sub">派生 → 端口确认 → 三库冒烟 → 准出 → 切换 → 到运行配置</span></div>
+            <div class="card-body">
+              <ol class="s0-flow" id="s0PhaseFlow" aria-live="polite">
+                <li><span>01</span><div><b>派生副本</b><small>复制 / RTL 替换或未替换 / 非 RTL 初检</small></div><b>待执行</b></li>
+                <li><span>02</span><div><b>端口确认</b><small>差异逐条处置后继续冒烟</small></div><b>待执行</b></li>
+                <li><span>03</span><div><b>三库冒烟</b><small>副本内真实编译 + warning 评估</small></div><b>待执行</b></li>
+                <li><span>04</span><div><b>准出</b><small>六项 passed 且无漂移（服务端判据）</small></div><b>待执行</b></li>
+                <li><span>05</span><div><b>切换环境</b><small>新子进程接管 + 健康检查</small></div><b>待执行</b></li>
+                <li><span>06</span><div><b>到运行配置</b><small>预填 s0_record_id 与推荐基线</small></div><b>待执行</b></li>
+              </ol>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><span class="section-index">D</span><h2>端口差异</h2><span class="sub">S0-b · 只呈现服务端结论</span></div>
+            <div class="card-body">
+              <div id="s0Ports"><div class="receipt-empty">尚未派生。</div><p class="muted tiny">端口差异由服务端派生并落账；界面不判定、不合成。</p></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><span class="section-index">E</span><h2>环境切换</h2><button class="btn btn-ghost btn-sm" id="s0SwitchRefresh" type="button">刷新环境</button></div>
+            <div class="card-body">
+              <div id="s0Switch"><div class="sk-line w80"></div><div class="sk-line w60"></div></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><span class="section-index">F</span><h2>派生副本</h2><button class="btn btn-ghost btn-sm" id="s0CopiesRefresh" type="button">刷新副本</button></div>
+            <div class="card-body">
+              <div id="s0Copies"><div class="sk-line w80"></div><div class="sk-line w60"></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="s0-scope">本页派生出的副本可通过一键切换成为当前环境，并在运行配置里开跑。</div>
       </section>
 
       <!-- ============ 视图 1：配置 ============ -->
@@ -236,7 +304,7 @@
         <div class="grid2">
           <div class="card">
             <div class="card-head"><h2>环境与工具</h2><span class="sub">服务健康检查</span></div>
-            <div class="card-body" id="healthBody"><span class="muted">加载中…</span></div>
+            <div class="card-body" id="healthBody"><div class="sk-line w80"></div><div class="sk-line w60"></div><div class="sk-line w60"></div></div>
           </div>
           <div class="card">
             <div class="card-head"><h2>操作边界</h2><span class="sub">界面只做投影与传输</span></div>
@@ -254,6 +322,7 @@
       <section id="viewRun" class="hidden" role="tabpanel" aria-labelledby="segRun">
         <div id="runEmpty" class="card empty-card">
           <div class="empty">
+            <svg class="icon icon-30" aria-hidden="true" focusable="false"><use href="#icon-empty"></use></svg>
             <div class="empty-title">尚未选择运行</div>
             <div class="muted">从左侧运行记录选择一条，或点「＋ 新建运行」开始闭环。</div>
           </div>
@@ -351,7 +420,7 @@
   <!-- 目录浏览器（基线与项目共用，单实例；打开时移动到对应步骤下方） -->
   <div class="dirpicker hidden" id="dirPicker">
     <div class="dp-head">
-      <button class="btn btn-ghost btn-sm" id="btnDirUp">↑ 上级</button>
+      <button class="btn btn-ghost btn-sm" id="btnDirUp"><svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-up"></use></svg> 上级</button>
       <span class="dp-crumb mono" id="dirCrumb">—</span>
       <button class="btn btn-ghost btn-sm" id="btnDirClose">收起</button>
     </div>
@@ -372,7 +441,7 @@
     <div class="aw-terminal-mark" aria-hidden="true">&gt;_</div>
     <div class="grow"><div class="eyebrow">AGENT WORKSPACE / 工作窗口</div><h2 id="awTitle">Agent</h2></div>
     <span class="chip" id="awStatus" role="status" aria-live="polite">加载中</span>
-    <button class="btn btn-ghost btn-sm" id="awClose" aria-label="关闭 Agent 窗口">关闭 ×</button>
+    <button class="btn btn-ghost btn-sm" id="awClose" aria-label="关闭 Agent 窗口">关闭 <svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-close"></use></svg></button>
   </div>
   <div class="aw-toolbar">
     <span id="awSelection">读取成果身份…</span>
@@ -462,7 +531,7 @@
         <p class="aw-embed-facts" id="awEmbedFacts">执行结果：读取中…</p>
         <p class="tiny muted" id="awEmbedCopyNote"></p>
         <div class="aw-embed-actions">
-          <a class="btn btn-sm" id="awEmbedDirect" href="#" target="_blank" rel="noopener" hidden>打开真实用例（实例窗口）↗</a>
+          <a class="btn btn-sm" id="awEmbedDirect" href="#" target="_blank" rel="noopener" hidden>打开真实用例（实例窗口） <svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-external"></use></svg></a>
           <button class="btn btn-sm" id="awSessionCopy" type="button">刷新执行结果</button>
         </div>
         <pre class="aw-session-copy" id="awSessionCopyBody" hidden>—</pre>
@@ -503,7 +572,7 @@
       <div class="nd-meta" id="ndMeta"></div>
     </div>
     <span class="chip" id="ndStatus" role="status" aria-live="polite">加载中</span>
-    <button class="btn btn-ghost btn-sm" id="ndClose" type="button" aria-label="关闭节点详情">关闭 ×</button>
+    <button class="btn btn-ghost btn-sm" id="ndClose" type="button" aria-label="关闭节点详情">关闭 <svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-close"></use></svg></button>
   </div>
   <div class="nd-toolbar">
     <span class="mono" id="ndPath">—</span>
@@ -525,6 +594,12 @@
         <div id="ndHeadline"></div>
         <div id="ndNote"></div>
         <div id="ndReport" class="nd-report-entry"></div>
+      </section>
+      <!-- SPEC-REV-20 §8.3：N16（晋升）面板的人签豁免清单（含 actor 与日期）。
+           数据由主模块从服务端投影 run_view.case_waivers 传入；本面板不判定、不聚合。 -->
+      <section class="nd-block hidden" id="ndWaiverBlock" aria-labelledby="ndWaiverH">
+        <h3 id="ndWaiverH">人签豁免 <span class="tiny muted">台账 overrides 的人签例外；机器原判未改写，报告仍显示本轮未通过</span></h3>
+        <div id="ndWaivers"></div>
       </section>
       <section class="nd-block hidden" id="ndGateBlock" aria-labelledby="ndGateH">
         <h3 id="ndGateH">闸门复核 <span class="tiny muted">清单只读；G1 逐条处置写入共享草稿；提交入口只有闸门视图</span></h3>
@@ -574,7 +649,7 @@
           <h3 id="ndDiffTitle">—</h3>
           <div class="nd-diff-meta" id="ndDiffMeta"></div>
         </div>
-        <button class="btn btn-ghost btn-sm nd-overlay-close" id="ndDiffClose" type="button" aria-label="关闭前后对比浮窗">关闭 ×</button>
+        <button class="btn btn-ghost btn-sm nd-overlay-close" id="ndDiffClose" type="button" aria-label="关闭前后对比浮窗">关闭 <svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-close"></use></svg></button>
       </div>
       <div class="nd-overlay-body" id="ndDiffBody"></div>
     </div>
@@ -590,11 +665,40 @@
         <h3 id="ndReportTitle">报告</h3>
         <div class="nd-diff-meta" id="ndReportMeta"></div>
       </div>
-      <button class="btn btn-ghost btn-sm nd-overlay-close" id="ndReportClose" type="button" aria-label="关闭报告浮窗">关闭 ×</button>
+      <button class="btn btn-ghost btn-sm nd-overlay-close" id="ndReportClose" type="button" aria-label="关闭报告浮窗">关闭 <svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-close"></use></svg></button>
     </div>
     <div class="nd-overlay-body">
       <pre class="nd-report-pre" id="ndReportBody">—</pre>
       <div class="foot-note" id="ndReportNote"></div>
+    </div>
+  </div>
+</dialog>
+<!-- SPEC-REV-20 §8.2：人签覆写二次确认（原文机器原因 + 证据件 path/md5 + 必填理由）。
+     口径：这是**人签例外**，会记入台账 overrides；报告仍显示本轮未通过，机器判据不改写。
+     判据只在服务端：能否提交只看 case_override 投影，界面不自行推断。 -->
+<dialog id="caseOverrideDialog" class="node-detail" aria-labelledby="coTitle">
+  <div class="nd-head">
+    <div class="grow">
+      <div class="eyebrow">CASE OVERRIDE / 人签例外</div>
+      <h2 id="coTitle">认定通过（人签例外）</h2>
+      <div class="nd-sub" id="coSub">—</div>
+    </div>
+    <span class="chip bad" id="coChip">人签例外</span>
+    <button class="btn btn-ghost btn-sm" id="coClose" type="button" aria-label="关闭人签例外确认">关闭 <svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-close"></use></svg></button>
+  </div>
+  <div class="nd-body">
+    <div class="alert bad" id="coWarn">这是人签例外，会记入台账；报告仍显示本轮未通过。机器判据一字不改，豁免只是显式的人签例外。</div>
+    <div id="coCases"></div>
+    <div class="field-row" style="margin-top:14px">
+      <span class="field-label">操作者（必须 human:&lt;名字&gt;）</span>
+      <input class="input mono" id="coActor" aria-label="操作者" autocomplete="off" placeholder="human:your-name" style="max-width:260px">
+    </div>
+    <span class="field-label" style="display:block;margin-top:12px">理由（必填；空理由不能提交）</span>
+    <textarea class="input" id="coReason" rows="4" maxlength="2000" aria-label="人签豁免理由" placeholder="例如：期望值来自旧文档条目，实测值与本变预期一致，属期望过期"></textarea>
+    <div class="gate-error" id="coError" role="alert"></div>
+    <div class="field-row" style="margin-top:12px;justify-content:flex-end">
+      <button class="btn btn-ghost btn-sm" id="coCancel" type="button">取消</button>
+      <button class="btn btn-primary btn-sm" id="coSubmit" type="button" data-override-submit="1" disabled>提交人签例外</button>
     </div>
   </div>
 </dialog>

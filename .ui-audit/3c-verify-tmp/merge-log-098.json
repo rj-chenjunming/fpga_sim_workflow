@@ -1,0 +1,21 @@
+{
+ "merged": [
+  {
+   "selector": ".j",
+   "media": [],
+   "removed_rules": [
+    0
+   ],
+   "kept_at_rule": 2,
+   "moved": [
+    {
+     "prop": "color",
+     "from_rule": 0,
+     "value": "red"
+    }
+   ],
+   "dropped": []
+  }
+ ],
+ "skipped": []
+}

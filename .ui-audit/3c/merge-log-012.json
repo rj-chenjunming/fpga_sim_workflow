@@ -1,0 +1,170 @@
+{
+ "merged": [
+  {
+   "selector": ".host-trace-table th",
+   "media": [],
+   "removed_rules": [
+    692
+   ],
+   "kept_at_rule": 694,
+   "moved": [
+    {
+     "prop": "border",
+     "from_rule": 692,
+     "value": "1px solid var(--line)"
+    },
+    {
+     "prop": "padding",
+     "from_rule": 692,
+     "value": "5px 8px"
+    },
+    {
+     "prop": "text-align",
+     "from_rule": 692,
+     "value": "left"
+    },
+    {
+     "prop": "vertical-align",
+     "from_rule": 692,
+     "value": "top"
+    },
+    {
+     "prop": "overflow-wrap",
+     "from_rule": 692,
+     "value": "anywhere"
+    },
+    {
+     "prop": "min-width",
+     "from_rule": 692,
+     "value": "0"
+    }
+   ],
+   "dropped": []
+  },
+  {
+   "selector": ".nd-dispose-reason",
+   "media": [],
+   "removed_rules": [
+    799
+   ],
+   "kept_at_rule": 800,
+   "moved": [
+    {
+     "prop": "font-size",
+     "from_rule": 799,
+     "value": "12px"
+    },
+    {
+     "prop": "overflow-wrap",
+     "from_rule": 799,
+     "value": "anywhere"
+    }
+   ],
+   "dropped": []
+  },
+  {
+   "selector": ".aw-s3-table th",
+   "media": [],
+   "removed_rules": [
+    890
+   ],
+   "kept_at_rule": 892,
+   "moved": [
+    {
+     "prop": "border-top",
+     "from_rule": 890,
+     "value": "1px solid var(--line)"
+    },
+    {
+     "prop": "padding",
+     "from_rule": 890,
+     "value": "8px 6px"
+    },
+    {
+     "prop": "text-align",
+     "from_rule": 890,
+     "value": "left"
+    },
+    {
+     "prop": "vertical-align",
+     "from_rule": 890,
+     "value": "top"
+    },
+    {
+     "prop": "overflow-wrap",
+     "from_rule": 890,
+     "value": "anywhere"
+    },
+    {
+     "prop": "word-break",
+     "from_rule": 890,
+     "value": "break-word"
+    }
+   ],
+   "dropped": []
+  },
+  {
+   "selector": ".s0-table th",
+   "media": [],
+   "removed_rules": [
+    937
+   ],
+   "kept_at_rule": 939,
+   "moved": [
+    {
+     "prop": "padding",
+     "from_rule": 937,
+     "value": "7px 9px"
+    },
+    {
+     "prop": "text-align",
+     "from_rule": 937,
+     "value": "left"
+    },
+    {
+     "prop": "border-bottom",
+     "from_rule": 937,
+     "value": "1px solid var(--line)"
+    },
+    {
+     "prop": "vertical-align",
+     "from_rule": 937,
+     "value": "top"
+    }
+   ],
+   "dropped": []
+  },
+  {
+   "selector": ".s0-table td",
+   "media": [],
+   "removed_rules": [
+    937
+   ],
+   "kept_at_rule": 939,
+   "moved": [
+    {
+     "prop": "padding",
+     "from_rule": 937,
+     "value": "7px 9px"
+    },
+    {
+     "prop": "text-align",
+     "from_rule": 937,
+     "value": "left"
+    },
+    {
+     "prop": "border-bottom",
+     "from_rule": 937,
+     "value": "1px solid var(--line)"
+    },
+    {
+     "prop": "vertical-align",
+     "from_rule": 937,
+     "value": "top"
+    }
+   ],
+   "dropped": []
+  }
+ ],
+ "skipped": []
+}

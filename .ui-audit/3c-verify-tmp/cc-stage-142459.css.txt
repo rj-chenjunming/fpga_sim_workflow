@@ -1,0 +1,18 @@
+before=../3c/snap-before/app.css
+after =stage-142459.css
+跨 @ 上下文、同选择器、同属性、可能同时生效、值不同的对：7 处翻转
+  FAIL .agents  grid-template-columns:  [top]=grid-template-columns=1fr 1fr vs [('@media (max-width:1100px)',)]=grid-template-columns=1fr
+        生效者 before=@media (max-width:1100px) (位置 411/412)  →  after=top (位置 1507/223)
+  FAIL .phase-card  align-items:  [top]=align-items=center vs [('@media(max-width:1000px)',)]=align-items=start
+        生效者 before=@media(max-width:1000px) (位置 737/878)  →  after=top (位置 1205/517)
+  FAIL .run-list  flex-basis:  [top]=flex-basis=0% vs [('@media(max-width:760px)',)]=flex-basis=auto
+        生效者 before=@media(max-width:760px) (位置 95/895)  →  after=top (位置 972/534)
+  FAIL .run-list  flex-grow:  [top]=flex-grow=1 vs [('@media(max-width:760px)',)]=flex-grow=0
+        生效者 before=@media(max-width:760px) (位置 95/895)  →  after=top (位置 972/534)
+  FAIL .run-list  flex-shrink:  [top]=flex-shrink=1 vs [('@media(max-width:760px)',)]=flex-shrink=0
+        生效者 before=@media(max-width:760px) (位置 95/895)  →  after=top (位置 972/534)
+  FAIL .toast  max-width:  [top]=max-width=420px vs [('@media(max-width:760px)',)]=max-width=none
+        生效者 before=@media(max-width:760px) (位置 684/928)  →  after=top (位置 1746/567)
+  FAIL .toast  right:  [top]=right=22px vs [('@media(max-width:760px)',)]=right=16px
+        生效者 before=@media(max-width:760px) (位置 677/927)  →  after=top (位置 1739/566)
+FAIL: 同名选择器跨 @ 上下文的生效先后被改动 ⇒ 断点区间内计算样式会变

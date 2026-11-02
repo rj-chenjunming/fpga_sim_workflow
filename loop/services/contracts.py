@@ -162,7 +162,9 @@ def run_created_at(run_dir: Path | None) -> str | None:
 REPORT_VERDICTS: tuple[str, ...] = ("passed", "not_passed", "undetermined")
 
 #: 恒需理由的决策值（A2）：忽略 / 有疑义 / 返工必须说明理由。
-REASON_REQUIRED_DECISIONS: frozenset[str] = frozenset({"ignored", "disputed", "rework"})
+REASON_REQUIRED_DECISIONS: frozenset[str] = frozenset(
+    {"ignored", "disputed", "rework", "no_impact_end"}
+)   # no_impact_end（G1 零必改分流：「本变无影响用例，结束」）必填理由（LOOP §14.1）
 
 
 def decision_requires_reason(
@@ -343,6 +345,10 @@ def case_states_view(run_dir: Path | None, *, created_at: str | None = None) -> 
                 continue
             updated = _iso_epoch(item.get("updated_at"))
             own = True if created is None else (updated is None or updated >= created)
+            overrides = item.get("overrides")
+            last = (overrides[-1]
+                    if isinstance(overrides, list) and overrides
+                    and isinstance(overrides[-1], dict) else None)
             cases.append(
                 {
                     "case": item.get("case"),
@@ -351,6 +357,10 @@ def case_states_view(run_dir: Path | None, *, created_at: str | None = None) -> 
                     "updated_by": item.get("updated_by"),
                     "file": item.get("file"),
                     "own": own,
+                    # SPEC-REV-20 §6：人签豁免是**显式例外**，凡展示该用例处都必须带上
+                    # 「人签豁免」标记与机器原判（O-5）；两者同源于台账 overrides[]。
+                    "waived": bool(last and last.get("action") == "pass"),
+                    "waiver": _waiver_projection(last),
                 }
             )
     pending_own = [c for c in cases if c["state"] == CASE_PENDING and c["own"]]
@@ -366,7 +376,188 @@ def case_states_view(run_dir: Path | None, *, created_at: str | None = None) -> 
         "pending_foreign_count": len(pending_foreign),
         "pending_foreign": [c["case"] for c in pending_foreign],
         "rework_cycles": (doc or {}).get("rework_cycles") if isinstance(doc, dict) else None,
+        # 台账自报身份（用于「身份错位」显式拒绝；判据权威仍在 kb 工具）
+        "run_id": (doc or {}).get("run_id") if isinstance(doc, dict) else None,
     }
+
+
+def _waiver_projection(record: dict[str, Any] | None) -> dict[str, Any] | None:
+    """台账 `overrides[]` 最新一条 → 人签豁免投影（**含机器原判**，O-5）。
+
+    逐字搬运，不改写机器结论：`machine` 是覆写时钉下的 `n10_cases.json` 快照
+    （`kb/tools/case_state.py` 写入），这里只读不重算。
+    """
+    if not isinstance(record, dict):
+        return None
+    return {
+        "action": record.get("action"),
+        "actor": record.get("actor"),
+        "reason": record.get("reason"),
+        "decided_at": record.get("decided_at"),
+        "prev_state": record.get("prev_state"),
+        "machine": record.get("machine"),
+    }
+
+
+def case_waivers_view(run_dir: Path | None, *, created_at: str | None = None) -> dict[str, Any]:
+    """人签豁免投影（SPEC-REV-20 §6）：逐例（actor/reason/decided_at/action/prev_state +
+    机器原判摘要）+ 汇总计数（豁免数 / 待验数）。
+
+    复用 `case_states_view` 的**同一份**读模型（不另写一套台账解析，红线 8）；
+    判据仍只看 `state` —— 覆写不新增判定。
+    """
+    view = case_states_view(run_dir, created_at=created_at)
+    waived = [c for c in view["cases"] if c.get("waived")]
+    entries = [
+        {
+            "case": c.get("case"),
+            "state": c.get("state"),
+            "own": c.get("own"),
+            "action": (c.get("waiver") or {}).get("action"),
+            "actor": (c.get("waiver") or {}).get("actor"),
+            "reason": (c.get("waiver") or {}).get("reason"),
+            "decided_at": (c.get("waiver") or {}).get("decided_at"),
+            "prev_state": (c.get("waiver") or {}).get("prev_state"),
+            # 机器原判（与人签豁免同屏，避免"静默变绿"）
+            "machine": (c.get("waiver") or {}).get("machine"),
+        }
+        for c in waived
+    ]
+    return {
+        "path": view.get("path"),
+        "present": view.get("present"),
+        "error": view.get("error"),
+        "count": len(entries),
+        "count_waived": len(entries),
+        "cases": entries,
+        # 汇总计数：豁免数 / 待验数（本轮自写条目）
+        "pending_count": len(view.get("pending_own") or []),
+        "pending": list(view.get("pending_own") or []),
+        "machine_source": "台账 overrides[].machine（覆写时钉下的 n10_cases.json 快照）",
+    }
+
+
+def case_failures_view(run_dir: Path | None) -> dict[str, Any]:
+    """机器原因（SPEC-REV-20 §3.2/§6）：供闸门面板"原文展示原因"。
+
+    唯一读侧实现是 `workflows.chunks.n10_semantics.load_cases`（与 N10 Host 写侧同源）；
+    旧 run 缺件 ⇒ `present=false` + `missing` 明说缺哪件，**不**解析 `n10_reconcile.md`。
+    """
+    if run_dir is None:
+        return {"present": False, "path": None, "missing": "无 run 目录", "count": 0,
+                "criterion": None, "cases": {}}
+    # 延迟导入：`workflows.context` → `services.contracts` 是既有依赖方向，
+    # 模块级导入会形成环；这里只在函数调用期解析（读实现仍只有一份）。
+    from workflows.chunks.n10_semantics import load_cases
+
+    doc = load_cases(Path(run_dir))
+    if not doc.get("present"):
+        return {"present": False, "path": doc.get("path"), "missing": doc.get("missing"),
+                "count": 0, "criterion": None, "cases": {}}
+    cases = {
+        str(case): {
+            "case": str(case),
+            "passed": item.get("passed"),
+            "criterion": item.get("criterion"),
+            "reasons": list(item.get("reasons") or []),
+            "counts": item.get("counts"),
+            "imprints": item.get("imprints"),
+            "evidence": item.get("evidence") or {},
+        }
+        for case, item in (doc.get("cases") or {}).items()
+        if isinstance(item, dict)
+    }
+    return {"present": True, "path": doc.get("path"), "missing": None,
+            "criterion": doc.get("criterion"), "count": len(cases), "cases": cases}
+
+
+#: 「等待闸门」是**允许覆写**的唯一 run 状态（SPEC-REV-20 §4-6 / O-7；run 状态是编排层事实）。
+OVERRIDE_WAITING_GATE = "waiting_gate"
+#: 覆写动作枚举（与 `kb/tools/case_state.py` 的 `--revoke` 一一对应）
+OVERRIDE_ACTIONS: tuple[str, ...] = ("pass", "revoke")
+
+
+#: `n10_cases.json` 缺失时的固定文案（SPEC-REV-20 §3.2：旧轮不能盲签）
+NO_MACHINE_REASON = "该轮机器原因未留存（早于覆写功能），不能盲签"
+
+
+def _override_action_blocked(action: str, item: dict[str, Any],
+                             failures: dict[str, Any],
+                             machine: dict[str, Any] | None) -> list[str]:
+    """单动作的逐条不满足项（§4-4 状态 / §4-5 机器原因）；两种动作共用这一份判据。"""
+    need = CASE_PENDING if action == "pass" else CASE_PASS
+    reasons: list[str] = []
+    if item.get("state") != need:
+        reasons.append(f"§4-4 当前态是「{item.get('state')}」，{action} 要求当前态为「{need}」")
+    elif action == "revoke" and (item.get("waiver") or {}).get("action") != "pass":
+        # revoke 只撤回「我自己刚签的覆写」：机器途径通过的用例不得被降级成待验
+        reasons.append("§4-4 该「已验证通过」不是覆写来的（最近一条覆写记录不是 "
+                       "action=\"pass\"）⇒ 不得把机器通过降级成待验")
+    if not failures.get("present"):
+        reasons.append(f"§4-5 {NO_MACHINE_REASON}（缺 {failures.get('missing') or 'n10_cases.json'}）")
+    elif machine is None:
+        reasons.append("§4-5 机器原因缺该例（n10_cases.json 的 cases 里没有它）")
+    elif machine.get("passed") is not False:
+        reasons.append(f"§4-5 机器判 passed={machine.get('passed')!r}（要求恰好 false）"
+                       "⇒ 机器没判它失败，不许盲签")
+    elif not machine.get("reasons"):
+        reasons.append("§4-5 机器原因 reasons 为空 ⇒ 没有可读的失败原因，不许盲签")
+    return reasons
+
+
+def case_override_view(
+    run_dir: Path | None,
+    *,
+    run_status: str | None = None,
+    created_at: str | None = None,
+) -> dict[str, Any]:
+    """「能不能签 / 能不能撤销」的**服务端唯一判定**（只读投影；SPEC-REV-20 §4/§6.1）。
+
+    为什么在这里：界面的按钮禁用与原因必须由服务端下发（WEB_UI_SPEC「判据归属」/
+    AGENTS 红线 8），前端不得自持一套 §4 判据；本函数同时被
+    `POST …/cases/override` 的前置复用（同一实现按 `action` 参数化，不为 revoke 另写一套）。
+
+    形状（§6.1）：`{enabled, blocked_reason, cases:{case:{state, machine_present,
+    actions:{pass:{available, blocked_reason}, revoke:{available, blocked_reason}}}}}`。
+
+    **写盘判据的权威仍是 `kb/tools/case_state.py override`**：这里只把同一组事实
+    （台账态 + `n10_cases.json` 机器原因 + run 状态）提前显式化成可展示的可用性；
+    任何被本函数放行但 CLI 拒绝的情形仍按 CLI 的 rc 透传（403/409），不吞。
+    """
+    states = case_states_view(run_dir, created_at=created_at)
+    failures = case_failures_view(run_dir)
+
+    blocked: str | None = None
+    if str(run_status or "") != OVERRIDE_WAITING_GATE:
+        if run_status is None:
+            blocked = ("run 状态未下发 ⇒ 无法判定可签（面板必须用 run_view.case_override，"
+                       "不得前端自判）")
+        else:
+            blocked = (f"§4-6 run 当前状态是 {run_status!r}；签/撤销只允许在「等待闸门」"
+                       f"（{OVERRIDE_WAITING_GATE}）时执行（O-7：running/终态一律拒绝）")
+    elif not failures.get("present"):
+        blocked = NO_MACHINE_REASON
+
+    cases: dict[str, Any] = {}
+    for item in states.get("cases") or []:
+        case = str(item.get("case"))
+        machine = (failures.get("cases") or {}).get(case)
+        actions: dict[str, Any] = {}
+        for action in OVERRIDE_ACTIONS:
+            reasons = _override_action_blocked(action, item, failures, machine)
+            actions[action] = {
+                "available": blocked is None and not reasons,
+                "blocked_reason": "; ".join(reasons) if reasons else blocked,
+            }
+        cases[case] = {
+            "state": item.get("state"),
+            # 机器原因可读才算"有原因"：passed 严格 false 且 reasons 非空（O-3）
+            "machine_present": bool(machine is not None
+                                    and machine.get("passed") is False
+                                    and machine.get("reasons")),
+            "actions": actions,
+        }
+    return {"enabled": blocked is None, "blocked_reason": blocked, "cases": cases}
 
 
 def rework_counts(run_dir: Path | None, *, extra: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -680,6 +871,8 @@ GATE_STAGE: dict[str, str] = {
     "G1_diff_confirm": "n4_gate1",
     "G2_report_accept": "n13_gate2",
     "G3_regression_decision": "n14_gate3",
+    # N5 必改=0 时的 G1 分流支线（LOOP §14）；未出现时不投影该门
+    "G1_no_impact": "n5_gate1b",
 }
 
 
@@ -865,6 +1058,7 @@ def gate_material(
     state_facts: dict[str, Any] | None = None,
     gate_decisions: dict[str, Any] | None = None,
     cycles: dict[str, Any] | None = None,
+    run_status: str | None = None,
 ) -> dict[str, Any]:
     """闸门材料。**只放材料，不放权限。**
 
@@ -906,6 +1100,13 @@ def gate_material(
         "difference_items": diff,
         # G2/G3 输入：用例态台账（本轮/历史分离）
         "case_states": cases,
+        # SPEC-REV-20 §6：闸门材料新增逐例豁免（人签记录 + 机器原判）与机器原因原文。
+        # 面板据此同时显示「机器判失败」与「人签认定通过」，不允许只显示后者（O-5）。
+        "case_waivers": case_waivers_view(rd, created_at=created),
+        "case_failures": case_failures_view(rd),
+        # 「能不能签」的唯一服务端判定（只读投影；前端不得自判可签性）。
+        # `run_status` 未下发 ⇒ enabled=false + 原因（不猜）；面板以 run_view.case_override 为准。
+        "case_override": case_override_view(rd, run_status=run_status, created_at=created),
         # G2 输入：报告 + 评估结论 + 计数；G3 输入：评估结论
         "report": {
             "n2_diff": diff.get("path"),
@@ -953,6 +1154,9 @@ def gate_material(
         for value in (
             diff.get("path"),
             cases.get("path"),
+            # 机器原因件的入口（旧 run 该路径不存在，读侧已显式 present=false）
+            (material["case_failures"].get("path")
+             if material["case_failures"].get("present") else None),
             (material["report"].get("n3_digest")),
             (material["report"].get("n9_evidence")),
         )
@@ -1055,7 +1259,11 @@ def _gates_authority(run_doc: dict[str, Any]) -> dict[str, Any]:
     # 事件流（自报）vs 权威（账本）：分歧必须显式呈现，**不得静默取其一**
     history = run_doc.get("gate_history") or []
     divergences: list[dict[str, Any]] = []
+    visible: dict[str, Any] = {}
     for gid, item in (auth.get("gates") or {}).items():
+        # 分流支线门是否出现由权威 `kb_lib.gate_applicable` 决定（`host.gate_authority`
+        # 已按该判据过滤）；本层不再写第二份规则（红线 8）。
+        visible[gid] = item
         evs = [e for e in history if e.get("gate") == gid]
         ev_decisions = [e.get("decision") for e in evs]
         au_decisions = [h.get("decision") for h in (item.get("history") or [])]
@@ -1069,6 +1277,7 @@ def _gates_authority(run_doc: dict[str, Any]) -> dict[str, Any]:
                 "note": "事件流与权威账本不一致 ⇒ 以权威为准，并把该分歧登记为缺陷来源。",
             })
 
+    auth["gates"] = visible
     auth["divergences"] = divergences
     return auth
 
@@ -1574,6 +1783,9 @@ def run_view(
         "events": events,
         # agent 工作状态是**投影**（事件派生），不是权威；字段见 Web UI Spec §4.3。
         "project": run_doc.get("project"),
+        # S0 §9.6 / 编排规格 §13：本次运行的环境根与原始根（派生副本切换后不同；旧记录为 None）。
+        "env_root": run_doc.get("env_root"),
+        "env_origin_root": run_doc.get("env_origin_root"),
         # R5：环境来源徽标（空 = 未经 S0 派生；drill 不覆盖 S0）
         "s0_record_id": run_doc.get("s0_record_id"),
         "agents": build_agents(
@@ -1597,6 +1809,11 @@ def run_view(
         # I1/I2 的**放行前置**也必须在看板上可见（材料与判定同一口径）。
         "difference_items": diff,
         "case_states": cases,
+        # SPEC-REV-20 §6：看板/用例列表的「人签豁免」计数 + 逐例（含机器原判）。
+        "case_waivers": case_waivers_view(run_dir, created_at=created),
+        # 「能不能签/撤销」的服务端唯一判定（按钮禁用与原因由此下发，前端不自判）。
+        "case_override": case_override_view(run_dir, run_status=run_doc.get("status"),
+                                           created_at=created),
         "conflicts": _conflict_summary(kb),
         "baselines": kb.baseline_chain(),
         "server_authority": "闸门态权威在 kb/tools/gate.py（gate_state + anchor）；本视图是只读投影。",

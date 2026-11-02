@@ -1,0 +1,4825 @@
+{
+ "tokens": [
+  {
+   "name": "--panel",
+   "value": "#ffffff",
+   "family": "neutral",
+   "existing": true
+  },
+  {
+   "name": "--surface",
+   "value": "#f8faf9",
+   "family": "neutral",
+   "existing": true
+  },
+  {
+   "name": "--bg",
+   "value": "#f4f6f5",
+   "family": "neutral",
+   "existing": true
+  },
+  {
+   "name": "--line",
+   "value": "#e1e8e4",
+   "family": "neutral",
+   "existing": true
+  },
+  {
+   "name": "--line-strong",
+   "value": "#c7d4cc",
+   "family": "neutral",
+   "existing": true
+  },
+  {
+   "name": "--text",
+   "value": "#213831",
+   "family": "neutral",
+   "existing": true
+  },
+  {
+   "name": "--muted",
+   "value": "#61746c",
+   "family": "neutral",
+   "existing": true
+  },
+  {
+   "name": "--faint",
+   "value": "#5f6f67",
+   "family": "neutral",
+   "existing": true
+  },
+  {
+   "name": "--primary",
+   "value": "#15775e",
+   "family": "primary",
+   "existing": true
+  },
+  {
+   "name": "--primary-hover",
+   "value": "#0e604b",
+   "family": "primary",
+   "existing": true
+  },
+  {
+   "name": "--primary-weak",
+   "value": "#eaf5ef",
+   "family": "primary",
+   "existing": true
+  },
+  {
+   "name": "--primary-line",
+   "value": "#b8daca",
+   "family": "primary",
+   "existing": true
+  },
+  {
+   "name": "--ok",
+   "value": "#24734d",
+   "family": "ok",
+   "existing": true
+  },
+  {
+   "name": "--ok-weak",
+   "value": "#edf7ef",
+   "family": "ok",
+   "existing": true
+  },
+  {
+   "name": "--warn",
+   "value": "#9a5e16",
+   "family": "warn",
+   "existing": true
+  },
+  {
+   "name": "--warn-weak",
+   "value": "#fff6e8",
+   "family": "warn",
+   "existing": true
+  },
+  {
+   "name": "--danger",
+   "value": "#b34140",
+   "family": "danger",
+   "existing": true
+  },
+  {
+   "name": "--danger-weak",
+   "value": "#fff0ef",
+   "family": "danger",
+   "existing": true
+  },
+  {
+   "name": "--purple",
+   "value": "#7357a0",
+   "family": "purple",
+   "existing": true
+  },
+  {
+   "name": "--purple-weak",
+   "value": "#f3eef9",
+   "family": "purple",
+   "existing": true
+  },
+  {
+   "name": "--rail",
+   "value": "#192e28",
+   "family": "neutral",
+   "existing": true
+  },
+  {
+   "name": "--rail-hover",
+   "value": "#243d34",
+   "family": "neutral",
+   "existing": true
+  },
+  {
+   "name": "--rail-text",
+   "value": "#e1eae4",
+   "family": "neutral",
+   "existing": true
+  },
+  {
+   "name": "--rail-muted",
+   "value": "#a5b9ae",
+   "family": "neutral",
+   "existing": true
+  },
+  {
+   "name": "--text-3",
+   "value": "#517057",
+   "family": "neutral",
+   "members": [
+    "#456761",
+    "#456a58",
+    "#4d6b4e",
+    "#50694b",
+    "#536e58",
+    "#54694b",
+    "#57764c",
+    "#5a6e52",
+    "#5c7055",
+    "#5c7a59",
+    "#5d7756"
+   ]
+  },
+  {
+   "name": "--neutral-12",
+   "value": "#335541",
+   "family": "neutral",
+   "members": [
+    "#284c35",
+    "#2f4a37",
+    "#304b35",
+    "#304b3d",
+    "#34533c",
+    "#36533d",
+    "#38614c",
+    "#3a5a4a",
+    "#3d5545",
+    "#3e5546"
+   ]
+  },
+  {
+   "name": "--line-soft",
+   "value": "#d5e4d0",
+   "family": "neutral",
+   "members": [
+    "#cae2c4",
+    "#cbe9d8",
+    "#d1e5da",
+    "#d4e0cc",
+    "#d7e8d5",
+    "#d9e7d6",
+    "#d9e8d4",
+    "#dae3d5",
+    "#dae5d2",
+    "#dce8d7"
+   ]
+  },
+  {
+   "name": "--rail-muted-2",
+   "value": "#b5cdb5",
+   "family": "neutral",
+   "members": [
+    "#a9cfb7",
+    "#b2c5b9",
+    "#b4c9ab",
+    "#b7d2bf",
+    "#b9d5aa",
+    "#bacdb3",
+    "#bbceba",
+    "#bcccb2"
+   ]
+  },
+  {
+   "name": "--text-4",
+   "value": "#8aa393",
+   "family": "neutral",
+   "members": [
+    "#839c8d",
+    "#91ab9a",
+    "#91ad9b",
+    "#93a49a"
+   ]
+  },
+  {
+   "name": "--text-5",
+   "value": "#698872",
+   "family": "neutral",
+   "members": [
+    "#60846a",
+    "#6b836a",
+    "#718c7e",
+    "#728d7b"
+   ]
+  },
+  {
+   "name": "--neutral-4",
+   "value": "#a3be97",
+   "family": "neutral",
+   "members": [
+    "#a0c18b",
+    "#a3be97",
+    "#a7c69b"
+   ]
+  },
+  {
+   "name": "--neutral-13",
+   "value": "#284a40",
+   "family": "neutral",
+   "members": [
+    "#234b34",
+    "#29484b"
+   ]
+  },
+  {
+   "name": "--rail-deep",
+   "value": "#495f48",
+   "family": "neutral",
+   "members": [
+    "#425449",
+    "#496353"
+   ]
+  },
+  {
+   "name": "--text-2",
+   "value": "#5d7756",
+   "family": "neutral",
+   "members": [
+    "#5e7854",
+    "#62834c"
+   ]
+  },
+  {
+   "name": "--rail-active",
+   "value": "#4e7052",
+   "family": "neutral",
+   "members": [
+    "#456e48"
+   ]
+  },
+  {
+   "name": "--rail-accent",
+   "value": "#bed4b7",
+   "family": "neutral",
+   "members": [
+    "#c1dcbd"
+   ]
+  },
+  {
+   "name": "--rail-border",
+   "value": "#526f62",
+   "family": "neutral",
+   "members": [
+    "#52716c"
+   ]
+  },
+  {
+   "name": "--ok-line",
+   "value": "#c9e4d1",
+   "family": "ok",
+   "members": [
+    "#bfe8d8",
+    "#c9dfc7",
+    "#cae9db"
+   ]
+  },
+  {
+   "name": "--ok-ink",
+   "value": "#148b68",
+   "family": "ok",
+   "members": [
+    "#148b68"
+   ]
+  },
+  {
+   "name": "--ok-line-2",
+   "value": "#c9dfc7",
+   "family": "ok",
+   "members": [
+    "#c3dabc"
+   ]
+  },
+  {
+   "name": "--warn-line",
+   "value": "#e6d9be",
+   "family": "warn",
+   "members": [
+    "#e2d3b6",
+    "#e6d5b4",
+    "#e7d5b4",
+    "#e8d8b7",
+    "#e9dfc9",
+    "#ead7b7",
+    "#ebdfc6",
+    "#ecdcbe",
+    "#eddfc5",
+    "#efe0bf",
+    "#efe1c3"
+   ]
+  },
+  {
+   "name": "--warn-8",
+   "value": "#745a30",
+   "family": "warn",
+   "members": [
+    "#6b5127",
+    "#7a6234",
+    "#7d6339"
+   ]
+  },
+  {
+   "name": "--warn-accent",
+   "value": "#ecd3a9",
+   "family": "warn",
+   "members": [
+    "#f3d19e"
+   ]
+  },
+  {
+   "name": "--warn-line-3",
+   "value": "#c8dfbc",
+   "family": "warn",
+   "members": [
+    "#c5ddb9",
+    "#c8dfbc",
+    "#d4e8c8"
+   ]
+  },
+  {
+   "name": "--warn-tint",
+   "value": "#fffdf8",
+   "family": "warn",
+   "members": [
+    "#fffdf8"
+   ]
+  },
+  {
+   "name": "--warn-7",
+   "value": "#b98c43",
+   "family": "warn",
+   "members": [
+    "#b9873b",
+    "#ba914b"
+   ]
+  },
+  {
+   "name": "--warn-line-4",
+   "value": "#e8b86a",
+   "family": "warn",
+   "members": [
+    "#e8b86a"
+   ]
+  },
+  {
+   "name": "--warn-ink",
+   "value": "#c49c61",
+   "family": "warn",
+   "members": [
+    "#c49c61"
+   ]
+  },
+  {
+   "name": "--danger-line-soft",
+   "value": "#ebc7c4",
+   "family": "danger",
+   "members": [
+    "#e4c1bb",
+    "#e6c0b9",
+    "#e7bdb8",
+    "#e7c4bf",
+    "#eac8c3",
+    "#ebc4bf",
+    "#f1cfcf",
+    "#f2c9c9",
+    "#f5c6c6"
+   ]
+  },
+  {
+   "name": "--danger-line",
+   "value": "#f5d2d0",
+   "family": "danger",
+   "members": [
+    "#ecdada",
+    "#eedecc",
+    "#f8dcd7"
+   ]
+  },
+  {
+   "name": "--danger-ink-soft",
+   "value": "#dab2ac",
+   "family": "danger",
+   "members": [
+    "#d9b3ae",
+    "#dcb1ab",
+    "#e2bbb5"
+   ]
+  },
+  {
+   "name": "--purple-line",
+   "value": "#e0d4ec",
+   "family": "purple",
+   "members": [
+    "#dfd1ed",
+    "#e1d8ec"
+   ]
+  },
+  {
+   "name": "--meta-blue",
+   "value": "#44607a",
+   "family": "blue",
+   "members": [
+    "#44607a"
+   ]
+  },
+  {
+   "name": "--overlay",
+   "value": "#12251aab",
+   "family": "alpha"
+  },
+  {
+   "name": "--rail-tint",
+   "value": "#ffffff08",
+   "family": "alpha"
+  },
+  {
+   "name": "--rail-line",
+   "value": "#ffffff17",
+   "family": "alpha"
+  },
+  {
+   "name": "--rail-line-strong",
+   "value": "#ffffff30",
+   "family": "alpha"
+  },
+  {
+   "name": "--shadow-tint",
+   "value": "#20372b0a",
+   "family": "alpha"
+  },
+  {
+   "name": "--shadow-raise",
+   "value": "#173b2426",
+   "family": "alpha"
+  },
+  {
+   "name": "--shadow-pop",
+   "value": "#10291a38",
+   "family": "alpha"
+  },
+  {
+   "name": "--toast-err",
+   "value": "#ff4d4f",
+   "family": "danger",
+   "inline_only": true
+  },
+  {
+   "name": "--toast-ok",
+   "value": "#52c41a",
+   "family": "ok",
+   "inline_only": true
+  },
+  {
+   "name": "--arrow-ink",
+   "value": "#5a6675",
+   "family": "neutral",
+   "inline_only": true
+  },
+  {
+   "name": "--av-1",
+   "value": "#2457d6",
+   "family": "av",
+   "members": [
+    "#2457d6"
+   ]
+  },
+  {
+   "name": "--av-2",
+   "value": "#3c7465",
+   "family": "av",
+   "members": [
+    "#3c7465"
+   ]
+  },
+  {
+   "name": "--av-3",
+   "value": "#7a5a26",
+   "family": "av",
+   "members": [
+    "#7a5a26"
+   ]
+  },
+  {
+   "name": "--av-4",
+   "value": "#624d80",
+   "family": "av",
+   "members": [
+    "#624d80"
+   ]
+  },
+  {
+   "name": "--av-5",
+   "value": "#7b4f4f",
+   "family": "av",
+   "members": [
+    "#7b4f4f"
+   ]
+  },
+  {
+   "name": "--av-6",
+   "value": "#55684f",
+   "family": "av",
+   "members": [
+    "#55684f"
+   ]
+  }
+ ],
+ "rows": [
+  {
+   "file": "loop/web/app.css",
+   "line": 18,
+   "property": "background",
+   "selector": ".pill",
+   "current": "#f2f4f7",
+   "token": "--bg",
+   "delta": 2,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 36,
+   "property": "background",
+   "selector": ".seg",
+   "current": "#eceff4",
+   "token": "--bg",
+   "delta": 8,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 39,
+   "property": "box-shadow",
+   "selector": ".seg button.on",
+   "current": "rgba(16,24,40,.08)",
+   "token": "--shadow-tint",
+   "delta": 10,
+   "alpha": 20,
+   "token_alpha": 10,
+   "kind": "alpha"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 65,
+   "property": "border-color",
+   "selector": ".chip.ok",
+   "current": "#bfe8d8",
+   "token": "--ok-line",
+   "delta": 10,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 66,
+   "property": "border-color",
+   "selector": ".chip.warn",
+   "current": "#f3d19e",
+   "token": "--warn-accent",
+   "delta": 11,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 67,
+   "property": "border-color",
+   "selector": ".chip.bad",
+   "current": "#f5c6c6",
+   "token": "--danger-line-soft",
+   "delta": 10,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 73,
+   "property": "border-color",
+   "selector": ".status-pill.wait",
+   "current": "#f3d19e",
+   "token": "--warn-accent",
+   "delta": 11,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 75,
+   "property": "border-color",
+   "selector": ".status-pill.done",
+   "current": "#bfe8d8",
+   "token": "--ok-line",
+   "delta": 10,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 76,
+   "property": "border-color",
+   "selector": ".status-pill.fail",
+   "current": "#f5c6c6",
+   "token": "--danger-line-soft",
+   "delta": 10,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 79,
+   "property": "border-color",
+   "selector": ".stage.done",
+   "current": "#bfe8d8",
+   "token": "--ok-line",
+   "delta": 10,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 80,
+   "property": "border-color",
+   "selector": ".stage.wait",
+   "current": "#f3d19e",
+   "token": "--warn-accent",
+   "delta": 11,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 81,
+   "property": "border-color",
+   "selector": ".stage.fail",
+   "current": "#f5c6c6",
+   "token": "--danger-line-soft",
+   "delta": 10,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 82,
+   "property": "background",
+   "selector": ".stage-head:hover",
+   "current": "#fafbfd",
+   "token": "--surface",
+   "delta": 4,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 83,
+   "property": "color",
+   "selector": ".stage.active .stage-idx",
+   "current": "#fff",
+   "token": "--panel",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 84,
+   "property": "border",
+   "selector": ".stage.done .stage-idx",
+   "current": "#bfe8d8",
+   "token": "--ok-line",
+   "delta": 10,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 85,
+   "property": "border",
+   "selector": ".stage.wait .stage-idx",
+   "current": "#f3d19e",
+   "token": "--warn-accent",
+   "delta": 11,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 86,
+   "property": "border",
+   "selector": ".stage.fail .stage-idx",
+   "current": "#f5c6c6",
+   "token": "--danger-line-soft",
+   "delta": 10,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 96,
+   "property": "background",
+   "selector": ".snode .sb",
+   "current": "#eef1f5",
+   "token": "--bg",
+   "delta": 6,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 99,
+   "property": "color",
+   "selector": ".snode.done .sb",
+   "current": "#fff",
+   "token": "--panel",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 101,
+   "property": "background",
+   "selector": ".snode.active .sb",
+   "current": "#fff",
+   "token": "--panel",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 103,
+   "property": "border-color",
+   "selector": ".snode.wait .sb",
+   "current": "#e8b86a",
+   "token": "--warn-line-4",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 104,
+   "property": "border-color",
+   "selector": ".snode.wait",
+   "current": "#f3d19e",
+   "token": "--warn-accent",
+   "delta": 11,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 104,
+   "property": "background",
+   "selector": ".snode.wait",
+   "current": "#fffdf8",
+   "token": "--warn-tint",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 105,
+   "property": "border-color",
+   "selector": ".snode.fail .sb",
+   "current": "#f5c6c6",
+   "token": "--danger-line-soft",
+   "delta": 10,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 106,
+   "property": "border-color",
+   "selector": ".snode.fail",
+   "current": "#f5c6c6",
+   "token": "--danger-line-soft",
+   "delta": 10,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 106,
+   "property": "background",
+   "selector": ".snode.fail",
+   "current": "#fffafa",
+   "token": "--panel",
+   "delta": 5,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 109,
+   "property": "color",
+   "selector": ".snode.gate.wait .sb",
+   "current": "#fff",
+   "token": "--panel",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 110,
+   "property": "color",
+   "selector": ".snode.gate.done .sb",
+   "current": "#fff",
+   "token": "--panel",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 118,
+   "property": "border-color",
+   "selector": ".agent.waiting",
+   "current": "#f3d19e",
+   "token": "--warn-accent",
+   "delta": 11,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 118,
+   "property": "background",
+   "selector": ".agent.waiting",
+   "current": "#fffdf8",
+   "token": "--warn-tint",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 119,
+   "property": "border-color",
+   "selector": ".agent.failed",
+   "current": "#f5c6c6",
+   "token": "--danger-line-soft",
+   "delta": 10,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 119,
+   "property": "background",
+   "selector": ".agent.failed",
+   "current": "#fffafa",
+   "token": "--panel",
+   "delta": 5,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 120,
+   "property": "background",
+   "selector": ".a1",
+   "current": "#2457d6",
+   "token": "--av-1",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 135,
+   "property": "border-color",
+   "selector": ".gate-card",
+   "current": "#f3d19e",
+   "token": "--warn-accent",
+   "delta": 11,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 135,
+   "property": "background",
+   "selector": ".gate-card",
+   "current": "#fffdf7",
+   "token": "--surface",
+   "delta": 7,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 136,
+   "property": "border-bottom-color",
+   "selector": ".gate-card .card-head",
+   "current": "#f3d19e",
+   "token": "--warn-accent",
+   "delta": 11,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 136,
+   "property": "background",
+   "selector": ".gate-card .card-head",
+   "current": "#fff8ec",
+   "token": "--warn-weak",
+   "delta": 4,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 142,
+   "property": "box-shadow",
+   "selector": ".option.on .radio",
+   "current": "#fff",
+   "token": "--panel",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 151,
+   "property": "background",
+   "selector": ".sev.info",
+   "current": "#eef2f6",
+   "token": "--bg",
+   "delta": 6,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 166,
+   "property": "background",
+   "selector": ".dp-roots",
+   "current": "#fbfcfe",
+   "token": "--panel",
+   "delta": 4,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 169,
+   "property": "background",
+   "selector": ".dp-item:hover",
+   "current": "#f8fafc",
+   "token": "--surface",
+   "delta": 3,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 203,
+   "property": "background",
+   "selector": ".phase-card",
+   "current": "#fff",
+   "token": "--panel",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 207,
+   "property": "background",
+   "selector": "#s0Form .input:disabled",
+   "current": "#edf2f1",
+   "token": "--bg",
+   "delta": 7,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 207,
+   "property": "color",
+   "selector": "#s0Form .input:disabled",
+   "current": "#617673",
+   "token": "--muted",
+   "delta": 7,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 213,
+   "property": "color",
+   "selector": ".s0-checks .check-passed>span",
+   "current": "#148b68",
+   "token": "--ok-ink",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 213,
+   "property": "background",
+   "selector": ".s0-checks .check-passed>span",
+   "current": "#e9f8f0",
+   "token": "--ok-weak",
+   "delta": 4,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 213,
+   "property": "border-color",
+   "selector": ".s0-checks .check-passed>span",
+   "current": "#cae9db",
+   "token": "--ok-line",
+   "delta": 10,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 214,
+   "property": "color",
+   "selector": ".s0-checks .check-passed b",
+   "current": "#148b68",
+   "token": "--ok-ink",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 226,
+   "property": "box-shadow",
+   "selector": ".agent-clickable:hover",
+   "current": "#087e7912",
+   "token": "--shadow-tint",
+   "delta": 9,
+   "alpha": 18,
+   "token_alpha": 10,
+   "kind": "alpha"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 228,
+   "property": "background",
+   "selector": ".agent-window",
+   "current": "#fff",
+   "token": "--panel",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 235,
+   "property": "border",
+   "selector": ".aw-timeline",
+   "current": "#29484b",
+   "token": "--neutral-13",
+   "delta": 11,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 235,
+   "property": "scrollbar-color",
+   "selector": ".aw-timeline",
+   "current": "#52716c",
+   "token": "--rail-border",
+   "delta": 10,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 235,
+   "property": "scrollbar-color",
+   "selector": ".aw-timeline",
+   "current": "#142d32",
+   "token": "--rail",
+   "delta": 10,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 236,
+   "property": "border-bottom",
+   "selector": ".aw-log-row",
+   "current": "#ffffff0a",
+   "token": "--rail-tint",
+   "delta": 2,
+   "alpha": 10,
+   "token_alpha": 8,
+   "kind": "alpha"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 257,
+   "property": "background",
+   "selector": ".aw-action-row .btn",
+   "current": "#fff",
+   "token": "--panel",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 258,
+   "property": "border-top",
+   "selector": ".aw-stop",
+   "current": "#dae6df",
+   "token": "--line",
+   "delta": 7,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 260,
+   "property": "color",
+   "selector": ".aw-limit summary",
+   "current": "#718c7e",
+   "token": "--text-5",
+   "delta": 12,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 270,
+   "property": "background",
+   "selector": "::selection",
+   "current": "#cbe9d8",
+   "token": "--line-soft",
+   "delta": 10,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 270,
+   "property": "color",
+   "selector": "::selection",
+   "current": "#183d2e",
+   "token": "--text",
+   "delta": 9,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 271,
+   "property": "color",
+   "selector": ".skip-link",
+   "current": "#fff",
+   "token": "--panel",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 276,
+   "property": "background",
+   "selector": "header",
+   "current": "#fff",
+   "token": "--panel",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 276,
+   "property": "box-shadow",
+   "selector": "header",
+   "current": "#21383104",
+   "token": "--shadow-tint",
+   "delta": 5,
+   "alpha": 4,
+   "token_alpha": 10,
+   "kind": "alpha"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 278,
+   "property": "color",
+   "selector": ".brand-flow",
+   "current": "#456a58",
+   "token": "--rail-active",
+   "delta": 9,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 279,
+   "property": "box-shadow",
+   "selector": ".mark",
+   "current": "#ffffff20",
+   "token": "--rail-line",
+   "delta": 8,
+   "alpha": 32,
+   "token_alpha": 23,
+   "kind": "alpha"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 280,
+   "property": "border",
+   "selector": ".mark:after",
+   "current": "#fff",
+   "token": "--panel",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 296,
+   "property": "background",
+   "selector": ".rail-entry",
+   "current": "#ffffff06",
+   "token": "--rail-tint",
+   "delta": 2,
+   "alpha": 6,
+   "token_alpha": 8,
+   "kind": "alpha"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 296,
+   "property": "border-color",
+   "selector": ".rail-entry",
+   "current": "#ffffff17",
+   "token": "--rail-line",
+   "delta": 0,
+   "alpha": 23,
+   "token_alpha": 23,
+   "kind": "alpha"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 297,
+   "property": "border-color",
+   "selector": ".rail-entry:hover",
+   "current": "#ffffff30",
+   "token": "--rail-line-strong",
+   "delta": 0,
+   "alpha": 48,
+   "token_alpha": 48,
+   "kind": "alpha"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 300,
+   "property": "border",
+   "selector": ".workspace-icon",
+   "current": "#728d7b",
+   "token": "--text-5",
+   "delta": 9,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 300,
+   "property": "color",
+   "selector": ".workspace-icon",
+   "current": "#b7d2bf",
+   "token": "--rail-accent",
+   "delta": 8,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 301,
+   "property": "background",
+   "selector": "aside #btnNew",
+   "current": "#d9ecde",
+   "token": "--line",
+   "delta": 8,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 301,
+   "property": "color",
+   "selector": "aside #btnNew",
+   "current": "#234b34",
+   "token": "--neutral-13",
+   "delta": 12,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 301,
+   "property": "border-color",
+   "selector": "aside #btnNew",
+   "current": "#d9ecde",
+   "token": "--line",
+   "delta": 8,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 301,
+   "property": "box-shadow",
+   "selector": "aside #btnNew",
+   "current": "#0000000a",
+   "token": "--shadow-tint",
+   "delta": 3,
+   "alpha": 10,
+   "token_alpha": 10,
+   "kind": "alpha"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 302,
+   "property": "background",
+   "selector": "aside #btnNew:hover",
+   "current": "#c4dfcc",
+   "token": "--line-strong",
+   "delta": 11,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 302,
+   "property": "border-color",
+   "selector": "aside #btnNew:hover",
+   "current": "#c4dfcc",
+   "token": "--line-strong",
+   "delta": 11,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 305,
+   "property": "color",
+   "selector": ".rail-label>span",
+   "current": "#839c8d",
+   "token": "--text-4",
+   "delta": 7,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 307,
+   "property": "color",
+   "selector": "#viewSeg button",
+   "current": "#b2c5b9",
+   "token": "--rail-muted-2",
+   "delta": 8,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 308,
+   "property": "color",
+   "selector": "#viewSeg button:hover",
+   "current": "#fff",
+   "token": "--panel",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 309,
+   "property": "background",
+   "selector": "#viewSeg button.on",
+   "current": "#304b3d",
+   "token": "--neutral-13",
+   "delta": 8,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 309,
+   "property": "color",
+   "selector": "#viewSeg button.on",
+   "current": "#f3faf5",
+   "token": "--bg",
+   "delta": 4,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 310,
+   "property": "background",
+   "selector": "#viewSeg button.on:before",
+   "current": "#b9d5aa",
+   "token": "--rail-muted-2",
+   "delta": 11,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 311,
+   "property": "color",
+   "selector": "#viewSeg button small",
+   "current": "#91ab9a",
+   "token": "--text-4",
+   "delta": 8,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 312,
+   "property": "color",
+   "selector": "#viewSeg button.on small",
+   "current": "#cae2c4",
+   "token": "--line-soft",
+   "delta": 12,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 313,
+   "property": "color",
+   "selector": ".nav-icon",
+   "current": "#91ad9b",
+   "token": "--text-4",
+   "delta": 10,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 314,
+   "property": "color",
+   "selector": "#viewSeg button.on .nav-icon",
+   "current": "#c5ddb9",
+   "token": "--warn-line-3",
+   "delta": 3,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 316,
+   "property": "scrollbar-color",
+   "selector": ".run-list",
+   "current": "#496353",
+   "token": "--rail-deep",
+   "delta": 11,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 319,
+   "property": "background",
+   "selector": ".run-item.active",
+   "current": "#284536",
+   "token": "--rail-hover",
+   "delta": 8,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 319,
+   "property": "border-color",
+   "selector": ".run-item.active",
+   "current": "#536e58",
+   "token": "--text-3",
+   "delta": 2,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 322,
+   "property": "background",
+   "selector": ".run-item .chip",
+   "current": "#ffffff08",
+   "token": "--rail-tint",
+   "delta": 0,
+   "alpha": 8,
+   "token_alpha": 8,
+   "kind": "alpha"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 322,
+   "property": "border-color",
+   "selector": ".run-item .chip",
+   "current": "#ffffff20",
+   "token": "--rail-line",
+   "delta": 8,
+   "alpha": 32,
+   "token_alpha": 23,
+   "kind": "alpha"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 322,
+   "property": "color",
+   "selector": ".run-item .chip",
+   "current": "#d0ddcc",
+   "token": "--line-soft",
+   "delta": 7,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 325,
+   "property": "border-top-color",
+   "selector": ".rail-foot",
+   "current": "#ffffff12",
+   "token": "--rail-line",
+   "delta": 5,
+   "alpha": 18,
+   "token_alpha": 23,
+   "kind": "alpha"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 329,
+   "property": "color",
+   "selector": ".page-breadcrumb>span:first-child",
+   "current": "#acb8b1",
+   "token": "--rail-muted",
+   "delta": 7,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 333,
+   "property": "background",
+   "selector": ".edition-line",
+   "current": "#c4d1c7",
+   "token": "--line-strong",
+   "delta": 5,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 336,
+   "property": "color",
+   "selector": ".workspace-footer b",
+   "current": "#58715f",
+   "token": "--rail-border",
+   "delta": 6,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 341,
+   "property": "background",
+   "selector": ".btn:hover",
+   "current": "#f1f6f2",
+   "token": "--bg",
+   "delta": 3,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 341,
+   "property": "border-color",
+   "selector": ".btn:hover",
+   "current": "#aebfb2",
+   "token": "--rail-muted",
+   "delta": 9,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 342,
+   "property": "color",
+   "selector": ".btn-primary",
+   "current": "#fff",
+   "token": "--panel",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 342,
+   "property": "box-shadow",
+   "selector": ".btn-primary",
+   "current": "#0f4c2810",
+   "token": "--shadow-tint",
+   "delta": 6,
+   "alpha": 16,
+   "token_alpha": 10,
+   "kind": "alpha"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 344,
+   "property": "background",
+   "selector": ".btn-ghost:hover",
+   "current": "#edf2ee",
+   "token": "--bg",
+   "delta": 7,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 347,
+   "property": "background",
+   "selector": ".input",
+   "current": "#fcfdfc",
+   "token": "--panel",
+   "delta": 3,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 347,
+   "property": "background",
+   "selector": "select.input",
+   "current": "#fcfdfc",
+   "token": "--panel",
+   "delta": 3,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 348,
+   "property": "background",
+   "selector": "textarea.input",
+   "current": "#fcfdfc",
+   "token": "--panel",
+   "delta": 3,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 349,
+   "property": "background",
+   "selector": ".input:focus",
+   "current": "#fff",
+   "token": "--panel",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 349,
+   "property": "background",
+   "selector": "select.input:focus",
+   "current": "#fff",
+   "token": "--panel",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 349,
+   "property": "background",
+   "selector": "textarea.input:focus",
+   "current": "#fff",
+   "token": "--panel",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 351,
+   "property": "background",
+   "selector": ".chip",
+   "current": "#f3f6f3",
+   "token": "--bg",
+   "delta": 2,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 358,
+   "property": "border-color",
+   "selector": ".banner.bad",
+   "current": "#ebc4bf",
+   "token": "--danger-line-soft",
+   "delta": 5,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 358,
+   "property": "border-color",
+   "selector": ".alert.bad",
+   "current": "#ebc4bf",
+   "token": "--danger-line-soft",
+   "delta": 5,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 359,
+   "property": "border-color",
+   "selector": ".banner.warn",
+   "current": "#ead7b7",
+   "token": "--warn-line",
+   "delta": 7,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 359,
+   "property": "border-color",
+   "selector": ".alert.warn",
+   "current": "#ead7b7",
+   "token": "--warn-line",
+   "delta": 7,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 366,
+   "property": "background",
+   "selector": ".phase-index",
+   "current": "#f0f4ed",
+   "token": "--bg",
+   "delta": 8,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 366,
+   "property": "color",
+   "selector": ".phase-index",
+   "current": "#4d6b4e",
+   "token": "--rail-active",
+   "delta": 5,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 373,
+   "property": "border",
+   "selector": ".section-index",
+   "current": "#d7e6e1",
+   "token": "--line",
+   "delta": 10,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 373,
+   "property": "border-color",
+   "selector": ".section-index",
+   "current": "#dce7da",
+   "token": "--line",
+   "delta": 10,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 373,
+   "property": "color",
+   "selector": ".section-index",
+   "current": "#4d6b4e",
+   "token": "--rail-active",
+   "delta": 5,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 373,
+   "property": "background",
+   "selector": ".section-index",
+   "current": "#f8faf6",
+   "token": "--surface",
+   "delta": 3,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 378,
+   "property": "background",
+   "selector": "#s0Form .input",
+   "current": "#fcfdfb",
+   "token": "--panel",
+   "delta": 4,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 380,
+   "property": "border",
+   "selector": ".s0-boundary",
+   "current": "#e1ede7",
+   "token": "--rail-text",
+   "delta": 3,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 380,
+   "property": "background",
+   "selector": ".s0-boundary",
+   "current": "#f2f7ef",
+   "token": "--bg",
+   "delta": 6,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 380,
+   "property": "border-color",
+   "selector": ".s0-boundary",
+   "current": "#e1eadb",
+   "token": "--line",
+   "delta": 9,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 380,
+   "property": "color",
+   "selector": ".s0-boundary",
+   "current": "#5d7756",
+   "token": "--text-2",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 384,
+   "property": "border",
+   "selector": ".readiness",
+   "current": "#efe1c3",
+   "token": "--warn-line",
+   "delta": 9,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 384,
+   "property": "border-color",
+   "selector": ".readiness",
+   "current": "#eddfc5",
+   "token": "--warn-line",
+   "delta": 7,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 388,
+   "property": "color",
+   "selector": ".receipt-label",
+   "current": "#456761",
+   "token": "--text-3",
+   "delta": 12,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 390,
+   "property": "border-bottom",
+   "selector": ".s0-checks li",
+   "current": "#e5ece9",
+   "token": "--line",
+   "delta": 5,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 391,
+   "property": "border",
+   "selector": ".s0-checks li>span",
+   "current": "#e6edea",
+   "token": "--line",
+   "delta": 6,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 391,
+   "property": "color",
+   "selector": ".s0-checks li>span",
+   "current": "#55684f",
+   "token": "--av-6",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 391,
+   "property": "background",
+   "selector": ".s0-checks li>span",
+   "current": "#f4f7f1",
+   "token": "--bg",
+   "delta": 4,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 391,
+   "property": "border-color",
+   "selector": ".s0-checks li>span",
+   "current": "#e2eadb",
+   "token": "--line",
+   "delta": 9,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 394,
+   "property": "border",
+   "selector": ".s0-blockers",
+   "current": "#e9dfc9",
+   "token": "--warn-line",
+   "delta": 11,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 394,
+   "property": "color",
+   "selector": ".s0-blockers",
+   "current": "#7a6234",
+   "token": "--warn-8",
+   "delta": 8,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 394,
+   "property": "background",
+   "selector": ".s0-blockers",
+   "current": "#fffaf0",
+   "token": "--warn-tint",
+   "delta": 8,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 394,
+   "property": "border-color",
+   "selector": ".s0-blockers",
+   "current": "#ebdfc6",
+   "token": "--warn-line",
+   "delta": 8,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 395,
+   "property": "color",
+   "selector": ".s0-blockers .eyebrow",
+   "current": "#7a6234",
+   "token": "--warn-8",
+   "delta": 8,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 396,
+   "property": "color",
+   "selector": ".s0-blockers h3",
+   "current": "#7a6234",
+   "token": "--warn-8",
+   "delta": 8,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 399,
+   "property": "color",
+   "selector": ".s0-history summary",
+   "current": "#456761",
+   "token": "--text-3",
+   "delta": 12,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 404,
+   "property": "background",
+   "selector": ".step-card",
+   "current": "#fcfdfb",
+   "token": "--panel",
+   "delta": 4,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 405,
+   "property": "background",
+   "selector": ".step-no",
+   "current": "#edf3e8",
+   "token": "--line",
+   "delta": 12,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 405,
+   "property": "border-color",
+   "selector": ".step-no",
+   "current": "#dae5d2",
+   "token": "--line-soft",
+   "delta": 5,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 405,
+   "property": "color",
+   "selector": ".step-no",
+   "current": "#62834c",
+   "token": "--text-2",
+   "delta": 12,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 410,
+   "property": "background",
+   "selector": ".confirm-bar",
+   "current": "#f7faf5",
+   "token": "--bg",
+   "delta": 4,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 414,
+   "property": "background",
+   "selector": ".run-head",
+   "current": "#fff",
+   "token": "--panel",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 420,
+   "property": "background",
+   "selector": ".stage",
+   "current": "#fff",
+   "token": "--panel",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 423,
+   "property": "color",
+   "selector": ".stage-idx",
+   "current": "#55684f",
+   "token": "--av-6",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 423,
+   "property": "background",
+   "selector": ".stage-idx",
+   "current": "#f0f4ef",
+   "token": "--bg",
+   "delta": 6,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 427,
+   "property": "background",
+   "selector": ".stage-bar",
+   "current": "#eaf0e9",
+   "token": "--line",
+   "delta": 9,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 428,
+   "property": "background",
+   "selector": ".stage-body",
+   "current": "#f9fbf7",
+   "token": "--surface",
+   "delta": 2,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 430,
+   "property": "background",
+   "selector": ".snode",
+   "current": "#fff",
+   "token": "--panel",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 452,
+   "property": "background",
+   "selector": ".agent",
+   "current": "#fff",
+   "token": "--panel",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 453,
+   "property": "box-shadow",
+   "selector": ".agent:hover",
+   "current": "#20372b08",
+   "token": "--shadow-tint",
+   "delta": 2,
+   "alpha": 8,
+   "token_alpha": 10,
+   "kind": "alpha"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 459,
+   "property": "color",
+   "selector": ".avatar",
+   "current": "#38614c",
+   "token": "--neutral-12",
+   "delta": 12,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 459,
+   "property": "background",
+   "selector": ".avatar",
+   "current": "#eaf3e8",
+   "token": "--rail-text",
+   "delta": 9,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 459,
+   "property": "border",
+   "selector": ".avatar",
+   "current": "#d9e7d6",
+   "token": "--line-soft",
+   "delta": 6,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 460,
+   "property": "background",
+   "selector": ".a2",
+   "current": "#e9f3ee",
+   "token": "--rail-text",
+   "delta": 10,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 460,
+   "property": "color",
+   "selector": ".a2",
+   "current": "#3c7465",
+   "token": "--av-2",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 460,
+   "property": "border-color",
+   "selector": ".a2",
+   "current": "#d1e5da",
+   "token": "--line-soft",
+   "delta": 10,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 460,
+   "property": "background",
+   "selector": ".a3",
+   "current": "#fbf2e6",
+   "token": "--warn-weak",
+   "delta": 4,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 460,
+   "property": "color",
+   "selector": ".a3",
+   "current": "#7a5a26",
+   "token": "--av-3",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 460,
+   "property": "border-color",
+   "selector": ".a3",
+   "current": "#eedecc",
+   "token": "--danger-line",
+   "delta": 12,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 461,
+   "property": "background",
+   "selector": ".a4",
+   "current": "#f0ecf6",
+   "token": "--bg",
+   "delta": 10,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 461,
+   "property": "color",
+   "selector": ".a4",
+   "current": "#624d80",
+   "token": "--av-4",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 461,
+   "property": "border-color",
+   "selector": ".a4",
+   "current": "#e1d8ec",
+   "token": "--purple-line",
+   "delta": 4,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 461,
+   "property": "background",
+   "selector": ".a5",
+   "current": "#f8eeee",
+   "token": "--bg",
+   "delta": 8,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 461,
+   "property": "color",
+   "selector": ".a5",
+   "current": "#7b4f4f",
+   "token": "--av-5",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 461,
+   "property": "border-color",
+   "selector": ".a5",
+   "current": "#ecdada",
+   "token": "--danger-line",
+   "delta": 10,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 462,
+   "property": "background",
+   "selector": ".a6",
+   "current": "#eef2ef",
+   "token": "--bg",
+   "delta": 6,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 462,
+   "property": "color",
+   "selector": ".a6",
+   "current": "#55684f",
+   "token": "--av-6",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 462,
+   "property": "border-color",
+   "selector": ".a6",
+   "current": "#dde5df",
+   "token": "--line",
+   "delta": 5,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 467,
+   "property": "background",
+   "selector": ".host-row",
+   "current": "#f6f9f4",
+   "token": "--bg",
+   "delta": 3,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 467,
+   "property": "border-color",
+   "selector": ".host-row",
+   "current": "#e0e9db",
+   "token": "--line",
+   "delta": 9,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 469,
+   "property": "background",
+   "selector": ".count-box",
+   "current": "#fafcf8",
+   "token": "--surface",
+   "delta": 2,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 469,
+   "property": "border-color",
+   "selector": ".count-box",
+   "current": "#e0e8db",
+   "token": "--line",
+   "delta": 9,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 477,
+   "property": "background",
+   "selector": ".option",
+   "current": "#fff",
+   "token": "--panel",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 480,
+   "property": "border-color",
+   "selector": ".option.on",
+   "current": "#c49c61",
+   "token": "--warn-ink",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 480,
+   "property": "background",
+   "selector": ".option.on",
+   "current": "#fff8eb",
+   "token": "--warn-weak",
+   "delta": 3,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 480,
+   "property": "box-shadow",
+   "selector": ".option.on",
+   "current": "#ba914b",
+   "token": "--warn-7",
+   "delta": 8,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 481,
+   "property": "background",
+   "selector": ".diff-item",
+   "current": "#fcfdfb",
+   "token": "--panel",
+   "delta": 4,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 482,
+   "property": "background",
+   "selector": ".diff-item.unresolved",
+   "current": "#fffaf1",
+   "token": "--warn-tint",
+   "delta": 7,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 482,
+   "property": "border-color",
+   "selector": ".diff-item.unresolved",
+   "current": "#e8d8b7",
+   "token": "--warn-line",
+   "delta": 7,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 483,
+   "property": "background",
+   "selector": ".log-pre",
+   "current": "#20382b",
+   "token": "--text",
+   "delta": 6,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 483,
+   "property": "color",
+   "selector": ".log-pre",
+   "current": "#dde8dc",
+   "token": "--line",
+   "delta": 8,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 485,
+   "property": "border-bottom",
+   "selector": ".ev-row",
+   "current": "#eef1f5",
+   "token": "--bg",
+   "delta": 6,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 486,
+   "property": "background",
+   "selector": ".dp-head",
+   "current": "#f6f9f3",
+   "token": "--bg",
+   "delta": 3,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 486,
+   "property": "background",
+   "selector": ".dp-foot",
+   "current": "#f6f9f3",
+   "token": "--bg",
+   "delta": 3,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 487,
+   "property": "background",
+   "selector": ".dirpicker",
+   "current": "#fff",
+   "token": "--panel",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 487,
+   "property": "box-shadow",
+   "selector": ".dirpicker",
+   "current": "#20372b0a",
+   "token": "--shadow-tint",
+   "delta": 0,
+   "alpha": 10,
+   "token_alpha": 10,
+   "kind": "alpha"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 489,
+   "property": "border-bottom",
+   "selector": ".dp-item",
+   "current": "#f0f3f7",
+   "token": "--bg",
+   "delta": 4,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 490,
+   "property": "background",
+   "selector": ".toast",
+   "current": "#213d2d",
+   "token": "--text",
+   "delta": 5,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 490,
+   "property": "color",
+   "selector": ".toast",
+   "current": "#eef7ee",
+   "token": "--bg",
+   "delta": 7,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 490,
+   "property": "box-shadow",
+   "selector": ".toast",
+   "current": "#173b2426",
+   "token": "--shadow-raise",
+   "delta": 0,
+   "alpha": 38,
+   "token_alpha": 38,
+   "kind": "alpha"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 493,
+   "property": "border",
+   "selector": ".agent-window",
+   "current": "#c7d4c8",
+   "token": "--line-strong",
+   "delta": 4,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 493,
+   "property": "box-shadow",
+   "selector": ".agent-window",
+   "current": "#10291a38",
+   "token": "--shadow-pop",
+   "delta": 0,
+   "alpha": 56,
+   "token_alpha": 56,
+   "kind": "alpha"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 494,
+   "property": "background",
+   "selector": ".agent-window::backdrop",
+   "current": "#12251ab3",
+   "token": "--overlay",
+   "delta": 7,
+   "alpha": 179,
+   "token_alpha": 171,
+   "kind": "alpha"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 495,
+   "property": "background",
+   "selector": ".aw-head",
+   "current": "#f5f8f1",
+   "token": "--bg",
+   "delta": 4,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 497,
+   "property": "background",
+   "selector": ".aw-terminal-mark",
+   "current": "#284c35",
+   "token": "--neutral-13",
+   "delta": 11,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 497,
+   "property": "color",
+   "selector": ".aw-terminal-mark",
+   "current": "#d4e8c8",
+   "token": "--warn-line-3",
+   "delta": 12,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 497,
+   "property": "border",
+   "selector": ".aw-terminal-mark",
+   "current": "#456e48",
+   "token": "--rail-active",
+   "delta": 10,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 498,
+   "property": "background",
+   "selector": ".aw-toolbar",
+   "current": "#fff",
+   "token": "--panel",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 503,
+   "property": "background",
+   "selector": ".aw-intervene",
+   "current": "#f8faf5",
+   "token": "--bg",
+   "delta": 4,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 507,
+   "property": "background",
+   "selector": ".aw-timeline",
+   "current": "#20362a",
+   "token": "--text",
+   "delta": 7,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 507,
+   "property": "border-color",
+   "selector": ".aw-timeline",
+   "current": "#34533c",
+   "token": "--neutral-12",
+   "delta": 5,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 507,
+   "property": "color",
+   "selector": ".aw-timeline",
+   "current": "#d9e8d4",
+   "token": "--line-soft",
+   "delta": 4,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 508,
+   "property": "color",
+   "selector": ".aw-empty",
+   "current": "#bacdb3",
+   "token": "--rail-muted-2",
+   "delta": 5,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 509,
+   "property": "color",
+   "selector": ".aw-log-count",
+   "current": "#a3be97",
+   "token": "--neutral-4",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 511,
+   "property": "color",
+   "selector": ".aw-log-row>span",
+   "current": "#a7c69b",
+   "token": "--neutral-4",
+   "delta": 8,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 512,
+   "property": "color",
+   "selector": ".aw-log-row b",
+   "current": "#e0ecda",
+   "token": "--line",
+   "delta": 10,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 513,
+   "property": "color",
+   "selector": ".aw-log-row p",
+   "current": "#b4c9ab",
+   "token": "--rail-muted-2",
+   "delta": 10,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 514,
+   "property": "background",
+   "selector": ".aw-detail summary",
+   "current": "#f9fbf6",
+   "token": "--surface",
+   "delta": 3,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 516,
+   "property": "background",
+   "selector": ".aw-detail pre",
+   "current": "#fefefe",
+   "token": "--panel",
+   "delta": 1,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 516,
+   "property": "color",
+   "selector": ".aw-detail pre",
+   "current": "#36533d",
+   "token": "--neutral-12",
+   "delta": 4,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 521,
+   "property": "background",
+   "selector": ".aw-control-rule",
+   "current": "#edf3e8",
+   "token": "--line",
+   "delta": 12,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 521,
+   "property": "color",
+   "selector": ".aw-control-rule",
+   "current": "#5e7854",
+   "token": "--text-2",
+   "delta": 2,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 524,
+   "property": "border-color",
+   "selector": ".aw-stop .btn",
+   "current": "#e7c4bf",
+   "token": "--danger-line-soft",
+   "delta": 5,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 538,
+   "property": "box-shadow",
+   "selector": "button.snode:hover",
+   "current": "#20372b0f",
+   "token": "--shadow-tint",
+   "delta": 4,
+   "alpha": 15,
+   "token_alpha": 10,
+   "kind": "alpha"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 540,
+   "property": "background",
+   "selector": "button.chip",
+   "current": "#fff",
+   "token": "--panel",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 545,
+   "property": "border",
+   "selector": ".node-detail",
+   "current": "#c7d4c8",
+   "token": "--line-strong",
+   "delta": 4,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 545,
+   "property": "background",
+   "selector": ".node-detail",
+   "current": "#fff",
+   "token": "--panel",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 546,
+   "property": "box-shadow",
+   "selector": ".node-detail",
+   "current": "#10291a38",
+   "token": "--shadow-pop",
+   "delta": 0,
+   "alpha": 56,
+   "token_alpha": 56,
+   "kind": "alpha"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 547,
+   "property": "background",
+   "selector": ".node-detail::backdrop",
+   "current": "#12251ab3",
+   "token": "--overlay",
+   "delta": 7,
+   "alpha": 179,
+   "token_alpha": 171,
+   "kind": "alpha"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 548,
+   "property": "background",
+   "selector": ".nd-head",
+   "current": "#f5f8f1",
+   "token": "--bg",
+   "delta": 4,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 550,
+   "property": "color",
+   "selector": ".nd-head .eyebrow",
+   "current": "#5c7a59",
+   "token": "--text-2",
+   "delta": 3,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 554,
+   "property": "background",
+   "selector": ".nd-toolbar",
+   "current": "#fff",
+   "token": "--panel",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 567,
+   "property": "background",
+   "selector": ".nd-event",
+   "current": "#fcfdfb",
+   "token": "--panel",
+   "delta": 4,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 570,
+   "property": "color",
+   "selector": ".nd-event-detail",
+   "current": "#425449",
+   "token": "--rail-deep",
+   "delta": 11,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 573,
+   "property": "background",
+   "selector": ".nd-summary",
+   "current": "#fbfdf9",
+   "token": "--surface",
+   "delta": 3,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 578,
+   "property": "background",
+   "selector": ".nd-raw pre",
+   "current": "#f6f9f4",
+   "token": "--bg",
+   "delta": 3,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 579,
+   "property": "background",
+   "selector": ".nd-pre",
+   "current": "#f6f9f4",
+   "token": "--bg",
+   "delta": 3,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 586,
+   "property": "border",
+   "selector": ".nd-failure",
+   "current": "#ebc4bf",
+   "token": "--danger-line-soft",
+   "delta": 5,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 589,
+   "property": "border",
+   "selector": ".nd-missing",
+   "current": "#ead7b7",
+   "token": "--warn-line",
+   "delta": 7,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 590,
+   "property": "background",
+   "selector": ".nd-foot",
+   "current": "#f5f8f1",
+   "token": "--bg",
+   "delta": 4,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 597,
+   "property": "color",
+   "selector": ".nd-purpose-text",
+   "current": "#243a2b",
+   "token": "--text",
+   "delta": 6,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 598,
+   "property": "border",
+   "selector": ".nd-mode-note",
+   "current": "#ead7b7",
+   "token": "--warn-line",
+   "delta": 7,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 598,
+   "property": "background",
+   "selector": ".nd-mode-note",
+   "current": "#fffaf1",
+   "token": "--warn-tint",
+   "delta": 7,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 599,
+   "property": "color",
+   "selector": ".nd-mode-note",
+   "current": "#7d6339",
+   "token": "--warn-8",
+   "delta": 9,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 602,
+   "property": "background",
+   "selector": ".nd-key-row",
+   "current": "#fbfdf9",
+   "token": "--surface",
+   "delta": 3,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 603,
+   "property": "background",
+   "selector": ".nd-key-row.missing",
+   "current": "#fbf7ef",
+   "token": "--warn-weak",
+   "delta": 7,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 603,
+   "property": "border-left-color",
+   "selector": ".nd-key-row.missing",
+   "current": "#e2d3b6",
+   "token": "--warn-line",
+   "delta": 8,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 609,
+   "property": "background",
+   "selector": ".nd-step-no",
+   "current": "#e8f0e4",
+   "token": "--rail-text",
+   "delta": 7,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 609,
+   "property": "color",
+   "selector": ".nd-step-no",
+   "current": "#2f4a37",
+   "token": "--neutral-13",
+   "delta": 9,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 618,
+   "property": "background",
+   "selector": ".nd-raw",
+   "current": "#fbfdf9",
+   "token": "--surface",
+   "delta": 3,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 619,
+   "property": "color",
+   "selector": ".nd-raw summary",
+   "current": "#3d5545",
+   "token": "--neutral-12",
+   "delta": 10,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 620,
+   "property": "background",
+   "selector": ".nd-raw-note",
+   "current": "#f2f6ee",
+   "token": "--bg",
+   "delta": 7,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 629,
+   "property": "background",
+   "selector": ".diff-pane",
+   "current": "#fff",
+   "token": "--panel",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 630,
+   "property": "border-left",
+   "selector": ".diff-pane.before",
+   "current": "#d9b3ae",
+   "token": "--danger-ink-soft",
+   "delta": 2,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 631,
+   "property": "border-left",
+   "selector": ".diff-pane.after",
+   "current": "#a9cfb7",
+   "token": "--rail-muted-2",
+   "delta": 12,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 633,
+   "property": "background",
+   "selector": ".diff-pane-head",
+   "current": "#f6f9f4",
+   "token": "--bg",
+   "delta": 3,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 640,
+   "property": "background",
+   "selector": ".diff-fields th",
+   "current": "#f6f9f4",
+   "token": "--bg",
+   "delta": 3,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 643,
+   "property": "background",
+   "selector": ".diff-hunk",
+   "current": "#f7faf7",
+   "token": "--surface",
+   "delta": 2,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 646,
+   "property": "background",
+   "selector": ".dh-row.dh-add",
+   "current": "#eef8f1",
+   "token": "--bg",
+   "delta": 6,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 647,
+   "property": "background",
+   "selector": ".dh-row.dh-del",
+   "current": "#fdf0ef",
+   "token": "--warn-weak",
+   "delta": 7,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 648,
+   "property": "background",
+   "selector": ".dh-row.dh-hunk",
+   "current": "#eef3f9",
+   "token": "--bg",
+   "delta": 6,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 648,
+   "property": "color",
+   "selector": ".dh-row.dh-hunk",
+   "current": "#44607a",
+   "token": "--meta-blue",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 650,
+   "property": "color",
+   "selector": ".dh-no",
+   "current": "#93a49a",
+   "token": "--text-4",
+   "delta": 9,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 652,
+   "property": "border",
+   "selector": ".diff-nohunk",
+   "current": "#e2d3b6",
+   "token": "--warn-line",
+   "delta": 8,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 653,
+   "property": "background",
+   "selector": ".diff-nohunk",
+   "current": "#fffaf1",
+   "token": "--warn-tint",
+   "delta": 7,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 653,
+   "property": "color",
+   "selector": ".diff-nohunk",
+   "current": "#7d6339",
+   "token": "--warn-8",
+   "delta": 9,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 661,
+   "property": "background",
+   "selector": ".host-trace-table th",
+   "current": "#f6f9f4",
+   "token": "--bg",
+   "delta": 3,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 686,
+   "property": "border",
+   "selector": ".s0-rehearsal-scope",
+   "current": "#ebdfc6",
+   "token": "--warn-line",
+   "delta": 8,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 687,
+   "property": "color",
+   "selector": ".s0-rehearsal-scope",
+   "current": "#7d6339",
+   "token": "--warn-8",
+   "delta": 9,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 688,
+   "property": "color",
+   "selector": ".s0-rehearsal-scope b",
+   "current": "#6b5127",
+   "token": "--warn-8",
+   "delta": 9,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 698,
+   "property": "background",
+   "selector": ".gate-entry",
+   "current": "#fff",
+   "token": "--panel",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 709,
+   "property": "color",
+   "selector": ".nd-headline",
+   "current": "#243a2b",
+   "token": "--text",
+   "delta": 6,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 711,
+   "property": "border",
+   "selector": ".nd-note-warn",
+   "current": "#ead7b7",
+   "token": "--warn-line",
+   "delta": 7,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 711,
+   "property": "background",
+   "selector": ".nd-note-warn",
+   "current": "#fffaf1",
+   "token": "--warn-tint",
+   "delta": 7,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 711,
+   "property": "color",
+   "selector": ".nd-note-warn",
+   "current": "#7d6339",
+   "token": "--warn-8",
+   "delta": 9,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 716,
+   "property": "border",
+   "selector": ".nd-evidence-note",
+   "current": "#cfdccb",
+   "token": "--line-soft",
+   "delta": 8,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 717,
+   "property": "background",
+   "selector": ".nd-evidence-note",
+   "current": "#f6faf3",
+   "token": "--bg",
+   "delta": 4,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 718,
+   "property": "background",
+   "selector": ".nd-evidence-note.muted",
+   "current": "#f7f8f6",
+   "token": "--bg",
+   "delta": 3,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 746,
+   "property": "border",
+   "selector": ".nd-hardblock",
+   "current": "#ead7b7",
+   "token": "--warn-line",
+   "delta": 7,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 746,
+   "property": "background",
+   "selector": ".nd-hardblock",
+   "current": "#fffaf1",
+   "token": "--warn-tint",
+   "delta": 7,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 747,
+   "property": "color",
+   "selector": ".nd-hardblock-head",
+   "current": "#7d6339",
+   "token": "--warn-8",
+   "delta": 9,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 748,
+   "property": "border-top",
+   "selector": ".nd-hb-item",
+   "current": "#ecdcbe",
+   "token": "--warn-line",
+   "delta": 6,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 748,
+   "property": "color",
+   "selector": ".nd-hb-item",
+   "current": "#6b5127",
+   "token": "--warn-8",
+   "delta": 9,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 751,
+   "property": "color",
+   "selector": ".nd-hb-code",
+   "current": "#7a6234",
+   "token": "--warn-8",
+   "delta": 8,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 755,
+   "property": "background",
+   "selector": ".nd-overlay",
+   "current": "#12251ab3",
+   "token": "--overlay",
+   "delta": 7,
+   "alpha": 179,
+   "token_alpha": 171,
+   "kind": "alpha"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 757,
+   "property": "background",
+   "selector": ".nd-overlay-card",
+   "current": "#fff",
+   "token": "--panel",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 757,
+   "property": "border",
+   "selector": ".nd-overlay-card",
+   "current": "#c7d4c8",
+   "token": "--line-strong",
+   "delta": 4,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 757,
+   "property": "box-shadow",
+   "selector": ".nd-overlay-card",
+   "current": "#10291a40",
+   "token": "--shadow-pop",
+   "delta": 7,
+   "alpha": 64,
+   "token_alpha": 56,
+   "kind": "alpha"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 758,
+   "property": "background",
+   "selector": ".nd-overlay-head",
+   "current": "#f5f8f1",
+   "token": "--bg",
+   "delta": 4,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 761,
+   "property": "color",
+   "selector": ".nd-overlay-head .eyebrow",
+   "current": "#5c7a59",
+   "token": "--text-2",
+   "delta": 3,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 771,
+   "property": "background",
+   "selector": ".nd-hunk",
+   "current": "#fff",
+   "token": "--panel",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 772,
+   "property": "background",
+   "selector": ".nd-hunk-head",
+   "current": "#eef3f9",
+   "token": "--bg",
+   "delta": 6,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 772,
+   "property": "color",
+   "selector": ".nd-hunk-head",
+   "current": "#44607a",
+   "token": "--meta-blue",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 778,
+   "property": "background",
+   "selector": ".nd-hunk-cell.empty",
+   "current": "#fafcfa",
+   "token": "--surface",
+   "delta": 2,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 779,
+   "property": "background",
+   "selector": ".nd-hunk-cell.del",
+   "current": "#fdf0ef",
+   "token": "--warn-weak",
+   "delta": 7,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 780,
+   "property": "background",
+   "selector": ".nd-hunk-cell.add",
+   "current": "#eef8f1",
+   "token": "--bg",
+   "delta": 6,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 781,
+   "property": "color",
+   "selector": ".nd-hunk-no",
+   "current": "#93a49a",
+   "token": "--text-4",
+   "delta": 9,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 783,
+   "property": "border",
+   "selector": ".nd-nohunk",
+   "current": "#e2d3b6",
+   "token": "--warn-line",
+   "delta": 8,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 784,
+   "property": "background",
+   "selector": ".nd-nohunk",
+   "current": "#fffaf1",
+   "token": "--warn-tint",
+   "delta": 7,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 784,
+   "property": "color",
+   "selector": ".nd-nohunk",
+   "current": "#7d6339",
+   "token": "--warn-8",
+   "delta": 9,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 796,
+   "property": "background",
+   "selector": ".nd-report-pre",
+   "current": "#f6f9f4",
+   "token": "--bg",
+   "delta": 3,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 824,
+   "property": "background",
+   "selector": ".nd-report-dialog::backdrop",
+   "current": "#12251ab3",
+   "token": "--overlay",
+   "delta": 7,
+   "alpha": 179,
+   "token_alpha": 171,
+   "kind": "alpha"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 834,
+   "property": "background",
+   "selector": ".nd-obs-details",
+   "current": "#fbfdf9",
+   "token": "--surface",
+   "delta": 3,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 835,
+   "property": "color",
+   "selector": ".nd-obs-summary",
+   "current": "#3d5545",
+   "token": "--neutral-12",
+   "delta": 10,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 845,
+   "property": "border",
+   "selector": ".nd-obs-missing",
+   "current": "#e2d3b6",
+   "token": "--warn-line",
+   "delta": 8,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 846,
+   "property": "background",
+   "selector": ".nd-obs-missing",
+   "current": "#fbf7ef",
+   "token": "--warn-weak",
+   "delta": 7,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 846,
+   "property": "color",
+   "selector": ".nd-obs-missing",
+   "current": "#7d6339",
+   "token": "--warn-8",
+   "delta": 9,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 849,
+   "property": "background",
+   "selector": ".nd-ref-group",
+   "current": "#fcfdfb",
+   "token": "--panel",
+   "delta": 4,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 857,
+   "property": "border",
+   "selector": ".nd-evidence-groups-note",
+   "current": "#e2d3b6",
+   "token": "--warn-line",
+   "delta": 8,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 858,
+   "property": "background",
+   "selector": ".nd-evidence-groups-note",
+   "current": "#fffaf1",
+   "token": "--warn-tint",
+   "delta": 7,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 858,
+   "property": "color",
+   "selector": ".nd-evidence-groups-note",
+   "current": "#7d6339",
+   "token": "--warn-8",
+   "delta": 9,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 860,
+   "property": "background",
+   "selector": ".nd-example",
+   "current": "#fbfdf9",
+   "token": "--surface",
+   "delta": 3,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 861,
+   "property": "color",
+   "selector": ".nd-example-summary",
+   "current": "#3d5545",
+   "token": "--neutral-12",
+   "delta": 10,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 863,
+   "property": "background",
+   "selector": ".nd-example-line",
+   "current": "#f6f9f4",
+   "token": "--bg",
+   "delta": 3,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 882,
+   "property": "border",
+   "selector": ".action-item",
+   "current": "#3a5a4a",
+   "token": "--neutral-12",
+   "delta": 9,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 901,
+   "property": "background",
+   "selector": ".aw-summary",
+   "current": "#fcfdfb",
+   "token": "--panel",
+   "delta": 4,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 901,
+   "property": "background",
+   "selector": ".aw-s3",
+   "current": "#fcfdfb",
+   "token": "--panel",
+   "delta": 4,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 901,
+   "property": "background",
+   "selector": ".aw-embed",
+   "current": "#fcfdfb",
+   "token": "--panel",
+   "delta": 4,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 923,
+   "property": "background",
+   "selector": ".aw-s3-grid pre",
+   "current": "#f8faf5",
+   "token": "--bg",
+   "delta": 4,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 924,
+   "property": "background",
+   "selector": ".aw-fallback",
+   "current": "#fffdf8",
+   "token": "--warn-tint",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 935,
+   "property": "background",
+   "selector": ".aw-session-copy",
+   "current": "#f8faf5",
+   "token": "--bg",
+   "delta": 4,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 957,
+   "property": "border-color",
+   "selector": ".s0-flow li.check-passed>span",
+   "current": "#cae9db",
+   "token": "--ok-line",
+   "delta": 10,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 959,
+   "property": "border-color",
+   "selector": ".s0-flow li.check-failed>span",
+   "current": "#f1cfcf",
+   "token": "--danger-line",
+   "delta": 4,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 969,
+   "property": "border-color",
+   "selector": ".s0-switch-msg-warn",
+   "current": "#efe0bf",
+   "token": "--warn-line",
+   "delta": 9,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 970,
+   "property": "border-color",
+   "selector": ".s0-switch-msg-bad",
+   "current": "#f2c9c9",
+   "token": "--danger-line-soft",
+   "delta": 7,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 971,
+   "property": "border-color",
+   "selector": ".s0-switch-msg-ok",
+   "current": "#cae9db",
+   "token": "--ok-line",
+   "delta": 10,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 987,
+   "property": "outline-color",
+   "selector": "aside :focus-visible",
+   "current": "#b9d5aa",
+   "token": "--rail-muted-2",
+   "delta": 11,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 993,
+   "property": "background",
+   "selector": ".sk-line",
+   "current": "#e8eeea",
+   "token": "--line",
+   "delta": 7,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 1015,
+   "property": "border",
+   "selector": ".empty .icon-30",
+   "current": "#d6e3d8",
+   "token": "--line-soft",
+   "delta": 8,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 1015,
+   "property": "background",
+   "selector": ".empty .icon-30",
+   "current": "#f0f6f1",
+   "token": "--bg",
+   "delta": 4,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/app.css",
+   "line": 1015,
+   "property": "color",
+   "selector": ".empty .icon-30",
+   "current": "#60846a",
+   "token": "--text-5",
+   "delta": 9,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 3,
+   "property": "border-color",
+   "selector": "header",
+   "current": "#3e5546",
+   "token": "--neutral-12",
+   "delta": 11,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 3,
+   "property": "color",
+   "selector": "header",
+   "current": "#e2ebe1",
+   "token": "--line",
+   "delta": 3,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 6,
+   "property": "color",
+   "selector": ".back-workspace",
+   "current": "#c1dcbd",
+   "token": "--rail-accent",
+   "delta": 8,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 6,
+   "property": "border",
+   "selector": ".back-workspace",
+   "current": "#6b836a",
+   "token": "--text-5",
+   "delta": 8,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 7,
+   "property": "background",
+   "selector": ".back-workspace:hover",
+   "current": "#304b35",
+   "token": "--neutral-13",
+   "delta": 11,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 7,
+   "property": "color",
+   "selector": ".back-workspace:hover",
+   "current": "#fff",
+   "token": "--panel",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 8,
+   "property": "color",
+   "selector": "header .muted",
+   "current": "#bbceba",
+   "token": "--rail-accent",
+   "delta": 6,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 9,
+   "property": "background",
+   "selector": ".authority",
+   "current": "#edf3e8",
+   "token": "--line",
+   "delta": 12,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 9,
+   "property": "border-color",
+   "selector": ".authority",
+   "current": "#d4e0cc",
+   "token": "--line-soft",
+   "delta": 4,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 11,
+   "property": "color",
+   "selector": ".authority .txt",
+   "current": "#54694b",
+   "token": "--rail-active",
+   "delta": 7,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 15,
+   "property": "background",
+   "selector": ".panel",
+   "current": "#fff",
+   "token": "--panel",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 18,
+   "property": "background",
+   "selector": ".badge,.chip",
+   "current": "#f1f5ef",
+   "token": "--bg",
+   "delta": 6,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 18,
+   "property": "border-color",
+   "selector": ".badge,.chip",
+   "current": "#dae3d5",
+   "token": "--line-soft",
+   "delta": 5,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 18,
+   "property": "color",
+   "selector": ".badge,.chip",
+   "current": "#5c7055",
+   "token": "--text-2",
+   "delta": 7,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 19,
+   "property": "border-color",
+   "selector": ".bg-ok,.msg-ok",
+   "current": "#c9dfc7",
+   "token": "--ok-line-2",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 20,
+   "property": "border-color",
+   "selector": ".bg-red,.msg-err",
+   "current": "#e7bdb8",
+   "token": "--danger-line-soft",
+   "delta": 12,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 21,
+   "property": "border-color",
+   "selector": ".bg-orange,.bg-yellow,.msg-warn",
+   "current": "#e7d5b4",
+   "token": "--warn-line",
+   "delta": 10,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 23,
+   "property": "background",
+   "selector": ".bg-gray",
+   "current": "#f1f4ee",
+   "token": "--bg",
+   "delta": 7,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 24,
+   "property": "border-color",
+   "selector": ".bg-purple",
+   "current": "#dfd1ed",
+   "token": "--purple-line",
+   "delta": 3,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 25,
+   "property": "background",
+   "selector": ".status-strip",
+   "current": "#fff",
+   "token": "--panel",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 27,
+   "property": "border-color",
+   "selector": ".tl-item",
+   "current": "#d3dfcc",
+   "token": "--line-soft",
+   "delta": 5,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 28,
+   "property": "background",
+   "selector": ".tl-item .dot",
+   "current": "#c9d4c3",
+   "token": "--line-strong",
+   "delta": 9,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 28,
+   "property": "border-color",
+   "selector": ".tl-item .dot",
+   "current": "#fff",
+   "token": "--panel",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 30,
+   "property": "box-shadow",
+   "selector": ".tl-item.running .dot",
+   "current": "#d7e8d5",
+   "token": "--line-soft",
+   "delta": 5,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 33,
+   "property": "color",
+   "selector": ".tl-name,.sev-msg",
+   "current": "#5a6e52",
+   "token": "--text-2",
+   "delta": 9,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 34,
+   "property": "background",
+   "selector": ".ccard,.chain-item,.queue-item",
+   "current": "#f8faf5",
+   "token": "--bg",
+   "delta": 4,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 35,
+   "property": "border-color",
+   "selector": ".ccard.ccard-red",
+   "current": "#eac8c3",
+   "token": "--danger-line-soft",
+   "delta": 1,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 38,
+   "property": "border-color",
+   "selector": ".warn-banner",
+   "current": "#e2bbb5",
+   "token": "--danger-ink-soft",
+   "delta": 9,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 40,
+   "property": "background",
+   "selector": ".sev",
+   "current": "#f5f8f1",
+   "token": "--bg",
+   "delta": 4,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 40,
+   "property": "border-left-color",
+   "selector": ".sev",
+   "current": "#bcccb2",
+   "token": "--rail-muted-2",
+   "delta": 7,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 42,
+   "property": "border-left-color",
+   "selector": ".sev-defect,.sev-warning",
+   "current": "#b9873b",
+   "token": "--warn-7",
+   "delta": 8,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 45,
+   "property": "background",
+   "selector": ".ref,button.ref",
+   "current": "#f4f8f0",
+   "token": "--bg",
+   "delta": 5,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 46,
+   "property": "background",
+   "selector": "button.ref:hover",
+   "current": "#eaf3e4",
+   "token": "--rail-text",
+   "delta": 9,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 47,
+   "property": "border-color",
+   "selector": ".ref-ok-link",
+   "current": "#c3dabc",
+   "token": "--ok-line-2",
+   "delta": 11,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 48,
+   "property": "border-color",
+   "selector": ".ref-missing",
+   "current": "#dcb1ab",
+   "token": "--danger-ink-soft",
+   "delta": 2,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 52,
+   "property": "background",
+   "selector": ".ev-list",
+   "current": "#f9fbf7",
+   "token": "--surface",
+   "delta": 2,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 53,
+   "property": "background",
+   "selector": ".btn",
+   "current": "#fff",
+   "token": "--panel",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 54,
+   "property": "background",
+   "selector": ".btn:hover:not(:disabled)",
+   "current": "#edf4e8",
+   "token": "--line",
+   "delta": 12,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 55,
+   "property": "color",
+   "selector": ".btn-primary",
+   "current": "#fff",
+   "token": "--panel",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 57,
+   "property": "border-color",
+   "selector": ".btn-danger",
+   "current": "#e4c1bb",
+   "token": "--danger-line-soft",
+   "delta": 9,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 58,
+   "property": "background",
+   "selector": ".btn-danger:hover:not(:disabled)",
+   "current": "#f8dcd7",
+   "token": "--danger-line",
+   "delta": 10,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 60,
+   "property": "background",
+   "selector": "input[type=text],textarea,select",
+   "current": "#fcfdfb",
+   "token": "--panel",
+   "delta": 4,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 61,
+   "property": "outline",
+   "selector": "input[type=text]:focus,textarea:focus,select:focus",
+   "current": "#c8dfbc",
+   "token": "--warn-line-3",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 62,
+   "property": "border-color",
+   "selector": ".note",
+   "current": "#e6d5b4",
+   "token": "--warn-line",
+   "delta": 10,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 64,
+   "property": "background",
+   "selector": ".toast-item",
+   "current": "#25462e",
+   "token": "--rail-hover",
+   "delta": 9,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 64,
+   "property": "color",
+   "selector": ".toast-item",
+   "current": "#edf5e7",
+   "token": "--rail-text",
+   "delta": 12,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 64,
+   "property": "border-color",
+   "selector": ".toast-item",
+   "current": "#57764c",
+   "token": "--rail-active",
+   "delta": 9,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 64,
+   "property": "border-left-color",
+   "selector": ".toast-item",
+   "current": "#a0c18b",
+   "token": "--neutral-4",
+   "delta": 12,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 64,
+   "property": "box-shadow",
+   "selector": ".toast-item",
+   "current": "#173b2426",
+   "token": "--shadow-raise",
+   "delta": 0,
+   "alpha": 38,
+   "token_alpha": 38,
+   "kind": "alpha"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 65,
+   "property": "background",
+   "selector": ".modal",
+   "current": "#102515a3",
+   "token": "--overlay",
+   "delta": 6,
+   "alpha": 163,
+   "token_alpha": 171,
+   "kind": "alpha"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 66,
+   "property": "background",
+   "selector": ".modal-box",
+   "current": "#fff",
+   "token": "--panel",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 66,
+   "property": "box-shadow",
+   "selector": ".modal-box",
+   "current": "#152c2133",
+   "token": "--shadow-pop",
+   "delta": 6,
+   "alpha": 51,
+   "token_alpha": 56,
+   "kind": "alpha"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 68,
+   "property": "border-color",
+   "selector": ".conn",
+   "current": "#e6c0b9",
+   "token": "--danger-line-soft",
+   "delta": 11,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 71,
+   "property": "background",
+   "selector": "pre.json",
+   "current": "#f7faf3",
+   "token": "--bg",
+   "delta": 4,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 71,
+   "property": "color",
+   "selector": "pre.json",
+   "current": "#50694b",
+   "token": "--rail-active",
+   "delta": 7,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 72,
+   "property": "background",
+   "selector": "pre.logtail",
+   "current": "#20382b",
+   "token": "--text",
+   "delta": 6,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 72,
+   "property": "border-color",
+   "selector": "pre.logtail",
+   "current": "#34533c",
+   "token": "--neutral-12",
+   "delta": 5,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 72,
+   "property": "color",
+   "selector": "pre.logtail",
+   "current": "#dce8d7",
+   "token": "--line-soft",
+   "delta": 7,
+   "alpha": 255,
+   "kind": "solid"
+  },
+  {
+   "file": "loop/web/legacy.css",
+   "line": 78,
+   "property": "color",
+   "selector": ".skip-link",
+   "current": "#fff",
+   "token": "--panel",
+   "delta": 0,
+   "alpha": 255,
+   "kind": "solid"
+  }
+ ],
+ "stats": {
+  "tokens": 69,
+  "solid_rows": 355,
+  "alpha_rows": 27,
+  "max_solid_delta": 12,
+  "max_alpha_delta": 10,
+  "bad_solid": 0,
+  "bad_alpha": 0,
+  "by_family": {
+   "neutral": 26,
+   "primary": 4,
+   "ok": 6,
+   "warn": 10,
+   "danger": 6,
+   "purple": 3,
+   "blue": 1,
+   "alpha": 7,
+   "av": 6
+  },
+  "baseline": {
+   "loop/web/app.css": {
+    "md5": "4d4a7867c397a77f81f1ad3814cebd08",
+    "lines": 1015,
+    "source": "snapshot"
+   },
+   "loop/web/legacy.css": {
+    "md5": "149153746ed1fa738b56aebea7db1e40",
+    "lines": 81,
+    "source": "snapshot"
+   },
+   "loop/web/tokens.css": {
+    "md5": "3d23134177964d8e2b2749a241f55a43",
+    "lines": 18,
+    "source": "snapshot"
+   }
+  }
+ }
+}

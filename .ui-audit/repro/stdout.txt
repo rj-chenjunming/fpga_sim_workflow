@@ -1,0 +1,527 @@
+==============================================================================
+M1 字体
+  body font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", "Microsoft YaHei", sans-serif
+  platformFonts: {"body": [{"family": "Noto Sans CJK SC", "glyphs": 5, "isCustom": false}], "cjk-h2": [{"family": "Noto Sans CJK SC", "glyphs": 15, "isCustom": false}], "page-title": [{"family": "Noto Sans CJK SC", "glyphs": 4, "isCustom": false}], "latin-edition": [{"family": "Liberation Sans", "glyphs": 20, "isCustom": false}, {"family": "Liberation Mono", "glyphs": 2, "isCustom": false}], "latin-brand": [{"family": "Liberation Sans", "glyphs": 4, "isCustom": false}, {"family": "Liberation Sans", "glyphs": 4, "isCustom": false}], "latin-addr": [{"family": "Liberation Mono", "glyphs": 15, "isCustom": false}], "mono-path": [{"family": "Liberation Mono", "glyphs": 16, "isCustom": false}]}
+  widthProbe: {"Inter": 643.27, "NoSuchFamilyXYZ": 643.27, "DejaVu Sans": 746.98, "Liberation Sans": 673.67, "Noto Sans SC": 643.27, "Noto Sans CJK SC": 692.89, "siteStack": 673.67, "monoStack": 792.14}
+  faces: []
+==============================================================================
+M2 字号  textElements=209 chars=1967 <12px: els=81 (38.8%) chars=582 (29.6%)
+       8px  count=  1 chars=   21  e.g. ['#viewS0 > div.s0-hero:nth-of-type(1) > div.hero-diagram:nth-of-type(2) > div.diagram-label:nth-of-type(1)']
+       9px  count= 10 chars=  131  e.g. ['#sidebar > div.rail-label:nth-of-type(2) > span', '#sidebar > div.rail-label.action-label:nth-of-type(4) > span']
+      10px  count= 19 chars=  108  e.g. ['#app > header > div.header-context:nth-of-type(2) > span.workspace-tag:nth-of-type(2)', '#btnS0 > span:nth-of-type(2) > small']
+    10.5px  count=  3 chars=   23  e.g. ['#actionBar > button.action-item:nth-of-type(1) > span.action-text:nth-of-type(2) > small', '#actionBar > button.action-item:nth-of-type(2) > span.action-text:nth-of-type(2) > small']
+      11px  count= 46 chars=  297  e.g. ['#sidebar > div.rail-top:nth-of-type(1) > div.rail-kicker', '#sidebar > div.rail-label:nth-of-type(2)']
+    11.5px  count=  2 chars=    2  e.g. ['#actionBar > button.action-item:nth-of-type(1) > span.action-text:nth-of-type(2) > b.mono', '#actionBar > button.action-item:nth-of-type(2) > span.action-text:nth-of-type(2) > b.mono']
+      12px  count= 55 chars=  897  e.g. ['#hdrEnvText', '#hdrAddr']
+    12.5px  count=  8 chars=   37  e.g. ['#s0Advanced > summary', '#s0Form > details.adv.s0-access:nth-of-type(2) > summary']
+      13px  count= 30 chars=  314  e.g. ['#app > header > div.header-context:nth-of-type(2)', '#btnS0 > span:nth-of-type(2)']
+      14px  count= 10 chars=   47  e.g. ['html > body > a.skip-link', '#s0PhaseA > div > h3']
+      15px  count=  9 chars=   49  e.g. ['div:nth-of-type(1) > div.card:nth-of-type(1) > div.card-head > h2', 'div:nth-of-type(1) > div.card.s0-rehearsal:nth-of-type(2) > div.card-head:nth-of-type(1) > h2']
+      16px  count=  2 chars=    4  e.g. ['#s0PhaseA > span.phase-index:nth-of-type(1)', '#s0PhaseB > span.phase-index:nth-of-type(1)']
+      17px  count=  1 chars=    1  e.g. ['#btnS0 > span.workspace-icon:nth-of-type(1)']
+      19px  count=  1 chars=    1  e.g. ['#s0Form > div.s0-boundary:nth-of-type(2) > span']
+      20px  count=  1 chars=    1  e.g. ['#btnNew > span']
+      21px  count=  6 chars=   12  e.g. ['#app > header > div.brand:nth-of-type(1)', '#app > header > div.brand:nth-of-type(1) > span.brand-flow:nth-of-type(2)']
+      22px  count=  1 chars=    1  e.g. ['#app > header > div.header-context:nth-of-type(2) > span.context-divider:nth-of-type(1)']
+      27px  count=  1 chars=    4  e.g. ['#pageTitle']
+      29px  count=  3 chars=   17  e.g. ['#viewS0 > div.s0-hero:nth-of-type(1) > div:nth-of-type(1) > h2', 'div.hero-diagram:nth-of-type(2) > div.diagram-flow:nth-of-type(2) > div.diagram-source:nth-of-type(1) > span']
+==============================================================================
+M3 字号/行高配对
+  8px/13.2px       ratio=1.65 count=  1 e.g. ['#viewS0 > div.s0-hero:nth-of-type(1) > div.hero-diagram:nth-of-type(2) > div.diagram-label:nth-of-type(1)']
+  9px/14.85px      ratio=1.65 count=  8 e.g. ['#sidebar > div.rail-label:nth-of-type(2) > span', '#sidebar > div.rail-label.action-label:nth-of-type(4) > span']
+  9px/normal       ratio=None count=  2 e.g. ['div.hero-diagram:nth-of-type(2) > div.diagram-flow:nth-of-type(2) > div.diagram-source:nth-of-type(1) > b', 'div.hero-diagram:nth-of-type(2) > div.diagram-flow:nth-of-type(2) > div.diagram-target:nth-of-type(3) > b']
+  10px/16.5px      ratio=1.65 count= 12 e.g. ['#app > header > div.header-context:nth-of-type(2) > span.workspace-tag:nth-of-type(2)', '#btnS0 > span:nth-of-type(2) > small']
+  10px/19px        ratio=1.9 count=  3 e.g. ['#railToolRoot', '#railWorkspaceRoot']
+  10px/normal      ratio=None count=  4 e.g. ['#segS0 > small', '#segSetup > small']
+  10.5px/17.33px   ratio=1.65 count=  3 e.g. ['#actionBar > button.action-item:nth-of-type(1) > span.action-text:nth-of-type(2) > small', '#actionBar > button.action-item:nth-of-type(2) > span.action-text:nth-of-type(2) > small']
+  11px/18.15px     ratio=1.65 count= 34 e.g. ['#sidebar > div.rail-top:nth-of-type(1) > div.rail-kicker', '#sidebar > div.rail-label:nth-of-type(2)']
+  11px/18.7px      ratio=1.7 count=  6 e.g. ['#s0PhaseFlow > li:nth-of-type(1) > div > small', '#s0PhaseFlow > li:nth-of-type(2) > div > small']
+  11px/normal      ratio=None count=  6 e.g. ['#s0Checks > li:nth-of-type(1) > span', '#s0Checks > li:nth-of-type(2) > span']
+  11.5px/18.98px   ratio=1.65 count=  2 e.g. ['#actionBar > button.action-item:nth-of-type(1) > span.action-text:nth-of-type(2) > b.mono', '#actionBar > button.action-item:nth-of-type(2) > span.action-text:nth-of-type(2) > b.mono']
+  12px/19.2px      ratio=1.6 count=  2 e.g. ['#s0PhaseA > div > p', '#s0PhaseB > div > p']
+  12px/19.8px      ratio=1.65 count= 35 e.g. ['#hdrEnvText', '#hdrAddr']
+  12px/20.4px      ratio=1.7 count=  4 e.g. ['div:nth-of-type(1) > div.card.s0-rehearsal:nth-of-type(2) > div.card-body:nth-of-type(2) > p.muted.tiny:nth-of-type(1)', 'div:nth-of-type(1) > div.card.s0-rehearsal:nth-of-type(2) > div.card-body:nth-of-type(2) > p.s0-rehearsal-scope:nth-of-type(2)']
+  12px/21.6px      ratio=1.8 count=  4 e.g. ['#viewS0 > div.s0-hero:nth-of-type(1) > div:nth-of-type(1) > p', '#s0Form > div.s0-boundary:nth-of-type(2) > div']
+  12px/22.8px      ratio=1.9 count=  2 e.g. ['#s0Blockers > p:nth-of-type(1)', '#s0Blockers > p:nth-of-type(2)']
+  12px/normal      ratio=None count=  8 e.g. ['#pageIndex', 'div:nth-of-type(1) > div.card:nth-of-type(1) > div.card-head > span.section-index:nth-of-type(1)']
+  12.5px/20.63px   ratio=1.65 count=  8 e.g. ['#s0Advanced > summary', '#s0Form > details.adv.s0-access:nth-of-type(2) > summary']
+  13px/21.45px     ratio=1.65 count= 30 e.g. ['#app > header > div.header-context:nth-of-type(2)', '#btnS0 > span:nth-of-type(2)']
+  14px/23.1px      ratio=1.65 count= 10 e.g. ['html > body > a.skip-link', '#s0PhaseA > div > h3']
+  15px/24.75px     ratio=1.65 count=  9 e.g. ['div:nth-of-type(1) > div.card:nth-of-type(1) > div.card-head > h2', 'div:nth-of-type(1) > div.card.s0-rehearsal:nth-of-type(2) > div.card-head:nth-of-type(1) > h2']
+  16px/normal      ratio=None count=  2 e.g. ['#s0PhaseA > span.phase-index:nth-of-type(1)', '#s0PhaseB > span.phase-index:nth-of-type(1)']
+  17px/28.05px     ratio=1.65 count=  1 e.g. ['#btnS0 > span.workspace-icon:nth-of-type(1)']
+  19px/22.8px      ratio=1.2 count=  1 e.g. ['#s0Form > div.s0-boundary:nth-of-type(2) > span']
+  20px/20px        ratio=1 count=  1 e.g. ['#btnNew > span']
+  21px/21px        ratio=1 count=  4 e.g. ['#segS0 > span.nav-icon:nth-of-type(1)', '#segSetup > span.nav-icon:nth-of-type(1)']
+  21px/34.65px     ratio=1.65 count=  2 e.g. ['#app > header > div.brand:nth-of-type(1)', '#app > header > div.brand:nth-of-type(1) > span.brand-flow:nth-of-type(2)']
+  22px/36.3px      ratio=1.65 count=  1 e.g. ['#app > header > div.header-context:nth-of-type(2) > span.context-divider:nth-of-type(1)']
+  27px/37.8px      ratio=1.4 count=  1 e.g. ['#pageTitle']
+  29px/37.7px      ratio=1.3 count=  2 e.g. ['div.hero-diagram:nth-of-type(2) > div.diagram-flow:nth-of-type(2) > div.diagram-source:nth-of-type(1) > span', 'div.hero-diagram:nth-of-type(2) > div.diagram-flow:nth-of-type(2) > div.diagram-target:nth-of-type(3) > span']
+  29px/43.5px      ratio=1.5 count=  1 e.g. ['#viewS0 > div.s0-hero:nth-of-type(1) > div:nth-of-type(1) > h2']
+==============================================================================
+M4_contrast_s0  scope=s0 textNodes=209 undecidable=0 fail=28 minRatio=1.53
+  FAIL  1.53 (need 4.5) rgb(199, 212, 204)     on rgb(255, 255, 255) 22px/300 n=1   ['#app > header > div.header-context:nth-of-type(2) > span.context-divider:nth-of-type(1)']
+  FAIL  1.89 (need 4.5) rgb(172, 184, 177)     on rgb(244, 246, 245) 11px/400 n=1   ['div.page-head:nth-of-type(1) > div:nth-of-type(1) > div.page-breadcrumb:nth-of-type(1) > span:nth-of-type(1)']
+  FAIL  2.17 (need 4.5) rgb(97, 116, 108)      on rgb(255, 255, 255) 12px/550 n=1   ['#btnNotify']
+  FAIL  3.27 (need 4.5) rgb(118, 137, 112)     on rgb(234, 241, 231) 9px/400 n=1   ['#viewS0 > div.s0-hero:nth-of-type(1) > div.hero-diagram:nth-of-type(2) > div.diagram-caption:nth-of-type(3)']
+  FAIL  3.31 (need 4.5) rgb(123, 139, 129)     on rgb(244, 246, 245) 9px/400 n=1   ['#workspace > div.page-head:nth-of-type(1) > div.page-edition:nth-of-type(3)']
+  FAIL  3.35 (need 4.5) rgb(113, 136, 107)     on rgb(234, 241, 231) 9px/400 n=1   ['div.hero-diagram:nth-of-type(2) > div.diagram-flow:nth-of-type(2) > div.diagram-connector:nth-of-type(2) > span']
+  FAIL  3.39 (need 4.5) rgb(113, 135, 106)     on rgb(234, 241, 231) 8px/400 n=1   ['#viewS0 > div.s0-hero:nth-of-type(1) > div.hero-diagram:nth-of-type(2) > div.diagram-label:nth-of-type(1)']
+  FAIL  3.68 (need 4.5) rgb(106, 133, 94)      on rgb(240, 244, 237) 16px/400 n=2   ['#s0PhaseA > span.phase-index:nth-of-type(1)', '#s0PhaseB > span.phase-index:nth-of-type(1)']
+  FAIL  3.76 (need 4.5) rgb(112, 131, 106)     on rgb(242, 247, 241) 10px/400 n=1   ['div.hero-diagram:nth-of-type(2) > div.diagram-flow:nth-of-type(2) > div.diagram-source:nth-of-type(1) > small']
+  ok    3.78 (need 3) rgb(102, 134, 89)      on rgb(242, 247, 241) 29px/400 n=1   ['div.hero-diagram:nth-of-type(2) > div.diagram-flow:nth-of-type(2) > div.diagram-source:nth-of-type(1) > span']
+  FAIL  3.78 (need 4.5) rgb(149, 125, 86)      on rgb(255, 250, 240) 9px/600 n=1   ['div.s0-grid:nth-of-type(3) > div.s0-evidence:nth-of-type(2) > div.s0-blockers:nth-of-type(2) > div.eyebrow:nth-of-type(1)']
+  FAIL  3.89 (need 4.5) rgb(105, 133, 99)      on rgb(248, 250, 246) 12px/400 n=7   ['div:nth-of-type(1) > div.card:nth-of-type(1) > div.card-head > span.section-index:nth-of-type(1)', 'div:nth-of-type(1) > div.card.s0-rehearsal:nth-of-type(2) > div.card-head:nth-of-type(1) > span.section-index:nth-of-type(1)']
+  FAIL  3.94 (need 4.5) rgb(112, 131, 106)     on rgb(249, 252, 244) 10px/400 n=1   ['div.hero-diagram:nth-of-type(2) > div.diagram-flow:nth-of-type(2) > div.diagram-target:nth-of-type(3) > small']
+  ok    3.96 (need 3) rgb(102, 134, 89)      on rgb(249, 252, 244) 29px/400 n=1   ['div.hero-diagram:nth-of-type(2) > div.diagram-flow:nth-of-type(2) > div.diagram-target:nth-of-type(3) > span']
+  FAIL  3.98 (need 4.5) rgb(108, 127, 105)     on rgb(244, 247, 241) 11px/400 n=6   ['#s0Checks > li:nth-of-type(1) > span', '#s0Checks > li:nth-of-type(2) > span']
+  FAIL  4.16 (need 4.5) rgb(92, 122, 89)       on rgb(234, 241, 231) 9px/600 n=1   ['#viewS0 > div.s0-hero:nth-of-type(1) > div:nth-of-type(1) > div.eyebrow:nth-of-type(1)']
+  FAIL  4.36 (need 4.5) rgb(140, 114, 76)      on rgb(255, 250, 240) 12px/400 n=2   ['#s0Blockers > p:nth-of-type(1)', '#s0Blockers > p:nth-of-type(2)']
+  ok    4.56 (need 4.5) rgb(93, 119, 86)       on rgb(242, 247, 239) 19px/400 n=1   ['#s0Form > div.s0-boundary:nth-of-type(2) > span']
+==============================================================================
+M4_contrast_gate  scope=gate textNodes=173 undecidable=0 fail=14 minRatio=1.53
+  FAIL  1.53 (need 4.5) rgb(199, 212, 204)     on rgb(255, 255, 255) 22px/300 n=1   ['#app > header > div.header-context:nth-of-type(2) > span.context-divider:nth-of-type(1)']
+  FAIL  1.89 (need 4.5) rgb(172, 184, 177)     on rgb(244, 246, 245) 11px/400 n=1   ['div.page-head:nth-of-type(1) > div:nth-of-type(1) > div.page-breadcrumb:nth-of-type(1) > span:nth-of-type(1)']
+  FAIL  2.17 (need 4.5) rgb(97, 116, 108)      on rgb(255, 255, 255) 12px/550 n=1   ['#btnNotify']
+  FAIL  2.56 (need 4.5) rgb(255, 255, 255)     on rgb(21, 119, 94)   13px/550 n=1   ['#gatePanel > div.gate-form > button.btn.btn-primary']
+  FAIL  3.31 (need 4.5) rgb(123, 139, 129)     on rgb(244, 246, 245) 9px/400 n=1   ['#workspace > div.page-head:nth-of-type(1) > div.page-edition:nth-of-type(3)']
+  FAIL  4.05 (need 4.5) rgb(113, 130, 123)     on rgb(255, 255, 255) 11px/400 n=4   ['div.stage.wait:nth-of-type(1) > button.stage-head > div.stage-sum:nth-of-type(3) > span.stage-chev:nth-of-type(3)', 'div.stage:nth-of-type(2) > button.stage-head > div.stage-sum:nth-of-type(3) > span.stage-chev:nth-of-type(3)']
+  FAIL  4.05 (need 4.5) rgb(113, 130, 123)     on rgb(255, 255, 255) 12px/400 n=2   ['#gateMaterial > div.foot-note:nth-of-type(11)', '#gatePanel > div.gate-form > div.foot-note:nth-of-type(3)']
+  FAIL  4.47 (need 4.5) rgb(97, 116, 108)      on rgb(240, 244, 239) 12px/400 n=3   ['#stagesGate > div.stage:nth-of-type(2) > button.stage-head > div.stage-idx:nth-of-type(1)', '#stagesGate > div.stage:nth-of-type(3) > button.stage-head > div.stage-idx:nth-of-type(1)']
+  ok    4.57 (need 4.5) rgb(97, 116, 108)      on rgb(243, 246, 243) 11px/400 n=7   ['#gateHead > span.chip:nth-of-type(3)', '#gateHead > span.chip:nth-of-type(5)']
+  ok    4.58 (need 4.5) rgb(97, 116, 108)      on rgb(244, 246, 245) 11px/400 n=3   ['#workspace > div.page-head:nth-of-type(1) > div:nth-of-type(1) > div.page-breadcrumb:nth-of-type(1)', '#workspace > footer.workspace-footer > span:nth-of-type(1)']
+  ok    4.58 (need 4.5) rgb(97, 116, 108)      on rgb(244, 246, 245) 13px/400 n=1   ['#pageSub']
+  ok    4.68 (need 4.5) rgb(97, 116, 108)      on rgb(246, 249, 244) 11px/400 n=4   ['div.diff-pair:nth-of-type(3) > div.diff-pane.before:nth-of-type(1) > div.diff-pane-head:nth-of-type(1) > span:nth-of-type(1)', 'div.diff-pair:nth-of-type(3) > div.diff-pane.after:nth-of-type(2) > div.diff-pane-head:nth-of-type(1) > span:nth-of-type(1)']
+  ok    4.74 (need 4.5) rgb(97, 116, 108)      on rgb(248, 250, 249) 12px/400 n=2   ['#hdrEnvText', '#hdrHealth']
+  ok    4.78 (need 4.5) rgb(97, 116, 108)      on rgb(255, 250, 241) 11.5px/400 n=2   ['div.diff-block:nth-of-type(8) > div.diff-list:nth-of-type(3) > div.diff-item.unresolved:nth-of-type(1) > div.diff-meta:nth-of-type(2)', 'div.diff-block:nth-of-type(8) > div.diff-list:nth-of-type(3) > div.diff-item.unresolved:nth-of-type(1) > div.diff-ev:nth-of-type(6)']
+  ok    4.86 (need 4.5) rgb(131, 156, 141)     on rgb(25, 46, 40)    9px/400 n=3   ['#sidebar > div.rail-label:nth-of-type(2) > span', '#sidebar > div.rail-label.action-label:nth-of-type(4) > span']
+  ok    4.87 (need 4.5) rgb(97, 116, 108)      on rgb(252, 253, 251) 11.5px/400 n=1   ['div.diff-block:nth-of-type(8) > div.diff-list:nth-of-type(3) > div.diff-item:nth-of-type(2) > div.diff-ev:nth-of-type(4)']
+  ok    4.89 (need 4.5) rgb(97, 116, 108)      on rgb(255, 253, 248) 11px/400 n=1   ['div.snodes > button.snode.gate:nth-of-type(5) > div.st:nth-of-type(2) > span.own']
+  ok    4.91 (need 4.5) rgb(88, 113, 95)       on rgb(244, 246, 245) 11px/600 n=1   ['#workspace > footer.workspace-footer > span:nth-of-type(1) > b']
+==============================================================================
+M4_contrast_monitor  scope=monitor textNodes=238 undecidable=0 fail=33 minRatio=1.53
+  FAIL  1.53 (need 4.5) rgb(199, 212, 204)     on rgb(255, 255, 255) 22px/300 n=1   ['#app > header > div.header-context:nth-of-type(2) > span.context-divider:nth-of-type(1)']
+  FAIL  1.89 (need 4.5) rgb(172, 184, 177)     on rgb(244, 246, 245) 11px/400 n=1   ['div.page-head:nth-of-type(1) > div:nth-of-type(1) > div.page-breadcrumb:nth-of-type(1) > span:nth-of-type(1)']
+  FAIL  2.17 (need 4.5) rgb(97, 116, 108)      on rgb(255, 255, 255) 12px/550 n=1   ['#btnNotify']
+  FAIL  2.85 (need 4.5) rgb(33, 56, 49)        on rgb(255, 255, 255) 12px/550 n=1   ['#runHead > button.btn.btn-sm:nth-of-type(2)']
+  FAIL  3.31 (need 4.5) rgb(123, 139, 129)     on rgb(244, 246, 245) 9px/400 n=1   ['#workspace > div.page-head:nth-of-type(1) > div.page-edition:nth-of-type(3)']
+  FAIL  3.98 (need 4.5) rgb(113, 130, 123)     on rgb(255, 253, 247) 12px/400 n=1   ['#gateCardBody > div.gate-form > div.foot-note:nth-of-type(4)']
+  FAIL  4.05 (need 4.5) rgb(113, 130, 123)     on rgb(255, 255, 255) 11px/400 n=19  ['div.stage.wait:nth-of-type(1) > button.stage-head > div.stage-sum:nth-of-type(3) > span.stage-chev:nth-of-type(3)', 'div.stage:nth-of-type(2) > button.stage-head > div.stage-sum:nth-of-type(3) > span.stage-chev:nth-of-type(3)']
+  FAIL  4.05 (need 4.5) rgb(113, 130, 123)     on rgb(255, 255, 255) 12px/400 n=2   ['div:nth-of-type(1) > div.card > div.card-body:nth-of-type(2) > div.foot-note:nth-of-type(3)', '#countsBody > div.foot-note:nth-of-type(2)']
+  FAIL  4.06 (need 4.5) rgb(152, 111, 54)      on rgb(251, 242, 230) 14px/700 n=1   ['#agents > div.agent.agent-clickable:nth-of-type(3) > div.agent-head:nth-of-type(1) > div.avatar.a3:nth-of-type(1)']
+  FAIL  4.21 (need 4.5) rgb(152, 101, 101)     on rgb(248, 238, 238) 14px/700 n=1   ['#agents > div.agent.agent-clickable:nth-of-type(5) > div.agent-head:nth-of-type(1) > div.avatar.a5:nth-of-type(1)']
+  FAIL  4.42 (need 4.5) rgb(123, 99, 152)      on rgb(240, 236, 246) 14px/700 n=1   ['#agents > div.agent.agent-clickable:nth-of-type(4) > div.agent-head:nth-of-type(1) > div.avatar.a4:nth-of-type(1)']
+  FAIL  4.47 (need 4.5) rgb(97, 116, 108)      on rgb(240, 244, 239) 12px/400 n=3   ['#stages > div.stage:nth-of-type(2) > button.stage-head > div.stage-idx:nth-of-type(1)', '#stages > div.stage:nth-of-type(3) > button.stage-head > div.stage-idx:nth-of-type(1)']
+  ok    4.57 (need 4.5) rgb(97, 116, 108)      on rgb(243, 246, 243) 11px/400 n=12  ['#runHead > span.chip:nth-of-type(3)', '#runHead > span.chip:nth-of-type(5)']
+  ok    4.58 (need 4.5) rgb(97, 116, 108)      on rgb(244, 246, 245) 11px/400 n=3   ['#workspace > div.page-head:nth-of-type(1) > div:nth-of-type(1) > div.page-breadcrumb:nth-of-type(1)', '#workspace > footer.workspace-footer > span:nth-of-type(1)']
+  ok    4.58 (need 4.5) rgb(97, 116, 108)      on rgb(244, 246, 245) 13px/400 n=1   ['#pageSub']
+  ok    4.68 (need 4.5) rgb(97, 116, 108)      on rgb(246, 249, 244) 12px/400 n=2   ['#hostRow > div', '#hostRow > div > div.tiny']
+  ok    4.68 (need 4.5) rgb(97, 116, 108)      on rgb(246, 249, 244) 11px/400 n=4   ['div.diff-pair:nth-of-type(3) > div.diff-pane.before:nth-of-type(1) > div.diff-pane-head:nth-of-type(1) > span:nth-of-type(1)', 'div.diff-pair:nth-of-type(3) > div.diff-pane.after:nth-of-type(2) > div.diff-pane-head:nth-of-type(1) > span:nth-of-type(1)']
+  ok    4.71 (need 4.5) rgb(97, 116, 108)      on rgb(255, 248, 236) 12px/400 n=1   ['#gateCardSub']
+==============================================================================
+M4b_pairs_s0  点名令牌对
+  FAIL   3.31 (need 4.5) rgb(123, 139, 129)   on rgb(244, 246, 245)     9px/400  page-edition #7b8b81           .page-edition
+  FAIL   3.39 (need 4.5) rgb(113, 135, 106)   on rgb(234, 241, 231)     8px/400  diagram-label #71876a          .diagram-label
+  ok     6.94 (need 4.5) rgb(165, 185, 174)   on rgb(25, 46, 40)       11px/400  rail-kicker(--rail-muted)      .rail-kicker
+  ok     6.94 (need 4.5) rgb(165, 185, 174)   on rgb(25, 46, 40)       11px/400  rail-label(--rail-muted)       .rail-label
+  ok     4.86 (need 4.5) rgb(131, 156, 141)   on rgb(25, 46, 40)        9px/400  rail-label>span #839c8d        .rail-label > span
+  ok     6.47 (need 4.5) rgb(165, 185, 174)   on rgb(31, 51, 45)       10px/400  rail-entry small(--rail-muted) .rail-entry small
+  ok     6.94 (need 4.5) rgb(165, 185, 174)   on rgb(25, 46, 40)       11px/400  run-item meta(--rail-muted)    .run-item .meta
+  ok     6.94 (need 4.5) rgb(165, 185, 174)   on rgb(25, 46, 40)       10px/400  rail-foot(--rail-muted)        .rail-foot
+  ok     4.58 (need 4.5) rgb(97, 116, 108)    on rgb(244, 246, 245)    13px/400  pageSub(--muted)               #pageSub
+  ok     4.68 (need 4.5) rgb(89, 112, 91)     on rgb(234, 241, 231)    12px/400  hero p #59705b                 .s0-hero p
+  FAIL   4.16 (need 4.5) rgb(92, 122, 89)     on rgb(234, 241, 231)     9px/600  hero eyebrow #5c7a59           .s0-hero .eyebrow
+  ok     4.91 (need 4.5) rgb(82, 110, 83)     on rgb(234, 241, 231)    11px/400  hero-tags span                 .hero-tags span
+  ok     4.97 (need 4.5) rgb(97, 116, 108)    on rgb(255, 255, 255)    12px/400  s0SubmitHint(--muted)          #s0SubmitHint
+  ok     4.97 (need 4.5) rgb(97, 116, 108)    on rgb(255, 255, 255)    12px/400  card-head sub                  .card-head .sub
+  ok     4.92 (need 4.5) rgb(154, 94, 22)     on rgb(255, 246, 232)    12px/400  readiness(--muted?)            #s0Readiness
+  ok     4.97 (need 4.5) rgb(97, 116, 108)    on rgb(255, 255, 255)    12px/400  s0-label span                  .s0-label span
+  ok     5.48 (need 4.5) rgb(255, 255, 255)   on rgb(21, 119, 94)      13px/550  disabled s0Prepare             #s0Prepare
+  ok     7.99 (need 4.5) rgb(35, 75, 52)      on rgb(217, 236, 222)    13px/650  btn-primary                    #btnNew
+  ok     5.48 (need 4.5) rgb(255, 255, 255)   on rgb(21, 119, 94)      14px/400  skip-link                      .skip-link
+  ok     4.56 (need 4.5) rgb(93, 119, 86)     on rgb(242, 247, 239)    12px/400  s0-boundary                    .s0-boundary
+  ok    12.54 (need 4.5) rgb(33, 56, 49)      on rgb(255, 255, 255)    15px/550  receipt-empty                  .receipt-empty
+==============================================================================
+M4b_pairs_gate  点名令牌对
+  ok     4.97 (need 4.5) rgb(97, 116, 108)    on rgb(255, 255, 255)    12px/400  option span(--muted)           .option span
+  ok    12.54 (need 4.5) rgb(33, 56, 49)      on rgb(255, 255, 255)    13px/700  option b                       .option b
+  ok     4.78 (need 4.5) rgb(97, 116, 108)    on rgb(255, 250, 241)  11.5px/400  diff-meta(--muted)             .diff-meta
+  ok     5.07 (need 4.5) rgb(154, 94, 22)     on rgb(255, 250, 241)    12px/400  diff-unresolved(--warn)        .diff-unresolved
+  MISSING gate-blockers(--danger)          .gate-blockers
+  ok    12.54 (need 4.5) rgb(33, 56, 49)      on rgb(255, 255, 255)    14px/400  gate-pane                      #gateMaterial
+  FAIL   2.56 (need 4.5) rgb(255, 255, 255)   on rgb(21, 119, 94)      13px/550  disabled btn                   #gatePanel .btn:disabled, #gatePanel button[disabled]
+  MISSING linkbtn                          .linkbtn
+==============================================================================
+M4b_pairs_monitor  点名令牌对
+  ok     5.27 (need 4.5) rgb(154, 94, 22)     on rgb(255, 255, 255)    12px/400  agent-note(--warn)             .agent-note
+  ok     5.48 (need 4.5) rgb(21, 119, 94)     on rgb(255, 255, 255)    12px/400  agent-action(--primary)        .agent-action
+  ok     5.09 (need 4.5) rgb(165, 185, 174)   on rgb(40, 69, 54)       11px/400  run-item meta(--rail-muted)    .run-item .meta
+  ok     4.57 (need 4.5) rgb(97, 116, 108)    on rgb(243, 246, 243)    11px/400  chip                           .chip
+  ok     4.58 (need 4.5) rgb(97, 116, 108)    on rgb(244, 246, 245)    13px/400  muted tiny                     .muted.tiny
+==============================================================================
+M7_targets_s0  targets=26 <24=0 <32=6
+  <32 93.3x30  #lnkLegacy  '旧版操作台 ↗'
+  <32 85.3x30  #btnNotify  '通知 已拒绝'
+  <32 542.4x28.6  #s0Form > details.adv.s0-access:nth-of-type(2) > summary  '可访问的目录范围'
+  <32 46x30  #s0Refresh  '刷新'
+  <32 70x30  #s0SwitchRefresh  '刷新环境'
+==============================================================================
+M7_targets_gate  targets=28 <24=0 <32=4
+  <32 93.3x30  #lnkLegacy  '旧版操作台 ↗'
+  <32 85.3x30  #btnNotify  '通知 已拒绝'
+  <32 94x30  #gateHead > button.btn.btn-sm:nth-of-type(1)  '查看执行详情'
+  <32 46x30  #gateHead > button.btn.btn-sm:nth-of-type(2)  '刷新'
+==============================================================================
+M7_targets_monitor  targets=40 <24=5 <32=10
+  <24 110.5x19.5  div.agent.agent-clickable:nth-of-type(1) > div.agent-head:nth-of-type(1) > div:nth-of-type(2) > button.agent-name.agent-open  'simenv-analyst ↗'
+  <24 106.2x19.5  div.agent.agent-clickable:nth-of-type(2) > div.agent-head:nth-of-type(1) > div:nth-of-type(2) > button.agent-name.agent-open  'simenv-author ↗'
+  <24 114.9x19.5  div.agent.agent-clickable:nth-of-type(3) > div.agent-head:nth-of-type(1) > div:nth-of-type(2) > button.agent-name.agent-open  'simenv-checker ↗'
+  <24 120.6x19.5  div.agent.agent-clickable:nth-of-type(4) > div.agent-head:nth-of-type(1) > div:nth-of-type(2) > button.agent-name.agent-open  'simenv-guardian ↗'
+  <24 115.6x19.5  div.agent.agent-clickable:nth-of-type(5) > div.agent-head:nth-of-type(1) > div:nth-of-type(2) > button.agent-name.agent-open  'simenv-reporter ↗'
+  <32 93.3x30  #lnkLegacy  '旧版操作台 ↗'
+  <32 85.3x30  #btnNotify  '通知 已拒绝'
+  <32 46x30  #runHead > button.btn.btn-sm:nth-of-type(1)  '刷新'
+  <32 70x30  #runHead > button.btn.btn-sm:nth-of-type(2)  '取消作业'
+  <32 110.5x19.5  div.agent.agent-clickable:nth-of-type(1) > div.agent-head:nth-of-type(1) > div:nth-of-type(2) > button.agent-name.agent-open  'simenv-analyst ↗'
+  <32 106.2x19.5  div.agent.agent-clickable:nth-of-type(2) > div.agent-head:nth-of-type(1) > div:nth-of-type(2) > button.agent-name.agent-open  'simenv-author ↗'
+  <32 114.9x19.5  div.agent.agent-clickable:nth-of-type(3) > div.agent-head:nth-of-type(1) > div:nth-of-type(2) > button.agent-name.agent-open  'simenv-checker ↗'
+  <32 120.6x19.5  div.agent.agent-clickable:nth-of-type(4) > div.agent-head:nth-of-type(1) > div:nth-of-type(2) > button.agent-name.agent-open  'simenv-guardian ↗'
+  <32 115.6x19.5  div.agent.agent-clickable:nth-of-type(5) > div.agent-head:nth-of-type(1) > div:nth-of-type(2) > button.agent-name.agent-open  'simenv-reporter ↗'
+  <32 403x28.6  #gateCardBody > div.gate-form > details.adv.diff-det > summary  'N2 差异清单 · 2 条 · 无未决'
+==============================================================================
+M8 single-sided borders(raw=26) real(style!=none)=26 style-none(未描边)=0  gradients(S0)=0
+  onesided: {'selector': '#app > header', 'side': 'bottom', 'width': 1, 'style': 'solid', 'color': 'rgb(225, 232, 228)'}
+  onesided: {'selector': '#sidebar > div.rail-foot:nth-of-type(8)', 'side': 'top', 'width': 1, 'style': 'solid', 'color': 'rgba(255, 255, 255, 0.07)'}
+  onesided: {'selector': 'div.s0-grid:nth-of-type(3) > div:nth-of-type(1) > div.card:nth-of-type(1) > div.card-head', 'side': 'bottom', 'width': 1, 'style': 'solid', 'color': 'rgb(225, 232, 228)'}
+  onesided: {'selector': 'div.s0-grid:nth-of-type(3) > div:nth-of-type(1) > div.card.s0-rehearsal:nth-of-type(2) > div.card-head:nth-of-type(1)', 'side': 'bottom', 'width': 1, 'style': 'solid', 'color': 'rgb(225, 232, 228)'}
+  onesided: {'selector': '#s0RehearsalResult', 'side': 'top', 'width': 1, 'style': 'dashed', 'color': 'rgb(225, 232, 228)'}
+  onesided: {'selector': 'div.s0-grid:nth-of-type(3) > div.s0-evidence:nth-of-type(2) > div.card:nth-of-type(1) > div.card-head:nth-of-type(1)', 'side': 'bottom', 'width': 1, 'style': 'solid', 'color': 'rgb(225, 232, 228)'}
+  onesided: {'selector': '#s0Result', 'side': 'bottom', 'width': 1, 'style': 'solid', 'color': 'rgb(225, 232, 228)'}
+  onesided: {'selector': '#s0Checks > li:nth-of-type(1)', 'side': 'bottom', 'width': 1, 'style': 'dashed', 'color': 'rgb(225, 232, 228)'}
+  onesided: {'selector': '#s0Checks > li:nth-of-type(2)', 'side': 'bottom', 'width': 1, 'style': 'dashed', 'color': 'rgb(225, 232, 228)'}
+  onesided: {'selector': '#s0Checks > li:nth-of-type(3)', 'side': 'bottom', 'width': 1, 'style': 'dashed', 'color': 'rgb(225, 232, 228)'}
+  onesided: {'selector': '#s0Checks > li:nth-of-type(4)', 'side': 'bottom', 'width': 1, 'style': 'dashed', 'color': 'rgb(225, 232, 228)'}
+  onesided: {'selector': '#s0Checks > li:nth-of-type(5)', 'side': 'bottom', 'width': 1, 'style': 'dashed', 'color': 'rgb(225, 232, 228)'}
+  onesided: {'selector': '#s0Entry > div.card:nth-of-type(1) > div.card-head:nth-of-type(1)', 'side': 'bottom', 'width': 1, 'style': 'solid', 'color': 'rgb(225, 232, 228)'}
+  onesided: {'selector': '#s0PhaseFlow > li:nth-of-type(1)', 'side': 'bottom', 'width': 1, 'style': 'dashed', 'color': 'rgb(225, 232, 228)'}
+  onesided: {'selector': '#s0PhaseFlow > li:nth-of-type(2)', 'side': 'bottom', 'width': 1, 'style': 'dashed', 'color': 'rgb(225, 232, 228)'}
+  onesided: {'selector': '#s0PhaseFlow > li:nth-of-type(3)', 'side': 'bottom', 'width': 1, 'style': 'dashed', 'color': 'rgb(225, 232, 228)'}
+  onesided: {'selector': '#s0PhaseFlow > li:nth-of-type(4)', 'side': 'bottom', 'width': 1, 'style': 'dashed', 'color': 'rgb(225, 232, 228)'}
+  onesided: {'selector': '#s0PhaseFlow > li:nth-of-type(5)', 'side': 'bottom', 'width': 1, 'style': 'dashed', 'color': 'rgb(225, 232, 228)'}
+  onesided: {'selector': '#s0Entry > div.card:nth-of-type(2) > div.card-head:nth-of-type(1)', 'side': 'bottom', 'width': 1, 'style': 'solid', 'color': 'rgb(225, 232, 228)'}
+  onesided: {'selector': '#s0Entry > div.card:nth-of-type(3) > div.card-head:nth-of-type(1)', 'side': 'bottom', 'width': 1, 'style': 'solid', 'color': 'rgb(225, 232, 228)'}
+  onesided: {'selector': '#s0Switch > div.kv:nth-of-type(1)', 'side': 'bottom', 'width': 1, 'style': 'dashed', 'color': 'rgb(225, 232, 228)'}
+  onesided: {'selector': '#s0Switch > div.kv:nth-of-type(2)', 'side': 'bottom', 'width': 1, 'style': 'dashed', 'color': 'rgb(225, 232, 228)'}
+  onesided: {'selector': '#s0Switch > div.kv:nth-of-type(3)', 'side': 'bottom', 'width': 1, 'style': 'dashed', 'color': 'rgb(225, 232, 228)'}
+  onesided: {'selector': '#s0Switch > div.kv:nth-of-type(4)', 'side': 'bottom', 'width': 1, 'style': 'dashed', 'color': 'rgb(225, 232, 228)'}
+  onesided: {'selector': '#s0Entry > div.card:nth-of-type(4) > div.card-head:nth-of-type(1)', 'side': 'bottom', 'width': 1, 'style': 'solid', 'color': 'rgb(225, 232, 228)'}
+  onesided: {'selector': '#workspace > footer.workspace-footer', 'side': 'top', 'width': 1, 'style': 'solid', 'color': 'rgb(225, 232, 228)'}
+  hero: {"selector": "#viewS0 > div.s0-hero:nth-of-type(1)", "backgroundImage": "none", "backgroundSize": "auto", "backgroundColor": "rgb(234, 241, 231)", "backgroundRepeat": "repeat"}
+  gate gradients: [{"selector": "div.gate-form > div.gate-options:nth-of-type(2) > label.option.on:nth-of-type(1) > span.radio", "image": "radial-gradient(circle, rgb(180, 83, 9) 0px, rgb(180, 83, 9) 40%, rgb(255, 255, 255) 42%, rgb(255, 255, 255) 100%)", "box": {"w": 0, "h": 0}, "size": "auto", "repeat": "repeat"}, {"selector": "div.gate-form > div.gate-options:nth-of-type(1) > label.option.on:nth-of-type(1) > span.radio", "image": "radial-gradient(circle, rgb(180, 83, 9) 0px, rgb(180, 83, 9) 40%, rgb(255, 255, 255) 42%, rgb(255, 255, 255) 100%)", "box": {"w": 15, "h": 15}, "size": "auto", "repeat": "repeat"}]
+==============================================================================
+M7c_named_s0
+  .seg button              216x44       fs=13     fw=450  n=4  r=7px    border[l,t,r,b]=0px none | 0px none | 0px none | 0px none  '▧ 环境准备 S0'
+  #viewSeg button          216x44       fs=13     fw=450  n=4  r=7px    border[l,t,r,b]=0px none | 0px none | 0px none | 0px none  '▧ 环境准备 S0'
+  .rail-entry              208x64       fs=13     fw=550  n=1  r=7px    border[l,t,r,b]=1px solid | 1px solid | 1px solid | 1px solid  'F 仿真与验证 Simulation workspa'
+  #btnNew                  208x40       fs=13     fw=650  n=1  r=7px    border[l,t,r,b]=1px solid | 1px solid | 1px solid | 1px solid  '＋ 新建运行'
+  .action-item             216x54.3     fs=14     fw=400  n=2  r=9px    border[l,t,r,b]=1px solid | 1px solid | 1px solid | 1px solid  'A 等待人工决策'
+  .run-item                216x66.9     fs=14     fw=400  n=2  r=7px    border[l,t,r,b]=1px solid | 1px solid | 1px solid | 1px solid  'A drill · 等待人工 · —'
+  .rail-foot               244x100      fs=10     fw=400  n=1  r=0px    border[l,t,r,b]=1px solid | 0px none | 0px none | 0px none  'TOOL_ROOT · — 数据根 · — 模型 ·'
+  .rail-label              244x47.1     fs=11     fw=400  n=3  r=0px    border[l,t,r,b]=0px none | 0px none | 0px none | 0px none  '工作台 WORKBENCH'
+  .btn                     93.3x30       fs=12     fw=550  n=10 r=7px    border[l,t,r,b]=1px solid | 1px solid | 1px solid | 1px solid  '旧版操作台 ↗'
+  .btn-sm                  93.3x30       fs=12     fw=550  n=5  r=7px    border[l,t,r,b]=1px solid | 1px solid | 1px solid | 1px solid  '旧版操作台 ↗'
+  .chip                    51x26.1     fs=11     fw=400  n=2  r=5px    border[l,t,r,b]=1px solid | 1px solid | 1px solid | 1px solid  '待准备'
+  MISSING .linkbtn                
+  MISSING .ev-chip                
+  MISSING .agent-open             
+  #s0Prepare               542.4x42       fs=13     fw=550  n=1  r=7px    border[l,t,r,b]=1px solid | 1px solid | 1px solid | 1px solid  '派生并校验 →'
+  .s0-hero                 1124x265      fs=14     fw=400  n=1  r=12px   border[l,t,r,b]=1px solid | 1px solid | 1px solid | 1px solid  'SIMULATION / ENVIRONMENT 让'
+  .s0-hero h2              337.8x87       fs=29     fw=550  n=1  r=0px    border[l,t,r,b]=0px none | 0px none | 0px none | 0px none  '让每一次验证， 都有可靠的起点。'
+  .page-edition            218.8x28       fs=9      fw=400  n=1  r=0px    border[l,t,r,b]=0px none | 0px none | 0px none | 0px none  'SIMULATION WORKBENCH S0'
+  .diagram-label           380x13.2     fs=8      fw=400  n=1  r=0px    border[l,t,r,b]=0px none | 0px none | 0px none | 0px none  'CONTROLLED DERIVATION'
+  summary                  542.4x45.9     fs=12.5   fw=400  n=3  r=0px    border[l,t,r,b]=0px none | 0px none | 0px none | 0px none  '高级（可改） 留空 = 服务端默认值'
+  MISSING .gate-pane              
+  MISSING .option                 
+  .input                   542.4x43       fs=13     fw=400  n=4  r=7px    border[l,t,r,b]=1px solid | 1px solid | 1px solid | 1px solid  ''
+  MISSING .agent                  
+  MISSING .stage-head             
+  MISSING .snode                  
+  MISSING .diff-item              
+  MISSING .foot-note              
+  .page-breadcrumb         299x18.1     fs=11     fw=400  n=1  r=0px    border[l,t,r,b]=0px none | 0px none | 0px none | 0px none  '工作台 / 环境准备'
+  MISSING .receipt-path           
+  .s0-checks li > span     27x27       fs=11     fw=400  n=6  r=7px    border[l,t,r,b]=1px solid | 1px solid | 1px solid | 1px solid  '01'
+  .card                    588.4x499.1    fs=14     fw=400  n=8  r=12px   border[l,t,r,b]=1px solid | 1px solid | 1px solid | 1px solid  'A 派生工作副本 S0-a 来源 / 只读输入 新版'
+  .card-head               586.4x62       fs=14     fw=400  n=7  r=0px    border[l,t,r,b]=0px none | 0px none | 1px solid | 0px none  'A 派生工作副本 S0-a'
+  .rail-top                244x189.1    fs=14     fw=400  n=1  r=0px    border[l,t,r,b]=0px none | 0px none | 0px none | 0px none  '当前工作空间 F 仿真与验证 Simulation '
+==============================================================================
+M7c_named_gate
+  .seg button              216x44       fs=13     fw=450  n=4  r=7px    border[l,t,r,b]=0px none | 0px none | 0px none | 0px none  '▧ 环境准备 S0'
+  #viewSeg button          216x44       fs=13     fw=450  n=4  r=7px    border[l,t,r,b]=0px none | 0px none | 0px none | 0px none  '▧ 环境准备 S0'
+  .rail-entry              208x64       fs=13     fw=550  n=1  r=7px    border[l,t,r,b]=1px solid | 1px solid | 1px solid | 1px solid  'F 仿真与验证 Simulation workspa'
+  #btnNew                  208x40       fs=13     fw=650  n=1  r=7px    border[l,t,r,b]=1px solid | 1px solid | 1px solid | 1px solid  '＋ 新建运行'
+  .action-item             216x54.3     fs=14     fw=400  n=2  r=9px    border[l,t,r,b]=1px solid | 1px solid | 1px solid | 1px solid  'A 等待人工决策'
+  .run-item                216x66.9     fs=14     fw=400  n=2  r=7px    border[l,t,r,b]=1px solid | 1px solid | 1px solid | 1px solid  'A drill · 等待人工 · —'
+  .rail-foot               244x100      fs=10     fw=400  n=1  r=0px    border[l,t,r,b]=1px solid | 0px none | 0px none | 0px none  'TOOL_ROOT · — 数据根 · — 模型 ·'
+  .rail-label              244x47.1     fs=11     fw=400  n=3  r=0px    border[l,t,r,b]=0px none | 0px none | 0px none | 0px none  '工作台 WORKBENCH'
+  .btn                     93.3x30       fs=12     fw=550  n=7  r=7px    border[l,t,r,b]=1px solid | 1px solid | 1px solid | 1px solid  '旧版操作台 ↗'
+  .btn-sm                  93.3x30       fs=12     fw=550  n=4  r=7px    border[l,t,r,b]=1px solid | 1px solid | 1px solid | 1px solid  '旧版操作台 ↗'
+  .chip                    35.1x26.1     fs=11     fw=400  n=16 r=5px    border[l,t,r,b]=1px solid | 1px solid | 1px solid | 1px solid  'drill'
+  MISSING .linkbtn                
+  MISSING .ev-chip                
+  MISSING .agent-open             
+  MISSING #s0Prepare              
+  MISSING .s0-hero                
+  MISSING .s0-hero h2             
+  .page-edition            218.8x28       fs=9      fw=400  n=1  r=0px    border[l,t,r,b]=0px none | 0px none | 0px none | 0px none  'SIMULATION WORKBENCH 03'
+  MISSING .diagram-label          
+  MISSING summary                 
+  .gate-pane               649x560      fs=14     fw=400  n=2  r=0px    border[l,t,r,b]=0px none | 0px none | 0px none | 0px none  '闸门 闸门 1 · 差异确认 节点 N4 轮次 0 '
+  .option                  388x74.5     fs=14     fw=400  n=2  r=8px    border[l,t,r,b]=1px solid | 1px solid | 1px solid | 1px solid  '服务端确认 值 confirmed'
+  .input                   220x42       fs=14     fw=400  n=2  r=7px    border[l,t,r,b]=1px solid | 1px solid | 1px solid | 1px solid  ''
+  MISSING .agent                  
+  .stage-head              1076x67.2     fs=14     fw=400  n=4  r=0px    border[l,t,r,b]=0px none | 0px none | 0px none | 0px none  '1 摄取 N0–N4 等待人工 ▸'
+  .snode                   112x48.2     fs=14     fw=400  n=5  r=7px    border[l,t,r,b]=1px solid | 1px solid | 1px solid | 1px solid  'N0 基线 Host'
+  .diff-item               590x261.5    fs=13     fw=400  n=2  r=8px    border[l,t,r,b]=1px solid | 1px solid | 1px solid | 3px solid  'D-001 interface modified 未'
+  .foot-note               590x21.6     fs=12     fw=400  n=2  r=0px    border[l,t,r,b]=0px none | 0px none | 0px none | 0px none  '材料与选项均来自服务端；界面不参与判定，也不持有「已'
+  .page-breadcrumb         312x18.1     fs=11     fw=400  n=1  r=0px    border[l,t,r,b]=0px none | 0px none | 0px none | 0px none  '工作台 / 人工闸门'
+  MISSING .receipt-path           
+  MISSING .s0-checks li > span    
+  .card                    1124x482.1    fs=14     fw=400  n=3  r=12px   border[l,t,r,b]=1px solid | 1px solid | 1px solid | 1px solid  '流程执行状态 闸门节点高亮 · 当前段自动展开 1 '
+  .card-head               1122x62       fs=14     fw=400  n=3  r=0px    border[l,t,r,b]=0px none | 0px none | 1px solid | 0px none  '流程执行状态 闸门节点高亮 · 当前段自动展开'
+  .rail-top                244x189.1    fs=14     fw=400  n=1  r=0px    border[l,t,r,b]=0px none | 0px none | 0px none | 0px none  '当前工作空间 F 仿真与验证 Simulation '
+==============================================================================
+M7c_named_monitor
+  .seg button              216x44       fs=13     fw=450  n=4  r=7px    border[l,t,r,b]=0px none | 0px none | 0px none | 0px none  '▧ 环境准备 S0'
+  #viewSeg button          216x44       fs=13     fw=450  n=4  r=7px    border[l,t,r,b]=0px none | 0px none | 0px none | 0px none  '▧ 环境准备 S0'
+  .rail-entry              208x64       fs=13     fw=550  n=1  r=7px    border[l,t,r,b]=1px solid | 1px solid | 1px solid | 1px solid  'F 仿真与验证 Simulation workspa'
+  #btnNew                  208x40       fs=13     fw=650  n=1  r=7px    border[l,t,r,b]=1px solid | 1px solid | 1px solid | 1px solid  '＋ 新建运行'
+  .action-item             216x54.3     fs=14     fw=400  n=2  r=9px    border[l,t,r,b]=1px solid | 1px solid | 1px solid | 1px solid  'A 等待人工决策'
+  .run-item                216x66.9     fs=14     fw=400  n=2  r=7px    border[l,t,r,b]=1px solid | 1px solid | 1px solid | 1px solid  'A drill · 等待人工 · —'
+  .rail-foot               244x100      fs=10     fw=400  n=1  r=0px    border[l,t,r,b]=1px solid | 0px none | 0px none | 0px none  'TOOL_ROOT · — 数据根 · — 模型 ·'
+  .rail-label              244x47.1     fs=11     fw=400  n=3  r=0px    border[l,t,r,b]=0px none | 0px none | 0px none | 0px none  '工作台 WORKBENCH'
+  .btn                     93.3x30       fs=12     fw=550  n=7  r=7px    border[l,t,r,b]=1px solid | 1px solid | 1px solid | 1px solid  '旧版操作台 ↗'
+  .btn-sm                  93.3x30       fs=12     fw=550  n=4  r=7px    border[l,t,r,b]=1px solid | 1px solid | 1px solid | 1px solid  '旧版操作台 ↗'
+  .chip                    35.1x26.1     fs=11     fw=400  n=22 r=5px    border[l,t,r,b]=1px solid | 1px solid | 1px solid | 1px solid  'drill'
+  MISSING .linkbtn                
+  MISSING .ev-chip                
+  .agent-open              110.5x19.5     fs=13     fw=650  n=5  r=0px    border[l,t,r,b]=0px none | 0px none | 0px none | 0px none  'simenv-analyst ↗'
+  MISSING #s0Prepare              
+  MISSING .s0-hero                
+  MISSING .s0-hero h2             
+  .page-edition            218.8x28       fs=9      fw=400  n=1  r=0px    border[l,t,r,b]=0px none | 0px none | 0px none | 0px none  'SIMULATION WORKBENCH 02'
+  MISSING .diagram-label          
+  summary                  403x28.6     fs=12.5   fw=400  n=2  r=0px    border[l,t,r,b]=0px none | 0px none | 0px none | 0px none  'N2 差异清单 · 2 条 · 无未决'
+  MISSING .gate-pane              
+  .option                  403x74.5     fs=14     fw=400  n=2  r=8px    border[l,t,r,b]=1px solid | 1px solid | 1px solid | 1px solid  '服务端确认 值 confirmed'
+  .input                   220x42       fs=14     fw=400  n=2  r=7px    border[l,t,r,b]=1px solid | 1px solid | 1px solid | 1px solid  ''
+  .agent                   295.5x264.6    fs=14     fw=400  n=5  r=9px    border[l,t,r,b]=1px solid | 1px solid | 1px solid | 1px solid  '析 simenv-analyst ↗ N3 · 差异'
+  .stage-head              1076x67.2     fs=14     fw=400  n=4  r=0px    border[l,t,r,b]=0px none | 0px none | 0px none | 0px none  '1 摄取 N0–N4 等待人工 ▸'
+  .snode                   112x48.2     fs=14     fw=400  n=5  r=7px    border[l,t,r,b]=1px solid | 1px solid | 1px solid | 1px solid  'N0 基线 Host'
+  .diff-item               403x316.9    fs=13     fw=400  n=2  r=8px    border[l,t,r,b]=1px solid | 1px solid | 1px solid | 3px solid  ''
+  .foot-note               605x21.6     fs=12     fw=400  n=3  r=0px    border[l,t,r,b]=0px none | 0px none | 0px none | 0px none  '以上卡片均为投影，非权威；判据以服务端 blocke'
+  .page-breadcrumb         245.6x18.1     fs=11     fw=400  n=1  r=0px    border[l,t,r,b]=0px none | 0px none | 0px none | 0px none  '工作台 / 运行监控'
+  MISSING .receipt-path           
+  MISSING .s0-checks li > span    
+  .card                    1124x482.1    fs=14     fw=400  n=7  r=12px   border[l,t,r,b]=1px solid | 1px solid | 1px solid | 1px solid  '流程执行状态 摄取 → 修订 → 验证 → 决策 轮'
+  .card-head               1122x62       fs=14     fw=400  n=6  r=0px    border[l,t,r,b]=0px none | 0px none | 1px solid | 0px none  '流程执行状态 摄取 → 修订 → 验证 → 决策 轮'
+  .rail-top                244x189.1    fs=14     fw=400  n=1  r=0px    border[l,t,r,b]=0px none | 0px none | 0px none | 0px none  '当前工作空间 F 仿真与验证 Simulation '
+==============================================================================
+M5_focus_s0 steps=22 withOutline=21 noOutline=1
+   1. #s0Rtl                                   fv=True ring=1.39 outline=2px solid rgb(196, 226, 207)  sibling[#s0Advanced] outline=3px none rgb(33, 56, 49)
+   2. #s0Advanced > summary                    fv=True ring=5.48 outline=3px solid rgb(21, 119, 94)  sibling[#s0Advanced > label.s0-label] outline=3px none rgb(33, 56, 49)
+   3. #s0Form > details.adv.s0-access:nth-of-t fv=True ring=5.48 outline=3px solid rgb(21, 119, 94)  sibling[#s0AllowedRoots] outline=3px none rgb(97, 116, 108)
+   4. #s0Prepare                               fv=True ring=5.48 outline=3px solid rgb(21, 119, 94)
+   5. div.s0-grid:nth-of-type(3) > div:nth-of- fv=True ring=5.48 outline=3px solid rgb(21, 119, 94)  sibling[#s0History] outline=3px none rgb(33, 56, 49)
+   6. #s0Rehearsal                             fv=True ring=5.48 outline=3px solid rgb(21, 119, 94)  sibling[#s0RehearsalHint] outline=3px none rgb(97, 116, 108)
+   7. #s0Refresh                               fv=True ring=5.48 outline=3px solid rgb(21, 119, 94)
+   8. #s0SwitchRefresh                         fv=True ring=5.48 outline=3px solid rgb(21, 119, 94)
+   9. #s0SwitchBack                            fv=True ring=5.48 outline=3px solid rgb(21, 119, 94)
+  10. #s0CopiesRefresh                         fv=True ring=5.48 outline=3px solid rgb(21, 119, 94)
+  11. BODY                                     fv=None ring=None outline=None None None
+  12. html > body > a.skip-link                fv=True ring=5.05 outline=3px solid rgb(21, 119, 94)  sibling[#app] outline=3px none rgb(33, 56, 49)
+  13. #lnkLegacy                               fv=True ring=5.48 outline=3px solid rgb(21, 119, 94)  sibling[#btnNotify] outline=3px none rgb(97, 116, 108)
+  14. #btnS0                                   fv=True ring=2.62 outline=3px solid rgb(21, 119, 94)  sibling[#btnNew] outline=3px none rgb(35, 75, 52)
+  15. #btnNew                                  fv=True ring=2.62 outline=3px solid rgb(21, 119, 94)
+  16. #segS0                                   fv=True ring=2.62 outline=3px solid rgb(21, 119, 94)  sibling[#segSetup] outline=3px none rgb(178, 197, 185)
+  17. #actionBar > button.action-item:nth-of-t fv=True ring=2.62 outline=3px solid rgb(21, 119, 94)  sibling[#actionBar > button.action-i] outline=3px none rgb(225, 234, 228)
+  18. #actionBar > button.action-item:nth-of-t fv=True ring=2.62 outline=3px solid rgb(21, 119, 94)
+  19. #runList > button.run-item:nth-of-type(1 fv=True ring=2.62 outline=3px solid rgb(21, 119, 94)  sibling[#runList > button.run-item:n] outline=3px none rgb(225, 234, 228)
+  20. #runList > button.run-item:nth-of-type(2 fv=True ring=2.62 outline=3px solid rgb(21, 119, 94)
+  21. #s0Rtl                                   fv=True ring=1.39 outline=2px solid rgb(196, 226, 207)  sibling[#s0Advanced] outline=3px none rgb(33, 56, 49)
+  22. #s0Advanced > summary                    fv=True ring=5.48 outline=3px solid rgb(21, 119, 94)  sibling[#s0Advanced > label.s0-label] outline=3px none rgb(33, 56, 49)
+  skipLink.afterEnter: {"selector": "#workspace", "tag": "main", "id": "workspace", "text": "工作台 / 环境准备 环境准备 从只读基线派生工作副本，让每", "focusVisible": true, "ringColor": "rgb(33, 56, 49)", "ringWidth": "3px", "ringStyle": "none", "ringOffset": "0px", "ringBg": "rgb(244, 246, 245)", "ringCont
+  skipLink.mainOutline: {"outlineWidth": "3px", "outlineStyle": "none", "outlineColor": "rgb(33, 56, 49)", "focusVisible": true, "tabindex": "-1"}  scrollY= 72
+M5_focus_gate steps=18 withOutline=17 noOutline=1
+   1. #gateHead > button.btn.btn-sm:nth-of-typ fv=True ring=5.48 outline=3px solid rgb(21, 119, 94)  sibling[#gateHead > button.btn.btn-s] outline=3px none rgb(33, 56, 49)
+   2. #gateHead > button.btn.btn-sm:nth-of-typ fv=True ring=5.48 outline=3px solid rgb(21, 119, 94)
+   3. #stagesGate > div.stage.wait:nth-of-type fv=True ring=5.48 outline=3px solid rgb(21, 119, 94)  sibling[#stagesGate > div.stage.wait] outline=3px none rgb(33, 56, 49)
+   4. div.stage.wait:nth-of-type(1) > div.stag fv=True ring=5.26 outline=3px solid rgb(21, 119, 94)  sibling[div.stage.wait:nth-of-type(1] outline=3px none rgb(33, 56, 49)
+   5. div.stage.wait:nth-of-type(1) > div.stag fv=True ring=5.26 outline=3px solid rgb(21, 119, 94)  sibling[div.stage.wait:nth-of-type(1] outline=3px none rgb(33, 56, 49)
+   6. div.stage.wait:nth-of-type(1) > div.stag fv=True ring=5.26 outline=3px solid rgb(21, 119, 94)  sibling[div.stage.wait:nth-of-type(1] outline=3px none rgb(33, 56, 49)
+   7. div.stage.wait:nth-of-type(1) > div.stag fv=True ring=5.26 outline=3px solid rgb(21, 119, 94)  sibling[div.stage.wait:nth-of-type(1] outline=3px none rgb(33, 56, 49)
+   8. div.stage.wait:nth-of-type(1) > div.stag fv=True ring=5.26 outline=3px solid rgb(21, 119, 94)
+   9. #stagesGate > div.stage:nth-of-type(2) > fv=True ring=5.48 outline=3px solid rgb(21, 119, 94)  sibling[#stagesGate > div.stage:nth-] outline=3px none rgb(33, 56, 49)
+  10. #stagesGate > div.stage:nth-of-type(3) > fv=True ring=5.48 outline=3px solid rgb(21, 119, 94)  sibling[#stagesGate > div.stage:nth-] outline=3px none rgb(33, 56, 49)
+  11. #stagesGate > div.stage:nth-of-type(4) > fv=True ring=5.48 outline=3px solid rgb(21, 119, 94)  sibling[#stagesGate > div.stage:nth-] outline=3px none rgb(33, 56, 49)
+  12. #gateMaterial                            fv=True ring=5.48 outline=2px solid rgb(21, 119, 94)
+  13. div.gate-form > div.gate-options:nth-of- fv=True ring=18.01 outline=1px auto rgb(16, 16, 16)  sibling[div.gate-form > div.gate-opt] outline=2px solid rgb(21, 119, 94)
+  14. #gatePanel > div.gate-form > div.field-r fv=True ring=1.39 outline=2px solid rgb(196, 226, 207)
+  15. #gatePanel > div.gate-form > textarea.in fv=True ring=1.39 outline=2px solid rgb(196, 226, 207)  sibling[#gatePanel > div.gate-form >] outline=3px none rgb(33, 56, 49)
+  16. #gatePanel > div.gate-form > button.btn. fv=True ring=5.48 outline=3px solid rgb(21, 119, 94)  sibling[#gatePanel > div.gate-form >] outline=3px none rgb(33, 56, 49)
+  17. BODY                                     fv=None ring=None outline=None None None
+  18. html > body > a.skip-link                fv=True ring=5.05 outline=3px solid rgb(21, 119, 94)  sibling[#app] outline=3px none rgb(33, 56, 49)
+  skipLink.afterEnter: {"selector": "#workspace", "tag": "main", "id": "workspace", "text": "工作台 / 人工闸门 人工闸门 依据差异与证据逐条复核；闸门", "focusVisible": true, "ringColor": "rgb(33, 56, 49)", "ringWidth": "3px", "ringStyle": "none", "ringOffset": "0px", "ringBg": "rgb(244, 246, 245)", "ringCont
+  skipLink.mainOutline: {"outlineWidth": "3px", "outlineStyle": "none", "outlineColor": "rgb(33, 56, 49)", "focusVisible": true, "tabindex": "-1"}  scrollY= 72
+==============================================================================
+M7b_disabled_s0 visibleDisabled=1  probe={"selector": "probe .btn.btn-primary:disabled", "declaredFg": "rgb(255, 255, 255)", "declaredBg": "rgb(21, 119, 94)", "panelBg": "rgb(255, 255, 255)", "opacity": 0.5, "effectiveFg": "rgb(255, 255, 255)", "effectiveBg": "rgb(138, 187, 174.5)", "ratio": 2.14, "fontSize": "13px"}
+    2.17 rgb(168.1, 178.54999999999998, 174.14999999999998) on rgb(255, 255, 255) opacity=0.55 12px #btnNotify
+==============================================================================
+M7b_disabled_gate visibleDisabled=2  probe={"selector": "probe .btn.btn-primary:disabled", "declaredFg": "rgb(255, 255, 255)", "declaredBg": "rgb(21, 119, 94)", "panelBg": "rgb(255, 255, 255)", "opacity": 0.5, "effectiveFg": "rgb(255, 255, 255)", "effectiveBg": "rgb(138, 187, 174.5)", "ratio": 2.14, "fontSize": "13px"}
+    2.17 rgb(168.1, 178.54999999999998, 174.14999999999998) on rgb(255, 255, 255) opacity=0.55 12px #btnNotify
+    2.56 rgb(138, 187, 174.5) on rgb(21, 119, 94) opacity=0.5 13px #gatePanel > div.gate-form > button.btn.btn-primar
+==============================================================================
+M6b gate fold 1280x720 scrollHeight=1406 hOverflow=0
+  header                     inFirstScreen=True  visibleRatio=1.00
+  #gateHead                  inFirstScreen=True  visibleRatio=1.00
+  .stage-head                inFirstScreen=True  visibleRatio=1.00
+  #gateMaterial              inFirstScreen=False visibleRatio=0.00
+  #gatePanel                 inFirstScreen=False visibleRatio=0.00
+  .gate-options              inFirstScreen=False visibleRatio=0.00
+  #gateMaterial .diff-item   inFirstScreen=False visibleRatio=0.00
+  footer                     inFirstScreen=False visibleRatio=0.00
+    box header                     y=      0 h=     72 bottom=     72
+    box #gateHead                  y=  222.4 h=  102.1 bottom=  324.5
+    box .stage-head                y=  416.5 h=   67.2 bottom=  483.8
+    box #gateMaterial              y=  909.6 h=    380 bottom= 1289.6
+    box #gatePanel                 y=  909.6 h=    380 bottom= 1289.6
+    box .gate-options              y=  931.6 h=  159.1 bottom= 1090.7
+    box #gateMaterial .diff-item   y= 1292.5 h=  316.9 bottom= 1609.4
+    box footer                     y= 1334.6 h=   43.1 bottom= 1377.8
+==============================================================================
+M6b gate fold 1440x900 scrollHeight=1586 hOverflow=0
+  header                     inFirstScreen=True  visibleRatio=1.00
+  #gateHead                  inFirstScreen=True  visibleRatio=1.00
+  .stage-head                inFirstScreen=True  visibleRatio=1.00
+  #gateMaterial              inFirstScreen=False visibleRatio=0.00
+  #gatePanel                 inFirstScreen=False visibleRatio=0.00
+  .gate-options              inFirstScreen=False visibleRatio=0.00
+  #gateMaterial .diff-item   inFirstScreen=False visibleRatio=0.00
+  footer                     inFirstScreen=False visibleRatio=0.00
+    box header                     y=      0 h=     72 bottom=     72
+    box #gateHead                  y=  226.4 h=  102.1 bottom=  328.5
+    box .stage-head                y=  420.5 h=   67.2 bottom=  487.8
+    box #gateMaterial              y=  913.6 h=    560 bottom= 1473.6
+    box #gatePanel                 y=  913.6 h=  461.1 bottom= 1374.8
+    box .gate-options              y=  935.6 h=  159.1 bottom= 1094.7
+    box #gateMaterial .diff-item   y= 1296.5 h=  261.5 bottom=   1558
+    box footer                     y= 1518.6 h=   43.1 bottom= 1561.8
+==============================================================================
+M6b gate fold 1920x1080 scrollHeight=1722 hOverflow=0
+  header                     inFirstScreen=True  visibleRatio=1.00
+  #gateHead                  inFirstScreen=True  visibleRatio=1.00
+  .stage-head                inFirstScreen=True  visibleRatio=1.00
+  #gateMaterial              inFirstScreen=False visibleRatio=0.27
+  #gatePanel                 inFirstScreen=False visibleRatio=0.42
+  .gate-options              inFirstScreen=True  visibleRatio=1.00
+  #gateMaterial .diff-item   inFirstScreen=False visibleRatio=0.00
+  footer                     inFirstScreen=False visibleRatio=0.00
+    box header                     y=      0 h=     72 bottom=     72
+    box #gateHead                  y=  236.4 h=     64 bottom=  300.4
+    box .stage-head                y=  392.4 h=   67.2 bottom=  459.6
+    box #gateMaterial              y=  885.5 h=    720 bottom= 1605.5
+    box #gatePanel                 y=  885.5 h=  461.1 bottom= 1346.6
+    box .gate-options              y=  907.5 h=  159.1 bottom= 1066.6
+    box #gateMaterial .diff-item   y= 1268.3 h=  261.5 bottom= 1529.8
+    box footer                     y= 1650.5 h=   43.1 bottom= 1693.6
+==============================================================================
+M6 fold 1280x720 scrollHeight=3134 hOverflow=0
+  header           inFirstScreen=True  topIn=True  visibleRatio=1.00
+  #workspace       inFirstScreen=False topIn=True  visibleRatio=0.21
+  .page-head       inFirstScreen=True  topIn=True  visibleRatio=1.00
+  .s0-hero         inFirstScreen=True  topIn=True  visibleRatio=1.00
+  .s0-phases       inFirstScreen=True  topIn=True  visibleRatio=1.00
+  #s0Rtl           inFirstScreen=False topIn=False visibleRatio=0.00
+  #s0Advanced      inFirstScreen=False topIn=False visibleRatio=0.00
+  #s0Prepare       inFirstScreen=False topIn=False visibleRatio=0.00
+  #s0Readiness     inFirstScreen=False topIn=False visibleRatio=0.00
+  .s0-evidence     inFirstScreen=False topIn=True  visibleRatio=0.09
+  .s0-rehearsal    inFirstScreen=False topIn=False visibleRatio=0.00
+    box header           y=      0 h=     72 bottom=     72
+    box #workspace       y=     72 h= 3061.8 bottom= 3133.8
+    box .page-head       y=    100 h=   96.4 bottom=  196.4
+    box .s0-hero         y=  222.4 h=    252 bottom=  474.4
+    box .s0-phases       y=  496.4 h=    122 bottom=  618.4
+    box #s0Rtl           y=    793 h=     43 bottom=    836
+    box #s0Advanced      y=    840 h=   45.9 bottom=  885.9
+    box #s0Prepare       y= 1098.1 h=     42 bottom= 1140.1
+    box #s0Readiness     y=  732.4 h=   43.8 bottom=  776.2
+    box .s0-evidence     y=  642.4 h=  895.1 bottom= 1537.5
+    box .s0-rehearsal    y= 1262.9 h=    282 bottom= 1544.9
+M6 fold 1440x900 scrollHeight=3110 hOverflow=0
+  header           inFirstScreen=True  topIn=True  visibleRatio=1.00
+  #workspace       inFirstScreen=False topIn=True  visibleRatio=0.27
+  .page-head       inFirstScreen=True  topIn=True  visibleRatio=1.00
+  .s0-hero         inFirstScreen=True  topIn=True  visibleRatio=1.00
+  .s0-phases       inFirstScreen=True  topIn=True  visibleRatio=1.00
+  #s0Rtl           inFirstScreen=True  topIn=True  visibleRatio=1.00
+  #s0Advanced      inFirstScreen=True  topIn=True  visibleRatio=1.00
+  #s0Prepare       inFirstScreen=False topIn=False visibleRatio=0.00
+  #s0Readiness     inFirstScreen=True  topIn=True  visibleRatio=1.00
+  .s0-evidence     inFirstScreen=False topIn=True  visibleRatio=0.29
+  .s0-rehearsal    inFirstScreen=False topIn=False visibleRatio=0.00
+    box header           y=      0 h=     72 bottom=     72
+    box #workspace       y=     72 h=   3038 bottom=   3110
+    box .page-head       y=    104 h=   96.4 bottom=  200.4
+    box .s0-hero         y=  226.4 h=    265 bottom=  491.4
+    box .s0-phases       y=  513.4 h=  106.8 bottom=  620.2
+    box #s0Rtl           y=  794.8 h=     43 bottom=  837.8
+    box #s0Advanced      y=  841.8 h=   45.9 bottom=  887.7
+    box #s0Prepare       y= 1078.3 h=     42 bottom= 1120.3
+    box #s0Readiness     y=  734.2 h=   43.8 bottom=    778
+    box .s0-evidence     y=  644.2 h=  895.1 bottom= 1539.3
+    box .s0-rehearsal    y= 1243.1 h=    282 bottom= 1525.1
+M6 fold 1920x1080 scrollHeight=3096 hOverflow=0
+  header           inFirstScreen=True  topIn=True  visibleRatio=1.00
+  #workspace       inFirstScreen=False topIn=True  visibleRatio=0.33
+  .page-head       inFirstScreen=True  topIn=True  visibleRatio=1.00
+  .s0-hero         inFirstScreen=True  topIn=True  visibleRatio=1.00
+  .s0-phases       inFirstScreen=True  topIn=True  visibleRatio=1.00
+  #s0Rtl           inFirstScreen=True  topIn=True  visibleRatio=1.00
+  #s0Advanced      inFirstScreen=True  topIn=True  visibleRatio=1.00
+  #s0Prepare       inFirstScreen=False topIn=True  visibleRatio=0.32
+  #s0Readiness     inFirstScreen=True  topIn=True  visibleRatio=1.00
+  .s0-evidence     inFirstScreen=False topIn=True  visibleRatio=0.46
+  .s0-rehearsal    inFirstScreen=False topIn=False visibleRatio=0.00
+    box header           y=      0 h=     72 bottom=     72
+    box #workspace       y=     72 h= 3024.4 bottom= 3096.4
+    box .page-head       y=    110 h=   96.4 bottom=  206.4
+    box .s0-hero         y=  236.4 h=    275 bottom=  511.4
+    box .s0-phases       y=  533.4 h=  106.8 bottom=  640.2
+    box #s0Rtl           y=  814.8 h=     43 bottom=  857.8
+    box #s0Advanced      y=  861.8 h=   45.9 bottom=  907.7
+    box #s0Prepare       y= 1066.5 h=     42 bottom= 1108.5
+    box #s0Readiness     y=  754.2 h=   43.8 bottom=    798
+    box .s0-evidence     y=  664.2 h=  895.1 bottom= 1559.3
+    box .s0-rehearsal    y= 1231.3 h=  261.6 bottom= 1492.9
+==============================================================================
+M9 duration histogram: {'0.15s, 0.15s, 0.15s': 41, '0.15s, 0.15s': 22, '0.3s': 8, '0.15s': 8, '0.2s': 1}
+   timing histogram: {'ease, ease, ease': 41, 'ease, ease': 22, 'ease': 17}
+   animations: [{'selector': '#runHead > span.status-pill.wait:nth-of-type(2) > span.pulse', 'name': 'pulse', 'duration': '1.6s', 'timing': 'ease', 'iterations': 'infinite'}, {'selector': '#gateHead > span.status-pill.wait:nth-of-type(2) > span.pulse', 'name': 'pulse', 'duration': '1.6s', 'timing': 'ease', 'iterations': 'infinite'}]
+   reduced-motion: elementsWithMotion= 0 mediaMatches= True
+     {'selector': '.btn', 'transitionDuration': '0s', 'transitionProperty': 'none', 'animationName': 'none', 'animationDuration': '0s'}
+     {'selector': '.seg button', 'transitionDuration': '0s', 'transitionProperty': 'none', 'animationName': 'none', 'animationDuration': '0s'}
+     {'selector': '.rail-entry', 'transitionDuration': '0s', 'transitionProperty': 'none', 'animationName': 'none', 'animationDuration': '0s'}
+     {'selector': '.agent-clickable', 'transitionDuration': '0s', 'transitionProperty': 'none', 'animationName': 'none', 'animationDuration': '0s'}
+     {'selector': '.s0-hero', 'transitionDuration': '0s', 'transitionProperty': 'none', 'animationName': 'none', 'animationDuration': '0s'}
+     {'selector': '.card', 'transitionDuration': '0s', 'transitionProperty': 'none', 'animationName': 'none', 'animationDuration': '0s'}
+     {'selector': '.stage-bar i', 'transitionDuration': '0s', 'transitionProperty': 'none', 'animationName': 'none', 'animationDuration': '0s'}
+     {'selector': '.tooltip', 'missing': True}
+     {'selector': '.icon-spin', 'missing': True}
+     {'selector': '.badge', 'missing': True}
+==============================================================================
+M10 light: {"bodyBg": "rgb(244, 246, 245)", "bodyColor": "rgb(33, 56, 49)", "htmlColorScheme": "light", "panelBg": "rgb(255, 255, 255)", "rootVars": {"bg": "#f4f6f5", "text": "#213831"}}
+    dark : {"mediaMatches": true, "bodyBg": "rgb(244, 246, 245)", "bodyColor": "rgb(33, 56, 49)", "htmlColorScheme": "light", "panelBg": "rgb(255, 255, 255)", "rootVars": {"bg": "#f4f6f5", "text": "#213831"}}
+==============================================================================
+pageErrors: [] posts: []
+JSON -> /home/work/chenjunming/change-impact-loop/.ui-audit/repro/measure.json

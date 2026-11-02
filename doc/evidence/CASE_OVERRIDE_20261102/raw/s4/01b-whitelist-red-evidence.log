@@ -1,0 +1,15 @@
+### 红证据：修复前（git HEAD 版 app.js）白名单 vs 服务端 ALLOWED_KINDS
+    gate_pending: 1, gate_decided: 1,
+    job_submitted: 1, job_progress: 1, job_finished: 1, dead_job: 1,
+    admission_granted: 1, admission_refused: 1, admission_queued: 1,
+    warning: 1
+  };
+  var EVENT_DETAIL_FIELDS = ["gate", "decision", "cycle", "message", "model", "mode", "rc", "diff_count"];
+
+  var STATUS_LABEL = {
+    running: "执行中",
+    waiting_gate: "等待人工",
+
+only_frontend= []
+only_server= ['case_override']
+equal= False

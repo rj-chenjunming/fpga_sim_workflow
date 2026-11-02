@@ -92,7 +92,9 @@ def test_view_projects_authority_not_just_events(client: TestClient) -> None:
     assert au["present"] is True, au
     assert au["anchor_ok"] is True, au          # 新状态必须带可复算锚
     assert "锚一致" in au["anchor_detail"]
-    assert set(au["gates"]) == set(GA.gate_ids())
+    # LOOP §14（2026-10-30）：`G1_no_impact` 是分流支线，未出现（本轮停在 G1）⇒ 不投影。
+    assert set(au["gates"]) == set(GA.gate_ids()) - {"G1_no_impact"}
+    assert "G1_no_impact" not in au["gates"]
 
     g1 = au["gates"]["G1_diff_confirm"]
     assert g1["human_signed"] is False

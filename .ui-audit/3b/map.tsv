@@ -1,0 +1,383 @@
+file	line	property	current	token	delta	selector
+loop/web/app.css	18	background	#f2f4f7	--bg	2	.pill
+loop/web/app.css	36	background	#eceff4	--primary-weak	6	.seg
+loop/web/app.css	39	box-shadow	rgba(16,24,40,.08)	--shadow-tint	31	.seg button.on
+loop/web/app.css	65	border-color	#bfe8d8	--ok-line	12	.chip.ok
+loop/web/app.css	66	border-color	#f3d19e	--warn-line	0	.chip.warn
+loop/web/app.css	67	border-color	#f5c6c6	--danger-line	11	.chip.bad
+loop/web/app.css	73	border-color	#f3d19e	--warn-line	0	.status-pill.wait
+loop/web/app.css	75	border-color	#bfe8d8	--ok-line	12	.status-pill.done
+loop/web/app.css	76	border-color	#f5c6c6	--danger-line	11	.status-pill.fail
+loop/web/app.css	79	border-color	#bfe8d8	--ok-line	12	.stage.done
+loop/web/app.css	80	border-color	#f3d19e	--warn-line	0	.stage.wait
+loop/web/app.css	81	border-color	#f5c6c6	--danger-line	11	.stage.fail
+loop/web/app.css	82	background	#fafbfd	--surface-2	2	.stage-head:hover
+loop/web/app.css	83	color	#fff	--panel	0	.stage.active .stage-idx
+loop/web/app.css	84	border	#bfe8d8	--ok-line	12	.stage.done .stage-idx
+loop/web/app.css	85	border	#f3d19e	--warn-line	0	.stage.wait .stage-idx
+loop/web/app.css	86	border	#f5c6c6	--danger-line	11	.stage.fail .stage-idx
+loop/web/app.css	96	background	#eef1f5	--purple-weak	5	.snode .sb
+loop/web/app.css	99	color	#fff	--panel	0	.snode.done .sb
+loop/web/app.css	101	background	#fff	--panel	0	.snode.active .sb
+loop/web/app.css	103	border-color	#e8b86a	--warn-line	52	.snode.wait .sb
+loop/web/app.css	104	border-color	#f3d19e	--warn-line	0	.snode.wait
+loop/web/app.css	104	background	#fffdf8	--surface-2	3	.snode.wait
+loop/web/app.css	105	border-color	#f5c6c6	--danger-line	11	.snode.fail .sb
+loop/web/app.css	106	border-color	#f5c6c6	--danger-line	11	.snode.fail
+loop/web/app.css	106	background	#fffafa	--surface-2	3	.snode.fail
+loop/web/app.css	109	color	#fff	--panel	0	.snode.gate.wait .sb
+loop/web/app.css	110	color	#fff	--panel	0	.snode.gate.done .sb
+loop/web/app.css	118	border-color	#f3d19e	--warn-line	0	.agent.waiting
+loop/web/app.css	118	background	#fffdf8	--surface-2	3	.agent.waiting
+loop/web/app.css	119	border-color	#f5c6c6	--danger-line	11	.agent.failed
+loop/web/app.css	119	background	#fffafa	--surface-2	3	.agent.failed
+loop/web/app.css	120	background	#2457d6	--purple	79	.a1
+loop/web/app.css	135	border-color	#f3d19e	--warn-line	0	.gate-card
+loop/web/app.css	135	background	#fffdf7	--surface-2	4	.gate-card
+loop/web/app.css	136	border-bottom-color	#f3d19e	--warn-line	0	.gate-card .card-head
+loop/web/app.css	136	background	#fff8ec	--warn-weak	4	.gate-card .card-head
+loop/web/app.css	142	box-shadow	#fff	--panel	0	.option.on .radio
+loop/web/app.css	151	background	#eef2f6	--purple-weak	5	.sev.info
+loop/web/app.css	166	background	#fbfcfe	--surface-2	3	.dp-roots
+loop/web/app.css	169	background	#f8fafc	--surface	3	.dp-item:hover
+loop/web/app.css	203	background	#fff	--panel	0	.phase-card
+loop/web/app.css	207	background	#edf2f1	--primary-weak	3	#s0Form .input:disabled
+loop/web/app.css	207	color	#617673	--muted	7	#s0Form .input:disabled
+loop/web/app.css	213	color	#148b68	--ok	27	.s0-checks .check-passed>span
+loop/web/app.css	213	background	#e9f8f0	--ok-weak	4	.s0-checks .check-passed>span
+loop/web/app.css	213	border-color	#cae9db	--ok-line	3	.s0-checks .check-passed>span
+loop/web/app.css	214	color	#148b68	--ok	27	.s0-checks .check-passed b
+loop/web/app.css	226	box-shadow	#087e7912	--shadow-tint	78	.agent-clickable:hover
+loop/web/app.css	228	background	#fff	--panel	0	.agent-window
+loop/web/app.css	235	border	#29484b	--rail-border	18	.aw-timeline
+loop/web/app.css	235	scrollbar-color	#52716c	--faint	13	.aw-timeline
+loop/web/app.css	235	scrollbar-color	#142d32	--rail	10	.aw-timeline
+loop/web/app.css	236	border-bottom	#ffffff0a	--rail-tint	0	.aw-log-row
+loop/web/app.css	257	background	#fff	--panel	0	.aw-action-row .btn
+loop/web/app.css	258	border-top	#dae6df	--line-soft	6	.aw-stop
+loop/web/app.css	260	color	#718c7e	--muted	24	.aw-limit summary
+loop/web/app.css	270	background	#cbe9d8	--ok-line	0	::selection
+loop/web/app.css	270	color	#183d2e	--text	9	::selection
+loop/web/app.css	271	color	#fff	--panel	0	.skip-link
+loop/web/app.css	276	background	#fff	--panel	0	header
+loop/web/app.css	276	box-shadow	#21383104	--shadow-tint	6	header
+loop/web/app.css	278	color	#456a58	--text-3	14	.brand-flow
+loop/web/app.css	279	box-shadow	#ffffff20	--rail-line	0	.mark
+loop/web/app.css	280	border	#fff	--panel	0	.mark:after
+loop/web/app.css	296	background	#ffffff06	--rail-tint	0	.rail-entry
+loop/web/app.css	296	border-color	#ffffff17	--rail-line	0	.rail-entry
+loop/web/app.css	297	border-color	#ffffff30	--rail-line	0	.rail-entry:hover
+loop/web/app.css	300	border	#728d7b	--muted	25	.workspace-icon
+loop/web/app.css	300	color	#b7d2bf	--primary-line	11	.workspace-icon
+loop/web/app.css	301	background	#d9ecde	--line-soft	0	aside #btnNew
+loop/web/app.css	301	color	#234b34	--text-2	12	aside #btnNew
+loop/web/app.css	301	border-color	#d9ecde	--line-soft	0	aside #btnNew
+loop/web/app.css	301	box-shadow	#0000000a	--shadow-tint	55	aside #btnNew
+loop/web/app.css	302	background	#c4dfcc	--line-strong	11	aside #btnNew:hover
+loop/web/app.css	302	border-color	#c4dfcc	--line-strong	11	aside #btnNew:hover
+loop/web/app.css	305	color	#839c8d	--rail-muted	34	.rail-label>span
+loop/web/app.css	307	color	#b2c5b9	--rail-accent	8	#viewSeg button
+loop/web/app.css	308	color	#fff	--panel	0	#viewSeg button:hover
+loop/web/app.css	309	background	#304b3d	--text-2	6	#viewSeg button.on
+loop/web/app.css	309	color	#f3faf5	--bg	4	#viewSeg button.on
+loop/web/app.css	310	background	#b9d5aa	--rail-accent	9	#viewSeg button.on:before
+loop/web/app.css	311	color	#91ab9a	--rail-muted	20	#viewSeg button small
+loop/web/app.css	312	color	#cae2c4	--line-strong	14	#viewSeg button.on small
+loop/web/app.css	313	color	#91ad9b	--rail-muted	20	.nav-icon
+loop/web/app.css	314	color	#c5ddb9	--rail-accent	16	#viewSeg button.on .nav-icon
+loop/web/app.css	316	scrollbar-color	#496353	--text-3	11	.run-list
+loop/web/app.css	319	background	#284536	--rail-hover	8	.run-item.active
+loop/web/app.css	319	border-color	#536e58	--text-3	0	.run-item.active
+loop/web/app.css	322	background	#ffffff08	--rail-tint	0	.run-item .chip
+loop/web/app.css	322	border-color	#ffffff20	--rail-line	0	.run-item .chip
+loop/web/app.css	322	color	#d0ddcc	--line-strong	9	.run-item .chip
+loop/web/app.css	325	border-top-color	#ffffff12	--rail-line	0	.rail-foot
+loop/web/app.css	329	color	#acb8b1	--rail-muted	7	.page-breadcrumb>span:first-child
+loop/web/app.css	333	background	#c4d1c7	--line-strong	5	.edition-line
+loop/web/app.css	336	color	#58715f	--text-3	7	.workspace-footer b
+loop/web/app.css	341	background	#f1f6f2	--bg	3	.btn:hover
+loop/web/app.css	341	border-color	#aebfb2	--rail-muted	9	.btn:hover
+loop/web/app.css	342	color	#fff	--panel	0	.btn-primary
+loop/web/app.css	342	box-shadow	#0f4c2810	--shadow-tint	21	.btn-primary
+loop/web/app.css	344	background	#edf2ee	--primary-weak	3	.btn-ghost:hover
+loop/web/app.css	347	background	#fcfdfc	--surface-2	1	.input
+loop/web/app.css	347	background	#fcfdfc	--surface-2	1	select.input
+loop/web/app.css	348	background	#fcfdfc	--surface-2	1	textarea.input
+loop/web/app.css	349	background	#fff	--panel	0	.input:focus
+loop/web/app.css	349	background	#fff	--panel	0	select.input:focus
+loop/web/app.css	349	background	#fff	--panel	0	textarea.input:focus
+loop/web/app.css	351	background	#f3f6f3	--bg	2	.chip
+loop/web/app.css	358	border-color	#ebc4bf	--danger-line	4	.banner.bad
+loop/web/app.css	358	border-color	#ebc4bf	--danger-line	4	.alert.bad
+loop/web/app.css	359	border-color	#ead7b7	--warn-line-soft	7	.banner.warn
+loop/web/app.css	359	border-color	#ead7b7	--warn-line-soft	7	.alert.warn
+loop/web/app.css	366	background	#f0f4ed	--ok-weak	3	.phase-index
+loop/web/app.css	366	color	#4d6b4e	--text-3	10	.phase-index
+loop/web/app.css	373	border	#d7e6e1	--line-soft	6	.section-index
+loop/web/app.css	373	border-color	#dce7da	--line-soft	5	.section-index
+loop/web/app.css	373	color	#4d6b4e	--text-3	10	.section-index
+loop/web/app.css	373	background	#f8faf6	--surface	3	.section-index
+loop/web/app.css	378	background	#fcfdfb	--surface-2	0	#s0Form .input
+loop/web/app.css	380	border	#e1ede7	--line	5	.s0-boundary
+loop/web/app.css	380	background	#f2f7ef	--ok-weak	5	.s0-boundary
+loop/web/app.css	380	border-color	#e1eadb	--line-soft	8	.s0-boundary
+loop/web/app.css	380	color	#5d7756	--text-3	10	.s0-boundary
+loop/web/app.css	384	border	#efe1c3	--warn-line-soft	5	.readiness
+loop/web/app.css	384	border-color	#eddfc5	--warn-line-soft	7	.readiness
+loop/web/app.css	388	color	#456761	--text-3	14	.receipt-label
+loop/web/app.css	390	border-bottom	#e5ece9	--line	5	.s0-checks li
+loop/web/app.css	391	border	#e6edea	--line	6	.s0-checks li>span
+loop/web/app.css	391	color	#55684f	--text-3	9	.s0-checks li>span
+loop/web/app.css	391	background	#f4f7f1	--bg	4	.s0-checks li>span
+loop/web/app.css	391	border-color	#e2eadb	--line	9	.s0-checks li>span
+loop/web/app.css	394	border	#e9dfc9	--warn-line-soft	11	.s0-blockers
+loop/web/app.css	394	color	#7a6234	--warn-ink	0	.s0-blockers
+loop/web/app.css	394	background	#fffaf0	--warn-weak	8	.s0-blockers
+loop/web/app.css	394	border-color	#ebdfc6	--warn-line-soft	8	.s0-blockers
+loop/web/app.css	395	color	#7a6234	--warn-ink	0	.s0-blockers .eyebrow
+loop/web/app.css	396	color	#7a6234	--warn-ink	0	.s0-blockers h3
+loop/web/app.css	399	color	#456761	--text-3	14	.s0-history summary
+loop/web/app.css	404	background	#fcfdfb	--surface-2	0	.step-card
+loop/web/app.css	405	background	#edf3e8	--ok-weak	7	.step-no
+loop/web/app.css	405	border-color	#dae5d2	--line-soft	12	.step-no
+loop/web/app.css	405	color	#62834c	--text-3	21	.step-no
+loop/web/app.css	410	background	#f7faf5	--bg	4	.confirm-bar
+loop/web/app.css	414	background	#fff	--panel	0	.run-head
+loop/web/app.css	420	background	#fff	--panel	0	.stage
+loop/web/app.css	423	color	#55684f	--text-3	9	.stage-idx
+loop/web/app.css	423	background	#f0f4ef	--ok-weak	3	.stage-idx
+loop/web/app.css	427	background	#eaf0e9	--primary-weak	6	.stage-bar
+loop/web/app.css	428	background	#f9fbf7	--surface	2	.stage-body
+loop/web/app.css	430	background	#fff	--panel	0	.snode
+loop/web/app.css	452	background	#fff	--panel	0	.agent
+loop/web/app.css	453	box-shadow	#20372b08	--shadow-tint	0	.agent:hover
+loop/web/app.css	459	color	#38614c	--rail-border	7	.avatar
+loop/web/app.css	459	background	#eaf3e8	--ok-weak	7	.avatar
+loop/web/app.css	459	border	#d9e7d6	--line-soft	8	.avatar
+loop/web/app.css	460	background	#e9f3ee	--primary-weak	2	.a2
+loop/web/app.css	460	color	#3c7465	--text-3	23	.a2
+loop/web/app.css	460	border-color	#d1e5da	--ok-line	6	.a2
+loop/web/app.css	460	background	#fbf2e6	--warn-weak	4	.a3
+loop/web/app.css	460	color	#7a5a26	--warn-ink	14	.a3
+loop/web/app.css	460	border-color	#eedecc	--warn-line-soft	14	.a3
+loop/web/app.css	461	background	#f0ecf6	--purple-weak	3	.a4
+loop/web/app.css	461	color	#624d80	--purple	32	.a4
+loop/web/app.css	461	border-color	#e1d8ec	--line	16	.a4
+loop/web/app.css	461	background	#f8eeee	--bg	8	.a5
+loop/web/app.css	461	color	#7b4f4f	--danger	56	.a5
+loop/web/app.css	461	border-color	#ecdada	--danger-weak	22	.a5
+loop/web/app.css	462	background	#eef2ef	--primary-weak	4	.a6
+loop/web/app.css	462	color	#55684f	--text-3	9	.a6
+loop/web/app.css	462	border-color	#dde5df	--line	5	.a6
+loop/web/app.css	467	background	#f6f9f4	--bg	3	.host-row
+loop/web/app.css	467	border-color	#e0e9db	--line-soft	7	.host-row
+loop/web/app.css	469	background	#fafcf8	--surface	2	.count-box
+loop/web/app.css	469	border-color	#e0e8db	--line-soft	7	.count-box
+loop/web/app.css	477	background	#fff	--panel	0	.option
+loop/web/app.css	480	border-color	#c49c61	--warn-line	61	.option.on
+loop/web/app.css	480	background	#fff8eb	--warn-weak	3	.option.on
+loop/web/app.css	480	box-shadow	#ba914b	--warn	53	.option.on
+loop/web/app.css	481	background	#fcfdfb	--surface-2	0	.diff-item
+loop/web/app.css	482	background	#fffaf1	--warn-weak	9	.diff-item.unresolved
+loop/web/app.css	482	border-color	#e8d8b7	--warn-line-soft	7	.diff-item.unresolved
+loop/web/app.css	483	background	#20382b	--text	6	.log-pre
+loop/web/app.css	483	color	#dde8dc	--rail-text	8	.log-pre
+loop/web/app.css	485	border-bottom	#eef1f5	--purple-weak	5	.ev-row
+loop/web/app.css	486	background	#f6f9f3	--bg	3	.dp-head
+loop/web/app.css	486	background	#f6f9f3	--bg	3	.dp-foot
+loop/web/app.css	487	background	#fff	--panel	0	.dirpicker
+loop/web/app.css	487	box-shadow	#20372b0a	--shadow-tint	0	.dirpicker
+loop/web/app.css	489	border-bottom	#f0f3f7	--bg	4	.dp-item
+loop/web/app.css	490	background	#213d2d	--rail-hover	7	.toast
+loop/web/app.css	490	color	#eef7ee	--ok-weak	1	.toast
+loop/web/app.css	490	box-shadow	#173b2426	--shadow-pop	18	.toast
+loop/web/app.css	493	border	#c7d4c8	--line-strong	4	.agent-window
+loop/web/app.css	493	box-shadow	#10291a38	--shadow-pop	0	.agent-window
+loop/web/app.css	494	background	#12251ab3	--overlay	0	.agent-window::backdrop
+loop/web/app.css	495	background	#f5f8f1	--bg	4	.aw-head
+loop/web/app.css	497	background	#284c35	--text-2	7	.aw-terminal-mark
+loop/web/app.css	497	color	#d4e8c8	--ok-line	16	.aw-terminal-mark
+loop/web/app.css	497	border	#456e48	--text-3	16	.aw-terminal-mark
+loop/web/app.css	498	background	#fff	--panel	0	.aw-toolbar
+loop/web/app.css	503	background	#f8faf5	--bg	4	.aw-intervene
+loop/web/app.css	507	background	#20362a	--rail	8	.aw-timeline
+loop/web/app.css	507	border-color	#34533c	--text-2	9	.aw-timeline
+loop/web/app.css	507	color	#d9e8d4	--line-soft	10	.aw-timeline
+loop/web/app.css	508	color	#bacdb3	--rail-accent	0	.aw-empty
+loop/web/app.css	509	color	#a3be97	--rail-muted	23	.aw-log-count
+loop/web/app.css	511	color	#a7c69b	--rail-muted	19	.aw-log-row>span
+loop/web/app.css	512	color	#e0ecda	--line-soft	7	.aw-log-row b
+loop/web/app.css	513	color	#b4c9ab	--rail-accent	8	.aw-log-row p
+loop/web/app.css	514	background	#f9fbf6	--surface	3	.aw-detail summary
+loop/web/app.css	516	background	#fefefe	--panel	1	.aw-detail pre
+loop/web/app.css	516	color	#36533d	--text-2	9	.aw-detail pre
+loop/web/app.css	521	background	#edf3e8	--ok-weak	7	.aw-control-rule
+loop/web/app.css	521	color	#5e7854	--text-3	11	.aw-control-rule
+loop/web/app.css	524	border-color	#e7c4bf	--danger-line	4	.aw-stop .btn
+loop/web/app.css	538	box-shadow	#20372b0f	--shadow-tint	0	button.snode:hover
+loop/web/app.css	540	background	#fff	--panel	0	button.chip
+loop/web/app.css	545	border	#c7d4c8	--line-strong	4	.node-detail
+loop/web/app.css	545	background	#fff	--panel	0	.node-detail
+loop/web/app.css	546	box-shadow	#10291a38	--shadow-pop	0	.node-detail
+loop/web/app.css	547	background	#12251ab3	--overlay	0	.node-detail::backdrop
+loop/web/app.css	548	background	#f5f8f1	--bg	4	.nd-head
+loop/web/app.css	550	color	#5c7a59	--text-3	12	.nd-head .eyebrow
+loop/web/app.css	554	background	#fff	--panel	0	.nd-toolbar
+loop/web/app.css	567	background	#fcfdfb	--surface-2	0	.nd-event
+loop/web/app.css	570	color	#425449	--rail-border	8	.nd-event-detail
+loop/web/app.css	573	background	#fbfdf9	--surface-2	2	.nd-summary
+loop/web/app.css	578	background	#f6f9f4	--bg	3	.nd-raw pre
+loop/web/app.css	579	background	#f6f9f4	--bg	3	.nd-pre
+loop/web/app.css	586	border	#ebc4bf	--danger-line	4	.nd-failure
+loop/web/app.css	589	border	#ead7b7	--warn-line-soft	7	.nd-missing
+loop/web/app.css	590	background	#f5f8f1	--bg	4	.nd-foot
+loop/web/app.css	597	color	#243a2b	--text	6	.nd-purpose-text
+loop/web/app.css	598	border	#ead7b7	--warn-line-soft	7	.nd-mode-note
+loop/web/app.css	598	background	#fffaf1	--warn-weak	9	.nd-mode-note
+loop/web/app.css	599	color	#7d6339	--warn-ink	5	.nd-mode-note
+loop/web/app.css	602	background	#fbfdf9	--surface-2	2	.nd-key-row
+loop/web/app.css	603	background	#fbf7ef	--warn-weak	7	.nd-key-row.missing
+loop/web/app.css	603	border-left-color	#e2d3b6	--warn-line-soft	10	.nd-key-row.missing
+loop/web/app.css	609	background	#e8f0e4	--rail-text	7	.nd-step-no
+loop/web/app.css	609	color	#2f4a37	--text-2	0	.nd-step-no
+loop/web/app.css	618	background	#fbfdf9	--surface-2	2	.nd-raw
+loop/web/app.css	619	color	#3d5545	--rail-border	5	.nd-raw summary
+loop/web/app.css	620	background	#f2f6ee	--ok-weak	5	.nd-raw-note
+loop/web/app.css	629	background	#fff	--panel	0	.diff-pane
+loop/web/app.css	630	border-left	#d9b3ae	--danger-line	21	.diff-pane.before
+loop/web/app.css	631	border-left	#a9cfb7	--rail-accent	17	.diff-pane.after
+loop/web/app.css	633	background	#f6f9f4	--bg	3	.diff-pane-head
+loop/web/app.css	640	background	#f6f9f4	--bg	3	.diff-fields th
+loop/web/app.css	643	background	#f7faf7	--surface	2	.diff-hunk
+loop/web/app.css	646	background	#eef8f1	--ok-weak	2	.dh-row.dh-add
+loop/web/app.css	647	background	#fdf0ef	--warn-weak	7	.dh-row.dh-del
+loop/web/app.css	648	background	#eef3f9	--purple-weak	5	.dh-row.dh-hunk
+loop/web/app.css	648	color	#44607a	--faint	27	.dh-row.dh-hunk
+loop/web/app.css	650	color	#93a49a	--rail-muted	21	.dh-no
+loop/web/app.css	652	border	#e2d3b6	--warn-line-soft	10	.diff-nohunk
+loop/web/app.css	653	background	#fffaf1	--warn-weak	9	.diff-nohunk
+loop/web/app.css	653	color	#7d6339	--warn-ink	5	.diff-nohunk
+loop/web/app.css	661	background	#f6f9f4	--bg	3	.host-trace-table th
+loop/web/app.css	686	border	#ebdfc6	--warn-line-soft	8	.s0-rehearsal-scope
+loop/web/app.css	687	color	#7d6339	--warn-ink	5	.s0-rehearsal-scope
+loop/web/app.css	688	color	#6b5127	--warn-ink	17	.s0-rehearsal-scope b
+loop/web/app.css	698	background	#fff	--panel	0	.gate-entry
+loop/web/app.css	709	color	#243a2b	--text	6	.nd-headline
+loop/web/app.css	711	border	#ead7b7	--warn-line-soft	7	.nd-note-warn
+loop/web/app.css	711	background	#fffaf1	--warn-weak	9	.nd-note-warn
+loop/web/app.css	711	color	#7d6339	--warn-ink	5	.nd-note-warn
+loop/web/app.css	716	border	#cfdccb	--line-strong	8	.nd-evidence-note
+loop/web/app.css	717	background	#f6faf3	--bg	4	.nd-evidence-note
+loop/web/app.css	718	background	#f7f8f6	--bg	3	.nd-evidence-note.muted
+loop/web/app.css	746	border	#ead7b7	--warn-line-soft	7	.nd-hardblock
+loop/web/app.css	746	background	#fffaf1	--warn-weak	9	.nd-hardblock
+loop/web/app.css	747	color	#7d6339	--warn-ink	5	.nd-hardblock-head
+loop/web/app.css	748	border-top	#ecdcbe	--warn-line-soft	0	.nd-hb-item
+loop/web/app.css	748	color	#6b5127	--warn-ink	17	.nd-hb-item
+loop/web/app.css	751	color	#7a6234	--warn-ink	0	.nd-hb-code
+loop/web/app.css	755	background	#12251ab3	--overlay	0	.nd-overlay
+loop/web/app.css	757	background	#fff	--panel	0	.nd-overlay-card
+loop/web/app.css	757	border	#c7d4c8	--line-strong	4	.nd-overlay-card
+loop/web/app.css	757	box-shadow	#10291a40	--shadow-pop	0	.nd-overlay-card
+loop/web/app.css	758	background	#f5f8f1	--bg	4	.nd-overlay-head
+loop/web/app.css	761	color	#5c7a59	--text-3	12	.nd-overlay-head .eyebrow
+loop/web/app.css	771	background	#fff	--panel	0	.nd-hunk
+loop/web/app.css	772	background	#eef3f9	--purple-weak	5	.nd-hunk-head
+loop/web/app.css	772	color	#44607a	--faint	27	.nd-hunk-head
+loop/web/app.css	778	background	#fafcfa	--surface	2	.nd-hunk-cell.empty
+loop/web/app.css	779	background	#fdf0ef	--warn-weak	7	.nd-hunk-cell.del
+loop/web/app.css	780	background	#eef8f1	--ok-weak	2	.nd-hunk-cell.add
+loop/web/app.css	781	color	#93a49a	--rail-muted	21	.nd-hunk-no
+loop/web/app.css	783	border	#e2d3b6	--warn-line-soft	10	.nd-nohunk
+loop/web/app.css	784	background	#fffaf1	--warn-weak	9	.nd-nohunk
+loop/web/app.css	784	color	#7d6339	--warn-ink	5	.nd-nohunk
+loop/web/app.css	796	background	#f6f9f4	--bg	3	.nd-report-pre
+loop/web/app.css	824	background	#12251ab3	--overlay	0	.nd-report-dialog::backdrop
+loop/web/app.css	834	background	#fbfdf9	--surface-2	2	.nd-obs-details
+loop/web/app.css	835	color	#3d5545	--rail-border	5	.nd-obs-summary
+loop/web/app.css	845	border	#e2d3b6	--warn-line-soft	10	.nd-obs-missing
+loop/web/app.css	846	background	#fbf7ef	--warn-weak	7	.nd-obs-missing
+loop/web/app.css	846	color	#7d6339	--warn-ink	5	.nd-obs-missing
+loop/web/app.css	849	background	#fcfdfb	--surface-2	0	.nd-ref-group
+loop/web/app.css	857	border	#e2d3b6	--warn-line-soft	10	.nd-evidence-groups-note
+loop/web/app.css	858	background	#fffaf1	--warn-weak	9	.nd-evidence-groups-note
+loop/web/app.css	858	color	#7d6339	--warn-ink	5	.nd-evidence-groups-note
+loop/web/app.css	860	background	#fbfdf9	--surface-2	2	.nd-example
+loop/web/app.css	861	color	#3d5545	--rail-border	5	.nd-example-summary
+loop/web/app.css	863	background	#f6f9f4	--bg	3	.nd-example-line
+loop/web/app.css	882	border	#3a5a4a	--rail-border	0	.action-item
+loop/web/app.css	901	background	#fcfdfb	--surface-2	0	.aw-summary
+loop/web/app.css	901	background	#fcfdfb	--surface-2	0	.aw-s3
+loop/web/app.css	901	background	#fcfdfb	--surface-2	0	.aw-embed
+loop/web/app.css	923	background	#f8faf5	--bg	4	.aw-s3-grid pre
+loop/web/app.css	924	background	#fffdf8	--surface-2	3	.aw-fallback
+loop/web/app.css	935	background	#f8faf5	--bg	4	.aw-session-copy
+loop/web/app.css	957	border-color	#cae9db	--ok-line	3	.s0-flow li.check-passed>span
+loop/web/app.css	959	border-color	#f1cfcf	--danger-line	12	.s0-flow li.check-failed>span
+loop/web/app.css	969	border-color	#efe0bf	--warn-line-soft	4	.s0-switch-msg-warn
+loop/web/app.css	970	border-color	#f2c9c9	--danger-line	8	.s0-switch-msg-bad
+loop/web/app.css	971	border-color	#cae9db	--ok-line	3	.s0-switch-msg-ok
+loop/web/app.css	987	outline-color	#b9d5aa	--rail-accent	9	aside :focus-visible
+loop/web/app.css	993	background	#e8eeea	--primary-weak	7	.sk-line
+loop/web/app.css	1015	border	#d6e3d8	--line-soft	9	.empty .icon-30
+loop/web/app.css	1015	background	#f0f6f1	--ok-weak	3	.empty .icon-30
+loop/web/app.css	1015	color	#60846a	--muted	16	.empty .icon-30
+loop/web/legacy.css	3	border-color	#3e5546	--rail-border	5	header
+loop/web/legacy.css	3	color	#e2ebe1	--rail-text	3	header
+loop/web/legacy.css	6	color	#c1dcbd	--primary-line	13	.back-workspace
+loop/web/legacy.css	6	border	#6b836a	--muted	15	.back-workspace
+loop/web/legacy.css	7	background	#304b35	--text-2	2	.back-workspace:hover
+loop/web/legacy.css	7	color	#fff	--panel	0	.back-workspace:hover
+loop/web/legacy.css	8	color	#bbceba	--rail-accent	7	header .muted
+loop/web/legacy.css	9	background	#edf3e8	--ok-weak	7	.authority
+loop/web/legacy.css	9	border-color	#d4e0cc	--ok-line	12	.authority
+loop/web/legacy.css	11	color	#54694b	--text-3	13	.authority .txt
+loop/web/legacy.css	15	background	#fff	--panel	0	.panel
+loop/web/legacy.css	18	background	#f1f5ef	--ok-weak	4	.badge,.chip
+loop/web/legacy.css	18	border-color	#dae3d5	--line-soft	9	.badge,.chip
+loop/web/legacy.css	18	color	#5c7055	--text-3	9	.badge,.chip
+loop/web/legacy.css	19	border-color	#c9dfc7	--ok-line	17	.bg-ok,.msg-ok
+loop/web/legacy.css	20	border-color	#e7bdb8	--danger-line	11	.bg-red,.msg-err
+loop/web/legacy.css	21	border-color	#e7d5b4	--warn-line-soft	10	.bg-orange,.bg-yellow,.msg-warn
+loop/web/legacy.css	23	background	#f1f4ee	--ok-weak	4	.bg-gray
+loop/web/legacy.css	24	border-color	#dfd1ed	--line	23	.bg-purple
+loop/web/legacy.css	25	background	#fff	--panel	0	.status-strip
+loop/web/legacy.css	27	border-color	#d3dfcc	--line-strong	12	.tl-item
+loop/web/legacy.css	28	background	#c9d4c3	--line-strong	9	.tl-item .dot
+loop/web/legacy.css	28	border-color	#fff	--panel	0	.tl-item .dot
+loop/web/legacy.css	30	box-shadow	#d7e8d5	--line-soft	9	.tl-item.running .dot
+loop/web/legacy.css	33	color	#5a6e52	--text-3	7	.tl-name,.sev-msg
+loop/web/legacy.css	34	background	#f8faf5	--bg	4	.ccard,.chain-item,.queue-item
+loop/web/legacy.css	35	border-color	#eac8c3	--danger-line	0	.ccard.ccard-red
+loop/web/legacy.css	38	border-color	#e2bbb5	--danger-line	14	.warn-banner
+loop/web/legacy.css	40	background	#f5f8f1	--bg	4	.sev
+loop/web/legacy.css	40	border-left-color	#bcccb2	--rail-accent	2	.sev
+loop/web/legacy.css	42	border-left-color	#b9873b	--warn	41	.sev-defect,.sev-warning
+loop/web/legacy.css	45	background	#f4f8f0	--bg	5	.ref,button.ref
+loop/web/legacy.css	46	background	#eaf3e4	--rail-text	9	button.ref:hover
+loop/web/legacy.css	47	border-color	#c3dabc	--ok-line	28	.ref-ok-link
+loop/web/legacy.css	48	border-color	#dcb1ab	--danger-line	24	.ref-missing
+loop/web/legacy.css	52	background	#f9fbf7	--surface	2	.ev-list
+loop/web/legacy.css	53	background	#fff	--panel	0	.btn
+loop/web/legacy.css	54	background	#edf4e8	--ok-weak	7	.btn:hover:not(:disabled)
+loop/web/legacy.css	55	color	#fff	--panel	0	.btn-primary
+loop/web/legacy.css	57	border-color	#e4c1bb	--danger-line	8	.btn-danger
+loop/web/legacy.css	58	background	#f8dcd7	--danger-line	20	.btn-danger:hover:not(:disabled)
+loop/web/legacy.css	60	background	#fcfdfb	--surface-2	0	input[type=text],textarea,select
+loop/web/legacy.css	61	outline	#c8dfbc	--line-strong	16	input[type=text]:focus,textarea:focus,select:focus
+loop/web/legacy.css	62	border-color	#e6d5b4	--warn-line-soft	10	.note
+loop/web/legacy.css	64	background	#25462e	--rail-hover	9	.toast-item
+loop/web/legacy.css	64	color	#edf5e7	--ok-weak	8	.toast-item
+loop/web/legacy.css	64	border-color	#57764c	--text-3	12	.toast-item
+loop/web/legacy.css	64	border-left-color	#a0c18b	--rail-muted	35	.toast-item
+loop/web/legacy.css	64	box-shadow	#173b2426	--shadow-pop	18	.toast-item
+loop/web/legacy.css	65	background	#102515a3	--overlay	5	.modal
+loop/web/legacy.css	66	background	#fff	--panel	0	.modal-box
+loop/web/legacy.css	66	box-shadow	#152c2133	--shadow-pop	7	.modal-box
+loop/web/legacy.css	68	border-color	#e6c0b9	--danger-line	10	.conn
+loop/web/legacy.css	71	background	#f7faf3	--bg	4	pre.json
+loop/web/legacy.css	71	color	#50694b	--text-3	13	pre.json
+loop/web/legacy.css	72	background	#20382b	--text	6	pre.logtail
+loop/web/legacy.css	72	border-color	#34533c	--text-2	9	pre.logtail
+loop/web/legacy.css	72	color	#dce8d7	--line-soft	7	pre.logtail
+loop/web/legacy.css	78	color	#fff	--panel	0	.skip-link

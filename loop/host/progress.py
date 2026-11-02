@@ -37,6 +37,8 @@ ALLOWED_KINDS: frozenset[str] = frozenset(
         "dead_job",
         "gate_pending",
         "gate_decided",
+        # SPEC-REV-20 §9：用例判据人签覆写（append-only 台账动作 + 机器原判摘要）。
+        "case_override",
         "admission_queued",
         "admission_granted",
         "admission_refused",

@@ -1,0 +1,18 @@
+PASS  map-final.tsv 与 CSS 逐条一致（382 条色值 / 382 行）
+PASS  unmapped=0
+PASS  final-design 的 69 个令牌 == tokens-final.css 的 69 个颜色令牌
+PASS  颜色令牌数 = 69
+PASS  全部变量 = 74（= 颜色 69 + --shadow/--radius/--ease-out/--font-*）
+PASS  保持 color-scheme:light、零外部引用
+PASS  实色 ΔRGB<=12：355 / 355 条（max=12）
+PASS  alpha 合成后 Δ<=12：27 / 27 条（max=10）
+PASS  legacy.html 3 条活内联色全部映射且 ΔRGB<=12（--arrow-ink/--toast-err/--toast-ok）
+      内联活规则行号: [127, 156, 157]
+      令牌构成: {'neutral': 26, 'primary': 4, 'ok': 6, 'warn': 10, 'danger': 6, 'purple': 3, 'blue': 1, 'alpha': 7, 'av': 6}
+      基线 md5: app.css 4d4a7867 / legacy.css 14915374（与当时工作树一致：True）
+
+unmapped=0
+max ΔRGB(实色)=12
+alpha 合成后 max Δ=10
+tokens=69（颜色；+5 非颜色 = 74 个变量）
+result: all checks passed

@@ -1,0 +1,8 @@
+## S3 目标测试（SPEC-REV-20 §4/§6/§6.1/§7/§9）
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+39 passed, 1 warning in 7.59s
+
+## 受影响回归（API/投影/闸门/看板；可写数据根）
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+276 passed, 1 warning in 206.66s (0:03:26)

@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>闭环变更影响 · 样张 v1</title>
+<style>
+  :root{
+    --bg:#f4f6f9; --panel:#ffffff; --line:#e4e9f0; --line-strong:#cfd7e3;
+    --text:#182230; --muted:#667085; --faint:#98a2b3;
+    --primary:#2457d6; --primary-weak:#eef3ff; --primary-line:#c7d7fe;
+    --ok:#12805c; --ok-weak:#e8f7f1; --warn:#b45309; --warn-weak:#fff4e5;
+    --danger:#c0392b; --danger-weak:#fdeeee; --purple:#6d28d9; --purple-weak:#f3eefe;
+    --shadow:0 1px 2px rgba(16,24,40,.04),0 4px 16px rgba(16,24,40,.06);
+    --radius:12px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font:14px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans SC","Microsoft YaHei",sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .muted{color:var(--muted)} .faint{color:var(--faint)} .tiny{font-size:12px}
+  a{color:var(--primary);text-decoration:none}
+  button{font:inherit;cursor:pointer}
+
+  /* ---------- 顶栏 ---------- */
+  header{height:58px;background:var(--panel);border-bottom:1px solid var(--line);
+    display:flex;align-items:center;gap:14px;padding:0 20px;position:sticky;top:0;z-index:20}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:650;letter-spacing:.2px}
+  .mark{width:26px;height:26px;border-radius:8px;
+    background:linear-gradient(135deg,#2457d6,#6d28d9);position:relative;flex:0 0 auto}
+  .mark:after{content:"";position:absolute;inset:7px;border:2px solid #fff;border-radius:4px;opacity:.9}
+  .pill{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:999px;
+    background:#f2f4f7;border:1px solid var(--line);color:var(--muted);font-size:12px;white-space:nowrap}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);flex:0 0 auto}
+  .dot.warn{background:var(--warn)} .dot.idle{background:var(--faint)} .dot.bad{background:var(--danger)}
+  .spacer{flex:1}
+  .mock-flag{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:6px;
+    background:var(--warn-weak);color:var(--warn);border:1px solid #f3d19e;font-size:12px}
+
+  /* ---------- 两区布局 ---------- */
+  .shell{display:flex;min-height:calc(100vh - 58px)}
+  aside{width:286px;flex:0 0 286px;background:var(--panel);border-right:1px solid var(--line);
+    display:flex;flex-direction:column}
+  .rail-top{padding:16px 16px 10px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:36px;padding:0 14px;
+    border-radius:8px;border:1px solid var(--line-strong);background:var(--panel);color:var(--text);
+    font-weight:550;transition:background .15s,border-color .15s}
+  .btn:hover{background:#f8fafc;border-color:#b9c4d4}
+  .btn-primary{background:var(--primary);border-color:var(--primary);color:#fff}
+  .btn-primary:hover{background:#1d49bb;border-color:#1d49bb}
+  .btn-ghost{background:transparent;border-color:transparent;color:var(--muted)}
+  .btn-ghost:hover{background:#f2f4f7;color:var(--text)}
+  .btn-block{width:100%}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .rail-label{padding:14px 16px 6px;font-size:11px;letter-spacing:.08em;color:var(--faint);text-transform:uppercase}
+  .run-list{padding:0 10px 10px;overflow:auto;flex:1}
+  .run-item{border:1px solid transparent;border-radius:10px;padding:10px 10px;margin:2px 0;cursor:pointer}
+  .run-item:hover{background:#f8fafc}
+  .run-item.active{background:var(--primary-weak);border-color:var(--primary-line)}
+  .run-item .rid{font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:7px}
+  .run-item .meta{display:flex;gap:8px;align-items:center;margin-top:3px;font-size:11.5px;color:var(--muted)}
+  .rail-foot{border-top:1px solid var(--line);padding:12px 16px;font-size:11.5px;color:var(--muted);
+    display:flex;flex-direction:column;gap:4px}
+
+  main{flex:1;min-width:0;padding:22px 26px 40px}
+  .page-head{display:flex;align-items:flex-start;gap:16px;margin-bottom:18px}
+  .page-head h1{font-size:20px;margin:0 0 3px;font-weight:650;letter-spacing:.2px}
+  .seg{display:inline-flex;background:#eceff4;border-radius:9px;padding:3px;gap:2px}
+  .seg button{border:0;background:transparent;height:28px;padding:0 12px;border-radius:7px;
+    color:var(--muted);font-size:12.5px;font-weight:550}
+  .seg button.on{background:var(--panel);color:var(--text);box-shadow:0 1px 2px rgba(16,24,40,.08)}
+
+  /* ---------- 通用卡片 ---------- */
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);margin-bottom:16px}
+  .card-head{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line)}
+  .card-head h2{font-size:14.5px;margin:0;font-weight:650}
+  .card-head .sub{font-size:12px;color:var(--muted)}
+  .card-body{padding:16px 18px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media (max-width:1180px){.grid2{grid-template-columns:1fr}}
+
+  /* ---------- 配置阶段 ---------- */
+  .step-card{display:flex;gap:14px;padding:16px 18px;border:1px solid var(--line);border-radius:10px;
+    background:#fcfdff;margin-bottom:14px}
+  .step-no{width:28px;height:28px;border-radius:50%;background:var(--primary-weak);color:var(--primary);
+    border:1px solid var(--primary-line);display:flex;align-items:center;justify-content:center;
+    font-weight:700;font-size:13px;flex:0 0 auto}
+  .step-main{flex:1;min-width:0}
+  .step-title{display:flex;align-items:center;gap:8px;font-weight:640;margin-bottom:8px}
+  .field-row{display:flex;gap:8px;align-items:center}
+  .input,select.input,textarea.input{width:100%;height:36px;border:1px solid var(--line-strong);
+    border-radius:8px;background:#fff;padding:0 10px;color:var(--text);font:inherit}
+  textarea.input{height:auto;padding:8px 10px;resize:vertical}
+  .input:focus,select.input:focus,textarea.input:focus{outline:2px solid var(--primary-line);border-color:var(--primary)}
+  .field-meta{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px;font-size:12px;color:var(--muted)}
+  .field-meta b{color:var(--text);font-weight:600}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .chip{font-size:11.5px;padding:2px 8px;border-radius:999px;background:#f2f4f7;border:1px solid var(--line);color:var(--muted)}
+  .chip.ok{background:var(--ok-weak);border-color:#bfe8d8;color:var(--ok)}
+  .chip.warn{background:var(--warn-weak);border-color:#f3d19e;color:var(--warn)}
+  .chip.bad{background:var(--danger-weak);border-color:#f5c6c6;color:var(--danger)}
+  .dropdown{position:relative}
+  .dd-panel{position:absolute;left:0;right:0;top:42px;background:#fff;border:1px solid var(--line-strong);
+    border-radius:10px;box-shadow:0 12px 32px rgba(16,24,40,.14);z-index:30;overflow:hidden;display:none}
+  .dd-panel.open{display:block}
+  .dd-item{padding:10px 12px;border-bottom:1px solid var(--line);cursor:pointer}
+  .dd-item:last-child{border-bottom:0}
+  .dd-item:hover{background:#f8fafc}
+  .dd-item b{display:block;font-size:13px}
+  .dd-item span{font-size:11.5px;color:var(--muted)}
+  details.adv{margin-top:4px}
+  details.adv summary{cursor:pointer;color:var(--muted);font-size:12.5px;padding:4px 0}
+  .confirm-bar{display:flex;align-items:center;gap:14px;padding:14px 18px;border-top:1px solid var(--line);
+    background:#fbfcfe;border-radius:0 0 var(--radius) var(--radius)}
+  .confirm-bar .summary{display:flex;gap:18px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+  .confirm-bar .summary b{color:var(--text)}
+
+  /* ---------- 执行阶段 ---------- */
+  .run-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+  .run-head .rid{font-size:16px;font-weight:650}
+  .status-pill{display:inline-flex;align-items:center;gap:7px;height:26px;padding:0 10px;border-radius:999px;
+    font-size:12px;font-weight:600;border:1px solid transparent}
+  .status-pill.wait{background:var(--warn-weak);color:var(--warn);border-color:#f3d19e}
+  .status-pill.run{background:var(--primary-weak);color:var(--primary);border-color:var(--primary-line)}
+  .status-pill.done{background:var(--ok-weak);color:var(--ok);border-color:#bfe8d8}
+  .status-pill.fail{background:var(--danger-weak);color:var(--danger);border-color:#f5c6c6}
+
+  /* 流程条 */
+  .flow{display:flex;align-items:flex-start;overflow-x:auto;padding:18px 6px 10px;gap:0}
+  .fnode{position:relative;flex:1 0 78px;text-align:center;min-width:78px}
+  .fnode .bubble{width:30px;height:30px;border-radius:50%;margin:0 auto 7px;display:flex;align-items:center;
+    justify-content:center;font-size:12px;font-weight:700;background:#eef1f5;color:var(--faint);
+    border:1px solid var(--line-strong);position:relative;z-index:1}
+  .fnode .name{font-size:11.5px;color:var(--muted);line-height:1.3}
+  .fnode .name b{display:block;color:var(--text);font-size:12px;font-weight:600}
+  .fnode:after{content:"";position:absolute;top:15px;left:calc(50% + 17px);right:calc(-50% + 17px);
+    height:2px;background:var(--line);z-index:0}
+  .fnode:last-child:after{display:none}
+  .fnode.done .bubble{background:var(--primary);border-color:var(--primary);color:#fff}
+  .fnode.done:after{background:var(--primary)}
+  .fnode.active .bubble{background:#fff;border:2px solid var(--primary);color:var(--primary);
+    box-shadow:0 0 0 4px var(--primary-weak)}
+  .fnode.active .name b{color:var(--primary)}
+  .fnode.gate .bubble{border-radius:8px;transform:rotate(45deg);background:var(--warn-weak);
+    border-color:#e8b86a;color:var(--warn)}
+  .fnode.gate .bubble span{transform:rotate(-45deg);display:block;font-size:11px}
+  .fnode.gate.active .bubble{box-shadow:0 0 0 4px #fdf0dc}
+  .fnode.gate.done .bubble{background:var(--warn);border-color:var(--warn);color:#fff}
+  .fnode.gate.done:after{background:var(--warn)}
+
+
+  /* ---------- 四段流程（分组 + 展开当前段） ---------- */
+  .stages{display:flex;flex-direction:column;gap:10px;padding:6px 0 2px}
+  .stage{border:1px solid var(--line);border-radius:10px;background:#fff;overflow:hidden}
+  .stage.active{border-color:var(--primary-line);box-shadow:0 0 0 3px var(--primary-weak)}
+  .stage.done{border-color:#bfe8d8}
+  .stage.wait{border-color:#f3d19e}
+  .stage.fail{border-color:#f5c6c6}
+  .stage-head{display:flex;align-items:center;gap:12px;padding:11px 14px;cursor:pointer;user-select:none}
+  .stage-head:hover{background:#fafbfd}
+  .stage-idx{width:24px;height:24px;border-radius:50%;background:#eef1f5;color:var(--muted);
+    display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex:0 0 auto}
+  .stage.active .stage-idx{background:var(--primary);color:#fff}
+  .stage.done .stage-idx{background:var(--ok-weak);color:var(--ok);border:1px solid #bfe8d8}
+  .stage.wait .stage-idx{background:var(--warn-weak);color:var(--warn);border:1px solid #f3d19e}
+  .stage-name{font-weight:640;font-size:13.5px}
+  .stage-range{font-size:11.5px;color:var(--faint);font-family:ui-monospace,Consolas,monospace}
+  .stage-sum{margin-left:auto;display:flex;align-items:center;gap:9px;font-size:12px;color:var(--muted)}
+  .stage-bar{width:110px;height:5px;border-radius:999px;background:#eef1f5;overflow:hidden}
+  .stage-bar i{display:block;height:100%;background:var(--primary);border-radius:999px;transition:width .3s}
+  .stage.done .stage-bar i{background:var(--ok)}
+  .stage.wait .stage-bar i{background:var(--warn)}
+  .stage-chev{color:var(--faint);font-size:11px;transition:transform .15s}
+  .stage.open .stage-chev{transform:rotate(90deg)}
+  .stage-body{display:none;border-top:1px solid var(--line);padding:12px 14px 14px;background:#fcfdff}
+  .stage.open .stage-body{display:block}
+  .snodes{display:flex;gap:8px;flex-wrap:wrap}
+  .snode{display:flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:8px;
+    padding:6px 9px;background:#fff;min-width:104px}
+  .snode .sb{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-size:10.5px;font-weight:700;background:#eef1f5;color:var(--faint);border:1px solid var(--line-strong);flex:0 0 auto}
+  .snode .st{font-size:11.5px;line-height:1.2}
+  .snode .st b{display:block;font-size:12px;color:var(--text);font-weight:600}
+  .snode .own{font-size:10.5px;color:var(--faint)}
+  .snode.done .sb{background:var(--primary);border-color:var(--primary);color:#fff}
+  .snode.done{border-color:var(--primary-line)}
+  .snode.active .sb{border:2px solid var(--primary);color:var(--primary);background:#fff}
+  .snode.active{border-color:var(--primary-line);background:var(--primary-weak)}
+  .snode.wait .sb{background:var(--warn-weak);border-color:#e8b86a;color:var(--warn)}
+  .snode.wait{border-color:#f3d19e;background:#fffdf8}
+  .snode.gate .sb{border-radius:6px;transform:rotate(45deg)}
+  .snode.gate .sb span{transform:rotate(-45deg);display:block}
+  .snode.gate.wait .sb{background:var(--warn);color:#fff;border-color:var(--warn)}
+  .snode.gate.done .sb{background:var(--warn);border-color:var(--warn);color:#fff}
+
+  /* ---------- 目录选择器 ---------- */
+  .dirpicker{border:1px solid var(--line-strong);border-radius:10px;background:#fff;
+    box-shadow:0 12px 32px rgba(16,24,40,.10);margin-top:10px;overflow:hidden}
+  .dp-head{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--line);background:#f8fafc}
+  .dp-crumb{flex:1;font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dp-list{max-height:190px;overflow:auto}
+  .dp-item{display:flex;align-items:center;gap:9px;padding:9px 12px;border-bottom:1px solid #f0f3f7;cursor:pointer}
+  .dp-item:last-child{border-bottom:0}
+  .dp-item:hover{background:#f8fafc}
+  .dp-item.disabled{opacity:.5;cursor:not-allowed}
+  .dp-icon{width:18px;text-align:center;color:var(--warn);flex:0 0 auto}
+  .dp-item b{font-size:12.5px;font-weight:600}
+  .dp-item span{margin-left:auto;font-size:11.5px;color:var(--muted)}
+  .dp-foot{display:flex;align-items:center;gap:10px;padding:9px 12px;border-top:1px solid var(--line);background:#fbfcfe}
+  .dp-foot .btn{height:30px;padding:0 12px;font-size:12.5px}
+
+  /* agent 卡 */
+  .agents{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media (max-width:1100px){.agents{grid-template-columns:1fr}}
+  .agent{border:1px solid var(--line);border-radius:10px;padding:12px 13px;background:#fff;
+    display:flex;flex-direction:column;gap:8px;min-height:132px}
+  .agent.working{border-color:var(--primary-line);box-shadow:0 0 0 3px var(--primary-weak)}
+  .agent.waiting{border-color:#f3d19e;background:#fffdf8}
+  .agent-head{display:flex;align-items:center;gap:9px}
+  .avatar{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;
+    font-weight:700;font-size:12px;color:#fff;flex:0 0 auto}
+  .a1{background:#2457d6}.a2{background:#0e9384}.a3{background:#b45309}
+  .a4{background:#6d28d9}.a5{background:#be185d}.a6{background:#475467}
+  .agent-name{font-weight:640;font-size:13px;line-height:1.25}
+  .agent-role{font-size:11.5px;color:var(--muted)}
+  .agent-body{font-size:12.5px;color:var(--muted);min-height:20px}
+  .agent-body b{color:var(--text);font-weight:600}
+  .agent-foot{display:flex;align-items:center;gap:10px;margin-top:auto;font-size:11.5px;color:var(--faint)}
+  .agent-foot .link{margin-left:auto;color:var(--primary);font-weight:550}
+  .spinner{width:10px;height:10px;border-radius:50%;border:2px solid var(--primary-line);
+    border-top-color:var(--primary);animation:spin 1s linear infinite;display:inline-block}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .pulse{width:7px;height:7px;border-radius:50%;background:var(--warn);box-shadow:0 0 0 0 rgba(180,83,9,.5);
+    animation:pulse 1.6s infinite}
+  @keyframes pulse{70%{box-shadow:0 0 0 7px rgba(180,83,9,0)}100%{box-shadow:0 0 0 0 rgba(180,83,9,0)}}
+
+  /* 闸门/证据侧栏 */
+  .side{display:flex;flex-direction:column;gap:16px}
+  .gate-card{border-color:#f3d19e;background:#fffdf7}
+  .gate-card .card-head{border-bottom-color:#f3d19e;background:#fff8ec;border-radius:var(--radius) var(--radius) 0 0}
+  .option{display:flex;align-items:flex-start;gap:9px;border:1px solid var(--line);border-radius:8px;
+    padding:9px 10px;margin-bottom:7px;cursor:pointer;background:#fff}
+  .option:hover{border-color:var(--line-strong)}
+  .option.on{border-color:var(--warn);background:var(--warn-weak)}
+  .option .radio{width:15px;height:15px;border-radius:50%;border:2px solid var(--line-strong);margin-top:2px;flex:0 0 auto}
+  .option.on .radio{border-color:var(--warn);background:radial-gradient(circle,#b45309 0 40%,#fff 42% 100%)}
+  .option b{font-size:12.5px;display:block}
+  .option span{font-size:11.5px;color:var(--muted)}
+  .kv{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;padding:5px 0;border-bottom:1px dashed var(--line)}
+  .kv:last-child{border-bottom:0}
+  .kv b{font-family:ui-monospace,Consolas,monospace}
+  .counts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .count-box{border:1px solid var(--line);border-radius:9px;padding:10px;background:#fcfdff}
+  .count-box .n{font-size:22px;font-weight:700;line-height:1.1}
+  .count-box .l{font-size:11.5px;color:var(--muted);margin-top:3px}
+  .count-box.bad .n{color:var(--danger)} .count-box.ok .n{color:var(--ok)}
+  .blocker{display:flex;gap:8px;align-items:flex-start;padding:8px 0;border-bottom:1px dashed var(--line);font-size:12.5px}
+  .blocker:last-child{border-bottom:0}
+  .sev{font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:5px;white-space:nowrap}
+  .sev.hard{background:var(--danger-weak);color:var(--danger)}
+  .sev.info{background:#eef2f6;color:var(--muted)}
+
+  details.events{margin-top:4px}
+  details.events summary{cursor:pointer;padding:12px 18px;font-size:12.5px;color:var(--muted);border-top:1px solid var(--line)}
+  .ev-list{max-height:230px;overflow:auto;padding:0 18px 14px;font-family:ui-monospace,Consolas,monospace;font-size:11.5px}
+  .ev-row{display:grid;grid-template-columns:52px 118px 1fr;gap:8px;padding:4px 0;border-bottom:1px dashed #eef1f5}
+  .ev-row .k{color:var(--primary)}
+  .ev-row .n{color:var(--muted)}
+
+  .toast{position:fixed;right:22px;bottom:22px;background:#111827;color:#fff;padding:10px 14px;border-radius:9px;
+    font-size:12.5px;opacity:0;transform:translateY(8px);transition:.2s;pointer-events:none;max-width:420px;z-index:99}
+  .toast.show{opacity:1;transform:none}
+  .hidden{display:none!important}
+  .foot-note{margin-top:10px;font-size:11.5px;color:var(--faint)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand"><span class="mark"></span> 变更影响闭环 <span class="muted tiny" style="font-weight:400">· 运营台</span></div>
+  <span class="pill"><span class="dot"></span> 环境 simenv-tcs9620-64ch</span>
+  <span class="pill mono tiny">127.0.0.1:8099</span>
+  <div class="spacer"></div>
+  <span class="mock-flag">样张 · 数据为假，不接后端</span>
+</header>
+
+<div class="shell">
+  <!-- ================= 左：运行列表 ================= -->
+  <aside>
+    <div class="rail-top">
+      <button class="btn btn-primary btn-block" onclick="showView('setup')">＋ 新建运行</button>
+    </div>
+    <div class="rail-label">运行记录</div>
+    <div class="run-list" id="runList">
+      <div class="run-item active" onclick="pickRun(this)">
+        <div class="rid"><span class="dot warn"></span> RUN-20261019-160206</div>
+        <div class="meta"><span>drill</span><span>·</span><span>等待闸门 1</span><span>·</span><span>2 分钟前</span></div>
+      </div>
+      <div class="run-item" onclick="pickRun(this)">
+        <div class="rid"><span class="dot"></span> RUN-20261019-155512</div>
+        <div class="meta"><span>drill</span><span>·</span><span>已收敛</span><span>·</span><span>11 分钟前</span></div>
+      </div>
+      <div class="run-item" onclick="pickRun(this)">
+        <div class="rid"><span class="dot bad"></span> RUN-20261019-154301</div>
+        <div class="meta"><span>real</span><span>·</span><span>失败 · N9</span><span>·</span><span>28 分钟前</span></div>
+      </div>
+      <div class="run-item" onclick="pickRun(this)">
+        <div class="rid"><span class="dot idle"></span> RUN-20261018-172244</div>
+        <div class="meta"><span>drill</span><span>·</span><span>已归档</span><span>·</span><span>昨天</span></div>
+      </div>
+    </div>
+    <div class="rail-foot">
+      <div class="mono">TOOL_ROOT · change-impact-loop</div>
+      <div>数据根：ENV_ROOT/kb（只读副本沙箱）</div>
+      <div>模型：origin-deepseek-v4-1-flash</div>
+    </div>
+  </aside>
+
+  <!-- ================= 右：工作区 ================= -->
+  <main>
+    <div class="page-head">
+      <div>
+        <h1 id="pageTitle">新建运行</h1>
+        <div class="muted tiny" id="pageSub">选择基线版本与环境仓 → 确认 → 启动闭环</div>
+      </div>
+      <div class="spacer"></div>
+      <div class="seg" title="样张预览：切换三种状态">
+        <button id="segSetup" class="on" onclick="showView('setup')">① 配置</button>
+        <button id="segRun" onclick="showView('run')">② 执行中</button>
+        <button id="segGate" onclick="showView('gate')">③ 闸门等待</button>
+      </div>
+    </div>
+
+    <!-- ============ 视图 1：配置 ============ -->
+    <section id="viewSetup">
+      <div class="card">
+        <div class="card-head"><h2>运行配置</h2><span class="sub">三个必选项；确认后创建 run 并进入执行视图</span></div>
+        <div class="card-body">
+
+          <!-- 01 基线 -->
+          <div class="step-card">
+            <div class="step-no">1</div>
+            <div class="step-main">
+              <div class="step-title">选择基线版本 <span class="chip ok">数据根内 baselines/</span></div>
+              <div class="field-row">
+                <div style="flex:1">
+                  <input class="input" id="fBaselineLabel" value="v0 · 2026-10-15 12:05 · 首版基线" readonly>
+                  <input type="hidden" id="fBaseline" value="v0">
+                </div>
+                <button class="btn" onclick="openPicker('baseline')">浏览…</button>
+                <button class="btn" onclick="toast('样张：GET /api/baselines 刷新基线链')">刷新</button>
+              </div>
+              <div class="field-meta">
+                <span>manifest <b>2521 B</b></span>
+                <span>parent <b>—</b></span>
+                <span>RTL 快照 <b>2.45 MB</b></span>
+                <span>用例 <b>162</b></span>
+                <span>锚点校验 <span class="chip ok">通过</span></span>
+              </div>
+              <div class="dirpicker hidden" id="pickerBaseline">
+                <div class="dp-head">
+                  <button class="btn btn-ghost" onclick="goUp('baseline')">↑ 上级</button>
+                  <span class="dp-crumb mono" id="dpBaseCrumb"></span>
+                  <button class="btn btn-ghost" onclick="closePicker('baseline')">收起</button>
+                </div>
+                <div class="dp-list" id="dpBaseList"></div>
+                <div class="dp-foot">
+                  <span class="muted tiny">只列目录；选中基线版本后自动校验 manifest 与锚点</span>
+                  <div class="spacer"></div>
+                  <button class="btn btn-primary" onclick="chooseDir('baseline')">选择此目录</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 02 项目 -->
+          <div class="step-card">
+            <div class="step-no">2</div>
+            <div class="step-main">
+              <div class="step-title">选择要修订的项目目录 <span class="chip">ENV_ROOT（环境仓根）</span></div>
+              <div class="field-row">
+                <input class="input mono" id="fProject" value="/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES" readonly style="flex:1">
+                <button class="btn" onclick="openPicker('project')">浏览…</button>
+                <button class="btn" id="btnValidate" onclick="validateProject()">校验</button>
+              </div>
+              <div class="field-meta" id="projectMeta">
+                <span>env_id <b>simenv-tcs9620-64ch</b></span>
+                <span>RTL <b>1 210 文件</b></span>
+                <span>TESTLIB <b>162 用例</b></span>
+                <span>uvs.setup <span class="chip ok">存在</span></span>
+                <span>可写性 <span class="chip ok">只读 + SIMLIB_RUN 可写</span></span>
+              </div>
+              <div class="dirpicker hidden" id="pickerProject">
+                <div class="dp-head">
+                  <button class="btn btn-ghost" onclick="goUp('project')">↑ 上级</button>
+                  <span class="dp-crumb mono" id="dpProjCrumb"></span>
+                  <button class="btn btn-ghost" onclick="closePicker('project')">收起</button>
+                </div>
+                <div class="dp-list" id="dpProjList"></div>
+                <div class="dp-foot">
+                  <span class="muted tiny">逐级进入目录；选到环境仓根后「校验」检查插件面</span>
+                  <div class="spacer"></div>
+                  <button class="btn btn-primary" onclick="chooseDir('project')">选择此目录</button>
+                </div>
+              </div>
+              <div class="chips">
+                <span class="chip ok">插件面齐全</span>
+                <span class="chip">冻结面：RTL / TB / PKG / TESTLIB</span>
+                <span class="chip warn">单槽：同环境禁止并发</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 03 选项 -->
+          <div class="step-card">
+            <div class="step-no">3</div>
+            <div class="step-main">
+              <div class="step-title">运行选项</div>
+              <div class="field-row">
+                <label class="muted tiny" style="width:64px">模式</label>
+                <select class="input" id="fMode" style="max-width:220px" onchange="syncMode()">
+                  <option value="drill" selected>drill · 用冻结夹具（推荐先跑）</option>
+                  <option value="real">real · 真机编译/全跑</option>
+                </select>
+                <label class="muted tiny" style="width:64px;margin-left:8px">场景</label>
+                <select class="input" id="fScenario" style="max-width:200px">
+                  <option value="happy" selected>happy</option>
+                  <option value="dead_job">dead_job（死任务夹具）</option>
+                  <option value="cancel">cancel（取消夹具）</option>
+                </select>
+              </div>
+              <details class="adv">
+                <summary>高级（时间注入 / 说明）</summary>
+                <div class="field-row" style="margin-top:8px">
+                  <input class="input mono" placeholder="now（留空 = 服务器时间；ISO 格式）" style="max-width:320px">
+                </div>
+              </details>
+            </div>
+          </div>
+        </div>
+
+        <div class="confirm-bar">
+          <div class="summary">
+            <span>基线 <b>v0</b></span>
+            <span>环境 <b>simenv-tcs9620-64ch</b></span>
+            <span>模式 <b>drill</b></span>
+          </div>
+          <div class="spacer"></div>
+          <span class="muted tiny">确认后：创建 run → 停在闸门 1</span>
+          <button class="btn btn-primary" onclick="confirmStart()">确认并启动</button>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <div class="card-head"><h2>本环境插件面</h2><span class="sub">GET /api/health</span></div>
+          <div class="card-body">
+            <div class="kv"><span>ENV_ROOT</span><b>…/SimEnv_TCS9620…</b></div>
+            <div class="kv"><span>WORKSPACE_ROOT</span><b>ENV_ROOT/kb</b></div>
+            <div class="kv"><span>plugin_missing</span><span class="chip ok">[]</span></div>
+            <div class="kv"><span>workspace_missing</span><span class="chip ok">[]</span></div>
+            <div class="kv"><span>agently / python</span><b>4.1.4.8 / 3.11.7</b></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>最近一轮</h2><span class="sub">点击左侧运行记录切换</span></div>
+          <div class="card-body">
+            <div class="kv"><span>run</span><b>RUN-20261019-160206</b></div>
+            <div class="kv"><span>当前状态</span><span class="chip warn">等待闸门 1</span></div>
+            <div class="kv"><span>已用</span><b>02:14</b></div>
+            <div class="kv"><span>阻断项</span><span class="chip bad">2</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 视图 2：执行中 ============ -->
+    <section id="viewRun" class="hidden">
+      <div class="run-head">
+        <span class="rid mono">RUN-20261019-160206</span>
+        <span class="status-pill run"><span class="spinner"></span> 执行中 · N6 用例修订</span>
+        <span class="chip">drill</span>
+        <span class="chip">基线 v0</span>
+        <span class="muted tiny">已用 02:14 · 更新于 3 s 前</span>
+        <div class="spacer"></div>
+        <button class="btn" onclick="toast('样张：GET /api/runs/{id} 手动刷新')">刷新</button>
+        <button class="btn" onclick="toast('样张：POST …/jobs/{job_id}/cancel')">取消作业</button>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>流程执行状态</h2><span class="sub">N0 → N16 · 三闸门为菱形 · 当前节点高亮</span></div>
+        <div class="stages" id="stages"></div>
+      </div>
+
+      <div class="grid2" style="grid-template-columns:minmax(0,1.55fr) minmax(320px,1fr)">
+        <div>
+          <div class="card">
+            <div class="card-head"><h2>Agent 工作状态</h2><span class="sub">6 个模型角色 · 状态由 node/event 派生</span></div>
+            <div class="card-body">
+              <div class="agents">
+                <div class="agent">
+                  <div class="agent-head"><div class="avatar a1">析</div>
+                    <div><div class="agent-name">simenv-analyst</div><div class="agent-role">N3 · 差异语义总结</div></div>
+                    <div class="spacer"></div><span class="chip ok">完成 · 12 s</span></div>
+                  <div class="agent-body">已产出 <b>3 组 / 27 条</b>差异摘要，逐条带证据行号。</div>
+                  <div class="agent-foot"><span>live · v4-1-flash</span><span class="link" onclick="toast('样张：打开 N3 产物与证据')">产物 / 证据 →</span></div>
+                </div>
+
+                <div class="agent working">
+                  <div class="agent-head"><div class="avatar a2">作</div>
+                    <div><div class="agent-name">simenv-author</div><div class="agent-role">N6 · 用例修订 / 补充</div></div>
+                    <div class="spacer"></div><span class="chip" style="color:var(--primary);background:var(--primary-weak);border-color:var(--primary-line)">工作中 · 03:12</span></div>
+                  <div class="agent-body"><span class="spinner"></span> 正在修订 <b>tc_pcie_rw_02</b>：读取模板库 → 校地址段基址。</div>
+                  <div class="agent-foot"><span>live · 输入 27 条必改</span><span class="link" onclick="toast('样张：打开 N6 沙箱产物')">沙箱用例 →</span></div>
+                </div>
+
+                <div class="agent">
+                  <div class="agent-head"><div class="avatar a3">检</div>
+                    <div><div class="agent-name">simenv-checker</div><div class="agent-role">N8 · 静态复核</div></div>
+                    <div class="spacer"></div><span class="chip">待命</span></div>
+                  <div class="agent-body muted">等待 N6 产出沙箱用例后开始逐条「怎样才能失败」复核。</div>
+                  <div class="agent-foot"><span>—</span></div>
+                </div>
+
+                <div class="agent">
+                  <div class="agent-head"><div class="avatar a4">账</div>
+                    <div><div class="agent-name">simenv-reconciler</div><div class="agent-role">N10 · 结果对账</div></div>
+                    <div class="spacer"></div><span class="chip">待命</span></div>
+                  <div class="agent-body muted">Host 抽数 + 模型分桶；需 N9 全跑证据。</div>
+                  <div class="agent-foot"><span>—</span></div>
+                </div>
+
+                <div class="agent">
+                  <div class="agent-head"><div class="avatar a5">守</div>
+                    <div><div class="agent-name">simenv-guardian</div><div class="agent-role">N11 · 证据守护</div></div>
+                    <div class="spacer"></div><span class="chip">待命</span></div>
+                  <div class="agent-body muted">检查身份四方同值：审的 md5 = 跑的 md5 = 对账的 md5。</div>
+                  <div class="agent-foot"><span>—</span></div>
+                </div>
+
+                <div class="agent">
+                  <div class="agent-head"><div class="avatar a6">报</div>
+                    <div><div class="agent-name">simenv-reporter</div><div class="agent-role">N12 · 评估报告</div></div>
+                    <div class="spacer"></div><span class="chip">待命</span></div>
+                  <div class="agent-body muted">汇总全轮证据；引用不可解析则拒发。</div>
+                  <div class="agent-foot"><span>—</span></div>
+                </div>
+              </div>
+
+              <div style="margin-top:12px" class="muted tiny">
+                Host 确定性侧：N9 全跑由 <b>job_runner</b> 看护（提交 → 停放 → 完成事件 resume），不占 agent 卡。
+              </div>
+            </div>
+          </div>
+
+          <details class="card events" open>
+            <summary>事件流 · events（seq 递增，前端只读）</summary>
+            <div class="ev-list">
+              <div class="ev-row"><span class="k">#018</span><span class="n">N6</span><span>node_started · 用例修订</span></div>
+              <div class="ev-row"><span class="k">#017</span><span class="n">N5</span><span>node_finished · ok · 必改 27 / 待查 4</span></div>
+              <div class="ev-row"><span class="k">#016</span><span class="n">N4</span><span>gate_decided · confirmed · human:demo</span></div>
+              <div class="ev-row"><span class="k">#015</span><span class="n">N4</span><span>gate_pending · G1_diff_confirm · cycle 1</span></div>
+              <div class="ev-row"><span class="k">#014</span><span class="n">N3</span><span>node_finished · ok · 27 条摘要</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="side">
+          <div class="card gate-card">
+            <div class="card-head"><h2>闸门 1 · 差异确认</h2><span class="sub">等待人工</span></div>
+            <div class="card-body">
+              <div class="kv"><span>差异条目</span><b>27</b></div>
+              <div class="kv"><span>未决</span><b style="color:var(--warn)">27</b></div>
+              <div class="kv"><span>冲突清单</span><b>72（全 blocks_release）</b></div>
+              <div class="chips" style="margin-bottom:10px">
+                <span class="chip bad">I3_EVIDENCE_MISSING</span>
+                <span class="chip bad">I4_CONFLICTS_UNCLEARED</span>
+              </div>
+              <div class="option on" onclick="pickOption(this)"><span class="radio"></span><div><b>差异确认</b><span>确认 27 条差异，进入影响分析</span></div></div>
+              <div class="option" onclick="pickOption(this)"><span class="radio"></span><div><b>忽略（须给理由）</b><span>本轮不处理，记录理由</span></div></div>
+              <div class="option" onclick="pickOption(this)"><span class="radio"></span><div><b>有疑义 ⇒ 转人工裁决</b><span>进入待裁决清单</span></div></div>
+              <div class="field-row" style="margin-top:10px">
+                <input class="input mono" value="human:demo" style="max-width:180px">
+              </div>
+              <textarea class="input" rows="2" placeholder="裁决理由（必须可核对）" style="margin-top:8px"></textarea>
+              <button class="btn btn-primary btn-block" style="margin-top:10px" onclick="toast('样张：POST …/gates/G1_diff_confirm/decision')">提交闸门决策</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><h2>双口径计数</h2><span class="sub">并列同权 · 不换算</span></div>
+            <div class="card-body">
+              <div class="counts">
+                <div class="count-box bad"><div class="n">1687</div><div class="l">口径一 · *E 文本计数</div></div>
+                <div class="count-box ok"><div class="n">0</div><div class="l">口径二 · UVM_ERROR</div></div>
+              </div>
+              <div class="foot-note">两者都归零才可判绿；当前口径一非零 ⇒ blocker 保持。</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><h2>阻断项</h2><span class="sub">按 severity</span></div>
+            <div class="card-body">
+              <div class="blocker"><span class="sev hard">hard</span><div><b>I3_EVIDENCE_MISSING</b><br><span class="muted tiny">尚未产生全跑证据；判绿不可用。</span></div></div>
+              <div class="blocker"><span class="sev hard">hard</span><div><b>I4_CONFLICTS_UNCLEARED</b><br><span class="muted tiny">72 项 blocks_release 未清零，晋升永久阻断。</span></div></div>
+              <div class="blocker"><span class="sev info">info</span><div><b>CAPACITY_LONG_TASK</b><br><span class="muted tiny">ETA 低置信（n=2）。</span></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 视图 3：闸门等待 ============ -->
+    <section id="viewGate" class="hidden">
+      <div class="run-head">
+        <span class="rid mono">RUN-20261019-160206</span>
+        <span class="status-pill wait"><span class="pulse"></span> 等待人工 · 闸门 1</span>
+        <span class="chip">drill</span>
+        <span class="muted tiny">执行已停放（interrupt），可安全重启；闸门态权威在 gates.json</span>
+        <div class="spacer"></div>
+        <button class="btn" onclick="toast('样张：跳转执行视图')">查看执行详情</button>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>流程执行状态</h2><span class="sub">N4 闸门 1 等待中 · 其余节点未进入</span></div>
+        <div class="stages" id="stages2"></div>
+      </div>
+
+      <div class="grid2" style="grid-template-columns:minmax(0,1.4fr) minmax(340px,1fr)">
+        <div class="card">
+          <div class="card-head"><h2>闸门材料</h2><span class="sub">服务端下发 · 前端不参与判定</span></div>
+          <div class="card-body">
+            <div class="kv"><span>差异清单</span><b>27 条（文件 9 / 段 6 / offset 12）</b></div>
+            <div class="kv"><span>冲突快照</span><b>72 项 · 全 blocks_release=true</b></div>
+            <div class="kv"><span>作者说明</span><span class="muted">无（尚未进入修订）</span></div>
+            <div class="kv"><span>权威枚举</span><b class="mono">confirmed / ignored / disputed</b></div>
+            <div class="foot-note">未决条目 &gt; 0 ⇒ 不得放行进入修订（I1）。忽略/有疑义必须给理由。</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>闸门操作</h2><span class="sub">写动作：POST …/gates/{gate_id}/decision</span></div>
+        <div class="card-body">
+          <div class="grid2">
+            <div>
+              <div class="option on" onclick="pickOption(this)"><span class="radio"></span><div><b>差异确认</b><span>进入 N5 影响分析</span></div></div>
+              <div class="option" onclick="pickOption(this)"><span class="radio"></span><div><b>忽略（须给理由）</b><span>记录理由并终止本轮</span></div></div>
+              <div class="option" onclick="pickOption(this)"><span class="radio"></span><div><b>有疑义 ⇒ 转人工裁决</b><span>进入待裁决清单</span></div></div>
+            </div>
+            <div>
+              <input class="input mono" value="human:demo" style="margin-bottom:8px">
+              <textarea class="input" rows="4" placeholder="裁决理由（ignored / disputed 必填）"></textarea>
+              <button class="btn btn-primary btn-block" style="margin-top:10px" onclick="toast('样张：提交后 run 继续执行')">提交闸门决策</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="foot-note">
+      样张说明：这是布局与信息层级的设计稿，所有数据为假、按钮只弹提示；真实实现会接
+      <span class="mono">/api/health</span>、<span class="mono">/api/runs</span>、<span class="mono">/api/runs/{id}</span>
+      与闸门接口。当前版本的两区结构：左=运行列表，右=按阶段切换的工作区。
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  var VIEWS = { setup: "viewSetup", run: "viewRun", gate: "viewGate" };
+  var TITLES = {
+    setup: ["新建运行", "选择基线版本与环境仓 → 确认 → 启动闭环"],
+    run:   ["运行监控", "流程执行状态 + 6 个 agent 的工作状态"],
+    gate:  ["闸门等待", "执行已停放；签字后继续"]
+  };
+
+  function showView(name) {
+    Object.keys(VIEWS).forEach(function (k) {
+      document.getElementById(VIEWS[k]).classList.toggle("hidden", k !== name);
+    });
+    ["segSetup", "segRun", "segGate"].forEach(function (id) {
+      document.getElementById(id).classList.remove("on");
+    });
+    document.getElementById(name === "setup" ? "segSetup" : name === "run" ? "segRun" : "segGate").classList.add("on");
+    document.getElementById("pageTitle").textContent = TITLES[name][0];
+    document.getElementById("pageSub").textContent = TITLES[name][1];
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function toast(msg) {
+    var el = document.getElementById("toast");
+    el.textContent = msg;
+    el.classList.add("show");
+    clearTimeout(toast._t);
+    toast._t = setTimeout(function () { el.classList.remove("show"); }, 2600);
+  }
+
+  function validateProject() {
+    var btn = document.getElementById("btnValidate");
+    btn.disabled = true; btn.textContent = "校验中…";
+    setTimeout(function () {
+      btn.disabled = false; btn.textContent = "校验";
+      document.getElementById("projectMeta").innerHTML =
+        '<span>env_id <b>simenv-tcs9620-64ch</b></span>' +
+        '<span>RTL <b>1 210 文件</b></span><span>TESTLIB <b>162 用例</b></span>' +
+        '<span>uvs.setup <span class="chip ok">存在</span></span>' +
+        '<span>校验 <span class="chip ok">通过</span></span>';
+      toast("样张：GET /api/env/check?path=… → 插件面齐全");
+    }, 650);
+  }
+
+  function syncMode() {
+    var mode = document.getElementById("fMode").value;
+    toast(mode === "real" ? "样张：real 模式需要 uvs.setup + run_local.sh（真机）" : "样张：drill 模式用冻结夹具");
+  }
+
+  function confirmStart() {
+    toast("样张：POST /api/runs {baseline, mode, scenario, project} → 切到执行视图");
+    showView("run");
+  }
+
+  function pickRun(el) {
+    document.querySelectorAll(".run-item").forEach(function (n) { n.classList.remove("active"); });
+    el.classList.add("active");
+    toast("样张：选中 " + el.querySelector(".rid").textContent.trim() + " → 打开运行详情");
+    showView("run");
+  }
+
+  function pickOption(el) {
+    var parent = el.closest(".card-body") || el.parentElement;
+    parent.querySelectorAll(".option").forEach(function (n) { n.classList.remove("on"); });
+    el.classList.add("on");
+  }
+
+  // ---------- 四段流程（分组 + 展开当前段） ----------
+  var STAGES = [
+    { key:"ingest", name:"摄取", range:"N0–N4", nodes:[
+      {id:"N0",name:"基线"},{id:"N1",name:"摄取"},{id:"N2",name:"diff"},
+      {id:"N3",name:"总结"},{id:"N4",name:"闸门1",gate:true}]},
+    { key:"revise", name:"修订", range:"N5–N8", nodes:[
+      {id:"N5",name:"影响"},{id:"N6",name:"修订"},{id:"N7",name:"编译"},{id:"N8",name:"复核"}]},
+    { key:"verify", name:"验证", range:"N9–N12", nodes:[
+      {id:"N9",name:"全跑"},{id:"N10",name:"对账"},{id:"N11",name:"守护"},{id:"N12",name:"报告"}]},
+    { key:"decide", name:"决策", range:"N13–N16", nodes:[
+      {id:"N13",name:"闸门2",gate:true},{id:"N14",name:"闸门3",gate:true},
+      {id:"N15",name:"回归"},{id:"N16",name:"晋升"}]}
+  ];
+  var OWNER = {N0:"Host",N1:"Host",N2:"Host",N3:"analyst",N4:"人",N5:"Host",N6:"author",
+    N7:"Host",N8:"checker",N9:"Host",N10:"checker",N11:"guardian",N12:"reporter",
+    N13:"人",N14:"人",N15:"TriggerFlow",N16:"Host"};
+
+  function stageStatus(stage, state){
+    var done=0, wait=false, active=false, fail=false;
+    stage.nodes.forEach(function(n){
+      var s=state[n.id]||"";
+      if(s==="done") done++;
+      if(s==="wait") wait=true;
+      if(s==="active") active=true;
+      if(s==="fail") fail=true;
+    });
+    if(fail) return {cls:"fail", label:"失败", done:done};
+    if(wait) return {cls:"wait", label:"等待人工", done:done};
+    if(done===stage.nodes.length) return {cls:"done", label:"完成", done:done};
+    if(active) return {cls:"active", label:"进行中", done:done};
+    return {cls:"", label:done?done+"/"+stage.nodes.length:"待开始", done:done};
+  }
+
+  function renderStages(targetId, state, openKey){
+    var host=document.getElementById(targetId); if(!host) return;
+    host.innerHTML=STAGES.map(function(stage,idx){
+      var ss=stageStatus(stage,state);
+      var open=stage.key===openKey;
+      var nodes=stage.nodes.map(function(n){
+        var s=state[n.id]||"";
+        var cls="snode"+(n.gate?" gate":"")+(s?" "+s:"");
+        var inner=(s==="done")?"✓":(s==="wait")?"!":(s==="active")?"…":n.id.replace("N","");
+        return '<div class="'+cls+'"><div class="sb"><span>'+inner+'</span></div>'+
+          '<div class="st"><b>'+n.id+' '+n.name+'</b><span class="own">'+OWNER[n.id]+'</span></div></div>';
+      }).join("");
+      var pct=Math.round(ss.done/stage.nodes.length*100);
+      return '<div class="stage '+ss.cls+(open?" open":"")+'">'+
+        '<div class="stage-head" onclick="toggleStage(this)">'+
+          '<div class="stage-idx">'+(ss.cls==="done"?"✓":idx+1)+'</div>'+
+          '<div><div class="stage-name">'+stage.name+'</div><div class="stage-range">'+stage.range+'</div></div>'+
+          '<div class="stage-sum"><span class="stage-bar"><i style="width:'+pct+'%"></i></span>'+
+          '<span>'+ss.label+'</span><span class="stage-chev">▸</span></div>'+
+        '</div><div class="stage-body"><div class="snodes">'+nodes+'</div></div></div>';
+    }).join("");
+  }
+
+  function toggleStage(head){
+    var stage=head.parentElement;
+    if(stage.classList.contains("open")){ stage.classList.remove("open"); return; }
+    stage.parentElement.querySelectorAll(".stage").forEach(function(s){s.classList.remove("open");});
+    stage.classList.add("open");
+  }
+
+  var RUN_STATE={N0:"done",N1:"done",N2:"done",N3:"done",N4:"done",N5:"done",N6:"active",
+    N7:"",N8:"",N9:"",N10:"",N11:"",N12:"",N13:"",N14:"",N15:"",N16:""};
+  var GATE_STATE={N0:"done",N1:"done",N2:"done",N3:"done",N4:"wait",
+    N5:"",N6:"",N7:"",N8:"",N9:"",N10:"",N11:"",N12:"",N13:"",N14:"",N15:"",N16:""};
+  renderStages("stages",RUN_STATE,"revise");
+  renderStages("stages2",GATE_STATE,"ingest");
+
+  // ---------- 目录选择器（样张：假目录树） ----------
+  var DIR_TREE={
+    "/home/work/chenjunming":[
+      {n:"FPGA_SIM",t:"dir",k:"/home/work/chenjunming/FPGA_SIM"},
+      {n:"M8000-50XS-SECOND",t:"dir",k:"/home/work/chenjunming/M8000-50XS-SECOND"},
+      {n:"cpld_csim",t:"dir",k:"/home/work/chenjunming/cpld_csim"}],
+    "/home/work/chenjunming/FPGA_SIM":[
+      {n:"SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES",t:"env",k:"/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES"}],
+    "/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES":[
+      {n:"RTL",t:"dir"},{n:"TB",t:"dir"},{n:"PKG",t:"dir"},{n:"TESTLIB",t:"dir"},{n:"uvs.setup",t:"file"}]
+  };
+  var BASE_ROOT="/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/kb/baselines";
+  var PICK={baseline:{root:BASE_ROOT,cur:BASE_ROOT},project:{root:"/home/work/chenjunming",cur:"/home/work/chenjunming"}};
+
+  function baseEntries(path){
+    if(path!==BASE_ROOT) return [];
+    return [{n:"v0",t:"base",k:"v0",m:"2026-10-15 12:05 · manifest 2521B · 162 用例"},
+            {n:"v1",t:"base",k:"v1",m:"不存在（需先由 N16 晋升）",disabled:true}];
+  }
+
+  function openPicker(kind){
+    var p=PICK[kind]; p.cur=p.root;
+    document.getElementById(kind==="baseline"?"pickerBaseline":"pickerProject").classList.remove("hidden");
+    renderPicker(kind);
+  }
+  function closePicker(kind){
+    document.getElementById(kind==="baseline"?"pickerBaseline":"pickerProject").classList.add("hidden");
+  }
+  function goUp(kind){
+    var p=PICK[kind]; if(p.cur===p.root) return;
+    var parts=p.cur.split("/"); parts.pop();
+    p.cur=parts.join("/")||"/"; renderPicker(kind);
+  }
+  function renderPicker(kind){
+    var p=PICK[kind];
+    var crumb=document.getElementById(kind==="baseline"?"dpBaseCrumb":"dpProjCrumb");
+    var list=document.getElementById(kind==="baseline"?"dpBaseList":"dpProjList");
+    crumb.textContent=p.cur;
+    var items=(kind==="baseline")?baseEntries(p.cur):(DIR_TREE[p.cur]||[]);
+    if(!items.length){ list.innerHTML='<div class="dp-item disabled"><b>（这一层没有可列出的目录）</b></div>'; return; }
+    list.innerHTML=items.map(function(it){
+      var icon=(it.t==="file")?"📄":(it.t==="base")?"▣":"▸";
+      var meta=it.m||"";
+      return '<div class="dp-item '+(it.disabled?"disabled":"")+'" onclick=\'pickEntry("'+kind+'",'+JSON.stringify(it)+')\'">'+
+        '<span class="dp-icon">'+icon+'</span><b>'+it.n+'</b><span>'+meta+'</span></div>';
+    }).join("");
+  }
+  function pickEntry(kind,it){
+    if(it.disabled) return;
+    if(it.t==="dir" && it.k){ PICK[kind].cur=it.k; renderPicker(kind); return; }
+    if(it.t==="env" && it.k){
+      document.getElementById("fProject").value=it.k;
+      closePicker("project");
+      document.getElementById("projectMeta").innerHTML=
+        '<span>env_id <b>simenv-tcs9620-64ch</b></span><span>RTL <b>1 210 文件</b></span>'+
+        '<span>TESTLIB <b>162 用例</b></span><span>uvs.setup <span class="chip ok">存在</span></span>'+
+        '<span>校验 <span class="chip warn">待校验</span></span>';
+      toast("样张：已选择项目目录，点「校验」检查插件面");
+      return;
+    }
+    if(it.t==="base"){
+      document.getElementById("fBaseline").value=it.k;
+      document.getElementById("fBaselineLabel").value=it.k+" · 2026-10-15 12:05 · 首版基线";
+      closePicker("baseline");
+      toast("样张：已选择基线 "+it.k+"，将自动校验 manifest 与锚点");
+      return;
+    }
+    toast("样张：这是文件，不能作为目录选择");
+  }
+  function chooseDir(kind){
+    if(kind==="baseline"){ toast("样张：请选择基线版本目录（v0 / v1）"); return; }
+    var path=PICK.project.cur;
+    document.getElementById("fProject").value=path;
+    closePicker("project");
+    toast("样张：GET /api/env/check?path="+path);
+  }
+
+</script>
+</body>
+</html>

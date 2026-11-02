@@ -1,0 +1,38 @@
+candidate centres: 2993
+existing re-pointed covers 64/213
+NEW tokens: 34 => solid tokens 58 | +7 alpha = 65
+existing moved: 1 [('--panel', '#ffffff', '#f3f6f3')]
+N00 #d6e0d5  n=26 #cae9db #cbe9d8 #cfdccb #d0ddcc #d1e5da #d3dfcc #d4e0cc #d6e3d8 #d7e6e1 #d7e8d5 #d9e7d6 #d9e8d4 #d9ecde #dae3d5 #dae5d2 #dae6df #dce7da #dce8d7 #dde5df #dde8dc #e0e8db #e0e9db #e0ecda #e1eadb #e2eadb #e2ebe1
+N01 #517057  n=13 #456761 #456a58 #4d6b4e #50694b #536e58 #54694b #55684f #57764c #58715f #5a6e52 #5c7055 #5c7a59 #5d7756
+N02 #bed7bc  n=13 #b7d2bf #bacdb3 #bbceba #bcccb2 #c1dcbd #c3dabc #c4d1c7 #c5ddb9 #c7d4c8 #c8dfbc #c9d4c3 #c9dfc7 #cae2c4
+N03 #244131  n=12 #183d2e #20362a #20382b #213d2d #234b34 #243a2b #25462e #284536 #284c35 #2f4a37 #304b35 #304b3d
+N04 #e8dbc0  n=12 #e2d3b6 #e6d5b4 #e7d5b4 #e8d8b7 #e9dfc9 #ead7b7 #ebdfc6 #ecdcbe #eddfc5 #eedecc #efe0bf #efe1c3
+N05 #e3bcb7  n=9  #d9b3ae #dcb1ab #e2bbb5 #e4c1bb #e6c0b9 #e7bdb8 #e7c4bf #eac8c3 #ebc4bf
+N06 #3e5b47  n=8  #34533c #36533d #38614c #3a5a4a #3d5545 #3e5546 #425449 #496353
+N07 #eae4e2  n=6  #e1d8ec #e1ede7 #e5ece9 #e6edea #e8f0e4 #ecdada
+N08 #aac3b4  n=5  #a9cfb7 #acb8b1 #aebfb2 #b2c5b9 #b4c9ab
+N09 #688874  n=4  #60846a #6b836a #718c7e #728d7b
+N10 #72592d  n=4  #6b5127 #7a5a26 #7a6234 #7d6339
+N11 #85a293  n=4  #799a8c #839c8d #91ab9a #91ad9b
+N12 #efd0cb  n=4  #f1cfcf #f2c9c9 #f5c6c6 #f8dcd7
+N13 #a1bf91  n=3  #a0c18b #a3be97 #a7c69b
+N14 #c8ded1  n=3  #bfe8d8 #c4dfcc #d4e8c8
+N15 #406a6f  n=2  #3c7465 #44607a
+N16 #577060  n=2  #52716c #5e7854
+N17 #b98c43  n=2  #b9873b #ba914b
+N18 #efedec  n=2  #eaf3e4 #fbf2e6
+N19 #142d32  n=1  #142d32
+N20 #148b68  n=1  #148b68
+N21 #2457d6  n=1  #2457d6
+N22 #26493f  n=1  #29484b
+N23 #3e6552  n=1  #456e48
+N24 #57774d  n=1  #62834c
+N25 #59736f  n=1  #617673
+N26 #624d80  n=1  #624d80
+N27 #7b4f4f  n=1  #7b4f4f
+N28 #8aa393  n=1  #93a49a
+N29 #aec9a0  n=1  #b9d5aa
+N30 #bf9656  n=1  #c49c61
+N31 #d4dde4  n=1  #dfd1ed
+N32 #e8b86a  n=1  #e8b86a
+N33 #eac6a9  n=1  #f3d19e

@@ -1,0 +1,34 @@
+/* FPGA Flow · shared visual tokens; all assets stay local.
+   3B 配色令牌化提案（2026-10-30）：颜色令牌 40 个 = 既有 24 + 新增 16；
+   非颜色令牌 --shadow/--radius/--ease-out/--font-* 原样保留。
+   依据 doc/agents/开工提示词_UI批次3C与3B.md §5.2；吸收表见 .ui-audit/3b/absorption.md。
+   说明：既有 24 个颜色令牌的值一律未动；16 个新增令牌的值取所吸收存量族的中位色。 */
+:root{
+  color-scheme:light;
+  /* 底（浅表面） */
+  --panel:#ffffff;--surface:#f8faf9;--surface-2:#fcfdfb;--bg:#f4f6f5;
+  /* 线（分隔/边框） */
+  --line:#e1e8e4;--line-strong:#c7d4cc;--line-soft:#d9ecde;
+  /* 字（正文/说明） */
+  --text:#213831;--text-2:#2f4a37;--text-3:#536e58;--muted:#61746c;--faint:#5f6f67;
+  /* 主色（青绿） */
+  --primary:#15775e;--primary-hover:#0e604b;--primary-weak:#eaf5ef;--primary-line:#b8daca;
+  /* 成功 */
+  --ok:#24734d;--ok-weak:#edf7ef;--ok-line:#cbe9d8;
+  /* 警告 */
+  --warn:#9a5e16;--warn-weak:#fff6e8;--warn-line:#f3d19e;--warn-line-soft:#ecdcbe;--warn-ink:#7a6234;
+  /* 危险 */
+  --danger:#b34140;--danger-weak:#fff0ef;--danger-line:#eac8c3;
+  /* 紫（次要标签） */
+  --purple:#7357a0;--purple-weak:#f3eef9;
+  /* 侧栏（深墨） */
+  --rail:#192e28;--rail-hover:#243d34;--rail-border:#3a5a4a;--rail-text:#e1eae4;--rail-muted:#a5b9ae;--rail-accent:#bacdb3;
+  /* 浮层 / 阴影 / 白色叠加 */
+  --overlay:#12251ab3;--rail-tint:#ffffff08;--rail-line:#ffffff17;--shadow-tint:#20372b0a;--shadow-pop:#10291a38;
+  /* 非颜色令牌（原样） */
+  --shadow:0 2px 4px #20372b03,0 8px 24px #20372b03;
+  --radius:12px;
+  --ease-out:cubic-bezier(0.22,1,0.36,1);
+  --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans SC","Microsoft YaHei",sans-serif;
+  --font-mono:"SFMono-Regular",Consolas,"Liberation Mono",monospace;
+}

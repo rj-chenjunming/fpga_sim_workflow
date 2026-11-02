@@ -40,6 +40,8 @@ ARTIFACTS = {
     "n16": "n16_promote.json",
     "n3": "n3_digest.md",
     "n10": "n10_reconcile.md",
+    # SPEC-REV-20 §3.2：N10 机器原因产物（逐例判据快照，供覆写前置/面板读取）
+    "n10_cases": "n10_cases.json",
     "n12": "n12_report.md",
 }
 
@@ -521,13 +523,18 @@ async def n5_impact(data: Any) -> dict[str, Any]:
     )
     gap_count = result["index_gap_count"]
     cases_text = "、".join(result["must_change_cases"]) or "无"
+    result["zero_must_change"] = result["must_change_count"] == 0
     result["summary"] = (
         f"N5：必改 {result['must_change_count']} 个用例（{cases_text}），"
-        f"索引缺口 {gap_count} 条，index_complete={result['index_complete']}；"
-        f"gate1 签署校验 rc={result['gate1_rc']}"
+        f"待查 {result.get('to_check_count')} 条，索引缺口 {gap_count} 条，"
+        f"index_complete={result['index_complete']}；gate1 签署校验 rc={result['gate1_rc']}"
     )
     await data.async_set_state("n5_impact", result)
     ctx.node_finished("N5", detail=result, refs=[str(target)])
+    # LOOP §14.2：必改=0 ⇒ 走 G1 分流支线（G1_no_impact）；否则原路径进 N6。
+    # 只发一个事件；判定只看 must_change_count（人 2026-10-30 裁决：宽口径）。
+    await data.async_emit("N5_ZERO_MUST_CHANGE" if result["zero_must_change"]
+                          else "N5_HAS_MUST_CHANGE", result)
     return result
 
 

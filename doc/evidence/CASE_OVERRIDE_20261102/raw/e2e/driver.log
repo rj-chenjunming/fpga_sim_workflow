@@ -1,0 +1,34 @@
+== 清理运行时状态 ==
+== 第 1 代：phase 1 ==
+[driver] 服务已起 pid=16（第 1 代）
+
+########## phase 1 ##########
+[driver] 已停 uvicorn pid=16（未触碰长任务）
+== 第 2 代：phase 2 / 3（真重启后重附着 + 收敛） ==
+[driver] 服务已起 pid=99（第 2 代）
+
+########## phase 2 ##########
+
+########## phase 3 ##########
+[driver] 已停 uvicorn pid=99（未触碰长任务）
+== 第 3 代：phase 4（起长任务并停放；不取消） ==
+[driver] 服务已起 pid=147（第 3 代）
+
+########## phase 4 ##########
+[driver] 已停 uvicorn pid=147（未触碰长任务）
+== 第 4 代：phase 4b（重附着到仍在跑的长任务 + 取消）/ 5（死任务） ==
+[driver] 服务已起 pid=225（第 4 代）
+
+########## phase 4b ##########
+
+########## phase 5 ##########
+[driver] 已停 uvicorn pid=225（未触碰长任务）
+
+================= 驱动汇总 =================
+  phase 1    rc=0
+  phase 2    rc=0
+  phase 3    rc=0
+  phase 4    rc=0
+  phase 4b   rc=0
+  phase 5    rc=0
+  => ALL PASS

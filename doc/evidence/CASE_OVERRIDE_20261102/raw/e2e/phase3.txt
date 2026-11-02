@@ -1,0 +1,27 @@
+== phase 3：终态 / 闸门恰好一次 / N16 零副作用 ==
+  [val ] 终态 = {'status': 'finished', 'error': None, 'current_node': None}
+  [ok  ] C1 跑到终态
+  [ok  ] C2 终态是 finished（不是 failed）
+  [ok  ] C3 无执行错误
+  [val ] gate_history = {'G1_diff_confirm': 1, 'G2_report_accept': 1, 'G3_regression_decision': 1}
+  [ok  ] C4 三道闸门各恰好一次（事件流）
+  [val ] gates_authority(终态) = {'G1_diff_confirm': {'decision': 'confirmed', 'status': 'signed', 'human_signed': True, 'actor_kind': 'human', 'history_len': 1}, 'G2_report_accept': {'decision': 'accept', 'status': 'signed', 'human_signed': True, 'actor_kind': 'human', 'history_len': 1}, 'G3_regression_decision': {'decision': 'defer', 'status': 'signed', 'human_signed': True, 'actor_kind': 'human', 'history_len': 1}, 'G1_no_impact': {'decision': None, 'status': None, 'human_signed': None, 'actor_kind': None, 'history_len': None}}
+  [ok  ] C5 权威账本：三道闸门均为人类签署
+  [ok  ] C5b 权威账本 all_signed=true
+  [ok  ] C5c 终态锚仍一致（全程未被外部改动）
+  [ok  ] C5d 事件流与权威账本无分歧
+  [val ] node_history = ['N0', 'N1', 'N2', 'N3', 'N4', 'N5', 'N6', 'N6_apply', 'N7', 'N8', 'N9', 'N9_submit', 'N10', 'N11', 'N12', 'N13', 'N14', 'HALT']
+  [ok  ] C6 节点历史覆盖 N0 起点
+  [ok  ] C7 节点历史到达终止节点（HALT 或 N16）
+  [ok  ] C7b defer ⇒ 终点是 HALT 且未走 N16（不发版）
+  [ok  ] C8 节点历史无 failed
+  [ok  ] C8b HALT 是显式中止而非假装收敛（事件 status=halted）
+  [val ] kb/baselines 内容摘要(前/后) = {'before': '34aa3b60d40f7890be375d1eb50d6786e25708201ccbdae56b9f10c83a9603db', 'after': '34aa3b60d40f7890be375d1eb50d6786e25708201ccbdae56b9f10c83a9603db'}
+  [ok  ] C9 N16 dry-run 对 kb/baselines 零副作用（内容 md5 逐行不变）
+  [ok  ] C10 promote 能力被 I4/I3 正确判否
+  [ok  ] C11 全流程事件 kind 仍在白名单
+  [ok  ] C12 事件 seq 严格递增且连续
+  [ok  ] C13 run 列表含本 run
+  [val ] run 列表 = [{'run_id': 'RUN-20261102-120331', 'status': 'finished', 'mode': 'drill', 'baseline': 'v0', 'updated_at': '2026-11-02T12:03:43.634531', 'current_node': 'HALT'}]
+
+===== phase 3：PASS=18 FAIL=0 =====

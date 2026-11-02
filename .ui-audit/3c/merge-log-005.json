@@ -1,0 +1,465 @@
+{
+ "merged": [
+  {
+   "selector": ".agent-name",
+   "media": [],
+   "removed_rules": [
+    84
+   ],
+   "kept_at_rule": 550,
+   "moved": [
+    {
+     "prop": "overflow-wrap",
+     "from_rule": 84,
+     "value": "anywhere"
+    }
+   ],
+   "dropped": [
+    {
+     "prop": "font-weight",
+     "rule": 84,
+     "value": "640"
+    },
+    {
+     "prop": "font-size",
+     "rule": 84,
+     "value": "13px"
+    },
+    {
+     "prop": "line-height",
+     "rule": 84,
+     "value": "1.25"
+    }
+   ]
+  },
+  {
+   "selector": ".agent-role",
+   "media": [],
+   "removed_rules": [
+    84
+   ],
+   "kept_at_rule": 550,
+   "moved": [
+    {
+     "prop": "color",
+     "from_rule": 84,
+     "value": "var(--muted)"
+    }
+   ],
+   "dropped": []
+  },
+  {
+   "selector": ".agent-body",
+   "media": [],
+   "removed_rules": [
+    84,
+    550
+   ],
+   "kept_at_rule": 1082,
+   "moved": [
+    {
+     "prop": "color",
+     "from_rule": 84,
+     "value": "var(--muted)"
+    },
+    {
+     "prop": "min-height",
+     "from_rule": 84,
+     "value": "20px"
+    },
+    {
+     "prop": "display",
+     "from_rule": 84,
+     "value": "flex"
+    },
+    {
+     "prop": "flex-direction",
+     "from_rule": 84,
+     "value": "column"
+    },
+    {
+     "prop": "gap",
+     "from_rule": 84,
+     "value": "3px"
+    },
+    {
+     "prop": "overflow-wrap",
+     "from_rule": 84,
+     "value": "anywhere"
+    },
+    {
+     "prop": "font-size",
+     "from_rule": 550,
+     "value": "13px"
+    },
+    {
+     "prop": "line-height",
+     "from_rule": 550,
+     "value": "1.7"
+    }
+   ],
+   "dropped": []
+  },
+  {
+   "selector": ".agent-action",
+   "media": [],
+   "removed_rules": [
+    85
+   ],
+   "kept_at_rule": 550,
+   "moved": [
+    {
+     "prop": "font-family",
+     "from_rule": 85,
+     "value": "ui-monospace,Consolas,monospace"
+    },
+    {
+     "prop": "color",
+     "from_rule": 85,
+     "value": "var(--primary)"
+    }
+   ],
+   "dropped": [
+    {
+     "prop": "font-size",
+     "rule": 85,
+     "value": "12px"
+    }
+   ]
+  },
+  {
+   "selector": ".agent-note",
+   "media": [],
+   "removed_rules": [
+    85
+   ],
+   "kept_at_rule": 550,
+   "moved": [
+    {
+     "prop": "color",
+     "from_rule": 85,
+     "value": "var(--warn)"
+    }
+   ],
+   "dropped": [
+    {
+     "prop": "font-size",
+     "rule": 85,
+     "value": "12px"
+    }
+   ]
+  },
+  {
+   "selector": ".agent-foot",
+   "media": [],
+   "removed_rules": [
+    85
+   ],
+   "kept_at_rule": 547,
+   "moved": [
+    {
+     "prop": "display",
+     "from_rule": 85,
+     "value": "flex"
+    },
+    {
+     "prop": "align-items",
+     "from_rule": 85,
+     "value": "center"
+    },
+    {
+     "prop": "margin-top",
+     "from_rule": 85,
+     "value": "auto"
+    },
+    {
+     "prop": "color",
+     "from_rule": 85,
+     "value": "var(--faint)"
+    },
+    {
+     "prop": "flex-wrap",
+     "from_rule": 85,
+     "value": "wrap"
+    }
+   ],
+   "dropped": []
+  },
+  {
+   "selector": ".linkbtn",
+   "media": [],
+   "removed_rules": [
+    86
+   ],
+   "kept_at_rule": 549,
+   "moved": [
+    {
+     "prop": "border",
+     "from_rule": 86,
+     "value": "0"
+    },
+    {
+     "prop": "background",
+     "from_rule": 86,
+     "value": "transparent"
+    },
+    {
+     "prop": "color",
+     "from_rule": 86,
+     "value": "var(--primary)"
+    },
+    {
+     "prop": "font-weight",
+     "from_rule": 86,
+     "value": "550"
+    },
+    {
+     "prop": "padding",
+     "from_rule": 86,
+     "value": "0"
+    },
+    {
+     "prop": "text-decoration",
+     "from_rule": 86,
+     "value": "underline"
+    },
+    {
+     "prop": "text-decoration-style",
+     "from_rule": 86,
+     "value": "dotted"
+    }
+   ],
+   "dropped": [
+    {
+     "prop": "font-size",
+     "rule": 86,
+     "value": "12px"
+    }
+   ]
+  },
+  {
+   "selector": ".host-row",
+   "media": [],
+   "removed_rules": [
+    94
+   ],
+   "kept_at_rule": 549,
+   "moved": [
+    {
+     "prop": "display",
+     "from_rule": 94,
+     "value": "flex"
+    },
+    {
+     "prop": "align-items",
+     "from_rule": 94,
+     "value": "flex-start"
+    },
+    {
+     "prop": "gap",
+     "from_rule": 94,
+     "value": "10px"
+    },
+    {
+     "prop": "margin-top",
+     "from_rule": 94,
+     "value": "14px"
+    },
+    {
+     "prop": "border",
+     "from_rule": 94,
+     "value": "1px dashed var(--line-strong)"
+    },
+    {
+     "prop": "border-radius",
+     "from_rule": 94,
+     "value": "9px"
+    },
+    {
+     "prop": "color",
+     "from_rule": 94,
+     "value": "var(--muted)"
+    }
+   ],
+   "dropped": []
+  },
+  {
+   "selector": ".side",
+   "media": [],
+   "removed_rules": [
+    95
+   ],
+   "kept_at_rule": 549,
+   "moved": [
+    {
+     "prop": "display",
+     "from_rule": 95,
+     "value": "flex"
+    },
+    {
+     "prop": "flex-direction",
+     "from_rule": 95,
+     "value": "column"
+    },
+    {
+     "prop": "min-width",
+     "from_rule": 95,
+     "value": "0"
+    }
+   ],
+   "dropped": []
+  },
+  {
+   "selector": ".option",
+   "media": [],
+   "removed_rules": [
+    97
+   ],
+   "kept_at_rule": 557,
+   "moved": [
+    {
+     "prop": "display",
+     "from_rule": 97,
+     "value": "flex"
+    },
+    {
+     "prop": "align-items",
+     "from_rule": 97,
+     "value": "flex-start"
+    },
+    {
+     "prop": "border",
+     "from_rule": 97,
+     "value": "1px solid var(--line)"
+    },
+    {
+     "prop": "cursor",
+     "from_rule": 97,
+     "value": "pointer"
+    },
+    {
+     "prop": "background",
+     "from_rule": 97,
+     "value": "#fff"
+    },
+    {
+     "prop": "position",
+     "from_rule": 97,
+     "value": "relative"
+    }
+   ],
+   "dropped": []
+  },
+  {
+   "selector": ".option b",
+   "media": [],
+   "removed_rules": [
+    102
+   ],
+   "kept_at_rule": 557,
+   "moved": [
+    {
+     "prop": "display",
+     "from_rule": 102,
+     "value": "block"
+    }
+   ],
+   "dropped": []
+  },
+  {
+   "selector": ".option span",
+   "media": [],
+   "removed_rules": [
+    102
+   ],
+   "kept_at_rule": 557,
+   "moved": [
+    {
+     "prop": "color",
+     "from_rule": 102,
+     "value": "var(--muted)"
+    }
+   ],
+   "dropped": []
+  },
+  {
+   "selector": ".kv",
+   "media": [],
+   "removed_rules": [
+    105
+   ],
+   "kept_at_rule": 552,
+   "moved": [
+    {
+     "prop": "display",
+     "from_rule": 105,
+     "value": "flex"
+    },
+    {
+     "prop": "justify-content",
+     "from_rule": 105,
+     "value": "space-between"
+    },
+    {
+     "prop": "gap",
+     "from_rule": 105,
+     "value": "10px"
+    },
+    {
+     "prop": "border-bottom",
+     "from_rule": 105,
+     "value": "1px dashed var(--line)"
+    },
+    {
+     "prop": "overflow-wrap",
+     "from_rule": 105,
+     "value": "anywhere"
+    }
+   ],
+   "dropped": []
+  },
+  {
+   "selector": ".kv b",
+   "media": [],
+   "removed_rules": [
+    106
+   ],
+   "kept_at_rule": 552,
+   "moved": [
+    {
+     "prop": "font-family",
+     "from_rule": 106,
+     "value": "ui-monospace,Consolas,monospace"
+    },
+    {
+     "prop": "text-align",
+     "from_rule": 106,
+     "value": "right"
+    }
+   ],
+   "dropped": []
+  },
+  {
+   "selector": ".count-box",
+   "media": [],
+   "removed_rules": [
+    107
+   ],
+   "kept_at_rule": 544,
+   "moved": [
+    {
+     "prop": "border",
+     "from_rule": 107,
+     "value": "1px solid var(--line)"
+    },
+    {
+     "prop": "min-width",
+     "from_rule": 107,
+     "value": "0"
+    }
+   ],
+   "dropped": []
+  }
+ ],
+ "skipped": []
+}

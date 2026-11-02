@@ -1,0 +1,87 @@
+== 组件层颜色字面量（声明位置）==
+  app.css     before= 323  after=0  var()用量 before= 484 after=807
+  legacy.css  before=  59  after=0  var()用量 before=  80 after=139
+  legacy.html style块字面量 before=158 after=155（其中活规则 3 条已换 var；死声明应余 155）
+  legacy.html var()用量 before=0 after=3
+
+== 令牌 ==
+  变量总数=74  颜色令牌=69  非颜色=['--ease-out', '--font-mono', '--font-sans', '--radius', '--shadow']
+  var() 引用总数=949  被引用的不同变量=76
+  定义了但没被组件层引用的变量=[]
+  引用了但未定义的变量=['--gate-pane-max-h', '--p']
+
+  每令牌引用次数（组件层）:
+    --arrow-ink            1  #5a6675
+    --av-1                 1  #2457d6
+    --av-2                 1  #3c7465
+    --av-3                 1  #7a5a26
+    --av-4                 1  #624d80
+    --av-5                 1  #7b4f4f
+    --av-6                 3  #55684f
+    --bg                  54  #f4f6f5
+    --danger              28  #b34140
+    --danger-ink-soft      3  #dab2ac
+    --danger-line          4  #f5d2d0
+    --danger-line-soft    16  #ebc7c4
+    --danger-weak         19  #fff0ef
+    --ease-out            15  cubic-bezier(0.22,1,0.36,1)
+    --faint                9  #5f6f67
+    --font-mono           23  "SFMono-Regular",Consolas,"Liberation Mo
+    --font-sans            2  -apple-system,BlinkMacSystemFont,"Segoe 
+    --line               135  #e1e8e4
+    --line-soft           14  #d5e4d0
+    --line-strong         32  #c7d4cc
+    --meta-blue            2  #44607a
+    --muted              103  #61746c
+    --neutral-12           9  #335541
+    --neutral-13           6  #284a40
+    --neutral-4            3  #a3be97
+    --ok                  14  #24734d
+    --ok-ink               2  #148b68
+    --ok-line              7  #c9e4d1
+    --ok-line-2            2  #c9dfc7
+    --ok-weak              8  #edf7ef
+    --overlay              5  #12251aab
+    --panel               58  #ffffff
+    --primary             55  #15775e
+    --primary-hover        3  #0e604b
+    --primary-line        22  #b8daca
+    --primary-weak        13  #eaf5ef
+    --purple               2  #7357a0
+    --purple-line          2  #e0d4ec
+    --purple-weak          2  #f3eef9
+    --radius               5  12px
+    --rail                 3  #192e28
+    --rail-accent          3  #bed4b7
+    --rail-active          7  #4e7052
+    --rail-border          2  #526f62
+    --rail-deep            2  #495f48
+    --rail-hover           6  #243d34
+    --rail-line            4  #ffffff17
+    --rail-line-strong     1  #ffffff30
+    --rail-muted          11  #a5b9ae
+    --rail-muted-2         7  #b5cdb5
+    --rail-text            9  #e1eae4
+    --rail-tint            3  #ffffff08
+    --shadow               3  0 2px 4px #20372b03,0 8px 24px #20372b03
+    --shadow-pop           4  #10291a38
+    --shadow-raise         2  #173b2426
+    --shadow-tint          8  #20372b0a
+    --surface             19  #f8faf9
+    --text                33  #213831
+    --text-2               7  #5d7756
+    --text-3               3  #517057
+    --text-4               5  #8aa393
+    --text-5               4  #698872
+    --toast-err            1  #ff4d4f
+    --toast-ok             1  #52c41a
+    --warn                32  #9a5e16
+    --warn-7               2  #b98c43
+    --warn-8              14  #745a30
+    --warn-accent          8  #ecd3a9
+    --warn-ink             1  #c49c61
+    --warn-line           21  #e6d9be
+    --warn-line-3          3  #c8dfbc
+    --warn-line-4          1  #e8b86a
+    --warn-tint           11  #fffdf8
+    --warn-weak           20  #fff6e8

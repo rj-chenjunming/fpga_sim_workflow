@@ -1,0 +1,55 @@
+TOOL_ROOT = /home/work/chenjunming/change-impact-loop
+ENV_ROOT  = /home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES
+WORKSPACE = /home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/kb
+checked=3166 skipped=44727 historical=857 known_missing=16 env_missing=35 missing=0
+[KNOWN-MISSING] doc/STATUS.md:85  loop/ACCEPTANCE_V1.md  (迁移记录中的旧路径；现行文件为 doc/evidence/ACCEPTANCE_V1.md)
+[KNOWN-MISSING] doc/STATUS.md:6598  loop/rsi/  (SPEC-10 P0 的计划落点（规格阶段**未实现**，2026-10-29）；实现时创建该包并**删除本行**)
+[KNOWN-MISSING] doc/STATUS.md:6604  loop/rsi/  (SPEC-10 P0 的计划落点（规格阶段**未实现**，2026-10-29）；实现时创建该包并**删除本行**)
+[KNOWN-MISSING] doc/audit/AUDIT-20261019-spec-conformance.md:44  kb/tools/compile_only.sh  (审计发现：real N7 引用的工具不存在（A-A5）)
+[KNOWN-MISSING] doc/audit/F03c-verify-20261022.md:157  loop/ACCEPTANCE_V1.md  (迁移记录中的旧路径；现行文件为 doc/evidence/ACCEPTANCE_V1.md)
+[KNOWN-MISSING] doc/audit/F03c-verify-20261022.md:550  kb/tools/compile_only.sh  (审计发现：real N7 引用的工具不存在（A-A5）)
+[KNOWN-MISSING] doc/audit/F03c-verify-20261022.md:550  workspaces/simenv-tcs9620-64ch/  (约定目标位置；当前数据仍在 ENV_ROOT/kb（ENV_PLUGIN_SPEC §7）)
+[KNOWN-MISSING] doc/audit/parts/spec-conformance.md:36  kb/tools/compile_only.sh  (审计发现：real N7 引用的工具不存在（A-A5）)
+[KNOWN-MISSING] doc/plans/2026-10-21-F03c-doc-link-roots.md:23  loop/ACCEPTANCE_V1.md  (迁移记录中的旧路径；现行文件为 doc/evidence/ACCEPTANCE_V1.md)
+[KNOWN-MISSING] doc/plans/2026-10-27-k1-env-checks-entry.md:33  loop/spikes/run_env_checks.sh  (K1 的选项①**未采用**（2026-10-27 选②：`run_env_layer_checks.sh --with-kb-selftests`）；此路径只出现在计划文本里，本仓不会创建 —— 见 doc/plans/2026-10-27-k1-env-checks-entry.md §1、STATUS §94)
+[KNOWN-MISSING] doc/plans/2026-10-27-kickoff-unresolved.md:49  loop/spikes/run_env_checks.sh  (K1 的选项①**未采用**（2026-10-27 选②：`run_env_layer_checks.sh --with-kb-selftests`）；此路径只出现在计划文本里，本仓不会创建 —— 见 doc/plans/2026-10-27-k1-env-checks-entry.md §1、STATUS §94)
+[KNOWN-MISSING] doc/spec/ENV_PLUGIN_SPEC.md:139  loop/ACCEPTANCE_V1.md  (迁移记录中的旧路径；现行文件为 doc/evidence/ACCEPTANCE_V1.md)
+[KNOWN-MISSING] doc/spec/ENV_PLUGIN_SPEC.md:172  loop/ACCEPTANCE_V1.md  (迁移记录中的旧路径；现行文件为 doc/evidence/ACCEPTANCE_V1.md)
+[KNOWN-MISSING] doc/spec/ENV_PLUGIN_SPEC.md:194  workspaces/simenv-tcs9620-64ch/  (约定目标位置；当前数据仍在 ENV_ROOT/kb（ENV_PLUGIN_SPEC §7）)
+[KNOWN-MISSING] doc/spec/RSI_SPEC.md:307  loop/rsi/  (SPEC-10 P0 的计划落点（规格阶段**未实现**，2026-10-29）；实现时创建该包并**删除本行**)
+[KNOWN-MISSING] doc/spec/RSI_SPEC.md:410  loop/rsi/  (SPEC-10 P0 的计划落点（规格阶段**未实现**，2026-10-29）；实现时创建该包并**删除本行**)
+[ENV-MISSING] AGENTS.md:127  TB/top.sv
+[ENV-MISSING] doc/STATUS.md:424  TB/top.sv
+[ENV-MISSING] doc/STATUS.md:439  TB/top.sv
+[ENV-MISSING] doc/STATUS.md:453  TB/top.sv
+[ENV-MISSING] doc/STATUS.md:756  TB/top.sv
+[ENV-MISSING] doc/STATUS.md:4407  RTL/TB/PKG/TESTLIB
+[ENV-MISSING] doc/STATUS.md:4491  TB/top.sv
+[ENV-MISSING] doc/STATUS.md:4602  PKG/kept.txt
+[ENV-MISSING] doc/audit/F03c-verify-20261022.md:541  TB/top.sv
+[ENV-MISSING] doc/audit/F03c-verify-20261022.md:544  TB/top.sv
+[ENV-MISSING] doc/audit/F03c-verify-20261022.md:1447  TB/top.sv
+[ENV-MISSING] doc/evidence/NODE_PANEL_REVISION_20261023.md:18  RTL/TB/PKG/TESTLIB
+[ENV-MISSING] doc/evidence/NODE_PANEL_ROUND3_20261023.md:14  RTL/TB/PKG/TESTLIB
+[ENV-MISSING] doc/plans/2026-10-21-F03c-doc-link-roots.md:25  TB/top.sv
+[ENV-MISSING] doc/plans/2026-10-21-F16b-coverage-and-empty-sandbox.md:56  TB/top.sv
+[ENV-MISSING] doc/plans/2026-10-23-node-panel-revision-round3-impl.md:32  RTL/TB/PKG/TESTLIB
+[ENV-MISSING] doc/plans/2026-10-23-node-panel-revision-round3-kickoff.md:67  RTL/TB/PKG/TESTLIB
+[ENV-MISSING] doc/plans/2026-10-23-node-panel-unified-revision-plan.md:37  RTL/TB/PKG/TESTLIB
+[ENV-MISSING] doc/plans/2026-10-27-c-group-handover.md:51  TB/top.sv
+[ENV-MISSING] doc/plans/2026-10-27-e2-e3-feasibility.md:64  TB/top.sv
+[ENV-MISSING] doc/plans/2026-10-27-kickoff-unresolved.md:32  TB/top.sv
+[ENV-MISSING] doc/plans/2026-10-27-s0-b-spec-proposal.md:16  TB/top.sv
+[ENV-MISSING] doc/plans/2026-10-27-s0-b-spec-proposal.md:24  TB/top.sv
+[ENV-MISSING] doc/plans/2026-10-27-s0-b-spec-proposal.md:29  TB/top.sv
+[ENV-MISSING] doc/plans/2026-10-27-s0-b-spec-proposal.md:69  TB/top.sv
+[ENV-MISSING] doc/plans/2026-10-27-s0-b-spec-proposal.md:75  TB/top.sv
+[ENV-MISSING] doc/plans/2026-10-27-s0-b-spec-proposal.md:80  TB/top.sv
+[ENV-MISSING] doc/plans/2026-10-27-s0-b-spec-proposal.md:89  TB/top.sv
+[ENV-MISSING] doc/plans/2026-10-29-derived-root-admission-and-ui-reason.md:9  RTL/TB/PKG/TESTLIB
+[ENV-MISSING] doc/plans/2026-10-30-rtl-folder-one-click.md:6  RTL/TB/PKG/TESTLIB
+[ENV-MISSING] doc/spec/S0_ENVIRONMENT_SPEC.md:11  TB/top.sv
+[ENV-MISSING] doc/spec/S0_ENVIRONMENT_SPEC.md:19  TB/top.sv
+[ENV-MISSING] doc/spec/S0_ENVIRONMENT_SPEC.md:32  TB/top.sv
+[ENV-MISSING] doc/spec/S0_ENVIRONMENT_SPEC.md:49  TB/top.sv
+[ENV-MISSING] doc/spec/S0_ENVIRONMENT_SPEC.md:178  TB/top.sv

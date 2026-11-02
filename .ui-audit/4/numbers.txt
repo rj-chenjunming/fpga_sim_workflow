@@ -1,0 +1,88 @@
+== M6b_gate_fold 原始读数（.ui-audit/measure.json）==
+-- 1280x720 pageScrollHeight=1324 hOverflow=0
+   header                     y=       0 h=     72 bottom=      72
+   #gateHead                  y=   206.2 h=   94.4 bottom=   300.6
+   .stage-head                y=   376.6 h=   61.2 bottom=   437.8
+   #gateMaterial              y=   828.3 h=    380 bottom=  1208.3
+   #gatePanel                 y=   828.3 h=    380 bottom=  1208.3
+   .gate-options              y=   850.3 h=  159.1 bottom=  1009.3
+   #gateMaterial .diff-item   y=  1210.3 h=  320.8 bottom=  1531.1
+   footer                     y=  1253.3 h=   43.1 bottom=  1296.4
+   fold header                   fullyInFirstScreen=True visibleRatio=1
+   fold #gateHead                fullyInFirstScreen=True visibleRatio=1
+   fold .stage-head              fullyInFirstScreen=True visibleRatio=1
+   fold #gateMaterial            fullyInFirstScreen=False visibleRatio=0
+   fold #gatePanel               fullyInFirstScreen=False visibleRatio=0
+   fold .gate-options            fullyInFirstScreen=False visibleRatio=0
+   fold #gateMaterial .diff-item fullyInFirstScreen=False visibleRatio=0
+   fold footer                   fullyInFirstScreen=False visibleRatio=0
+-- 1440x900 pageScrollHeight=1504 hOverflow=0
+   header                     y=       0 h=     72 bottom=      72
+   #gateHead                  y=   210.2 h=   94.4 bottom=   304.6
+   .stage-head                y=   380.6 h=   61.2 bottom=   441.8
+   #gateMaterial              y=   832.3 h=    560 bottom=  1392.3
+   #gatePanel                 y=   832.3 h=  461.1 bottom=  1293.4
+   .gate-options              y=   854.3 h=  159.1 bottom=  1013.3
+   #gateMaterial .diff-item   y=  1214.3 h=  263.9 bottom=  1478.1
+   footer                     y=  1437.3 h=   43.1 bottom=  1480.4
+   fold header                   fullyInFirstScreen=True visibleRatio=1
+   fold #gateHead                fullyInFirstScreen=True visibleRatio=1
+   fold .stage-head              fullyInFirstScreen=True visibleRatio=1
+   fold #gateMaterial            fullyInFirstScreen=False visibleRatio=0.12
+   fold #gatePanel               fullyInFirstScreen=False visibleRatio=0.15
+   fold .gate-options            fullyInFirstScreen=False visibleRatio=0.29
+   fold #gateMaterial .diff-item fullyInFirstScreen=False visibleRatio=0
+   fold footer                   fullyInFirstScreen=False visibleRatio=0
+-- 1920x1080 pageScrollHeight=1648 hOverflow=0
+   header                     y=       0 h=     72 bottom=      72
+   #gateHead                  y=   228.2 h=     56 bottom=   284.2
+   .stage-head                y=   360.2 h=   61.2 bottom=   421.4
+   #gateMaterial              y=   811.9 h=    720 bottom=  1531.9
+   #gatePanel                 y=   811.9 h=  461.1 bottom=    1273
+   .gate-options              y=   833.9 h=  159.1 bottom=     993
+   #gateMaterial .diff-item   y=  1193.9 h=  263.9 bottom=  1457.8
+   footer                     y=  1576.9 h=   43.1 bottom=    1620
+   fold header                   fullyInFirstScreen=True visibleRatio=1
+   fold #gateHead                fullyInFirstScreen=True visibleRatio=1
+   fold .stage-head              fullyInFirstScreen=True visibleRatio=1
+   fold #gateMaterial            fullyInFirstScreen=False visibleRatio=0.37
+   fold #gatePanel               fullyInFirstScreen=False visibleRatio=0.58
+   fold .gate-options            fullyInFirstScreen=True visibleRatio=1
+   fold #gateMaterial .diff-item fullyInFirstScreen=False visibleRatio=0
+   fold footer                   fullyInFirstScreen=False visibleRatio=0
+
+== token 解析 vs 实测 pane 高 ==
+1280x720: clamp(300, 720-340=380, 720) = 380 | #gateMaterial.h=380 | #gatePanel.h=380
+1440x900: clamp(300, 900-340=560, 720) = 560 | #gateMaterial.h=560 | #gatePanel.h=461.1
+1920x1080: clamp(300, 1080-340=740, 720) = 720 | #gateMaterial.h=720 | #gatePanel.h=461.1
+
+== 1280x720 上方占用链（实测 + 由实测边与 CSS 边距推导）==
+header: 0 -> 72
+#gateHead top=206.2 (main padding 28 + page-head 88.2 + margin 18 推得)  bottom=300.6 h=94.4
+四段流程卡 top=314.6 (gateHead margin-bottom:14, app.css:1211)  bottom=808.3 (.card margin-bottom:20, app.css:553)
+   => 四段流程卡高 = 493.7
+#gateMaterial top=828.3  (首屏 vh=720)
+要让 #gateMaterial 顶边进入首屏，需从上方压掉 108.3px
+要让 #gateMaterial 整栏进入首屏，需压掉 488.3px（其自身柱高 380）
+
+可压块（实测/推导）：
+  A 共享页头 .page-head（浏览器全视图共用, index.html:59-68）: h=88.2 + margin 18 = 106.2  (M6_fold 1280: .page-head y=100 bottom=188.2)
+  B #gateHead: h=94.4
+  C 四段流程卡（含 card-head 441.7 之外的 stages 区）: 整卡 493.7，折叠成仅 card-head 可省 441.7
+  仅压 B 到 1920 的 56px: y = 789.9
+  仅去掉 A: y = 722.1
+  折叠 C 到 card-head: y = 386.6
+
+== 常数候选（不改结构时 pane 高 / 页高推算）==
+-- 现状: clamp(300px, calc(100dvh - 340px), 720px)
+   1280x720: pane_cap=380 (现 380) Δ=+0  | 页 scrollHeight 1324 -> 1324 (推算) | 两栏底 1208.3
+   1440x900: pane_cap=560 (现 560) Δ=+0  | 页 scrollHeight 1504 -> 1504 (推算) | 两栏底 1392.3
+   1920x1080: pane_cap=720 (现 720) Δ=+0  | 页 scrollHeight 1648 -> 1648 (推算) | 两栏底 1531.9
+-- A1: clamp(300px, calc(100dvh - 300px), 860px)
+   1280x720: pane_cap=420 (现 380) Δ=+40  | 页 scrollHeight 1324 -> 1364 (推算) | 两栏底 1248.3
+   1440x900: pane_cap=600 (现 560) Δ=+40  | 页 scrollHeight 1504 -> 1544 (推算) | 两栏底 1432.3
+   1920x1080: pane_cap=780 (现 720) Δ=+60  | 页 scrollHeight 1648 -> 1708 (推算) | 两栏底 1591.9
+-- A2: clamp(240px, calc(100dvh - 260px), 880px)
+   1280x720: pane_cap=460 (现 380) Δ=+80  | 页 scrollHeight 1324 -> 1404 (推算) | 两栏底 1288.3
+   1440x900: pane_cap=640 (现 560) Δ=+80  | 页 scrollHeight 1504 -> 1584 (推算) | 两栏底 1472.3
+   1920x1080: pane_cap=820 (现 720) Δ=+100  | 页 scrollHeight 1648 -> 1748 (推算) | 两栏底 1631.9

@@ -1,0 +1,73 @@
+FFFF..                                                                   [100%]
+=================================== FAILURES ===================================
+_________________ test_no_gate_1_identity_literal_in_web_layer _________________
+
+    def test_no_gate_1_identity_literal_in_web_layer() -> None:
+        """界面不得再下达权威里不存在的 `GATE-1` 身份（三处文案改中性化）。"""
+        offenders = {
+            name: text.count("GATE-1")
+            for name, text in _web_texts().items()
+            if "GATE-1" in text
+        }
+>       assert not offenders, f"loop/web 仍有 GATE-1：{offenders}"
+E       AssertionError: loop/web 仍有 GATE-1：{'index.html': 2, 's0.js': 1}
+E       assert not {'index.html': 2, 's0.js': 1}
+
+tests/test_ui_gate_copy.py:71: AssertionError
+_________________ test_no_new_gate_identity_is_invented_by_ui __________________
+
+    def test_no_new_gate_identity_is_invented_by_ui() -> None:
+        """反向护栏：不许换个号自建闸门名（`GATE-2` / `GATE-3` … 同样禁止）。
+    
+        `G1_diff_confirm` / `G2_report_accept` / `G3_regression_decision` 是服务端下发的身份，
+        界面只消费、不手抄，所以这里只卡「`GATE-<数字>`」这种自造代号。
+        """
+        offenders = {
+            name: FORBIDDEN.findall(text)
+            for name, text in _web_texts().items()
+            if FORBIDDEN.search(text)
+        }
+>       assert not offenders, f"界面自建了闸门代号：{offenders}"
+E       AssertionError: 界面自建了闸门代号：{'index.html': ['GATE-1', 'GATE-1'], 's0.js': ['GATE-1']}
+E       assert not {'index.html': ['GATE-1', 'GATE-1'], 's0.js': ['GATE-1']}
+
+tests/test_ui_gate_copy.py:85: AssertionError
+__________________ test_neutral_copy_replaces_the_three_spots __________________
+
+    def test_neutral_copy_replaces_the_three_spots() -> None:
+        index_html = _web_texts()["index.html"]
+        s0_js = _web_texts()["s0.js"]
+        # 落点 1：首屏兜底（主操作行左提示）
+>       assert HINT in index_html, "index.html 的 #s0SubmitHint 缺少中性文案"
+E       AssertionError: index.html 的 #s0SubmitHint 缺少中性文案
+E       assert '准出与切换由服务端判定；准备完成后仍需 S0-b 接口复核' in '<!DOCTYPE html>\n<html lang="zh-CN">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-wid...eport-viewer.js"></script>\n<script src="node-detail.js"></script>\n<script src="app.js"></script>\n</body>\n</html>\n'
+
+tests/test_ui_gate_copy.py:94: AssertionError
+__________________ test_hint_copy_is_identical_in_html_and_js __________________
+
+    def test_hint_copy_is_identical_in_html_and_js() -> None:
+        """两处双写必须逐字相同：否则 busy 恢复后提示与首屏兜底不一致。"""
+        index_html = _web_texts()["index.html"]
+        s0_js = _web_texts()["s0.js"]
+        hint_ids = index_html.count('id="s0SubmitHint"')
+        assert hint_ids == 1, f"#s0SubmitHint 应唯一，实际 {hint_ids} 处"
+        # 取 index.html 里 #s0SubmitHint 元素的文本（到下一个 '<' 为止）
+        match = re.search(r'id="s0SubmitHint"[^>]*>([^<]*)<', index_html)
+        assert match, "index.html 找不到 #s0SubmitHint 的文本节点"
+        html_text = match.group(1).strip()
+>       assert html_text == HINT, f"#s0SubmitHint 文本漂移：{html_text!r}"
+E       AssertionError: #s0SubmitHint 文本漂移：'准出与切换由服务端判定；准备完成后仍需 GATE-1'
+E       assert '准出与切换由服务端判定；准备完成后仍需 GATE-1' == '准出与切换由服务端判定；...后仍需 S0-b 接口复核'
+E         
+E         - 准出与切换由服务端判定；准备完成后仍需 S0-b 接口复核
+E         ?                     ^^ ^^^^^^
+E         + 准出与切换由服务端判定；准备完成后仍需 GATE-1
+E         ?                     ^^^^ ^
+
+tests/test_ui_gate_copy.py:111: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_ui_gate_copy.py::test_no_gate_1_identity_literal_in_web_layer
+FAILED tests/test_ui_gate_copy.py::test_no_new_gate_identity_is_invented_by_ui
+FAILED tests/test_ui_gate_copy.py::test_neutral_copy_replaces_the_three_spots
+FAILED tests/test_ui_gate_copy.py::test_hint_copy_is_identical_in_html_and_js
+4 failed, 2 passed in 0.70s

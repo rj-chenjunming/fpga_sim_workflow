@@ -1,0 +1,24 @@
+pristine app.css（md5 103ec75124e21c6c97a717d7607fa132）在**修正后的守卫**下的红基线：
+简单选择器实例 total=1156 distinct=946 重复(全部)=193 非白名单重复=190
+按上下文： {'top-level': 178, '@media(max-width:760px)': 14, '@media(max-width:850px)': 1}
+前 20 条：
+  top-level                    body                     x3
+  top-level                    .mono                    x2
+  top-level                    .field-label             x2
+  top-level                    header                   x2
+  top-level                    .brand                   x2
+  top-level                    .mark                    x2
+  top-level                    .mark:after              x2
+  top-level                    .shell                   x2
+  top-level                    aside                    x2
+  top-level                    .btn                     x2
+  top-level                    .btn-primary             x2
+  top-level                    .btn-ghost:hover         x2
+  top-level                    .btn-sm                  x2
+  top-level                    .btn:disabled            x2
+  top-level                    .rail-label              x2
+  top-level                    .run-list                x2
+  top-level                    .run-item                x2
+  top-level                    .run-item .rid           x2
+  top-level                    .run-item .meta          x2
+  top-level                    .run-empty               x2

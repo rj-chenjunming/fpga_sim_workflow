@@ -1,0 +1,3 @@
+.phase-card{align-items:center}
+@media(max-width:1000px){.phase-card{align-items:start}}
+.phase-card{padding:1px}

@@ -1,0 +1,13 @@
+== phase 4：长任务停放（作业仍在跑） ==
+  [val ] 本次启动的恢复报告 = {'restored': [], 'failed': []}
+  [ok  ] D-1 已 finished 的 run 不会被重启反复恢复（僵尸 run 不再堆积）
+  [ok  ] 建 run(scenario=cancel)
+  [ok  ] 签 G1(scenario=cancel)
+  [ok  ] 作业已提交(scenario=cancel)
+  [val ] 停放态 = {'status': 'waiting_job', 'slot': {'locked': True, 'holder': {'format_version': 2, 'owner_pid': 147, 'owner_start': '836379470', 'job_id': 'N9-RUN-20261102-120346', 'tc': 'tc_pcie_rw_02', 'seed': '1', 'acquired_at': 1793592231.3178005, 'note': None, 'job_pid': 171, 'job_pid_start': '836380109', 'job_record_id': 'JOB-6af32108022f', 'start_ts': 1793592231.3178005}, 'holder_alive': True, 'holder_alive_known': True, 'holder_job_id': 'N9-RUN-20261102-120346', 'holder_job_pid': 171, 'holder_phase': 'running', 'format_version': 2, 'queued': [], 'queue_depth': 0}, 'pending_payload': {'job_id': 'JOB-6af32108022f', 'node': 'N9', 'tc': 'tc_pcie_rw_02', 'log_path': '/home/work/chenjunming/change-impact-loop/loop/state/jobs/JOB-6af32108022f.log', 'cases': ['tc_pcie_rw_02'], 'wait_reason': '全跑为外部长任务；图必须停放而非阻塞 handler。', 'entry_decisions_required': False}}
+  [ok  ] D0 作业运行期执行处于**停放**（waiting_job，不是 running 到不可快照）
+  [ok  ] D0b 单槽被该作业持有（uvs.setup 是全局单文件 ⇒ 单槽）
+  [ok  ] D0c 停放的中断带 job_id（可被看护/补投递认领）
+  [ok  ] D0d 停放时执行快照已落盘（重启恢复的前提）
+
+===== phase 4：PASS=8 FAIL=0 =====

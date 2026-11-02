@@ -1,0 +1,7 @@
+复跑与归档 measure.json 的差异条目数 = 6
+.M2_fontSize.histogram.12.samples[1]: '127.0.0.1:44629' vs '127.0.0.1:34849'
+.M4_contrast_monitor.groups[35].samples[0]: '127.0.0.1:44629' vs '127.0.0.1:34849'
+.M3_lineHeight.12px/19.8px.samples[1]: '127.0.0.1:44629' vs '127.0.0.1:34849'
+.meta.url: 'http://127.0.0.1:44629' vs 'http://127.0.0.1:34849'
+.M4_contrast_gate.groups[23].samples[0]: '127.0.0.1:44629' vs '127.0.0.1:34849'
+.M4_contrast_s0.groups[32].samples[0]: '127.0.0.1:44629' vs '127.0.0.1:34849'

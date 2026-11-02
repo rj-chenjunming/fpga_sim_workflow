@@ -267,6 +267,50 @@ def _target_cases(data: Any) -> list[dict[str, Any]]:
     return out
 
 
+def _baseline_full_targets() -> list[dict[str, Any]]:
+    """全量回归目标集（LOOP §14.3）：`kb/index/cases.json` 的全部用例 + 当前环境根下的文件。
+
+    - 用例名 / 文件 / md5 **全部取自索引**（与 G3=`full_now` 的 `_full_regression_cases()` 同一口径，
+      红线 8：不新增第二套"全量"定义）；
+    - 提交前逐例校验：文件存在、md5 == 索引 md5（本支无修订，**审的对象就是跑的对象**）；
+    - 索引缺失 / 为空 / 缺 md5 / md5 不符 ⇒ 显式失败（不得回退到一个默认用例）。
+    """
+    path = P.KB_DIR / "index" / "cases.json"
+    try:
+        doc = json.loads(path.read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError) as exc:
+        raise RuntimeError(
+            f"全量回归集不可用：{path} 不可读/不可解析（{exc}）⇒ 不得回退默认用例"
+        ) from exc
+    rows = [c for c in (doc.get("cases") or []) if isinstance(c, dict) and c.get("case")]
+    if not rows:
+        raise RuntimeError(f"全量回归集为空：{path} 没有 cases ⇒ 不得回退默认用例")
+    out: list[dict[str, Any]] = []
+    for item in rows:
+        case = str(item["case"])
+        rel = str(item.get("file") or f"TESTLIB/{case}.sv")
+        target = Path(P.ENV_ROOT) / rel
+        if not target.is_file():
+            raise FileNotFoundError(f"全量回归用例文件缺失：{target}（case={case}）")
+        want = str(item.get("md5") or "")
+        if not want:
+            raise RuntimeError(f"索引缺 md5：{case} ⇒ 无法做『审的对象 == 跑的对象』校验")
+        now = _md5_file(target)
+        if now != want:
+            raise RuntimeError(
+                f"{case} 文件 md5 与索引不一致（{now} != {want}）⇒ 全量回归目标集不可信"
+            )
+        out.append({"case": case, "sandbox_path": str(target), "md5": want, "file": rel})
+    return out
+
+
+def _no_impact_full_regression(data: Any) -> bool:
+    """本轮是否选了 G1 分流支线的 `full_regression`（LOOP §14.3）。"""
+    decisions = data.get_state("gate_decisions") or {}
+    item = decisions.get("G1_no_impact") or {}
+    return item.get("decision") == "full_regression"
+
+
 def _md5_file(path: Path) -> str:
     import hashlib
 
@@ -547,7 +591,15 @@ async def n9_submit(data: Any) -> dict[str, Any]:
         return payload
 
     # ---------------------------------------------------------------- real
-    cases = _target_cases(data)
+    # LOOP §14.3：N5 必改=0 且人签 `full_regression` ⇒ 目标集 = 索引全量（无修订可做）；
+    # 其余情况仍只认 N6 冻结沙箱件（不静默回退）。
+    full_regression = _no_impact_full_regression(data)
+    if full_regression:
+        cases = _baseline_full_targets()
+        target_set = "baseline_frozen_full"
+    else:
+        cases = _target_cases(data)
+        target_set = "n6_applied"
     _verify_targets(cases)
     case_names = [c["case"] for c in cases]
     gate = await _acquire_slot(data, ctx, job_id=_slot_job_id(ctx),
@@ -576,7 +628,7 @@ async def n9_submit(data: Any) -> dict[str, Any]:
         "job_id": record.job_id, "node": "N9", "phase": "running",
         "tc": ",".join(case_names), "seed": _SEED,
         "cases": case_names, "expected_cases": case_names, "md5s": md5s,
-        "target_set": "n6_applied", "started_at": record.started_at,
+        "target_set": target_set, "started_at": record.started_at,
         "log_path": record.log_path, "sandbox_root": str(run_dir / "sandbox"),
         "evidence_dir": str(evidence_dir), "summary_path": str(summary_path),
         "mode": ctx.mode, "scenario": ctx.scenario,
@@ -590,8 +642,12 @@ async def n9_submit(data: Any) -> dict[str, Any]:
     ctx.node_finished("N9_submit", detail={
         "job_id": record.job_id, "cases": len(case_names),
         "source": "kb_tool",
-        "summary": (f"N9_submit：已提交全跑作业 {record.job_id}，"
-                    f"覆盖 {len(case_names)} 个沙箱用例 ⇒ 图转入停放"),
+        "summary": (
+            f"N9_submit：已提交全跑作业 {record.job_id}，覆盖 {len(case_names)} 个用例"
+            + ("（全量回归：无修订分支，目标集取自 kb/index/cases.json）"
+               if full_regression else "（沙箱修订件）")
+            + " ⇒ 图转入停放"
+        ),
     }, refs=[record.log_path, str(summary_path)])
     return payload
 

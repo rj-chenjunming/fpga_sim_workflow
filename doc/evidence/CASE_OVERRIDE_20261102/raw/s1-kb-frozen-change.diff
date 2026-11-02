@@ -1,0 +1,707 @@
+diff --git a/kb/README.md b/kb/README.md
+index 21311b7..18f48d1 100644
+--- a/kb/README.md
++++ b/kb/README.md
+@@ -39,7 +39,7 @@
+     ├── n1_snapshot.py             #   N0/N1：自研代码 tar + 全量清单 md5 + manifest
+     ├── n2_diff.py                 #   N2：纯确定性差异对比（三路）
+     ├── n5_impact.py               #   N5：段粗筛 → offset/位域交集 → 必改/待查
+-    ├── case_state.py              #   用例态台账（I2；init/set/show/check；N16 前置唯一判据）
++    ├── case_state.py              #   用例态台账（I2；init/set/show/check/override；N16 前置唯一判据）
+     ├── gate.py                    #   三道人工闸门的持久化状态机（I6）
+     ├── n16_promote.py             #   N16：人触发 + Host 原子晋升（默认 dry-run，--promote 才写盘；I4/I2/I7 前置）
+     ├── n10_pending.py             #   N10 待裁决单一写者（只 append pending.json 的 n10_items）
+diff --git a/kb/schema/case_states.schema.json b/kb/schema/case_states.schema.json
+index 84ba54c..84196ec 100644
+--- a/kb/schema/case_states.schema.json
++++ b/kb/schema/case_states.schema.json
+@@ -47,6 +47,40 @@
+             }
+           },
+           "evidence": { "type": ["string", "null"], "description": "证据路径 + md5（可解析）" },
++          "overrides": {
++            "type": "array",
++            "description": "人签覆写审计链（append-only；SPEC-REV-20 §3.1）。每条 = 一次动作，旧记录永不覆盖；state 是读侧唯一事实，生效规则见 action。冻结目录单独变更 + 留证（先例 G1_no_impact）。",
++            "items": {
++              "type": "object",
++              "required": ["schema", "action", "actor", "actor_kind", "reason",
++                           "decided_at", "prev_state", "machine", "record_sha256"],
++              "properties": {
++                "schema": { "const": "kb/case_override" },
++                "action": { "enum": ["pass", "revoke"], "description": "pass ⇒ state=已验证通过；revoke ⇒ state=已修订待验" },
++                "actor": { "type": "string", "pattern": "^human:.+$", "description": "人签唯一形态（O-2；模型/替身/裸名一律拒绝）" },
++                "actor_kind": { "enum": ["human"] },
++                "reason": { "type": "string", "description": "非空理由（人签必须写明为什么放开）" },
++                "decided_at": { "type": "string", "description": "经 kb_lib.now_iso()（--now/KB_NOW 注入）" },
++                "prev_state": { "enum": ["未改", "已修订待验", "已验证通过", "已退回"], "description": "动作发生前的状态" },
++                "machine": {
++                  "type": "object",
++                  "description": "机器判据快照（唯一来源 <run_dir>/n10_cases.json；原样搬运，不重算）",
++                  "properties": {
++                    "schema": { "const": "loop/n10_cases" },
++                    "source_path": { "type": "string" },
++                    "source_md5": { "type": "string" },
++                    "passed": { "type": "boolean" },
++                    "criterion": { "type": ["string", "null"] },
++                    "reasons": { "type": "array", "items": { "type": "string" } },
++                    "counts": { "type": "object" },
++                    "imprints": { "type": "object" },
++                    "evidence": { "type": "object" }
++                  }
++                },
++                "record_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$", "description": "sha256(canonical(record 去掉 record_sha256))，--verify 复算" }
++              }
++            }
++          },
+           "note": { "type": ["string", "null"] },
+           "updated_by": { "type": ["string", "null"] },
+           "updated_at": { "type": ["string", "null"] }
+diff --git a/kb/tools/_selftest_case_state.py b/kb/tools/_selftest_case_state.py
+index e0b35cf..a9db3e6 100644
+--- a/kb/tools/_selftest_case_state.py
++++ b/kb/tools/_selftest_case_state.py
+@@ -1,16 +1,21 @@
+ #!/usr/bin/env python3
+ # -*- coding: utf-8 -*-
+-"""case_state 台账自测（I2 四态 / I3 跑通门槛 / I7 边界 / check 机器出口）。
++"""case_state 台账自测（I2 四态 / I3 跑通门槛 / I7 边界 / check 机器出口 / 人签覆写）。
+ 
+ 固定下来的契约
+     * 四态字面量 = schema enum（漂移即失败）；
+     * `set --state 已验证通过` 是**合取门槛**：卡点B/C/D + 两套口径 + 观测点三向一致，
+       缺一条就 rc=3 **且不写盘**（模型/脚本不能自封跑通）；
+     * `check` 是唯一判定出口：待验 ⇒ rc=3；`n6_n8_cycles >= limit` ⇒ rc=3（边界统一 `>=`）；
+-    * `set --rework-cycles` 允许记录 `==limit`（那是升级 N13 的状态），但拒绝 `>limit`（不写盘）。
++    * `set --rework-cycles` 允许记录 `==limit`（那是升级 N13 的状态），但拒绝 `>limit`（不写盘）；
++    * `override`（SPEC-REV-20 §4/§5）拒绝矩阵 1/2/3/4/5/7/8 全在写盘前判 ⇒ rc≠0 且台账 md5 不变；
++      合法动作**只追加** `overrides[]` 记录（含可复算 `record_sha256`），批量全有或全无；
++      `--verify` 逐条复算 `record_sha256` 与 `source_md5`，不符/无法复核 ⇒ rc=4 且不写盘。
+ 
+ 用法：`python3 kb/tools/_selftest_case_state.py`（退出码 0 = 全过；只写 tmp 文件）
+ """
++import contextlib
++import io
+ import json
+ import os
+ import shutil
+@@ -112,6 +117,241 @@ try:
+     check("15 cycles>limit ⇒ set rc=3 且台账保持 3（不偷偷放宽预算）",
+           rc == 3 and st["rework_cycles"]["n6_n8_cycles"] == 3, "rc=%s" % rc)
+ 
++    # ================= 6 人签覆写 override / --verify（SPEC-REV-20 §3.1/§4/§5） =========
++    # 冻结目录变更：`kb/schema/case_states.schema.json` 条目属性新增 `overrides`；
++    # `case_state.py` 新增 `override` 子命令（只读同目录 `n10_cases.json`，不解析 n10_reconcile.md）。
++    item_props = schema["properties"]["cases"]["items"]["properties"]
++    ov_schema = item_props.get("overrides") or {}
++    ov_props = ((ov_schema.get("items") or {}).get("properties") or {})
++    check("17 schema 条目属性新增 overrides（array；action=[pass,revoke]；actor_kind=[human]）",
++          ov_schema.get("type") == "array"
++          and ov_props.get("action", {}).get("enum") == ["pass", "revoke"]
++          and ov_props.get("actor_kind", {}).get("enum") == ["human"],
++          str(sorted(ov_props)))
++
++    OVR_DIR = os.path.join(TMP, "ovr")
++    OVR = os.path.join(OVR_DIR, "case_states.json")
++    N10 = os.path.join(OVR_DIR, "n10_cases.json")
++    NOW = "2026-11-02T11:00:00+0800"
++    ACTOR = "human:chenjunming"
++    PASS_ST, PEND_ST = "已验证通过", "已修订待验"
++
++    # 机器原因唯一来源：台账同目录的 n10_cases.json（S2 由 Host 落盘；这里是夹具）
++    N10_DOC = {
++        "schema": "loop/n10_cases",
++        "run_id": RUN,
++        "created_at": "2026-11-02T10:00:00+0800",
++        "criterion": "聚合判据 = 各用例 I3 判据的合取（含印记三向一致）",
++        "cases": {
++            "tc_r1": {"case": "tc_r1", "passed": False,
++                      "criterion": "PASS ⟺ 两套口径皆 0 ∧ 印记三向一致",
++                      "reasons": ["印记 N6_tc_r1 三向不一致：['value_matches_expected']"],
++                      "counts": {"koutou1": {"value": 0}},
++                      "imprints": {"N6_tc_r1": {"consistent": False}},
++                      "evidence": {"path": "evidence/x_tc_r1_run.log", "md5": "a" * 32,
++                                   "bytes": 123}},
++            "tc_r2": {"case": "tc_r2", "passed": False, "reasons": ["口径一 egrep=2"],
++                      "counts": {}, "imprints": {}},
++            "tc_r3": {"case": "tc_r3", "passed": False, "reasons": ["UVM Report Summary 缺失"]},
++            "tc_pass": {"case": "tc_pass", "passed": False, "reasons": ["印记三向不一致"]},
++            "tc_ok": {"case": "tc_ok", "passed": True, "reasons": []},
++            "tc_noreason": {"case": "tc_noreason", "passed": False, "reasons": []},
++        },
++    }
++
++    def read_p(p):
++        return K.read_json(p) if os.path.isfile(p) else None
++
++    def md5_p(p):
++        return K.md5_file(p) if os.path.isfile(p) else None
++
++    def entries(p=None):
++        doc = read_p(p or OVR) or {}
++        return {c.get("case"): c for c in (doc.get("cases") or [])}
++
++    def entry_of(doc, case):
++        for c in (doc.get("cases") or []):
++            if c.get("case") == case:
++                return c
++        return None
++
++    def overr(*argv):
++        return call("override", "--run", RUN, "--state-file", OVR, "--now", NOW, *argv)
++
++    def check_json(*argv):
++        buf = io.StringIO()
++        with contextlib.redirect_stdout(buf):
++            rc_ = call(*argv)
++        txt = buf.getvalue().strip()
++        return rc_, (json.loads(txt) if txt else {})
++
++    def reject(*argv):
++        """一次应被拒绝的调用：返回 (rc, 台账 md5 是否一字节不动)。"""
++        before = md5_p(OVR)
++        rc_ = overr(*argv)
++        return rc_, md5_p(OVR) == before
++
++    call("init", "--run", RUN, "--state-file", OVR)
++    for c in ("tc_r1", "tc_r2", "tc_r3", "tc_non10", "tc_ok", "tc_noreason"):
++        call("set", "--run", RUN, "--state-file", OVR, "--case", c, "--state", PEND_ST)
++    call("set", "--run", RUN, "--state-file", OVR, "--case", "tc_weird", "--state", "未改")
++    call("set", "--run", RUN, "--state-file", OVR, "--case", "tc_pass", "--state", PASS_ST,
++         "--compile-rc", "0", "--static-check", "pass", "--run-md5", "c" * 32,
++         "--md5-after", "c" * 32, "--script-egrep", "0", "--uvm-error", "0",
++         "--uvm-summary-present", "--obs-expected", "5", "--obs-observed", "5")
++    K.write_json(N10, N10_DOC)
++    N10_MD5 = K.md5_file(N10)
++
++    # ---- §4 拒绝矩阵 1/2/3/4/5/7：全部在写盘前 ⇒ rc=3 且台账一字节不动 ----
++    for bad in ("model:gpt-5", "host:kb", "rehearsal:drill", "chenjunming", "",
++                "human:", "human:   "):
++        rc, same = reject("--case", "tc_r1", "--actor", bad, "--reason", "想签")
++        check("18 §4-1 --actor %r 被拒 rc=3 且台账一字节不动" % bad,
++              rc == 3 and same, "rc=%s same=%s" % (rc, same))
++    for bad in ("", "   ", "\t\n"):
++        rc, same = reject("--case", "tc_r1", "--actor", ACTOR, "--reason", bad)
++        check("19 §4-2 reason=%r 被拒 rc=3 且台账一字节不动" % bad,
++              rc == 3 and same, "rc=%s same=%s" % (rc, same))
++    rc, same = reject("--case", "tc_absent", "--actor", ACTOR, "--reason", "理由")
++    check("20 §4-3 用例不在台账 ⇒ rc=3 且台账一字节不动", rc == 3 and same, "rc=%s" % rc)
++    rc, same = reject("--case", "tc_weird", "--actor", ACTOR, "--reason", "理由")
++    check("21 §4-4 当前态不是「%s」（pass）⇒ rc=3 且台账不动" % PEND_ST,
++          rc == 3 and same, "rc=%s" % rc)
++    rc, same = reject("--case", "tc_r1", "--actor", ACTOR, "--reason", "理由", "--revoke")
++    check("22 §4-4 当前态不是「%s」（revoke）⇒ rc=3 且台账不动" % PASS_ST,
++          rc == 3 and same, "rc=%s" % rc)
++    # §4-4 撤销边界（2026-11-02 裁定）：revoke 只撤回「我自己刚签的覆写」；
++    # 机器途径/正常流程写入的 `已验证通过` 不得被 revoke 降级成待验（O-1/O-3 精神）。
++    rc, same = reject("--case", "tc_pass", "--actor", ACTOR, "--reason", "撤销机器通过",
++                      "--revoke")
++    check("22b §4-4 当前态是「%s」但最近一条覆写记录不是 pass（机器途径）⇒ revoke rc=3"
++          " 且台账不动" % PASS_ST, rc == 3 and same, "rc=%s same=%s" % (rc, same))
++    os.rename(N10, N10 + ".bak")
++    rc, same = reject("--case", "tc_r1", "--actor", ACTOR, "--reason", "理由")
++    os.rename(N10 + ".bak", N10)
++    check("23 §4-5 n10_cases.json 缺失 ⇒ rc=3 且台账不动（不许盲签）",
++          rc == 3 and same, "rc=%s" % rc)
++    rc, same = reject("--case", "tc_non10", "--actor", ACTOR, "--reason", "理由")
++    check("24 §4-5 用例不在 n10_cases.json ⇒ rc=3 且台账不动", rc == 3 and same, "rc=%s" % rc)
++    rc, same = reject("--case", "tc_ok", "--actor", ACTOR, "--reason", "理由")
++    check("25 §4-5 机器判 passed=true ⇒ rc=3 且台账不动（机器已放过，不许盲签）",
++          rc == 3 and same, "rc=%s" % rc)
++    rc, same = reject("--case", "tc_noreason", "--actor", ACTOR, "--reason", "理由")
++    check("26 §4-5 机器 reasons 为空 ⇒ rc=3 且台账不动（原因必须可读）",
++          rc == 3 and same, "rc=%s" % rc)
++    rc, same = reject("--case", "tc_r1", "--case", "tc_r2", "--case", "tc_ok",
++                      "--actor", ACTOR, "--reason", "批量签")
++    e = entries()
++    check("27 §4-7 批量任一不满足 ⇒ 整批拒绝 rc=3、台账不动、两例都没写",
++          rc == 3 and same
++          and not (e["tc_r1"].get("overrides") or [])
++          and not (e["tc_r2"].get("overrides") or []), "rc=%s" % rc)
++    m0 = md5_p(OVR)
++    rc = overr("--case", "tc_r1", "--case", "tc_r1", "--actor", ACTOR, "--reason", "重复")
++    check("28 同批重复 --case ⇒ rc=2（请求形状错）且台账不动",
++          rc == 2 and md5_p(OVR) == m0, "rc=%s" % rc)
++
++    # ---- 合法单签（pass）：只追加、锚可复算、机器快照原样搬运 ----
++    rc = overr("--case", "tc_r1", "--actor", ACTOR,
++               "--reason", "期望值来自旧文档条目；实测与本变预期一致，属期望过期")
++    st_o = read_p(OVR) or {}
++    e = {c.get("case"): c for c in (st_o.get("cases") or [])}
++    ovs = e["tc_r1"].get("overrides") or []
++    rec = ovs[-1] if ovs else {}
++    body = {k: v for k, v in rec.items() if k != "record_sha256"}
++    check("29 合法覆写 ⇒ rc=0、state 变「%s」、overrides 长度 1" % PASS_ST,
++          rc == 0 and e["tc_r1"].get("state") == PASS_ST and len(ovs) == 1,
++          "rc=%s state=%s len=%d" % (rc, e["tc_r1"].get("state"), len(ovs)))
++    check("30 record_sha256 = sha256(canonical(record 去掉 record_sha256)) 可复算",
++          rec.get("record_sha256") == K.sha256_obj(body),
++          str(rec.get("record_sha256"))[:16])
++    mach = rec.get("machine") or {}
++    check("31 machine 快照来源唯一 = n10_cases.json（source_path/source_md5/passed/reasons 原样搬运）",
++          rec.get("machine", {}).get("schema") == "loop/n10_cases"
++          and mach.get("source_path") == "n10_cases.json"
++          and mach.get("source_md5") == N10_MD5
++          and mach.get("passed") is False
++          and mach.get("reasons") == N10_DOC["cases"]["tc_r1"]["reasons"]
++          and mach.get("evidence") == N10_DOC["cases"]["tc_r1"]["evidence"],
++          "src_md5=%s" % str(mach.get("source_md5"))[:16])
++    check("32 记录字段：action/actor/actor_kind/prev_state/decided_at（时间走 --now 单一入口）",
++          rec.get("schema") == "kb/case_override" and rec.get("action") == "pass"
++          and rec.get("actor") == ACTOR and rec.get("actor_kind") == "human"
++          and rec.get("prev_state") == PEND_ST and rec.get("decided_at") == NOW,
++          "action=%s prev=%s" % (rec.get("action"), rec.get("prev_state")))
++    check("33 台账 writer / 条目 updated_by 同步 human:<name>；updated_at 走 now_iso()",
++          st_o.get("writer") == ACTOR and e["tc_r1"].get("updated_by") == ACTOR
++          and st_o.get("updated_at") == NOW, "writer=%s" % st_o.get("writer"))
++    check("34 含 overrides 的台账仍通过 case_states.schema.json 校验",
++          K.validate(st_o, schema) == [], " | ".join(K.validate(st_o, schema)[:3]))
++
++    # ---- 批量一次签（每例一条记录、全有或全无）----
++    rc = overr("--case", "tc_r2", "--case", "tc_r3", "--actor", ACTOR, "--reason", "同批两例")
++    e = entries()
++    check("35 批量合法 ⇒ rc=0、两例各一条记录、状态皆「%s」（一次落盘）" % PASS_ST,
++          rc == 0 and len(e["tc_r2"].get("overrides") or []) == 1
++          and len(e["tc_r3"].get("overrides") or []) == 1
++          and e["tc_r2"].get("state") == PASS_ST and e["tc_r3"].get("state") == PASS_ST,
++          "rc=%s" % rc)
++    rc, info = check_json("check", "--run", RUN, "--state-file", OVR, "--json")
++    # 夹具里 tc_non10/tc_noreason/tc_ok 仍是「已修订待验」（它们专门用于 §4-5 拒绝用例），
++    # 所以这里 check 仍 rc=3；要看的是**被签的三例已不阻断 I2** + info.waived 列出它们。
++    check("36 签后被签用例不再阻断 I2：pending 不含 tc_r1/r2/r3；info.waived 列出三例"
++          "（展示用，不加新判据）",
++          rc == 3 and not {"tc_r1", "tc_r2", "tc_r3"} & set(info.get("pending") or [])
++          and info.get("waived") == ["tc_r1", "tc_r2", "tc_r3"],
++          "pending=%r waived=%r" % (info.get("pending"), info.get("waived")))
++
++    # ---- 撤销 = 追加 revoke 记录（不删不改前面的记录）----
++    before = entries()
++    rc = overr("--case", "tc_r1", "--actor", ACTOR, "--reason", "撤销：按修正后的期望值复核",
++               "--revoke")
++    e = entries()
++    ovs = e["tc_r1"].get("overrides") or []
++    check("37 撤销 ⇒ rc=0、追加第 2 条 action=revoke、state 回「%s」、旧记录一字未改" % PEND_ST,
++          rc == 0 and len(ovs) == 2 and ovs[-1].get("action") == "revoke"
++          and ovs[-1].get("prev_state") == PASS_ST
++          and e["tc_r1"].get("state") == PEND_ST
++          and ovs[0] == (before["tc_r1"].get("overrides") or [None])[0],
++          "len=%d state=%s" % (len(ovs), e["tc_r1"].get("state")))
++    rc, info = check_json("check", "--run", RUN, "--state-file", OVR, "--json")
++    check("38 撤销后 I2 恢复：tc_r1 重新出现在 pending；waived 只剩 tc_r2/tc_r3",
++          rc == 3 and "tc_r1" in (info.get("pending") or [])
++          and info.get("waived") == ["tc_r2", "tc_r3"],
++          "pending=%r waived=%r" % (info.get("pending"), info.get("waived")))
++
++    # ---- --verify：逐条复算 record_sha256 与 source_md5 ----
++    m0 = md5_p(OVR)
++    rc = overr("--verify")
++    check("39 --verify 链完整 ⇒ rc=0 且不写盘（离线复核，不需要 actor/reason/case）",
++          rc == 0 and md5_p(OVR) == m0, "rc=%s" % rc)
++    orig = json.loads(json.dumps(read_p(OVR)))
++    bad = json.loads(json.dumps(orig))
++    entry_of(bad, "tc_r2")["overrides"][0]["record_sha256"] = "0" * 64
++    K.write_json(OVR, bad)
++    m_tampered = md5_p(OVR)
++    rc = overr("--verify")
++    check("40 §4-8 record_sha256 复核失败 ⇒ --verify rc=4 且不复写台账",
++          rc == 4 and md5_p(OVR) == m_tampered, "rc=%s" % rc)
++    rc = overr("--case", "tc_r2", "--actor", ACTOR, "--reason", "想继续", "--revoke")
++    check("41 §4-8 锚复核失败时动作也在写盘前被拒 rc=4、台账不动",
++          rc == 4 and md5_p(OVR) == m_tampered, "rc=%s" % rc)
++    K.write_json(OVR, orig)
++    check("42 还原后台账字节复原（md5 与篡改前一致）", md5_p(OVR) == m0, "")
++    bad_n10 = json.loads(json.dumps(N10_DOC))
++    bad_n10["cases"]["tc_r1"]["reasons"] = ["篡改后的原因"]
++    K.write_json(N10, bad_n10)
++    rc = overr("--verify")
++    check("43 §4-8 source_md5 复核失败 ⇒ --verify rc=4", rc == 4, "rc=%s" % rc)
++    os.remove(N10)
++    rc = overr("--verify")
++    check("44 source_md5 无法复核（件缺失）⇒ --verify rc=4（缺件不当作通过）",
++          rc == 4, "rc=%s" % rc)
++    K.write_json(N10, N10_DOC)
++    check("45 恢复 n10_cases.json 后其 md5 与签名时一致", K.md5_file(N10) == N10_MD5, "")
++    rc = overr("--verify")
++    check("46 恢复后 --verify rc=0（整条链可离线复核）", rc == 0, "rc=%s" % rc)
++
+     # ---- 5 台账损坏 ----
+     with open(STATE, "w", encoding="utf-8") as f:
+         f.write("{not json")
+diff --git a/kb/tools/case_state.py b/kb/tools/case_state.py
+index 1252416..fdfa193 100644
+--- a/kb/tools/case_state.py
++++ b/kb/tools/case_state.py
+@@ -16,6 +16,23 @@ I3：`跑通` 的可执行化 —— `set --state 已验证通过` 必须**同
+     set   --run <run_id> --case <tc> --state <四态之一> [卡点B/C/D 证据字段…] [--now ISO]
+     show  --run <run_id> [--case <tc>] [--json]
+     check --run <run_id> [--json] [--for-promotion]
++    override --run <run_id> --case <tc> [--case <tc> …] (--actor human:<name>) --reason <R>
++             [--revoke] | --run <run_id> --verify
++
++    人签覆写（SPEC-REV-20 §3.1/§4/§5）—— `override`：
++      * **机器判据一字不改**：只把 `<run_dir>/n10_cases.json` 里该例**已算好**的
++        `passed/criterion/reasons/counts/imprints/evidence` 原样搬进记录（O-1）；
++      * 人签 = `human:<非空名>` + 非空 reason；`model:/host:/rehearsal:/裸名` 一律拒绝（O-2）；
++      * **只增不改**：每次动作往该例 `overrides[]` 追加一条（含 `record_sha256`），
++        旧记录永不覆盖；`state` 按动作落 `已验证通过`（pass）/`已修订待验`（revoke）；
++      * **撤销边界**（§4-4 裁定）：`--revoke` 只撤回「最近一条覆写记录是 action="pass"」的覆写；
++        机器途径/正常流程写入的 `已验证通过` 不是覆写来的 ⇒ 拒绝（不许把人凭空制造的待验塞进本轮）；
++      * 拒绝矩阵（§4 行 1/2/3/4/5/7/8）全部**在写盘前**判定 ⇒ rc≠0 且台账一字节不动；
++        批量先全量预检再写一次（全有或全无）；
++      * `--verify`：逐条复算 `record_sha256` 与 `machine.source_md5`，不符/无法复核 ⇒ rc=4；
++        带动作参数时先复核再写（锚坏 ⇒ 不写）。
++      * 机器原因唯一来源是台账同目录的 `n10_cases.json`（**不解析** `n10_reconcile.md`）；
++        该件缺失/旧轮未留存 ⇒ 显式拒绝（O-3/§3.2：「不能盲签」）。
+ 
+     `check` 是**唯一**的台账判定实现（N16 晋升前置检查 import 本模块的
+     `check_ledger()`，禁止第二套同判据实现）：
+@@ -24,7 +41,9 @@ I3：`跑通` 的可执行化 —— `set --state 已验证通过` 必须**同
+       * `--for-promotion` 时存在「待验」⇒ 不得晋升；
+       * I7：`n6_n8_cycles >= limit` ⇒ 已到上限，必须升级 N13 人工裁决，
+         `--for-promotion` 时不得晋升（边界统一 `>=`，不再用 `>`）。
+-    退出码：0 通过 / 3 规则不满足 / 4 台账损坏。
++      * `info["waived"]` 列出「最近一条记录是 action=pass」的用例（**展示用**：
++        判据仍只看 `state`，覆写没有新增任何判定）。
++    退出码：0 通过 / 3 规则不满足 / 4 台账损坏（含 `--verify` 锚复核失败）。
+ 
+ 卡点字段（按需）
+     --compile-rc N           卡点B 的 rc（只编译）
+@@ -36,10 +55,11 @@ I3：`跑通` 的可执行化 —— `set --state 已验证通过` 必须**同
+     --obs-expected N --obs-observed N   预期观测点印记三向一致
+     --evidence PATH, --note TEXT, --updated-by NAME
+ 
+-时间字段（README §3.1.1）：本脚本声明 `("updated_at",)`（条目级 `updated_at` 同口径）；
+-一律经 `kb_lib.now_iso()`，`--now`/`KB_NOW` 注入。
++时间字段（README §3.1.1）：本脚本声明 `("updated_at", "decided_at")`（条目级 `updated_at`
++同口径）；一律经 `kb_lib.now_iso()`，`--now`/`KB_NOW` 注入。
+ 
+ 退出码：0 成功 / 2 用法 / 3 规则不满足（拒绝且不写盘） / 4 状态文件损坏
++        （含 `--verify` 的 `record_sha256`/`source_md5` 复核失败）
+ """
+ 
+ import argparse
+@@ -50,6 +70,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+ import kb_lib as K  # noqa: E402
+ 
+ RC_OK = 0
++RC_USAGE = 2
+ RC_REJECT = 3
+ RC_BROKEN = 4
+ 
+@@ -58,6 +79,11 @@ STATES = ("未改", "已修订待验", "已验证通过", "已退回")
+ PENDING_STATE = "已修订待验"
+ PASS_STATE = "已验证通过"
+ 
++#: 人签覆写（SPEC-REV-20 §3.1）：记录 schema 与机器原因件名（**唯一来源**）
++OVERRIDE_SCHEMA = "kb/case_override"
++MACHINE_SCHEMA = "loop/n10_cases"
++N10_FILENAME = "n10_cases.json"
++
+ 
+ def over_rework_limit(cycles, limit):
+     """I7 边界：**统一 `>=`**（spec §8；审计 C5 —— 旧 n16 用 `>` 导致 cycles==limit 仍可晋升）。
+@@ -90,6 +116,11 @@ def check_ledger(st, for_promotion=False):
+                      if c.get("state") == PENDING_STATE)
+     if pending:
+         problems.append("存在「%s」用例（I2）：%s" % (PENDING_STATE, ", ".join(pending)))
++    # 人签豁免（SPEC-REV-20 §6）：**展示用**列表，判据仍只看 `state`（覆写不新增判定）。
++    waived = sorted(str(c.get("case")) for c in cases
++                    if isinstance(c.get("overrides"), list) and c["overrides"]
++                    and isinstance(c["overrides"][-1], dict)
++                    and c["overrides"][-1].get("action") == "pass")
+     rc = st.get("rework_cycles") or {}
+     cycles, limit = rc.get("n6_n8_cycles"), rc.get("limit")
+     if cycles is None or limit is None:
+@@ -105,6 +136,7 @@ def check_ledger(st, for_promotion=False):
+         "cases": len(cases),
+         "counts": {s: counts.get(s, 0) for s in STATES},
+         "pending": pending,
++        "waived": waived,
+         "invalid_states": bad_states,
+         "rework_cycles": {"n6_n8_cycles": cycles, "limit": limit,
+                           "g2_rework_cycles": g2,
+@@ -382,6 +414,264 @@ def cmd_check(args):
+     return RC_OK if not problems else RC_REJECT
+ 
+ 
++def run_dir_for(state_file, run_id):
++    """本轮目录：`--state-file` 给了就取它的父目录，否则 `kb/runs/<run_id>`。
++
++    机器原因的唯一来源 `<run_dir>/n10_cases.json` 必须与台账**同目录** —— 否则会出现
++    「读 A 轮的台账 + 读 B 轮的原因」这种身份错位（演练/自测也靠这条把两件留在同一目录）。
++    """
++    if state_file:
++        return os.path.dirname(os.path.abspath(state_file))
++    return K.run_dir(run_id)
++
++
++def parse_human_actor(actor):
++    """`human:<非空名>` 才是人签（SPEC-REV-20 O-2）；返回 (actor, None) 或 (None, 拒绝理由)。"""
++    if not isinstance(actor, str) or not actor.strip():
++        return None, "§4-1 --actor 必须是 human:<非空名>（得到 %r）" % (actor,)
++    kind, sep, name = actor.partition(":")
++    if not sep:
++        return None, ("§4-1 --actor 必须是 human:<非空名>；裸名 %r 不是人签（模型/替身一律不准签）"
++                      % actor)
++    if kind != "human":
++        return None, ("§4-1 --actor 的类必须是 human，得到 %r（model:/host:/rehearsal: 一律拒绝）"
++                      % kind)
++    if not name.strip():
++        return None, "§4-1 --actor 的 human 名为空（得到 %r）" % actor
++    return actor, None
++
++
++def load_machine(run_dir, run_id, case):
++    """读机器原因快照并判 §4-5；返回 (machine, None) 或 (None, 拒绝理由)。
++
++    唯一来源 = `<run_dir>/n10_cases.json`（N10 Host 落盘，SPEC-REV-20 §3.2）。
++    旧轮没有该件 ⇒ 显式拒绝（不解析 `n10_reconcile.md`、不做第二套解析、不猜原因）。
++    """
++    p = os.path.join(run_dir, N10_FILENAME)
++    if not os.path.isfile(p):
++        return None, ("§4-5 机器原因未留存：缺 %s（早于覆写功能的旧轮无法复核机器判据 ⇒ 不能盲签）"
++                      % K.relpath(p))
++    try:
++        doc = K.read_json(p)
++    except ValueError as exc:
++        return None, "§4-5 %s 不是合法 JSON（%s）⇒ 无法复核机器判据" % (K.relpath(p), exc)
++    if not isinstance(doc, dict):
++        return None, "§4-5 %s 顶层不是对象 ⇒ 无法复核机器判据" % K.relpath(p)
++    if doc.get("schema") != MACHINE_SCHEMA:
++        return None, ("§4-5 %s 的 schema=%r != %r（不是 N10 Host 落盘的机器原因件）"
++                      % (K.relpath(p), doc.get("schema"), MACHINE_SCHEMA))
++    if doc.get("run_id") != run_id:
++        return None, ("§4-5 %s 的 run_id=%r 与 --run=%r 不一致（身份错位：不是本轮的机器原因）"
++                      % (K.relpath(p), doc.get("run_id"), run_id))
++    cases = doc.get("cases")
++    if not isinstance(cases, dict):
++        return None, "§4-5 %s 的 cases 不是对象" % K.relpath(p)
++    c = cases.get(case)
++    if not isinstance(c, dict):
++        return None, ("§4-5 机器原因缺该例：%s 的 cases 里没有 %r" % (K.relpath(p), case))
++    if c.get("passed") is not False:
++        return None, ("§4-5 机器判 %r 的 passed=%r（要求恰好 false）⇒ 机器没判它失败，不许盲签（O-3）"
++                      % (case, c.get("passed")))
++    reasons = c.get("reasons")
++    if not isinstance(reasons, list) or not reasons:
++        return None, ("§4-5 机器判 %r 的 reasons 为空/非数组 ⇒ 没有可读的失败原因，不许盲签（O-3）"
++                      % case)
++    return {
++        "schema": MACHINE_SCHEMA,
++        "source_path": N10_FILENAME,
++        "source_md5": K.md5_file(p),
++        "passed": False,
++        "criterion": c.get("criterion") or doc.get("criterion"),
++        "reasons": list(reasons),
++        "counts": c.get("counts") or {},
++        "imprints": c.get("imprints") or {},
++        "evidence": c.get("evidence") or {},
++    }, None
++
++
++def verify_overrides(st, run_dir):
++    """逐条复算 `record_sha256` 与 `machine.source_md5`（SPEC-REV-20 §5 `--verify`）。
++
++    返回问题列表（空 = 链完整）。**缺件也算失败**：能复核才算通过，不许把「无法复核」当通过。
++    本函数是唯一复核实现（`--verify` 与写盘前复核都用它）。
++    """
++    problems = []
++    md5_cache = {}
++    for c in st.get("cases") or []:
++        if not isinstance(c, dict):
++            continue
++        ovs = c.get("overrides")
++        if ovs is None:
++            continue
++        if not isinstance(ovs, list):
++            problems.append("用例 %r 的 overrides 不是数组" % c.get("case"))
++            continue
++        for i, rec in enumerate(ovs):
++            tag = "用例 %r 的 overrides[%d]" % (c.get("case"), i)
++            if not isinstance(rec, dict):
++                problems.append("%s 不是对象" % tag)
++                continue
++            body = {k: v for k, v in rec.items() if k != "record_sha256"}
++            want = K.sha256_obj(body)
++            if rec.get("record_sha256") != want:
++                problems.append("%s record_sha256 复核失败：记录声明 %r 实际复算 %s"
++                                % (tag, rec.get("record_sha256"), want))
++            mach = rec.get("machine")
++            if not isinstance(mach, dict):
++                problems.append("%s 缺 machine 快照 ⇒ source_md5 无法复核" % tag)
++                continue
++            sp, want_md5 = mach.get("source_path"), mach.get("source_md5")
++            if not sp or not want_md5:
++                problems.append("%s 缺 machine.source_path/source_md5 ⇒ 无法复核" % tag)
++                continue
++            path = str(sp) if os.path.isabs(str(sp)) else os.path.join(run_dir, str(sp))
++            if path not in md5_cache:
++                md5_cache[path] = K.md5_file(path) if os.path.isfile(path) else None
++            actual = md5_cache[path]
++            if actual is None:
++                problems.append("%s source_md5 无法复核：缺件 %s" % (tag, K.relpath(path)))
++            elif actual != want_md5:
++                problems.append("%s source_md5 复核失败：声明 %r 实际 %s（%s 已变）"
++                                % (tag, want_md5, actual, K.relpath(path)))
++    return problems
++
++
++def cmd_override(args):
++    """人签覆写（SPEC-REV-20 §3.1/§4/§5）：只追加 `overrides[]`，一次读改写、一次落盘。
++
++    拒绝一律发生在写盘前：台账一字节不动，rc=3（矩阵 1/2/3/4/5/7）/ rc=4（矩阵 8）。
++    """
++    action = "revoke" if args.revoke else "pass"
++    cases = list(args.cases or [])
++    verify_only = bool(args.verify) and not cases and not args.actor and not args.reason
++    run_dir = run_dir_for(args.state_file, args.run)
++
++    if not verify_only:
++        if not cases:
++            sys.stderr.write("[FAIL] override 需要至少一个 --case（只复核请用 --verify）\n")
++            return RC_USAGE
++        if len(set(cases)) != len(cases):
++            sys.stderr.write("[FAIL] 同一批 --case 有重复：%r ⇒ 一次动作每例只能一条记录\n"
++                             "       台账**未写盘**\n" % (cases,))
++            return RC_USAGE
++        if args.actor is None:
++            sys.stderr.write("[FAIL] override 需要 --actor human:<非空名>（O-2）\n")
++            return RC_USAGE
++        if args.reason is None:
++            sys.stderr.write("[FAIL] override 需要 --reason <理由>（O-2：非空）\n")
++            return RC_USAGE
++        actor, why = parse_human_actor(args.actor)
++        if why:
++            sys.stderr.write("[FAIL] %s ⇒ 台账**未写盘**\n" % why)
++            return RC_REJECT
++        if not args.reason.strip():
++            sys.stderr.write("[FAIL] §4-2 reason 不能为空/全空白（人签必须写明为什么放开）\n"
++                             "       ⇒ 台账**未写盘**\n")
++            return RC_REJECT
++
++    p = state_path(args.run, args.state_file)
++    st = load_state(p, args.run)
++    if st is None:
++        sys.stderr.write("[FAIL] 用例态台账不存在：%s ⇒ 先 case_state.py init --run %s\n"
++                         % (K.relpath(p), args.run))
++        return RC_REJECT
++
++    if verify_only:
++        errs = K.validate(st, K.load_schema(SCHEMA_NAME))
++        if errs:
++            sys.stderr.write("[FAIL] 台账不合 schema ⇒ 无法复核：\n  - %s\n"
++                             % "\n  - ".join(errs[:8]))
++            return RC_BROKEN
++        problems = verify_overrides(st, run_dir)
++        if problems:
++            sys.stderr.write("[FAIL] §4-8 覆写链复核失败（台账**未改动**）：\n  - %s\n"
++                             % "\n  - ".join(problems[:20]))
++            return RC_BROKEN
++        print("[kb] 覆写链复核通过：%s（逐条 record_sha256 + source_md5 均已复算）"
++              % K.relpath(p))
++        return RC_OK
++
++    # ---- 逐例预检（矩阵 3/4/5）：全部问题一次列全，任一不满足 ⇒ 整批不写（矩阵 7）
++    problems = []
++    planned = []
++    for case in cases:
++        entry = find_case(st, case)
++        if entry is None:
++            problems.append("§4-3 用例 %r 不在台账（覆写不新增用例）" % case)
++            continue
++        prev = entry.get("state")
++        need = PENDING_STATE if action == "pass" else PASS_STATE
++        if prev != need:
++            problems.append("§4-4 用例 %r 当前态是 %r，%s 要求当前态为 %r"
++                            % (case, prev, action, need))
++            continue
++        if action == "revoke":
++            # §4-4 撤销边界（2026-11-02 裁定）：revoke 只撤回「我自己刚签的覆写」。
++            # 机器途径/正常流程写入的 `已验证通过` 不是覆写来的 ⇒ 不得被 revoke 降级成待验
++            # （那等于人凭空制造待验、阻断本轮，违反 O-1/O-3 精神）。
++            ovs = entry.get("overrides")
++            last = (ovs[-1] if isinstance(ovs, list) and ovs
++                    and isinstance(ovs[-1], dict) else {})
++            if last.get("action") != "pass":
++                problems.append(
++                    "§4-4 用例 %r 当前态虽是「%s」，但最近一条覆写记录不是 action=\"pass\""
++                    "（该通过不是覆写来的）⇒ revoke 拒绝：不得把机器通过降级成待验"
++                    % (case, prev))
++                continue
++        machine, why = load_machine(run_dir, args.run, case)
++        if why:
++            problems.append(why)
++            continue
++        planned.append((case, entry, prev, machine))
++    if problems:
++        sys.stderr.write("[FAIL] 人签覆写被拒（§4 前置不满足，%d 处未通过）⇒ 台账**一字节未动**：\n"
++                         "  - %s\n" % (len(problems), "\n  - ".join(problems)))
++        return RC_REJECT
++
++    # ---- 矩阵 8：已有覆写记录的锚必须先复核通过，才允许继续追加（坏锚 ⇒ 不写）
++    anchor_problems = verify_overrides(st, run_dir)
++    if anchor_problems:
++        sys.stderr.write("[FAIL] §4-8 既有覆写链复核失败 ⇒ 拒绝追加（台账**未改动**）：\n  - %s\n"
++                         % "\n  - ".join(anchor_problems[:20]))
++        return RC_BROKEN
++
++    # ---- 构造记录（只追加；时间走 kb_lib.now_iso() 单一入口）
++    now = K.now_iso()
++    for case, entry, prev, machine in planned:
++        rec = {
++            "schema": OVERRIDE_SCHEMA,
++            "action": action,
++            "actor": args.actor,
++            "actor_kind": "human",
++            "reason": args.reason,
++            "decided_at": now,
++            "prev_state": prev,
++            "machine": machine,
++        }
++        rec["record_sha256"] = K.sha256_obj(rec)
++        entry.setdefault("overrides", []).append(rec)
++        entry["state"] = PASS_STATE if action == "pass" else PENDING_STATE
++        entry["updated_by"] = args.actor
++        entry["updated_at"] = now
++    st["writer"] = args.actor
++    st["updated_at"] = now
++
++    errs = K.validate(st, K.load_schema(SCHEMA_NAME))
++    if errs:
++        sys.stderr.write("[FAIL] 写盘前 schema 校验失败（不写）：\n  - %s\n"
++                         % "\n  - ".join(errs[:8]))
++        return RC_BROKEN
++
++    K.write_json(p, st)   # 一次落盘（批量全有或全无）
++    for case, entry, prev, machine in planned:
++        print("[kb] override %s：%s %s -> %s（machine.passed=False，机器原因 %d 条）"
++              % (action, case, prev, entry["state"], len(machine["reasons"])))
++    print("[kb] 台账：%s（追加 %d 条 overrides 记录，record_sha256 可离线复算）"
++          % (K.relpath(p), len(planned)))
++    print("[kb] 时间字段声明：decided_at/updated_at（README §3.1.1，--now/KB_NOW 注入）")
++    return RC_OK
++
++
+ def main(argv=None):
+     ap = argparse.ArgumentParser(
+         description="用例态台账（I2 四态 + I3 跑通门槛可执行化；N16 晋升前置检查读本文件）",
+@@ -445,6 +735,20 @@ def main(argv=None):
+                     help="按 N16 晋升前置检查口径（I2 待验 / I7 >=limit 均拒绝）")
+     ck.set_defaults(func=cmd_check)
+ 
++    ov = sub.add_parser("override", parents=[common],
++                        help="人签覆写（只追加 overrides[]；拒绝矩阵 §4 全在写盘前判）；"
++                             "`--verify` 只复核 record_sha256 + source_md5")
++    ov.add_argument("--run", required=True)
++    ov.add_argument("--case", dest="cases", action="append", default=None,
++                    help="用例名，可重复（批量一次签，全有或全无）")
++    ov.add_argument("--actor", default=None, help="必须是 human:<非空名>（O-2）")
++    ov.add_argument("--reason", default=None, help="非空理由（写进台账，报告仍显示本轮未通过）")
++    ov.add_argument("--revoke", action="store_true",
++                    help="撤销：追加 action=revoke 记录，state 回「已修订待验」")
++    ov.add_argument("--verify", action="store_true",
++                    help="逐条复算 record_sha256 与 machine.source_md5（不带动作参数时只复核）")
++    ov.set_defaults(func=cmd_override)
++
+     args = ap.parse_args(argv)
+     now = args.now or getattr(args, "now_sub", None)
+     if now:

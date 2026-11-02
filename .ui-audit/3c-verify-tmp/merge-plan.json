@@ -1,0 +1,535 @@
+{
+ "evidence": "../3c/cooccur-full.json",
+ "evidence_used": true,
+ "evidence_pairs": 1092,
+ "evidence_measured_selectors": 833,
+ "evidence_states": [
+  "1280x720/s0",
+  "1280x720/setup",
+  "1280x720/run",
+  "1280x720/gate",
+  "1280x720/dirpicker",
+  "1280x720/agent",
+  "1280x720/node-detail",
+  "1280x720/empty",
+  "1280x720/legacy",
+  "1280x720/toast",
+  "1280x720/alert",
+  "1280x720/gate-empty",
+  "1440x900/s0",
+  "1440x900/setup",
+  "1440x900/run",
+  "1440x900/gate",
+  "1440x900/dirpicker",
+  "1440x900/agent",
+  "1440x900/node-detail",
+  "1440x900/empty",
+  "1440x900/legacy",
+  "1440x900/toast",
+  "1440x900/alert",
+  "1440x900/gate-empty",
+  "1920x1080/s0",
+  "1920x1080/setup",
+  "1920x1080/run",
+  "1920x1080/gate",
+  "1920x1080/dirpicker",
+  "1920x1080/agent",
+  "1920x1080/node-detail",
+  "1920x1080/empty",
+  "1920x1080/legacy",
+  "1920x1080/toast",
+  "1920x1080/alert",
+  "1920x1080/gate-empty"
+ ],
+ "groups": 193,
+ "safe": 184,
+ "blocked": 9,
+ "safe_selectors": [
+  "body",
+  ".mono",
+  ".field-label",
+  "header",
+  ".brand",
+  ".mark",
+  ".mark:after",
+  ".shell",
+  "aside",
+  ".btn-primary",
+  ".btn-ghost:hover",
+  ".btn-sm",
+  ".btn:disabled",
+  ".rail-label",
+  ".run-list",
+  ".run-item .rid",
+  ".run-item .meta",
+  ".run-empty",
+  ".rail-foot",
+  "main",
+  ".page-head",
+  ".banner",
+  ".banner.bad",
+  ".banner.warn",
+  ".alert",
+  ".alert.bad",
+  ".alert.warn",
+  ".card-head",
+  ".card-head h2",
+  ".run-grid",
+  ".empty-title",
+  ".step-card",
+  ".step-no",
+  ".step-title",
+  "select.input",
+  "textarea.input",
+  ".field-meta",
+  ".chip",
+  ".confirm-bar",
+  ".confirm-bar .summary",
+  ".confirm-bar .summary b",
+  ".run-head",
+  ".run-head .rid",
+  ".status-pill",
+  ".run-meta",
+  ".stages",
+  ".stage",
+  ".stage.active",
+  ".stage-head",
+  ".stage-idx",
+  ".stage-name",
+  ".stage-range",
+  ".stage-sum",
+  ".stage-bar",
+  ".stage-body",
+  ".snodes",
+  ".snode",
+  ".snode .st b",
+  ".agents",
+  ".agent",
+  ".agent-head",
+  ".avatar",
+  ".agent-name",
+  ".agent-role",
+  ".agent-body",
+  ".agent-action",
+  ".agent-note",
+  ".agent-foot",
+  ".linkbtn",
+  ".host-row",
+  ".side",
+  ".option",
+  ".option b",
+  ".option span",
+  ".kv",
+  ".kv b",
+  ".count-box",
+  ".count-box .n",
+  ".count-box .l",
+  ".blocker",
+  ".sev",
+  ".refs",
+  ".ev-list",
+  ".ev-row",
+  ".log-pre",
+  ".dirpicker",
+  ".dp-head",
+  ".dp-list",
+  ".dp-item",
+  ".dp-foot",
+  ".toast",
+  ".foot-note",
+  ".diff-item",
+  ".diff-item.unresolved",
+  ".eyebrow",
+  ".s0-phases",
+  ".phase-card",
+  ".phase-index",
+  ".phase-card h3",
+  ".phase-card p",
+  ".phase-card .chip",
+  ".s0-grid",
+  ".section-index",
+  ".s0-grid .card-head .sub",
+  ".s0-label",
+  ".s0-label span",
+  "#s0Form .input",
+  ".form-divider",
+  ".s0-boundary",
+  ".s0-form-actions",
+  ".s0-form-actions .btn",
+  ".readiness",
+  ".s0-result",
+  ".receipt-empty",
+  ".s0-result p",
+  ".receipt-label",
+  ".receipt-id",
+  ".receipt-path",
+  ".s0-checks li",
+  ".s0-checks li>span",
+  ".s0-checks small",
+  ".s0-checks b",
+  ".s0-blockers",
+  ".s0-blockers .eyebrow",
+  ".s0-blockers p",
+  ".s0-scope",
+  ".s0-history summary",
+  ".s0-history summary span",
+  ".s0-history-item small",
+  ".s0-access",
+  "#s0AllowedRoots",
+  "#s0Report",
+  "header",
+  "#hdrEnv",
+  "#hdrHealth",
+  ".shell",
+  ".run-list",
+  ".page-head",
+  ".s0-phases",
+  ".phase-card",
+  ".grid2",
+  ".s0-grid",
+  ".agent-open",
+  ".aw-head",
+  ".aw-head h2",
+  ".aw-terminal-mark",
+  ".aw-toolbar",
+  ".aw-toolbar #awIdentity",
+  ".aw-toolbar .input",
+  ".aw-layout",
+  ".aw-observe",
+  ".aw-intervene",
+  ".aw-section-head h3",
+  ".aw-section-head .chip",
+  ".aw-section-head .tiny",
+  ".aw-note",
+  ".aw-timeline",
+  ".aw-empty",
+  ".aw-log-count",
+  ".aw-log-row",
+  ".aw-log-row>span",
+  ".aw-log-row b",
+  ".aw-log-row p",
+  ".aw-detail summary",
+  ".aw-detail summary span",
+  ".aw-detail pre",
+  ".aw-intervene .input",
+  ".aw-intervene .s0-label",
+  ".aw-receipt",
+  ".aw-control-rule",
+  ".aw-stop p",
+  ".aw-limit",
+  ".aw-intervene",
+  ".page-head h1",
+  ".aw-intervene",
+  ".nd-detail-table th",
+  ".nd-raw",
+  ".nd-raw summary",
+  ".diff-fields th",
+  ".host-trace-table th",
+  ".nd-dispose-reason",
+  ".aw-s3-table th",
+  ".s0-table th",
+  ".s0-table td"
+ ],
+ "blocked_detail": [
+  {
+   "selector": ".btn",
+   "media": [],
+   "at": [],
+   "rules": [
+    26,
+    492
+   ],
+   "blocked": [
+    {
+     "rule": 450,
+     "selector": ".rail-entry",
+     "prop": "justify-content",
+     "value": "flex-start",
+     "media": "",
+     "reason": "共命中证据显示确实命中同一元素"
+    },
+    {
+     "rule": 450,
+     "selector": ".rail-entry",
+     "prop": "gap",
+     "value": "10px",
+     "media": "",
+     "reason": "共命中证据显示确实命中同一元素"
+    },
+    {
+     "rule": 31,
+     "selector": ".btn-sm",
+     "prop": "padding",
+     "value": "0 10px",
+     "media": "",
+     "reason": "共命中证据显示确实命中同一元素"
+    },
+    {
+     "rule": 27,
+     "selector": ".btn-primary",
+     "prop": "border-color",
+     "value": "var(--primary)",
+     "media": "",
+     "reason": "共命中证据显示确实命中同一元素"
+    },
+    {
+     "rule": 27,
+     "selector": ".btn-primary",
+     "prop": "background",
+     "value": "var(--primary)",
+     "media": "",
+     "reason": "共命中证据显示确实命中同一元素"
+    },
+    {
+     "rule": 27,
+     "selector": ".btn-primary",
+     "prop": "color",
+     "value": "#fff",
+     "media": "",
+     "reason": "共命中证据显示确实命中同一元素"
+    }
+   ],
+   "moves": [
+    "display",
+    "align-items",
+    "justify-content",
+    "gap",
+    "padding",
+    "border",
+    "background",
+    "color",
+    "text-decoration",
+    "white-space"
+   ]
+  },
+  {
+   "selector": ".run-item",
+   "media": [],
+   "at": [],
+   "rules": [
+    35,
+    471
+   ],
+   "blocked": [
+    {
+     "rule": 320,
+     "selector": ".run-item",
+     "prop": "width",
+     "value": "auto",
+     "media": "@media(max-width:760px)",
+     "reason": "共命中证据显示确实命中同一元素"
+    }
+   ],
+   "moves": [
+    "display",
+    "width",
+    "text-align",
+    "font",
+    "border",
+    "cursor",
+    "background",
+    "color"
+   ]
+  },
+  {
+   "selector": ".card",
+   "media": [],
+   "at": [],
+   "rules": [
+    56,
+    508
+   ],
+   "blocked": [
+    {
+     "rule": 167,
+     "selector": ".gate-card",
+     "prop": "background",
+     "value": "#fffdf7",
+     "media": "",
+     "reason": "共命中证据显示确实命中同一元素"
+    },
+    {
+     "rule": 167,
+     "selector": ".gate-card",
+     "prop": "border-color",
+     "value": "#f3d19e",
+     "media": "",
+     "reason": "共命中证据显示确实命中同一元素"
+    }
+   ],
+   "moves": [
+    "background",
+    "border"
+   ]
+  },
+  {
+   "selector": ".grid2",
+   "media": [],
+   "at": [],
+   "rules": [
+    59,
+    513
+   ],
+   "blocked": [
+    {
+     "rule": 310,
+     "selector": ".run-grid",
+     "prop": "grid-template-columns",
+     "value": "1fr",
+     "media": "@media(max-width:1000px)",
+     "reason": "共命中证据显示确实命中同一元素"
+    }
+   ],
+   "moves": [
+    "display",
+    "grid-template-columns"
+   ]
+  },
+  {
+   "selector": ".input",
+   "media": [],
+   "at": [],
+   "rules": [
+    69,
+    499
+   ],
+   "blocked": [
+    {
+     "rule": 423,
+     "selector": ".mono",
+     "prop": "font-family",
+     "value": "var(--font-mono)",
+     "media": "",
+     "reason": "共命中证据显示确实命中同一元素"
+    }
+   ],
+   "moves": [
+    "width",
+    "border",
+    "color",
+    "font"
+   ]
+  },
+  {
+   "selector": ".rail-entry",
+   "media": [
+    "@media(max-width:760px)"
+   ],
+   "at": [],
+   "rules": [
+    317,
+    731
+   ],
+   "blocked": [
+    {
+     "rule": 450,
+     "selector": ".rail-entry",
+     "prop": "margin-bottom",
+     "value": "20px",
+     "media": "",
+     "reason": "共命中证据显示确实命中同一元素"
+    },
+    {
+     "rule": 450,
+     "selector": ".rail-entry",
+     "prop": "height",
+     "value": "auto",
+     "media": "",
+     "reason": "共命中证据显示确实命中同一元素"
+    },
+    {
+     "rule": 492,
+     "selector": ".btn",
+     "prop": "font-size",
+     "value": "13px",
+     "media": "",
+     "reason": "共命中证据显示确实命中同一元素"
+    }
+   ],
+   "moves": [
+    "margin",
+    "height",
+    "font-size"
+   ]
+  },
+  {
+   "selector": "aside #btnNew",
+   "media": [
+    "@media(max-width:760px)"
+   ],
+   "at": [],
+   "rules": [
+    318,
+    732
+   ],
+   "blocked": [
+    {
+     "rule": 455,
+     "selector": "aside #btnNew",
+     "prop": "height",
+     "value": "40px",
+     "media": "",
+     "reason": "共命中证据显示确实命中同一元素"
+    }
+   ],
+   "moves": [
+    "height"
+   ]
+  },
+  {
+   "selector": ".run-item",
+   "media": [
+    "@media(max-width:760px)"
+   ],
+   "at": [],
+   "rules": [
+    320,
+    741
+   ],
+   "blocked": [
+    {
+     "rule": 471,
+     "selector": ".run-item",
+     "prop": "padding",
+     "value": "12px 10px",
+     "media": "",
+     "reason": "共命中证据显示确实命中同一元素"
+    }
+   ],
+   "moves": [
+    "width",
+    "padding",
+    "flex-shrink"
+   ]
+  },
+  {
+   "selector": ".agent-window",
+   "media": [],
+   "at": [],
+   "rules": [
+    348,
+    651
+   ],
+   "blocked": [
+    {
+     "rule": 404,
+     "selector": ".agent-window",
+     "prop": "max-height",
+     "value": "calc(100dvh - 24px)",
+     "media": "@media(max-width:850px)",
+     "reason": "共命中证据显示确实命中同一元素"
+    }
+   ],
+   "moves": [
+    "max-width",
+    "max-height",
+    "padding",
+    "color",
+    "background",
+    "overflow"
+   ]
+  }
+ ],
+ "moves_total": 598,
+ "dropped_total": 45
+}

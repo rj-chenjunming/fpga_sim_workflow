@@ -1,0 +1,111 @@
+FFF..F.FF.                                                               [100%]
+=================================== FAILURES ===================================
+____________________ test_sprite_root_is_inline_and_hidden _____________________
+
+    def test_sprite_root_is_inline_and_hidden() -> None:
+        """sprite 必须是 `index.html` 里的隐藏内联根：不新增静态资源文件、不新增一次 HTTP 请求。"""
+        html = _index()
+>       assert 'id="iconSprite"' in html, "index.html 缺少内联图标 sprite（#iconSprite）"
+E       AssertionError: index.html 缺少内联图标 sprite（#iconSprite）
+E       assert 'id="iconSprite"' in '<!DOCTYPE html>\n<html lang="zh-CN">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-wid...eport-viewer.js"></script>\n<script src="node-detail.js"></script>\n<script src="app.js"></script>\n</body>\n</html>\n'
+
+tests/test_ui_icons.py:99: AssertionError
+__________________ test_icon_template_for_dom_cloning_exists ___________________
+
+    def test_icon_template_for_dom_cloning_exists() -> None:
+        """JS 端只克隆 `#iconTpl`，不拼 namespace 字符串（否则红 `test_web_smoke.py` 的 http:// 断言）。"""
+        html = _index()
+>       assert 'id="iconTpl"' in html, "index.html 缺少 #iconTpl（JS 克隆模板）"
+E       AssertionError: index.html 缺少 #iconTpl（JS 克隆模板）
+E       assert 'id="iconTpl"' in '<!DOCTYPE html>\n<html lang="zh-CN">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-wid...eport-viewer.js"></script>\n<script src="node-detail.js"></script>\n<script src="app.js"></script>\n</body>\n</html>\n'
+
+tests/test_ui_icons.py:110: AssertionError
+______________ test_symbol_inventory_is_exactly_the_consumed_set _______________
+
+    def test_symbol_inventory_is_exactly_the_consumed_set() -> None:
+        ids = [m.group(1) for m in _SYMBOL.finditer(_index())]
+        assert len(ids) == len(set(ids)), f"symbol id 重复：{ids}"
+>       assert set(ids) == EXPECTED_SYMBOLS, (
+            "symbol 表与设计不符：缺 " f"{sorted(EXPECTED_SYMBOLS - set(ids))}，多 {sorted(set(ids) - EXPECTED_SYMBOLS)}"
+        )
+E       AssertionError: symbol 表与设计不符：缺 ['icon-agent', 'icon-check', 'icon-chevron', 'icon-close', 'icon-empty', 'icon-external', 'icon-fail', 'icon-gate', 'icon-invalid', 'icon-next', 'icon-panel', 'icon-run', 'icon-running', 'icon-s0', 'icon-setup', 'icon-up', 'icon-valid', 'icon-wait']，多 []
+E       assert set() == {'icon-agent'...xternal', ...}
+E         
+E         Extra items in the right set:
+E         'icon-gate'
+E         'icon-chevron'
+E         'icon-run'
+E         'icon-running'
+E         'icon-valid'...
+E         
+E         ...Full output truncated (14 lines hidden), use '-vv' to show
+
+tests/test_ui_icons.py:121: AssertionError
+______________ test_replaced_code_points_are_gone_from_components ______________
+
+    def test_replaced_code_points_are_gone_from_components() -> None:
+        offenders: dict[str, dict[str, int]] = {}
+        for name in COMPONENTS:
+            text = _text(name)
+            hits = {cp: text.count(cp) for cp in REPLACED_ZERO if cp in text}
+            if hits:
+                offenders[name] = hits
+>       assert not offenders, (
+            "组件层仍含被替换的图标码位（应改用 <use href=\"#icon-…\">）："
+            f"{offenders}；码位集合={REPLACED_ZERO!r}"
+        )
+E       AssertionError: 组件层仍含被替换的图标码位（应改用 <use href="#icon-…">）：{'index.html': {'◇': 1, '↑': 1, '⌄': 1, '▧': 1, '⊞': 1, '◴': 1, '×': 4, '↗': 3}, 'app.js': {'✓': 2, '✕': 1, '▸': 2, '•': 2, '▣': 1, '▢': 1, '↗': 1}, 's0.js': {'✓': 3}, 'node-detail.js': {'↗': 3}}；码位集合='✓✕▸◇↑•⌄▧⊞◴▣▢×↗'
+E       assert not {'index.html': {'◇': 1, '↑': 1, '⌄': 1, '▧': 1, ...}, 'app.js': {'✓': 2, '✕': 1, '▸': 2, '•': 2, ...}, 's0.js': {'✓': 3}, 'node-detail.js': {'↗': 3}}
+
+tests/test_ui_icons.py:153: AssertionError
+__________ test_prose_arrows_stay_text_but_action_suffixes_are_icons ___________
+
+    def test_prose_arrows_stay_text_but_action_suffixes_are_icons() -> None:
+        """白名单里 `→` 的边界：**可点击动作后缀**必须换成图标，正文流程箭头保留字面。"""
+        for name in COMPONENTS:
+            text = _text(name)
+            for literal in ("派生并校验 →", "继续冒烟 →", "去新建运行 →", "逐条处置 →", "同源）→"):
+                assert literal not in text, f"{name} 仍有「动作 + →」文本后缀（应改 icon-next）：{literal!r}"
+>           assert "<span aria-hidden=\"true\">→</span>" not in text, f"{name} 仍有独立的 → 装饰 span"
+E           AssertionError: index.html 仍有独立的 → 装饰 span
+E           assert '<span aria-...ue">→</span>' not in '<!DOCTYPE h...>\n</html>\n'
+E             
+E             '<span aria-hidden="true">→</span>' is contained here:
+E               t">派生并校验 <span aria-hidden="true">→</span></button></div>
+E                               <details class="adv s0-advanced" id="s0Advanced">
+E                                 <summary>高级（可改）<span>留空 = 服务端默认值</span></summary>
+E                                 <label class="s0-label" for="s0Baseline">基线工程目录 <span>留空 = 原始环境根（origin_env_root）</span></label>
+E                                 <input class="input mono" id="s0Baseline" placeholder="/sim/项目基线" autocomplete="off">...
+E             
+E             ...Full output truncated (565 lines hidden), use '-vv' to show
+
+tests/test_ui_icons.py:176: AssertionError
+________ test_ellipsis_and_title_prefix_are_the_only_whitelisted_glyphs ________
+
+    def test_ellipsis_and_title_prefix_are_the_only_whitelisted_glyphs() -> None:
+        """白名单必须仍然“名副其实”：`●` 只剩 `document.title` 一处，其它白名单码位不得变成图标。"""
+        app_js = _text("app.js")
+        for name, text in _js_texts().items():
+            for literal in ('return "✓"', 'return "✕"', 'return "!"', 'return "…"'):
+>               assert literal not in text, f"{name} 的状态图标函数仍在返回字形：{literal}"
+E               AssertionError: app.js 的状态图标函数仍在返回字形：return "✓"
+E               assert 'return "✓"' not in '/* 变更影响闭环 ·...t);\n})();\n'
+E                 
+E                 'return "✓"' is contained here:
+E                   = "done") return "✓";
+E                       if (st === "wait") return "!";
+E                       if (st === "active") return "…";
+E                       if (st === "fail") return "✕";
+E                       return "";...
+E                 
+E                 ...Full output truncated (2447 lines hidden), use '-vv' to show
+
+tests/test_ui_icons.py:185: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_ui_icons.py::test_sprite_root_is_inline_and_hidden - Assert...
+FAILED tests/test_ui_icons.py::test_icon_template_for_dom_cloning_exists - As...
+FAILED tests/test_ui_icons.py::test_symbol_inventory_is_exactly_the_consumed_set
+FAILED tests/test_ui_icons.py::test_replaced_code_points_are_gone_from_components
+FAILED tests/test_ui_icons.py::test_prose_arrows_stay_text_but_action_suffixes_are_icons
+FAILED tests/test_ui_icons.py::test_ellipsis_and_title_prefix_are_the_only_whitelisted_glyphs
+6 failed, 4 passed in 0.73s

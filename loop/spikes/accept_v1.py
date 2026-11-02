@@ -211,8 +211,11 @@ def phase1(c: httpx.Client) -> None:
           "divergences": au.get("divergences")})
     ck("A40 视图带权威闸门态（不是只有事件流）", au.get("present") is True, au.get("reason"))
     ck("A41 权威锚可复算且一致（gates.sha256）", au.get("anchor_ok") is True, au.get("anchor_detail"))
-    ck("A42 权威态覆盖全部三道闸门",
-       set((au.get("gates") or {}).keys()) == set(GA.gate_ids()), list((au.get("gates") or {}).keys()))
+    # LOOP §14（2026-10-30）：`G1_no_impact` 是 N5 必改=0 才出现的分流支线，
+    # 本轮停在 G1（N5 还没跑）⇒ 未出现，权威投影按适用性过滤（不计入"全部闸门"）。
+    ck("A42 权威态覆盖全部已出现的闸门（含分流支线判定）",
+       set((au.get("gates") or {}).keys()) == set(GA.gate_ids()) - {"G1_no_impact"},
+       list((au.get("gates") or {}).keys()))
     ck("A43 未签的 G1 在权威里 human_signed=false",
        (au.get("gates") or {}).get("G1_diff_confirm", {}).get("human_signed") is False,
        (au.get("gates") or {}).get("G1_diff_confirm"))

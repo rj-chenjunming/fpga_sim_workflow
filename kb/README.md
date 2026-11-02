@@ -39,7 +39,7 @@
     ├── n1_snapshot.py             #   N0/N1：自研代码 tar + 全量清单 md5 + manifest
     ├── n2_diff.py                 #   N2：纯确定性差异对比（三路）
     ├── n5_impact.py               #   N5：段粗筛 → offset/位域交集 → 必改/待查
-    ├── case_state.py              #   用例态台账（I2；init/set/show/check；N16 前置唯一判据）
+    ├── case_state.py              #   用例态台账（I2；init/set/show/check/override；N16 前置唯一判据）
     ├── gate.py                    #   三道人工闸门的持久化状态机（I6）
     ├── n16_promote.py             #   N16：人触发 + Host 原子晋升（默认 dry-run，--promote 才写盘；I4/I2/I7 前置）
     ├── n10_pending.py             #   N10 待裁决单一写者（只 append pending.json 的 n10_items）

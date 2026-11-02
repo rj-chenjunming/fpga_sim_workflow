@@ -1,0 +1,1 @@
+{"states": ["synthetic"], "selector_sanitized": {".g": ".g", ".h": ".h"}, "selector_counts": {".g": 1, ".h": 1}, "co_match": [{"a": ".g", "b": ".h", "count": 1, "sample_state": "synthetic"}], "co_match_pair_count": 1, "pairs_checked": 0}

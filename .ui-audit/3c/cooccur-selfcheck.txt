@@ -1,0 +1,147 @@
+##############################################################################
+# 3C 证据工具自检（交付 2 · cooccur.py）实跑记录
+# 时间：2026-10-30；仓库根 R=/home/work/chenjunming/change-impact-loop
+# 环境：loop/.venv/bin/python；Chromium=$R/.pw-browsers；HOME=$R/.chrome-home；TMPDIR=$R/.chrome-tmp
+##############################################################################
+
+## 0 输入与靶子
+- 输入：.ui-audit/3c/cooccur-selectors.json（md5 09a37dd9990f2b0b73edba8a2843ca35）
+  212 个选择器；blocked_pairs 原始 370 对、去重后 329 对。
+- 被测 web：.ui-audit/3c/snap-harness-same（= 开工前基线，app.css md5 103ec751…；两次跑同一目录）
+- 状态：9 基础 × 3 主视口（1280x720/1440x900/1920x1080）+ toast / alert / gate-empty × 3 = 36 个状态；
+  <dialog> 打开态由 agent(#agentWindow)、node-detail(#nodeDetail) 覆盖。
+- 附加元素探针（不在输入清单、输出里用 probe_selectors 标出）：button、#btnS0
+  —— 只为把「元素选择器 vs 类选择器」这类竞争纳入证据，并把「.btn 与 button」做成可判定断言。
+
+## 1 第一次运行（含 --selfcheck 判别性断言）原始输出
+$ cd $R/loop && PLAYWRIGHT_BROWSERS_PATH=$R/.pw-browsers HOME=$R/.chrome-home TMPDIR=$R/.chrome-tmp \
+    .venv/bin/python $R/.ui-audit/3c/cooccur.py \
+      --web $R/.ui-audit/3c/snap-harness-same \
+      --selectors $R/.ui-audit/3c/cooccur-selectors.json \
+      --out $R/.ui-audit/3c/cooccur.json --selfcheck
+---- 原始输出 ----
+web=/home/work/chenjunming/change-impact-loop/.ui-audit/3c/snap-harness-same
+状态数=36（3 视口 × 12 状态）；选择器 212 个（匹配用 212 个）
+  collected 1280x720/s0              elements=948   selectors=212 hits=603
+  collected 1280x720/setup           elements=948   selectors=212 hits=603
+  collected 1280x720/run             elements=1420  selectors=212 hits=921
+  collected 1280x720/gate            elements=1420  selectors=212 hits=921
+  collected 1280x720/dirpicker       elements=966   selectors=212 hits=627
+  collected 1280x720/agent           elements=1426  selectors=212 hits=920
+  collected 1280x720/node-detail     elements=1525  selectors=212 hits=941
+  collected 1280x720/empty           elements=948   selectors=212 hits=603
+  collected 1280x720/legacy          elements=411   selectors=212 hits=39
+  collected 1280x720/toast           elements=948   selectors=212 hits=603
+  collected 1280x720/alert           elements=948   selectors=212 hits=604
+  collected 1280x720/gate-empty      elements=948   selectors=212 hits=603
+  collected 1440x900/s0              elements=948   selectors=212 hits=603
+  collected 1440x900/setup           elements=948   selectors=212 hits=603
+  collected 1440x900/run             elements=1420  selectors=212 hits=921
+  collected 1440x900/gate            elements=1420  selectors=212 hits=921
+  collected 1440x900/dirpicker       elements=966   selectors=212 hits=627
+  collected 1440x900/agent           elements=1426  selectors=212 hits=920
+  collected 1440x900/node-detail     elements=1525  selectors=212 hits=941
+  collected 1440x900/empty           elements=948   selectors=212 hits=603
+  collected 1440x900/legacy          elements=411   selectors=212 hits=39
+  collected 1440x900/toast           elements=948   selectors=212 hits=603
+  collected 1440x900/alert           elements=948   selectors=212 hits=604
+  collected 1440x900/gate-empty      elements=948   selectors=212 hits=603
+  collected 1920x1080/s0             elements=948   selectors=212 hits=603
+  collected 1920x1080/setup          elements=948   selectors=212 hits=603
+  collected 1920x1080/run            elements=1420  selectors=212 hits=921
+  collected 1920x1080/gate           elements=1420  selectors=212 hits=921
+  collected 1920x1080/dirpicker      elements=966   selectors=212 hits=627
+  collected 1920x1080/agent          elements=1426  selectors=212 hits=920
+  collected 1920x1080/node-detail    elements=1525  selectors=212 hits=941
+  collected 1920x1080/empty          elements=948   selectors=212 hits=603
+  collected 1920x1080/legacy         elements=411   selectors=212 hits=39
+  collected 1920x1080/toast          elements=948   selectors=212 hits=603
+  collected 1920x1080/alert          elements=948   selectors=212 hits=604
+  collected 1920x1080/gate-empty     elements=948   selectors=212 hits=603
+{"web": "/home/work/chenjunming/change-impact-loop/.ui-audit/3c/snap-harness-same", "selectors": "/home/work/chenjunming/change-impact-loop/.ui-audit/3c/cooccur-selectors.json", "out": "/home/work/chenjunming/change-impact-loop/.ui-audit/3c/cooccur.json", "states": 36, "selector_total": 214, "input_selector_total": 212, "probe_selectors": ["button", "#btnS0"], "invalid_selectors": 0, "zero_hit_selectors": 29, "co_match_pair_count": 68, "pairs_checked": 22791, "blocked_pairs_checked": 329, "blocked_pairs_co_match": 2, "untrusted_states": []}
+PASS 必然共命中 .btn                         button             count=1161 sample='btn'
+PASS 必然共命中 .rail-entry                  #btnS0             count=33 sample='btn btn-block rail-entry'
+PASS 必然共命中 .btn                         .btn-sm            count=651 sample='btn btn-ghost btn-sm'
+PASS 必然共命中 .btn-ghost                   .btn-ghost:hover   count=369 sample='btn btn-ghost btn-sm'
+PASS 必然共命中 .btn                         .btn:disabled      count=228 sample='btn'
+PASS 必然不共命中 .dp-list                   .rail-entry       （出现在 co_match=False）
+PASS 必然不共命中 .run-item                  .agent-open       （出现在 co_match=False）
+PASS 必然不共命中 .aw-layout                 .aw-intervene     （出现在 co_match=False）
+PASS 空扫自检：36 个状态中 0 个不可信 []
+PASS 共命中对 68 个 / 已检查对 22791 个；选择器 214 个，其中 0 命中 29 个
+PASS: 共命中证据采集完成
+EXIT1=0
+COOCCUR_DURATION=37s
+---- 结束 ----
+
+## 2 稳定性：同一 web 目录跑两次，co_match 集合必须一致
+$ ... cooccur.py --web $R/.ui-audit/3c/snap-harness-same --selectors ... --out $R/.ui-audit/3c/cooccur-b.json
+---- 第二次运行 ----
+{"web": "/home/work/chenjunming/change-impact-loop/.ui-audit/3c/snap-harness-same", "selectors": "/home/work/chenjunming/change-impact-loop/.ui-audit/3c/cooccur-selectors.json", "out": "/home/work/chenjunming/change-impact-loop/.ui-audit/3c/cooccur-b.json", "states": 36, "selector_total": 214, "input_selector_total": 212, "probe_selectors": ["button", "#btnS0"], "invalid_selectors": 0, "zero_hit_selectors": 29, "co_match_pair_count": 68, "pairs_checked": 22791, "blocked_pairs_checked": 329, "blocked_pairs_co_match": 2, "untrusted_states": []}
+PASS: 共命中证据采集完成
+EXIT2=0
+---- 结束 ----
+$ .venv/bin/python .ui-audit/3c/cooccur.py --out .ui-audit/3c/cooccur.json \
+    --check-stable .ui-audit/3c/cooccur-b.json
+{"co_match_only_in_a": [], "co_match_only_in_b": [], "co_match_count_a": 68, "co_match_count_b": 68, "selector_count_diffs": {}, "selector_count_diff_total": 0}
+PASS: co_match 集合与逐选择器命中数完全一致
+EXIT=0
+⇒ co_match 集合 diff 为空（only_in_a=[] / only_in_b=[]），逐选择器命中数也完全一致；
+  另用 python 集合比较（含 count）复核：pair+count identical True、state_element_totals identical True。
+
+## 3 判据判别性：3 个必然共命中 + 3 个必然不共命中
+必然共命中（前 3 个在输入清单内，后 2 个用到附加探针 button / #btnS0）：
+  - .btn                ↔ .btn-sm              count=651   （同一元素同时有这两个类）
+  - .btn                ↔ .btn:disabled        count=228   （`:disabled` 是静态伪类，保留后可命中）
+  - .btn-ghost          ↔ .btn-ghost:hover     count=369   （跨 sanitize：:hover 剥掉后才命中）
+  - .rail-entry         ↔ #btnS0               count=33    （#btnS0 本身带 rail-entry 类）
+  - .btn                ↔ button               count=1161  （元素选择器 vs 类选择器，最典型的竞争）
+  `.btn-ghost` ↔ `.btn-ghost:hover` 是跨 sanitize 的对：`:hover` 在 querySelectorAll 里恒不命中，
+  sanitize 成 `.btn-ghost` 后与静态版共命中 ⇒ 这正是「剥交互态」要保住的那类证据。
+必然不共命中（实测 count=0，且两者都在输入清单里 ⇒ 不是「没测量」造成的假阴性）：
+  - .dp-list ↔ .rail-entry（0）
+  - .run-item ↔ .agent-open（0）
+  - .aw-layout ↔ .aw-intervene（0，容器与后代不是同一元素）
+断言输出见 §1：5 个「必然共命中」PASS、3 个「必然不共命中」PASS、空扫自检 PASS。
+
+## 4 空扫自检（防空证据）
+- 规则：每状态元素总数 > 100 且 (.btn/header/.rail-entry) 中至少 2 个命中 > 0，否则该状态不可信（exit 1）。
+- 36 个状态全部 trusted；untrusted_states = []
+- 元素最少的可信状态：1280x720/legacy（411 个元素）；probe 命中最少的组合：1280x720/legacy（probes_hit={'.btn': 8, 'header': 1, '.rail-entry': 0}）
+- 全部状态元素总数区间：411 ~ 1525
+- 附加态确实渲染出来了（state_extras，1440x900）：
+  1440x900/alert         {"alert_text": "受控替身：派生失败（cooccur 夹具）"}
+  1440x900/gate-empty    {"alert_text": "尚未选择运行。请先在左侧选择一条运行记录。"}
+  1440x900/toast         {"toast_text": "基线已刷新：3 个版本"}
+
+## 5 未覆盖 / 0 命中选择器（29 个，JSON 里 zero_hit_selectors 逐条列出）
+.aw-edit-pair, .aw-edit-pair pre, .aw-log-count, .aw-log-row, .aw-log-row b, .aw-log-row p, .aw-log-row>span, .aw-toolbar #awIdentity, .banner, .banner.bad, .dp-note, .ev-row, .form-divider, .gate-blockers, .linkbtn, .log-pre, .receipt-id, .receipt-label, .refs, .run-empty, .s0-checks .check-passed b, .s0-checks .check-passed>span, .s0-history-item, .spinner, .stage.active, .stage.active .stage-idx, .stage.done, .stage.done .stage-idx, .ver-flag
+  说明：这些选择器只出现在本工具**没有打开**的子态（如 .aw-* 的日志/编辑分支、.stage.active 的
+  自动展开态、.banner/错误横幅、.run-empty、.spinner、.receipt-*/refs 等），因此 0 命中是
+  「未覆盖」而不是「不存在」；报告里保留而不是删掉，是为了让复核者能查到边界。
+
+## 6 blocked_pairs 回填（Lead 的竞争对）
+- 去重后 329 对；co_match 真出现过的：[('.btn', '.btn-sm', 651), ('.btn', '.btn-primary', 195)]
+- 其余 327 对在这些受控状态下**没有共命中**，逐对结果（含 count / 样例 / measured 标记）在
+  cooccur.json 的 blocked_pairs 里；blocked_pairs_unmeasured = 0，即所有对的两方都在被测集合内
+  （凡是一方没被测的选择器，工具会记 measured=false 而不是记成「不共命中」）。
+- 口径：pairs_checked = C(214,2) = 22791（214 = 输入 212 + 探针 2）；co_match_pairs = 68。
+- sanitize 实际改动 3 条（其余 211 条原样可用）：
+  - .btn-ghost:hover       → .btn-ghost     交互态 :hover 已剥（querySelectorAll 恒不命中）
+  - .mark:after            → .mark          pseudo-element :after 已剥
+  - .pulse:after           → .pulse         pseudo-element :after 已剥
+  剥掉的伪元素不在 querySelectorAll 的可匹配范围内，伪元素之间的互斥只能由静态判据处理；
+  剥掉交互态伪类会让命中集合变成「该规则目标元素」的**上界近似**（宁可多算共命中，不假绿）。
+
+## 7 附加稳健性：在 Lead 的 884 选择器全量清单上也跑通（不是交付口径，但证明不脆）
+$ ... cooccur.py --web $R/.ui-audit/3c/snap-harness-same \
+    --selectors $R/.ui-audit/3c/cooccur-selectors-full.json --out .../cooccur-full-check.json
+{... "selector_total": 885, "input_selector_total": 884, "probe_selectors": ["#btnS0"],
+ "invalid_selectors": 1, "zero_hit_selectors": 299, "co_match_pair_count": 2626,
+ "pairs_checked": 391170, "untrusted_states": []}
+PASS: 共命中证据采集完成   EXIT=0   DURATION=44s
+- 884 个选择器里 61 个被 sanitize 改写过；`:selection` 剥成空串 ⇒ 进 invalid_selectors（如实报出，不当 0 命中）。
+- `button` 已在全量清单内，故探针只剩 #btnS0；36 个状态仍全部 trusted。
+- 原始输出存档：.ui-audit/3c/cooccur-full-check.txt（2.9 MB 中间 JSON 已删，结论以本段与日志为准）。
+
+退出码：两次运行都 0（采集成功 + 空扫自检通过）；--check-stable 0；全量清单稳健性运行 0。

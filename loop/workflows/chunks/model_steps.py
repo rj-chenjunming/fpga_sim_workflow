@@ -77,7 +77,7 @@ from .n6_facts import _api_semantics_for, build_n6_targets  # noqa: E402,F401
 from .n10_semantics import (  # noqa: E402,F401
     PENDING_CLASSES, _case_pass_fields, _cases_table, _classification_summary,
     _diffs_for_classification, _per_case_fail_buckets,
-    _persist_pending, _reconcile_markdown,
+    _persist_cases, _persist_pending, _reconcile_markdown,
 )
 from .n11_guard import _host_identity  # noqa: E402,F401
 
@@ -1464,6 +1464,7 @@ async def n10_reconcile(data: Any) -> dict[str, Any]:
         reconcile_path = _artifact(ctx, "n10_reconcile.md")
         _write_text(reconcile_path, _reconcile_markdown(out))
         out["reconcile_md_path"] = str(reconcile_path)
+        out.update(_persist_cases(ctx, out))  # S2：机器原因逐例快照（只搬运既有判据）
         await data.async_set_state("n10_reconcile", out)
         ctx.node_finished("N10", status="pass" if out["both_zero"] else "fail",
                           detail={"both_zero": out["both_zero"],
@@ -1477,7 +1478,8 @@ async def n10_reconcile(data: Any) -> dict[str, Any]:
                                       f"{counts_text(out.get('counts'))}，"
                                       f"both_zero={out['both_zero']}（{cls_out['mode']}）"
                                   )},
-                          refs=[ev.get("path", ""), str(reconcile_path)])
+                          refs=[ev.get("path", ""), str(reconcile_path),
+                                out["n10_cases_path"]])
         return out
 
     # ---------------------------------------------------------------- real
@@ -1583,6 +1585,7 @@ async def n10_reconcile(data: Any) -> dict[str, Any]:
     reconcile_path = _artifact(ctx, "n10_reconcile.md")
     _write_text(reconcile_path, _reconcile_markdown(out))
     out["reconcile_md_path"] = str(reconcile_path)
+    out.update(_persist_cases(ctx, out))  # S2：机器原因逐例快照（只搬运既有判据）
     await data.async_set_state("n10_reconcile", out)
     status = "pass" if (n9.get("verdict") or {}).get("passed") else "fail"
     ctx.node_finished("N10", status=status,
@@ -1602,8 +1605,9 @@ async def n10_reconcile(data: Any) -> dict[str, Any]:
                                   f"verdict_passed={(n9.get('verdict') or {}).get('passed')}，"
                                   f"待裁决 {len(pending_items)} 项（{cls_out['mode']}）"
                               )},
-                      refs=[str(reconcile_path)] + [str((cases.get(c) or {}).get("path") or "")
-                                                    for c in target_cases][:4])
+                      refs=[str(reconcile_path), out["n10_cases_path"]]
+                      + [str((cases.get(c) or {}).get("path") or "")
+                         for c in target_cases][:4])
     return out
 
 

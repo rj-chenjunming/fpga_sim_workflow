@@ -21,7 +21,7 @@
 |---|---|---|
 | [`OVERVIEW.md`](OVERVIEW.md) | **项目总览 + 三张流程图**（架构边界 / 主流程 / 长任务生命周期） | 先读这个 |
 | [`UI_RUNBOOK.md`](UI_RUNBOOK.md) | **人工跑通手册（2026-10-23 版）**：起服务与预检、S0 环境准备与演练、运行配置、节点详情/Agent 窗口、三道闸门怎么点、终点判读与排障（操作类，非契约） | 要亲手跑一遍时看；截图见 [`evidence/UI_RUNBOOK_20261023/`](evidence/UI_RUNBOOK_20261023/README.md) |
-| [`spec/`](spec/) | 三份契约：业务篇 / 编排篇 / 环境插件篇 | 见 §2 |
+| [`spec/`](spec/) | 契约集 SPEC-01～10（业务 / 编排 / 环境插件 / Agent 上下文与窗口 / DSH 后端 / UI / S0 / 开发侧 RSI） | 见 §2 |
 | [`agents/`](agents/) | 6 个角色定义 + 2 份开工提示词 | [`agents/README.md`](agents/README.md) |
 | [`evidence/`](evidence/) | 验收报告与演练证据（**内容冻结、只增不改**） | [`evidence/README.md`](evidence/README.md) |
 | [`history/`](history/) | 拆仓前的历史快照（**不是现状**） | [`history/README.md`](history/README.md) |
@@ -35,6 +35,7 @@
 后续工作统一入口：[下一轮 SpecDD 计划](plans/2026-10-22-next-iteration-specdd.md) → [内网验证手册](plans/2026-10-22-intranet-validation.md)（可复制命令、预期结果、失败处理、证据交接）。先收口 R1–R5，再做 F14/F05；本次成册不代表修复已实施。原 [优化与重构执行手册](plans/OPTIMIZATION_PLAYBOOK.md) 保留 F 编号与任务来源，历史实施进度见 STATUS §14 起，最新复核/离线交付见 §35–§36。此前 [优化评估](audit/AUDIT-20261021-specdd-followups.md) 与 [原路线](plans/2026-10-21-specdd-followups.md) 保留为来源。
 
 网页视觉升级：[视觉契约](spec/WEB_UI_SPEC.md#14-全站网页视觉系统2026-10-21) → [实施计划](plans/2026-10-21-desktop-redesign.md) → [预览与验证证据](evidence/WEB_REDESIGN_20261021.md)。范围为浏览器中的现有工作台；状态与本轮实测见 STATUS §12。
+UI 设计审视与批次 1+2 优化（2026-10-30）：[按 ai-design-skills 的审计](audit/AUDIT-20261030-ui-design.md) → [优化计划与执行记录](plans/2026-10-30-ui-visual-optimization.md) → [前后对比证据](evidence/UI_VISUAL_OPTIMIZATION_20261030/README.md)；门禁与未做项见 STATUS §140；字号阶梯（§14 增补 / §10 A14）见 [实施计划](plans/2026-10-30-ui-typography-scale.md) 与 STATUS §141。
 
 内网浏览器验证：[Rocky 离线包与运行命令](../loop/offline/README.md) → [交付计划](plans/2026-10-22-browser-offline.md)；实际结果与主机系统库限制见 STATUS §36。
 
@@ -43,6 +44,7 @@
 ## 2 `spec/` 契约
 
 > **编号**：每份 SPEC 有稳定编号 `SPEC-0X`（文件名不变）。当前修订记录：
+> [SPEC-REV-20](spec/SPEC-REV-20-20261102.md)（2026-11-02，**已实现**：用例判据人签覆写 CASE-OVERRIDE；[计划](plans/2026-11-02-case-override.md)、证据见 `evidence/CASE_OVERRIDE_20261102/`，门禁见 STATUS §148）、
 > [SPEC-REV-13](spec/SPEC-REV-13-20261026.md)（云端 DSH 接入与 M1/M2/M3 记忆优化实施规格，**未实现**；[详细设计](plans/2026-10-26-cloud-dsh-memory-design.md)，本轮见 STATUS §104）、
 > [SPEC-REV-12](spec/SPEC-REV-12-20261026.md)（2026-10-26，**已实现**：R1 失败报告收口（方案 D）+ R2 真实轮冻结为 drill 夹具；验证见 [SPEC_REV05_VERIFY](evidence/SPEC_REV05_VERIFY_20261026.md)、依据 [REAL_N9_20261024](evidence/REAL_N9_20261024.md)，门禁见 STATUS §65）、
 > [SPEC-REV-11](spec/SPEC-REV-11-20261025.md)（H2b 逐问题复核与候选版本失效，恢复续修），
@@ -57,6 +59,7 @@
 > [SPEC-REV-02](spec/SPEC-REV-02-20261023.md)（DSH 执行后端设计草案，未实现）、
 > [SPEC-REV-01](spec/SPEC-REV-01-20261022.md)（2026-10-22，已生效）。
 > 修订记录只增不改；后续依次 `SPEC-REV-14`…
+> **新增 SPEC（不是修订）**：[SPEC-10 开发侧工作流自我迭代契约](spec/RSI_SPEC.md)（2026-10-29，规格阶段，**未实现**）。
 
 | 编号 | 文件 | 管什么 |
 |---|---|---|
@@ -69,6 +72,7 @@
 | SPEC-07 | [Agent 工作窗口](spec/AGENT_WINDOW_SPEC.md) | 逐节点观察、人工补充指令、请求暂停/恢复/终止、控制审计与身份隔离（仅模型节点；Host 节点用 SPEC-04 §4.2.1） |
 | SPEC-08（分期实施） | [DSH Agent 执行后端](spec/DSH_AGENT_RUNTIME_SPEC.md) | D1 首片提取后端边界；原生 DSH 核、工具/候选权限及真实会话接入仍待验证 |
 | SPEC-09（分期实施） | [AI 工作面板体验设计](spec/AI_WORK_PANEL_SPEC.md) | 首批统一入口与 N3/N6/N8 成果展示；后置能力、验证边界见 STATUS §55 |
+| SPEC-10（规格阶段） | [开发侧工作流自我迭代（RSI）](spec/RSI_SPEC.md) | 会话后复盘、draft 经验、skill 提案与人批准、RSI 台账（**不是业务闸门**）、复核三态与 stale；P0–P2 分期与验收，**未实现** |
 
 DSH 交互三层对齐（2026-10-28）：[体检对照表](plans/2026-10-28-three-layer-interaction-alignment.md) → [P1–P8 探针实测](evidence/DSH_PROBE_20261028/README.md) （只体检不改代码；Q1–Q7 + C1–C4 冲突裁决已定）→ [REV-14 执行器契约对齐](spec/SPEC-REV-14-20261028.md)（D1–D4 偏离登记；S1/S2 机制已实现，见 STATUS §109/§111）→ [REV-15 闸门绑产物指纹](spec/SPEC-REV-15-20261028.md)（S0b，已实现 C1）→ [P0 能力清单与隔离探测](evidence/DSH_P0_20261028/README.md)（bwrap 可挡宿主数据，但 `/proc` 可读 key；Q8 已裁：D1 + bwrap 缓解）→ [S1 切片](plans/2026-10-28-s1-dsh-process.md)（机制层，见 STATUS §109）→ [S2 切片](plans/2026-10-28-s2-candidate-selfcheck-observation.md) + [S2 实测证据](evidence/DSH_S2_20261028/README.md)（结构化候选 / 启动自检 / sdk 观测面；见 STATUS §111）→ [S2 开工提示词](agents/开工提示词_S2-DSH执行器与后续切片.md)→ [S3 开工提示词（WM → IL → EXP）](agents/开工提示词_S3-记忆与指令.md) → [S3 切片计划](plans/2026-10-28-s3-wm-il-exp.md) + [S3 实测证据](evidence/DSH_S3_20261028/README.md)（WM/IL/EXP 三片，C1 机制；四门与未做清单见 STATUS §112）→ [S4–S6 开工提示词](agents/开工提示词_S4-投影取证与候选导入.md)（S4 投影与界面 / S5 C2 真机取证 / S6 候选导入与公平对照；见 STATUS §113）→ **[S4–S6 交付](STATUS.md)**（S4 `d0f069f` §114 / S5 `4a4186c` §115 / S6 `3d2a1a6` §116；证据档 `DSH_S4_20261028`、`DSH_C2_20261029`、`DSH_S6_20261029`）→ **[S7 开工提示词](agents/开工提示词_S7-暴露面收敛与真机收口.md)**（N6 收口 + DS-06 真机 / tool-allowlist / DSH Web 实例与同源反代真机 / 低成本清理）。
 

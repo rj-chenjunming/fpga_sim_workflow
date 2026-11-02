@@ -1,0 +1,48 @@
+provision rc=0
+[info] ENV_ROOT=/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES
+[info] WORKSPACE(origin data root)=/home/work/chenjunming/change-impact-loop/.dev-ws-lead
+[info] STATE=/home/work/chenjunming/change-impact-loop/.lead-e2e-state  PORT=8198  ENTRY=env
+[info] 派生副本父目录=/home/work/chenjunming/change-impact-loop/workspaces
+  [ok  ] 前置：uvlan 在 PATH
+  [ok  ] 前置：影子数据根存在
+  [ok  ] 服务启动：/api/health.env_root == 原始 ENV_ROOT
+[info] 环境项目入口：baseline=/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES（整套环境，RTL 不替换）
+  [ok  ] POST /api/s0/from-rtl（只给环境项目）返回 200
+[info] record=S0-20261030T083534496338-5614fd9eda checks={'copy': 'passed', 'rtl': 'skipped', 'non_rtl': 'passed', 'ports': 'passed', 'smoke': 'waiting', 'baseline': 'passed'}
+  [ok  ] 记录 entry=env_folder 且 rtl_source/rtl_prefix 为 null
+  [ok  ] copy/non_rtl/baseline 三项 passed
+  [FAIL] rtl 检查 skipped 且理由写明「未替换」  <<< {'key': 'rtl', 'label': 'RTL 未替换（环境项目入口）', 'status': 'skipped', 'reason': '环境项目入口：未提供新版 RTL，副本 RTL 与源环境逐文件一致（copy 判据已覆盖），不做替换'}
+  [ok  ] ports 零差异（RTL 未替换 ⇒ 无接口差异）
+  [ok  ] 派生时 smoke 尚未跑（waiting）且未准出
+  [ok  ] copy_plan 落账（copied 非空 / 排除根非空）
+  [ok  ] 未提供 RTL ⇒ rtl_plan/folder_warning 为 null
+  [ok  ] 副本数据根自包含（<副本>/kb 存在）
+  [ok  ] POST …/advance 返回 200
+[info] checks after advance={'copy': 'passed', 'rtl': 'skipped', 'non_rtl': 'passed', 'ports': 'passed', 'smoke': 'passed', 'baseline': 'passed'}
+  [ok  ] 三库冒烟 passed
+  [ok  ] 环境项目入口准出：五项 passed + rtl=skipped 且 ready_for_execution=true
+  [ok  ] POST …/activate 返回 202
+  [ok  ] 202 的 switch.target_env_root == 副本
+  [ok  ] 切换后 /api/health.env_root == 副本
+[info] /api/env/state={"env_root": "/home/work/chenjunming/change-impact-loop/workspaces/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES-derived-20261030T083534496338Z", "env_id": "simenv-tcs9620-64ch", "origin_env_root": "/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES", "switch": {"status": "active", "target_env_root": "/home/work/chenjunming/change-impact-loop/workspaces/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES-derived-20261030T083534496338Z", "target_workspace": "/home/work/chenjunming/change-impact-loop/workspaces/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES-derived-20261030T0
+  [ok  ] 切换后 env/state：当前根=副本、原始根仍为 ENV_ROOT
+  [ok  ] 切换结论 active（env_switch.status）
+  [ok  ] 副本数据根存在（<副本>/kb）
+  [ok  ] 派生数据根的基线准入通过（至少一个 valid）
+  [ok  ] POST /api/runs(real) 返回 200
+[info] run=RUN-20261030-163606 status=waiting_gate pending=G1_diff_confirm:0
+  [ok  ] real run 跑到 G1（N0–N3 真实执行）
+  [ok  ] run 文档记录 env_root=副本、origin=原始根
+  [ok  ] G1 签 ignored（human，含逐条理由）返回 200
+[info] G1 逐条处置条目数=0
+  [ok  ] G1 ignored 后运行收敛到终态（不再阻塞切回）
+  [ok  ] 原始 ENV_ROOT 零写入（find -newer 命中 0）
+  [ok  ] POST /api/env/switch-back 返回 202
+  [ok  ] 切回后 /api/health.env_root == 原始 ENV_ROOT
+  [ok  ] 切回后 env/state：当前根=原始根、原始根记录不变
+  [ok  ] 切回后副本仍保留
+  [ok  ] 切回后 DELETE …/copy 返回 200（副本可手动清理）
+
+=> PASS=32 FAIL=1
+FAILED: rtl 检查 skipped 且理由写明「未替换」
+chain rc=1

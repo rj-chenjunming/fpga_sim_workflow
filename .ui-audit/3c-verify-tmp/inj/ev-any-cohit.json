@@ -1,0 +1,1 @@
+{"states": ["s"], "selector_sanitized": {".any-a": ".any-a", ".any-b": ".any-b"}, "selector_counts": {".any-a": 1, ".any-b": 1}, "co_match": [{"a": ".any-a", "b": ".any-b", "count": 3, "sample_state": "s"}], "co_match_pair_count": 1, "pairs_checked": 1}

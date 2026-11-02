@@ -38,6 +38,7 @@ from .chunks.gates import (
     gate1,
     gate2,
     gate3,
+    gate_no_impact,
     halt,
 )
 from .chunks.host_steps import (
@@ -82,7 +83,14 @@ LOOP_FLOW = TriggerFlow(name="change-impact-loop")
     .to(gate1)
 )
 
-LOOP_FLOW.when("G1_CONFIRMED").to(n5_impact).to(n6_author).to(n6_apply).to(n7_compile).to(n8_check)
+LOOP_FLOW.when("G1_CONFIRMED").to(n5_impact)
+# LOOP §14：N5 必改=0 ⇒ 进 G1 分流支线 `G1_no_impact`（N5b）；有任一必改 ⇒ 原路径。
+# 两个事件由 `n5_impact` 自己在完成后发**一个**；不许两边都走。
+LOOP_FLOW.when("N5_HAS_MUST_CHANGE").to(n6_author).to(n6_apply).to(n7_compile).to(n8_check)
+LOOP_FLOW.when("N5_ZERO_MUST_CHANGE").to(gate_no_impact)
+# 分流支线：结束（HALT 终态，不晋升）或转全量回归（跳 N6–N8 直接 N9 全跑）
+LOOP_FLOW.when("G1_NO_IMPACT_END").to(halt)
+LOOP_FLOW.when("G1_NO_IMPACT_FULL_REGRESSION").to(n9_submit)
 # 有疑义 / 忽略 ⇒ 不进入修订阶段，闭环显式终止（不假装收敛）
 LOOP_FLOW.when("G1_IGNORED").to(halt)
 LOOP_FLOW.when("G1_DISPUTED").to(halt)
@@ -173,6 +181,10 @@ class RunDoc:
     #: R5：环境来源（S0 派生记录 id）。**可空**：drill 与"未经 S0 派生"都是 None，
     #: 不得据此声称环境就绪（S0-b 未接入，ready_for_execution 恒 false）。
     s0_record_id: str | None = None
+    #: S0 §9.6 / 编排规格 §13：本次运行实际使用的环境根与其原始根（派生副本切换后不同）。
+    #: 只增字段；缺省 None 表示历史记录（读旧记录不得 KeyError）。
+    env_root: str | None = None
+    env_origin_root: str | None = None
     status: str = "running"
     created_at: str = ""
     updated_at: str = ""
@@ -187,6 +199,8 @@ class RunDoc:
             "baseline": self.baseline,
             "project": self.project,
             "s0_record_id": self.s0_record_id,
+            "env_root": self.env_root,
+            "env_origin_root": self.env_origin_root,
             "mode": self.mode,
             "scenario": self.scenario,
             "status": self.status,
@@ -521,12 +535,22 @@ class RunManager:
             runner=self.runner,
             pending={"rework_limit": REWORK_LIMIT},
         )
+        # 编排规格 §13：记录本次运行实际使用的环境根与原始根（派生副本切换后二者不同）。
+        # origin 由 `host/env_switch` 的持久化记录给出（唯一来源）；未记录时退化为当前根。
+        env_root = str(P.ENV_ROOT)
+        try:
+            from host import env_switch as _env_switch
+            origin = _env_switch.origin_env_root()
+        except (ImportError, ValueError):
+            origin = None
         doc = RunDoc(
             run_id=run_id,
             run_dir=str(run_dir),
             baseline=baseline_id,
             project=project or str(P.ENV_ROOT),
             s0_record_id=s0_record_id,
+            env_root=env_root,
+            env_origin_root=str(origin) if origin is not None else env_root,
             mode=mode,
             scenario=scenario,
             created_at=P.now_iso(dt),

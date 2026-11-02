@@ -1,0 +1,41 @@
+== phase 2：重启后重新附着 + G2 + G3 ==
+  [val ] restore_report = {'restored': ['RUN-20261102-120331'], 'failed': [], 'jobs': {'running': 0, 'done': 1, 'dead': 0, 'undelivered': 1}}
+  [ok  ] B1 重启后从快照恢复了本 run
+  [ok  ] B2 恢复无失败项
+  [val ] 重附着后的 job = {'job_id': 'JOB-f6f5bedc1dd4', 'phase': 'done', 'rc': 0, 'elapsed_s': 0.0}
+  [ok  ] B3 重新附着到**同一个**作业
+  [ok  ] B4 单槽状态与作业相位自洽（运行中⇒占锁 / 终态⇒不占）
+  [ok  ] B5 gate_history 仍恰好一次 G1（重启不重复记账）
+  [val ] G2 状态 = waiting_gate
+  [ok  ] B6 到达 G2_report_accept
+  [val ] counts = {'koutou1': {'label': '口径一（`*E` 文本行数）', 'value': 1687, 'zero': False, 'refs': ['line 359: UVM_INFO pcie_sequence.sv(598) @ 153.513 us [PCIE_REG_RD@3DW] *E @ADDR[0x84] -> DATA[0x0] != EXP[0xffffffff]', 'line 362: UVM_INFO pcie_sequence.sv(598) @ 153.833 us [PCIE_REG_RD@3DW] *E @ADDR[0x84] -> DATA[0x0] != EXP[0x55555555]', 'line 365: UVM_INFO pcie_sequence.sv(598) @ 154.153 us [PCIE_REG_RD@3DW] *E @ADDR[0x84] -> DATA[0x0] != EXP[0xaaaaaaaa]', 'line 368: UVM_INFO pcie_sequence.sv(598) @ 154.473 us [PCIE_REG_RD@3DW] *E @ADDR[0x84] -> DATA[0x0] != EXP[0x12345678]', 'line 376: UVM_INFO pcie_sequence.sv(598) @ 155.353 us [PCIE_REG_RD@3DW] *E @ADDR[0x88] -> DATA[0xff] != EXP[0x3]']}, 'koutou2': {'label': '口径二（UVM Report Summary）', 'value': {'UVM_INFO': 34933, 'UVM_WARNING': 0, 'UVM_ERROR': 0, 'UVM_FATAL': 0}, 'zero': True, 'refs': ['line 35154: UVM_INFO :34933', 'line 35155: UVM_WARNING :    0', 'line 35156: UVM_ERROR :    0', 'line 35157: UVM_FATAL :    0']}, 'both_zero': False, 'single_source': True, 'note': '两套口径分别取、分别存，不得互相替代（doc/AGENTS.md 红线 3 / spec I3）。'}
+  [val ] verdict = {'passed': False, 'reasons': ['口径一 = 1687 ≠ 0'], 'criterion': 'PASS ⟺ 两套口径皆 0 ∧ UVM Report Summary 出现 ∧ 期望观测点印记三向一致', 'must_not': '口径二为 0 不足以判绿：口径一非 0 或印记不一致时**不得**判跑通。'}
+  [val ] imprints = {'N6_FPGA_DATE_PCIE': {'verified_count': 5, 'failed_count': 0, 'consistent': True}}
+  [val ] job(终) = {'phase': 'done', 'rc': 0, 'elapsed_s': 0.0}
+  [val ] slot(终) = {'locked': False, 'holder': None, 'holder_alive': None, 'holder_alive_known': False, 'holder_job_id': None, 'holder_job_pid': None, 'holder_phase': None, 'format_version': None, 'queued': [], 'queue_depth': 0}
+  [ok  ] B7 两套口径并列呈现（一个不能替代另一个）
+  [ok  ] B8 口径一 = 1687（夹具实测值）
+  [ok  ] B9 口径二 UVM_ERROR=0 且判零
+  [ok  ] B10 两口径分歧 ⇒ both_zero 必须为 false
+  [ok  ] B11 分歧时不得判绿（verdict.passed=False）
+  [ok  ] B12 verdict 明说「不得把跑通当结论」
+  [ok  ] B13 印记三向一致
+  [ok  ] B14 作业终态 rc==0（该用例本身跑得完）
+  [ok  ] B15 作业结束后单槽已释放
+  [ok  ] B16 G2 自造枚举被拒 400
+  [ok  ] B17 G2 非人类 actor 被拒 403
+  [ok  ] B18 拒绝后仍停在 G2（中断未被消耗）
+  [val ] human 签 G2 = {'status': 200, 'decision': 'accept'}
+  [ok  ] B19 人类签 G2 成功
+  [ok  ] B20 到达 G3_regression_decision
+  [val ] gate_history 计数 = {'G1_diff_confirm': 1, 'G2_report_accept': 1}
+  [ok  ] B21 G1/G2 各恰好一次
+  [val ] G3 material = {'blockers': [('I1_UNRESOLVED_ENTRIES', 'warning'), ('I3_KOUTOU1_NONZERO', 'blocker'), ('F_N16_04_STAGING_RESIDUE', 'warning'), ('I4_CONFLICTS_UNCLEARED', 'blocker')], 'can': {'judge_pass': False, 'promote': False}}
+  [ok  ] B22 G3 材料里冲突未清零仍是 blocker
+  [ok  ] B23 冲突未清零时 full_now 被拒 403（I4 在提交前判）
+  [ok  ] B24 subset_only 同样被 I4 拒 403
+  [ok  ] B25 G3 非人类 actor 被拒 403
+  [ok  ] B26 三次拒绝后仍停在 G3
+  [ok  ] B27 人类选 defer 成功（I4 允许的选项）
+
+===== phase 2：PASS=27 FAIL=0 =====

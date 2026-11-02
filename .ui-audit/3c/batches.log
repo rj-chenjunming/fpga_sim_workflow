@@ -1,0 +1,64 @@
+===== batch 1  start 14:34:09 =====
+  merged .run-item .rid [top] rules [21] → 第 459 条位置
+本批合并 15 个选择器；批日志 /home/work/chenjunming/change-impact-loop/.ui-audit/3c/merge-log-001.json
+{"before_web": "/home/work/chenjunming/change-impact-loop/.ui-audit/3c/snap-before", "after_web": "/home/work/chenjunming/change-impact-loop/.ui-audit/3c/web-stage", "combinations": 24, "diff_combinations": 0, "diffs": [], "transition_declaration_diffs": {}}
+PASS: 所有 24 个（宽度, 状态）组合的计算样式指纹完全一致（含 transition-*/animation-* 真实计算值；无限动画已停在 0 时刻）。
+===== batch 2  start 14:35:23 =====
+  merged .empty-title [top] rules [33, 490] → 第 1117 条位置
+本批合并 15 个选择器；批日志 /home/work/chenjunming/change-impact-loop/.ui-audit/3c/merge-log-002.json
+{"before_web": "/home/work/chenjunming/change-impact-loop/.ui-audit/3c/snap-before", "after_web": "/home/work/chenjunming/change-impact-loop/.ui-audit/3c/web-stage", "combinations": 24, "diff_combinations": 0, "diffs": [], "transition_declaration_diffs": {}}
+PASS: 所有 24 个（宽度, 状态）组合的计算样式指纹完全一致（含 transition-*/animation-* 真实计算值；无限动画已停在 0 时刻）。
+===== batch 3  start 14:36:36 =====
+  merged .stages [top] rules [48] → 第 532 条位置
+本批合并 15 个选择器；批日志 /home/work/chenjunming/change-impact-loop/.ui-audit/3c/merge-log-003.json
+{"before_web": "/home/work/chenjunming/change-impact-loop/.ui-audit/3c/snap-before", "after_web": "/home/work/chenjunming/change-impact-loop/.ui-audit/3c/web-stage", "combinations": 24, "diff_combinations": 0, "diffs": [], "transition_declaration_diffs": {}}
+PASS: 所有 24 个（宽度, 状态）组合的计算样式指纹完全一致（含 transition-*/animation-* 真实计算值；无限动画已停在 0 时刻）。
+===== batch 4  start 14:37:50 =====
+  merged .avatar [top] rules [83] → 第 544 条位置
+本批合并 15 个选择器；批日志 /home/work/chenjunming/change-impact-loop/.ui-audit/3c/merge-log-004.json
+{"before_web": "/home/work/chenjunming/change-impact-loop/.ui-audit/3c/snap-before", "after_web": "/home/work/chenjunming/change-impact-loop/.ui-audit/3c/web-stage", "combinations": 24, "diff_combinations": 0, "diffs": [], "transition_declaration_diffs": {}}
+PASS: 所有 24 个（宽度, 状态）组合的计算样式指纹完全一致（含 transition-*/animation-* 真实计算值；无限动画已停在 0 时刻）。
+===== batch 5  start 14:39:04 =====
+  merged .count-box [top] rules [107] → 第 544 条位置
+本批合并 15 个选择器；批日志 /home/work/chenjunming/change-impact-loop/.ui-audit/3c/merge-log-005.json
+{"before_web": "/home/work/chenjunming/change-impact-loop/.ui-audit/3c/snap-before", "after_web": "/home/work/chenjunming/change-impact-loop/.ui-audit/3c/web-stage", "combinations": 24, "diff_combinations": 0, "diffs": [], "transition_declaration_diffs": {}}
+PASS: 所有 24 个（宽度, 状态）组合的计算样式指纹完全一致（含 transition-*/animation-* 真实计算值；无限动画已停在 0 时刻）。
+===== batch 6  start 14:40:17 =====
+  merged .diff-item [top] rules [137] → 第 540 条位置
+本批合并 15 个选择器；批日志 /home/work/chenjunming/change-impact-loop/.ui-audit/3c/merge-log-006.json
+{"before_web": "/home/work/chenjunming/change-impact-loop/.ui-audit/3c/snap-before", "after_web": "/home/work/chenjunming/change-impact-loop/.ui-audit/3c/web-stage", "combinations": 24, "diff_combinations": 0, "diffs": [], "transition_declaration_diffs": {}}
+PASS: 所有 24 个（宽度, 状态）组合的计算样式指纹完全一致（含 transition-*/animation-* 真实计算值；无限动画已停在 0 时刻）。
+===== batch 7  start 14:41:31 =====
+  merged .s0-form-actions [top] rules [150] → 第 429 条位置
+本批合并 15 个选择器；批日志 /home/work/chenjunming/change-impact-loop/.ui-audit/3c/merge-log-007.json
+{"before_web": "/home/work/chenjunming/change-impact-loop/.ui-audit/3c/snap-before", "after_web": "/home/work/chenjunming/change-impact-loop/.ui-audit/3c/web-stage", "combinations": 24, "diff_combinations": 0, "diffs": [], "transition_declaration_diffs": {}}
+PASS: 所有 24 个（宽度, 状态）组合的计算样式指纹完全一致（含 transition-*/animation-* 真实计算值；无限动画已停在 0 时刻）。
+===== batch 8  start 14:42:43 =====
+  merged .s0-blockers p [top] rules [155] → 第 431 条位置
+本批合并 15 个选择器；批日志 /home/work/chenjunming/change-impact-loop/.ui-audit/3c/merge-log-008.json
+{"before_web": "/home/work/chenjunming/change-impact-loop/.ui-audit/3c/snap-before", "after_web": "/home/work/chenjunming/change-impact-loop/.ui-audit/3c/web-stage", "combinations": 24, "diff_combinations": 0, "diffs": [], "transition_declaration_diffs": {}}
+PASS: 所有 24 个（宽度, 状态）组合的计算样式指纹完全一致（含 transition-*/animation-* 真实计算值；无限动画已停在 0 时刻）。
+===== batch 9  start 14:43:56 =====
+  merged .aw-head h2 [top] rules [213] → 第 507 条位置
+本批合并 15 个选择器；批日志 /home/work/chenjunming/change-impact-loop/.ui-audit/3c/merge-log-009.json
+{"before_web": "/home/work/chenjunming/change-impact-loop/.ui-audit/3c/snap-before", "after_web": "/home/work/chenjunming/change-impact-loop/.ui-audit/3c/web-stage", "combinations": 24, "diff_combinations": 0, "diffs": [], "transition_declaration_diffs": {}}
+PASS: 所有 24 个（宽度, 状态）组合的计算样式指纹完全一致（含 transition-*/animation-* 真实计算值；无限动画已停在 0 时刻）。
+===== batch 10  start 14:45:09 =====
+  merged .aw-detail summary [top] rules [221] → 第 510 条位置
+本批合并 15 个选择器；批日志 /home/work/chenjunming/change-impact-loop/.ui-audit/3c/merge-log-010.json
+{"before_web": "/home/work/chenjunming/change-impact-loop/.ui-audit/3c/snap-before", "after_web": "/home/work/chenjunming/change-impact-loop/.ui-audit/3c/web-stage", "combinations": 24, "diff_combinations": 0, "diffs": [], "transition_declaration_diffs": {}}
+PASS: 所有 24 个（宽度, 状态）组合的计算样式指纹完全一致（含 transition-*/animation-* 真实计算值；无限动画已停在 0 时刻）。
+===== batch 11  start 14:46:21 =====
+  merged .diff-fields th [top] rules [675] → 第 677 条位置
+本批合并 15 个选择器；批日志 /home/work/chenjunming/change-impact-loop/.ui-audit/3c/merge-log-011.json
+{"before_web": "/home/work/chenjunming/change-impact-loop/.ui-audit/3c/snap-before", "after_web": "/home/work/chenjunming/change-impact-loop/.ui-audit/3c/web-stage", "combinations": 24, "diff_combinations": 0, "diffs": [], "transition_declaration_diffs": {}}
+PASS: 所有 24 个（宽度, 状态）组合的计算样式指纹完全一致（含 transition-*/animation-* 真实计算值；无限动画已停在 0 时刻）。
+===== batch 12  start 14:47:34 =====
+  merged .s0-table td [top] rules [937] → 第 939 条位置
+本批合并 5 个选择器；批日志 /home/work/chenjunming/change-impact-loop/.ui-audit/3c/merge-log-012.json
+{"before_web": "/home/work/chenjunming/change-impact-loop/.ui-audit/3c/snap-before", "after_web": "/home/work/chenjunming/change-impact-loop/.ui-audit/3c/web-stage", "combinations": 24, "diff_combinations": 0, "diffs": [], "transition_declaration_diffs": {}}
+PASS: 所有 24 个（宽度, 状态）组合的计算样式指纹完全一致（含 transition-*/animation-* 真实计算值；无限动画已停在 0 时刻）。
+===== batch 13  start 14:48:46 =====
+本批合并 0 个选择器；批日志 /home/work/chenjunming/change-impact-loop/.ui-audit/3c/merge-log-013.json
+batch 13: 没有可合并组，收工
+ALL BATCHES DONE 14:48:47

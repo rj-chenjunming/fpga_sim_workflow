@@ -1,0 +1,15 @@
+== phase 4b：重启后长任务仍在跑 + 取消（界面第二个写动作） ==
+  [val ] restore_report = {'restored': ['RUN-20261102-120346'], 'failed': [], 'jobs': {'running': 1, 'done': 1, 'dead': 0, 'undelivered': 0}}
+  [ok  ] D1 重启后本长任务 run 被恢复
+  [ok  ] D1b 重启时确有作业在跑（re-attach 才有意义）
+  [val ] 重启后 = {'status': 'waiting_job', 'job': 'JOB-6af32108022f', 'phase': 'running', 'slot': {'locked': True, 'holder': {'format_version': 2, 'owner_pid': 147, 'owner_start': '836379470', 'job_id': 'N9-RUN-20261102-120346', 'tc': 'tc_pcie_rw_02', 'seed': '1', 'acquired_at': 1793592231.3178005, 'note': None, 'job_pid': 171, 'job_pid_start': '836380109', 'job_record_id': 'JOB-6af32108022f', 'start_ts': 1793592231.3178005}, 'holder_alive': True, 'holder_alive_known': True, 'holder_job_id': 'N9-RUN-20261102-120346', 'holder_job_pid': 171, 'holder_phase': 'running', 'format_version': 2, 'queued': [], 'queue_depth': 0}}
+  [ok  ] D2 仍重新附着到**同一个**在跑作业
+  [ok  ] D3 跨重启单槽**没有丢**（活动锁不得被重启误清）
+  [ok  ] D4 重启后仍处于停放（waiting_job：可以再恢复，不会 fail-closed）
+  [val ] cancel 响应 = {'ok': True, 'job_id': 'JOB-6af32108022f'}
+  [ok  ] D5 取消请求被接受
+  [val ] 取消后 = {'status': 'failed', 'job': 'cancelled', 'slot': {'locked': False, 'holder': None, 'holder_alive': None, 'holder_alive_known': False, 'holder_job_id': None, 'holder_job_pid': None, 'holder_phase': None, 'format_version': None, 'queued': [], 'queue_depth': 0}}
+  [ok  ] D6 取消后 run 不是成功态
+  [ok  ] D7 取消后单槽已释放（终态必须释放，否则会把一次失败放大成全体挂起）
+
+===== phase 4b：PASS=8 FAIL=0 =====

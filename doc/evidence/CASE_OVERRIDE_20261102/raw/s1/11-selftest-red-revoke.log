@@ -1,0 +1,178 @@
+[PASS] 1 STATES 与 case_states.schema.json 的 enum 逐值一致 (['未改', '已修订待验', '已验证通过', '已退回'])
+[kb] 已建立用例态台账：/tmp/selftest-case-state-anvyopf8/case_states.json（run_id=RUN-19990101-000000，四态字面量固定）
+[kb] 时间字段声明：updated_at（README §3.1.1，--now/KB_NOW 注入）
+[PASS] 2 init rc=0 且台账落盘 (rc=0)
+[PASS] 3 初始 rework_cycles={n6_n8_cycles:0,limit:3} ({'limit': 3, 'n6_n8_cycles': 0})
+[PASS] 4 重复 init 无 --force ⇒ rc=3（台账只增不改） (rc=3)
+[PASS] 5 缺全部卡点证据 ⇒ 已验证通过被拒 rc=3 (rc=3)
+[PASS] 6 被拒后台账未写盘（找不到 tc_a） 
+[kb] tc_a：/tmp/selftest-case-state-anvyopf8/case_states.json -> 已验证通过
+[kb]   compile_rc=0 static_check=pass two_counts={'script_egrep': 0, 'uvm_error': 0, 'uvm_summary_present': True}
+[kb] 时间字段声明：updated_at（README §3.1.1）
+[PASS] 7 卡点B/C/D+两口径+观测点齐全 ⇒ 已验证通过 rc=0 (rc=0)
+{"cases":1,"counts":{"已修订待验":0,"已退回":0,"已验证通过":1,"未改":0},"for_promotion":false,"invalid_states":[],"ok":true,"path":"/tmp/selftest-case-state-anvyopf8/case_states.json","pending":[],"problems":[],"rework_cycles":{"g2_rework_cycles":null,"limit":3,"n6_n8_cycles":0,"over_limit":false},"run_id":"RUN-19990101-000000","waived":[]}
+[PASS] 8 check 无待验、返工未到上限 ⇒ rc=0 (rc=0)
+[kb] tc_b：/tmp/selftest-case-state-anvyopf8/case_states.json -> 已修订待验
+[kb]   compile_rc=None static_check=None two_counts=None
+[kb] 时间字段声明：updated_at（README §3.1.1）
+[PASS] 9 写入已修订待验 rc=0 (rc=0)
+{"cases":2,"counts":{"已修订待验":1,"已退回":0,"已验证通过":1,"未改":0},"for_promotion":true,"invalid_states":[],"ok":false,"path":"/tmp/selftest-case-state-anvyopf8/case_states.json","pending":["tc_b"],"problems":["存在「已修订待验」用例（I2）：tc_b"],"rework_cycles":{"g2_rework_cycles":null,"limit":3,"n6_n8_cycles":0,"over_limit":false},"run_id":"RUN-19990101-000000","waived":[]}
+[PASS] 10 有待验 ⇒ N16 前置 check rc=3 (rc=3)
+     check --json（待验态）： {"ok": false, "note": "rc=3"}
+[kb] tc_b：/tmp/selftest-case-state-anvyopf8/case_states.json -> 已验证通过
+[kb]   compile_rc=0 static_check=pass two_counts={'script_egrep': 0, 'uvm_error': 0, 'uvm_summary_present': True}
+[kb] 时间字段声明：updated_at（README §3.1.1）
+[PASS] 11 tc_b 补齐证据后 已验证通过 rc=0（无待验） (rc=0)
+{"cases":2,"counts":{"已修订待验":0,"已退回":0,"已验证通过":2,"未改":0},"for_promotion":false,"invalid_states":[],"ok":true,"path":"/tmp/selftest-case-state-anvyopf8/case_states.json","pending":[],"problems":[],"rework_cycles":{"g2_rework_cycles":null,"limit":3,"n6_n8_cycles":0,"over_limit":false},"run_id":"RUN-19990101-000000","waived":[]}
+[PASS] 12 无待验 ⇒ check rc=0 (rc=0)
+[kb] 注意：n6_n8_cycles == limit（3）⇒ I7 已到上限，必须升级 N13 人工裁决；check/N16 按 `>= limit` 拒绝晋升
+[kb] tc_a：/tmp/selftest-case-state-anvyopf8/case_states.json -> 已验证通过
+[kb]   compile_rc=0 static_check=pass two_counts={'script_egrep': 0, 'uvm_error': 0, 'uvm_summary_present': True}
+[kb] 时间字段声明：updated_at（README §3.1.1）
+[PASS] 13 记录 n6_n8_cycles==limit(3) 允许（升级 N13 的状态要可记录） (rc=0)
+{"cases":2,"counts":{"已修订待验":0,"已退回":0,"已验证通过":2,"未改":0},"for_promotion":true,"invalid_states":[],"ok":false,"path":"/tmp/selftest-case-state-anvyopf8/case_states.json","pending":[],"problems":["返工循环 n6_n8_cycles=3 >= limit=3（I7）⇒ 已到上限，必须升级 N13 人工裁决"],"rework_cycles":{"g2_rework_cycles":null,"limit":3,"n6_n8_cycles":3,"over_limit":true},"run_id":"RUN-19990101-000000","waived":[]}
+[PASS] 14 cycles>=limit ⇒ check rc=3（边界统一 >=，审计 C5） (rc=3)
+[PASS] 15 cycles>limit ⇒ set rc=3 且台账保持 3（不偷偷放宽预算） (rc=3)
+[PASS] 17 schema 条目属性新增 overrides（array；action=[pass,revoke]；actor_kind=[human]） (['action', 'actor', 'actor_kind', 'decided_at', 'machine', 'prev_state', 'reason', 'record_sha256', 'schema'])
+[kb] 已建立用例态台账：/tmp/selftest-case-state-anvyopf8/ovr/case_states.json（run_id=RUN-19990101-000000，四态字面量固定）
+[kb] 时间字段声明：updated_at（README §3.1.1，--now/KB_NOW 注入）
+[kb] tc_r1：/tmp/selftest-case-state-anvyopf8/ovr/case_states.json -> 已修订待验
+[kb]   compile_rc=None static_check=None two_counts=None
+[kb] 时间字段声明：updated_at（README §3.1.1）
+[kb] tc_r2：/tmp/selftest-case-state-anvyopf8/ovr/case_states.json -> 已修订待验
+[kb]   compile_rc=None static_check=None two_counts=None
+[kb] 时间字段声明：updated_at（README §3.1.1）
+[kb] tc_r3：/tmp/selftest-case-state-anvyopf8/ovr/case_states.json -> 已修订待验
+[kb]   compile_rc=None static_check=None two_counts=None
+[kb] 时间字段声明：updated_at（README §3.1.1）
+[kb] tc_non10：/tmp/selftest-case-state-anvyopf8/ovr/case_states.json -> 已修订待验
+[kb]   compile_rc=None static_check=None two_counts=None
+[kb] 时间字段声明：updated_at（README §3.1.1）
+[kb] tc_ok：/tmp/selftest-case-state-anvyopf8/ovr/case_states.json -> 已修订待验
+[kb]   compile_rc=None static_check=None two_counts=None
+[kb] 时间字段声明：updated_at（README §3.1.1）
+[kb] tc_noreason：/tmp/selftest-case-state-anvyopf8/ovr/case_states.json -> 已修订待验
+[kb]   compile_rc=None static_check=None two_counts=None
+[kb] 时间字段声明：updated_at（README §3.1.1）
+[kb] tc_weird：/tmp/selftest-case-state-anvyopf8/ovr/case_states.json -> 未改
+[kb]   compile_rc=None static_check=None two_counts=None
+[kb] 时间字段声明：updated_at（README §3.1.1）
+[kb] tc_pass：/tmp/selftest-case-state-anvyopf8/ovr/case_states.json -> 已验证通过
+[kb]   compile_rc=0 static_check=pass two_counts={'script_egrep': 0, 'uvm_error': 0, 'uvm_summary_present': True}
+[kb] 时间字段声明：updated_at（README §3.1.1）
+[PASS] 18 §4-1 --actor 'model:gpt-5' 被拒 rc=3 且台账一字节不动 (rc=3 same=True)
+[PASS] 18 §4-1 --actor 'host:kb' 被拒 rc=3 且台账一字节不动 (rc=3 same=True)
+[PASS] 18 §4-1 --actor 'rehearsal:drill' 被拒 rc=3 且台账一字节不动 (rc=3 same=True)
+[PASS] 18 §4-1 --actor 'chenjunming' 被拒 rc=3 且台账一字节不动 (rc=3 same=True)
+[PASS] 18 §4-1 --actor '' 被拒 rc=3 且台账一字节不动 (rc=3 same=True)
+[PASS] 18 §4-1 --actor 'human:' 被拒 rc=3 且台账一字节不动 (rc=3 same=True)
+[PASS] 18 §4-1 --actor 'human:   ' 被拒 rc=3 且台账一字节不动 (rc=3 same=True)
+[PASS] 19 §4-2 reason='' 被拒 rc=3 且台账一字节不动 (rc=3 same=True)
+[PASS] 19 §4-2 reason='   ' 被拒 rc=3 且台账一字节不动 (rc=3 same=True)
+[PASS] 19 §4-2 reason='\t\n' 被拒 rc=3 且台账一字节不动 (rc=3 same=True)
+[PASS] 20 §4-3 用例不在台账 ⇒ rc=3 且台账一字节不动 (rc=3)
+[PASS] 21 §4-4 当前态不是「已修订待验」（pass）⇒ rc=3 且台账不动 (rc=3)
+[PASS] 22 §4-4 当前态不是「已验证通过」（revoke）⇒ rc=3 且台账不动 (rc=3)
+[kb] override revoke：tc_pass 已验证通过 -> 已修订待验（machine.passed=False，机器原因 1 条）
+[kb] 台账：/tmp/selftest-case-state-anvyopf8/ovr/case_states.json（追加 1 条 overrides 记录，record_sha256 可离线复算）
+[kb] 时间字段声明：decided_at/updated_at（README §3.1.1，--now/KB_NOW 注入）
+[FAIL] 22b §4-4 当前态是「已验证通过」但最近一条覆写记录不是 pass（机器途径）⇒ revoke rc=3 且台账不动 (rc=0 same=False)
+[PASS] 23 §4-5 n10_cases.json 缺失 ⇒ rc=3 且台账不动（不许盲签） (rc=3)
+[PASS] 24 §4-5 用例不在 n10_cases.json ⇒ rc=3 且台账不动 (rc=3)
+[PASS] 25 §4-5 机器判 passed=true ⇒ rc=3 且台账不动（机器已放过，不许盲签） (rc=3)
+[PASS] 26 §4-5 机器 reasons 为空 ⇒ rc=3 且台账不动（原因必须可读） (rc=3)
+[PASS] 27 §4-7 批量任一不满足 ⇒ 整批拒绝 rc=3、台账不动、两例都没写 (rc=3)[FAIL] 用例态台账已存在：/tmp/selftest-case-state-anvyopf8/case_states.json
+      ⇒ 台账只增不改；要清空重来请显式 --force
+[FAIL] --state 已验证通过 被拒（I3 跑通门槛是合取，缺一不可）：
+  - 卡点B compile_rc 必须 == 0（实际 None）
+  - 卡点C static_check 必须 == 'pass'（实际 None）
+  - 口径一 script_egrep 缺失
+  - 口径二 uvm_error 缺失
+  - 必须显式 --uvm-summary-present（口径二确有 UVM Report Summary）
+  - run_md5 必须非空（运行对象身份 join，spec §7.6）
+  - 必须同时给 --obs-expected 与 --obs-observed（观测点三向一致）
+      台账**未写盘**，用例态保持原值。
+[FAIL] --rework-cycles 4 > limit 3（I7）=> 返工超上限，必须升级 N13 人工裁决（spec §8）=> 台账**未写盘**
+[FAIL] §4-1 --actor 的类必须是 human，得到 'model'（model:/host:/rehearsal: 一律拒绝） ⇒ 台账**未写盘**
+[FAIL] §4-1 --actor 的类必须是 human，得到 'host'（model:/host:/rehearsal: 一律拒绝） ⇒ 台账**未写盘**
+[FAIL] §4-1 --actor 的类必须是 human，得到 'rehearsal'（model:/host:/rehearsal: 一律拒绝） ⇒ 台账**未写盘**
+[FAIL] §4-1 --actor 必须是 human:<非空名>；裸名 'chenjunming' 不是人签（模型/替身一律不准签） ⇒ 台账**未写盘**
+[FAIL] §4-1 --actor 必须是 human:<非空名>（得到 ''） ⇒ 台账**未写盘**
+[FAIL] §4-1 --actor 的 human 名为空（得到 'human:'） ⇒ 台账**未写盘**
+[FAIL] §4-1 --actor 的 human 名为空（得到 'human:   '） ⇒ 台账**未写盘**
+[FAIL] §4-2 reason 不能为空/全空白（人签必须写明为什么放开）
+       ⇒ 台账**未写盘**
+[FAIL] §4-2 reason 不能为空/全空白（人签必须写明为什么放开）
+       ⇒ 台账**未写盘**
+[FAIL] §4-2 reason 不能为空/全空白（人签必须写明为什么放开）
+       ⇒ 台账**未写盘**
+[FAIL] 人签覆写被拒（§4 前置不满足，1 处未通过）⇒ 台账**一字节未动**：
+  - §4-3 用例 'tc_absent' 不在台账（覆写不新增用例）
+[FAIL] 人签覆写被拒（§4 前置不满足，1 处未通过）⇒ 台账**一字节未动**：
+  - §4-4 用例 'tc_weird' 当前态是 '未改'，pass 要求当前态为 '已修订待验'
+[FAIL] 人签覆写被拒（§4 前置不满足，1 处未通过）⇒ 台账**一字节未动**：
+  - §4-4 用例 'tc_r1' 当前态是 '已修订待验'，revoke 要求当前态为 '已验证通过'
+[FAIL] 人签覆写被拒（§4 前置不满足，1 处未通过）⇒ 台账**一字节未动**：
+  - §4-5 机器原因未留存：缺 /tmp/selftest-case-state-anvyopf8/ovr/n10_cases.json（早于覆写功能的旧轮无法复核机器判据 ⇒ 不能盲签）
+[FAIL] 人签覆写被拒（§4 前置不满足，1 处未通过）⇒ 台账**一字节未动**：
+  - §4-5 机器原因缺该例：/tmp/selftest-case-state-anvyopf8/ovr/n10_cases.json 的 cases 里没有 'tc_non10'
+[FAIL] 人签覆写被拒（§4 前置不满足，1 处未通过）⇒ 台账**一字节未动**：
+  - §4-5 机器判 'tc_ok' 的 passed=True（要求恰好 false）⇒ 机器没判它失败，不许盲签（O-3）
+[FAIL] 人签覆写被拒（§4 前置不满足，1 处未通过）⇒ 台账**一字节未动**：
+  - §4-5 机器判 'tc_noreason' 的 reasons 为空/非数组 ⇒ 没有可读的失败原因，不许盲签（O-3）
+[FAIL] 人签覆写被拒（§4 前置不满足，1 处未通过）⇒ 台账**一字节未动**：
+  - §4-5 机器判 'tc_ok' 的 passed=True（要求恰好 false）⇒ 机器没判它失败，不许盲签（O-3）
+[FAIL] 同一批 --case 有重复：['tc_r1', 'tc_r1'] ⇒ 一次动作每例只能一条记录
+       台账**未写盘**
+[FAIL] §4-8 覆写链复核失败（台账**未改动**）：
+  - 用例 'tc_r2' 的 overrides[0] record_sha256 复核失败：记录声明 '0000000000000000000000000000000000000000000000000000000000000000' 实际复算 f9ec464029d60f7510a19674d6a5d3fb597ecec6a9f185049f3923f613dc888a
+[FAIL] §4-8 既有覆写链复核失败 ⇒ 拒绝追加（台账**未改动**）：
+  - 用例 'tc_r2' 的 overrides[0] record_sha256 复核失败：记录声明 '0000000000000000000000000000000000000000000000000000000000000000' 实际复算 f9ec464029d60f7510a19674d6a5d3fb597ecec6a9f185049f3923f613dc888a
+[FAIL] §4-8 覆写链复核失败（台账**未改动**）：
+  - 用例 'tc_pass' 的 overrides[0] source_md5 复核失败：声明 '01088cd1a642ffceb7af8886d2abf065' 实际 d88c0cb1aefb4ce6477ad5f7bb511a94（/tmp/selftest-case-state-anvyopf8/ovr/n10_cases.json 已变）
+  - 用例 'tc_r1' 的 overrides[0] source_md5 复核失败：声明 '01088cd1a642ffceb7af8886d2abf065' 实际 d88c0cb1aefb4ce6477ad5f7bb511a94（/tmp/selftest-case-state-anvyopf8/ovr/n10_cases.json 已变）
+  - 用例 'tc_r1' 的 overrides[1] source_md5 复核失败：声明 '01088cd1a642ffceb7af8886d2abf065' 实际 d88c0cb1aefb4ce6477ad5f7bb511a94（/tmp/selftest-case-state-anvyopf8/ovr/n10_cases.json 已变）
+  - 用例 'tc_r2' 的 overrides[0] source_md5 复核失败：声明 '01088cd1a642ffceb7af8886d2abf065' 实际 d88c0cb1aefb4ce6477ad5f7bb511a94（/tmp/selftest-case-state-anvyopf8/ovr/n10_cases.json 已变）
+  - 用例 'tc_r3' 的 overrides[0] source_md5 复核失败：声明 '01088cd1a642ffceb7af8886d2abf065' 实际 d88c0cb1aefb4ce6477ad5f7bb511a94（/tmp/selftest-case-state-anvyopf8/ovr/n10_cases.json 已变）
+[FAIL] §4-8 覆写链复核失败（台账**未改动**）：
+  - 用例 'tc_pass' 的 overrides[0] source_md5 无法复核：缺件 /tmp/selftest-case-state-anvyopf8/ovr/n10_cases.json
+  - 用例 'tc_r1' 的 overrides[0] source_md5 无法复核：缺件 /tmp/selftest-case-state-anvyopf8/ovr/n10_cases.json
+  - 用例 'tc_r1' 的 overrides[1] source_md5 无法复核：缺件 /tmp/selftest-case-state-anvyopf8/ovr/n10_cases.json
+  - 用例 'tc_r2' 的 overrides[0] source_md5 无法复核：缺件 /tmp/selftest-case-state-anvyopf8/ovr/n10_cases.json
+  - 用例 'tc_r3' 的 overrides[0] source_md5 无法复核：缺件 /tmp/selftest-case-state-anvyopf8/ovr/n10_cases.json
+[FAIL] 用例态台账不是合法 JSON（Expecting property name enclosed in double quotes: line 1 column 2 (char 1)）：/tmp/selftest-case-state-anvyopf8/case_states.json
+
+[PASS] 28 同批重复 --case ⇒ rc=2（请求形状错）且台账不动 (rc=2)
+[kb] override pass：tc_r1 已修订待验 -> 已验证通过（machine.passed=False，机器原因 1 条）
+[kb] 台账：/tmp/selftest-case-state-anvyopf8/ovr/case_states.json（追加 1 条 overrides 记录，record_sha256 可离线复算）
+[kb] 时间字段声明：decided_at/updated_at（README §3.1.1，--now/KB_NOW 注入）
+[PASS] 29 合法覆写 ⇒ rc=0、state 变「已验证通过」、overrides 长度 1 (rc=0 state=已验证通过 len=1)
+[PASS] 30 record_sha256 = sha256(canonical(record 去掉 record_sha256)) 可复算 (236f46c1774656d8)
+[PASS] 31 machine 快照来源唯一 = n10_cases.json（source_path/source_md5/passed/reasons 原样搬运） (src_md5=01088cd1a642ffce)
+[PASS] 32 记录字段：action/actor/actor_kind/prev_state/decided_at（时间走 --now 单一入口） (action=pass prev=已修订待验)
+[PASS] 33 台账 writer / 条目 updated_by 同步 human:<name>；updated_at 走 now_iso() (writer=human:chenjunming)
+[PASS] 34 含 overrides 的台账仍通过 case_states.schema.json 校验 
+[kb] override pass：tc_r2 已修订待验 -> 已验证通过（machine.passed=False，机器原因 1 条）
+[kb] override pass：tc_r3 已修订待验 -> 已验证通过（machine.passed=False，机器原因 1 条）
+[kb] 台账：/tmp/selftest-case-state-anvyopf8/ovr/case_states.json（追加 2 条 overrides 记录，record_sha256 可离线复算）
+[kb] 时间字段声明：decided_at/updated_at（README §3.1.1，--now/KB_NOW 注入）
+[PASS] 35 批量合法 ⇒ rc=0、两例各一条记录、状态皆「已验证通过」（一次落盘） (rc=0)
+[PASS] 36 签后被签用例不再阻断 I2：pending 不含 tc_r1/r2/r3；info.waived 列出三例（展示用，不加新判据） (pending=['tc_non10', 'tc_noreason', 'tc_ok', 'tc_pass'] waived=['tc_r1', 'tc_r2', 'tc_r3'])
+[kb] override revoke：tc_r1 已验证通过 -> 已修订待验（machine.passed=False，机器原因 1 条）
+[kb] 台账：/tmp/selftest-case-state-anvyopf8/ovr/case_states.json（追加 1 条 overrides 记录，record_sha256 可离线复算）
+[kb] 时间字段声明：decided_at/updated_at（README §3.1.1，--now/KB_NOW 注入）
+[PASS] 37 撤销 ⇒ rc=0、追加第 2 条 action=revoke、state 回「已修订待验」、旧记录一字未改 (len=2 state=已修订待验)
+[PASS] 38 撤销后 I2 恢复：tc_r1 重新出现在 pending；waived 只剩 tc_r2/tc_r3 (pending=['tc_non10', 'tc_noreason', 'tc_ok', 'tc_pass', 'tc_r1'] waived=['tc_r2', 'tc_r3'])
+[kb] 覆写链复核通过：/tmp/selftest-case-state-anvyopf8/ovr/case_states.json（逐条 record_sha256 + source_md5 均已复算）
+[PASS] 39 --verify 链完整 ⇒ rc=0 且不写盘（离线复核，不需要 actor/reason/case） (rc=0)
+[PASS] 40 §4-8 record_sha256 复核失败 ⇒ --verify rc=4 且不复写台账 (rc=4)
+[PASS] 41 §4-8 锚复核失败时动作也在写盘前被拒 rc=4、台账不动 (rc=4)
+[PASS] 42 还原后台账字节复原（md5 与篡改前一致） 
+[PASS] 43 §4-8 source_md5 复核失败 ⇒ --verify rc=4 (rc=4)
+[PASS] 44 source_md5 无法复核（件缺失）⇒ --verify rc=4（缺件不当作通过） (rc=4)
+[PASS] 45 恢复 n10_cases.json 后其 md5 与签名时一致 
+[kb] 覆写链复核通过：/tmp/selftest-case-state-anvyopf8/ovr/case_states.json（逐条 record_sha256 + source_md5 均已复算）
+[PASS] 46 恢复后 --verify rc=0（整条链可离线复核） (rc=0)
+[PASS] 16 台账不是合法 JSON ⇒ check rc=4 (rc=4)
+
+汇总：PASS=54 FAIL=1

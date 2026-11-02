@@ -1,0 +1,6 @@
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_api_ui_contract.py::test_create_run_echoes_project - OSErro...
+FAILED tests/test_api_ui_contract.py::test_gate_material_projection_has_diff_entries
+2 failed, 23 passed, 1 warning in 18.18s

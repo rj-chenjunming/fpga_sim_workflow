@@ -1,0 +1,186 @@
+diff --git a/kb/schema/gate_state.schema.json b/kb/schema/gate_state.schema.json
+index 3e2f256..256452e 100644
+--- a/kb/schema/gate_state.schema.json
++++ b/kb/schema/gate_state.schema.json
+@@ -1,12 +1,12 @@
+ {
+   "$schema": "http://json-schema.org/draft-07/schema#",
+-  "title": "kb/run/gates.json —— 三道人工闸门状态（spec I6 / §8.1）",
+-  "description": "G1_diff_confirm / G2_report_accept / G3_regression_decision。**human_signed 只在 actor_kind=human 时为真**；模型与演练一律 false。task-19 起新增 append-only 的 history[] 与防篡改锚 gates.sha256（同目录），见 F-GATE-02/03。",
++  "title": "kb/run/gates.json —— 人工闸门状态（spec I6 / §8.1）",
++  "description": "三道主线闸门 G1_diff_confirm / G2_report_accept / G3_regression_decision；2026-10-30 增补 G1_no_impact（N5 必改=0 的 G1 分流支线，version=2 起存在；不是第四道主线闸门，契约见 CHANGE_IMPACT_LOOP_SPEC §12 / LOOP_ORCHESTRATION_SPEC §14）。**human_signed 只在 actor_kind=human 时为真**；模型与演练一律 false。task-19 起新增 append-only 的 history[] 与防篡改锚 gates.sha256（同目录），见 F-GATE-02/03。",
+   "type": "object",
+   "required": ["schema", "version", "run_id", "created_at", "manifest_from", "manifest_to", "gates"],
+   "properties": {
+     "schema": { "const": "kb/gate-state" },
+-    "version": { "const": 1 },
++    "version": { "enum": [1, 2] },
+     "run_id": { "type": "string", "pattern": "^RUN-[0-9]{8}-[0-9]{6}$" },
+     "created_at": { "type": "string" },
+     "updated_at": { "type": "string" },
+@@ -30,7 +30,8 @@
+       "properties": {
+         "G1_diff_confirm": { "$ref": "#/definitions/gate" },
+         "G2_report_accept": { "$ref": "#/definitions/gate" },
+-        "G3_regression_decision": { "$ref": "#/definitions/gate" }
++        "G3_regression_decision": { "$ref": "#/definitions/gate" },
++        "G1_no_impact": { "$ref": "#/definitions/gate" }
+       }
+     }
+   },
+@@ -41,7 +42,7 @@
+                    "human_signed", "signed_at", "note", "rework_target", "artifacts"],
+       "additionalProperties": true,
+       "properties": {
+-        "gate_id": { "enum": ["G1_diff_confirm", "G2_report_accept", "G3_regression_decision"] },
++        "gate_id": { "enum": ["G1_diff_confirm", "G2_report_accept", "G3_regression_decision", "G1_no_impact"] },
+         "kind": { "enum": ["diff_confirm", "report_accept", "regression_decision"] },
+         "status": { "enum": ["pending", "signed", "rejected"] },
+         "decision": { "type": "string" },
+diff --git a/kb/tools/gate.py b/kb/tools/gate.py
+index ab458b0..5249a67 100644
+--- a/kb/tools/gate.py
++++ b/kb/tools/gate.py
+@@ -1,11 +1,15 @@
+ #!/usr/bin/env python3
+ # -*- coding: utf-8 -*-
+-"""gate.py —— 三道人工闸门的持久化状态机（spec I6 / §1 / §8）
++"""gate.py —— 人工闸门的持久化状态机（spec I6 / §1 / §8）
+ 
+ 闸门（`kb_lib.GATE_IDS`）
+     G1_diff_confirm          N4  差异确认   confirmed / ignored / disputed / pending
+     G2_report_accept         N13 评估       accept / rework / pending
+     G3_regression_decision   N14 回归决策   full_now / subset_only / milestone_only / defer / pending
++    G1_no_impact             N5b 零必改分流 no_impact_end / full_regression / pending
++                             （2026-10-30 增补：G1 的**分流支线**，仅在 N5 必改=0 时出现；
++                              不是第四道主线闸门，契约见 CHANGE_IMPACT_LOOP_SPEC §12 /
++                              LOOP_ORCHESTRATION_SPEC §14）
+ 
+ 铁律（本脚本存在的唯一理由）
+     `human_signed=true` **只在** `--actor-kind human` **且** 给了 `--actor <人名>` 时为真，
+@@ -60,6 +64,7 @@ DEFAULT_EXPECT = {
+     "G1_diff_confirm": "confirmed",
+     "G2_report_accept": "accept",
+     "G3_regression_decision": None,   # 已决策即可：full_now/subset_only/milestone_only/defer
++    "G1_no_impact": None,             # 已决策即可：no_impact_end / full_regression
+ }
+ REWORK_TARGETS = ("N4", "N6")   # spec §8：N13 返工只可回指 N4（范围判错）或 N6（用例改错）
+ ACTOR_KINDS = ("human", "model", "rehearsal", "host")
+@@ -92,9 +97,16 @@ def load_state(run_id):
+         sys.stderr.write("[FAIL] gates.json 的 run_id=%r 与 --run %r 不一致（身份错位）\n"
+                          % (st.get("run_id"), run_id))
+         raise SystemExit(RC_BROKEN)
+-    for g in K.GATE_IDS:
++    # 2026-10-30：`version=2` 含 G1_no_impact；旧 `version=1` 记录只有三道主线闸门
++    # ⇒ 按 version 决定必需集合，历史 gates.json 仍可读、不会被判"状态不完整"。
++    try:
++        version = int(st.get("version") or 1)
++    except (TypeError, ValueError):
++        version = 1
++    need = K.GATE_IDS if version >= 2 else K.GATE_IDS_V1
++    for g in need:
+         if g not in st.get("gates", {}):
+-            sys.stderr.write("[FAIL] gates.json 缺闸门 %s（状态不完整）\n" % g)
++            sys.stderr.write("[FAIL] gates.json 缺闸门 %s（状态不完整；version=%s）\n" % (g, version))
+             raise SystemExit(RC_BROKEN)
+     return st
+ 
+@@ -147,7 +159,9 @@ def cmd_init(args):
+ 
+ def cmd_show(args):
+     st = load_state(args.run)
+-    ids = [args.gate] if args.gate else list(K.GATE_IDS)
++    # 2026-10-30：旧 `version=1` 记录只有三道主线闸门 ⇒ 默认按**记录里实际存在的门**展示，
++    # 不能按 `K.GATE_IDS` 硬列（否则读历史 gates.json 会 KeyError）。
++    ids = [args.gate] if args.gate else list(st.get("gates") or {})
+     if args.gate and args.gate not in K.GATE_IDS:
+         sys.stderr.write("[FAIL] 未知闸门 %r（合法：%s）\n" % (args.gate, ", ".join(K.GATE_IDS)))
+         return RC_REJECT
+diff --git a/kb/tools/kb_lib.py b/kb/tools/kb_lib.py
+index 6d722ad..735ceaa 100644
+--- a/kb/tools/kb_lib.py
++++ b/kb/tools/kb_lib.py
+@@ -544,26 +544,33 @@ def run_dir(run_id, create=False):
+     return p
+ 
+ 
+-# ---------------------------------------------------------------- 三道人工闸门
++# ---------------------------------------------------------------- 人工闸门
+ 
+-GATE_IDS = ("G1_diff_confirm", "G2_report_accept", "G3_regression_decision")
++#: v1 的三道**主线**闸门（旧 `gates.json` 里 `version=1` 的必需集合；读旧记录用）。
++GATE_IDS_V1 = ("G1_diff_confirm", "G2_report_accept", "G3_regression_decision")
++#: 2026-10-30 增补：`G1_no_impact` = N5 必改=0 时的 **G1 分流支线**（不是第四道主线闸门）。
++#: 契约：`doc/spec/CHANGE_IMPACT_LOOP_SPEC.md` §12 + `doc/spec/LOOP_ORCHESTRATION_SPEC.md` §14。
++GATE_IDS = GATE_IDS_V1 + ("G1_no_impact",)
+ GATE_KIND = {
+     "G1_diff_confirm": "diff_confirm",
+     "G2_report_accept": "report_accept",
+     "G3_regression_decision": "regression_decision",
++    "G1_no_impact": "diff_confirm",
+ }
+-# G1 决策枚举；G2/G3 见 spec §2
++# G1 决策枚举；G2/G3 见 spec §2；G1_no_impact 见 LOOP §14
+ GATE_DECISIONS = {
+     "G1_diff_confirm": ["confirmed", "ignored", "disputed", "pending"],
+     "G2_report_accept": ["accept", "rework", "pending"],
+     "G3_regression_decision": ["full_now", "subset_only", "milestone_only", "defer", "pending"],
++    # 零必改分流：结束（必填理由） / 转全量回归；pending 是状态不是动作
++    "G1_no_impact": ["no_impact_end", "full_regression", "pending"],
+ }
+ 
+ 
+ def gate_init(run_id, manifest_from, manifest_to):
+     st = {
+         "schema": "kb/gate-state",
+-        "version": 1,
++        "version": 2,          # 2026-10-30：version=2 含 G1_no_impact（旧 v1 记录仍可读）
+         "run_id": run_id,
+         "manifest_from": manifest_from,
+         "manifest_to": manifest_to,
+@@ -821,16 +828,42 @@ def gate_verify_state_hash(run_id, gate_id):
+     return False, "；".join(parts)
+ 
+ 
++#: 只在特定分支才出现的门（未出现时不计入"全签"判据，也不投影）。
++GATE_BRANCH_ONLY = ("G1_no_impact",)
++
++
++def gate_applicable(gate_id, row):
++    """该门在本轮是否**适用** —— 唯一判据（`gate_summary` 与 `host.gate_authority` 共用）。
++
++    `G1_no_impact`（N5 必改=0 的 G1 分流支线，2026-10-30）未出现时保持 `pending` 且无 history；
++    此时它不适用：既不能把正常运行说成"还有一道门没签"，也不能让它拖住 `all_signed`。
++    其它门恒适用。
++    """
++    if gate_id not in GATE_BRANCH_ONLY:
++        return True
++    row = row or {}
++    return bool(row.get("history") or (row.get("decision") not in (None, "pending")))
++
++
+ def gate_summary(run_id):
+     st = gate_get(run_id)
++    version = int(st.get("version") or 1)
++    ids = [g for g in (GATE_IDS if version >= 2 else GATE_IDS_V1)
++           if g in (st.get("gates") or {})]
++    missing = [g for g in (GATE_IDS if version >= 2 else GATE_IDS_V1) if g not in ids]
++    if missing:
++        raise ValueError("gates.json 状态不完整（version=%s 缺 %s）" % (version, missing))
++    applicable = [g for g in ids if gate_applicable(g, st["gates"][g])]
+     return {
+         "run_id": st["run_id"],
+-        "all_signed": all(st["gates"][g]["status"] == "signed" for g in GATE_IDS),
+-        "human_signed_all": all(st["gates"][g]["human_signed"] for g in GATE_IDS),
++        "version": version,
++        "applicable": applicable,
++        "all_signed": all(st["gates"][g]["status"] == "signed" for g in applicable),
++        "human_signed_all": all(st["gates"][g]["human_signed"] for g in applicable),
+         "gates": {g: {"decision": st["gates"][g]["decision"],
+                       "actor_kind": st["gates"][g]["actor_kind"],
+                       "human_signed": st["gates"][g]["human_signed"]}
+-                  for g in GATE_IDS},
++                  for g in applicable},
+     }
+ 
+ 

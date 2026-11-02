@@ -1,12 +1,12 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "kb/run/gates.json —— 三道人工闸门状态（spec I6 / §8.1）",
-  "description": "G1_diff_confirm / G2_report_accept / G3_regression_decision。**human_signed 只在 actor_kind=human 时为真**；模型与演练一律 false。task-19 起新增 append-only 的 history[] 与防篡改锚 gates.sha256（同目录），见 F-GATE-02/03。",
+  "title": "kb/run/gates.json —— 人工闸门状态（spec I6 / §8.1）",
+  "description": "三道主线闸门 G1_diff_confirm / G2_report_accept / G3_regression_decision；2026-10-30 增补 G1_no_impact（N5 必改=0 的 G1 分流支线，version=2 起存在；不是第四道主线闸门，契约见 CHANGE_IMPACT_LOOP_SPEC §12 / LOOP_ORCHESTRATION_SPEC §14）。**human_signed 只在 actor_kind=human 时为真**；模型与演练一律 false。task-19 起新增 append-only 的 history[] 与防篡改锚 gates.sha256（同目录），见 F-GATE-02/03。",
   "type": "object",
   "required": ["schema", "version", "run_id", "created_at", "manifest_from", "manifest_to", "gates"],
   "properties": {
     "schema": { "const": "kb/gate-state" },
-    "version": { "const": 1 },
+    "version": { "enum": [1, 2] },
     "run_id": { "type": "string", "pattern": "^RUN-[0-9]{8}-[0-9]{6}$" },
     "created_at": { "type": "string" },
     "updated_at": { "type": "string" },
@@ -30,7 +30,8 @@
       "properties": {
         "G1_diff_confirm": { "$ref": "#/definitions/gate" },
         "G2_report_accept": { "$ref": "#/definitions/gate" },
-        "G3_regression_decision": { "$ref": "#/definitions/gate" }
+        "G3_regression_decision": { "$ref": "#/definitions/gate" },
+        "G1_no_impact": { "$ref": "#/definitions/gate" }
       }
     }
   },
@@ -41,7 +42,7 @@
                    "human_signed", "signed_at", "note", "rework_target", "artifacts"],
       "additionalProperties": true,
       "properties": {
-        "gate_id": { "enum": ["G1_diff_confirm", "G2_report_accept", "G3_regression_decision"] },
+        "gate_id": { "enum": ["G1_diff_confirm", "G2_report_accept", "G3_regression_decision", "G1_no_impact"] },
         "kind": { "enum": ["diff_confirm", "report_accept", "regression_decision"] },
         "status": { "enum": ["pending", "signed", "rejected"] },
         "decision": { "type": "string" },

@@ -141,19 +141,25 @@ def test_s0_default_view_and_unavailable_driver_are_explicit(ui):
     pw.expect(page.locator('#viewS0')).to_be_visible()
     pw.expect(page.locator('#s0Readiness')).to_contain_text('尚未准出')
     pw.expect(page.locator('#s0PhaseB')).to_contain_text('三库')
-    pw.expect(page.locator('#s0PhaseB')).to_contain_text('未接入')
+    # T3 裁决 2（2026-10-30）：from-rtl 落地后 S0-b 已由一键入口承接，旧「未接入」不成立。
+    pw.expect(page.locator('#s0PhaseB')).to_contain_text('已接入')
     assert not api['posts']
 
 
 def test_s0_prepare_captures_paths_prevents_duplicate_and_shows_blockers(ui):
     page, api = ui
-    for element, value in [('s0Baseline', '/fixture/baseline'), ('s0Version', 'v1'),
-                           ('s0Rtl', '/fixture/src/rtl'), ('s0Work', '/fixture/baseline_wk_v2')]:
+    # T3（WEB_UI_SPEC §15）：基线/版本/副本路径收进折叠的「高级」区；先展开再填。
+    page.locator('#s0Advanced').evaluate('el => { el.open = true }')
+    # T4（S0 §9.9 / WEB_UI §15）：界面二选一，rtl 模式不再有「基线工程目录」高级键。
+    for element, value in [('s0Version', 'v1'), ('s0Rtl', '/fixture/src/rtl'),
+                           ('s0Work', '/fixture/baseline_wk_v2')]:
         page.locator('#' + element).fill(value)
     page.locator('#s0Prepare').evaluate('el => { el.click(); el.click(); }')
     page.wait_for_timeout(80)
-    assert api['posts'] == [('/api/s0', {'baseline': '/fixture/baseline', 'baseline_version': 'v1',
-                                       'rtl_source': '/fixture/src/rtl', 'work_env': '/fixture/baseline_wk_v2'})]
+    # T3：一键入口由 /api/s0/from-rtl 承接；只为填了的非空字段发键（rtl 模式不发 baseline）。
+    assert api['posts'] == [('/api/s0/from-rtl', {'baseline_version': 'v1',
+                                                 'rtl_source': '/fixture/src/rtl',
+                                                 'work_env': '/fixture/baseline_wk_v2'})]
     release(page, api, {'id': 'S0-fixture', 'status': 'prepared', 'ready_for_execution': False,
                         'work_env': '/fixture/baseline_wk_v2', 'checks': [],
                         'blockers': [{'message': '三库未执行'}], 'report_url': '/api/s0/S0-fixture/report'})
@@ -192,7 +198,9 @@ def test_s0_rehearsal_runs_once_and_shows_four_checks_with_scope_notice(ui):
 
 def test_s0_rejection_keeps_inputs_and_focus_survives_polling(ui):
     page, api = ui
-    for element in ['s0Baseline', 's0Version', 's0Rtl', 's0Work']:
+    # T3（WEB_UI_SPEC §15）：先展开「高级」区，否则三个可写路径不可见。
+    page.locator('#s0Advanced').evaluate('el => { el.open = true }')
+    for element in ['s0Version', 's0Rtl', 's0Work']:
         page.locator('#' + element).fill('/fixture/value')
     page.locator('#s0Work').focus()
     tick(page)

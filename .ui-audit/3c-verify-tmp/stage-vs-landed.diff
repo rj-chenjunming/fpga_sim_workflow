@@ -1,0 +1,69 @@
+--- .ui-audit/3c/web-stage/app.css	2026-10-30 14:47:34.849607802 +0800
++++ loop/web/app.css	2026-10-30 14:50:33.279602332 +0800
+@@ -89,7 +89,7 @@
+ .stage.done .stage-bar i{background:var(--ok)}
+ .stage.wait .stage-bar i{background:var(--warn)}
+ .stage.fail .stage-bar i{background:var(--danger)}
+-.stage-chev{color:var(--faint);font-size:11px;transition:transform .2s var(--ease-out);display:inline-block}
++.stage-chev{color:var(--faint);transition:transform .2s var(--ease-out);display:inline-block}
+ .stage.open .stage-chev{transform:rotate(90deg)}
+ .stage.open .stage-body{display:block}
+ .snode .sb{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+@@ -237,8 +237,6 @@
+ .aw-log-row>span{max-width:137px;flex:0 0 105px}
+ .aw-log-row>div{min-width:0}
+ .aw-detail{border:1px solid var(--line);border-radius:8px;margin-bottom:12px;min-width:0;overflow:hidden}
+-.aw-detail summary:before{content:'▸';color:#799a8c}
+-.aw-detail[open] summary:before{content:'▾'}
+ 
+ .aw-intervene textarea{resize:vertical;min-height:118px;margin-bottom:12px}
+ .agent-window [hidden]{display:none!important}
+@@ -312,7 +310,7 @@
+ #viewSeg button.on:before{content:"";position:absolute;left:0;width:3px;height:18px;background:#b9d5aa;border-radius:3px}
+ #viewSeg button small{margin-left:auto;color:#91ab9a;font:10px var(--font-mono)}
+ #viewSeg button.on small{color:#cae2c4}
+-.nav-icon{width:19px;font-size:20px;line-height:1;text-align:center;color:#91ad9b}
++.nav-icon{width:19px;text-align:center;color:#91ad9b}
+ #viewSeg button.on .nav-icon{color:#c5ddb9}
+ .history-label{padding-top:29px}
+ .run-list{overflow:auto;flex:1;padding:0 14px 18px;min-height:80px;scrollbar-width:thin;scrollbar-color:#496353 transparent;}
+@@ -360,7 +358,6 @@
+ .banner.bad{background:var(--danger-weak);color:var(--danger);border-color:#ebc4bf;}.alert.bad{background:var(--danger-weak);color:var(--danger);border-color:#ebc4bf;}
+ .banner.warn{background:var(--warn-weak);color:var(--warn);border-color:#ead7b7;}.alert.warn{background:var(--warn-weak);color:var(--warn);border-color:#ead7b7;}
+ .empty-card{padding:65px 25px}
+-.empty:before{content:"◇";display:grid;place-items:center;margin:0 auto 20px;width:58px;height:58px;border:1px solid #d6e3d8;border-radius:16px;background:#f0f6f1;color:#60846a;font-size:30px}
+ 
+ /* Preparation：阶段卡 + 表单（营销 hero 按 WEB_UI_SPEC §14 增补 2026-10-30 删除）。 */
+ .eyebrow{font-weight:600;color:var(--muted);font-size:10px;letter-spacing:1.6px;}
+@@ -443,7 +440,7 @@
+ .gate-pane{
+   /* 规格口径（§5 第 2 条 / §14）：上限是**一个** token，两栏同源；判定值
+      = clamp(300px, 100dvh - 340px, 720px)。用例对 token 与解析值双向断言。 */
+-  --gate-pane-max-h:clamp(300px, calc(100dvh - 340px), 720px);
++  --gate-pane-max-h:clamp(300px, calc(100dvh - 300px), 860px);
+   max-height:var(--gate-pane-max-h);
+   overflow-x:auto;overflow-y:auto;
+   overscroll-behavior:contain;
+@@ -530,7 +527,7 @@
+ @media(min-width:1101px) and (max-width:1390px){header{gap:12px}#hdrAddr{display:none}.workspace-tag{display:none}.brand{width:185px;flex-basis:185px}aside{width:224px;flex-basis:224px}main{width:calc(100% - 224px);padding:28px}.page-edition{font-size:11px;gap:6px}.s0-grid{gap:20px}.phase-card{padding:16px;gap:10px;flex-wrap:wrap}.phase-card .chip{margin-left:auto}.run-grid{grid-template-columns:minmax(0,1.2fr) minmax(310px,1fr);gap:20px}.agents{grid-template-columns:1fr}.page-head{flex-wrap:nowrap}.page-head .spacer{display:block}.grid2{grid-template-columns:repeat(2,minmax(0,1fr))}}
+ @media(min-width:761px) and (max-width:1100px){header{gap:10px;padding:0 18px}.brand{width:185px;flex-basis:185px}#hdrAddr{display:none}#hdrHealth{display:none}.workspace-tag{display:none}aside{width:205px;flex-basis:205px}main{width:calc(100% - 205px);padding:25px 22px}.page-edition{display:none}.s0-grid{grid-template-columns:minmax(0,1fr)}.run-grid{grid-template-columns:minmax(0,1fr)}.grid2{grid-template-columns:minmax(0,1fr)}.s0-evidence{display:block}.s0-phases{grid-template-columns:1fr}.aw-layout{grid-template-columns:minmax(0,1fr)}.aw-intervene{border-left:0;border-top:1px solid var(--line)}}
+ /* Existing small-window compatibility, outside this redesign's scope. */
+-@media(max-width:760px){header{height:60px;padding:0 16px}.brand{width:auto;flex-basis:auto;font-size:18px}.header-context{display:none}#hdrAddr{display:none}#hdrEnv{display:none;}#hdrHealth{display:none;}.page-edition{display:none}.shell{flex-direction:column}aside{width:100%;height:auto;position:static;flex-basis:auto}.rail-top{padding:14px;display:flex;gap:10px}.rail-entry{display:none}aside #btnNew{width:100%}.rail-kicker{display:none}.rail-label{display:none}.rail-foot{display:none}#viewSeg{flex-direction:row;margin:0 10px 14px;gap:3px}#viewSeg button{font-size:11px;height:40px;padding:0 8px;gap:6px}#viewSeg button small{display:none}.nav-icon{font-size:16px;width:16px}.run-list{flex:none;overflow-x:auto;min-height:0;max-height:108px;display:flex;padding:0 12px 10px;gap:8px;}.run-item{min-width:175px}.run-item .rid{font-size:11px}main{width:100%;padding:24px 16px}.page-head h1{font-size:24px}.page-head #pageSub{font-size:12px}.s0-grid{min-width:0;grid-template-columns:minmax(0,1fr);}.s0-phases{grid-template-columns:minmax(0,1fr)}.run-grid{grid-template-columns:minmax(0,1fr)}.grid2{grid-template-columns:minmax(0,1fr);}.s0-evidence{display:block}.phase-card{flex-wrap:wrap}.s0-form-actions{flex-direction:column;align-items:stretch}.s0-form-actions .btn{width:100%}.agent-window{width:calc(100vw - 20px)}.aw-head{padding:18px}.aw-observe{padding:18px}.aw-head h2{font-size:16px}.aw-head .eyebrow{font-size:10px}.aw-head .btn{font-size:11px}.aw-layout{grid-template-columns:minmax(0,1fr)}.aw-toolbar{padding:12px 18px;flex-wrap:wrap}.aw-intervene{padding:18px;border-left:0;border-top:1px solid var(--line);}.workspace-footer{font-size:10px}}
++@media(max-width:760px){header{height:60px;padding:0 16px}.brand{width:auto;flex-basis:auto;font-size:18px}.header-context{display:none}#hdrAddr{display:none}#hdrEnv{display:none;}#hdrHealth{display:none;}.page-edition{display:none}.shell{flex-direction:column}aside{width:100%;height:auto;position:static;flex-basis:auto}.rail-top{padding:14px;display:flex;gap:10px}.rail-entry{display:none}aside #btnNew{width:100%}.rail-kicker{display:none}.rail-label{display:none}.rail-foot{display:none}#viewSeg{flex-direction:row;margin:0 10px 14px;gap:3px}#viewSeg button{font-size:11px;height:40px;padding:0 8px;gap:6px}#viewSeg button small{display:none}.nav-icon{width:16px}.run-list{flex:none;overflow-x:auto;min-height:0;max-height:108px;display:flex;padding:0 12px 10px;gap:8px;}.run-item{min-width:175px}.run-item .rid{font-size:11px}main{width:100%;padding:24px 16px}.page-head h1{font-size:24px}.page-head #pageSub{font-size:12px}.s0-grid{min-width:0;grid-template-columns:minmax(0,1fr);}.s0-phases{grid-template-columns:minmax(0,1fr)}.run-grid{grid-template-columns:minmax(0,1fr)}.grid2{grid-template-columns:minmax(0,1fr);}.s0-evidence{display:block}.phase-card{flex-wrap:wrap}.s0-form-actions{flex-direction:column;align-items:stretch}.s0-form-actions .btn{width:100%}.agent-window{width:calc(100vw - 20px)}.aw-head{padding:18px}.aw-observe{padding:18px}.aw-head h2{font-size:16px}.aw-head .eyebrow{font-size:10px}.aw-head .btn{font-size:11px}.aw-layout{grid-template-columns:minmax(0,1fr)}.aw-toolbar{padding:12px 18px;flex-wrap:wrap}.aw-intervene{padding:18px;border-left:0;border-top:1px solid var(--line);}.workspace-footer{font-size:10px}}
+ @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}*:before{animation:none!important;transition:none!important;scroll-behavior:auto!important}*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+ 
+ /* ------------------------------------------------------------------
+@@ -1006,3 +1003,13 @@
+ #stagesGate .stage-head{min-height:44px;padding:10px 14px}
+ #stagesGate .stage-body{padding:12px 14px}
+ #viewGate .card-head{min-height:52px;padding:12px 18px}
++
++/* ---------- 图标（WEB_UI_SPEC §14「资产」：本地内联 sprite，零外链、零字体依赖；批次 4 A） ----------
++   16×16 = symbol viewBox 的 1:1 尺寸；fill:none + stroke:currentColor 是全部 symbol 的共同描边口径，
++   符号内不重复声明；currentColor 让图标继承父元素颜色。不设 font-size（字号受 §14 阶梯/A14 约束）。 */
++.icon{width:16px;height:16px;flex:0 0 auto;display:inline-block;vertical-align:-3px;
++  fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
++/* 空态插图：替代已删的 .empty:before（原 58×58 圆角框逐像素保留；58 − 2 边框 − 26 padding = 30 内容盒） */
++.icon-30{width:30px;height:30px;vertical-align:baseline}
++.empty .icon-30{display:block;width:58px;height:58px;padding:13px;box-sizing:border-box;
++  margin:0 auto 20px;border:1px solid #d6e3d8;border-radius:16px;background:#f0f6f1;color:#60846a}

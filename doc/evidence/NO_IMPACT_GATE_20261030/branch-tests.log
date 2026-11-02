@@ -1,0 +1,12 @@
+$ cd loop && bash spikes/run_software_checks.sh tests/test_no_impact_gate.py -q
+
+[info] 软件层数据根：/tmp/loop-software-qstf21（drill 夹具与 baselines → 真实只读源）
+[info] 共享 state 由 conftest 注入一次性目录（$LOOP_STATE_ROOT）
+[info] 默认排除环境层用例（-m "not env_layer"）；用 bash spikes/run_env_layer_checks.sh
+[info]   在派生 ENV_ROOT 副本上跑这 3 条（本机 ENV_ROOT 只读）；INCLUDE_ENV_LAYER=1 仅在其可写时有效
+[info] 被排除的环境层用例（3 项）：
+  - tests/test_archive_e2.py::test_guard_compile_only_archives_evidence_readonly
+  - tests/test_archive_e2.py::test_guard_archive_is_bounded_and_excludes_guard_log
+  - tests/test_projection_and_frozen.py::test_frozen_witness_before_after_drill_run
+...............                                                          [100%]
+15 passed in 12.32s

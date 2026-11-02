@@ -1,0 +1,50 @@
+before=../3c/snap-before/app.css
+after =stage-FINAL-f047bf6b.css
+跨 @ 上下文、同选择器、同属性、可能同时生效、值不同的对：23 处翻转
+  FAIL .agents  grid-template-columns:  [top]=grid-template-columns=1fr 1fr vs [('@media (max-width:1100px)',)]=grid-template-columns=1fr
+        生效者 before=@media (max-width:1100px) (位置 411/412)  →  after=top (位置 1391/223)
+  FAIL .aw-head  column-gap:  [top]=column-gap=14px vs [('@media(max-width:850px)',)]=column-gap=10px
+        生效者 before=@media(max-width:850px) (位置 954/1098)  →  after=top (位置 1653/571)
+  FAIL .aw-head  row-gap:  [top]=row-gap=14px vs [('@media(max-width:850px)',)]=row-gap=10px
+        生效者 before=@media(max-width:850px) (位置 954/1098)  →  after=top (位置 1653/571)
+  FAIL .aw-intervene  border-left-color:  [top]=border-left-color=1px solid var(--line) vs [('@media(max-width:850px)',)]=border-left-color=0
+        生效者 before=@media(max-width:850px) (位置 977/1103)  →  after=top (位置 1691/576)
+  FAIL .aw-intervene  border-left-style:  [top]=border-left-style=1px solid var(--line) vs [('@media(max-width:850px)',)]=border-left-style=0
+        生效者 before=@media(max-width:850px) (位置 977/1103)  →  after=top (位置 1691/576)
+  FAIL .aw-intervene  border-left-width:  [top]=border-left-width=1px solid var(--line) vs [('@media(max-width:850px)',)]=border-left-width=0
+        生效者 before=@media(max-width:850px) (位置 977/1103)  →  after=top (位置 1691/576)
+  FAIL .aw-log-row  column-gap:  [top]=column-gap=12px vs [('@media(max-width:850px)',)]=column-gap=9px
+        生效者 before=@media(max-width:850px) (位置 1001/1117)  →  after=top (位置 1726/590)
+  FAIL .aw-log-row  row-gap:  [top]=row-gap=12px vs [('@media(max-width:850px)',)]=row-gap=9px
+        生效者 before=@media(max-width:850px) (位置 1001/1117)  →  after=top (位置 1726/590)
+  FAIL .aw-terminal-mark  font-size:  [top]=font-size=18px vs [('@media(max-width:850px)',)]=font-size=14px
+        生效者 before=@media(max-width:850px) (位置 963/1115)  →  after=top (位置 1665/588)
+  FAIL .aw-terminal-mark  height:  [top]=height=42px vs [('@media(max-width:850px)',)]=height=35px
+        生效者 before=@media(max-width:850px) (位置 962/1114)  →  after=top (位置 1664/587)
+  FAIL .aw-terminal-mark  width:  [top]=width=42px vs [('@media(max-width:850px)',)]=width=32px
+        生效者 before=@media(max-width:850px) (位置 961/1113)  →  after=top (位置 1663/586)
+  FAIL .aw-timeline  max-height:  [top]=max-height=260px vs [('@media(max-width:850px)',)]=max-height=240px
+        生效者 before=@media(max-width:850px) (位置 992/1120)  →  after=top (位置 1707/593)
+  FAIL .phase-card  align-items:  [top]=align-items=center vs [('@media(max-width:1000px)',)]=align-items=start
+        生效者 before=@media(max-width:1000px) (位置 737/878)  →  after=top (位置 1033/455)
+  FAIL .phase-card  padding-bottom:  [top]=padding-bottom=12px vs [('@media(max-width:760px)',)]=padding-bottom=14px
+        生效者 before=top (位置 1500/914)  →  after=@media(max-width:760px) (位置 1037/1909)
+  FAIL .phase-card  padding-top:  [top]=padding-top=12px vs [('@media(max-width:760px)',)]=padding-top=14px
+        生效者 before=top (位置 1500/914)  →  after=@media(max-width:760px) (位置 1037/1909)
+  FAIL .s0-phases  column-gap:  [top]=column-gap=14px vs [('@media(max-width:760px)',)]=column-gap=10px
+        生效者 before=top (位置 1498/911)  →  after=@media(max-width:760px) (位置 1030/1902)
+  FAIL .s0-phases  margin-bottom:  [top]=margin-bottom=16px vs [('@media(max-width:760px)',)]=margin-bottom=18px
+        生效者 before=top (位置 1499/912)  →  after=@media(max-width:760px) (位置 1031/1903)
+  FAIL .s0-phases  row-gap:  [top]=row-gap=14px vs [('@media(max-width:760px)',)]=row-gap=10px
+        生效者 before=top (位置 1498/911)  →  after=@media(max-width:760px) (位置 1030/1902)
+  FAIL .shell  min-height:  [top]=min-height=calc(100vh - 72px) vs [('@media(max-width:760px)',)]=min-height=calc(100vh - 59px)
+        生效者 before=top (位置 1194/890)  →  after=@media(max-width:760px) (位置 686/1863)
+  FAIL .toast  max-width:  [top]=max-width=420px vs [('@media(max-width:760px)',)]=max-width=none
+        生效者 before=@media(max-width:760px) (位置 684/928)  →  after=top (位置 1637/492)
+  FAIL .toast  right:  [top]=right=22px vs [('@media(max-width:760px)',)]=right=16px
+        生效者 before=@media(max-width:760px) (位置 677/927)  →  after=top (位置 1630/491)
+  FAIL header  column-gap:  [top]=column-gap=16px vs [('@media(max-width:760px)',)]=column-gap=9px
+        生效者 before=top (位置 1146/885)  →  after=@media(max-width:760px) (位置 629/1852)
+  FAIL header  row-gap:  [top]=row-gap=16px vs [('@media(max-width:760px)',)]=row-gap=9px
+        生效者 before=top (位置 1146/885)  →  after=@media(max-width:760px) (位置 629/1852)
+FAIL: 同名选择器跨 @ 上下文的生效先后被改动 ⇒ 断点区间内计算样式会变

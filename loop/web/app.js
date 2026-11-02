@@ -24,6 +24,8 @@
     N3: { name: "总结", owner: "analyst" },
     N4: { name: "闸门1", owner: "人", gate: true },
     N5: { name: "影响", owner: "Host" },
+    /* LOOP §14：N5 必改=0 时的 G1 分流支线（人签：结束 / 转全量回归） */
+    N5b: { name: "零必改分流", owner: "人", gate: true },
     N6: { name: "修订", owner: "author" },
     N7: { name: "编译", owner: "Host" },
     N8: { name: "复核", owner: "checker" },
@@ -57,7 +59,9 @@
   var GATE_TITLES = {
     G1_diff_confirm: { label: "闸门 1 · 差异确认", node: "N4" },
     G2_report_accept: { label: "闸门 2 · 报告验收", node: "N13" },
-    G3_regression_decision: { label: "闸门 3 · 回归决策", node: "N14" }
+    G3_regression_decision: { label: "闸门 3 · 回归决策", node: "N14" },
+    /* LOOP §14：N5 必改=0 的 G1 分流支线（只在有必改=0 的轮次出现，不是主线第三道门之后的第四道） */
+    G1_no_impact: { label: "闸门 1 分流 · 零必改（结束 / 转全量回归）", node: "N5b" }
   };
 
   /* 事件流白名单：只显示这些 kind（spec §4.4 第 5 条）。 */
@@ -65,6 +69,8 @@
     run_started: 1, run_finished: 1,
     node_started: 1, node_finished: 1, node_failed: 1,
     gate_pending: 1, gate_decided: 1,
+    /* SPEC-REV-20 §9：人签覆写事件（append-only 台账动作，带机器原判摘要）。 */
+    case_override: 1,
     job_submitted: 1, job_progress: 1, job_finished: 1, dead_job: 1,
     admission_granted: 1, admission_refused: 1, admission_queued: 1,
     warning: 1
@@ -147,6 +153,34 @@
   }
 
   function clearEl(node) { if (node) node.replaceChildren(); }
+
+  /* 图标（WEB_UI_SPEC §14「资产」）：唯一来源是 index.html 的内联 sprite（#iconSprite），
+   * 本文件只克隆 #iconTpl 这一个模板、只改 `<use href>`，不拼命名空间 URI 字符串、
+   * 不走 DOM 命名空间创建 API（那会把 SVG 命名空间 URI 写进 JS，直接红
+   * tests/test_web_smoke.py 的「JS 不得引用外部资源」断言）。
+   * 符号解析不到时返回 null，调用点按「图标可缺席」处理，绝不让图标承载唯一信息。 */
+  var ICON_TPL = null;
+  function iconNode(name) {
+    if (ICON_TPL === null) {
+      var tpl = $("iconTpl");
+      ICON_TPL = tpl && tpl.content && tpl.content.firstElementChild
+        ? tpl.content.firstElementChild.cloneNode(true) : false;
+    }
+    if (!ICON_TPL) return null;
+    var svg = ICON_TPL.cloneNode(true);
+    var use = svg.querySelector("use");
+    if (use) use.setAttribute("href", "#icon-" + name);
+    return svg;
+  }
+
+  /* 按钮文案 + 尾部图标（替代 `textContent = "… →"` 的写法：textContent 会把图标当文本清掉）。 */
+  function labelWithIcon(button, text, icon) {
+    if (!button) return button;
+    button.replaceChildren(document.createTextNode(text));
+    var node = iconNode(icon);
+    if (node) button.appendChild(node);
+    return button;
+  }
 
   function setText(id, text) {
     var node = $(id);
@@ -419,6 +453,30 @@
     renderSidebar();
   }
 
+  /* T3 预填钩子（计划 2026-10-30 §4 T3 / WEB_UI_SPEC §15，裁决 1）：
+   * S0 切换成功后把 {s0_record_id, baseline, env_root} 写 sessionStorage["loop.s0Prefill"]；
+   * 这里只在「读取预填 / 选中基线 / 提交运行」三处消费，不改其它状态机。 */
+  var S0_PREFILL_KEY = "loop.s0Prefill";
+  function s0Prefill() {
+    try {
+      var raw = window.sessionStorage ? sessionStorage.getItem(S0_PREFILL_KEY) : null;
+      if (!raw) return null;
+      var parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== "object") return null;
+      var recordId = parsed.s0_record_id === undefined || parsed.s0_record_id === null
+        ? "" : String(parsed.s0_record_id);
+      var baseline = parsed.baseline === undefined || parsed.baseline === null
+        ? "" : String(parsed.baseline);
+      /* 裁决 1：env_root = 切换成功时的实际环境根；有它才说明“本次运行在派生环境里”。 */
+      var envRoot = parsed.env_root === undefined || parsed.env_root === null
+        ? "" : String(parsed.env_root);
+      if (!recordId && !baseline) return null;
+      return { s0_record_id: recordId, baseline: baseline, env_root: envRoot };
+    } catch (e) {
+      return null;   /* 隐私模式/坏数据：预填不可用不影响配置视图 */
+    }
+  }
+
   async function loadBaselines(manual) {
     state.baselinesLoading = true;
     renderSetup();
@@ -429,6 +487,11 @@
         ? String(body.workspace_root).replace(/\/$/, "") + "/baselines"
         : null;
       state.baselinesError = null;
+      /* S0 预填优先：命中且可用才改选中；不命中不覆盖用户选择（提示见 renderSetup）。 */
+      var prefill = s0Prefill();
+      if (prefill && prefill.baseline && findValidBaseline(prefill.baseline)) {
+        state.setup.baseline = prefill.baseline;
+      }
       if (!findValidBaseline(state.setup.baseline)) {
         var first = null;
         for (var i = 0; i < state.baselines.length; i++) {
@@ -898,6 +961,15 @@
       if (state.setup.checkError) {
         alerts.appendChild(h("div", "alert bad", "环境校验失败（/api/env/check）：" + state.setup.checkError));
       }
+      /* T3：S0 预填的基线不在当前列表时保留预填（不清空、不崩），只给可读提示。 */
+      var prefill = s0Prefill();
+      if (prefill && prefill.baseline && !state.baselinesLoading && !findBaseline(prefill.baseline)) {
+        var note = h("div", "alert warn",
+          "S0 派生记录 " + (prefill.s0_record_id || "—") + " 预填的基线 " + prefill.baseline +
+          " 不在当前可用基线列表；预填已保留，请手动选择基线。");
+        note.id = "s0PrefillNote";
+        alerts.appendChild(note);
+      }
     }
 
     var startBtn = $("btnStart");
@@ -1147,6 +1219,13 @@
       };
       var now = String(state.setup.now || "").trim();
       if (now) body.now = now;
+      /* T3 + 裁决 1：prefill 带 env_root ⇒ 本次运行位于经 S0 派生的环境，附带
+       * s0_record_id（来源徽标）；不再要求 baseline 命中基线列表（默认
+       * baseline_version=RTL@… 本来就不是基线 id）。记录存在性仍由服务端校验。 */
+      var prefill = s0Prefill();
+      if (prefill && prefill.s0_record_id && prefill.env_root) {
+        body.s0_record_id = prefill.s0_record_id;
+      }
       var run = await api("/api/runs", { method: "POST", body: body }, 20000);
       if (!run || !run.run_id) throw new Error("服务端未返回 run_id");
       toast("已创建运行：" + run.run_id);
@@ -1187,6 +1266,9 @@
       if (emptyBox) {
         clearEl(emptyBox);
         var empty = h("div", "empty");
+        /* 空态插图：结构挂内联 SVG（伪元素无法放 <use>；app.css 的 .empty:before 装饰随之删除）。 */
+        var emptyIcon = iconNode("empty");
+        if (emptyIcon) { emptyIcon.classList.add("icon-30"); empty.appendChild(emptyIcon); }
         empty.appendChild(h("div", "empty-title", state.runs.length ? "从左侧选择一条运行记录" : "还没有运行记录"));
         empty.appendChild(h("div", "muted", state.runs.length
           ? "选中后可查看四段流程、agent 工作状态与闸门。"
@@ -1448,12 +1530,13 @@
     return "";
   }
 
+  /* 节点状态泡：返回 svg 节点（不是字形）。状态语义仍由 `.snode` 的 class + 按钮 aria-label 承担。 */
   function nodeIcon(st) {
-    if (st === "done") return "✓";
-    if (st === "wait") return "!";
-    if (st === "active") return "…";
-    if (st === "fail") return "✕";
-    return "";
+    if (st === "done") return iconNode("check");
+    if (st === "wait") return iconNode("wait");
+    if (st === "active") return iconNode("running");
+    if (st === "fail") return iconNode("fail");
+    return null;
   }
 
   function stageAgg(stage, v) {
@@ -1473,7 +1556,7 @@
     if (fail) return { cls: "fail", label: "失败", done: done, total: total };
     if (wait) return { cls: "wait", label: "等待人工", done: done, total: total };
     if (nodes.length && done === nodes.length) return { cls: "done", label: "完成", done: done, total: total };
-    if (active) return { cls: "active", label: "进行中", done: done, total: total };
+    if (active) return { cls: "active", label: "执行中", done: done, total: total };
     if (done) return { cls: "", label: done + "/" + nodes.length, done: done, total: total };
     return { cls: "", label: "待开始", done: done, total: total };
   }
@@ -1584,7 +1667,11 @@
     var head = h("button", "stage-head");
     head.type = "button";
     head.setAttribute("aria-expanded", open ? "true" : "false");
-    head.appendChild(h("div", "stage-idx", agg.cls === "done" ? "✓" : String(idx + 1)));
+    var idxBox = h("div", "stage-idx");
+    var idxIcon = agg.cls === "done" ? iconNode("check") : null;
+    if (idxIcon) idxBox.appendChild(idxIcon);
+    else idxBox.appendChild(document.createTextNode(String(idx + 1)));
+    head.appendChild(idxBox);
     var titleBox = h("div");
     titleBox.appendChild(h("div", "stage-name", stage.name || stage.key || "段"));
     titleBox.appendChild(h("div", "stage-range", stageRange(stage)));
@@ -1592,11 +1679,16 @@
     var sum = h("div", "stage-sum");
     var bar = h("span", "stage-bar");
     var fill = h("i");
-    fill.style.width = Math.round((agg.done / Math.max(1, agg.total)) * 100) + "%";
+    /* 进度只动 transform（WEB_UI_SPEC §14：禁止动画 width）；比例交给 CSS 的 scaleX(var(--p))。 */
+    var ratio = Math.min(1, Math.max(0, agg.done / Math.max(1, agg.total)));
+    fill.style.setProperty("--p", String(ratio));
     bar.appendChild(fill);
     sum.appendChild(bar);
     sum.appendChild(h("span", null, agg.label));
-    sum.appendChild(h("span", "stage-chev", "▸"));
+    var chev = h("span", "stage-chev");
+    var chevIcon = iconNode("chevron");
+    if (chevIcon) chev.appendChild(chevIcon);
+    sum.appendChild(chev);
     head.appendChild(sum);
     head.addEventListener("click", function () { toggleStage(stage.key); });
     wrap.appendChild(head);
@@ -1621,7 +1713,10 @@
     wrap.setAttribute("aria-label", "节点 " + nodeId + " " + (meta.name || "") +
       "，owner " + (meta.owner || "—") + "，状态 " + (st || "待开始") + "；打开任务详情");
     var bubble = h("div", "sb");
-    bubble.appendChild(h("span", null, nodeIcon(st)));
+    var bubbleIcon = h("span");
+    var stIcon = nodeIcon(st);
+    if (stIcon) bubbleIcon.appendChild(stIcon);
+    bubble.appendChild(bubbleIcon);
     var txt = h("div", "st");
     txt.appendChild(h("b", null, nodeId + " " + (meta.name || "")));
     txt.appendChild(h("span", "own", meta.owner || "—"));
@@ -1661,6 +1756,10 @@
       onAgent: agent ? function () { openAgentPanel(state.runId, agent.name, agent.nodes, nodeId, trigger); } : null,
       gate: !!(meta && meta.gate),
       onGate: function () { showView("gate"); },
+      /* SPEC-REV-20 §8.3：N16（晋升）面板要看见本轮人签豁免清单（服务端投影原样传入，
+         面板只展示，不判定、不聚合）。 */
+      caseWaivers: state.viewData && state.viewData.case_waivers
+        ? state.viewData.case_waivers : null,
       trigger: trigger || null
     });
   }
@@ -1706,7 +1805,7 @@
         name: a.name || a.role || "角色",
         nodes: a.nodes || [],
         desc: "服务端下发角色",
-        avatar: "•",
+        avatar: "",
         cls: "a6"
       }, a, v, false));
     });
@@ -1718,7 +1817,7 @@
       : status === "working" ? "primary"
         : status === "waiting" ? "warn"
           : status === "failed" ? "bad" : "";
-    var label = { idle: "待命", working: "工作中", paused: "已暂停", interrupting: "干预处理中", waiting: "等待", done: "完成", failed: "失败" }[status] || status || "待命";
+    var label = { idle: "待命", working: "执行中", paused: "已暂停", interrupting: "干预处理中", waiting: "等待", done: "完成", failed: "失败" }[status] || status || "待命";
     var text = label + (elapsed !== null && elapsed !== undefined ? " · " + elapsed + " s" : "");
     return h("span", "chip" + (cls ? " " + cls : ""), text);
   }
@@ -1728,10 +1827,14 @@
     if (a && a.live_control && ["paused", "interrupting"].indexOf(a.live_control.state) >= 0) status = a.live_control.state;
     var card = h("div", "agent " + (status === "working" ? "working" : status === "waiting" ? "waiting" : status === "failed" ? "failed" : ""));
     var head = h("div", "agent-head");
-    head.appendChild(h("div", "avatar " + (def.cls || "a6"), def.avatar || "•"));
+    var avatarBox = h("div", "avatar " + (def.cls || "a6"), def.avatar || "");
+    if (!def.avatar) { var avatarIcon = iconNode("agent"); if (avatarIcon) avatarBox.appendChild(avatarIcon); }
+    head.appendChild(avatarBox);
     var nameBox = h("div");
     var name = a && a.name ? a.name : def.name;
-    var open = h("button", "agent-name agent-open", name + " ↗");
+    var open = h("button", "agent-name agent-open", name + " ");
+    var openIcon = iconNode("panel");
+    if (openIcon) open.appendChild(openIcon);
     open.type = "button";
     open.setAttribute("data-agent-node", (def.nodes || [])[0] || "");
     open.setAttribute("aria-label", "打开 " + name + " 工作窗口");
@@ -1934,6 +2037,12 @@
     if (!v) {
       host.appendChild(h("div", "muted tiny", panelHint()));
       return;
+    }
+    /* SPEC-REV-20 §6/§8.3：看板同样要看到「人签豁免」（含 actor 与日期），
+       否则豁免会让本轮看起来像普通通过（O-5）。数据只取服务端 run_view.case_waivers。 */
+    var boardWaivers = v && v.case_waivers;
+    if (boardWaivers && Number(boardWaivers.count) > 0) {
+      host.appendChild(waiverBanner(boardWaivers));
     }
     var counts = v && v.counts;
     if (!counts) {
@@ -2596,7 +2705,468 @@
         extras.appendChild(h("div", "muted tiny", "Host 留痕未下发 changes。"));
       }
     }
+    /* SPEC-REV-20 §6/§8.3：报告页横幅 —— 本轮人签豁免必须与报告入口同屏，
+       否则「机器判失败 + 人签放行」会被看成普通通过（O-5 不得静默变绿）。
+       数据只取服务端投影 `case_waivers`（run_view 每次重算优先）；这里不做任何判定。 */
+    var waiverInfo = (payload.case_waivers && typeof payload.case_waivers === "object")
+      ? payload.case_waivers
+      : (state.viewData && state.viewData.case_waivers);
+    if (waiverInfo && Number(waiverInfo.count) > 0) {
+      extras.appendChild(waiverBanner(waiverInfo));
+    }
     host.appendChild(extras);
+  }
+
+  /* ---------------- 用例判据人签覆写（SPEC-REV-20 §8，2026-11-02） ----------------
+   * 边界（红线 8「口径唯一」+ SPEC-REV-20 §8）：
+   *   · 机器判据一字不改：只显示 `n10_cases.json` 的 `reasons` 原文与证据件 path/md5，
+   *     不翻译、不截断成结论，也不重算任何判据；
+   *   · **「能不能签 / 能不能撤销」只在服务端**：只消费 `case_override` 投影的
+   *     `enabled`/`blocked_reason` 与逐例 `available`/`blocked_reason`；
+   *     投影缺失 ⇒ 明说「服务端未下发可覆写判定 ⇒ 不可提交」，按钮禁用，**不兜底推断**；
+   *   · 提交只走 POST /api/runs/{run_id}/cases/override；服务端拒绝原样显示 detail.error
+   *     （409 读 detail.reason），不改写成「操作失败」。
+   * ------------------------------------------------------------------------ */
+  var CASE_PASS_STATE = "已验证通过";
+  var overrideDialog = {open: false, action: null, cases: [], runId: null, submitting: false,
+                        trigger: null};
+
+  /* 覆写投影：run_view 每次轮询重算 ⇒ 优先；闸门材料里的 `case_override` 是开闸时的
+     快照 ⇒ 兜底。两者都是**服务端投影**，这里不重算、不推断。 */
+  function overrideProjection(v, pending) {
+    var fromView = v && v.case_override;
+    if (fromView && typeof fromView === "object") return fromView;
+    var payload = pending && pending.payload ? pending.payload : {};
+    var fromMaterial = payload.case_override;
+    return fromMaterial && typeof fromMaterial === "object" ? fromMaterial : null;
+  }
+
+  /* 逐用例事实合并：台账状态 / 机器原因 / 豁免记录 / 服务端可覆写判定。
+     各来源都只搬运服务端字段，缺失即显式「未下发」，不编造。 */
+  function caseRows(v, pending) {
+    var payload = pending && pending.payload ? pending.payload : {};
+    var states = (v && v.case_states) || payload.case_states || null;
+    var failures = payload.case_failures || (v && v.case_failures) || null;
+    var waivers = (v && v.case_waivers) || payload.case_waivers || null;
+    var projection = overrideProjection(v, pending);
+    var order = [];
+    var by = Object.create(null);
+    function add(name) {
+      var key = String(name);
+      if (!by[key]) {
+        by[key] = {name: key, state: null, machine: null, waiver: null, ov: null};
+        order.push(by[key]);
+      }
+      return by[key];
+    }
+    var list = states && Array.isArray(states.cases) ? states.cases : [];
+    list.forEach(function (c) {
+      if (c && c.case !== undefined && c.case !== null) add(c.case).state = c;
+    });
+    var fcases = failures && failures.cases && typeof failures.cases === "object" ? failures.cases : {};
+    Object.keys(fcases).forEach(function (name) { add(name).machine = fcases[name]; });
+    var wlist = waivers && Array.isArray(waivers.cases) ? waivers.cases : [];
+    wlist.forEach(function (w) {
+      if (!w || w.case === undefined || w.case === null) return;
+      var row = add(w.case);
+      row.waiver = w;
+      /* 旧 run 没有 n10_cases.json 时，豁免记录里钉下的机器原判是唯一可读来源。 */
+      if (!row.machine && w.machine && typeof w.machine === "object") row.machine = w.machine;
+    });
+    var pcases = projection && projection.cases && typeof projection.cases === "object"
+      ? projection.cases : {};
+    Object.keys(pcases).forEach(function (name) { add(name).ov = pcases[name]; });
+    /* 是否豁免只看台账投影的 `waived`（服务端由 overrides[] 末条算出），不按 action 自拼。 */
+    order.forEach(function (row) {
+      if (!row.waiver && row.state && row.state.waived) row.waiver = row.state.waiver || {};
+    });
+    return {rows: order, failures: failures, waivers: waivers, projection: projection};
+  }
+
+  function machineVerdictText(machine) {
+    if (!machine || machine.passed === undefined || machine.passed === null) return "未下发";
+    return machine.passed === true ? "通过" : "未通过";
+  }
+
+  function machineVerdictChip(machine) {
+    var text = machineVerdictText(machine);
+    var cls = machine && machine.passed === true ? "ok" : (machine && machine.passed === false ? "bad" : "warn");
+    return chipEl(text, cls);
+  }
+
+  /* `reasons` 原文逐条列出（不翻译、不截断、不合并成结论）。 */
+  function machineReasonList(machine) {
+    var list = h("ul", "co-reasons");
+    list.style.margin = "0";
+    list.style.paddingLeft = "16px";
+    var reasons = machine && Array.isArray(machine.reasons) ? machine.reasons : [];
+    if (!reasons.length) {
+      list.appendChild(h("li", "muted tiny",
+        machine ? "机器未给原因（reasons 为空）" : "未下发（该轮没有该例的机器原因）"));
+      return list;
+    }
+    reasons.forEach(function (reason) {
+      list.appendChild(h("li", null, String(reason === null || reason === undefined ? "" : reason)));
+    });
+    return list;
+  }
+
+  function evidenceLines(machine) {
+    var box = h("div", "co-evidence");
+    var ev = machine && machine.evidence && typeof machine.evidence === "object" ? machine.evidence : null;
+    if (!ev || !ev.path) {
+      box.appendChild(h("div", "muted tiny", "未下发（该轮没有该例的证据件身份）"));
+      return box;
+    }
+    var pathEl = h("div", "mono tiny", "path " + String(ev.path));
+    pathEl.style.overflowWrap = "anywhere";
+    box.appendChild(pathEl);
+    var md5El = h("div", "mono tiny", "md5 " + (ev.md5 === undefined || ev.md5 === null ? "未下发" : String(ev.md5)));
+    md5El.style.overflowWrap = "anywhere";
+    box.appendChild(md5El);
+    if (ev.bytes !== undefined && ev.bytes !== null) {
+      box.appendChild(h("div", "mono tiny", "bytes " + bytesText(ev.bytes)));
+    }
+    return box;
+  }
+
+  /* 「人签豁免」徽标：必须带 actor 与日期，并说明机器原判未被改写（O-5）。 */
+  function waiverChip(waiver) {
+    var actor = waiver && waiver.actor ? String(waiver.actor) : "actor 未下发";
+    var at = waiver && waiver.decided_at ? fmtDateTime(waiver.decided_at) : "日期未下发";
+    var chip = chipEl("人签豁免 · " + actor + " · " + at, "bad");
+    chip.setAttribute("data-case-waiver", "1");
+    chip.title = "人签例外（台账 overrides，append-only）：机器原判未被改写，报告仍显示本轮未通过";
+    return chip;
+  }
+
+  function waiverBanner(info) {
+    var box = h("div", "alert warn");
+    box.appendChild(h("b", null, "本轮 " + String(info.count) + " 例人签豁免（见台账 overrides）"));
+    box.appendChild(h("div", "tiny",
+      "报告正文与两套口径数字不变：报告仍显示本轮未通过；豁免是显式人签例外，不是机器判据。"));
+    var chips = h("div", "chips");
+    (Array.isArray(info.cases) ? info.cases : []).forEach(function (c) {
+      if (!c || c.case === undefined || c.case === null) return;
+      chips.appendChild(waiverChip(c));
+    });
+    if (chips.childNodes.length) box.appendChild(chips);
+    return box;
+  }
+
+  /* 操作入口标签：待验 ⇒「认定通过」，已通过 ⇒「撤销」。`state` 是服务端下发的逐例事实，
+     只用来选入口；能否真的操作只看服务端 `available`/`blocked_reason`。
+     `case_override` 投影是**某一个动作**的判定（`action`）——投影只覆盖另一个动作时，
+     本入口没有服务端判据 ⇒ 禁用并明说（不拿另一动作的结论顶替，也不自己拼）。 */
+  function overrideActionOf(row) {
+    return row && row.ov && String(row.ov.state || "") === CASE_PASS_STATE ? "revoke" : "pass";
+  }
+
+  /* 逐例动作判定（规格 §6.1）：`cases[c].actions.<pass|revoke>` 各自 {available, blocked_reason}。
+     服务端没下发**本动作**的条目 ⇒ 返回 null（入口禁用并明说），绝不拿另一个动作的判据顶替。 */
+  function overrideActionVerdict(ctx, action) {
+    if (!ctx || !ctx.actions || typeof ctx.actions !== "object") return null;
+    var got = ctx.actions[action];
+    return got && typeof got === "object" ? got : null;
+  }
+
+  function overrideBlockedReason(projection, ctx, action) {
+    if (!projection) return "服务端未下发可覆写判定 ⇒ 不可提交";
+    /* 顶层 enabled=false 是**整轮**判定（终态 / 非等待闸门 / 机器原因未留存）⇒ 一律用它；
+       与逐例动作判据不混用（例级原因只在整轮可签时才看）。 */
+    if (projection.enabled !== true) {
+      return String(projection.blocked_reason || "服务端判定当前不可覆写（未给原因）");
+    }
+    if (!ctx) return "服务端未下发该用例的可覆写判定 ⇒ 不可提交";
+    var verdict = overrideActionVerdict(ctx, action);
+    if (!verdict) {
+      return "服务端未下发该用例「" + (action === "revoke" ? "撤销" : "认定通过") + "」判定 ⇒ 不可提交";
+    }
+    if (verdict.available !== true) {
+      return String(verdict.blocked_reason || "服务端未给原因");
+    }
+    return "";
+  }
+
+  /* G2/N13 面板逐用例表：用例 / 台账状态 / 机器判定 / 机器原因（原文）/ 证据件 / 操作。 */
+  function renderCaseOverrideSection(host, v, pending) {
+    if (!host) return;
+    var data = caseRows(v, pending);
+    var waivedCount = data.waivers && data.waivers.count !== undefined ? Number(data.waivers.count) : 0;
+    if (!data.rows.length && !waivedCount) return;
+    var box = h("div", "case-override");
+    box.setAttribute("data-case-override", "1");
+    box.appendChild(h("div", "diff-fields-head", "逐用例判据 · 机器原因与人工覆写（SPEC-REV-20 §8）"));
+    box.appendChild(h("div", "foot-note",
+      "机器判据一字不改（reasons 原文照登）；能否签发/撤销只看服务端下发的人签例外判定。"));
+    if (data.failures && data.failures.present === false) {
+      box.appendChild(h("div", "alert warn",
+        "该轮机器原因未留存（" + String(data.failures.missing || "n10_cases.json 缺失")
+        + "，早于覆写功能），不能盲签。"));
+    }
+    if (!data.projection) {
+      box.appendChild(h("div", "alert warn",
+        "服务端未下发可覆写判定 ⇒ 不可提交（界面不自行推断能否签署）。"));
+    } else if (data.projection.enabled !== true) {
+      box.appendChild(h("div", "alert warn",
+        "服务端判定当前不可覆写：" + String(data.projection.blocked_reason || "服务端未给原因")));
+    }
+    var wrap = h("div", "table-scroll");
+    var table = h("table", "host-trace-table");
+    var thead = h("thead");
+    var hr = h("tr");
+    [["用例", "12%"], ["台账状态", "16%"], ["机器判定", "7%"],
+     ["机器原因（原文）", "32%"], ["证据件（path / md5）", "21%"], ["操作", "12%"]].forEach(function (pair) {
+      var th = h("th", null, pair[0]);
+      th.style.width = pair[1];
+      hr.appendChild(th);
+    });
+    thead.appendChild(hr);
+    table.appendChild(thead);
+    var tbody = h("tbody");
+    data.rows.forEach(function (row) {
+      var tr = h("tr");
+      tr.setAttribute("data-case", row.name);
+
+      tr.appendChild(h("td", "mono", row.name));
+
+      var stateCell = h("td");
+      if (row.state && row.state.state !== undefined && row.state.state !== null) {
+        stateCell.appendChild(h("div", null, String(row.state.state)));
+      } else {
+        stateCell.appendChild(h("div", "muted tiny", "台账未下发"));
+      }
+      if (row.waiver) stateCell.appendChild(waiverChip(row.waiver));
+      tr.appendChild(stateCell);
+
+      var verdictCell = h("td");
+      verdictCell.appendChild(machineVerdictChip(row.machine));
+      tr.appendChild(verdictCell);
+
+      var reasonCell = h("td");
+      if (row.machine && row.machine.criterion) reasonCell.title = String(row.machine.criterion);
+      reasonCell.appendChild(machineReasonList(row.machine));
+      tr.appendChild(reasonCell);
+
+      var evCell = h("td");
+      evCell.appendChild(evidenceLines(row.machine));
+      tr.appendChild(evCell);
+
+      var actCell = h("td");
+      var action = overrideActionOf(row);
+      var btn = h("button", "btn btn-sm", action === "revoke" ? "撤销" : "认定通过");
+      btn.type = "button";
+      btn.setAttribute("data-case-override-action", action);
+      var blocked = overrideBlockedReason(data.projection, row.ov, action);
+      if (blocked) {
+        /* 不可签：禁用并**原文**显示服务端给的原因（缺投影时明说不可提交，不兜底猜）。 */
+        btn.disabled = true;
+        btn.title = blocked;
+        actCell.appendChild(btn);
+        actCell.appendChild(h("div", "foot-note", "不可签：" + blocked));
+      } else {
+        btn.addEventListener("click", function () { openCaseOverrideDialog(row.name, action, btn); });
+        actCell.appendChild(btn);
+      }
+      tr.appendChild(actCell);
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    wrap.appendChild(table);
+    box.appendChild(wrap);
+    host.appendChild(box);
+  }
+
+  function defaultOperatorValue() {
+    var cur = state.gateDraft && state.gateDraft.actor ? String(state.gateDraft.actor) : "human:";
+    if (window.Operator) {
+      try {
+        var filled = window.Operator.apply(cur, window.Operator.recall());
+        if (filled) return String(filled);
+      } catch (e) { /* 记住/预填不可用不影响填写 */ }
+    }
+    return cur || "human:";
+  }
+
+  function overrideDraft() {
+    var actor = $("coActor") ? String($("coActor").value || "").trim() : "";
+    var reason = $("coReason") ? String($("coReason").value || "").trim() : "";
+    return {actor: actor, reason: reason};
+  }
+
+  function syncOverrideSubmit() {
+    var btn = $("coSubmit");
+    if (!btn) return;
+    var d = overrideDraft();
+    btn.textContent = overrideDialog.submitting ? "提交中…" : "提交人签例外";
+    btn.disabled = overrideDialog.submitting || !d.actor || !d.reason;
+  }
+
+  function overrideCaseBlock(row) {
+    var block = h("div", "co-case");
+    block.setAttribute("data-case", row.name);
+    block.appendChild(h("div", "diff-fields-head",
+      "用例 " + row.name + " · 台账状态 "
+      + (row.state && row.state.state ? String(row.state.state) : "未下发")));
+    if (row.waiver) block.appendChild(waiverChip(row.waiver));
+    var verdict = h("div", "kv");
+    verdict.appendChild(h("span", null, "机器判定（原值）"));
+    verdict.appendChild(h("b", null, machineVerdictText(row.machine)));
+    block.appendChild(verdict);
+    if (row.machine && row.machine.criterion) {
+      block.appendChild(h("div", "foot-note", "机器判据：" + String(row.machine.criterion)));
+    }
+    block.appendChild(h("div", "foot-note", "机器原因（原文，不翻译、不截断）："));
+    block.appendChild(machineReasonList(row.machine));
+    block.appendChild(h("div", "foot-note", "证据件（身份可复核）："));
+    block.appendChild(evidenceLines(row.machine));
+    return block;
+  }
+
+  function openCaseOverrideDialog(caseName, action, trigger) {
+    var dlg = $("caseOverrideDialog");
+    if (!dlg) {
+      toast("二次确认弹窗未加载（index.html #caseOverrideDialog）");
+      return;
+    }
+    /* 用当前视图重取该用例事实：按钮是上一次渲染的闭包，点击与轮询之间判定可能已变，
+       弹窗里展示的机器原因/证据件也必须是**此刻**服务端下发的那一份。 */
+    var data = caseRows(state.viewData, pendingInfo(state.viewData));
+    var row = null;
+    data.rows.forEach(function (item) { if (!row && item.name === String(caseName)) row = item; });
+    if (!row) {
+      toast("该用例不在当前材料里，无法发起人签覆写");
+      return;
+    }
+    /* 二次校验：只有服务端说 available 才允许走到弹窗；动作也按当前投影重取（不缓存旧标签）。 */
+    var action = overrideActionOf(row);
+    var blocked = overrideBlockedReason(data.projection, row.ov, action);
+    if (blocked) {
+      toast("不可提交：" + blocked);
+      return;
+    }
+    overrideDialog = {open: true, action: action, cases: [row.name],
+                      runId: state.runId, submitting: false,
+                      trigger: trigger && trigger.isConnected ? trigger : null};
+    setText("coTitle", action === "revoke" ? "撤销人签豁免（人签例外）" : "认定通过（人签例外）");
+    setText("coSub", "运行 " + String(state.runId || "—") + " · 用例 " + row.name
+      + " · 台账 append-only，撤销也是追加一条记录");
+    var chip = $("coChip");
+    if (chip) chip.textContent = action === "revoke" ? "撤销 · 人签例外" : "认定通过 · 人签例外";
+    var host = $("coCases");
+    if (host) {
+      clearEl(host);
+      host.appendChild(overrideCaseBlock(row));
+    }
+    var actor = $("coActor");
+    if (actor) actor.value = defaultOperatorValue();
+    var reason = $("coReason");
+    if (reason) reason.value = "";
+    var errBox = $("coError");
+    if (errBox) errBox.textContent = "";
+    syncOverrideSubmit();
+    try { dlg.showModal(); } catch (e) { dlg.setAttribute("open", "open"); }
+  }
+
+  function closeCaseOverrideDialog() {
+    var dlg = $("caseOverrideDialog");
+    var trigger = overrideDialog.trigger;
+    overrideDialog.open = false;
+    overrideDialog.submitting = false;
+    overrideDialog.cases = [];
+    overrideDialog.trigger = null;
+    if (dlg && dlg.open) {
+      try { dlg.close(); } catch (e) { dlg.removeAttribute("open"); }
+    }
+    /* 关闭后焦点回到触发按钮（与节点面板/报告浮窗同一口径）；轮询重绘过就放弃。 */
+    if (trigger && trigger.isConnected) {
+      try { trigger.focus(); } catch (e) { /* 保留当前焦点 */ }
+    }
+  }
+
+  /* 服务端拒绝原样显示：`detail.error`（409 读 `detail.reason`），不改写成「操作失败」。 */
+  function overrideErrorText(e) {
+    var detail = e && e.body ? e.body.detail : null;
+    var text = "";
+    if (detail && typeof detail === "object") {
+      text = detail.error || detail.reason || detail.message || "";
+    } else if (typeof detail === "string") {
+      text = detail;
+    }
+    if (!text) text = e && e.message ? String(e.message) : "服务端未给原因";
+    return String(text);
+  }
+
+  async function submitCaseOverride() {
+    if (!overrideDialog.open || overrideDialog.submitting) return;
+    var errBox = $("coError");
+    var d = overrideDraft();
+    if (!d.reason) {
+      if (errBox) errBox.textContent = "必须填写理由：空理由不能提交（这是人签例外，理由会随台账长期保留）。";
+      syncOverrideSubmit();
+      return;
+    }
+    if (!d.actor) {
+      if (errBox) errBox.textContent = "必须填写操作者（human:<名字>）。";
+      syncOverrideSubmit();
+      return;
+    }
+    var runId = overrideDialog.runId;
+    var payload = {action: overrideDialog.action, cases: overrideDialog.cases.slice(),
+                   actor: d.actor, reason: d.reason};
+    overrideDialog.submitting = true;
+    if (errBox) errBox.textContent = "";
+    syncOverrideSubmit();
+    try {
+      var res = await api("/api/runs/" + enc(runId) + "/cases/override", {method: "POST", body: payload});
+      overrideDialog.submitting = false;
+      closeCaseOverrideDialog();
+      toast((res && res.action === "revoke" ? "已记录撤销（仍是追加记录）" : "已记录人签豁免")
+        + "：" + payload.cases.join("、"));
+      if (state.runId === runId) await poll();
+    } catch (e) {
+      overrideDialog.submitting = false;
+      var text = overrideErrorText(e);
+      if (errBox) {
+        errBox.textContent = text;
+        /* 403 的 `detail.blockers[]` 每条都写明 §4-x，逐条原样列出（不合并成一句结论）。 */
+        var detail = e && e.body ? e.body.detail : null;
+        var blockers = detail && Array.isArray(detail.blockers) ? detail.blockers : [];
+        blockers.forEach(function (blocker) {
+          if (!blocker) return;
+          var line = h("div", "tiny", String(blocker.message || blocker.code || "服务端未给 blocker 文案"));
+          errBox.appendChild(line);
+        });
+      }
+      syncOverrideSubmit();
+      toast("人签例外被拒：" + text);
+    }
+  }
+
+  function bindCaseOverrideDialog() {
+    var dlg = $("caseOverrideDialog");
+    if (!dlg) return;
+    dlg.addEventListener("cancel", function (event) {
+      event.preventDefault();
+      closeCaseOverrideDialog();
+    });
+    dlg.addEventListener("close", function () {
+      overrideDialog.open = false;
+      overrideDialog.submitting = false;
+    });
+    dlg.addEventListener("click", function (event) {
+      if (event.target === dlg) closeCaseOverrideDialog();
+    });
+    var closeBtn = $("coClose");
+    if (closeBtn) closeBtn.addEventListener("click", closeCaseOverrideDialog);
+    var cancelBtn = $("coCancel");
+    if (cancelBtn) cancelBtn.addEventListener("click", closeCaseOverrideDialog);
+    var submitBtn = $("coSubmit");
+    if (submitBtn) submitBtn.addEventListener("click", function () { submitCaseOverride(); });
+    ["coActor", "coReason"].forEach(function (id) {
+      var el = $(id);
+      if (el) el.addEventListener("input", syncOverrideSubmit);
+    });
   }
 
   /* ---------------- 逐条处置控件（SPEC-04 §4.4，2026-10-23 增补） ----------------
@@ -2909,6 +3479,9 @@
         });
         host.appendChild(det);
       }
+      /* SPEC-REV-20 §8.4：终态/无可签场景仍要看得到逐用例事实与「人签豁免」徽标，
+         操作入口一律禁用并按服务端 blocked_reason 显示原因（不因没有待决策闸门就隐藏）。 */
+      renderCaseOverrideSection(host, v, null);
       return;
     }
     var m = pending.payload || {};
@@ -2931,6 +3504,9 @@
     if (m.invariant_note) host.appendChild(h("div", "alert info", String(m.invariant_note)));
     if (m.actor_policy) host.appendChild(h("div", "foot-note", String(m.actor_policy)));
     host.appendChild(h("div", "foot-note", "材料与选项均来自服务端；界面不参与判定，也不持有「已通过」。"));
+    /* SPEC-REV-20 §8.1：G2/N13 面板逐用例表（机器原因原文 + 认定通过 / 撤销）。
+       闸门 id 只用于选择**展示形态**（同 node-detail.js 的 gateIsG1 口径）；能否操作只看服务端投影。 */
+    if (pending.gate === "G2_report_accept") renderCaseOverrideSection(host, v, pending);
   }
 
   function conflictsText(c) {
@@ -3062,7 +3638,7 @@
         var guide = h("div");
         guide.style.marginTop = "8px";
         guide.appendChild(h("div", "muted tiny", "本闸门需逐条处置全部差异条目（I1）；逐条控件在「人工闸门」视图。"));
-        var go = h("button", "btn btn-sm", "去人工闸门视图逐条处置 →");
+        var go = labelWithIcon(h("button", "btn btn-sm"), "去人工闸门视图逐条处置 ", "next");
         go.type = "button";
         go.addEventListener("click", function () { showView("gate"); });
         guide.appendChild(go);
@@ -3519,7 +4095,10 @@
         var b = ent.base || {};
         var row = h("button", "dp-item" + (b.valid ? "" : " disabled"));
         row.type = "button";
-        row.appendChild(h("span", "dp-icon", b.valid ? "▣" : "▢"));
+        var baselineIcon = h("span", "dp-icon");
+        var validIcon = iconNode(b.valid ? "valid" : "invalid");
+        if (validIcon) baselineIcon.appendChild(validIcon);
+        row.appendChild(baselineIcon);
         row.appendChild(h("b", null, b.id || ent.name || "—"));
         var meta = h("span", "dp-meta");
         if (b.created_at) meta.appendChild(h("span", null, fmtDateTime(b.created_at)));
@@ -3558,7 +4137,10 @@
       if (!ent) return;
       var row = h("button", "dp-item");
       row.type = "button";
-      row.appendChild(h("span", "dp-icon", "▸"));
+      var rowIcon = h("span", "dp-icon");
+      var rowChevron = iconNode("chevron");
+      if (rowChevron) rowIcon.appendChild(rowChevron);
+      row.appendChild(rowIcon);
       row.appendChild(h("b", null, ent.name || "(未命名)"));
       var meta = h("span", "dp-meta");
       if (ent.is_env) {
@@ -3693,6 +4275,11 @@
     $("btnS0").addEventListener("click", function () { showView("s0"); });
     var btnNew = $("btnNew");
     if (btnNew) btnNew.addEventListener("click", function () { showView("setup"); });
+    /* T3：S0 模块只通过事件请求切视图（不直接改这里的状态机）。 */
+    window.addEventListener("loop:navigate", function (event) {
+      var target = event && event.detail && event.detail.view;
+      if (target && VIEW_META[target]) showView(target);
+    });
 
     var segs = document.querySelectorAll("#viewSeg button");
     for (var i = 0; i < segs.length; i++) {
@@ -3768,6 +4355,9 @@
       });
       renderNotifyButton();
     }
+
+    /* SPEC-REV-20 §8.2：人签覆写二次确认弹窗（静态 <dialog>，轮询重绘不影响它）。 */
+    bindCaseOverrideDialog();
   }
 
   /* ---------------- 节点面板 ↔ 闸门草稿桥（SPEC-REV-04 §4，2026-10-23 新增） ----------------

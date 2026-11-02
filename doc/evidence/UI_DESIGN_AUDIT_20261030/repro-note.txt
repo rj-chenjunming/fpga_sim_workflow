@@ -1,0 +1,5 @@
+复跑命令（repo 根）：
+PLAYWRIGHT_BROWSERS_PATH=$PWD/.pw-browsers HOME=$PWD/.chrome-home TMPDIR=$PWD/.chrome-tmp loop/.venv/bin/python <脚本路径>
+
+本次复跑：把归档 measure.py 复制到 .ui-audit/repro/ 后运行（2026-10-30），exit=0，输出 .ui-audit/repro/measure.json；
+与归档 measure.json 的差异见 repro-diff.txt（仅 6 处 ephemeral 端口）。

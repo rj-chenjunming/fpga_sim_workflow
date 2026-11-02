@@ -1,0 +1,84 @@
+## 冻结枚举与 schema 形状（只读解析）
+GATE_IDS_V1 = ('G1_diff_confirm', 'G2_report_accept', 'G3_regression_decision')
+GATE_IDS    = ('G1_diff_confirm', 'G2_report_accept', 'G3_regression_decision', 'G1_no_impact')
+GATE_KIND['G1_no_impact'] = diff_confirm
+GATE_DECISIONS['G1_no_impact'] = ['no_impact_end', 'full_regression', 'pending']
+GATE_BRANCH_ONLY = ('G1_no_impact',)
+schema.version.enum = [1, 2]
+schema.gates.required = ['G1_diff_confirm', 'G2_report_accept', 'G3_regression_decision']
+schema.gate_id.enum = ['G1_diff_confirm', 'G2_report_accept', 'G3_regression_decision', 'G1_no_impact']
+
+## gate.py init（新 run ⇒ version=2 + 4 门）
+[kb] 闸门状态已建立：runs/RUN-20261030-220000/gates.json
+[kb] run_id=RUN-20261030-220000
+[kb] manifest_from=N/A
+[kb] manifest_to  =runs/RUN-20261030-220000/n1_manifest_new.json
+[kb]   G1_diff_confirm: decision=pending        status=pending actor=None       actor_kind=None      human_signed=False
+[kb]   G2_report_accept: decision=pending        status=pending actor=None       actor_kind=None      human_signed=False
+[kb]   G3_regression_decision: decision=pending        status=pending actor=None       actor_kind=None      human_signed=False
+[kb]   G1_no_impact: decision=pending        status=pending actor=None       actor_kind=None      human_signed=False
+[kb] human_signed 只在 --actor-kind human 且给 --actor 时为真（I6）
+
+## show（4 门）
+[kb] run_id=RUN-20261030-220000（runs/RUN-20261030-220000/gates.json）
+[kb] G1_diff_confirm: decision=pending        status=pending actor=None       actor_kind=None      human_signed=False
+[kb] G1_no_impact: decision=pending        status=pending actor=None       actor_kind=None      human_signed=False
+[kb] G2_report_accept: decision=pending        status=pending actor=None       actor_kind=None      human_signed=False
+[kb] G3_regression_decision: decision=pending        status=pending actor=None       actor_kind=None      human_signed=False
+[kb]   history 条数={'G1_diff_confirm': 0, 'G1_no_impact': 0, 'G2_report_accept': 0, 'G3_regression_decision': 0}（append-only；F-GATE-02）
+[kb]   防篡改锚：OK 锚一致（b2d8d609ac61…）（F-GATE-03）
+[kb] all_signed=False human_signed_all=False
+
+## sign no_impact_end（human）
+[kb] 已写入 runs/RUN-20261030-220000/gates.json
+[kb] G1_no_impact: decision=no_impact_end  status=signed  actor=张三         actor_kind=human     human_signed=True
+[kb] human_signed=true（actor_kind=human，actor=张三）
+[kb] note=本变无影响用例，结束
+
+## require-signed --expect no_impact_end
+{
+  "allow_rehearsal": false,
+  "failures": [],
+  "gate": "G1_no_impact",
+  "gates": {
+    "G1_no_impact": {
+      "actor": "张三",
+      "actor_kind": "human",
+      "decision": "no_impact_end",
+      "expected": "no_impact_end",
+      "failures": [],
+      "human_signed": true,
+      "ok": true
+    }
+  },
+  "ok": true,
+  "run_id": "RUN-20261030-220000"
+}
+[kb] 闸门已满足：G1_no_impact
+
+## 非法决策被拒（自造 full_regression 以外的值）
+usage: gate.py [-h] {init,show,sign,require-signed} ...
+gate.py: error: --decision 'close_now' 对闸门 G1_no_impact 非法（合法：no_impact_end, full_regression, pending）
+rc=2
+
+## 非 human 不得署名该门
+[FAIL] actor_kind=model 不得签署 G1_no_impact —— 模型/脚本不得替人盖章（I6）。
+       gates.json 未改动，human_signed 保持 false。
+       演练（README §4 K3）确实需要写入 actor_kind=rehearsal 时，请显式加 --allow-nonhuman（写盘后 human_signed 仍为 false，require-signed 默认仍拒绝）。
+rc=3
+
+## 旧 version=1 记录仍可读（3 门，不含分流门）
+wrote legacy v1 gates.json（3 门）
+[kb] run_id=RUN-20261030-220001（runs/RUN-20261030-220001/gates.json）
+[kb] G1_diff_confirm: decision=confirmed      status=signed  actor=李四         actor_kind=human     human_signed=True
+[kb] G2_report_accept: decision=accept         status=signed  actor=李四         actor_kind=human     human_signed=True
+[kb] G3_regression_decision: decision=defer          status=signed  actor=李四         actor_kind=human     human_signed=True
+[kb]   history 条数={'G1_diff_confirm': 0, 'G2_report_accept': 0, 'G3_regression_decision': 0}（append-only；F-GATE-02）
+[kb]   防篡改锚：未校验 无锚（legacy 状态，未校验）（F-GATE-03）
+[kb] all_signed=True human_signed_all=True
+rc=0
+
+## version=2 但缺分流门 ⇒ 状态不完整（rc=4）
+wrote v2 gates.json（故意缺 G1_no_impact）
+[FAIL] gates.json 缺闸门 G1_no_impact（状态不完整；version=2）
+rc=4

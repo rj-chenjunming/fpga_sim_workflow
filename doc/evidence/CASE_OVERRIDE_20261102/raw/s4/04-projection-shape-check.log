@@ -1,0 +1,9 @@
+kw= {'run_status': 'waiting_gate'}
+{"enabled": false, "blocked_reason": "该轮机器原因未留存（早于覆写功能），不能盲签"}
+cases type: dict count: 0
+has 'action' legacy field: False
+kw= {'run_status': None}
+{"enabled": false, "blocked_reason": "run 状态未下发 ⇒ 无法判定可签（面板必须用 run_view.case_override，不得前端自判）"}
+cases type: dict count: 0
+has 'action' legacy field: False
+OK: 顶�� enabled/blocked_reason + cases[].actions.<pass|revoke> 与 app.js::overrideActionVerdict 一致

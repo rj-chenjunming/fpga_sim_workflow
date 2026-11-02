@@ -1,0 +1,37 @@
+可合并组: 193（安全 184 / 受阻 9）
+搬动声明 598 条；删除被支配声明 45 条
+
+受阻: .btn  [top]
+   ← rule#450 .rail-entry  justify-content:flex-start () 共命中证据显示确实命中同一元素
+   ← rule#450 .rail-entry  gap:10px () 共命中证据显示确实命中同一元素
+   ← rule#31 .btn-sm  padding:0 10px () 共命中证据显示确实命中同一元素
+   ← rule#27 .btn-primary  border-color:var(--primary) () 共命中证据显示确实命中同一元素
+   ← rule#27 .btn-primary  background:var(--primary) () 共命中证据显示确实命中同一元素
+   ← rule#27 .btn-primary  color:#fff () 共命中证据显示确实命中同一元素
+
+受阻: .run-item  [top]
+   ← rule#320 .run-item  width:auto (@media(max-width:760px)) 共命中证据显示确实命中同一元素
+
+受阻: .card  [top]
+   ← rule#167 .gate-card  background:#fffdf7 () 共命中证据显示确实命中同一元素
+   ← rule#167 .gate-card  border-color:#f3d19e () 共命中证据显示确实命中同一元素
+
+受阻: .grid2  [top]
+   ← rule#310 .run-grid  grid-template-columns:1fr (@media(max-width:1000px)) 共命中证据显示确实命中同一元素
+
+受阻: .input  [top]
+   ← rule#423 .mono  font-family:var(--font-mono) () 共命中证据显示确实命中同一元素
+
+受阻: .rail-entry  [@media(max-width:760px)]
+   ← rule#450 .rail-entry  margin-bottom:20px () 共命中证据显示确实命中同一元素
+   ← rule#450 .rail-entry  height:auto () 共命中证据显示确实命中同一元素
+   ← rule#492 .btn  font-size:13px () 共命中证据显示确实命中同一元素
+
+受阻: aside #btnNew  [@media(max-width:760px)]
+   ← rule#455 aside #btnNew  height:40px () 共命中证据显示确实命中同一元素
+
+受阻: .run-item  [@media(max-width:760px)]
+   ← rule#471 .run-item  padding:12px 10px () 共命中证据显示确实命中同一元素
+
+受阻: .agent-window  [top]
+   ← rule#404 .agent-window  max-height:calc(100dvh - 24px) (@media(max-width:850px)) 共命中证据显示确实命中同一元素

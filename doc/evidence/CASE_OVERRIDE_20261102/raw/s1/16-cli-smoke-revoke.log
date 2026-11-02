@@ -1,0 +1,37 @@
+### python3 -B /home/work/chenjunming/change-impact-loop/kb/tools/case_state.py --now 2026-11-02T12:00:00+0800 init --run RUN-20261102-120000
+[kb] 已建立用例态台账：runs/RUN-20261102-120000/case_states.json（run_id=RUN-20261102-120000，四态字面量固定）
+[kb] 时间字段声明：updated_at（README §3.1.1，--now/KB_NOW 注入）
+rc=0
+### python3 -B /home/work/chenjunming/change-impact-loop/kb/tools/case_state.py set --run RUN-20261102-120000 --case tc_ovr --state 已修订待验
+[kb] tc_ovr：runs/RUN-20261102-120000/case_states.json -> 已修订待验
+[kb]   compile_rc=None static_check=None two_counts=None
+[kb] 时间字段声明：updated_at（README §3.1.1）
+rc=0
+### python3 -B /home/work/chenjunming/change-impact-loop/kb/tools/case_state.py set --run RUN-20261102-120000 --case tc_machine --state 已验证通过 --compile-rc 0 --static-check pass --run-md5 cccccccccccccccccccccccccccccccc --md5-after cccccccccccccccccccccccccccccccc --script-egrep 0 --uvm-error 0 --uvm-summary-present --obs-expected 5 --obs-observed 5
+[kb] tc_machine：runs/RUN-20261102-120000/case_states.json -> 已验证通过
+[kb]   compile_rc=0 static_check=pass two_counts={'script_egrep': 0, 'uvm_error': 0, 'uvm_summary_present': True}
+[kb] 时间字段声明：updated_at（README §3.1.1）
+rc=0
+### python3 -B /home/work/chenjunming/change-impact-loop/kb/tools/case_state.py override --run RUN-20261102-120000 --case tc_machine --actor human:chenjunming --reason 撤销机器通过 --revoke
+[FAIL] 人签覆写被拒（§4 前置不满足，1 处未通过）⇒ 台账**一字节未动**：
+  - §4-4 用例 'tc_machine' 当前态虽是「已验证通过」，但最近一条覆写记录不是 action="pass"（该通过不是覆写来的）⇒ revoke 拒绝：不得把机器通过降级成待验
+rc=3
+md5_before=755c92b2eda19d1779e62f2a1c5af9e4
+md5_after=755c92b2eda19d1779e62f2a1c5af9e4
+LEDGER_UNCHANGED=1
+### python3 -B /home/work/chenjunming/change-impact-loop/kb/tools/case_state.py override --run RUN-20261102-120000 --case tc_ovr --actor human:chenjunming --reason 期望值过期 --now 2026-11-02T12:05:00+0800
+[kb] override pass：tc_ovr 已修订待验 -> 已验证通过（machine.passed=False，机器原因 1 条）
+[kb] 台账：runs/RUN-20261102-120000/case_states.json（追加 1 条 overrides 记录，record_sha256 可离线复算）
+[kb] 时间字段声明：decided_at/updated_at（README §3.1.1，--now/KB_NOW 注入）
+rc=0
+### python3 -B /home/work/chenjunming/change-impact-loop/kb/tools/case_state.py override --run RUN-20261102-120000 --case tc_ovr --actor human:chenjunming --reason 撤回我的覆写 --revoke --now 2026-11-02T12:10:00+0800
+[kb] override revoke：tc_ovr 已验证通过 -> 已修订待验（machine.passed=False，机器原因 1 条）
+[kb] 台账：runs/RUN-20261102-120000/case_states.json（追加 1 条 overrides 记录，record_sha256 可离线复算）
+[kb] 时间字段声明：decided_at/updated_at（README §3.1.1，--now/KB_NOW 注入）
+rc=0
+### python3 -B /home/work/chenjunming/change-impact-loop/kb/tools/case_state.py override --run RUN-20261102-120000 --verify
+[kb] 覆写链复核通过：runs/RUN-20261102-120000/case_states.json（逐条 record_sha256 + source_md5 均已复算）
+rc=0
+### python3 -B /home/work/chenjunming/change-impact-loop/kb/tools/case_state.py check --run RUN-20261102-120000 --json
+{"cases":2,"counts":{"已修订待验":1,"已退回":0,"已验证通过":1,"未改":0},"for_promotion":false,"invalid_states":[],"ok":false,"path":"runs/RUN-20261102-120000/case_states.json","pending":["tc_ovr"],"problems":["存在「已修订待验」用例（I2）：tc_ovr"],"rework_cycles":{"g2_rework_cycles":null,"limit":3,"n6_n8_cycles":0,"over_limit":false},"run_id":"RUN-20261102-120000","waived":[]}
+rc=3

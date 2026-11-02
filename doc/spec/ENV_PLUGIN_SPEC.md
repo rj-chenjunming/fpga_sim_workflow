@@ -242,3 +242,15 @@
   `$LOOP_STATE_ROOT` 只解决「测试与独立副本不写共享 state」（F03-a），**不代表**已按环境隔离。
 - ✅ `[已修]` `kb/README.md` 已按三根重写：本仓 `kb/` = `README.md` + `schema/` + `tools/`；
   运行数据写作 `<WORKSPACE_ROOT>/{index,conflicts,baselines,runs,adjudication}`（当前 = `ENV_ROOT/kb/…`）。
+
+## 8 派生副本作为环境根（2026-10-30）
+
+> 契约来源：[S0 §9](S0_ENVIRONMENT_SPEC.md#9-单一-rtl-文件夹入口一键派生与自动切换2026-10-30)。只增不改 §1 的解析顺序。
+
+1. **解析**：`$LOOP_ENV_ROOT` 优先于注册表 ⇒ 派生副本无需登记即可作为 `ENV_ROOT`
+   （`kb_lib._resolve_env_root`）；`ENV_ID` 回落为副本目录名，未注册**不是错误**，健康检查/界面如实显示。
+2. **零写承诺不变**：原环境除 `SIMLIB_RUN/`、`uvs.setup`（自愈）外零写入；派生副本的一切运行产物写副本自身。
+3. **数据根**：派生环境 `WORKSPACE_ROOT = <work>/kb`（副本自包含，见 S0 §9.3）；原数据根不被本次派生写。
+4. **单槽**仍按软件实例全局（`STATE_ROOT/slot.lock`）：同一时刻只允许一个环境根在跑；切换前必须拒绝活跃 run。
+5. **原始根记录**：`<STATE_DIR>/env-switch/` 持久化 `origin_env_root`；派生源恒为原始根（禁止副本当基线）；
+   切换与切回双向可审计，注册表（`environments.json`）**不因切换被写**，副本不因切回被删。

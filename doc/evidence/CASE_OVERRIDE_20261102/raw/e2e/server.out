@@ -1,0 +1,112 @@
+INFO:     2026-11-02 12:03:31 | Started server process [16]
+INFO:     2026-11-02 12:03:31 | Waiting for application startup.
+INFO:     2026-11-02 12:03:31 | Application startup complete.
+INFO:     2026-11-02 12:03:31 | Uvicorn running on http://127.0.0.1:8098 (Press CTRL+C to quit)
+INFO:     2026-11-02 12:03:31 | 127.0.0.1:44586 - "GET /api/health HTTP/1.1" 200
+INFO:     2026-11-02 12:03:31 | 127.0.0.1:44594 - "GET /api/health HTTP/1.1" 200
+INFO:     2026-11-02 12:03:31 | 127.0.0.1:44594 - "GET / HTTP/1.1" 200
+INFO:     2026-11-02 12:03:31 | 127.0.0.1:44594 - "GET /app.js HTTP/1.1" 200
+INFO:     2026-11-02 12:03:31 | 127.0.0.1:44594 - "GET /app.js HTTP/1.1" 200
+WARNING:  2026-11-02 12:03:32 | [TriggerFlowExecution] [triggerflow.interrupt_raised] [run=20cbd0d005464b2faf75e0cb39f71ab5] TriggerFlow execution 'cb49c2cb274343708cd58f783464be71' paused for interrupt 'G1_diff_confirm:0'.
+WARNING:  2026-11-02 12:03:32 | [TriggerFlowExecution] [triggerflow.interrupt_exposed] [run=20cbd0d005464b2faf75e0cb39f71ab5] TriggerFlow execution 'cb49c2cb274343708cd58f783464be71' exposed interrupt 'G1_diff_confirm:0'.
+INFO:     2026-11-02 12:03:32 | 127.0.0.1:44594 - "POST /api/runs HTTP/1.1" 200
+INFO:     2026-11-02 12:03:32 | 127.0.0.1:44594 - "GET /api/runs/RUN-20261102-120331 HTTP/1.1" 200
+INFO:     2026-11-02 12:03:32 | 127.0.0.1:44594 - "POST /api/runs/RUN-20261102-120331/gates/G1_diff_confirm/decision HTTP/1.1" 403
+INFO:     2026-11-02 12:03:32 | 127.0.0.1:44594 - "POST /api/runs/RUN-20261102-120331/gates/G1_diff_confirm/decision HTTP/1.1" 400
+INFO:     2026-11-02 12:03:32 | 127.0.0.1:44594 - "POST /api/runs/RUN-20261102-120331/gates/G3_regression_decision/decision HTTP/1.1" 403
+INFO:     2026-11-02 12:03:32 | 127.0.0.1:44594 - "POST /api/runs/RUN-20261102-120331/gates/G1_diff_confirm/decision HTTP/1.1" 400
+INFO:     2026-11-02 12:03:32 | 127.0.0.1:44594 - "GET /api/runs/RUN-20261102-120331 HTTP/1.1" 200
+WARNING:  2026-11-02 12:03:33 | [TriggerFlowExecution] [triggerflow.interrupt_raised] [run=20cbd0d005464b2faf75e0cb39f71ab5] TriggerFlow execution 'cb49c2cb274343708cd58f783464be71' paused for interrupt 'JOB:JOB-f6f5bedc1dd4'.
+WARNING:  2026-11-02 12:03:33 | [TriggerFlowExecution] [triggerflow.interrupt_exposed] [run=20cbd0d005464b2faf75e0cb39f71ab5] TriggerFlow execution 'cb49c2cb274343708cd58f783464be71' exposed interrupt 'JOB:JOB-f6f5bedc1dd4'.
+INFO:     2026-11-02 12:03:33 | 127.0.0.1:44594 - "POST /api/runs/RUN-20261102-120331/gates/G1_diff_confirm/decision HTTP/1.1" 200
+INFO:     2026-11-02 12:03:34 | 127.0.0.1:44594 - "GET /api/runs/RUN-20261102-120331 HTTP/1.1" 200
+INFO:     2026-11-02 12:03:35 | 127.0.0.1:44594 - "GET /api/runs/RUN-20261102-120331 HTTP/1.1" 200
+INFO:     2026-11-02 12:03:36 | 127.0.0.1:44594 - "GET /api/runs/RUN-20261102-120331/events?since_seq=0 HTTP/1.1" 200
+INFO:     2026-11-02 12:03:36 | 127.0.0.1:44594 - "GET /api/runs/RUN-20261102-120331/evidence/exists?ref=kb%2Fruns%2FRUN-20261015-120626%2Fevidence%2Farchive HTTP/1.1" 200
+INFO:     2026-11-02 12:03:36 | 127.0.0.1:44594 - "GET /api/runs/RUN-20261102-120331/evidence/exists?ref=kb%2Fruns%2F__%E4%B8%8D%E5%AD%98%E5%9C%A8__%2Fevidence HTTP/1.1" 200
+INFO:     2026-11-02 12:03:36 | 127.0.0.1:44594 - "GET /api/runs/RUN-20261102-120331/events?since_seq=0 HTTP/1.1" 200
+INFO:     2026-11-02 12:03:36 | Shutting down
+INFO:     2026-11-02 12:03:36 | Waiting for application shutdown.
+ERROR:    2026-11-02 12:03:36 | [TriggerFlowExecution] [triggerflow.resume_dispatch_failed] [run=20cbd0d005464b2faf75e0cb39f71ab5] TriggerFlow execution 'cb49c2cb274343708cd58f783464be71' resume request 'JOB-f6f5bedc1dd4:done:0' for interrupt 'JOB:JOB-f6f5bedc1dd4' changed phase.
+INFO:     2026-11-02 12:03:36 | Application shutdown complete.
+INFO:     2026-11-02 12:03:36 | Finished server process [16]
+INFO:     2026-11-02 12:03:37 | Started server process [99]
+INFO:     2026-11-02 12:03:37 | Waiting for application startup.
+WARNING:  2026-11-02 12:03:39 | [TriggerFlowExecution] [triggerflow.interrupt_raised] [run=20cbd0d005464b2faf75e0cb39f71ab5] TriggerFlow execution 'cb49c2cb274343708cd58f783464be71' paused for interrupt 'G2_report_accept:0-0'.
+WARNING:  2026-11-02 12:03:39 | [TriggerFlowExecution] [triggerflow.interrupt_exposed] [run=20cbd0d005464b2faf75e0cb39f71ab5] TriggerFlow execution 'cb49c2cb274343708cd58f783464be71' exposed interrupt 'G2_report_accept:0-0'.
+INFO:     2026-11-02 12:03:39 | Application startup complete.
+INFO:     2026-11-02 12:03:39 | Uvicorn running on http://127.0.0.1:8098 (Press CTRL+C to quit)
+INFO:     2026-11-02 12:03:40 | 127.0.0.1:42962 - "GET /api/health HTTP/1.1" 200
+INFO:     2026-11-02 12:03:40 | 127.0.0.1:42968 - "GET /api/health HTTP/1.1" 200
+INFO:     2026-11-02 12:03:40 | 127.0.0.1:42968 - "GET /api/runs/RUN-20261102-120331 HTTP/1.1" 200
+INFO:     2026-11-02 12:03:40 | 127.0.0.1:42968 - "GET /api/runs/RUN-20261102-120331 HTTP/1.1" 200
+INFO:     2026-11-02 12:03:40 | 127.0.0.1:42968 - "POST /api/runs/RUN-20261102-120331/gates/G2_report_accept/decision HTTP/1.1" 400
+INFO:     2026-11-02 12:03:40 | 127.0.0.1:42968 - "POST /api/runs/RUN-20261102-120331/gates/G2_report_accept/decision HTTP/1.1" 403
+INFO:     2026-11-02 12:03:41 | 127.0.0.1:42968 - "GET /api/runs/RUN-20261102-120331 HTTP/1.1" 200
+WARNING:  2026-11-02 12:03:42 | [TriggerFlowExecution] [triggerflow.interrupt_raised] [run=20cbd0d005464b2faf75e0cb39f71ab5] TriggerFlow execution 'cb49c2cb274343708cd58f783464be71' paused for interrupt 'G3_regression_decision:0'.
+WARNING:  2026-11-02 12:03:42 | [TriggerFlowExecution] [triggerflow.interrupt_exposed] [run=20cbd0d005464b2faf75e0cb39f71ab5] TriggerFlow execution 'cb49c2cb274343708cd58f783464be71' exposed interrupt 'G3_regression_decision:0'.
+INFO:     2026-11-02 12:03:42 | 127.0.0.1:42968 - "POST /api/runs/RUN-20261102-120331/gates/G2_report_accept/decision HTTP/1.1" 200
+INFO:     2026-11-02 12:03:42 | 127.0.0.1:42968 - "GET /api/runs/RUN-20261102-120331 HTTP/1.1" 200
+INFO:     2026-11-02 12:03:42 | 127.0.0.1:42968 - "POST /api/runs/RUN-20261102-120331/gates/G3_regression_decision/decision HTTP/1.1" 403
+INFO:     2026-11-02 12:03:42 | 127.0.0.1:42968 - "POST /api/runs/RUN-20261102-120331/gates/G3_regression_decision/decision HTTP/1.1" 403
+INFO:     2026-11-02 12:03:43 | 127.0.0.1:42968 - "POST /api/runs/RUN-20261102-120331/gates/G3_regression_decision/decision HTTP/1.1" 403
+INFO:     2026-11-02 12:03:43 | 127.0.0.1:42968 - "GET /api/runs/RUN-20261102-120331 HTTP/1.1" 200
+INFO:     2026-11-02 12:03:43 | 127.0.0.1:42968 - "POST /api/runs/RUN-20261102-120331/gates/G3_regression_decision/decision HTTP/1.1" 200
+INFO:     2026-11-02 12:03:44 | 127.0.0.1:54630 - "GET /api/runs/RUN-20261102-120331 HTTP/1.1" 200
+INFO:     2026-11-02 12:03:44 | 127.0.0.1:54630 - "GET /api/runs/RUN-20261102-120331/events?since_seq=0 HTTP/1.1" 200
+INFO:     2026-11-02 12:03:44 | 127.0.0.1:54630 - "GET /api/runs HTTP/1.1" 200
+INFO:     2026-11-02 12:03:44 | Shutting down
+INFO:     2026-11-02 12:03:44 | Waiting for application shutdown.
+INFO:     2026-11-02 12:03:44 | Application shutdown complete.
+INFO:     2026-11-02 12:03:44 | Finished server process [99]
+INFO:     2026-11-02 12:03:45 | Started server process [147]
+INFO:     2026-11-02 12:03:45 | Waiting for application startup.
+INFO:     2026-11-02 12:03:46 | Application startup complete.
+INFO:     2026-11-02 12:03:46 | Uvicorn running on http://127.0.0.1:8098 (Press CTRL+C to quit)
+INFO:     2026-11-02 12:03:46 | 127.0.0.1:54676 - "GET /api/health HTTP/1.1" 200
+INFO:     2026-11-02 12:03:46 | 127.0.0.1:54688 - "GET /api/health HTTP/1.1" 200
+WARNING:  2026-11-02 12:03:49 | [TriggerFlowExecution] [triggerflow.interrupt_raised] [run=210af9f5c1594234be0110abc408bf81] TriggerFlow execution '92db22076111407f9157c15b32159fa0' paused for interrupt 'G1_diff_confirm:0'.
+WARNING:  2026-11-02 12:03:49 | [TriggerFlowExecution] [triggerflow.interrupt_exposed] [run=210af9f5c1594234be0110abc408bf81] TriggerFlow execution '92db22076111407f9157c15b32159fa0' exposed interrupt 'G1_diff_confirm:0'.
+INFO:     2026-11-02 12:03:49 | 127.0.0.1:54688 - "POST /api/runs HTTP/1.1" 200
+WARNING:  2026-11-02 12:03:51 | [TriggerFlowExecution] [triggerflow.interrupt_raised] [run=210af9f5c1594234be0110abc408bf81] TriggerFlow execution '92db22076111407f9157c15b32159fa0' paused for interrupt 'JOB:JOB-6af32108022f'.
+WARNING:  2026-11-02 12:03:51 | [TriggerFlowExecution] [triggerflow.interrupt_exposed] [run=210af9f5c1594234be0110abc408bf81] TriggerFlow execution '92db22076111407f9157c15b32159fa0' exposed interrupt 'JOB:JOB-6af32108022f'.
+INFO:     2026-11-02 12:03:51 | 127.0.0.1:54688 - "POST /api/runs/RUN-20261102-120346/gates/G1_diff_confirm/decision HTTP/1.1" 200
+INFO:     2026-11-02 12:03:51 | 127.0.0.1:54688 - "GET /api/runs/RUN-20261102-120346 HTTP/1.1" 200
+INFO:     2026-11-02 12:03:51 | 127.0.0.1:54688 - "GET /api/runs/RUN-20261102-120346 HTTP/1.1" 200
+INFO:     2026-11-02 12:03:51 | 127.0.0.1:54688 - "GET /api/runs/RUN-20261102-120346 HTTP/1.1" 200
+INFO:     2026-11-02 12:03:51 | Shutting down
+INFO:     2026-11-02 12:03:51 | Waiting for application shutdown.
+INFO:     2026-11-02 12:03:51 | Application shutdown complete.
+INFO:     2026-11-02 12:03:51 | Finished server process [147]
+INFO:     2026-11-02 12:03:52 | Started server process [225]
+INFO:     2026-11-02 12:03:52 | Waiting for application startup.
+INFO:     2026-11-02 12:03:52 | Application startup complete.
+INFO:     2026-11-02 12:03:52 | Uvicorn running on http://127.0.0.1:8098 (Press CTRL+C to quit)
+INFO:     2026-11-02 12:03:53 | 127.0.0.1:57192 - "GET /api/health HTTP/1.1" 200
+INFO:     2026-11-02 12:03:53 | 127.0.0.1:57208 - "GET /api/health HTTP/1.1" 200
+INFO:     2026-11-02 12:03:53 | 127.0.0.1:57208 - "GET /api/runs/RUN-20261102-120346 HTTP/1.1" 200
+INFO:     2026-11-02 12:03:53 | 127.0.0.1:57208 - "POST /api/runs/RUN-20261102-120346/jobs/JOB-6af32108022f/cancel HTTP/1.1" 200
+INFO:     2026-11-02 12:03:53 | 127.0.0.1:57208 - "GET /api/runs/RUN-20261102-120346 HTTP/1.1" 200
+ERROR:    2026-11-02 12:03:53 | [TriggerFlowExecution] [chunk.failed] [run=67a143b604704d5e927b50fbd392bb74] Chunk 'n9_park' failed.
+ERROR:    2026-11-02 12:03:53 | [TriggerFlowExecution] [triggerflow.execution_failed] [run=210af9f5c1594234be0110abc408bf81] TriggerFlow execution '92db22076111407f9157c15b32159fa0' failed.
+ERROR:    2026-11-02 12:03:53 | [TriggerFlowExecution] [triggerflow.resume_dispatch_failed] [run=210af9f5c1594234be0110abc408bf81] TriggerFlow execution '92db22076111407f9157c15b32159fa0' resume request 'JOB-6af32108022f:cancelled:None' for interrupt 'JOB:JOB-6af32108022f' changed phase.
+WARNING:  2026-11-02 12:03:53 | [TriggerFlowExecution] [triggerflow.pending_interrupts_cancelled] [run=210af9f5c1594234be0110abc408bf81] TriggerFlow execution '92db22076111407f9157c15b32159fa0' cancelled pending interrupts before close.
+INFO:     2026-11-02 12:03:54 | 127.0.0.1:57208 - "GET /api/runs/RUN-20261102-120346 HTTP/1.1" 200
+WARNING:  2026-11-02 12:03:54 | [TriggerFlowExecution] [triggerflow.interrupt_raised] [run=ba727a511df64be7a0974ed6571b4bbc] TriggerFlow execution '845c8a72048a4bd2aa34958dd6b2daeb' paused for interrupt 'G1_diff_confirm:0'.
+WARNING:  2026-11-02 12:03:55 | [TriggerFlowExecution] [triggerflow.interrupt_exposed] [run=ba727a511df64be7a0974ed6571b4bbc] TriggerFlow execution '845c8a72048a4bd2aa34958dd6b2daeb' exposed interrupt 'G1_diff_confirm:0'.
+INFO:     2026-11-02 12:03:55 | 127.0.0.1:57214 - "POST /api/runs HTTP/1.1" 200
+WARNING:  2026-11-02 12:03:56 | [TriggerFlowExecution] [triggerflow.interrupt_raised] [run=ba727a511df64be7a0974ed6571b4bbc] TriggerFlow execution '845c8a72048a4bd2aa34958dd6b2daeb' paused for interrupt 'JOB:JOB-f005197de85b'.
+WARNING:  2026-11-02 12:03:56 | [TriggerFlowExecution] [triggerflow.interrupt_exposed] [run=ba727a511df64be7a0974ed6571b4bbc] TriggerFlow execution '845c8a72048a4bd2aa34958dd6b2daeb' exposed interrupt 'JOB:JOB-f005197de85b'.
+INFO:     2026-11-02 12:03:56 | 127.0.0.1:57214 - "POST /api/runs/RUN-20261102-120354/gates/G1_diff_confirm/decision HTTP/1.1" 200
+INFO:     2026-11-02 12:03:56 | 127.0.0.1:57214 - "GET /api/runs/RUN-20261102-120354 HTTP/1.1" 200
+INFO:     2026-11-02 12:03:56 | 127.0.0.1:57214 - "GET /api/runs/RUN-20261102-120354 HTTP/1.1" 200
+ERROR:    2026-11-02 12:03:56 | [TriggerFlowExecution] [chunk.failed] [run=de11e7a21164459080a62b86ca88482a] Chunk 'n9_park' failed.
+ERROR:    2026-11-02 12:03:56 | [TriggerFlowExecution] [triggerflow.execution_failed] [run=ba727a511df64be7a0974ed6571b4bbc] TriggerFlow execution '845c8a72048a4bd2aa34958dd6b2daeb' failed.
+ERROR:    2026-11-02 12:03:56 | [TriggerFlowExecution] [triggerflow.resume_dispatch_failed] [run=ba727a511df64be7a0974ed6571b4bbc] TriggerFlow execution '845c8a72048a4bd2aa34958dd6b2daeb' resume request 'JOB-f005197de85b:dead:None' for interrupt 'JOB:JOB-f005197de85b' changed phase.
+WARNING:  2026-11-02 12:03:56 | [TriggerFlowExecution] [triggerflow.pending_interrupts_cancelled] [run=ba727a511df64be7a0974ed6571b4bbc] TriggerFlow execution '845c8a72048a4bd2aa34958dd6b2daeb' cancelled pending interrupts before close.
+INFO:     2026-11-02 12:03:57 | 127.0.0.1:57214 - "GET /api/runs/RUN-20261102-120354 HTTP/1.1" 200
+INFO:     2026-11-02 12:03:57 | 127.0.0.1:57214 - "GET /api/runs/RUN-20261102-120354/events?since_seq=0 HTTP/1.1" 200
+INFO:     2026-11-02 12:03:57 | Shutting down
+INFO:     2026-11-02 12:03:57 | Waiting for application shutdown.
+INFO:     2026-11-02 12:03:57 | Application shutdown complete.
+INFO:     2026-11-02 12:03:57 | Finished server process [225]

@@ -55,10 +55,16 @@ BRANCH_EVENTS: dict[str, dict[str, str]] = {
         "milestone_only": "G3_MILESTONE",
         "defer": "G3_DEFER",
     },
+    # N5 必改=0 的 G1 分流支线（LOOP §14）：结束（HALT）或转全量回归（跳 N6–N8 直接 N9）
+    "G1_no_impact": {
+        "no_impact_end": "G1_NO_IMPACT_END",
+        "full_regression": "G1_NO_IMPACT_FULL_REGRESSION",
+    },
 }
 
 #: 闸门 → 节点名（纯展示元数据）
-GATE_NODE = {"G1_diff_confirm": "N4", "G2_report_accept": "N13", "G3_regression_decision": "N14"}
+GATE_NODE = {"G1_diff_confirm": "N4", "G2_report_accept": "N13",
+             "G3_regression_decision": "N14", "G1_no_impact": "N5b"}
 
 #: 闸门 → 材料阶段（与 contracts.GATE_STAGE 同一口径）
 GATE_STAGE = contracts.GATE_STAGE
@@ -78,6 +84,7 @@ GATE_LABEL_CN = {
     "G1_diff_confirm": "闸门1（差异确认）",
     "G2_report_accept": "闸门2（报告验收）",
     "G3_regression_decision": "闸门3（回归决策）",
+    "G1_no_impact": "闸门1 分流（N5 必改=0：结束 / 转全量回归）",
 }
 
 
@@ -295,6 +302,7 @@ def gate_artifacts(run_dir: Path, gate: str) -> list[str]:
         "G1_diff_confirm": ("n2_diff.json", "n3_digest.md"),
         "G2_report_accept": ("n12_report.md", "reconcile.md", "n9_result.json", "check_C.md"),
         "G3_regression_decision": ("n12_report.md", "n11_review.json"),
+        "G1_no_impact": ("n5_impact.json", "n3_digest.md"),
     }.get(gate, ())
     out: list[str] = []
     rd = Path(run_dir)
@@ -325,6 +333,7 @@ def normalize_entry_decisions(
     decision: str,
     entry_decisions: dict[str, Any] | None,
     diff: dict[str, Any],
+    reason: str | None = None,
 ) -> dict[str, dict[str, Any]]:
     """校验并归一「逐条处置」（A1）。
 
@@ -334,10 +343,22 @@ def normalize_entry_decisions(
     - 一致性：逐条处置与闸门单选分支必须一致（有 disputed ⇒ 整门 disputed；
       否则有 ignored ⇒ 整门 ignored；否则 confirmed）。
     返回 `{entry_id: {"decision":..., "reason":...}}`。
+
+    **未逐条提交时**（`entry_decisions` 为空）：条目继承闸门级决策，理由继承闸门级 `reason`。
+    2026-10-30 修复：旧实现这里把理由写成 `None` 且不校验 ⇒ G1 选 `ignored` + 只给闸门级理由时
+    预检放行、签署后 `_resumed` 的二次预检必失败（实测 500 + 孤儿签名 + run 置 failed）。
+    现在把同一条 A2 判据前置到提交前（拒绝发生在写账本之前）。
     """
     entries = diff.get("entries") or []
     ids = [str(e.get("entry_id")) for e in entries if e.get("entry_id")]
     if not entry_decisions:
+        if decision in ("ignored", "disputed"):
+            if not (isinstance(reason, str) and reason.strip()):
+                raise GatePreconditionFailed(
+                    f"A2：闸门级决策 {decision!r} 必须给出理由（reason）；"
+                    "未逐条提交时该理由会作为每条差异条目的处置理由（ignored/disputed 不得无理由）。"
+                )
+            return {eid: {"decision": decision, "reason": reason} for eid in ids}
         return {eid: {"decision": decision, "reason": None} for eid in ids}
     normalized: dict[str, dict[str, Any]] = {}
     unknown = sorted(set(entry_decisions) - set(ids))
@@ -404,7 +425,8 @@ def precheck_decision(
             )
             if entry_decisions:
                 result["entries"] = normalize_entry_decisions(
-                    gate=gate, decision=decision, entry_decisions=entry_decisions, diff=diff
+                    gate=gate, decision=decision, entry_decisions=entry_decisions, diff=diff,
+                    reason=reason,
                 )
             elif drill_attestation:
                 # drill 夹具的 N2 产出于修 F-02 之前（旧编码判定）⇒ 历史未决条目
@@ -433,7 +455,8 @@ def precheck_decision(
                 )
         else:
             result["entries"] = normalize_entry_decisions(
-                gate=gate, decision=decision, entry_decisions=entry_decisions, diff=diff
+                gate=gate, decision=decision, entry_decisions=entry_decisions, diff=diff,
+                reason=reason,
             )
 
     elif gate == "G2_report_accept" and decision == "accept":
@@ -505,10 +528,12 @@ def _ledger_notes(ctx: RunCtx) -> list[dict[str, Any]]:
     ]
 
 
+
+
 async def _enter(ctx: RunCtx, data: Any, gate: str) -> dict[str, Any]:
     """保留旧闸门与流程快照身份。"""
     from ..nodes.gate_enter import run
-    return await run(ctx, data, gate, GA=GA, GATE_NODE=GATE_NODE, GATE_STAGE=GATE_STAGE, _counts_for=_counts_for, _cycle=_cycle, _cycles_view=_cycles_view, _ledger_notes=_ledger_notes, _persist_cycles=_persist_cycles, _state_facts=_state_facts, contracts=contracts, decision_options=decision_options)
+    return await run(ctx, data, gate, _assert_no_impact_gate_allowed=_assert_no_impact_gate_allowed, GA=GA, GATE_NODE=GATE_NODE, GATE_STAGE=GATE_STAGE, _counts_for=_counts_for, _cycle=_cycle, _cycles_view=_cycles_view, _ledger_notes=_ledger_notes, _persist_cycles=_persist_cycles, _state_facts=_state_facts, contracts=contracts, decision_options=decision_options)
 
 
 
@@ -557,7 +582,28 @@ async def _enter(ctx: RunCtx, data: Any, gate: str) -> dict[str, Any]:
 async def _resumed(ctx: RunCtx, data: Any, gate: str) -> dict[str, Any]:
     """保留旧闸门与流程快照身份。"""
     from ..nodes.gate_resume import run
-    return await run(ctx, data, gate, BRANCH_EVENTS=BRANCH_EVENTS, GA=GA, GATE_NODE=GATE_NODE, GatePreconditionFailed=GatePreconditionFailed, _cycle=_cycle, _cycles_view=_cycles_view, _material_hard_block=_material_hard_block, _persist_cycles=_persist_cycles, _planned_entries=_planned_entries, append_decision_ledger=append_decision_ledger, authority_record=authority_record, human_signed_flag=human_signed_flag, precheck_decision=precheck_decision)
+    return await run(ctx, data, gate, _assert_no_impact_gate_allowed=_assert_no_impact_gate_allowed, BRANCH_EVENTS=BRANCH_EVENTS, GA=GA, GATE_NODE=GATE_NODE, GatePreconditionFailed=GatePreconditionFailed, _cycle=_cycle, _cycles_view=_cycles_view, _material_hard_block=_material_hard_block, _persist_cycles=_persist_cycles, _planned_entries=_planned_entries, append_decision_ledger=append_decision_ledger, authority_record=authority_record, human_signed_flag=human_signed_flag, precheck_decision=precheck_decision)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -680,6 +726,8 @@ def make_gate(gate: str):
 gate1 = make_gate("G1_diff_confirm")
 gate2 = make_gate("G2_report_accept")
 gate3 = make_gate("G3_regression_decision")
+# N5 必改=0 的 G1 分流支线（LOOP §14）：只在 N5 之后可达，不在主线三道闸门之内
+gate_no_impact = make_gate("G1_no_impact")
 
 
 async def halt(data: Any) -> dict[str, Any]:
@@ -714,3 +762,24 @@ GATE_IDS = GA.gate_ids()
 
 #: 合法决策全量（取自权威，仅暴露用）
 GATE_DECISIONS = GA.decisions()
+
+
+def _assert_no_impact_gate_allowed(ctx: RunCtx, data: Any, gate: str) -> None:
+    """纵深防御（LOOP §14.5-4）：`G1_no_impact` 只在 N5 `must_change_count == 0` 时可进入/可签署。
+
+    拓扑上只有 `N5_ZERO_MUST_CHANGE` 才能到达本门；这里再挡一次，防止绕过恢复载荷
+    或手工 continue_with 把"有必改用例"的轮次推进到分流支线（否则等于跳过修订）。
+    """
+    if gate != "G1_no_impact":
+        return
+    n5 = data.get_state("n5_impact") or {}
+    count = n5.get("must_change_count")
+    if count is None:
+        raise GatePreconditionFailed(
+            "G1_no_impact 需要 N5 结论（`n5_impact.must_change_count`）才能签署；"
+            "本轮状态缺失 ⇒ 拒绝（不猜'零必改'）。"
+        )
+    if int(count) != 0:
+        raise GatePreconditionFailed(
+            f"G1_no_impact 只在 N5 必改=0 时可用（本轮 must_change_count={count}）⇒ 拒绝。"
+        )

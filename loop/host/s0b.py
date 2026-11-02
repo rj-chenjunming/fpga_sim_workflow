@@ -565,11 +565,43 @@ def _uvlan_available() -> bool:
     return shutil.which("uvlan") is not None
 
 
+#: 基线编译代理根里要从基线软链过去的环境条目（编译驱动只读这些；软链不是写入）。
+BASELINE_COMPILE_LINKS: tuple[str, ...] = (
+    "RTL", "TB", "PKG", "TESTLIB", "BIN", "TC", "all_define.txt", "input.tcl",
+    "uvs.setup", "doc",
+)
+
+
+def baseline_compile_root(baseline: Path, smoke_root: Path) -> dict:
+    """给"基线那一侧"造一个**可写代理根**：基线本身零写入（S0 §8.2-2 / 红线 11）。
+
+    为什么需要：`run_guarded.sh` 会在 `ROOT/SIMLIB_RUN/.run_guarded.lock` 与
+    `ROOT/.compile_only.lock` 建锁。把 `ROOT` 直接指向受守卫的环境根（真实机常是只读挂载）
+    时：只读 ⇒ `mkdir` 失败、owner 不可解析 ⇒ 驱动 rc=3 且**不产出任何编译日志**（本机实测）；
+    可写 ⇒ 会写基线（v1 口径与"断言基线零写入"矛盾）。两种都不成立，所以这里造一个只含
+    **指向基线资产的只读软链** + 自己的 `SIMLIB_RUN/` 的代理根。
+    """
+    root = Path(smoke_root) / "baseline" / "root"
+    if root.exists() or root.is_symlink():
+        shutil.rmtree(root)
+    root.mkdir(parents=True, exist_ok=False)
+    linked: list[str] = []
+    for name in BASELINE_COMPILE_LINKS:
+        source = Path(baseline) / name
+        if not source.exists() and not source.is_symlink():
+            continue
+        os.symlink(os.path.realpath(source) if source.is_symlink() else source, root / name)
+        linked.append(name)
+    (root / "SIMLIB_RUN").mkdir()      # 锁与归档的落点（在代理根里，不动基线）
+    return {"root": str(root), "baseline": str(baseline), "linked": linked}
+
+
 def run_smoke(record: dict, folder: Path, case: str, run_id: str, now=None) -> dict:
     """在**副本内**跑 `run_guarded.sh --mode compile-only`，再按基线相对增量判 warning。
 
     - 驱动复用既有实现（红线 8：不新增第二套编译）；
     - 基线编译在**独立沙箱**里做（`--sandbox-root` 指向基线树），保证基线零写入；
+      基线侧 `ROOT` 永远经 `baseline_compile_root()` 的可写代理根（见该函数说明）；
     - 读数一律经 `uvs_logs`（红线 7：不许裸 grep）。
     """
     folder = Path(folder)
@@ -588,9 +620,14 @@ def run_smoke(record: dict, folder: Path, case: str, run_id: str, now=None) -> d
     # 沙箱与证据必须放在**被见证的树之外**：`manifest()` 拒绝符号链接，而 run_guarded 的沙箱
     # 工作树全是软链 ⇒ 放进 work/baseline 里会让"漂移核验"把冒烟自己当成污染（实测踩过）。
     smoke_root = _s0b(folder) / "smoke"
+    compile_roots: dict[str, dict] = {}
     for label, root in (("candidate", work), ("baseline", baseline)):
         evidence = smoke_root / label / "evidence"
         sandbox = smoke_root / label / "sandbox"
+        if label == "baseline":
+            # 基线侧永远走可写代理根：基线零写入（只读挂载下直接跑会 rc=3 且无日志）。
+            compile_roots[label] = baseline_compile_root(baseline, smoke_root)
+            root = Path(compile_roots[label]["root"])
         command = ["bash", str(COMPILE_DRIVER), "--mode", "compile-only", "-c", case,
                    "--sandbox-root", str(sandbox), "--run", "%s-s0smoke-%s" % (run_id, label),
                    "--evidence-dir", str(evidence)]
@@ -605,10 +642,14 @@ def run_smoke(record: dict, folder: Path, case: str, run_id: str, now=None) -> d
         logs = sorted(evidence.glob("*_c_*.log")) or sorted(evidence.glob("archive/*_c_*.log"))
         if not logs:
             return {"status": "failed", "reason": "%s 段没有产出编译日志：%s" % (label, evidence),
-                    "rc": proc.returncode, "at": stamp}
+                    "rc": proc.returncode, "at": stamp,
+                    "compile_root": compile_roots.get(label)}
         reports = [uvs_logs.parse_log(path) for path in logs]
         results[label] = {"rc": proc.returncode, "command": command,
                           "evidence_dir": str(evidence),
+                          "compile_root": str(root),
+                          "root_mode": ("proxy_readonly_baseline" if label == "baseline"
+                                        else "candidate_copy"),
                           "logs": [str(p) for p in logs],
                           "summary": uvs_logs.summarize(reports),
                           "tail": (proc.stdout or "")[-2000:]}
@@ -661,11 +702,21 @@ def reevaluate_smoke(smoke: dict, folder: Path) -> dict:
 
 
 def ready_for_execution(record: dict, folder: Path) -> bool:
-    """六项 check 全 passed **且**没有漂移/错误 ⇒ 才允许 `real`。
+    """准出判据（唯一实现）：六项 check 全 passed 且没有漂移/错误 ⇒ 才允许 `real`。
 
-    fail-closed：任何一项不是 `passed`（含 `waiting`）都返回 False。
+    **S0 §9.9-4 唯一例外**：环境项目入口（`entry="env_folder"`）下 `rtl` 允许 `skipped`
+    （RTL 不替换），此时其余五项必须全 `passed`。
+
+    fail-closed：除该唯一例外外，任何一项不是 `passed`（含 `waiting`/`skipped`）都返回 False；
+    未知 `entry`、缺任一 check 同样 False。
     """
     checks = {c["key"]: c["status"] for c in record.get("checks") or []}
-    return (record.get("status") == "prepared" and not record.get("error")
-            and all(checks.get(key) == "passed" for key in
-                    ("copy", "rtl", "non_rtl", "ports", "smoke", "baseline")))
+    if record.get("status") != "prepared" or record.get("error"):
+        return False
+    if not all(checks.get(key) == "passed" for key in
+               ("copy", "non_rtl", "ports", "smoke", "baseline")):
+        return False
+    rtl = checks.get("rtl")
+    if rtl == "passed":
+        return True
+    return rtl == "skipped" and record.get("entry") == "env_folder"

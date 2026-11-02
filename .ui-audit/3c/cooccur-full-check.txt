@@ -1,0 +1,42 @@
+web=/home/work/chenjunming/change-impact-loop/.ui-audit/3c/snap-harness-same
+状态数=36（3 视口 × 12 状态）；选择器 884 个（匹配用 833 个）
+  collected 1280x720/s0              elements=948   selectors=833 hits=2322
+  collected 1280x720/setup           elements=948   selectors=833 hits=2323
+  collected 1280x720/run             elements=1420  selectors=833 hits=3378
+  collected 1280x720/gate            elements=1420  selectors=833 hits=3378
+  collected 1280x720/dirpicker       elements=966   selectors=833 hits=2376
+  collected 1280x720/agent           elements=1426  selectors=833 hits=3389
+  collected 1280x720/node-detail     elements=1525  selectors=833 hits=3627
+  collected 1280x720/empty           elements=948   selectors=833 hits=2322
+  collected 1280x720/legacy          elements=411   selectors=833 hits=896
+  collected 1280x720/toast           elements=948   selectors=833 hits=2323
+  collected 1280x720/alert           elements=948   selectors=833 hits=2325
+  collected 1280x720/gate-empty      elements=948   selectors=833 hits=2322
+  collected 1440x900/s0              elements=948   selectors=833 hits=2322
+  collected 1440x900/setup           elements=948   selectors=833 hits=2323
+  collected 1440x900/run             elements=1420  selectors=833 hits=3378
+  collected 1440x900/gate            elements=1420  selectors=833 hits=3378
+  collected 1440x900/dirpicker       elements=966   selectors=833 hits=2376
+  collected 1440x900/agent           elements=1426  selectors=833 hits=3389
+  collected 1440x900/node-detail     elements=1525  selectors=833 hits=3627
+  collected 1440x900/empty           elements=948   selectors=833 hits=2322
+  collected 1440x900/legacy          elements=411   selectors=833 hits=896
+  collected 1440x900/toast           elements=948   selectors=833 hits=2323
+  collected 1440x900/alert           elements=948   selectors=833 hits=2325
+  collected 1440x900/gate-empty      elements=948   selectors=833 hits=2322
+  collected 1920x1080/s0             elements=948   selectors=833 hits=2322
+  collected 1920x1080/setup          elements=948   selectors=833 hits=2323
+  collected 1920x1080/run            elements=1420  selectors=833 hits=3378
+  collected 1920x1080/gate           elements=1420  selectors=833 hits=3378
+  collected 1920x1080/dirpicker      elements=966   selectors=833 hits=2376
+  collected 1920x1080/agent          elements=1426  selectors=833 hits=3389
+  collected 1920x1080/node-detail    elements=1525  selectors=833 hits=3627
+  collected 1920x1080/empty          elements=948   selectors=833 hits=2322
+  collected 1920x1080/legacy         elements=411   selectors=833 hits=896
+  collected 1920x1080/toast          elements=948   selectors=833 hits=2323
+  collected 1920x1080/alert          elements=948   selectors=833 hits=2325
+  collected 1920x1080/gate-empty     elements=948   selectors=833 hits=2322
+{"web": "/home/work/chenjunming/change-impact-loop/.ui-audit/3c/snap-harness-same", "selectors": "/home/work/chenjunming/change-impact-loop/.ui-audit/3c/cooccur-selectors-full.json", "out": "/home/work/chenjunming/change-impact-loop/.ui-audit/3c/cooccur-full-check.json", "states": 36, "selector_total": 885, "input_selector_total": 884, "probe_selectors": ["#btnS0"], "invalid_selectors": 1, "zero_hit_selectors": 299, "co_match_pair_count": 2626, "pairs_checked": 391170, "blocked_pairs_checked": 0, "blocked_pairs_co_match": 0, "untrusted_states": []}
+PASS: 共命中证据采集完成
+EXIT=0
+DURATION=44s

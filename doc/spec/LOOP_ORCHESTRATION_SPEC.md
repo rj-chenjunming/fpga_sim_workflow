@@ -71,7 +71,7 @@
 | # | 不变式（上游原文摘要） | 机制 owner | 落点 |
 |---|---|---|---|
 | I1 | 差异条目无未决项才可进入修订 | 闸门1 pause chunk + `kb/tools/gate.py` | `gates.py::gate1` 放行前读 gate_state，未决>0 则拒绝 resume |
-| I2 | 受影响用例态 ∈ {未改/已修订待验/已验证通过/已退回}；有「待验」不得称跑通 | N16 前置 + `kb/tools/case_state.py` | N16 读 `case_states.json`，存在「已修订待验」⇒ rc=3 |
+| I2 | 受影响用例态 ∈ {未改/已修订待验/已验证通过/已退回}；有「待验」不得称跑通 | N16 前置 + `kb/tools/case_state.py` | N16 读 `case_states.json`，存在「已修订待验」⇒ rc=3。2026-11-02 增补：人签覆写（[SPEC-REV-20](SPEC-REV-20-20261102.md)）把该例态写成 `已验证通过`，机器原判冻结在条目 `overrides[]`；判据与聚合数不变 |
 | I3 | 跑通 = 编译 rc=0 ∧ 静态卡点C ∧ 全跑有完整 UVM 汇总 ∧ **两套口径均为 0** ∧ 观测点印记计数三向一致 | 结果对账 chunk | **双计数并列**：口径一（`*E` 文本计数）与口径二（UVM 汇总）分别取、分别存、**永不互相替代** |
 | I4 | 冲突清单未清零不发版 | 闸门2/3 + N16 | N16 读 `<WORKSPACE_ROOT>/conflicts/conflicts.json`，任一 `blocks_release=true` ⇒ 拒绝 |
 | I5 | 每步证据带身份，归档只增不改 | `kb/tools/n1_snapshot.py` + RecordStore | manifest/anchor 冻结，快照留存 |
@@ -173,7 +173,7 @@
 | N9 证据 | 双计数分别取 + 印记三向一致校验 + identity 四方同值（run_id/case/md5/seed） | N10 对账 / N11 守护 |
 | 闸门2 决策 | `actor_kind` + 计数快照 | N11 / 回边 |
 | 闸门3 决策 | 冲突清零校验（选 `full_now`/`subset_only` 时，提交前） | N15 / N16 |
-| N16 前置 | `case_states.json` 无「已修订待验」（本轮）∧ 冲突无 `blocks_release` ∧ 两类回边均 `>= limit` 拒绝 ∧ 身份与 G3 逐字一致 ∧ 无残留 `manifest.json` | 晋升或 rc=3 |
+| N16 前置 | `case_states.json` 无「已修订待验」（本轮）∧ 冲突无 `blocks_release` ∧ 两类回边均 `>= limit` 拒绝 ∧ 身份与 G3 逐字一致 ∧ 无残留 `manifest.json` | 晋升或 rc=3。2026-11-02：人签覆写只改台账态（`已验证通过`），本前置不变——台账是唯一事实，机器原判在 `overrides[]` 可回放 |
 
 ---
 
@@ -314,7 +314,7 @@ n9_sim chunk                       park chunk                      job_runner �
 
 ## 10. UI 投影契约（v1 = 闸门操作台 + 长任务看板）
 
-**v1 范围**：单机单用户。**允许的写动作恰好四个**（全部经服务端校验，前端只传输）：
+**v1 范围**：单机单用户。**允许的写动作恰好五个**（全部经服务端校验，前端只传输；第 ⑤ 项为 2026-11-02 增补，见 [SPEC-REV-20](SPEC-REV-20-20261102.md)）：
 
 | # | 动作 | 端点 | 权威校验（拒绝发生在任何写盘之前） |
 |---|---|---|---|
@@ -322,6 +322,7 @@ n9_sim chunk                       park chunk                      job_runner �
 | ② | 取消作业 | `POST /api/runs/{run_id}/jobs/{job_id}/cancel` | 作业存在且未终态；送达后由 `JobRunner` 记权威相位 |
 | ③ | 新建运行 | `POST /api/runs` | `project` 必须等于进程 `ENV_ROOT`（跨环境须重启）；`mode ∈ {drill, real}`；`scenario` 见 `SCENARIOS`；run_id 必须唯一 |
 | ④ | 人触发晋升（N16/I8） | `POST /api/runs/{run_id}/promote` | actor 必须以 `human` 开头且**与 G3 签署者逐字一致**；G3 已签、`human_signed=true`、决策 ∈ {full_now, subset_only, milestone_only}；再交 `kb/tools/n16_promote.py --promote`（I4/I7/七件套/parent 链由工具复核）；每次尝试落 `<run_dir>/promote_result.json`，已成功过拒绝重复晋升 |
+| ⑤ | 用例人签覆写（2026-11-02，[SPEC-REV-20](SPEC-REV-20-20261102.md)） | `POST /api/runs/{run_id}/cases/override` | `action ∈ {pass, revoke}`；actor 必须 `human:<name>`、reason 非空；用例状态必须匹配动作；`<run_dir>/n10_cases.json` 可读且该例 `passed=false`、`reasons` 非空；**仅 `waiting_gate`**；服务层只调 `kb/tools/case_state.py override`，不自己写台账；批量全有或全无 |
 
 **明确不做**：UI 编辑 `TESTLIB/`（写权在 v1–v3 归作者角色 + 沙箱）、UI 直接改基线/冲突清单。
 晋升的**真实写盘**只由 `n16_promote.py` 原子完成；API 层不写 `baselines/`、不伪造闸门。
@@ -697,3 +698,87 @@ P0 实现与本文契约的逐条对照见 **`doc/audit/AUDIT-20261019-spec-conf
 4. 不引入 `TaskDAG`/动态生成图：稳定拓扑写在源码里；未验证的运行时计划数据**不得**编译成临时 TriggerFlow 定义。
 5. 不宣称分布式恢复、不宣称多用户并发。
 6. v1 不做前端编辑用例、不做自动发版决策。
+
+## 13 派生环境根与运行（2026-10-30）
+
+> 契约来源：[S0 §9](S0_ENVIRONMENT_SPEC.md) + [SPEC-03 §8](ENV_PLUGIN_SPEC.md)。只增不改既有节点与闸门。
+
+1. run 文档只增字段：`env_root`（本次运行使用的环境根绝对路径，缺省 = 进程 `ENV_ROOT`）与 `env_origin_root`；
+   既有判据不变：`POST /api/runs` 仍要求 `project == 进程 ENV_ROOT`（切换完成后进程根即派生副本根）。
+2. `s0_record_id` 语义不变（C12）：`real` 必须记录存在且 `ready_for_execution=true`。
+3. 派生环境的数据根 = 副本 `kb/`（自包含）；基线准入第三条候选（§3.1.1）已覆盖该布局。
+4. ~~未决登记（本轮不实现）~~ **已实现（2026-10-30，见 §14）**：N5 必改用例 = 0 时的 G1 人工分流
+   （“本变无影响用例，结束” / “转全量回归”）通过新增闸门 `G1_no_impact`（冻结枚举已按“单独变更 + 留证”
+   新增：`kb_lib.GATE_IDS/GATE_KIND/GATE_DECISIONS` + `kb/schema/gate_state.schema.json`）与 N5 后的条件分支实现；
+   详细契约见 §14。
+
+## 14 N5 必改=0 分流闸门 `G1_no_impact`（2026-10-30）
+
+> 业务契约：[CHANGE_IMPACT_LOOP_SPEC §12](CHANGE_IMPACT_LOOP_SPEC.md)。
+> 本节是**机制契约**：闸门身份/枚举、拓扑边、节点、准出与证据、投影、验收。
+> 变更性质：`kb/tools/kb_lib.py` 与 `kb/schema/gate_state.schema.json` 属**冻结目录**，
+> 本次按 AGENTS.md §3「改语义需单独变更并留证」执行——变更说明与自测输出落
+> `doc/evidence/KB_GATE_NO_IMPACT_20261030/`，计划见 `doc/plans/2026-10-30-zero-must-change-gate.md`。
+
+### 14.1 闸门身份与枚举（冻结目录新增）
+
+| 项 | 值 |
+|---|---|
+| `GATE_IDS` | 头部仍是 `("G1_diff_confirm", "G2_report_accept", "G3_regression_decision")`，**追加** `"G1_no_impact"`（末尾追加，不改既有顺序） |
+| `GATE_KIND["G1_no_impact"]` | `"diff_confirm"`（差异确认类；语义是"零必改分流"） |
+| `GATE_DECISIONS["G1_no_impact"]` | `["no_impact_end", "full_regression", "pending"]` |
+| `gate_state.schema.json` | `gates.required/properties` 与 `gate_id` 枚举同步加入 `G1_no_impact`；`additionalProperties=false` 不变 |
+| 节点 | `N5b`（`GATE_NODE["G1_no_impact"]="N5b"`；`node_history`/看板按节点名投影） |
+| 理由要求 | `no_impact_end` 必填（加入 `contracts.REASON_REQUIRED_DECISIONS`）；`full_regression` 不强制（人 2026-10-30 裁决） |
+
+### 14.2 拓扑
+
+```
+G1_CONFIRMED → N5 ──(N5_HAS_MUST_CHANGE)→ N6_author → …（原路径不变）
+                      └(N5_ZERO_MUST_CHANGE)→ N5b(G1_no_impact) ─┬(G1_NO_IMPACT_END)→ HALT
+                                                                  └(G1_NO_IMPACT_FULL_REGRESSION)→ N9_submit → N9 → N10 → …
+```
+
+- N5 chunk 在**自己完成后**按 `must_change_count == 0` 发上述两个事件之一（只发一个）；
+- `G1_no_impact` 决策分支由 `BRANCH_EVENTS` 映射到 `G1_NO_IMPACT_END` / `G1_NO_IMPACT_FULL_REGRESSION`；
+- 启动自检（`assert_topology_matches_authority`）覆盖新门：`BRANCH_EVENTS` 必须与权威枚举逐值一致。
+
+### 14.3 两个分支的机制
+
+**`no_impact_end`（本轮终止）**：上游事件 → `halt`。`HALT` 节点写 `status=halted`、
+`summary` 含「N5 必改=0，人签『本变无影响用例，结束』」；run 收敛 `finished`；不跑 N12/N13/N14/N15/N16；
+无 G3 签署 ⇒ N16 前置检查必然拒绝晋升。
+
+**`full_regression`（转全量回归）**：上游事件 → `n9_submit`。N9 目标集改为
+`kb/index/cases.json` 的全部用例（与 G3=`full_now` 的 `_full_regression_cases()` **同一口径**）：
+
+- 每例 `file` = 索引里的 `TESTLIB/<case>.sv`，`sandbox_path` = 当前环境根下该文件，
+  `md5` = 索引 `md5`；提交前逐例复核存在且 md5 相等（**审的对象 == 跑的对象**）；
+- 索引缺失/为空 ⇒ 显式失败（`不得回退到一个默认用例`）；
+- `n9_job.target_set="baseline_frozen_full"`（与 `n6_applied` 来源可区分）；
+- 跳过 N6/N7/N8 ⇒ 不产 `n6_author/n6_applied/n8_check` state；N10/N11/N12 必须对缺失的前序 state
+  **容错读**（不得 KeyError；报告里显式标注"本支无修订"）。
+
+### 14.4 闸门材料
+
+`contracts.gate_material(gate="G1_no_impact", stage="n5_gate1b")` 至少包含：
+
+- N5 摘要：`must_change_count`（=0）、`to_check_count`/`to_check_cases`、`must_change_over_budget` /
+  `must_change_unreachable` 计数、`index_complete`、`index_gaps`；
+- G1 已签署记录（`human_signed`/`signed_at`/anchor）与 N2 差异条目数；
+- 当前 `env_root` / `baseline` / `s0_record_id`（若运行由 S0 派生环境发起）；
+- 决策选项（服务端下发：`value`/`label`/`requires_reason`，取自权威枚举 + 同一理由判据）；
+- 缺失件一律显式 `missing`，不编造。
+
+### 14.5 验收
+
+1. kb 自测：`GATE_IDS`/`GATE_DECISIONS` 新增项合法、`gate.py sign/require-signed` 对 `G1_no_impact`
+   可签可检、`gate_state.schema.json` 校验新 `gates.json` 通过；
+2. 拓扑自检：`BRANCH_EVENTS` 与权威逐值一致（新增门在内）；drift 时启动即炸；
+3. 分支单测：N5 必改>0 ⇒ 不发 `N5_ZERO_MUST_CHANGE`、仍进 N6；必改=0 ⇒ 进 `N5b`；
+   `no_impact_end` ⇒ HALT/finished/不晋升；`full_regression` ⇒ N9 目标集 = 索引全量且 md5 校验、
+   `target_set="baseline_frozen_full"`、N9→N12 链路可跑；
+4. 反向守卫：必改>0 时不得出现 `G1_no_impact` 的签署记录；`full_regression` 不得静默回退到"修订子集"；
+5. 四道门 + 浏览器门（闸门操作台能渲染第 4 个门与两个选项，`requires_reason` 与判据同源）；
+6. 真实链：本机 `uvlan` 可用时，drill 场景覆盖两分支；real 全量回归成本（≈19 min/用例 × 全量）
+   不在本轮跑，STATUS 如实登记「分支只经 drill/单测证明」，不得宣称 real 全跑通过。

@@ -1,0 +1,77 @@
+### python3 -B /home/work/chenjunming/change-impact-loop/kb/tools/case_state.py --now 2026-11-02T11:00:00+0800 init --run RUN-20261102-110000
+[kb] 已建立用例态台账：runs/RUN-20261102-110000/case_states.json（run_id=RUN-20261102-110000，四态字面量固定）
+[kb] 时间字段声明：updated_at（README §3.1.1，--now/KB_NOW 注入）
+rc=0
+### python3 -B /home/work/chenjunming/change-impact-loop/kb/tools/case_state.py set --run RUN-20261102-110000 --case tc_a --state 已修订待验
+[kb] tc_a：runs/RUN-20261102-110000/case_states.json -> 已修订待验
+[kb]   compile_rc=None static_check=None two_counts=None
+[kb] 时间字段声明：updated_at（README §3.1.1）
+rc=0
+### python3 -B /home/work/chenjunming/change-impact-loop/kb/tools/case_state.py set --run RUN-20261102-110000 --case tc_b --state 已修订待验
+[kb] tc_b：runs/RUN-20261102-110000/case_states.json -> 已修订待验
+[kb]   compile_rc=None static_check=None two_counts=None
+[kb] 时间字段声明：updated_at（README §3.1.1）
+rc=0
+### python3 -B /home/work/chenjunming/change-impact-loop/kb/tools/case_state.py override --run RUN-20261102-110000 --verify
+[kb] 覆写链复核通过：runs/RUN-20261102-110000/case_states.json（逐条 record_sha256 + source_md5 均已复算）
+rc=0
+### python3 -B /home/work/chenjunming/change-impact-loop/kb/tools/case_state.py override --run RUN-20261102-110000 --case tc_a --case tc_b --actor human:chenjunming --reason 两例期望值过期 --now 2026-11-02T11:05:00+0800
+[kb] override pass：tc_a 已修订待验 -> 已验证通过（machine.passed=False，机器原因 1 条）
+[kb] override pass：tc_b 已修订待验 -> 已验证通过（machine.passed=False，机器原因 1 条）
+[kb] 台账：runs/RUN-20261102-110000/case_states.json（追加 2 条 overrides 记录，record_sha256 可离线复算）
+[kb] 时间字段声明：decided_at/updated_at（README §3.1.1，--now/KB_NOW 注入）
+rc=0
+### python3 -B /home/work/chenjunming/change-impact-loop/kb/tools/case_state.py check --run RUN-20261102-110000 --json
+{"cases":2,"counts":{"已修订待验":0,"已退回":0,"已验证通过":2,"未改":0},"for_promotion":false,"invalid_states":[],"ok":true,"path":"runs/RUN-20261102-110000/case_states.json","pending":[],"problems":[],"rework_cycles":{"g2_rework_cycles":null,"limit":3,"n6_n8_cycles":0,"over_limit":false},"run_id":"RUN-20261102-110000","waived":["tc_a","tc_b"]}
+rc=0
+### python3 -B /home/work/chenjunming/change-impact-loop/kb/tools/case_state.py override --run RUN-20261102-110000 --verify
+[kb] 覆写链复核通过：runs/RUN-20261102-110000/case_states.json（逐条 record_sha256 + source_md5 均已复算）
+rc=0
+### python3 -B /home/work/chenjunming/change-impact-loop/kb/tools/case_state.py show --run RUN-20261102-110000 --case tc_a --json
+[kb] runs/RUN-20261102-110000/case_states.json（run_id=RUN-20261102-110000 writer=human:chenjunming updated_at=2026-11-02T11:05:00+0800）
+[kb]   tc_a                               已验证通过    compile_rc=None static_check=None run_md5=None
+[kb]   态「未改」= 0
+[kb]   态「已修订待验」= 0
+[kb]   态「已验证通过」= 1
+[kb]   态「已退回」= 0
+[kb] 待验数=0 ⇒ 无待验
+{"cases":[{"case":"tc_a","overrides":[{"action":"pass","actor":"human:chenjunming","actor_kind":"human","decided_at":"2026-11-02T11:05:00+0800","machine":{"counts":{},"criterion":"聚合判据","evidence":{"md5":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","path":"evidence/a.log"},"imprints":{},"passed":false,"reasons":["口径一 egrep=3"],"schema":"loop/n10_cases","source_md5":"05a846660b4a7499fe9a131ef404bab2","source_path":"n10_cases.json"},"prev_state":"已修订待验","reason":"两例期望值过期","record_sha256":"68dff631ccc7ec124c7627893f590134009289adcec30837444be8b467d8adcb","schema":"kb/case_override"}],"state":"已验证通过","updated_at":"2026-11-02T11:05:00+0800","updated_by":"human:chenjunming"},{"case":"tc_b","overrides":[{"action":"pass","actor":"human:chenjunming","actor_kind":"human","decided_at":"2026-11-02T11:05:00+0800","machine":{"counts":{},"criterion":"聚合判据","evidence":{},"imprints":{},"passed":false,"reasons":["印记三向不一致"],"schema":"loop/n10_cases","source_md5":"05a846660b4a7499fe9a131ef404bab2","source_path":"n10_cases.json"},"prev_state":"已修订待验","reason":"两例期望值过期","record_sha256":"768fbe3b228e08fc493983872f86bcab60afdb28cabeb6f49ce4f0416227c663","schema":"kb/case_override"}],"state":"已验证通过","updated_at":"2026-11-02T11:05:00+0800","updated_by":"human:chenjunming"}],"rework_cycles":{"limit":3,"n6_n8_cycles":0},"run_id":"RUN-20261102-110000","schema":"kb/run/case_states","updated_at":"2026-11-02T11:05:00+0800","version":1,"writer":"human:chenjunming"}
+rc=0
+### python3 -B /home/work/chenjunming/change-impact-loop/kb/tools/case_state.py override --run RUN-20261102-110000 --case tc_a --actor human:chenjunming --reason 已签过再签
+[FAIL] 人签覆写被拒（§4 前置不满足，1 处未通过）⇒ 台账**一字节未动**：
+  - §4-4 用例 'tc_a' 当前态是 '已验证通过'，pass 要求当前态为 '已修订待验'
+rc=3
+### python3 -B /home/work/chenjunming/change-impact-loop/kb/tools/case_state.py override --run RUN-20261102-110000 --case tc_a --actor human:chenjunming --reason 撤销 --revoke --now 2026-11-02T11:10:00+0800
+[kb] override revoke：tc_a 已验证通过 -> 已修订待验（machine.passed=False，机器原因 1 条）
+[kb] 台账：runs/RUN-20261102-110000/case_states.json（追加 1 条 overrides 记录，record_sha256 可离线复算）
+[kb] 时间字段声明：decided_at/updated_at（README §3.1.1，--now/KB_NOW 注入）
+rc=0
+### python3 -B /home/work/chenjunming/change-impact-loop/kb/tools/case_state.py override --run RUN-20261102-110000 --case tc_a --actor model:o3 --reason 模型想签
+[FAIL] §4-1 --actor 的类必须是 human，得到 'model'（model:/host:/rehearsal: 一律拒绝） ⇒ 台账**未写盘**
+rc=3
+### python3 -B /home/work/chenjunming/change-impact-loop/kb/tools/case_state.py check --run RUN-20261102-110000 --json
+{"cases":2,"counts":{"已修订待验":1,"已退回":0,"已验证通过":1,"未改":0},"for_promotion":false,"invalid_states":[],"ok":false,"path":"runs/RUN-20261102-110000/case_states.json","pending":["tc_a"],"problems":["存在「已修订待验」用例（I2）：tc_a"],"rework_cycles":{"g2_rework_cycles":null,"limit":3,"n6_n8_cycles":0,"over_limit":false},"run_id":"RUN-20261102-110000","waived":["tc_b"]}
+rc=3
+### python3 -B /home/work/chenjunming/change-impact-loop/kb/tools/case_state.py --help
+usage: case_state.py [-h] [--now NOW] [--state-file STATE_FILE]
+                     {init,set,show,check,override} ...
+
+用例态台账（I2 四态 + I3 跑通门槛可执行化；N16 晋升前置检查读本文件）
+
+positional arguments:
+  {init,set,show,check,override}
+    init                建立空台账（已存在则拒绝，--force 才重建）
+    set                 写一个用例的态与卡点证据（--state 已验证通过 走 I3 合取门槛）
+    show                显示台账与各态计数
+    check               台账判定（N16 前置检查稳定出口；待验/返工>=limit 均 rc=3）
+    override            人签覆写（只追加 overrides[]；拒绝矩阵 §4 全在写盘前判）；`--verify` 只复核
+                        record_sha256 + source_md5
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --now NOW             注入时间字段 updated_at（ISO8601；等价环境变量 KB_NOW）
+  --state-file STATE_FILE
+                        台账文件路径覆盖（默认 kb/runs/<run_id>/case_states.json）
+
+退出码：0 成功 / 2 用法 / 3 规则不满足（不写盘） / 4 状态文件损坏
+rc=0

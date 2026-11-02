@@ -57,11 +57,15 @@ async def run(data: Any, *, ctx_of, ARTIFACTS, _load_json, _to_check_fields, run
     )
     gap_count = result["index_gap_count"]
     cases_text = "、".join(result["must_change_cases"]) or "无"
+    result["zero_must_change"] = result["must_change_count"] == 0
     result["summary"] = (
         f"N5：必改 {result['must_change_count']} 个用例（{cases_text}），"
-        f"索引缺口 {gap_count} 条，index_complete={result['index_complete']}；"
+        f"待查 {result.get('to_check_count')} 条，索引缺口 {gap_count} 条，"
+        f"index_complete={result['index_complete']}；"
         f"gate1 签署校验 rc={result['gate1_rc']}"
     )
     await data.async_set_state("n5_impact", result)
     ctx.node_finished("N5", detail=result, refs=[str(target)])
+    await data.async_emit("N5_ZERO_MUST_CHANGE" if result["zero_must_change"]
+                          else "N5_HAS_MUST_CHANGE", result)
     return result

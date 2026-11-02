@@ -1,0 +1,42 @@
+covered by existing 24: 104 of 213
+remaining distinct values: 109 occurrences: 166
+greedy new centres: 39 => total tokens: 63
+N00 #ecdcbe w=21  n=11 #e2d3b6 #e6d5b4 #e7d5b4 #e8d8b7 #e9dfc9 #ead7b7 #ebdfc6 #ecdcbe #eddfc5 #efe0bf #efe1c3
+N01 #ebc4bf w=19  n=9  #e2bbb5 #e4c1bb #e6c0b9 #e7bdb8 #e7c4bf #eac8c3 #ebc4bf #f2c9c9 #f5c6c6
+N02 #536e58 w=14  n=10 #496353 #4d6b4e #536e58 #55684f #57764c #5a6e52 #5c7055 #5c7a59 #5d7756 #5e7854
+N03 #7a6234 w=12  n=2  #7a6234 #7d6339
+N04 #cbe9d8 w=11  n=6  #bfe8d8 #cae9db #cbe9d8 #d1e5da #d4e0cc #d7e8d5
+N05 #34533c w=11  n=8  #284c35 #2f4a37 #304b35 #304b3d #34533c #36533d #3d5545 #3e5546
+N06 #f3d19e w=10  n=1  #f3d19e
+N07 #bacdb3 w=7   n=6  #b2c5b9 #b4c9ab #b9d5aa #bacdb3 #bbceba #bcccb2
+N08 #cae2c4 w=6   n=6  #c1dcbd #c3dabc #c5ddb9 #c8dfbc #cae2c4 #d4e8c8
+N09 #dae5d2 w=5   n=5  #d9e7d6 #d9e8d4 #dae3d5 #dae5d2 #dce8d7
+N10 #91ab9a w=4   n=3  #91ab9a #91ad9b #93a49a
+N11 #456761 w=3   n=2  #456761 #456a58
+N12 #ecdada w=3   n=3  #ecdada #f1cfcf #f8dcd7
+N13 #a3be97 w=3   n=3  #a0c18b #a3be97 #a7c69b
+N14 #3a5a4a w=3   n=3  #38614c #3a5a4a #425449
+N15 #50694b w=3   n=3  #456e48 #50694b #54694b
+N16 #148b68 w=2   n=1  #148b68
+N17 #799a8c w=2   n=2  #799a8c #839c8d
+N18 #718c7e w=2   n=2  #718c7e #728d7b
+N19 #60846a w=2   n=2  #60846a #6b836a
+N20 #e1d8ec w=2   n=2  #dfd1ed #e1d8ec
+N21 #d9b3ae w=2   n=2  #d9b3ae #dcb1ab
+N22 #44607a w=2   n=1  #44607a
+N23 #6b5127 w=2   n=1  #6b5127
+N24 #e8b86a w=1   n=1  #e8b86a
+N25 #2457d6 w=1   n=1  #2457d6
+N26 #29484b w=1   n=1  #29484b
+N27 #52716c w=1   n=1  #52716c
+N28 #234b34 w=1   n=1  #234b34
+N29 #62834c w=1   n=1  #62834c
+N30 #3c7465 w=1   n=1  #3c7465
+N31 #7a5a26 w=1   n=1  #7a5a26
+N32 #eedecc w=1   n=1  #eedecc
+N33 #624d80 w=1   n=1  #624d80
+N34 #7b4f4f w=1   n=1  #7b4f4f
+N35 #c49c61 w=1   n=1  #c49c61
+N36 #ba914b w=1   n=1  #ba914b
+N37 #a9cfb7 w=1   n=1  #a9cfb7
+N38 #b9873b w=1   n=1  #b9873b

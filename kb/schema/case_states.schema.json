@@ -47,6 +47,40 @@
             }
           },
           "evidence": { "type": ["string", "null"], "description": "证据路径 + md5（可解析）" },
+          "overrides": {
+            "type": "array",
+            "description": "人签覆写审计链（append-only；SPEC-REV-20 §3.1）。每条 = 一次动作，旧记录永不覆盖；state 是读侧唯一事实，生效规则见 action。冻结目录单独变更 + 留证（先例 G1_no_impact）。",
+            "items": {
+              "type": "object",
+              "required": ["schema", "action", "actor", "actor_kind", "reason",
+                           "decided_at", "prev_state", "machine", "record_sha256"],
+              "properties": {
+                "schema": { "const": "kb/case_override" },
+                "action": { "enum": ["pass", "revoke"], "description": "pass ⇒ state=已验证通过；revoke ⇒ state=已修订待验" },
+                "actor": { "type": "string", "pattern": "^human:.+$", "description": "人签唯一形态（O-2；模型/替身/裸名一律拒绝）" },
+                "actor_kind": { "enum": ["human"] },
+                "reason": { "type": "string", "description": "非空理由（人签必须写明为什么放开）" },
+                "decided_at": { "type": "string", "description": "经 kb_lib.now_iso()（--now/KB_NOW 注入）" },
+                "prev_state": { "enum": ["未改", "已修订待验", "已验证通过", "已退回"], "description": "动作发生前的状态" },
+                "machine": {
+                  "type": "object",
+                  "description": "机器判据快照（唯一来源 <run_dir>/n10_cases.json；原样搬运，不重算）",
+                  "properties": {
+                    "schema": { "const": "loop/n10_cases" },
+                    "source_path": { "type": "string" },
+                    "source_md5": { "type": "string" },
+                    "passed": { "type": "boolean" },
+                    "criterion": { "type": ["string", "null"] },
+                    "reasons": { "type": "array", "items": { "type": "string" } },
+                    "counts": { "type": "object" },
+                    "imprints": { "type": "object" },
+                    "evidence": { "type": "object" }
+                  }
+                },
+                "record_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$", "description": "sha256(canonical(record 去掉 record_sha256))，--verify 复算" }
+              }
+            }
+          },
           "note": { "type": ["string", "null"] },
           "updated_by": { "type": ["string", "null"] },
           "updated_at": { "type": ["string", "null"] }

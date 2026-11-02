@@ -19,7 +19,10 @@ window.NodeDetail = (function () {
   var api = null;
   var s = {
     open: false, epoch: 0, request: 0, target: null, data: null, trigger: null,
-    gateBridge: null, overlay: null, overlayTrigger: null, overlaySeq: 0
+    gateBridge: null, overlay: null, overlayTrigger: null, overlaySeq: 0,
+    /* SPEC-REV-20 §8.3：N16 面板要用的人签豁免投影（app.js 传入 run_view.case_waivers；
+       本层只展示，不判定、不聚合）。 */
+    caseWaivers: null
   };
 
   /* 执行方式：服务端 source 原值 + 一句中文说明（展示映射，不改原值）。 */
@@ -56,6 +59,30 @@ window.NodeDetail = (function () {
   }
 
   function clear(node) { if (node) node.replaceChildren(); }
+
+  /* 图标（WEB_UI_SPEC §14「资产」）：唯一来源是 index.html 的内联 sprite，本文件只克隆
+   * #iconTpl 并改 <use href>；不拼命名空间 URI 字符串（否则红 test_web_smoke.py 的外链断言）。 */
+  var ICON_TPL = null;
+  function iconNode(name) {
+    if (ICON_TPL === null) {
+      var tpl = $("iconTpl");
+      ICON_TPL = tpl && tpl.content && tpl.content.firstElementChild
+        ? tpl.content.firstElementChild.cloneNode(true) : false;
+    }
+    if (!ICON_TPL) return null;
+    var svg = ICON_TPL.cloneNode(true);
+    var use = svg.querySelector("use");
+    if (use) use.setAttribute("href", "#icon-" + name);
+    return svg;
+  }
+  /* 文案 + 尾部图标（替代「动作文案 + 尾部箭头字形」的写法，见 node-detail 的 5 处动作按钮）。 */
+  function labelWithIcon(button, text, icon) {
+    if (!button) return button;
+    button.replaceChildren(document.createTextNode(text));
+    var node = iconNode(icon);
+    if (node) button.appendChild(node);
+    return button;
+  }
 
   function enc(v) { return encodeURIComponent(v === undefined || v === null ? "" : String(v)); }
 
@@ -272,6 +299,8 @@ window.NodeDetail = (function () {
       gate: !!options.gate,
       onGate: typeof options.onGate === "function" ? options.onGate : null
     };
+    s.caseWaivers = options.caseWaivers && typeof options.caseWaivers === "object"
+      ? options.caseWaivers : null;
     s.trigger = options.trigger || document.activeElement || null;
 
     closeOverlay(false);
@@ -291,6 +320,9 @@ window.NodeDetail = (function () {
     clear($("ndNote"));
     clear($("ndReport"));
     clear($("ndGate"));
+    clear($("ndWaivers"));
+    var waiverBlock = $("ndWaiverBlock");
+    if (waiverBlock) waiverBlock.classList.add("hidden");
     clear($("ndKey"));
     clear($("ndSteps"));
     clear($("ndIdentity"));
@@ -364,6 +396,7 @@ window.NodeDetail = (function () {
     s.data = null;
     s.target = null;
     s.gateBridge = null;
+    s.caseWaivers = null;
     if (dialog && dialog.open) dialog.close();
     s.trigger = null;
     if (node) focusChip(node);
@@ -392,6 +425,61 @@ window.NodeDetail = (function () {
     var chip = el("span", "chip" + (cls ? " " + cls : ""), text);
     if (title) chip.title = title;
     return chip;
+  }
+
+  /* 日期只取 `decided_at` 的日历段（`YYYY-MM-DDTHH:MM:SS+0800` 是台账原样字符串，
+     不在展示层做时区换算，避免把日期跨日算错）。 */
+  function dateOnly(value) {
+    if (isMissing(value) || value === "") return "日期未下发";
+    var text = String(value);
+    var match = text.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    return match ? match[1] + "-" + match[2] + "-" + match[3] : text;
+  }
+
+  /* SPEC-REV-20 §8.3 / O-5：N16（晋升）面板必须看得见「人签豁免」清单（含 actor 与日期），
+     并同屏给出机器原判 —— 否则豁免过的人会让本轮看起来像普通通过。
+     只在 N16 渲染；数据是 app.js 传入的服务端投影，本层不判定、不聚合、不翻译原因。 */
+  function renderWaiverBlock() {
+    var block = $("ndWaiverBlock");
+    var host = $("ndWaivers");
+    if (!block || !host) return;
+    clear(host);
+    var node = s.target ? String(s.target.node || "") : "";
+    var info = s.caseWaivers;
+    var cases = info && Array.isArray(info.cases) ? info.cases : [];
+    var show = node === "N16" && cases.length > 0;
+    block.classList.toggle("hidden", !show);
+    if (!show) return;
+    var count = isMissing(info.count) ? cases.length : info.count;
+    host.appendChild(el("div", "foot-note",
+      "本轮 " + String(count) + " 例人签豁免（台账 overrides）：机器判据未被改写，报告仍显示本轮未通过。"));
+    cases.forEach(function (item) {
+      if (!item) return;
+      var row = el("div", "nd-item");
+      row.setAttribute("data-case-waiver", String(item.case || ""));
+      row.appendChild(el("span", "chip bad", "人签豁免"));
+      var body = el("div", "nd-item-body");
+      body.appendChild(el("div", "nd-item-title mono",
+        String(item.case || "用例名未下发")));
+      body.appendChild(el("div", "nd-item-detail",
+        "actor " + String(item.actor || "actor 未下发") + " · 人签日期 " + dateOnly(item.decided_at)
+        + " · 台账状态 " + String(item.state || "未下发")));
+      var machine = item.machine && typeof item.machine === "object" ? item.machine : null;
+      var verdict = !machine || isMissing(machine.passed) ? "未下发"
+        : (machine.passed === true ? "通过" : "未通过");
+      body.appendChild(el("div", "nd-item-detail", "机器原判：" + verdict));
+      var reasons = machine && Array.isArray(machine.reasons) ? machine.reasons : [];
+      if (reasons.length) {
+        /* 机器原因原文逐条列出（不翻译、不截断）——与闸门面板同一口径。 */
+        var list = el("ul", "co-reasons");
+        list.style.margin = "4px 0 0";
+        list.style.paddingLeft = "16px";
+        reasons.forEach(function (reason) { list.appendChild(el("li", null, String(reason))); });
+        body.appendChild(list);
+      }
+      row.appendChild(body);
+      host.appendChild(row);
+    });
   }
 
   function renderMeta(view) {
@@ -677,7 +765,7 @@ window.NodeDetail = (function () {
   }
 
   function appendGateJump(foot) {
-    var jump = el("button", "btn btn-sm nd-gate-jump", "去闸门视图确认并提交 →");
+    var jump = labelWithIcon(el("button", "btn btn-sm nd-gate-jump"), "去闸门视图确认并提交 ", "next");
     jump.type = "button";
     jump.setAttribute("aria-label", "关闭节点面板并跳到闸门视图（提交入口只有那里）");
     jump.addEventListener("click", goGateView);
@@ -787,7 +875,7 @@ window.NodeDetail = (function () {
     body.appendChild(metaLine);
     row.appendChild(body);
 
-    var openBtn = el("button", "btn btn-sm nd-gate-open", "查看前后对比 ↗");
+    var openBtn = labelWithIcon(el("button", "btn btn-sm nd-gate-open"), "查看前后对比 ", "panel");
     openBtn.type = "button";
     openBtn.setAttribute("data-entry-open", id);
     openBtn.setAttribute("aria-label", "查看条目 " + (entry.title || id) + " 的前后对比");
@@ -1561,7 +1649,7 @@ window.NodeDetail = (function () {
     if (actions) {
       clear(actions);
       if (target && target.gate && target.onGate) {
-        var gateJump = el("button", "btn btn-sm nd-agent-jump", "查看闸门材料（同源）→");
+        var gateJump = labelWithIcon(el("button", "btn btn-sm nd-agent-jump"), "查看闸门材料（同源）", "next");
         gateJump.type = "button";
         gateJump.setAttribute("aria-label", "打开闸门视图查看同源材料");
         gateJump.addEventListener("click", function () {
@@ -1572,7 +1660,7 @@ window.NodeDetail = (function () {
         actions.appendChild(gateJump);
       }
       if (target && target.agent && window.AgentWindow) {
-        var jump = el("button", "btn btn-sm nd-agent-jump", "打开 Agent 工作窗口 ↗");
+        var jump = labelWithIcon(el("button", "btn btn-sm nd-agent-jump"), "打开 Agent 工作窗口 ", "panel");
         jump.type = "button";
         jump.setAttribute("aria-label", "打开 " + target.agent.name + " 工作窗口");
         jump.addEventListener("click", openAgentTask);
@@ -1737,7 +1825,7 @@ window.NodeDetail = (function () {
     if (!(s.target && s.target.agent && window.AgentWindow)) return null;
     var wrap = el("div", "nd-evidence-agent");
     if (prefix) wrap.appendChild(el("span", "tiny muted", prefix));
-    var jump = el("button", "btn btn-sm", "打开 Agent 工作窗口 ↗");
+    var jump = labelWithIcon(el("button", "btn btn-sm"), "打开 Agent 工作窗口 ", "panel");
     jump.type = "button";
     jump.setAttribute("aria-label", "打开 " + s.target.agent.name + " 工作窗口");
     jump.addEventListener("click", openAgentTask);
@@ -1980,6 +2068,7 @@ window.NodeDetail = (function () {
     }
 
     renderMeta(view);
+    renderWaiverBlock();
     renderPurpose(view);
     renderModeNote(view);
     renderResult(view);

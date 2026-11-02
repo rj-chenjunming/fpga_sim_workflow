@@ -1,0 +1,737 @@
+{
+ "evidence": ".ui-audit/3c/cooccur-full.json",
+ "evidence_used": true,
+ "evidence_pairs": 1092,
+ "evidence_measured_selectors": 833,
+ "evidence_states": [
+  "1280x720/s0",
+  "1280x720/setup",
+  "1280x720/run",
+  "1280x720/gate",
+  "1280x720/dirpicker",
+  "1280x720/agent",
+  "1280x720/node-detail",
+  "1280x720/empty",
+  "1280x720/legacy",
+  "1280x720/toast",
+  "1280x720/alert",
+  "1280x720/gate-empty",
+  "1440x900/s0",
+  "1440x900/setup",
+  "1440x900/run",
+  "1440x900/gate",
+  "1440x900/dirpicker",
+  "1440x900/agent",
+  "1440x900/node-detail",
+  "1440x900/empty",
+  "1440x900/legacy",
+  "1440x900/toast",
+  "1440x900/alert",
+  "1440x900/gate-empty",
+  "1920x1080/s0",
+  "1920x1080/setup",
+  "1920x1080/run",
+  "1920x1080/gate",
+  "1920x1080/dirpicker",
+  "1920x1080/agent",
+  "1920x1080/node-detail",
+  "1920x1080/empty",
+  "1920x1080/legacy",
+  "1920x1080/toast",
+  "1920x1080/alert",
+  "1920x1080/gate-empty"
+ ],
+ "groups": 23,
+ "safe": 0,
+ "blocked": 23,
+ "safe_selectors": [],
+ "blocked_detail": [
+  {
+   "selector": ".btn",
+   "media": [],
+   "at": [],
+   "rules": [
+    16,
+    325
+   ],
+   "blocked": [
+    {
+     "rule": 284,
+     "selector": ".rail-entry",
+     "prop": "justify-content",
+     "value": "flex-start",
+     "media": "",
+     "reason": "共命中证据显示确实命中同一元素"
+    },
+    {
+     "rule": 284,
+     "selector": ".rail-entry",
+     "prop": "gap",
+     "value": "10px",
+     "media": "",
+     "reason": "共命中证据显示确实命中同一元素"
+    },
+    {
+     "rule": 284,
+     "selector": ".rail-entry",
+     "prop": "padding",
+     "value": "10px",
+     "media": "",
+     "reason": "共命中证据显示确实命中同一元素"
+    },
+    {
+     "rule": 17,
+     "selector": ".btn-ghost",
+     "prop": "border-color",
+     "value": "transparent",
+     "media": "",
+     "reason": "共命中证据显示确实命中同一元素"
+    },
+    {
+     "rule": 17,
+     "selector": ".btn-ghost",
+     "prop": "background",
+     "value": "transparent",
+     "media": "",
+     "reason": "共命中证据显示确实命中同一元素"
+    },
+    {
+     "rule": 17,
+     "selector": ".btn-ghost",
+     "prop": "color",
+     "value": "var(--muted)",
+     "media": "",
+     "reason": "共命中证据显示确实命中同一元素"
+    }
+   ],
+   "moves": [
+    "display",
+    "align-items",
+    "justify-content",
+    "gap",
+    "padding",
+    "border",
+    "background",
+    "color",
+    "text-decoration",
+    "white-space"
+   ]
+  },
+  {
+   "selector": ".run-item",
+   "media": [],
+   "at": [],
+   "rules": [
+    19,
+    305
+   ],
+   "blocked": [
+    {
+     "rule": 186,
+     "selector": ".run-item",
+     "prop": "width",
+     "value": "auto",
+     "media": "@media(max-width:760px)",
+     "reason": "同一选择器在窗口内有别的 @media 上下文规则（源码先后即生效关系）"
+    }
+   ],
+   "moves": [
+    "display",
+    "width",
+    "text-align",
+    "font",
+    "border",
+    "cursor",
+    "background",
+    "color"
+   ]
+  },
+  {
+   "selector": ".card",
+   "media": [],
+   "at": [],
+   "rules": [
+    28,
+    340
+   ],
+   "blocked": [
+    {
+     "rule": 94,
+     "selector": ".gate-card",
+     "prop": "background",
+     "value": "#fffdf7",
+     "media": "",
+     "reason": "共命中证据显示确实命中同一元素"
+    },
+    {
+     "rule": 94,
+     "selector": ".gate-card",
+     "prop": "border-color",
+     "value": "#f3d19e",
+     "media": "",
+     "reason": "共命中证据显示确实命中同一元素"
+    }
+   ],
+   "moves": [
+    "background",
+    "border"
+   ]
+  },
+  {
+   "selector": ".grid2",
+   "media": [],
+   "at": [],
+   "rules": [
+    29,
+    344
+   ],
+   "blocked": [
+    {
+     "rule": 30,
+     "selector": ".grid2",
+     "prop": "grid-template-columns",
+     "value": "1fr",
+     "media": "@media (max-width:1180px)",
+     "reason": "同一选择器在窗口内有别的 @media 上下文规则（源码先后即生效关系）"
+    }
+   ],
+   "moves": [
+    "display",
+    "grid-template-columns"
+   ]
+  },
+  {
+   "selector": ".input",
+   "media": [],
+   "at": [],
+   "rules": [
+    34,
+    332
+   ],
+   "blocked": [
+    {
+     "rule": 259,
+     "selector": ".mono",
+     "prop": "font-family",
+     "value": "var(--font-mono)",
+     "media": "",
+     "reason": "共命中证据显示确实命中同一元素"
+    }
+   ],
+   "moves": [
+    "width",
+    "border",
+    "color",
+    "font"
+   ]
+  },
+  {
+   "selector": ".agents",
+   "media": [],
+   "at": [],
+   "rules": [
+    78,
+    429
+   ],
+   "blocked": [
+    {
+     "rule": 79,
+     "selector": ".agents",
+     "prop": "grid-template-columns",
+     "value": "1fr",
+     "media": "@media (max-width:1100px)",
+     "reason": "同一选择器在窗口内有别的 @media 上下文规则（源码先后即生效关系）"
+    }
+   ],
+   "moves": [
+    "display",
+    "grid-template-columns"
+   ]
+  },
+  {
+   "selector": ".toast",
+   "media": [],
+   "at": [],
+   "rules": [
+    131,
+    474
+   ],
+   "blocked": [
+    {
+     "rule": 204,
+     "selector": ".toast",
+     "prop": "right",
+     "value": "16px",
+     "media": "@media(max-width:760px)",
+     "reason": "同一选择器在窗口内有别的 @media 上下文规则（源码先后即生效关系）"
+    },
+    {
+     "rule": 204,
+     "selector": ".toast",
+     "prop": "max-width",
+     "value": "none",
+     "media": "@media(max-width:760px)",
+     "reason": "同一选择器在窗口内有别的 @media 上下文规则（源码先后即生效关系）"
+    }
+   ],
+   "moves": [
+    "position",
+    "right",
+    "bottom",
+    "padding",
+    "opacity",
+    "transform",
+    "transition",
+    "pointer-events",
+    "max-width",
+    "z-index",
+    "overflow-wrap"
+   ]
+  },
+  {
+   "selector": ".s0-phases",
+   "media": [],
+   "at": [],
+   "rules": [
+    143,
+    353
+   ],
+   "blocked": [
+    {
+     "rule": 192,
+     "selector": ".s0-phases",
+     "prop": "grid-template-columns",
+     "value": "1fr",
+     "media": "@media(max-width:760px)",
+     "reason": "同一选择器在窗口内有别的 @media 上下文规则（源码先后即生效关系）"
+    }
+   ],
+   "moves": [
+    "display",
+    "grid-template-columns"
+   ]
+  },
+  {
+   "selector": ".phase-card",
+   "media": [],
+   "at": [],
+   "rules": [
+    144,
+    354
+   ],
+   "blocked": [
+    {
+     "rule": 175,
+     "selector": ".phase-card",
+     "prop": "align-items",
+     "value": "start",
+     "media": "@media(max-width:1000px)",
+     "reason": "同一选择器在窗口内有别的 @media 上下文规则（源码先后即生效关系）"
+    }
+   ],
+   "moves": [
+    "display",
+    "align-items",
+    "border",
+    "background",
+    "min-width"
+   ]
+  },
+  {
+   "selector": "header",
+   "media": [
+    "@media(max-width:760px)"
+   ],
+   "at": [],
+   "rules": [
+    180,
+    545
+   ],
+   "blocked": [
+    {
+     "rule": 267,
+     "selector": "header",
+     "prop": "gap",
+     "value": "16px",
+     "media": "",
+     "reason": "同一选择器在窗口内有别的 @media 上下文规则（源码先后即生效关系）"
+    }
+   ],
+   "moves": [
+    "gap"
+   ]
+  },
+  {
+   "selector": ".shell",
+   "media": [
+    "@media(max-width:760px)"
+   ],
+   "at": [],
+   "rules": [
+    183,
+    552
+   ],
+   "blocked": [
+    {
+     "rule": 280,
+     "selector": ".shell",
+     "prop": "min-height",
+     "value": "calc(100vh - 72px)",
+     "media": "",
+     "reason": "同一选择器在窗口内有别的 @media 上下文规则（源码先后即生效关系）"
+    }
+   ],
+   "moves": [
+    "min-height"
+   ]
+  },
+  {
+   "selector": ".rail-entry",
+   "media": [
+    "@media(max-width:760px)"
+   ],
+   "at": [],
+   "rules": [
+    184,
+    555
+   ],
+   "blocked": [
+    {
+     "rule": 284,
+     "selector": ".rail-entry",
+     "prop": "margin-bottom",
+     "value": "20px",
+     "media": "",
+     "reason": "同一选择器在窗口内有别的 @media 上下文规则（源码先后即生效关系）"
+    },
+    {
+     "rule": 284,
+     "selector": ".rail-entry",
+     "prop": "height",
+     "value": "auto",
+     "media": "",
+     "reason": "同一选择器在窗口内有别的 @media 上下文规则（源码先后即生效关系）"
+    },
+    {
+     "rule": 325,
+     "selector": ".btn",
+     "prop": "font-size",
+     "value": "13px",
+     "media": "",
+     "reason": "共命中证据显示确实命中同一元素"
+    }
+   ],
+   "moves": [
+    "margin",
+    "height",
+    "font-size"
+   ]
+  },
+  {
+   "selector": "aside #btnNew",
+   "media": [
+    "@media(max-width:760px)"
+   ],
+   "at": [],
+   "rules": [
+    185,
+    556
+   ],
+   "blocked": [
+    {
+     "rule": 289,
+     "selector": "aside #btnNew",
+     "prop": "height",
+     "value": "40px",
+     "media": "",
+     "reason": "同一选择器在窗口内有别的 @media 上下文规则（源码先后即生效关系）"
+    }
+   ],
+   "moves": [
+    "height"
+   ]
+  },
+  {
+   "selector": ".run-item",
+   "media": [
+    "@media(max-width:760px)"
+   ],
+   "at": [],
+   "rules": [
+    186,
+    565
+   ],
+   "blocked": [
+    {
+     "rule": 305,
+     "selector": ".run-item",
+     "prop": "padding",
+     "value": "12px 10px",
+     "media": "",
+     "reason": "同一选择器在窗口内有别的 @media 上下文规则（源码先后即生效关系）"
+    }
+   ],
+   "moves": [
+    "width",
+    "padding",
+    "flex-shrink"
+   ]
+  },
+  {
+   "selector": ".s0-phases",
+   "media": [
+    "@media(max-width:760px)"
+   ],
+   "at": [],
+   "rules": [
+    192,
+    571
+   ],
+   "blocked": [
+    {
+     "rule": 353,
+     "selector": ".s0-phases",
+     "prop": "gap",
+     "value": "14px",
+     "media": "",
+     "reason": "同一选择器在窗口内有别的 @media 上下文规则（源码先后即生效关系）"
+    },
+    {
+     "rule": 353,
+     "selector": ".s0-phases",
+     "prop": "margin-bottom",
+     "value": "16px",
+     "media": "",
+     "reason": "同一选择器在窗口内有别的 @media 上下文规则（源码先后即生效关系）"
+    }
+   ],
+   "moves": [
+    "gap",
+    "margin-bottom"
+   ]
+  },
+  {
+   "selector": ".phase-card",
+   "media": [
+    "@media(max-width:760px)"
+   ],
+   "at": [],
+   "rules": [
+    193,
+    206,
+    575
+   ],
+   "blocked": [
+    {
+     "rule": 354,
+     "selector": ".phase-card",
+     "prop": "padding",
+     "value": "12px 16px",
+     "media": "",
+     "reason": "同一选择器在窗口内有别的 @media 上下文规则（源码先后即生效关系）"
+    }
+   ],
+   "moves": [
+    "align-items",
+    "padding",
+    "min-width"
+   ]
+  },
+  {
+   "selector": ".agent-window",
+   "media": [],
+   "at": [],
+   "rules": [
+    210,
+    475
+   ],
+   "blocked": [
+    {
+     "rule": 241,
+     "selector": ".agent-window",
+     "prop": "max-height",
+     "value": "calc(100dvh - 24px)",
+     "media": "@media(max-width:850px)",
+     "reason": "同一选择器在窗口内有别的 @media 上下文规则（源码先后即生效关系）"
+    }
+   ],
+   "moves": [
+    "max-width",
+    "max-height",
+    "padding",
+    "color",
+    "background",
+    "overflow"
+   ]
+  },
+  {
+   "selector": ".aw-head",
+   "media": [],
+   "at": [],
+   "rules": [
+    211,
+    477
+   ],
+   "blocked": [
+    {
+     "rule": 242,
+     "selector": ".aw-head",
+     "prop": "gap",
+     "value": "10px",
+     "media": "@media(max-width:850px)",
+     "reason": "同一选择器在窗口内有别的 @media 上下文规则（源码先后即生效关系）"
+    }
+   ],
+   "moves": [
+    "display",
+    "align-items",
+    "gap",
+    "border-bottom"
+   ]
+  },
+  {
+   "selector": ".aw-terminal-mark",
+   "media": [],
+   "at": [],
+   "rules": [
+    212,
+    479
+   ],
+   "blocked": [
+    {
+     "rule": 252,
+     "selector": ".aw-terminal-mark",
+     "prop": "width",
+     "value": "32px",
+     "media": "@media(max-width:850px)",
+     "reason": "同一选择器在窗口内有别的 @media 上下文规则（源码先后即生效关系）"
+    },
+    {
+     "rule": 252,
+     "selector": ".aw-terminal-mark",
+     "prop": "height",
+     "value": "35px",
+     "media": "@media(max-width:850px)",
+     "reason": "同一选择器在窗口内有别的 @media 上下文规则（源码先后即生效关系）"
+    },
+    {
+     "rule": 252,
+     "selector": ".aw-terminal-mark",
+     "prop": "font-size",
+     "value": "14px",
+     "media": "@media(max-width:850px)",
+     "reason": "同一选择器在窗口内有别的 @media 上下文规则（源码先后即生效关系）"
+    }
+   ],
+   "moves": [
+    "display",
+    "place-items",
+    "border-radius",
+    "width",
+    "height",
+    "font",
+    "flex-shrink"
+   ]
+  },
+  {
+   "selector": ".aw-intervene",
+   "media": [],
+   "at": [],
+   "rules": [
+    214,
+    485
+   ],
+   "blocked": [
+    {
+     "rule": 246,
+     "selector": ".aw-intervene",
+     "prop": "border-left",
+     "value": "0",
+     "media": "@media(max-width:850px)",
+     "reason": "同一选择器在窗口内有别的 @media 上下文规则（源码先后即生效关系）"
+    }
+   ],
+   "moves": [
+    "border-left",
+    "min-width"
+   ]
+  },
+  {
+   "selector": ".aw-timeline",
+   "media": [],
+   "at": [],
+   "rules": [
+    216,
+    490
+   ],
+   "blocked": [
+    {
+     "rule": 257,
+     "selector": ".aw-timeline",
+     "prop": "max-height",
+     "value": "240px",
+     "media": "@media(max-width:850px)",
+     "reason": "同一选择器在窗口内有别的 @media 上下文规则（源码先后即生效关系）"
+    }
+   ],
+   "moves": [
+    "border",
+    "max-height",
+    "overflow",
+    "margin-bottom",
+    "scrollbar-color"
+   ]
+  },
+  {
+   "selector": ".aw-log-row",
+   "media": [],
+   "at": [],
+   "rules": [
+    217,
+    493
+   ],
+   "blocked": [
+    {
+     "rule": 254,
+     "selector": ".aw-log-row",
+     "prop": "gap",
+     "value": "9px",
+     "media": "@media(max-width:850px)",
+     "reason": "同一选择器在窗口内有别的 @media 上下文规则（源码先后即生效关系）"
+    }
+   ],
+   "moves": [
+    "display",
+    "align-items",
+    "gap",
+    "border-bottom",
+    "overflow-wrap"
+   ]
+  },
+  {
+   "selector": ".aw-log-row>span",
+   "media": [],
+   "at": [],
+   "rules": [
+    218,
+    494
+   ],
+   "blocked": [
+    {
+     "rule": 255,
+     "selector": ".aw-log-row>span",
+     "prop": "flex-basis",
+     "value": "95px",
+     "media": "@media(max-width:850px)",
+     "reason": "同一选择器在窗口内有别的 @media 上下文规则（源码先后即生效关系）"
+    }
+   ],
+   "moves": [
+    "max-width",
+    "flex"
+   ]
+  }
+ ],
+ "moves_total": 91,
+ "dropped_total": 1
+}

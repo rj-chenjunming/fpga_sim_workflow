@@ -1,0 +1,3 @@
+.a{align-items:center}
+@media(max-width:1000px){.a{align-items:start}}
+.a{padding:1px}

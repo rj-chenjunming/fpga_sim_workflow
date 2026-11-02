@@ -1,0 +1,21 @@
+loop/web/agent-results.js: 0 处
+loop/web/agent-window.js: 0 处
+loop/web/capabilities.js: 0 处
+loop/web/context-explain.js: 0 处
+loop/web/event-filter.js: 0 处
+loop/web/gate-session.js: 0 处
+loop/web/job-status.js: 0 处
+loop/web/node-detail.js: 3 处
+   790  [↗]  var openBtn = el("button", "btn btn-sm nd-gate-open", "查看前后对比 ↗");
+   1575  [↗]  var jump = el("button", "btn btn-sm nd-agent-jump", "打开 Agent 工作窗口 ↗");
+   1740  [↗]  var jump = el("button", "btn btn-sm", "打开 Agent 工作窗口 ↗");
+loop/web/operator.js: 0 处
+loop/web/pane-scroll.js: 0 处
+loop/web/report-viewer.js: 0 处
+loop/web/run-stream.js: 0 处
+loop/web/run-view-state.js: 0 处
+loop/web/s4-view.js: 0 处
+loop/web/session-url.js: 0 处
+loop/web/wait-center.js: 0 处
+loop/web/legacy.css: 0 处
+loop/web/tokens.css: 0 处

@@ -1,0 +1,10 @@
+== phase 5：死任务必须判死（无 rc 不得当成功） ==
+  [ok  ] 建 run(scenario=dead_job)
+  [ok  ] 签 G1(scenario=dead_job)
+  [ok  ] 作业已提交(scenario=dead_job)
+  [val ] 死任务后 = {'status': 'failed', 'job': {'job_id': 'JOB-f005197de85b', 'node': 'N9', 'phase': 'dead', 'rc': None, 'tc': 'tc_pcie_rw_02', 'seed': '1', 'started_at': 1793592236.2954865, 'elapsed_s': 0.0, 'eta_seconds': None, 'eta_human': '未知（本作业未登记仿真时长）', 'basis': '实测模型 3.79 µs sim / 1 s wall（n=2，低置信）', 'confidence': 'none', 'log_path': '/home/work/chenjunming/change-impact-loop/loop/state/jobs/JOB-f005197de85b.log', 'log_tail': [], 'note': 'mode=drill scenario=dead_job DRILL FIXTURE'}, 'error': '投递失败：RuntimeError: 死任务 JOB-f005197de85b：进程已终结但未留下 rc ⇒ 不得当成功，走失败分支。'}
+  [ok  ] E1 死任务判为 failed（不得静默当成功）
+  [ok  ] E2 死任务后单槽已释放（否则失败会被放大成全体挂起）
+  [ok  ] E3 事件流记了 dead_job
+
+===== phase 5：PASS=6 FAIL=0 =====

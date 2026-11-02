@@ -13,10 +13,11 @@ import pytest
 
 from test_run_sessions import ui, static_url, select, pw, tick, GATE  # noqa: F401
 
-# 可判定口径（§14「闸门双栏局部滚动」）：上限 = clamp(300, 100dvh - 340, 720)
-PANE_MAX_H_OFFSET = 340
+# 可判定口径（§14「闸门双栏局部滚动」+「闸门两栏上限放宽（2026-10-30 增补）」）：
+# 上限 = clamp(300, 100dvh - 300, 860)。改常数=改契约，规格先改（WEB_UI_SPEC §14）。
+PANE_MAX_H_OFFSET = 300
 PANE_MAX_H_MIN = 300
-PANE_MAX_H_MAX = 720
+PANE_MAX_H_MAX = 860
 ACCEPTANCE_VIEWPORTS = [(1280, 720), (1440, 900), (1920, 1080)]
 
 

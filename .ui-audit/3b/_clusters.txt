@@ -1,0 +1,102 @@
+C00 n=24 occ=93  center=#fafbf8 props={'color': 1, 'background': 23}
+     #ffffff #fefefe #fafbfd #fbfcfe #f8fafc #fcfdfc #fcfdfb #fbfdf9 #fafcfa #fffdf8 #fffdf7 #fffafa #f8faf6 #f7faf5 #f8faf5 #f9fbf6 #f7faf7 #f9fbf7 #fafcf8 #f6f9f4 #f6f9f3 #f6faf3 #f7faf3 #f7f8f6
+     .btn-primary | .aw-detail pre | .stage-head:hover | .dp-roots
+C01 n=38 occ=47  center=#eef4ef props={'background': 31, 'border-bottom': 2, 'color': 3, 'border': 2}
+     #f2f4f7 #f0f3f7 #eef3f9 #eceff4 #eef1f5 #eef2f6 #f0ecf6 #edf2f1 #edf2ee #eef2ef #e9f3ee #e9f8f0 #f3faf5 #f1f6f2 #f0f6f1 #f3f6f3 #f4f7f1 #f5f8f1 #f4f8f0 #f0f4ed #f1f4ee #f0f4ef #f1f5ef #f2f7ef #f2f6ee #eef7ee #eef8f1 #e1ede7 #e5ece9 #e6edea #edf3e8 #edf4e8 #edf5e7 #eaf3e8 #e8f0e4 #eaf3e4 #eaf0e9 #e8eeea
+     .pill | .dp-item | .dh-row.dh-hunk | .seg
+C02 n=12 occ=22  center=#ebdebf props={'border': 2, 'border-color': 8, 'border-left-color': 1, 'border-top': 1}
+     #efe1c3 #eddfc5 #e9dfc9 #ebdfc6 #eedecc #ead7b7 #e8d8b7 #e7d5b4 #e6d5b4 #e2d3b6 #ecdcbe #efe0bf
+     .readiness | .readiness | .s0-blockers | .s0-blockers
+C03 n=19 occ=20  center=#dce8db props={'border': 3, 'border-top': 1, 'border-color': 8, 'background': 1, 'color': 5, 'box-shadow': 1}
+     #d7e6e1 #dae6df #dde5df #d9ecde #dce7da #dde8dc #e1eadb #e2eadb #e0e9db #e0e8db #e0ecda #e2ebe1 #d6e3d8 #d9e7d6 #d9e8d4 #d7e8d5 #dae5d2 #dae3d5 #dce8d7
+     .section-index | .aw-stop | .a6 | aside #btnNew
+C04 n=12 occ=18  center=#cfe2cc props={'border-color': 6, 'background': 2, 'color': 3, 'border': 1}
+     #bfe8d8 #cae9db #cbe9d8 #d1e5da #c4dfcc #cae2c4 #c9dfc7 #d0ddcc #cfdccb #d4e0cc #d3dfcc #d4e8c8
+     .chip.ok | .s0-checks .check-passed>s | ::selection | .a2
+C05 n=12 occ=16  center=#587054 props={'color': 10, 'border-color': 2}
+     #55684f #54694b #4d6b4e #50694b #5c7055 #5a6e52 #57764c #536e58 #58715f #5d7756 #5e7854 #5c7a59
+     .stage-idx | .authority .txt | .phase-index | pre.json
+C06 n=8  occ=16  center=#fff8ef props={'background': 8}
+     #fff8ec #fff8eb #fbf7ef #fffaf0 #fffaf1 #fbf2e6 #f8eeee #fdf0ef
+     .gate-card .card-head | .option.on | .nd-key-row.missing | .s0-blockers
+C07 n=4  occ=15  center=#7a6234 props={'color': 4}
+     #7a6234 #7d6339 #7a5a26 #6b5127
+     .s0-blockers | .nd-mode-note | .a3 | .s0-rehearsal-scope b
+C08 n=5  occ=13  center=#f2cfcf props={'border-color': 4, 'background': 1}
+     #f5c6c6 #f2c9c9 #f1cfcf #ecdada #f8dcd7
+     .banner.bad | .s0-switch-msg-bad | .s0-flow li.check-failed>s | .a5
+C09 n=9  occ=11  center=#c4d4bd props={'color': 4, 'outline': 1, 'border-color': 1, 'background': 2, 'border': 1}
+     #b7d2bf #bbceba #c5ddb9 #c8dfbc #c1dcbd #c3dabc #c4d1c7 #c7d4c8 #c9d4c3
+     .workspace-icon | header .muted | #viewSeg button.on .nav-ic | input[type=text]:focus,tex
+C10 n=9  occ=11  center=#e6c0b9 props={'border-color': 8, 'border-left': 1}
+     #ebc4bf #e7c4bf #eac8c3 #e7bdb8 #e4c1bb #e6c0b9 #e2bbb5 #d9b3ae #dcb1ab
+     .banner.bad | .aw-stop .btn | .ccard.ccard-red | .bg-red,.msg-err
+C11 n=1  occ=10  center=#f3d19e props={'border-color': 1}
+     #f3d19e
+     .banner.warn
+C12 n=9  occ=10  center=#2f4b36 props={'color': 3, 'background': 5, 'border-color': 1}
+     #234b34 #284c35 #284536 #25462e #304b3d #34533c #36533d #2f4a37 #304b35
+     aside #btnNew | .aw-terminal-mark | .run-item.active | .toast-item
+C13 n=6  occ=8   center=#203a2d props={'scrollbar-color': 1, 'color': 2, 'background': 3}
+     #142d32 #183d2e #20382b #20362a #213d2d #243a2b
+     .aw-timeline | ::selection | .log-pre | .aw-timeline
+C14 n=5  occ=7   center=#3d5549 props={'color': 3, 'border': 1, 'border-color': 1}
+     #38614c #3a5a4a #425449 #3d5545 #3e5546
+     .avatar | .action-item | .nd-event-detail | .nd-raw summary
+C15 n=5  occ=6   center=#b9cdb2 props={'background': 1, 'color': 2, 'border-left-color': 1, 'border-left': 1}
+     #b9d5aa #bacdb3 #bcccb2 #b4c9ab #a9cfb7
+     #viewSeg button.on:before | .aw-empty | .sev | .aw-log-row p
+C16 n=4  occ=4   center=#799a8c props={'color': 3, 'border': 1}
+     #799a8c #839c8d #718c7e #728d7b
+     .aw-detail summary:before | .rail-label>span | .aw-limit summary | .workspace-icon
+C17 n=3  occ=4   center=#91ab9a props={'color': 3}
+     #91ab9a #91ad9b #93a49a
+     #viewSeg button small | .nav-icon | .dh-no
+C18 n=3  occ=3   center=#61836a props={'color': 2, 'border': 1}
+     #617673 #60846a #6b836a
+     #s0Form .input:disabled | .empty:before | .back-workspace
+C19 n=2  occ=3   center=#52716c props={'color': 1, 'scrollbar-color': 1}
+     #456761 #52716c
+     .receipt-label | .aw-timeline
+C20 n=3  occ=3   center=#456a53 props={'color': 1, 'scrollbar-color': 1, 'border': 1}
+     #456a58 #496353 #456e48
+     .brand-flow | .run-list | .aw-terminal-mark
+C21 n=3  occ=3   center=#aebfb2 props={'color': 2, 'border-color': 1}
+     #b2c5b9 #aebfb2 #acb8b1
+     #viewSeg button | .btn:hover | .page-breadcrumb>span:firs
+C22 n=2  occ=3   center=#44747a props={'color': 2}
+     #3c7465 #44607a
+     .a2 | .dh-row.dh-hunk
+C23 n=3  occ=3   center=#a3c197 props={'color': 2, 'border-left-color': 1}
+     #a3be97 #a7c69b #a0c18b
+     .aw-log-count | .aw-log-row>span | .toast-item
+C24 n=1  occ=2   center=#148b68 props={'color': 1}
+     #148b68
+     .s0-checks .check-passed>s
+C25 n=2  occ=2   center=#e1d8ed props={'border-color': 2}
+     #e1d8ec #dfd1ed
+     .a4 | .bg-purple
+C26 n=2  occ=2   center=#ba914b props={'box-shadow': 1, 'border-left-color': 1}
+     #ba914b #b9873b
+     .option.on | .sev-defect,.sev-warning
+C27 n=1  occ=1   center=#e8b86a props={'border-color': 1}
+     #e8b86a
+     .snode.wait .sb
+C28 n=1  occ=1   center=#2457d6 props={'background': 1}
+     #2457d6
+     .a1
+C29 n=1  occ=1   center=#29484b props={'border': 1}
+     #29484b
+     .aw-timeline
+C30 n=1  occ=1   center=#62834c props={'color': 1}
+     #62834c
+     .step-no
+C31 n=1  occ=1   center=#624d80 props={'color': 1}
+     #624d80
+     .a4
+C32 n=1  occ=1   center=#7b4f4f props={'color': 1}
+     #7b4f4f
+     .a5
+C33 n=1  occ=1   center=#c49c61 props={'border-color': 1}
+     #c49c61
+     .option.on

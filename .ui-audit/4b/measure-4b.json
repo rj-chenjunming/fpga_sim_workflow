@@ -1,0 +1,718 @@
+{
+  "icon": {
+    "w": "16px",
+    "h": "16px",
+    "fill": "none",
+    "stroke": "1.5px",
+    "hasSprite": true
+  },
+  "emptyState": {
+    "icons": 1,
+    "w": 58,
+    "h": 58,
+    "before": "none",
+    "beforeW": "auto"
+  },
+  "viewports": {
+    "1280x720": {
+      "s0": {
+        "segButtons": [
+          {
+            "id": "segS0",
+            "w": 196,
+            "h": 44
+          },
+          {
+            "id": "segSetup",
+            "w": 196,
+            "h": 44
+          },
+          {
+            "id": "segRun",
+            "w": 196,
+            "h": 44
+          },
+          {
+            "id": "segGate",
+            "w": 196,
+            "h": 44
+          }
+        ],
+        "segS0": {
+          "w": 196,
+          "h": 44,
+          "y": 308.3
+        },
+        "railEntry": {
+          "w": 188,
+          "h": 64,
+          "y": 127.1
+        },
+        "navIcon": {
+          "w": 19,
+          "h": 21.4,
+          "y": 319.6
+        },
+        "navSvg": {
+          "w": 16,
+          "h": 16,
+          "y": 321.6
+        },
+        "gateMaterial": {
+          "w": 0,
+          "h": 0,
+          "y": 0
+        },
+        "gatePanel": {
+          "w": 0,
+          "h": 0,
+          "y": 0
+        },
+        "gatePanes": [
+          {
+            "h": 0,
+            "y": 0,
+            "scrollH": 0,
+            "clientH": 0
+          },
+          {
+            "h": 0,
+            "y": 0,
+            "scrollH": 0,
+            "clientH": 0
+          }
+        ],
+        "scrollW": 1280,
+        "clientW": 1280,
+        "overflowX": false,
+        "emptyBeforeIcon": {
+          "content": "none",
+          "icons": 1
+        }
+      },
+      "run": {
+        "segButtons": [
+          {
+            "id": "segS0",
+            "w": 196,
+            "h": 44
+          },
+          {
+            "id": "segSetup",
+            "w": 196,
+            "h": 44
+          },
+          {
+            "id": "segRun",
+            "w": 196,
+            "h": 44
+          },
+          {
+            "id": "segGate",
+            "w": 196,
+            "h": 44
+          }
+        ],
+        "segS0": {
+          "w": 196,
+          "h": 44,
+          "y": 115.3
+        },
+        "railEntry": {
+          "w": 188,
+          "h": 64,
+          "y": -65.9
+        },
+        "navIcon": {
+          "w": 19,
+          "h": 21.4,
+          "y": 126.6
+        },
+        "navSvg": {
+          "w": 16,
+          "h": 16,
+          "y": 128.6
+        },
+        "gateMaterial": {
+          "w": 0,
+          "h": 0,
+          "y": 0
+        },
+        "gatePanel": {
+          "w": 0,
+          "h": 0,
+          "y": 0
+        },
+        "gatePanes": [
+          {
+            "h": 0,
+            "y": 0,
+            "scrollH": 0,
+            "clientH": 0
+          },
+          {
+            "h": 0,
+            "y": 0,
+            "scrollH": 0,
+            "clientH": 0
+          }
+        ],
+        "scrollW": 1280,
+        "clientW": 1280,
+        "overflowX": false,
+        "emptyBeforeIcon": {
+          "content": "none",
+          "icons": 1
+        }
+      },
+      "gate": {
+        "segButtons": [
+          {
+            "id": "segS0",
+            "w": 196,
+            "h": 44
+          },
+          {
+            "id": "segSetup",
+            "w": 196,
+            "h": 44
+          },
+          {
+            "id": "segRun",
+            "w": 196,
+            "h": 44
+          },
+          {
+            "id": "segGate",
+            "w": 196,
+            "h": 44
+          }
+        ],
+        "segS0": {
+          "w": 196,
+          "h": 44,
+          "y": 115.3
+        },
+        "railEntry": {
+          "w": 188,
+          "h": 64,
+          "y": -65.9
+        },
+        "navIcon": {
+          "w": 19,
+          "h": 21.4,
+          "y": 126.6
+        },
+        "navSvg": {
+          "w": 16,
+          "h": 16,
+          "y": 128.6
+        },
+        "gateMaterial": {
+          "w": 488,
+          "h": 420,
+          "y": 828.3
+        },
+        "gatePanel": {
+          "w": 488,
+          "h": 420,
+          "y": 828.3
+        },
+        "gatePanes": [
+          {
+            "h": 420,
+            "y": 828.3,
+            "scrollH": 1255,
+            "clientH": 420
+          },
+          {
+            "h": 420,
+            "y": 828.3,
+            "scrollH": 461,
+            "clientH": 420
+          }
+        ],
+        "scrollW": 1280,
+        "clientW": 1280,
+        "overflowX": false,
+        "emptyBeforeIcon": {
+          "content": "none",
+          "icons": 1
+        }
+      }
+    },
+    "1440x900": {
+      "s0": {
+        "segButtons": [
+          {
+            "id": "segS0",
+            "w": 216,
+            "h": 44
+          },
+          {
+            "id": "segSetup",
+            "w": 216,
+            "h": 44
+          },
+          {
+            "id": "segRun",
+            "w": 216,
+            "h": 44
+          },
+          {
+            "id": "segGate",
+            "w": 216,
+            "h": 44
+          }
+        ],
+        "segS0": {
+          "w": 216,
+          "h": 44,
+          "y": 295.3
+        },
+        "railEntry": {
+          "w": 208,
+          "h": 64,
+          "y": 114.1
+        },
+        "navIcon": {
+          "w": 19,
+          "h": 21.4,
+          "y": 306.6
+        },
+        "navSvg": {
+          "w": 16,
+          "h": 16,
+          "y": 308.6
+        },
+        "gateMaterial": {
+          "w": 0,
+          "h": 0,
+          "y": 0
+        },
+        "gatePanel": {
+          "w": 0,
+          "h": 0,
+          "y": 0
+        },
+        "gatePanes": [
+          {
+            "h": 0,
+            "y": 0,
+            "scrollH": 0,
+            "clientH": 0
+          },
+          {
+            "h": 0,
+            "y": 0,
+            "scrollH": 0,
+            "clientH": 0
+          }
+        ],
+        "scrollW": 1440,
+        "clientW": 1440,
+        "overflowX": false,
+        "emptyBeforeIcon": {
+          "content": "none",
+          "icons": 1
+        }
+      },
+      "run": {
+        "segButtons": [
+          {
+            "id": "segS0",
+            "w": 216,
+            "h": 44
+          },
+          {
+            "id": "segSetup",
+            "w": 216,
+            "h": 44
+          },
+          {
+            "id": "segRun",
+            "w": 216,
+            "h": 44
+          },
+          {
+            "id": "segGate",
+            "w": 216,
+            "h": 44
+          }
+        ],
+        "segS0": {
+          "w": 216,
+          "h": 44,
+          "y": 295.3
+        },
+        "railEntry": {
+          "w": 208,
+          "h": 64,
+          "y": 114.1
+        },
+        "navIcon": {
+          "w": 19,
+          "h": 21.4,
+          "y": 306.6
+        },
+        "navSvg": {
+          "w": 16,
+          "h": 16,
+          "y": 308.6
+        },
+        "gateMaterial": {
+          "w": 0,
+          "h": 0,
+          "y": 0
+        },
+        "gatePanel": {
+          "w": 0,
+          "h": 0,
+          "y": 0
+        },
+        "gatePanes": [
+          {
+            "h": 0,
+            "y": 0,
+            "scrollH": 0,
+            "clientH": 0
+          },
+          {
+            "h": 0,
+            "y": 0,
+            "scrollH": 0,
+            "clientH": 0
+          }
+        ],
+        "scrollW": 1440,
+        "clientW": 1440,
+        "overflowX": false,
+        "emptyBeforeIcon": {
+          "content": "none",
+          "icons": 1
+        }
+      },
+      "gate": {
+        "segButtons": [
+          {
+            "id": "segS0",
+            "w": 216,
+            "h": 44
+          },
+          {
+            "id": "segSetup",
+            "w": 216,
+            "h": 44
+          },
+          {
+            "id": "segRun",
+            "w": 216,
+            "h": 44
+          },
+          {
+            "id": "segGate",
+            "w": 216,
+            "h": 44
+          }
+        ],
+        "segS0": {
+          "w": 216,
+          "h": 44,
+          "y": 295.3
+        },
+        "railEntry": {
+          "w": 208,
+          "h": 64,
+          "y": 114.1
+        },
+        "navIcon": {
+          "w": 19,
+          "h": 21.4,
+          "y": 306.6
+        },
+        "navSvg": {
+          "w": 16,
+          "h": 16,
+          "y": 308.6
+        },
+        "gateMaterial": {
+          "w": 649,
+          "h": 600,
+          "y": 832.3
+        },
+        "gatePanel": {
+          "w": 447,
+          "h": 461.1,
+          "y": 832.3
+        },
+        "gatePanes": [
+          {
+            "h": 600,
+            "y": 832.3,
+            "scrollH": 1159,
+            "clientH": 600
+          },
+          {
+            "h": 461.1,
+            "y": 832.3,
+            "scrollH": 461,
+            "clientH": 461
+          }
+        ],
+        "scrollW": 1440,
+        "clientW": 1440,
+        "overflowX": false,
+        "emptyBeforeIcon": {
+          "content": "none",
+          "icons": 1
+        }
+      }
+    },
+    "1920x1080": {
+      "s0": {
+        "segButtons": [
+          {
+            "id": "segS0",
+            "w": 216,
+            "h": 44
+          },
+          {
+            "id": "segSetup",
+            "w": 216,
+            "h": 44
+          },
+          {
+            "id": "segRun",
+            "w": 216,
+            "h": 44
+          },
+          {
+            "id": "segGate",
+            "w": 216,
+            "h": 44
+          }
+        ],
+        "segS0": {
+          "w": 216,
+          "h": 44,
+          "y": 308.3
+        },
+        "railEntry": {
+          "w": 208,
+          "h": 64,
+          "y": 127.1
+        },
+        "navIcon": {
+          "w": 19,
+          "h": 21.4,
+          "y": 319.6
+        },
+        "navSvg": {
+          "w": 16,
+          "h": 16,
+          "y": 321.6
+        },
+        "gateMaterial": {
+          "w": 0,
+          "h": 0,
+          "y": 0
+        },
+        "gatePanel": {
+          "w": 0,
+          "h": 0,
+          "y": 0
+        },
+        "gatePanes": [
+          {
+            "h": 0,
+            "y": 0,
+            "scrollH": 0,
+            "clientH": 0
+          },
+          {
+            "h": 0,
+            "y": 0,
+            "scrollH": 0,
+            "clientH": 0
+          }
+        ],
+        "scrollW": 1920,
+        "clientW": 1920,
+        "overflowX": false,
+        "emptyBeforeIcon": {
+          "content": "none",
+          "icons": 1
+        }
+      },
+      "run": {
+        "segButtons": [
+          {
+            "id": "segS0",
+            "w": 216,
+            "h": 44
+          },
+          {
+            "id": "segSetup",
+            "w": 216,
+            "h": 44
+          },
+          {
+            "id": "segRun",
+            "w": 216,
+            "h": 44
+          },
+          {
+            "id": "segGate",
+            "w": 216,
+            "h": 44
+          }
+        ],
+        "segS0": {
+          "w": 216,
+          "h": 44,
+          "y": 308.3
+        },
+        "railEntry": {
+          "w": 208,
+          "h": 64,
+          "y": 127.1
+        },
+        "navIcon": {
+          "w": 19,
+          "h": 21.4,
+          "y": 319.6
+        },
+        "navSvg": {
+          "w": 16,
+          "h": 16,
+          "y": 321.6
+        },
+        "gateMaterial": {
+          "w": 0,
+          "h": 0,
+          "y": 0
+        },
+        "gatePanel": {
+          "w": 0,
+          "h": 0,
+          "y": 0
+        },
+        "gatePanes": [
+          {
+            "h": 0,
+            "y": 0,
+            "scrollH": 0,
+            "clientH": 0
+          },
+          {
+            "h": 0,
+            "y": 0,
+            "scrollH": 0,
+            "clientH": 0
+          }
+        ],
+        "scrollW": 1920,
+        "clientW": 1920,
+        "overflowX": false,
+        "emptyBeforeIcon": {
+          "content": "none",
+          "icons": 1
+        }
+      },
+      "gate": {
+        "segButtons": [
+          {
+            "id": "segS0",
+            "w": 216,
+            "h": 44
+          },
+          {
+            "id": "segSetup",
+            "w": 216,
+            "h": 44
+          },
+          {
+            "id": "segRun",
+            "w": 216,
+            "h": 44
+          },
+          {
+            "id": "segGate",
+            "w": 216,
+            "h": 44
+          }
+        ],
+        "segS0": {
+          "w": 216,
+          "h": 44,
+          "y": 308.3
+        },
+        "railEntry": {
+          "w": 208,
+          "h": 64,
+          "y": 127.1
+        },
+        "navIcon": {
+          "w": 19,
+          "h": 21.4,
+          "y": 319.6
+        },
+        "navSvg": {
+          "w": 16,
+          "h": 16,
+          "y": 321.6
+        },
+        "gateMaterial": {
+          "w": 918.9,
+          "h": 780,
+          "y": 811.9
+        },
+        "gatePanel": {
+          "w": 633.1,
+          "h": 461.1,
+          "y": 811.9
+        },
+        "gatePanes": [
+          {
+            "h": 780,
+            "y": 811.9,
+            "scrollH": 1159,
+            "clientH": 780
+          },
+          {
+            "h": 461.1,
+            "y": 811.9,
+            "scrollH": 461,
+            "clientH": 461
+          }
+        ],
+        "scrollW": 1920,
+        "clientW": 1920,
+        "overflowX": false,
+        "emptyBeforeIcon": {
+          "content": "none",
+          "icons": 1
+        }
+      }
+    }
+  },
+  "agentWindowIcons": [
+    {
+      "href": "#icon-close",
+      "w": 16,
+      "h": 16
+    },
+    {
+      "href": "#icon-external",
+      "w": 0,
+      "h": 0
+    }
+  ],
+  "nodeDetailIcons": [
+    {
+      "href": "#icon-close",
+      "w": 16,
+      "h": 16
+    }
+  ]
+}

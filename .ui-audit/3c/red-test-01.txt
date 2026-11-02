@@ -1,0 +1,65 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+______________ test_simple_selectors_are_defined_once_per_context ______________
+
+    def test_simple_selectors_are_defined_once_per_context():
+        """同一简单选择器在同一 @ 上下文内只允许一条规则定义（批次 3C 的收敛判据）。"""
+        total, distinct, duplicates = load_structure()
+        # 反空扫：先证明解析器真的读到了东西（否则「无重复」毫无意义）
+        assert total >= MIN_SIMPLE_SELECTORS, (
+            f"反空扫失败：只解析到 {total} 个简单选择器（阈值 {MIN_SIMPLE_SELECTORS}），"
+            "解析器可能坏了，不是文件变干净了")
+        assert distinct >= MIN_SIMPLE_SELECTORS, (
+            f"反空扫失败：只有 {distinct} 个不同简单选择器（阈值 {MIN_SIMPLE_SELECTORS}）")
+        if duplicates:
+            lines = [f"{d['context']}  {d['selector']}  ×{d['count']}" for d in duplicates[:40]]
+>           pytest.fail(
+                "app.css 仍有 %d 个简单选择器在同一 @ 上下文内被多次定义"
+                "（F14 两段式未收敛，见 doc/plans/2026-10-30-ui-css-merge-f14c.md）：\n  %s"
+                % (len(duplicates), "\n  ".join(lines)))
+E           Failed: app.css 仍有 178 个简单选择器在同一 @ 上下文内被多次定义（F14 两段式未收敛，见 doc/plans/2026-10-30-ui-css-merge-f14c.md）：
+E             top-level  body  ×3
+E             top-level  .mono  ×2
+E             top-level  .field-label  ×2
+E             top-level  header  ×2
+E             top-level  .brand  ×2
+E             top-level  .mark  ×2
+E             top-level  .mark:after  ×2
+E             top-level  .shell  ×2
+E             top-level  aside  ×2
+E             top-level  .btn  ×2
+E             top-level  .btn-primary  ×2
+E             top-level  .btn-ghost:hover  ×2
+E             top-level  .btn-sm  ×2
+E             top-level  .btn:disabled  ×2
+E             top-level  .rail-label  ×2
+E             top-level  .run-list  ×2
+E             top-level  .run-item  ×2
+E             top-level  .run-item .rid  ×2
+E             top-level  .run-item .meta  ×2
+E             top-level  .run-empty  ×2
+E             top-level  .rail-foot  ×2
+E             top-level  main  ×2
+E             top-level  .page-head  ×2
+E             top-level  .banner  ×3
+E             top-level  .banner.bad  ×2
+E             top-level  .banner.warn  ×2
+E             top-level  .alert  ×3
+E             top-level  .alert.bad  ×2
+E             top-level  .alert.warn  ×2
+E             top-level  .card  ×2
+E             top-level  .card-head  ×2
+E             top-level  .card-head h2  ×3
+E             top-level  .grid2  ×2
+E             top-level  .run-grid  ×2
+E             top-level  .empty-title  ×3
+E             top-level  .step-card  ×2
+E             top-level  .step-no  ×2
+E             top-level  .step-title  ×2
+E             top-level  .input  ×2
+E             top-level  select.input  ×3
+
+tests/test_ui_css_structure.py:162: Failed
+=========================== short test summary info ============================
+FAILED tests/test_ui_css_structure.py::test_simple_selectors_are_defined_once_per_context
+1 failed in 0.65s

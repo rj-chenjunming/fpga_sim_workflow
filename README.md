@@ -18,7 +18,7 @@
 |---|---|---|
 | `loop/` | 编排层 + HTTP 服务 + 网页工作台 + 测试 + 验收装置（Agently TriggerFlow） | [`loop/README.md`](loop/README.md) |
 | `kb/` | Host 确定性工具（不上模型）+ JSON Schema + 契约 | [`kb/README.md`](kb/README.md) |
-| `doc/spec/` | 三份契约：业务篇 / 编排篇 / 环境插件篇 | [`doc/README.md`](doc/README.md) |
+| `doc/spec/` | 契约集 SPEC-01～10（业务 / 编排 / 环境插件 / Agent / DSH / UI / S0 / 开发侧 RSI） | [`doc/README.md`](doc/README.md) |
 | `doc/agents/` | 6 个角色定义 + 2 份开工提示词 | [`doc/agents/README.md`](doc/agents/README.md) |
 | `doc/evidence/` | 验收报告与演练证据（只读、内容冻结） | [`doc/evidence/README.md`](doc/evidence/README.md) |
 | `doc/history/` | 拆仓前的历史快照（不是现状） | [`doc/history/README.md`](doc/history/README.md) |

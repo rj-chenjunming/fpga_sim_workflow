@@ -1,0 +1,10 @@
+# 3B 实现后的 5 个静态用例（原始输出）
+# 命令: cd loop && .venv/bin/python -m pytest tests/test_ui_tokens.py tests/test_ui_css_structure.py tests/test_ui_typography.py tests/test_ui_icons.py tests/test_ui_gate_copy.py -q
+# 时间: 2026-10-30T15:02:38+08:00
+
+..............................                                           [100%]
+30 passed in 0.84s
+
+# 附加（同批 web/css 的软件层冒烟，非必需但受本批影响）：
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+6 passed, 1 warning in 0.79s

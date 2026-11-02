@@ -1,0 +1,92 @@
+/* FPGA Flow · shared visual tokens; all assets stay local.
+   3B 配色令牌化 · 收口版（裁决 A：令牌上限放到 46–50+，保 ΔRGB<=12）。
+   组成 = 既有 24 个颜色令牌（值未动）+ 新增语义/alpha/头像令牌；
+   非颜色令牌 --shadow/--radius/--ease-out/--font-* 原样保留。
+   吸收表与判据：.ui-audit/3b/absorption-final.md；残余例外：gaps-final.md。 */
+:root{
+  color-scheme:light;
+  /* 底 / 线 / 字 / 侧栏（neutral 共享） */
+  --panel:#ffffff;
+  --surface:#f8faf9;
+  --bg:#f4f6f5;
+  --line:#e1e8e4;
+  --line-strong:#c7d4cc;
+  --line-soft:#d5e4d0;
+  --text:#213831;
+  --text-2:#5d7756;
+  --text-3:#517057;
+  --text-4:#8aa393;
+  --text-5:#698872;
+  --muted:#61746c;
+  --faint:#5f6f67;
+  --rail:#192e28;
+  --rail-hover:#243d34;
+  --rail-active:#4e7052;
+  --rail-border:#526f62;
+  --rail-text:#e1eae4;
+  --rail-muted:#a5b9ae;
+  --rail-muted-2:#b5cdb5;
+  --rail-accent:#bed4b7;
+  --rail-deep:#495f48;
+  --arrow-ink:#5a6675;
+  --neutral-12:#335541;
+  --neutral-13:#284a40;
+  --neutral-4:#a3be97;
+  /* 主色（青绿） */
+  --primary:#15775e;
+  --primary-hover:#0e604b;
+  --primary-line:#b8daca;
+  --primary-weak:#eaf5ef;
+  /* 成功 */
+  --ok:#24734d;
+  --ok-ink:#148b68;
+  --ok-line:#c9e4d1;
+  --ok-line-2:#c9dfc7;
+  --ok-weak:#edf7ef;
+  --toast-ok:#52c41a;
+  /* 警告 */
+  --warn:#9a5e16;
+  --warn-7:#b98c43;
+  --warn-8:#745a30;
+  --warn-accent:#ecd3a9;
+  --warn-ink:#c49c61;
+  --warn-line:#e6d9be;
+  --warn-line-3:#c8dfbc;
+  --warn-line-4:#e8b86a;
+  --warn-tint:#fffdf8;
+  --warn-weak:#fff6e8;
+  /* 危险 */
+  --danger:#b34140;
+  --danger-ink-soft:#dab2ac;
+  --danger-line:#f5d2d0;
+  --danger-line-soft:#ebc7c4;
+  --danger-weak:#fff0ef;
+  --toast-err:#ff4d4f;
+  /* 紫（次要标签） */
+  --purple:#7357a0;
+  --purple-line:#e0d4ec;
+  --purple-weak:#f3eef9;
+  /* 数据/元信息蓝 */
+  --meta-blue:#44607a;
+  /* 头像身份色（.a1–.a6） */
+  --av-1:#2457d6;
+  --av-2:#3c7465;
+  --av-3:#7a5a26;
+  --av-4:#624d80;
+  --av-5:#7b4f4f;
+  --av-6:#55684f;
+  /* 浮层 / 阴影 / 白色叠加（alpha） */
+  --overlay:#12251aab;
+  --rail-line:#ffffff17;
+  --rail-line-strong:#ffffff30;
+  --rail-tint:#ffffff08;
+  --shadow-pop:#10291a38;
+  --shadow-raise:#173b2426;
+  --shadow-tint:#20372b0a;
+  /* 非颜色令牌（原样） */
+  --shadow:0 2px 4px #20372b03,0 8px 24px #20372b03;
+  --radius:12px;
+  --ease-out:cubic-bezier(0.22,1,0.36,1);
+  --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans SC","Microsoft YaHei",sans-serif;
+  --font-mono:"SFMono-Regular",Consolas,"Liberation Mono",monospace;
+}

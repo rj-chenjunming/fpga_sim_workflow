@@ -1,0 +1,351 @@
+{
+ "merged": [
+  {
+   "selector": ".diff-item.unresolved",
+   "media": [],
+   "removed_rules": [
+    137
+   ],
+   "kept_at_rule": 540,
+   "moved": [
+    {
+     "prop": "border-left-color",
+     "from_rule": 137,
+     "value": "var(--warn)"
+    }
+   ],
+   "dropped": []
+  },
+  {
+   "selector": ".eyebrow",
+   "media": [],
+   "removed_rules": [
+    144
+   ],
+   "kept_at_rule": 424,
+   "moved": [
+    {
+     "prop": "font-weight",
+     "from_rule": 144,
+     "value": "600"
+    },
+    {
+     "prop": "color",
+     "from_rule": 144,
+     "value": "var(--muted)"
+    }
+   ],
+   "dropped": []
+  },
+  {
+   "selector": ".phase-index",
+   "media": [],
+   "removed_rules": [
+    147
+   ],
+   "kept_at_rule": 426,
+   "moved": [
+    {
+     "prop": "place-items",
+     "from_rule": 147,
+     "value": "center"
+    },
+    {
+     "prop": "font-family",
+     "from_rule": 147,
+     "value": "monospace"
+    },
+    {
+     "prop": "font-size",
+     "from_rule": 147,
+     "value": "16px"
+    }
+   ],
+   "dropped": []
+  },
+  {
+   "selector": ".phase-card h3",
+   "media": [],
+   "removed_rules": [
+    147
+   ],
+   "kept_at_rule": 426,
+   "moved": [
+    {
+     "prop": "font-weight",
+     "from_rule": 147,
+     "value": "600"
+    }
+   ],
+   "dropped": []
+  },
+  {
+   "selector": ".phase-card p",
+   "media": [],
+   "removed_rules": [
+    147,
+    426
+   ],
+   "kept_at_rule": 1049,
+   "moved": [
+    {
+     "prop": "margin",
+     "from_rule": 147,
+     "value": "0"
+    },
+    {
+     "prop": "color",
+     "from_rule": 147,
+     "value": "var(--muted)"
+    },
+    {
+     "prop": "font-size",
+     "from_rule": 426,
+     "value": "12px"
+    },
+    {
+     "prop": "line-height",
+     "from_rule": 426,
+     "value": "1.5"
+    }
+   ],
+   "dropped": []
+  },
+  {
+   "selector": ".phase-card .chip",
+   "media": [],
+   "removed_rules": [
+    147
+   ],
+   "kept_at_rule": 426,
+   "moved": [
+    {
+     "prop": "white-space",
+     "from_rule": 147,
+     "value": "nowrap"
+    }
+   ],
+   "dropped": []
+  },
+  {
+   "selector": ".s0-grid",
+   "media": [],
+   "removed_rules": [
+    147
+   ],
+   "kept_at_rule": 426,
+   "moved": [
+    {
+     "prop": "display",
+     "from_rule": 147,
+     "value": "grid"
+    },
+    {
+     "prop": "align-items",
+     "from_rule": 147,
+     "value": "start"
+    }
+   ],
+   "dropped": []
+  },
+  {
+   "selector": ".section-index",
+   "media": [],
+   "removed_rules": [
+    148
+   ],
+   "kept_at_rule": 428,
+   "moved": [
+    {
+     "prop": "display",
+     "from_rule": 148,
+     "value": "grid"
+    },
+    {
+     "prop": "place-items",
+     "from_rule": 148,
+     "value": "center"
+    },
+    {
+     "prop": "border",
+     "from_rule": 148,
+     "value": "1px solid #d7e6e1"
+    },
+    {
+     "prop": "font",
+     "from_rule": 148,
+     "value": "11px monospace"
+    }
+   ],
+   "dropped": []
+  },
+  {
+   "selector": ".s0-grid .card-head .sub",
+   "media": [],
+   "removed_rules": [
+    148
+   ],
+   "kept_at_rule": 428,
+   "moved": [
+    {
+     "prop": "margin-left",
+     "from_rule": 148,
+     "value": "auto"
+    }
+   ],
+   "dropped": []
+  },
+  {
+   "selector": ".s0-label",
+   "media": [],
+   "removed_rules": [
+    148
+   ],
+   "kept_at_rule": 429,
+   "moved": [
+    {
+     "prop": "display",
+     "from_rule": 148,
+     "value": "flex"
+    },
+    {
+     "prop": "justify-content",
+     "from_rule": 148,
+     "value": "space-between"
+    },
+    {
+     "prop": "gap",
+     "from_rule": 148,
+     "value": "8px"
+    },
+    {
+     "prop": "flex-wrap",
+     "from_rule": 148,
+     "value": "wrap"
+    },
+    {
+     "prop": "font-weight",
+     "from_rule": 148,
+     "value": "600"
+    }
+   ],
+   "dropped": []
+  },
+  {
+   "selector": ".s0-label span",
+   "media": [],
+   "removed_rules": [
+    148
+   ],
+   "kept_at_rule": 429,
+   "moved": [
+    {
+     "prop": "font-weight",
+     "from_rule": 148,
+     "value": "400"
+    }
+   ],
+   "dropped": []
+  },
+  {
+   "selector": "#s0Form .input",
+   "media": [],
+   "removed_rules": [
+    148
+   ],
+   "kept_at_rule": 429,
+   "moved": [
+    {
+     "prop": "width",
+     "from_rule": 148,
+     "value": "100%"
+    }
+   ],
+   "dropped": []
+  },
+  {
+   "selector": ".form-divider",
+   "media": [],
+   "removed_rules": [
+    149
+   ],
+   "kept_at_rule": 429,
+   "moved": [
+    {
+     "prop": "border-top",
+     "from_rule": 149,
+     "value": "1px solid var(--line)"
+    }
+   ],
+   "dropped": []
+  },
+  {
+   "selector": ".s0-boundary",
+   "media": [],
+   "removed_rules": [
+    149
+   ],
+   "kept_at_rule": 429,
+   "moved": [
+    {
+     "prop": "display",
+     "from_rule": 149,
+     "value": "flex"
+    },
+    {
+     "prop": "align-items",
+     "from_rule": 149,
+     "value": "start"
+    },
+    {
+     "prop": "gap",
+     "from_rule": 149,
+     "value": "10px"
+    },
+    {
+     "prop": "border",
+     "from_rule": 149,
+     "value": "1px solid #e1ede7"
+    },
+    {
+     "prop": "border-radius",
+     "from_rule": 149,
+     "value": "6px"
+    },
+    {
+     "prop": "line-height",
+     "from_rule": 149,
+     "value": "1.8"
+    },
+    {
+     "prop": "margin",
+     "from_rule": 149,
+     "value": "17px 0"
+    }
+   ],
+   "dropped": []
+  },
+  {
+   "selector": ".s0-form-actions",
+   "media": [],
+   "removed_rules": [
+    150
+   ],
+   "kept_at_rule": 429,
+   "moved": [
+    {
+     "prop": "display",
+     "from_rule": 150,
+     "value": "flex"
+    },
+    {
+     "prop": "justify-content",
+     "from_rule": 150,
+     "value": "space-between"
+    }
+   ],
+   "dropped": []
+  }
+ ],
+ "skipped": []
+}

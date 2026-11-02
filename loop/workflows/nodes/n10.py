@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any
 
 
-async def run(data: Any, *, MP, PENDING_CLASSES, _artifact, _case_pass_fields, _cases_table, _classification_summary, _diffs_for_classification, _per_case_fail_buckets, _persist_pending, _reconcile_markdown, _set_case_state, _write_text, counts_text, ctx_of, ledger, run_model_node) -> dict[str, Any]:
+async def run(data: Any, *, MP, PENDING_CLASSES, _artifact, _case_pass_fields, _cases_table, _classification_summary, _diffs_for_classification, _per_case_fail_buckets, _persist_cases, _persist_pending, _reconcile_markdown, _set_case_state, _write_text, counts_text, ctx_of, ledger, run_model_node) -> dict[str, Any]:
     """N10 结果对账（Host 抽数 + 模型 FAIL 三分类）。
 
     - **Host 确定性**：两套口径/印记/身份一律来自 `host.evidence` 聚合，模型只对**桶**分类；
@@ -84,6 +84,7 @@ async def run(data: Any, *, MP, PENDING_CLASSES, _artifact, _case_pass_fields, _
         reconcile_path = _artifact(ctx, "n10_reconcile.md")
         _write_text(reconcile_path, _reconcile_markdown(out))
         out["reconcile_md_path"] = str(reconcile_path)
+        out.update(_persist_cases(ctx, out))
         await data.async_set_state("n10_reconcile", out)
         ctx.node_finished("N10", status="pass" if out["both_zero"] else "fail",
                           detail={"both_zero": out["both_zero"],
@@ -97,7 +98,7 @@ async def run(data: Any, *, MP, PENDING_CLASSES, _artifact, _case_pass_fields, _
                                       f"{counts_text(out.get('counts'))}，"
                                       f"both_zero={out['both_zero']}（{cls_out['mode']}）"
                                   )},
-                          refs=[ev.get("path", ""), str(reconcile_path)])
+                          refs=[ev.get("path", ""), str(reconcile_path), out["n10_cases_path"]])
         return out
 
     # ---------------------------------------------------------------- real
@@ -203,6 +204,7 @@ async def run(data: Any, *, MP, PENDING_CLASSES, _artifact, _case_pass_fields, _
     reconcile_path = _artifact(ctx, "n10_reconcile.md")
     _write_text(reconcile_path, _reconcile_markdown(out))
     out["reconcile_md_path"] = str(reconcile_path)
+    out.update(_persist_cases(ctx, out))
     await data.async_set_state("n10_reconcile", out)
     status = "pass" if (n9.get("verdict") or {}).get("passed") else "fail"
     ctx.node_finished("N10", status=status,
@@ -222,6 +224,6 @@ async def run(data: Any, *, MP, PENDING_CLASSES, _artifact, _case_pass_fields, _
                                   f"verdict_passed={(n9.get('verdict') or {}).get('passed')}，"
                                   f"待裁决 {len(pending_items)} 项（{cls_out['mode']}）"
                               )},
-                      refs=[str(reconcile_path)] + [str((cases.get(c) or {}).get("path") or "")
+                      refs=[str(reconcile_path), out["n10_cases_path"]] + [str((cases.get(c) or {}).get("path") or "")
                                                     for c in target_cases][:4])
     return out

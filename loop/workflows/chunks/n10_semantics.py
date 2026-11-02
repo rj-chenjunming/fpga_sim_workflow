@@ -12,11 +12,15 @@ from typing import Any
 from host import paths as P
 
 from ..context import RunCtx
-from .host_steps import run_kb_tool
+from .host_steps import _write_json, md5_file, run_kb_tool
 from .model_common import read_json as _read_json, write_text as _write_text
 
 #: N10 待裁决清单里需要人裁决的分类（分类 2/3）
 PENDING_CLASSES = ("本轮引入", "待裁决")
+
+#: 机器原因产物的 schema 与文件名（SPEC-REV-20 §3.2：`<run_dir>/n10_cases.json`）
+N10_CASES_SCHEMA = "loop/n10_cases"
+N10_CASES_FILE = "n10_cases.json"
 
 def _diffs_for_classification(ctx: RunCtx) -> list[dict[str, Any]]:
     doc = _read_json(ctx.run_dir / "n2_diff.json") or {}
@@ -221,3 +225,101 @@ def _case_pass_fields(ctx: RunCtx, case: str, item: dict[str, Any],
         "note": "N10：卡点B rc=0 ∧ 卡点C pass ∧ 双口径皆 0 ∧ UVM 汇总 ∧ 印记一致",
         "updated_by": "loop:N10",
     }
+
+
+# ---------------------------------------------------------------- 机器原因产物（SPEC-REV-20 §3.2）
+
+
+def _evidence_ref(item: dict[str, Any]) -> dict[str, Any]:
+    """证据件引用：路径 + 落盘时现算的 md5/bytes。
+
+    文件缺失或读不出 ⇒ `md5`/`bytes` 保持 `None`（显式"算不出"，**不编造**）。
+    """
+    raw = str((item or {}).get("path") or "")
+    ref: dict[str, Any] = {"path": raw or None, "md5": None, "bytes": None}
+    path = Path(raw) if raw else None
+    if path is None or not path.is_file():
+        return ref
+    try:
+        ref["md5"] = md5_file(path)
+        ref["bytes"] = path.stat().st_size
+    except OSError:
+        # 读不出就保持 None：身份不可复核时不写假的 md5
+        return ref
+    return ref
+
+
+def _machine_cases(cases: dict[str, Any] | None) -> dict[str, Any]:
+    """逐例机器原因：**只搬运** `n9_result.cases[*]` 的既有判据（不重算、不新增判据）。"""
+    out: dict[str, Any] = {}
+    for case in sorted(cases or {}):
+        item = (cases or {}).get(case) or {}
+        verdict = item.get("verdict") or {}
+        out[str(case)] = {
+            "case": str(case),
+            # passed 原样搬运；缺失就是 None（不默认 False，更不默认 True）
+            "passed": verdict.get("passed"),
+            "criterion": verdict.get("criterion"),
+            "reasons": [str(x) for x in (verdict.get("reasons") or [])],
+            "counts": item.get("counts"),
+            "imprints": item.get("imprints"),
+            "evidence": _evidence_ref(item),
+        }
+    return out
+
+
+def _persist_cases(ctx: RunCtx, out: dict[str, Any]) -> dict[str, Any]:
+    """落盘 `<run_dir>/n10_cases.json`（N10 Host 写，机器原因的唯一来源）。
+
+    **只搬运已算好的判据**（`n9_result.cases[*].verdict`/`counts`/`imprints`），不重算、
+    不替换（O-1）。写入失败**显式**：记 `warning` 事件 + 返回 `written=False`，
+    **不抛异常也不静默**——该产物缺失的后果是"本轮不可覆写"（服务层 fail-closed 拒绝），
+    不是把 N10 判失败。
+    """
+    path = ctx.run_dir / N10_CASES_FILE
+    payload = {
+        "schema": N10_CASES_SCHEMA,
+        "run_id": ctx.run_id,
+        "created_at": P.now_iso(),
+        "criterion": ((out or {}).get("verdict") or {}).get("criterion"),
+        "cases": _machine_cases((out or {}).get("cases")),
+    }
+    try:
+        _write_json(path, payload)
+    except (OSError, TypeError, ValueError) as exc:
+        ctx.event(
+            "warning", node="N10", status="n10_cases_not_written",
+            detail={"path": str(path), "error": f"{type(exc).__name__}: {exc}",
+                    "rule": "机器原因未留存 ⇒ 本轮不可覆写（服务层 fail-closed 拒绝）"},
+            refs=[str(path)],
+        )
+        return {"n10_cases_path": str(path), "n10_cases_written": False,
+                "n10_cases_error": f"{type(exc).__name__}: {exc}"}
+    return {"n10_cases_path": str(path), "n10_cases_written": True,
+            "n10_cases_count": len(payload["cases"])}
+
+
+def load_cases(run_dir: Path | str) -> dict[str, Any]:
+    """读 `<run_dir>/n10_cases.json`（**读侧唯一实现**，与写侧同源）。
+
+    旧 run（本规格之前的轮次）没有该件 ⇒ `present=False` + `missing` 明说缺哪件；
+    **不**反解析 `n10_reconcile.md`（不做第二套判据解析，§3.2）。
+    """
+    run_dir = Path(run_dir)
+    path = run_dir / N10_CASES_FILE
+    if not path.is_file():
+        return {"present": False, "path": str(path), "missing": N10_CASES_FILE, "cases": {}}
+    try:
+        doc = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return {"present": False, "path": str(path),
+                "missing": f"{N10_CASES_FILE}（不可解析：{type(exc).__name__}: {exc}）",
+                "cases": {}}
+    if (not isinstance(doc, dict) or doc.get("schema") != N10_CASES_SCHEMA
+            or not isinstance(doc.get("cases"), dict)):
+        return {"present": False, "path": str(path),
+                "missing": f"{N10_CASES_FILE}（schema 不是 {N10_CASES_SCHEMA}）", "cases": {}}
+    return {"present": True, "path": str(path), "missing": None,
+            "schema": doc.get("schema"), "run_id": doc.get("run_id"),
+            "created_at": doc.get("created_at"), "criterion": doc.get("criterion"),
+            "cases": doc["cases"]}

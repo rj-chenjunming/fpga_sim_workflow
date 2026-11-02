@@ -1,0 +1,60 @@
+== 解析规模 ==
+before: 1076 条规则 / 946 个(上下文,简单选择器)键 / 3329 条声明实例
+after : 970 条规则 / 946 个键 / 3285 条声明实例
+
+== B. 值未变判据（after 串 == before 串去掉被支配者，逐字比较）==
+键新增 0；键消失 0；未合并键 23（其中串与 before 不等 0，属正常未合并）；已合并键声明串不等 0
+被判定支配并删除的声明实例：45
+
+== C. 跨选择器「生效声明先后翻转」判据 ==
+证据：states=36 选择器=885 co_match=2626 pairs_checked=391170
+长手属性×上下文键：before 286 / after 286
+同特异性同重要性、可能共命中、先后关系翻转的对：11479
+  → 真风险(证据共命中) 0；未覆盖 0；证据已豁免 11479
+  其中「一侧选择器零命中 ⇒ 由其vacuous清掉」的翻转对：4058
+  未覆盖明细：
+
+== C2. 跨 @ 上下文（顶层 vs @media 等）先后翻转：1141 ==
+  裁决分布: {'evidence-cleared': 1141}
+  零命中选择器（36 组合里一次都没命中元素）：299 个 / 共 885
+  covered 但其中一侧是零命中选择器的跨上下文翻转：255
+  ! align-items: [top] .brand pos 30→686  vs  [('@media(max-width:1000px)',)] .s0-evidence pos 875→472  值 align-items=center | align-items=start  → evidence-cleared
+  ! align-items: [top] .brand pos 30→686  vs  [('@media(max-width:1000px)',)] .phase-card pos 878→475  值 align-items=center | align-items=start  → evidence-cleared
+  ! align-items: [top] .card-head pos 175→1038  vs  [('@media(max-width:1000px)',)] .s0-evidence pos 875→472  值 align-items=center | align-items=start  → evidence-cleared
+  ! align-items: [top] .card-head pos 175→1038  vs  [('@media(max-width:1000px)',)] .phase-card pos 878→475  值 align-items=center | align-items=start  → evidence-cleared
+  ! align-items: [top] .run-grid pos 180→1423  vs  [('@media(max-width:1000px)',)] .s0-form-actions pos 882→479  值 align-items=start | align-items=center  → evidence-cleared
+  ! align-items: [top] .step-no pos 190→1270  vs  [('@media(max-width:1000px)',)] .s0-evidence pos 875→472  值 align-items=center | align-items=start  → evidence-cleared
+  ! align-items: [top] .step-no pos 190→1270  vs  [('@media(max-width:1000px)',)] .phase-card pos 878→475  值 align-items=center | align-items=start  → evidence-cleared
+  ! align-items: [top] .step-title pos 198→1283  vs  [('@media(max-width:1000px)',)] .s0-evidence pos 875→472  值 align-items=center | align-items=start  → evidence-cleared
+  ! align-items: [top] .step-title pos 198→1283  vs  [('@media(max-width:1000px)',)] .phase-card pos 878→475  值 align-items=center | align-items=start  → evidence-cleared
+  ! align-items: [top] .confirm-bar pos 256→1307  vs  [('@media(max-width:1000px)',)] .s0-evidence pos 875→472  值 align-items=center | align-items=start  → evidence-cleared
+  ! align-items: [top] .confirm-bar pos 256→1307  vs  [('@media(max-width:1000px)',)] .phase-card pos 878→475  值 align-items=center | align-items=start  → evidence-cleared
+  ! align-items: [top] .run-head pos 265→1324  vs  [('@media(max-width:1000px)',)] .s0-evidence pos 875→472  值 align-items=center | align-items=start  → evidence-cleared
+  ! align-items: [top] .run-head pos 265→1324  vs  [('@media(max-width:1000px)',)] .phase-card pos 878→475  值 align-items=center | align-items=start  → evidence-cleared
+  ! align-items: [top] .status-pill pos 269→1342  vs  [('@media(max-width:1000px)',)] .s0-evidence pos 875→472  值 align-items=center | align-items=start  → evidence-cleared
+  ! align-items: [top] .status-pill pos 269→1342  vs  [('@media(max-width:1000px)',)] .phase-card pos 878→475  值 align-items=center | align-items=start  → evidence-cleared
+  ! align-items: [top] .stage-head pos 298→1360  vs  [('@media(max-width:1000px)',)] .s0-evidence pos 875→472  值 align-items=center | align-items=start  → evidence-cleared
+  ! align-items: [top] .stage-head pos 298→1360  vs  [('@media(max-width:1000px)',)] .phase-card pos 878→475  值 align-items=center | align-items=start  → evidence-cleared
+  ! align-items: [top] .stage-idx pos 311→1376  vs  [('@media(max-width:1000px)',)] .s0-evidence pos 875→472  值 align-items=center | align-items=start  → evidence-cleared
+  ! align-items: [top] .stage-idx pos 311→1376  vs  [('@media(max-width:1000px)',)] .phase-card pos 878→475  值 align-items=center | align-items=start  → evidence-cleared
+  ! align-items: [top] .stage-sum pos 331→1393  vs  [('@media(max-width:1000px)',)] .s0-evidence pos 875→472  值 align-items=center | align-items=start  → evidence-cleared
+  ! align-items: [top] .stage-sum pos 331→1393  vs  [('@media(max-width:1000px)',)] .phase-card pos 878→475  值 align-items=center | align-items=start  → evidence-cleared
+  ! align-items: [top] .snode pos 358→1410  vs  [('@media(max-width:1000px)',)] .s0-evidence pos 875→472  值 align-items=center | align-items=start  → evidence-cleared
+  ! align-items: [top] .snode pos 358→1410  vs  [('@media(max-width:1000px)',)] .phase-card pos 878→475  值 align-items=center | align-items=start  → evidence-cleared
+  ! align-items: [top] .agent-head pos 422→1450  vs  [('@media(max-width:1000px)',)] .s0-evidence pos 875→472  值 align-items=center | align-items=start  → evidence-cleared
+  ! align-items: [top] .agent-head pos 422→1450  vs  [('@media(max-width:1000px)',)] .phase-card pos 878→475  值 align-items=center | align-items=start  → evidence-cleared
+  ! align-items: [top] .avatar pos 424→1460  vs  [('@media(max-width:1000px)',)] .s0-evidence pos 875→472  值 align-items=center | align-items=start  → evidence-cleared
+  ! align-items: [top] .avatar pos 424→1460  vs  [('@media(max-width:1000px)',)] .phase-card pos 878→475  值 align-items=center | align-items=start  → evidence-cleared
+  ! align-items: [top] .agent-foot pos 448→1508  vs  [('@media(max-width:1000px)',)] .s0-evidence pos 875→472  值 align-items=center | align-items=start  → evidence-cleared
+  ! align-items: [top] .agent-foot pos 448→1508  vs  [('@media(max-width:1000px)',)] .phase-card pos 878→475  值 align-items=center | align-items=start  → evidence-cleared
+  ! align-items: [top] .host-row pos 487→1530  vs  [('@media(max-width:1000px)',)] .s0-evidence pos 875→472  值 align-items=flex-start | align-items=start  → evidence-cleared
+
+== D. 结构数字与全局不变量 ==
+before: 规则 1076；(选择器文本,上下文) 重复组 153 涉及 307 条；简单选择器重复 193 个 涉及 403 条；!important 声明 5
+  before: 不同选择器文本 788 / 不同简单选择器 788
+after: 规则 970；(选择器文本,上下文) 重复组 23 涉及 47 条；简单选择器重复 23 个 涉及 47 条；!important 声明 11
+before 的 @ 上下文：{'top': 917, '@media (max-width:1180px)': 1, '@media (max-width:1100px)': 1, '@media(min-width:1550px)': 2, '@media(max-width:1200px)': 12, '@media(max-width:1000px)': 10, '@media(max-width:760px)': 66, '@media(max-width:640px)': 1, '@media(max-width:850px)': 29, '@media(min-width:1101px)': 2, '@media(max-width:1100px)': 1, '@media(min-width:1600px)': 6, '@media(min-width:1101px) and (max-width:1390px)': 14, '@media(min-width:761px) and (max-width:1100px)': 11, '@media(prefers-reduced-motion:reduce)': 1, '@media(max-width:900px)': 2}
+after 的 @ 上下文：{'top': 791, '@media (max-width:1180px)': 1, '@media (max-width:1100px)': 1, '@media(min-width:1550px)': 2, '@media(max-width:1200px)': 12, '@media(max-width:1000px)': 10, '@media(max-width:760px)': 75, '@media(max-width:640px)': 1, '@media(max-width:850px)': 33, '@media(min-width:1101px)': 2, '@media(max-width:1100px)': 1, '@media(min-width:1600px)': 6, '@media(min-width:1101px) and (max-width:1390px)': 15, '@media(min-width:761px) and (max-width:1100px)': 15, '@media(prefers-reduced-motion:reduce)': 3, '@media(max-width:900px)': 2}
+before: 不同 (prop,value,important) 组合 869；其中 important=True 4
+after: 不同 (prop,value,important) 组合 868；其中 important=True 4
+hex 字面量多重集 before=321 after=325 不等=True

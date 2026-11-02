@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any
 
 
-async def run(data: Any, *, _REAL_CASE, _SEED, _acquire_slot, _drill_case_spec, _slot_job_id, _submit_drill_replay, _target_cases, _verify_targets, ctx_of) -> dict[str, Any]:
+async def run(data: Any, *, _baseline_full_targets, _no_impact_full_regression, _REAL_CASE, _SEED, _acquire_slot, _drill_case_spec, _slot_job_id, _submit_drill_replay, _target_cases, _verify_targets, ctx_of) -> dict[str, Any]:
     """申请单槽 + 提交全跑作业。**返回后图即停放，执行不再是 `running`。**
 
     real：一个作业串行跑**全部**受影响用例（目标集取 n6_applied 冻结件）。
@@ -91,7 +91,9 @@ async def run(data: Any, *, _REAL_CASE, _SEED, _acquire_slot, _drill_case_spec, 
         return payload
 
     # ---------------------------------------------------------------- real
-    cases = _target_cases(data)
+    full_regression = _no_impact_full_regression(data)
+    cases = _baseline_full_targets() if full_regression else _target_cases(data)
+    target_set = "baseline_frozen_full" if full_regression else "n6_applied"
     _verify_targets(cases)
     case_names = [c["case"] for c in cases]
     gate = await _acquire_slot(data, ctx, job_id=_slot_job_id(ctx),
@@ -120,7 +122,7 @@ async def run(data: Any, *, _REAL_CASE, _SEED, _acquire_slot, _drill_case_spec, 
         "job_id": record.job_id, "node": "N9", "phase": "running",
         "tc": ",".join(case_names), "seed": _SEED,
         "cases": case_names, "expected_cases": case_names, "md5s": md5s,
-        "target_set": "n6_applied", "started_at": record.started_at,
+        "target_set": target_set, "started_at": record.started_at,
         "log_path": record.log_path, "sandbox_root": str(run_dir / "sandbox"),
         "evidence_dir": str(evidence_dir), "summary_path": str(summary_path),
         "mode": ctx.mode, "scenario": ctx.scenario,
@@ -135,6 +137,8 @@ async def run(data: Any, *, _REAL_CASE, _SEED, _acquire_slot, _drill_case_spec, 
         "job_id": record.job_id, "cases": len(case_names),
         "source": "kb_tool",
         "summary": (f"N9_submit：已提交全跑作业 {record.job_id}，"
-                    f"覆盖 {len(case_names)} 个沙箱用例 ⇒ 图转入停放"),
+                    f"覆盖 {len(case_names)} 个用例"
+                    + ("（全量回归：无修订分支，目标集取自 kb/index/cases.json）"
+                       if full_regression else "（沙箱修订件）") + " ⇒ 图转入停放"),
     }, refs=[record.log_path, str(summary_path)])
     return payload

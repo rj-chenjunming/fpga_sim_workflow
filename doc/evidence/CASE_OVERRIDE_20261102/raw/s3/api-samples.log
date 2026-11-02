@@ -1,0 +1,162 @@
+/home/work/chenjunming/change-impact-loop/loop/.venv/lib64/python3.11/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient as TestClient  # noqa
+
+===== POST /api/runs/{id}/cases/override  (action=pass, 单例) -> HTTP 200 =====
+{
+  "ok": true,
+  "action": "pass",
+  "results": [
+    {
+      "case": "tc_rtc_05",
+      "state": "已验证通过"
+    }
+  ],
+  "case_waivers": {
+    "path": "/tmp/s3-sample-kpxx75so/runs/RUN-20261102-431142/case_states.json",
+    "present": true,
+    "error": null,
+    "count": 1,
+    "count_waived": 1,
+    "cases": [
+      {
+        "case": "tc_rtc_05",
+        "state": "已验证通过",
+        "own": true,
+        "action": "pass",
+        "actor": "human:chenjunming",
+        "reason": "期望值来自旧文档条目；实测值与本变预期一致，属期望过期",
+        "decided_at": "2026-11-02T11:49:37+0800",
+        "prev_state": "已修订待验",
+        "machine": {
+          "counts": {
+            "koutou1": {
+              "value": 0
+            },
+            "koutou2": {
+              "value": {
+                "UVM_ERROR": 0,
+                "UVM_FATAL": 0
+              }
+            }
+          },
+          "criterion": "PASS ⟺ 两套口径皆 0 ∧ UVM Report Summary 出现 ∧ 期望观测点印记三向一致",
+          "evidence": {
+            "bytes": 123456,
+            "md5": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "path": "evidence/20261102-130000_tc_rtc_05_1_run.log"
+          },
+          "imprints": {
+            "N6_pcie_test_tc_rtc_05": {
+              "consistent": false
+            }
+          },
+          "passed": false,
+          "reasons": [
+            "印记 N6_pcie_test_tc_rtc_05 三向不一致：['value_matches_expected']"
+          ],
+          "schema": "loop/n10_cases",
+          "source_md5": "d5ba53160a89276dc9b9bb280bcd4270",
+          "source_path": "n10_cases.json"
+        }
+      }
+    ],
+    "pending_count": 1,
+    "pending": [
+      "tc_rtc_10"
+    ],
+    "machine_source": "台账 overrides[].machine（覆写时钉下的 n10_cases.json 快照）"
+  },
+  "warnings": []
+}
+
+===== 投影样例：run_view.case_override（run_status=waiting_gate；tc_rtc_05 已豁免、tc_rtc_10 仍待验）=====
+{
+  "enabled": true,
+  "blocked_reason": null,
+  "cases": {
+    "tc_rtc_05": {
+      "state": "已验证通过",
+      "machine_present": true,
+      "actions": {
+        "pass": {
+          "available": false,
+          "blocked_reason": "§4-4 当前态是「已验证通过」，pass 要求当前态为「已修订待验」"
+        },
+        "revoke": {
+          "available": true,
+          "blocked_reason": null
+        }
+      }
+    },
+    "tc_rtc_10": {
+      "state": "已修订待验",
+      "machine_present": true,
+      "actions": {
+        "pass": {
+          "available": true,
+          "blocked_reason": null
+        },
+        "revoke": {
+          "available": false,
+          "blocked_reason": "§4-4 当前态是「已修订待验」，revoke 要求当前态为「已验证通过」"
+        }
+      }
+    }
+  }
+}
+
+===== 400 请求体形状错（action 不在枚举） -> HTTP 400 =====
+{
+  "detail": {
+    "error": "action 必须是 pass/revoke（得到 'maybe'）；撤销请用 action=\"revoke\"。"
+  }
+}
+
+===== 403 §4-1 actor 非 human -> HTTP 403 =====
+{
+  "detail": {
+    "error": "§4-1 --actor 的类必须是 human，得到 'model'（model:/host:/rehearsal: 一律拒绝） ⇒ 台账**未写盘**",
+    "blockers": [
+      {
+        "code": "CASE_OVERRIDE_4_1",
+        "severity": "blocker",
+        "title": "覆写前置不满足（§4-1）",
+        "message": "§4-1 --actor 的类必须是 human，得到 'model'（model:/host:/rehearsal: 一律拒绝）",
+        "refs": [
+          "run=RUN-20261102-431142",
+          "run_status=waiting_gate"
+        ]
+      }
+    ],
+    "note": "被拒 = 前置（§4-1~§4-7）不满足或 run 不在等待闸门；台账一字节未动。"
+  }
+}
+
+===== 403 §4-6 run 状态 running -> HTTP 403 =====
+{
+  "detail": {
+    "error": "§4-6 run 当前状态是 'running'；签/撤销只允许在「等待闸门」（waiting_gate）时执行（O-7：running/终态一律拒绝）",
+    "blockers": [
+      {
+        "code": "CASE_OVERRIDE_4_6",
+        "severity": "blocker",
+        "title": "覆写前置不满足（§4-6）",
+        "message": "§4-6 run 当前状态是 'running'；签/撤销只允许在「等待闸门」（waiting_gate）时执行（O-7：running/终态一律拒绝）",
+        "refs": [
+          "run=RUN-20261102-431142",
+          "run_status=running"
+        ]
+      }
+    ],
+    "note": "被拒 = 前置（§4-1~§4-7）不满足或 run 不在等待闸门；台账一字节未动。"
+  }
+}
+
+===== 409 锚复核失败（kb rc=4） -> HTTP 409 =====
+{
+  "detail": {
+    "error": "台账/机器原因件不一致到无法判定（kb rc=4）：§4-8 既有覆写链复核失败 ⇒ 拒绝追加（台账**未改动**）：",
+    "reason": "[FAIL] §4-8 既有覆写链复核失败 ⇒ 拒绝追加（台账**未改动**）：\n  - 用例 'tc_rtc_05' 的 overrides[0] record_sha256 复核失败：记录声明 '42dee4078dad394552789c77d89c4dfac105219845ce59affdc0959f475c5753' 实际复算 7bc0ee1f150f17d3c530cbc44a901b74f39f28fa4887a3db6048e043b88a4de2",
+    "note": "台账与机器原因件不一致到无法判定（kb rc=4）⇒ 拒绝追加。"
+  }
+}

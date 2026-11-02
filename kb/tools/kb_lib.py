@@ -544,26 +544,33 @@ def run_dir(run_id, create=False):
     return p
 
 
-# ---------------------------------------------------------------- 三道人工闸门
+# ---------------------------------------------------------------- 人工闸门
 
-GATE_IDS = ("G1_diff_confirm", "G2_report_accept", "G3_regression_decision")
+#: v1 的三道**主线**闸门（旧 `gates.json` 里 `version=1` 的必需集合；读旧记录用）。
+GATE_IDS_V1 = ("G1_diff_confirm", "G2_report_accept", "G3_regression_decision")
+#: 2026-10-30 增补：`G1_no_impact` = N5 必改=0 时的 **G1 分流支线**（不是第四道主线闸门）。
+#: 契约：`doc/spec/CHANGE_IMPACT_LOOP_SPEC.md` §12 + `doc/spec/LOOP_ORCHESTRATION_SPEC.md` §14。
+GATE_IDS = GATE_IDS_V1 + ("G1_no_impact",)
 GATE_KIND = {
     "G1_diff_confirm": "diff_confirm",
     "G2_report_accept": "report_accept",
     "G3_regression_decision": "regression_decision",
+    "G1_no_impact": "diff_confirm",
 }
-# G1 决策枚举；G2/G3 见 spec §2
+# G1 决策枚举；G2/G3 见 spec §2；G1_no_impact 见 LOOP §14
 GATE_DECISIONS = {
     "G1_diff_confirm": ["confirmed", "ignored", "disputed", "pending"],
     "G2_report_accept": ["accept", "rework", "pending"],
     "G3_regression_decision": ["full_now", "subset_only", "milestone_only", "defer", "pending"],
+    # 零必改分流：结束（必填理由） / 转全量回归；pending 是状态不是动作
+    "G1_no_impact": ["no_impact_end", "full_regression", "pending"],
 }
 
 
 def gate_init(run_id, manifest_from, manifest_to):
     st = {
         "schema": "kb/gate-state",
-        "version": 1,
+        "version": 2,          # 2026-10-30：version=2 含 G1_no_impact（旧 v1 记录仍可读）
         "run_id": run_id,
         "manifest_from": manifest_from,
         "manifest_to": manifest_to,
@@ -821,16 +828,42 @@ def gate_verify_state_hash(run_id, gate_id):
     return False, "；".join(parts)
 
 
+#: 只在特定分支才出现的门（未出现时不计入"全签"判据，也不投影）。
+GATE_BRANCH_ONLY = ("G1_no_impact",)
+
+
+def gate_applicable(gate_id, row):
+    """该门在本轮是否**适用** —— 唯一判据（`gate_summary` 与 `host.gate_authority` 共用）。
+
+    `G1_no_impact`（N5 必改=0 的 G1 分流支线，2026-10-30）未出现时保持 `pending` 且无 history；
+    此时它不适用：既不能把正常运行说成"还有一道门没签"，也不能让它拖住 `all_signed`。
+    其它门恒适用。
+    """
+    if gate_id not in GATE_BRANCH_ONLY:
+        return True
+    row = row or {}
+    return bool(row.get("history") or (row.get("decision") not in (None, "pending")))
+
+
 def gate_summary(run_id):
     st = gate_get(run_id)
+    version = int(st.get("version") or 1)
+    ids = [g for g in (GATE_IDS if version >= 2 else GATE_IDS_V1)
+           if g in (st.get("gates") or {})]
+    missing = [g for g in (GATE_IDS if version >= 2 else GATE_IDS_V1) if g not in ids]
+    if missing:
+        raise ValueError("gates.json 状态不完整（version=%s 缺 %s）" % (version, missing))
+    applicable = [g for g in ids if gate_applicable(g, st["gates"][g])]
     return {
         "run_id": st["run_id"],
-        "all_signed": all(st["gates"][g]["status"] == "signed" for g in GATE_IDS),
-        "human_signed_all": all(st["gates"][g]["human_signed"] for g in GATE_IDS),
+        "version": version,
+        "applicable": applicable,
+        "all_signed": all(st["gates"][g]["status"] == "signed" for g in applicable),
+        "human_signed_all": all(st["gates"][g]["human_signed"] for g in applicable),
         "gates": {g: {"decision": st["gates"][g]["decision"],
                       "actor_kind": st["gates"][g]["actor_kind"],
                       "human_signed": st["gates"][g]["human_signed"]}
-                  for g in GATE_IDS},
+                  for g in applicable},
     }
 
 

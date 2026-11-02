@@ -1,0 +1,18 @@
+PASS  map.tsv 与 CSS 逐条一致：CSS 内 382 条色值出现 == map.tsv 382 行
+PASS  unmapped=0（每条形如 file/line/property/literal 都有令牌）
+PASS  map.tsv 用到的 38 个令牌全部在 tokens-proposed.css 有定义
+PASS  颜色令牌数 = 40（上限 40，含既有 24）
+PASS  全部变量 = 45（40 颜色 + --shadow/--radius/--ease-out/--font-*）
+PASS  保持 color-scheme:light
+PASS  无外部引用（0 个 url()/@import）
+
+--- 覆盖（ΔRGB = max(|Δr|,|Δg|,|Δb|)，0-255 sRGB）---
+色值出现总数 = 382；不同值（rgb+alpha）= 233
+实色（非 alpha）出现 = 355，ΔRGB<=12 = 303（85.4%）
+ΔRGB>12 出现 = 58 / 不同值 = 52
+alpha 类出现 = 27（其 ΔRGB 不作判据，见 absorption.md 的 α 列）
+
+--- 写权 ---
+本次审计只写 .ui-audit/3b/；loop/web/**、loop/tests/**、doc/**、kb/** 未改动（见 handoff.md 的 git status 片段）
+
+result: unmapped=0, all checks passed

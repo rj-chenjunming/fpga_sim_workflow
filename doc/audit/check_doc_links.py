@@ -53,7 +53,8 @@ WORKSPACE_PREFIXES = [
     "kb/adjudication/", "kb/FIXTURE_IDENTITY.md",
 ]
 #: 仓内派生数据根/副本（由 `loop/spikes/*.sh` 预置，内含环境文档副本）⇒ 不算本仓文档
-SKIP_PREFIXES = ["loop/state", "loop/.logs", "loop/.venv", "loop/.pytest_cache",
+SKIP_PREFIXES = [".ui-audit/", ".chrome-tmp", ".chrome-home", ".pw-browsers/",
+                 "loop/state", "loop/.logs", "loop/.venv", "loop/.pytest_cache",
                  "loop/.agently", ".env-copy", ".dev-ws", ".wsp", ".tmp-",
                  # 2026-10-29（S8 审计 P2-13 处置）：数据根既可写成相对仓根的 `.dev-ws`，
                  # 也可写成从 `loop/` 视角的 `loop/.dev-ws`（`AGENTS.md` §4 的命令正是后者）。
@@ -80,6 +81,7 @@ KNOWN_MISSING: dict[str, str] = {
     "loop/spikes/run_env_checks.sh": "K1 的选项①**未采用**（2026-10-27 选②：`run_env_layer_checks.sh --with-kb-selftests`）；此路径只出现在计划文本里，本仓不会创建 —— 见 doc/plans/2026-10-27-k1-env-checks-entry.md §1、STATUS §94",
     "workspaces/simenv-tcs9620-64ch/": "约定目标位置；当前数据仍在 ENV_ROOT/kb（ENV_PLUGIN_SPEC §7）",
     "loop/ACCEPTANCE_V1.md": "迁移记录中的旧路径；现行文件为 doc/evidence/ACCEPTANCE_V1.md",
+    "loop/rsi/": "SPEC-10 P0 的计划落点（规格阶段**未实现**，2026-10-29）；实现时创建该包并**删除本行**",
 }
 LINE_SUFFIX = re.compile(r":\d+(-\d+)?(,\d+(-\d+)?)*$")
 SYMBOL_SUFFIX = re.compile(r"::.*$")
@@ -247,7 +249,13 @@ def scan(roots: Roots, docs_root: Path | None = None) -> Report:
         rel = md.relative_to(base).as_posix()
         # 派生数据根/环境副本（`loop/spikes/*.sh` 预置）内含环境文档副本，不是本仓文档。
         if rel.startswith((".git/", "loop/.venv/", "workspaces/",
-                           ".env-copy/", ".dev-ws", ".demo-ws", ".wsp", ".tmp-", ".s0-")):
+                           ".env-copy/", ".dev-ws", ".demo-ws", ".wsp", ".tmp-", ".s0-",
+                           # 2026-10-30（UI 3C/3B/批次4 处置）：`.ui-audit/` 是本轮**未入库临时区**
+                           # （审计/复核员的分析件、指纹工具、截图），不是本仓文档；`.chrome-tmp*`/
+                           # `.chrome-home*`/`.pw-browsers/` 是浏览器运行时目录，其下还含文档门
+                           # 自己单测生成的假仓库夹具（曾被本门扫到 ⇒ 自我污染的 5 条断链）。
+                           ".ui-audit/", ".chrome-tmp", ".chrome-home", ".pw-browsers/",
+                           ".playwright-")):
             continue
         is_historical = any(rel.startswith(p) for p in HISTORICAL_FILES)
         try:

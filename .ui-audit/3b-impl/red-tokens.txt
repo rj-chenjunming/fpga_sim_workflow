@@ -1,0 +1,114 @@
+# 3B 令牌化 · TDD 红（实现前）
+# 命令: cd loop && .venv/bin/python -m pytest tests/test_ui_tokens.py -q
+# 时间: 2026-10-30T14:59:38+08:00
+# web 快照 md5:
+#   4d4a7867c397a77f81f1ad3814cebd08  web/app.css
+#   149153746ed1fa738b56aebea7db1e40  web/legacy.css
+#   3d23134177964d8e2b2749a241f55a43  web/tokens.css
+#   6efe19041973dd727f80bcb0b365ee08  web/legacy.html
+
+F.F....F.                                                                [100%]
+=================================== FAILURES ===================================
+___________________ test_component_css_has_no_color_literals ___________________
+
+    def test_component_css_has_no_color_literals() -> None:
+        """`app.css` + `legacy.css` 的声明里不得再出现色值字面量（`tokens.css` 是唯一色源）。"""
+        offenders: list[str] = []
+        scanned = 0
+        for path in (APP_CSS, LEGACY_CSS):
+            text = _declaration_text(path)
+            hits = _literals_with_lines(text)
+            scanned += len(hits)
+            offenders.extend(f"{path.name}:{line}  {literal}" for line, literal in hits[:20])
+>       assert not offenders, (
+            "组件层仍有 %d 处颜色字面量（应全部换成 var(--token)；映射见 "
+            ".ui-audit/3b/map-final.tsv）。前 20 条：\n  %s"
+            % (scanned, "\n  ".join(offenders))
+        )
+E       AssertionError: 组件层仍有 382 处颜色字面量（应全部换成 var(--token)；映射见 .ui-audit/3b/map-final.tsv）。前 20 条：
+E           app.css:18  #f2f4f7
+E           app.css:36  #eceff4
+E           app.css:39  rgba(16,24,40,.08)
+E           app.css:65  #bfe8d8
+E           app.css:66  #f3d19e
+E           app.css:67  #f5c6c6
+E           app.css:73  #f3d19e
+E           app.css:75  #bfe8d8
+E           app.css:76  #f5c6c6
+E           app.css:79  #bfe8d8
+E           app.css:80  #f3d19e
+E           app.css:81  #f5c6c6
+E           app.css:82  #fafbfd
+E           app.css:83  #fff
+E           app.css:84  #bfe8d8
+E           app.css:85  #f3d19e
+E           app.css:86  #f5c6c6
+E           app.css:96  #eef1f5
+E           app.css:99  #fff
+E           app.css:101  #fff
+E           legacy.css:3  #3e5546
+E           legacy.css:3  #e2ebe1
+E           legacy.css:6  #c1dcbd
+E           legacy.css:6  #6b836a
+E           legacy.css:7  #304b35
+E           legacy.css:7  #fff
+E           legacy.css:8  #bbceba
+E           legacy.css:9  #edf3e8
+E           legacy.css:9  #d4e0cc
+E           legacy.css:11  #54694b
+E           legacy.css:15  #fff
+E           legacy.css:18  #f1f5ef
+E           legacy.css:18  #dae3d5
+E           legacy.css:18  #5c7055
+E           legacy.css:19  #c9dfc7
+E           legacy.css:20  #e7bdb8
+E           legacy.css:21  #e7d5b4
+E           legacy.css:23  #f1f4ee
+E           legacy.css:24  #dfd1ed
+E           legacy.css:25  #fff
+E       assert not ['app.css:18  #f2f4f7', 'app.css:36  #eceff4', 'app.css:39  rgba(16,24,40,.08)', 'app.css:65  #bfe8d8', 'app.css:66  #f3d19e', 'app.css:67  #f5c6c6', ...]
+
+tests/test_ui_tokens.py:265: AssertionError
+_____________ test_legacy_inline_live_rules_have_no_color_literals _____________
+
+    def test_legacy_inline_live_rules_have_no_color_literals() -> None:
+        """`legacy.html` `<style>` 里**仍然生效**的规则不得有色值字面量（死声明见下一条用例）。"""
+        live = _live_inline_units()
+        total_units = sum(len(_selector_units(selector_list))
+                          for _ctx, selector_list, _decls in _inline_rules())
+        assert total_units >= MIN_INLINE_SELECTOR_UNITS, (
+            f"反空扫失败：<style> 只解析到 {total_units} 个选择器单元（阈值 "
+            f"{MIN_INLINE_SELECTOR_UNITS}），解析器可能坏了")
+        offenders = [(unit, literal) for unit, decls in live
+                     for _line, literal in _literals_with_lines(decls)]
+>       assert not offenders, (
+            "legacy.html 内联 <style> 的活规则仍有颜色字面量（应换成 var(...)，共 %d 处）：\n  %s"
+            % (len(offenders), "\n  ".join(f"{unit}: {literal}" for unit, literal in offenders[:20]))
+        )
+E       AssertionError: legacy.html 内联 <style> 的活规则仍有颜色字面量（应换成 var(...)，共 3 处）：
+E           .chain-arrow: #5a6675
+E           .toast-item.err: #ff4d4f
+E           .toast-item.ok: #52c41a
+E       assert not [('.chain-arrow', '#5a6675'), ('.toast-item.err', '#ff4d4f'), ('.toast-item.ok', '#52c41a')]
+
+tests/test_ui_tokens.py:293: AssertionError
+_________________ test_color_token_count_is_the_adjudicated_69 _________________
+
+    def test_color_token_count_is_the_adjudicated_69() -> None:
+        """颜色令牌 = 69（人裁，±0）；非颜色令牌仍是那 5 个，合计 74 个变量。"""
+        declared = _token_declarations()
+        color = {name: value for name, value in declared.items()
+                 if _COLOR.fullmatch(value.strip())}
+>       assert len(color) == EXPECTED_COLOR_TOKENS, (
+            f"颜色令牌 {len(color)} 个，人裁是 {EXPECTED_COLOR_TOKENS} 个（±0）。"
+            "若确有必要改动，先停手报告，不要自行改判据")
+E       AssertionError: 颜色令牌 24 个，人裁是 69 个（±0）。若确有必要改动，先停手报告，不要自行改判据
+E       assert 24 == 69
+E        +  where 24 = len({'--bg': '#f4f6f5', '--panel': '#fff', '--surface': '#f8faf9', '--text': '#213831', ...})
+
+tests/test_ui_tokens.py:372: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_ui_tokens.py::test_component_css_has_no_color_literals - As...
+FAILED tests/test_ui_tokens.py::test_legacy_inline_live_rules_have_no_color_literals
+FAILED tests/test_ui_tokens.py::test_color_token_count_is_the_adjudicated_69
+3 failed, 6 passed in 0.72s

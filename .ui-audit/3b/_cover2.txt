@@ -1,0 +1,33 @@
+existing covers 104/213, remaining 109 values / 166 occ
+candidates: 817
+NEW tokens needed: 30 => total 54
+N00 #ebccbe  w=31  #e2d3b6 #e4c1bb #e6c0b9 #e6d5b4 #e7c4bf #e7d5b4 #e8d8b7 #eac8c3 #ead7b7 #ebc4bf #f2c9c9 #f5c6c6
+N01 #517057  w=17  #456761 #456a58 #4d6b4e #50694b #536e58 #54694b #55684f #57764c #5a6e52 #5c7055 #5c7a59 #5d7756
+N02 #72592d  w=15  #6b5127 #7a5a26 #7a6234 #7d6339
+N03 #d6e4d0  w=14  #cae2c4 #cae9db #cbe9d8 #d1e5da #d4e0cc #d4e8c8 #d7e8d5 #d9e7d6 #d9e8d4 #dae3d5 #dae5d2 #dce8d7
+N04 #345640  w=13  #284c35 #2f4a37 #304b35 #304b3d #34533c #36533d #38614c #3a5a4a #3d5545 #3e5546
+N05 #eac6a9  w=11  #e2bbb5 #f3d19e
+N06 #bcd3b2  w=10  #b4c9ab #b9d5aa #bacdb3 #bbceba #bcccb2 #c1dcbd #c3dabc #c5ddb9 #c8dfbc
+N07 #f0d5c6  w=9   #e9dfc9 #ebdfc6 #ecdcbe #eddfc5 #eedecc #efe0bf #efe1c3 #f1cfcf
+N08 #8aa494  w=5   #839c8d #91ab9a #91ad9b #93a49a
+N09 #688874  w=4   #60846a #6b836a #718c7e #728d7b
+N10 #c8e6d9  w=4   #bfe8d8
+N11 #ddb7b1  w=3   #d9b3ae #dcb1ab #e7bdb8
+N12 #a3be97  w=3   #a0c18b #a3be97 #a7c69b
+N13 #e5d5e3  w=3   #dfd1ed #e1d8ec #ecdada
+N14 #4b6873  w=3   #44607a #52716c
+N15 #4f6e4d  w=2   #456e48 #496353
+N16 #5e7854  w=2   #5e7854 #62834c
+N17 #b2cdb4  w=2   #a9cfb7 #b2c5b9
+N18 #bf9656  w=2   #ba914b #c49c61
+N19 #284a40  w=2   #234b34 #29484b
+N20 #148b68  w=2   #148b68
+N21 #eedecc  w=1   #f8dcd7
+N22 #36533d  w=1   #425449
+N23 #45685c  w=1   #3c7465
+N24 #e8b86a  w=1   #e8b86a
+N25 #839c8d  w=1   #799a8c
+N26 #624d80  w=1   #624d80
+N27 #b9873b  w=1   #b9873b
+N28 #7b4f4f  w=1   #7b4f4f
+N29 #2457d6  w=1   #2457d6

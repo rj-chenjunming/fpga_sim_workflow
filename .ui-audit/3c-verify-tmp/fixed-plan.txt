@@ -1,0 +1,107 @@
+可合并组: 153（安全 123 / 受阻 30）
+搬动声明 467 条；删除被支配声明 5 条
+
+受阻: .btn  [top]
+   ← rule#438 .rail-entry  justify-content:flex-start () 共命中证据显示确实命中同一元素
+   ← rule#438 .rail-entry  gap:10px () 共命中证据显示确实命中同一元素
+   ← rule#30 .btn-sm  padding:0 10px () 共命中证据显示确实命中同一元素
+   ← rule#26 .btn-primary  border-color:var(--primary) () 共命中证据显示确实命中同一元素
+   ← rule#26 .btn-primary  background:var(--primary) () 共命中证据显示确实命中同一元素
+   ← rule#26 .btn-primary  color:#fff () 共命中证据显示确实命中同一元素
+
+受阻: .run-list  [top]
+   ← rule#313 .run-list  flex:none (@media(max-width:760px)) 同一选择器在窗口内有别的 @media 上下文规则（源码先后即生效关系）
+
+受阻: .run-item  [top]
+   ← rule#314 .run-item  width:auto (@media(max-width:760px)) 同一选择器在窗口内有别的 @media 上下文规则（源码先后即生效关系）
+
+受阻: .run-item .meta  [top]
+   ← rule#392 .aw-stop p,.aw-limit  margin:9px 0 () 该对选择器未被共命中证据覆盖 ⇒ 不能豁免
+
+受阻: .card  [top]
+   ← rule#164 .gate-card  background:#fffdf7 () 共命中证据显示确实命中同一元素
+   ← rule#164 .gate-card  border-color:#f3d19e () 共命中证据显示确实命中同一元素
+
+受阻: .grid2  [top]
+   ← rule#60 .grid2  grid-template-columns:1fr (@media (max-width:1180px)) 同一选择器在窗口内有别的 @media 上下文规则（源码先后即生效关系）
+
+受阻: .input,select.input,textarea.input  [top]
+   ← rule#102 .stage.done .stage-idx  border:1px solid #bfe8d8 () 该对选择器未被共命中证据覆盖 ⇒ 不能豁免
+   ← rule#101 .stage.active .stage-idx  color:#fff () 该对选择器未被共命中证据覆盖 ⇒ 不能豁免
+
+受阻: .agents  [top]
+   ← rule#137 .agents  grid-template-columns:1fr (@media (max-width:1100px)) 同一选择器在窗口内有别的 @media 上下文规则（源码先后即生效关系）
+
+受阻: .count-box .n  [top]
+   ← rule#498 .foot-note,.field-meta  font-size:12px () 该对选择器未被共命中证据覆盖 ⇒ 不能豁免
+   ← rule#594 .agent-open,.agent-name  font-weight:650 () 该对选择器未被共命中证据覆盖 ⇒ 不能豁免
+   ← rule#392 .aw-stop p,.aw-limit  line-height:1.9 () 该对选择器未被共命中证据覆盖 ⇒ 不能豁免
+
+受阻: .toast  [top]
+   ← rule#334 .toast  right:16px (@media(max-width:760px)) 同一选择器在窗口内有别的 @media 上下文规则（源码先后即生效关系）
+   ← rule#334 .toast  max-width:none (@media(max-width:760px)) 同一选择器在窗口内有别的 @media 上下文规则（源码先后即生效关系）
+
+受阻: .s0-phases  [top]
+   ← rule#321 .s0-phases  grid-template-columns:1fr (@media(max-width:760px)) 同一选择器在窗口内有别的 @media 上下文规则（源码先后即生效关系）
+
+受阻: .phase-card  [top]
+   ← rule#303 .phase-card  align-items:start (@media(max-width:1000px)) 同一选择器在窗口内有别的 @media 上下文规则（源码先后即生效关系）
+
+受阻: .s0-form-actions .btn  [top]
+   ← rule#399 .aw-observe,.aw-intervene  padding:18px (@media(max-width:850px)) 该对选择器未被共命中证据覆盖 ⇒ 不能豁免
+
+受阻: header  [@media(max-width:760px)]
+   ← rule#421 header  gap:16px () 同一选择器在窗口内有别的 @media 上下文规则（源码先后即生效关系）
+
+受阻: .shell  [@media(max-width:760px)]
+   ← rule#434 .shell  min-height:calc(100vh - 72px) () 同一选择器在窗口内有别的 @media 上下文规则（源码先后即生效关系）
+
+受阻: .rail-entry  [@media(max-width:760px)]
+   ← rule#438 .rail-entry  margin-bottom:20px () 同一选择器在窗口内有别的 @media 上下文规则（源码先后即生效关系）
+   ← rule#438 .rail-entry  height:auto () 同一选择器在窗口内有别的 @media 上下文规则（源码先后即生效关系）
+   ← rule#480 .btn  font-size:13px () 共命中证据显示确实命中同一元素
+
+受阻: aside #btnNew  [@media(max-width:760px)]
+   ← rule#443 aside #btnNew  height:40px () 同一选择器在窗口内有别的 @media 上下文规则（源码先后即生效关系）
+
+受阻: .run-item  [@media(max-width:760px)]
+   ← rule#459 .run-item  padding:12px 10px () 同一选择器在窗口内有别的 @media 上下文规则（源码先后即生效关系）
+
+受阻: .phase-card  [@media(max-width:760px)]
+   ← rule#507 .phase-card  padding:12px 16px () 同一选择器在窗口内有别的 @media 上下文规则（源码先后即生效关系）
+
+受阻: .agent-window  [top]
+   ← rule#395 .agent-window  max-height:calc(100dvh - 24px) (@media(max-width:850px)) 同一选择器在窗口内有别的 @media 上下文规则（源码先后即生效关系）
+
+受阻: .aw-head  [top]
+   ← rule#396 .aw-head  gap:10px (@media(max-width:850px)) 同一选择器在窗口内有别的 @media 上下文规则（源码先后即生效关系）
+
+受阻: .aw-terminal-mark  [top]
+   ← rule#406 .aw-terminal-mark  width:32px (@media(max-width:850px)) 同一选择器在窗口内有别的 @media 上下文规则（源码先后即生效关系）
+   ← rule#406 .aw-terminal-mark  height:35px (@media(max-width:850px)) 同一选择器在窗口内有别的 @media 上下文规则（源码先后即生效关系）
+   ← rule#406 .aw-terminal-mark  font-size:14px (@media(max-width:850px)) 同一选择器在窗口内有别的 @media 上下文规则（源码先后即生效关系）
+
+受阻: .aw-toolbar .input  [top]
+   ← rule#399 .aw-observe,.aw-intervene  padding:18px (@media(max-width:850px)) 该对选择器未被共命中证据覆盖 ⇒ 不能豁免
+
+受阻: .aw-intervene  [top]
+   ← rule#400 .aw-intervene  border-left:0 (@media(max-width:850px)) 同一选择器在窗口内有别的 @media 上下文规则（源码先后即生效关系）
+
+受阻: .aw-timeline  [top]
+   ← rule#411 .aw-timeline  max-height:240px (@media(max-width:850px)) 同一选择器在窗口内有别的 @media 上下文规则（源码先后即生效关系）
+
+受阻: .aw-log-row  [top]
+   ← rule#408 .aw-log-row  gap:9px (@media(max-width:850px)) 同一选择器在窗口内有别的 @media 上下文规则（源码先后即生效关系）
+
+受阻: .aw-log-row>span  [top]
+   ← rule#409 .aw-log-row>span  flex-basis:95px (@media(max-width:850px)) 同一选择器在窗口内有别的 @media 上下文规则（源码先后即生效关系）
+
+受阻: .aw-intervene .input  [top]
+   ← rule#392 .aw-stop p,.aw-limit  line-height:1.9 () 该对选择器未被共命中证据覆盖 ⇒ 不能豁免
+
+受阻: .aw-intervene .s0-label  [top]
+   ← rule#392 .aw-stop p,.aw-limit  margin:9px 0 () 该对选择器未被共命中证据覆盖 ⇒ 不能豁免
+
+受阻: .aw-stop p,.aw-limit  [top]
+   ← rule#498 .foot-note,.field-meta  line-height:1.8 () 该对选择器未被共命中证据覆盖 ⇒ 不能豁免
+   ← rule#586 .agent-head>.chip  margin-left:auto () 该对选择器未被共命中证据覆盖 ⇒ 不能豁免

@@ -1,0 +1,15 @@
+5663ff57669e52b0d9af1bc817f3df35  ./raw/absorption-final.md
+82a55ba69b32fc10ea66bf9838a135ab  ./raw/gaps-final.md
+9ccdda884ac11509a8391a009aa38370  ./raw/green-tokens.txt
+c400e85a9719f4a5a8fbb38c820ac232  ./raw/guard-mutation.txt
+04da33bb21da74306370b2a2f299285b  ./raw/map-final.tsv
+9cbaf4d2078f082b030c84fa6ba3dba4  ./raw/measure-baseline.json
+809efcedaac6ce2c7bb843595b94a413  ./raw/measure-final.json
+d0349028abe790eda50401a3245f39df  ./raw/measure-final.stdout.txt
+e07b06242b9945030ec07b55096ffb0e  ./raw/red-tokens.txt
+a473d83c1104ed824953529a15fece80  ./raw/report.md
+e456ffeadd6309372c96f1776bac1976  ./raw/selfcheck-final.txt
+754a6b73772d602d734c732bf61c2ac4  ./raw/static-5-suites.txt
+2eee8a67befa10308c56aadb1f71ef2f  ./raw/tokens-final.css
+a438809089b49d244ab23d78c82a5dac  ./raw/verify-surgical.txt
+c021091c5768cdb58f1f20933d8e1bb3  ./README.md

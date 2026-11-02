@@ -1,0 +1,144 @@
+{
+  "accepted_warnings": [],
+  "at": "2026-10-29T18:04:46.556341+00:00",
+  "baseline": {
+    "command": [
+      "bash",
+      "/home/work/chenjunming/change-impact-loop/kb/tools/run_guarded.sh",
+      "--mode",
+      "compile-only",
+      "-c",
+      "tc_bmc_i2c_01",
+      "--sandbox-root",
+      "/home/work/chenjunming/change-impact-loop/.lead-e2e-state/s0/S0-20261029T180430556071-492a58cc62/s0b/smoke/baseline/sandbox",
+      "--run",
+      "S0-20261029T180430556071-492a58cc62-s0smoke-baseline",
+      "--evidence-dir",
+      "/home/work/chenjunming/change-impact-loop/.lead-e2e-state/s0/S0-20261029T180430556071-492a58cc62/s0b/smoke/baseline/evidence"
+    ],
+    "compile_root": "/home/work/chenjunming/change-impact-loop/.lead-e2e-state/s0/S0-20261029T180430556071-492a58cc62/s0b/smoke/baseline/root",
+    "evidence_dir": "/home/work/chenjunming/change-impact-loop/.lead-e2e-state/s0/S0-20261029T180430556071-492a58cc62/s0b/smoke/baseline/evidence",
+    "logs": [
+      "/home/work/chenjunming/change-impact-loop/.lead-e2e-state/s0/S0-20261029T180430556071-492a58cc62/s0b/smoke/baseline/evidence/20261030-020449_tc_bmc_i2c_01_1_c_rtl.log",
+      "/home/work/chenjunming/change-impact-loop/.lead-e2e-state/s0/S0-20261029T180430556071-492a58cc62/s0b/smoke/baseline/evidence/20261030-020449_tc_bmc_i2c_01_1_c_tb.log"
+    ],
+    "rc": 0,
+    "root_mode": "proxy_readonly_baseline",
+    "summary": {
+      "errors": 0,
+      "logs": [
+        {
+          "error_codes": {},
+          "errors": 0,
+          "line_count": 1295,
+          "ok": true,
+          "path": "/home/work/chenjunming/change-impact-loop/.lead-e2e-state/s0/S0-20261029T180430556071-492a58cc62/s0b/smoke/baseline/evidence/20261030-020449_tc_bmc_i2c_01_1_c_rtl.log",
+          "warning_codes": {
+            "Warning-120002": 3,
+            "Warning-120428": 2,
+            "Warning-121553": 4,
+            "Warning-121687": 4
+          },
+          "warnings": 13
+        },
+        {
+          "error_codes": {},
+          "errors": 0,
+          "line_count": 795,
+          "ok": true,
+          "path": "/home/work/chenjunming/change-impact-loop/.lead-e2e-state/s0/S0-20261029T180430556071-492a58cc62/s0b/smoke/baseline/evidence/20261030-020449_tc_bmc_i2c_01_1_c_tb.log",
+          "warning_codes": {
+            "Warning-120002": 3,
+            "Warning-121147": 1
+          },
+          "warnings": 4
+        }
+      ],
+      "ok": true,
+      "warning_codes": {
+        "Warning-120002": 6,
+        "Warning-120428": 2,
+        "Warning-121147": 1,
+        "Warning-121553": 4,
+        "Warning-121687": 4
+      },
+      "warnings": 17
+    },
+    "tail": "   ./TB/top_pkg.sv, 58\n\nback to file './TB/top_pkg.sv'\n    ./TB/top_pkg.sv, 58\n\nanalyzing included file './TB/top_vsqr.sv'\n    ./TB/top_pkg.sv, 59\n\nback to file './TB/top_pkg.sv'\n    ./TB/top_pkg.sv, 59\n\nanalyzing included file './TB/top_scoreboard.sv'\n    ./TB/top_pkg.sv, 60\n\nback to file './TB/top_pkg.sv'\n    ./TB/top_pkg.sv, 60\n\nanalyzing included file './TB/top_env.sv'\n    ./TB/top_pkg.sv, 61\n\nback to file './TB/top_pkg.sv'\n    ./TB/top_pkg.sv, 61\n\nanalyzing included file './TB/LIBS/CBB-LIB/test_lib.sv'\n    ./TB/top_pkg.sv, 62\n\nback to file './TB/top_pkg.sv'\n    ./TB/top_pkg.sv, 62\n\nback to file './cases/tc_bmc_i2c_01.sv'\n    ./cases/tc_bmc_i2c_01.sv, 35\n\nanalyzing included file './TB/AGENTS/CRG-Agent/crg_pkg.sv'\n    ./cases/tc_bmc_i2c_01.sv, 36\n\nback to file './cases/tc_bmc_i2c_01.sv'\n    ./cases/tc_bmc_i2c_01.sv, 36\n\nanalyzing included file './TB/LIBS/CBB-LIB/macros_pkg.sv'\n    ./cases/tc_bmc_i2c_01.sv, 37\n\nback to file './cases/tc_bmc_i2c_01.sv'\n    ./cases/tc_bmc_i2c_01.sv, 37\n\nanalyzing included file './TB/AGENTS/I2C-Agent/packet.sv'\n    ./cases/tc_bmc_i2c_01.sv, 38\n\nback to file './cases/tc_bmc_i2c_01.sv'\n    ./cases/tc_bmc_i2c_01.sv, 38\n\n\nSaving Verilog Library 'tb' to Path './SIMLIB_RUN/tc_bmc_i2c_01_1/tb' Done\nElapsed time: 0.84s, CPU time: 0.83s, RSS size: 429.79M\nCompilation: 0 error(s), 4 warning(s)\n[guard] 卡点B uvlan -work tb rc=0（日志 /home/work/chenjunming/change-impact-loop/.lead-e2e-state/s0/S0-20261029T180430556071-492a58cc62/s0b/smoke/baseline/evidence/20261030-020449_tc_bmc_i2c_01_1_c_tb.log）\n[identity] case md5 一致：3bd99cee657694277a9182552275e3ab（phase=end，case_file=TESTLIB/tc_bmc_i2c_01.sv，compiled=/home/work/chenjunming/change-impact-loop/.lead-e2e-state/s0/S0-20261029T180430556071-492a58cc62/s0b/smoke/baseline/sandbox/cases/tc_bmc_i2c_01.sv）\n[heal] uvs.setup 已还原到夹具 md5 a80f7b6ca48a7961a107bbe871af761d\n[guard] rc=0（证据：/home/work/chenjunming/change-impact-loop/.lead-e2e-state/s0/S0-20261029T180430556071-492a58cc62/s0b/smoke/baseline/evidence）\n"
+  },
+  "candidate": {
+    "command": [
+      "bash",
+      "/home/work/chenjunming/change-impact-loop/kb/tools/run_guarded.sh",
+      "--mode",
+      "compile-only",
+      "-c",
+      "tc_bmc_i2c_01",
+      "--sandbox-root",
+      "/home/work/chenjunming/change-impact-loop/.lead-e2e-state/s0/S0-20261029T180430556071-492a58cc62/s0b/smoke/candidate/sandbox",
+      "--run",
+      "S0-20261029T180430556071-492a58cc62-s0smoke-candidate",
+      "--evidence-dir",
+      "/home/work/chenjunming/change-impact-loop/.lead-e2e-state/s0/S0-20261029T180430556071-492a58cc62/s0b/smoke/candidate/evidence"
+    ],
+    "compile_root": "/home/work/chenjunming/change-impact-loop/workspaces/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES-derived-20261029T180430556071Z",
+    "evidence_dir": "/home/work/chenjunming/change-impact-loop/.lead-e2e-state/s0/S0-20261029T180430556071-492a58cc62/s0b/smoke/candidate/evidence",
+    "logs": [
+      "/home/work/chenjunming/change-impact-loop/.lead-e2e-state/s0/S0-20261029T180430556071-492a58cc62/s0b/smoke/candidate/evidence/20261030-020446_tc_bmc_i2c_01_1_c_rtl.log",
+      "/home/work/chenjunming/change-impact-loop/.lead-e2e-state/s0/S0-20261029T180430556071-492a58cc62/s0b/smoke/candidate/evidence/20261030-020446_tc_bmc_i2c_01_1_c_tb.log"
+    ],
+    "rc": 0,
+    "root_mode": "candidate_copy",
+    "summary": {
+      "errors": 0,
+      "logs": [
+        {
+          "error_codes": {},
+          "errors": 0,
+          "line_count": 1295,
+          "ok": true,
+          "path": "/home/work/chenjunming/change-impact-loop/.lead-e2e-state/s0/S0-20261029T180430556071-492a58cc62/s0b/smoke/candidate/evidence/20261030-020446_tc_bmc_i2c_01_1_c_rtl.log",
+          "warning_codes": {
+            "Warning-120002": 3,
+            "Warning-120428": 2,
+            "Warning-121553": 4,
+            "Warning-121687": 4
+          },
+          "warnings": 13
+        },
+        {
+          "error_codes": {},
+          "errors": 0,
+          "line_count": 795,
+          "ok": true,
+          "path": "/home/work/chenjunming/change-impact-loop/.lead-e2e-state/s0/S0-20261029T180430556071-492a58cc62/s0b/smoke/candidate/evidence/20261030-020446_tc_bmc_i2c_01_1_c_tb.log",
+          "warning_codes": {
+            "Warning-120002": 3,
+            "Warning-121147": 1
+          },
+          "warnings": 4
+        }
+      ],
+      "ok": true,
+      "warning_codes": {
+        "Warning-120002": 6,
+        "Warning-120428": 2,
+        "Warning-121147": 1,
+        "Warning-121553": 4,
+        "Warning-121687": 4
+      },
+      "warnings": 17
+    },
+    "tail": "./TB/top_pkg.sv, 58\n\nback to file './TB/top_pkg.sv'\n    ./TB/top_pkg.sv, 58\n\nanalyzing included file './TB/top_vsqr.sv'\n    ./TB/top_pkg.sv, 59\n\nback to file './TB/top_pkg.sv'\n    ./TB/top_pkg.sv, 59\n\nanalyzing included file './TB/top_scoreboard.sv'\n    ./TB/top_pkg.sv, 60\n\nback to file './TB/top_pkg.sv'\n    ./TB/top_pkg.sv, 60\n\nanalyzing included file './TB/top_env.sv'\n    ./TB/top_pkg.sv, 61\n\nback to file './TB/top_pkg.sv'\n    ./TB/top_pkg.sv, 61\n\nanalyzing included file './TB/LIBS/CBB-LIB/test_lib.sv'\n    ./TB/top_pkg.sv, 62\n\nback to file './TB/top_pkg.sv'\n    ./TB/top_pkg.sv, 62\n\nback to file './cases/tc_bmc_i2c_01.sv'\n    ./cases/tc_bmc_i2c_01.sv, 35\n\nanalyzing included file './TB/AGENTS/CRG-Agent/crg_pkg.sv'\n    ./cases/tc_bmc_i2c_01.sv, 36\n\nback to file './cases/tc_bmc_i2c_01.sv'\n    ./cases/tc_bmc_i2c_01.sv, 36\n\nanalyzing included file './TB/LIBS/CBB-LIB/macros_pkg.sv'\n    ./cases/tc_bmc_i2c_01.sv, 37\n\nback to file './cases/tc_bmc_i2c_01.sv'\n    ./cases/tc_bmc_i2c_01.sv, 37\n\nanalyzing included file './TB/AGENTS/I2C-Agent/packet.sv'\n    ./cases/tc_bmc_i2c_01.sv, 38\n\nback to file './cases/tc_bmc_i2c_01.sv'\n    ./cases/tc_bmc_i2c_01.sv, 38\n\n\nSaving Verilog Library 'tb' to Path './SIMLIB_RUN/tc_bmc_i2c_01_1/tb' Done\nElapsed time: 0.82s, CPU time: 0.82s, RSS size: 432.59M\nCompilation: 0 error(s), 4 warning(s)\n[guard] 卡点B uvlan -work tb rc=0（日志 /home/work/chenjunming/change-impact-loop/.lead-e2e-state/s0/S0-20261029T180430556071-492a58cc62/s0b/smoke/candidate/evidence/20261030-020446_tc_bmc_i2c_01_1_c_tb.log）\n[identity] case md5 一致：3bd99cee657694277a9182552275e3ab（phase=end，case_file=TESTLIB/tc_bmc_i2c_01.sv，compiled=/home/work/chenjunming/change-impact-loop/.lead-e2e-state/s0/S0-20261029T180430556071-492a58cc62/s0b/smoke/candidate/sandbox/cases/tc_bmc_i2c_01.sv）\n[heal] uvs.setup 已还原到夹具 md5 a80f7b6ca48a7961a107bbe871af761d\n[guard] rc=0（证据：/home/work/chenjunming/change-impact-loop/.lead-e2e-state/s0/S0-20261029T180430556071-492a58cc62/s0b/smoke/candidate/evidence）\n"
+  },
+  "case": "tc_bmc_i2c_01",
+  "reason": "",
+  "status": "passed",
+  "unaccepted_warnings": [],
+  "warning_delta": {
+    "added": [],
+    "count_increase": [],
+    "needs_evaluation": [],
+    "removed": []
+  }
+}

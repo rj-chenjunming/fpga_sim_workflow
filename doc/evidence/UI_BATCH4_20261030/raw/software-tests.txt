@@ -1,0 +1,89 @@
+........................................................................ [ 48%]
+......FF................................................................ [ 97%]
+....                                                                     [100%]
+=================================== FAILURES ===================================
+___________________ test_whitelist_entries_still_duplicated ____________________
+
+    def test_whitelist_entries_still_duplicated():
+        """白名单是「已知例外」，不是「永久豁免」：每条必须仍被 ≥2 条规则定义，否则要删掉这条。"""
+        _total, _distinct, duplicates = load_structure()
+        seen = {(d["context"], d["selector"]) for d in duplicates}
+        stale = [key for key in ALLOWED if key not in seen]
+>       assert not stale, f"白名单已失效（这些选择器现在只定义一次，请从 ALLOWED 删除）：{stale}"
+E       AssertionError: 白名单已失效（这些选择器现在只定义一次，请从 ALLOWED 删除）：[('', '.rail-entry')]
+E       assert not [('', '.rail-entry')]
+
+tests/test_ui_css_structure.py:181: AssertionError
+______________ test_simple_selectors_are_defined_once_per_context ______________
+
+    def test_simple_selectors_are_defined_once_per_context():
+        """同一简单选择器在同一 @ 上下文内只允许一条规则定义（批次 3C 的收敛判据）。"""
+        total, distinct, duplicates = load_structure()
+        # 反空扫：先证明解析器真的读到了东西（否则「无重复」毫无意义）
+        assert total >= MIN_SIMPLE_SELECTORS, (
+            f"反空扫失败：只解析到 {total} 个简单选择器（阈值 {MIN_SIMPLE_SELECTORS}），"
+            "解析器可能坏了，不是文件变干净了")
+        assert distinct >= MIN_SIMPLE_SELECTORS, (
+            f"反空扫失败：只有 {distinct} 个不同简单选择器（阈值 {MIN_SIMPLE_SELECTORS}）")
+        unallowed = [d for d in duplicates
+                     if (d["context"], d["selector"]) not in ALLOWED]
+        if unallowed:
+            lines = [f"{d['context'] or 'top-level'}  {d['selector']}  ×{d['count']}"
+                     for d in unallowed[:40]]
+>           pytest.fail(
+                "app.css 仍有 %d 个简单选择器在同一 @ 上下文内被多次定义"
+                "（F14 两段式未收敛，见 doc/plans/2026-10-30-ui-css-merge-f14c.md）：\n  %s"
+                % (len(unallowed), "\n  ".join(lines)))
+E           Failed: app.css 仍有 175 个简单选择器在同一 @ 上下文内被多次定义（F14 两段式未收敛，见 doc/plans/2026-10-30-ui-css-merge-f14c.md）：
+E             top-level  .field-label  ×2
+E             top-level  .brand  ×2
+E             top-level  .mark  ×2
+E             top-level  .shell  ×2
+E             top-level  .btn-primary  ×2
+E             top-level  .btn-ghost:hover  ×2
+E             top-level  .btn-sm  ×2
+E             top-level  .run-list  ×2
+E             top-level  .run-item  ×2
+E             top-level  .run-item .rid  ×2
+E             top-level  .run-item .meta  ×2
+E             top-level  .run-empty  ×2
+E             top-level  .rail-foot  ×2
+E             top-level  .page-head  ×2
+E             top-level  .banner  ×3
+E             top-level  .banner.bad  ×2
+E             top-level  .banner.warn  ×2
+E             top-level  .alert  ×3
+E             top-level  .alert.bad  ×2
+E             top-level  .alert.warn  ×2
+E             top-level  .card-head  ×2
+E             top-level  .card-head h2  ×3
+E             top-level  .run-grid  ×2
+E             top-level  .empty-title  ×3
+E             top-level  .step-card  ×2
+E             top-level  .step-no  ×2
+E             top-level  .step-title  ×2
+E             top-level  .input  ×2
+E             top-level  select.input  ×3
+E             top-level  .field-meta  ×3
+E             top-level  .chip  ×2
+E             top-level  .confirm-bar  ×2
+E             top-level  .confirm-bar .summary  ×2
+E             top-level  .run-head  ×2
+E             top-level  .status-pill  ×2
+E             top-level  .run-meta  ×2
+E             top-level  .stages  ×2
+E             top-level  .stage  ×2
+E             top-level  .stage.active  ×2
+E             top-level  .stage-head  ×2
+
+tests/test_ui_css_structure.py:198: Failed
+=============================== warnings summary ===============================
+.venv/lib64/python3.11/site-packages/fastapi/testclient.py:1
+  /home/work/chenjunming/change-impact-loop/loop/.venv/lib64/python3.11/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_ui_css_structure.py::test_whitelist_entries_still_duplicated
+FAILED tests/test_ui_css_structure.py::test_simple_selectors_are_defined_once_per_context
+2 failed, 146 passed, 1 warning in 22.53s

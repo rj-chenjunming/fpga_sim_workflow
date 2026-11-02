@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FPGA Flow · 仿真工作台</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<a class="skip-link" href="#workspace">跳到工作区</a>
+<div id="app">
+
+  <header>
+    <div class="brand"><span class="mark" aria-hidden="true"></span> FPGA<span class="brand-flow">Flow</span></div>
+    <div class="header-context"><span class="context-divider">/</span> 仿真工作台 <span class="workspace-tag">WORKSPACE</span></div>
+    <div class="spacer"></div>
+    <span class="pill" id="hdrEnv"><span class="dot idle" id="hdrDot"></span><span id="hdrEnvText">环境未就绪</span></span>
+    <span class="pill mono tiny" id="hdrAddr">—</span>
+    <span class="pill tiny" id="hdrHealth">健康检查中…</span>
+    <a class="btn btn-ghost btn-sm" id="lnkLegacy" href="legacy.html">旧版操作台 ↗</a>
+    <!-- U1-a（SPEC-REV-07）：等待送达通知开关；不支持 Notification 的浏览器隐藏，降级为标题徽标/闪烁 -->
+    <button class="btn btn-ghost btn-sm hidden" id="btnNotify" type="button"
+            title="运行进入等待人工/失败/作业结束时浏览器通知；被拒绝时降级为标题闪烁">通知</button>
+  </header>
+
+  <div class="shell">
+
+    <!-- ================= 左栏：入口 + 运行列表 + 根信息 ================= -->
+    <aside id="sidebar">
+      <div class="rail-top">
+        <div class="rail-kicker">当前工作空间</div>
+        <button class="btn btn-block rail-entry" id="btnS0"><span class="workspace-icon" aria-hidden="true">F</span><span>仿真与验证<small>Simulation workspace</small></span><span aria-hidden="true">⌄</span></button>
+        <button class="btn btn-primary btn-block" id="btnNew"><span aria-hidden="true">＋</span> 新建运行</button>
+      </div>
+      <div class="rail-label">工作台 <span>WORKBENCH</span></div>
+      <nav class="rail-nav" aria-label="主导航">
+      <div class="seg" id="viewSeg" role="tablist" aria-label="视图切换" aria-orientation="vertical">
+        <button id="segS0" data-view="s0" class="on" role="tab" aria-selected="true" aria-controls="viewS0"><span class="nav-icon" aria-hidden="true">▧</span><span>环境准备</span><small>S0</small></button>
+        <button id="segSetup" data-view="setup" role="tab" aria-selected="false" aria-controls="viewSetup"><span class="nav-icon" aria-hidden="true">⊞</span><span>运行配置</span><small>01</small></button>
+        <button id="segRun" data-view="run" role="tab" aria-selected="false" aria-controls="viewRun"><span class="nav-icon" aria-hidden="true">◴</span><span>运行监控</span><small>02</small></button>
+        <button id="segGate" data-view="gate" role="tab" aria-selected="false" aria-controls="viewGate"><span class="nav-icon" aria-hidden="true">◇</span><span>人工闸门</span><small>03</small></button>
+      </div>
+      </nav>
+      <!-- U1-b（SPEC-REV-07）：「在等我」行动条 —— 只读聚合等待人工/失败的运行；点击直达 -->
+      <div class="rail-label action-label">在等我 <span>ATTENTION</span></div>
+      <div class="action-bar" id="actionBar"></div>
+      <div class="rail-label history-label">最近运行 <span>HISTORY</span></div>
+      <div class="run-list" id="runList"></div>
+      <div class="rail-foot">
+        <div class="mono" id="railToolRoot" title="">TOOL_ROOT · —</div>
+        <div class="mono" id="railWorkspaceRoot" title="">数据根 · —</div>
+        <div id="railModel">模型：—</div>
+      </div>
+    </aside>
+
+    <!-- ================= 右区：三视图 ================= -->
+    <main id="workspace" tabindex="-1">
+      <div class="page-head">
+        <div>
+          <div class="page-breadcrumb">工作台 <span>/</span> <span id="pageCrumb">环境准备</span></div>
+          <h1 id="pageTitle">环境准备</h1>
+          <div class="muted tiny" id="pageSub">从只读基线派生工作副本，让每一次验证都有据可查</div>
+        </div>
+        <div class="spacer"></div>
+        <div class="page-edition"><span class="edition-line"></span> SIMULATION WORKBENCH <b id="pageIndex">S0</b></div>
+      </div>
+
+      <div id="banners"></div>
+
+      <section id="viewS0" role="tabpanel" aria-labelledby="segS0">
+        <div class="s0-phases">
+          <div class="phase-card" id="s0PhaseA"><span class="phase-index">01</span><div><div class="eyebrow">S0-a / 派生准备</div><h3>复制、替换、核对</h3><p>与差异分析并行，无需等待接口报告。</p></div><span class="chip" id="s0PhaseAStatus">待准备</span></div>
+          <div class="phase-card" id="s0PhaseB"><span class="phase-index">02</span><div><div class="eyebrow">S0-b / 执行前检查</div><h3>接口适配与三库冒烟</h3><p>端口差异逐条确认与副本三库冒烟已接入，由本页一键入口自动承接。</p></div><span class="chip ok">已接入</span></div>
+        </div>
+
+        <div class="s0-grid">
+          <div>
+            <div class="card">
+              <div class="card-head"><span class="section-index">A</span><h2>派生工作副本</h2><span class="sub">S0-a</span></div>
+              <form id="s0Form" class="card-body">
+                <div class="form-section-label">来源 / 只读输入</div>
+                <label class="s0-label" for="s0Rtl">新版 RTL 文件夹 <span>唯一必填；目录名须为 RTL 或 SRC</span></label>
+                <input class="input mono" id="s0Rtl" required placeholder="/project/src/RTL" autocomplete="off">
+                <div id="s0Error" role="alert"></div>
+                <div class="s0-form-actions"><span class="muted tiny" id="s0SubmitHint">准出与切换由服务端判定；准备完成后仍需 GATE-1</span><button class="btn btn-primary" id="s0Prepare" type="submit">派生并校验 <span aria-hidden="true">→</span></button></div>
+                <details class="adv s0-advanced" id="s0Advanced">
+                  <summary>高级（可改）<span>留空 = 服务端默认值</span></summary>
+                  <label class="s0-label" for="s0Baseline">基线工程目录 <span>留空 = 原始环境根（origin_env_root）</span></label>
+                  <input class="input mono" id="s0Baseline" placeholder="/sim/项目基线" autocomplete="off">
+                  <label class="s0-label" for="s0Version">基线版本 <span>留空 = RTL@文件夹名+时间戳（操作者声明，不伪装已验证 commit）</span></label>
+                  <input class="input mono" id="s0Version" placeholder="例如 v1.2 / commit 标识" autocomplete="off">
+                  <label class="s0-label" for="s0Work">新工作副本目录 <span>留空 = TOOL_ROOT/workspaces/原环境名-derived-时间戳</span></label>
+                  <input class="input mono" id="s0Work" placeholder="/sim/项目基线_wk_v2" autocomplete="off">
+                </details>
+                <div class="s0-boundary"><span>→</span><div>按 S0 §9.3 选择性复制 TB、TESTLIB、PKG、文档与数据子集；仅整体替换副本 RTL。<br>已有目标不会覆盖；跳过项在阶段回执里逐条列出。</div></div>
+                <details class="adv s0-access"><summary>可访问的目录范围</summary><div class="mono tiny" id="s0AllowedRoots">由服务端配置；路径必须位于允许根内。</div></details>
+              </form>
+            </div>
+            <details class="card s0-history"><summary>准备记录 <span class="muted tiny">查看历史派生与重新核验</span></summary><div class="card-body" id="s0History"><div class="sk-line w80"></div><div class="sk-line w60"></div></div></details>
+            <div class="card s0-rehearsal">
+              <div class="card-head"><span class="section-index">R</span><h2>S0 演练</h2><span class="sub">S0-rehearsal</span></div>
+              <div class="card-body">
+                <p class="muted tiny">在软件 state 目录下生成一份临时小基线，自动完成一次 copy → 整体替换 RTL → 核验。不需要内网 UVS，不需要填写任何路径，也不会写真实环境。</p>
+                <div class="s0-rehearsal-actions">
+                  <button class="btn" id="s0Rehearsal" type="button">运行 S0 演练（临时小基线）</button>
+                  <span class="muted tiny" id="s0RehearsalHint">只验证链路，不代表环境就绪</span>
+                </div>
+                <div id="s0RehearsalError" role="alert"></div>
+                <div id="s0RehearsalResult" class="s0-rehearsal-result" aria-live="polite">
+                  <p class="muted tiny">尚未运行。演练记录与真实 S0 记录同源，写在服务端软件 state 目录。</p>
+                </div>
+                <p class="s0-rehearsal-scope">演练：只证明 copy→replace→核验链路，<b>不是</b>环境就绪、不是 S0-b。</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="s0-evidence">
+            <div class="card">
+              <div class="card-head"><span class="section-index">B</span><h2>检查与证据</h2><button class="btn btn-ghost btn-sm" id="s0Refresh" type="button">刷新</button></div>
+              <div class="card-body">
+                <div class="readiness" id="s0Readiness" role="status" aria-live="polite"><span class="dot warn"></span> 尚未准出</div>
+                <div id="s0Result" class="s0-result"><div class="receipt-empty">每次派生，都有一份记录。</div><p class="muted tiny">填写左侧路径，生成工作副本与逐文件指纹。准备记录可随时重新核验。</p></div>
+                <ol class="s0-checks" id="s0Checks">
+                  <li><span>01</span><div>完整派生工作副本<small>保留完整工程结构</small></div><b>待执行</b></li>
+                  <li><span>02</span><div>新版 RTL 整体替换<small>逐文件 MD5 一致</small></div><b>待执行</b></li>
+                  <li><span>03</span><div>非 RTL 初检一致<small>复制不得污染继承资产</small></div><b>待执行</b></li>
+                  <li><span>04</span><div>端口差异确认<small>仅限 top.sv 接口适配</small></div><b>已接入</b></li>
+                  <li><span>05</span><div>自动冒烟<small>0 error + warning 评估</small></div><b>已接入</b></li>
+                  <li><span>06</span><div>基线零写入见证<small>派生前后全量指纹</small></div><b>待执行</b></li>
+                </ol>
+                <a class="btn btn-block hidden" id="s0Report">下载准备报告 ↗</a>
+              </div>
+            </div>
+            <div class="s0-blockers"><div class="eyebrow">BEFORE EXECUTION / 执行前</div><h3>还需要完成什么</h3><div id="s0Blockers"><p>派生成功后端口差异与三库冒烟由本页承接；无记录时以服务端结论为准。</p><p>完成 S0 两段及 GATE-1 后才能进入新版执行。</p></div></div>
+          </div>
+        </div>
+
+        <!-- T3（WEB_UI_SPEC §13）：一键入口的阶段回执 / 端口差异 / 环境切换 / 副本清单。
+             全部只渲染服务端 record 字段，界面不新增判定口径。 -->
+        <div class="s0-entry" id="s0Entry">
+          <div class="card">
+            <div class="card-head"><span class="section-index">C</span><h2>阶段回执</h2><span class="sub">派生 → 端口确认 → 三库冒烟 → 准出 → 切换 → 到运行配置</span></div>
+            <div class="card-body">
+              <ol class="s0-flow" id="s0PhaseFlow" aria-live="polite">
+                <li><span>01</span><div><b>派生副本</b><small>复制 / RTL 整体替换 / 非 RTL 初检</small></div><b>待执行</b></li>
+                <li><span>02</span><div><b>端口确认</b><small>差异逐条处置后继续冒烟</small></div><b>待执行</b></li>
+                <li><span>03</span><div><b>三库冒烟</b><small>副本内真实编译 + warning 评估</small></div><b>待执行</b></li>
+                <li><span>04</span><div><b>准出</b><small>六项 passed 且无漂移（服务端判据）</small></div><b>待执行</b></li>
+                <li><span>05</span><div><b>切换环境</b><small>新子进程接管 + 健康检查</small></div><b>待执行</b></li>
+                <li><span>06</span><div><b>到运行配置</b><small>预填 s0_record_id 与推荐基线</small></div><b>待执行</b></li>
+              </ol>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><span class="section-index">D</span><h2>端口差异</h2><span class="sub">S0-b · 只呈现服务端结论</span></div>
+            <div class="card-body">
+              <div id="s0Ports"><div class="receipt-empty">尚未派生。</div><p class="muted tiny">端口差异由服务端派生并落账；界面不判定、不合成。</p></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><span class="section-index">E</span><h2>环境切换</h2><button class="btn btn-ghost btn-sm" id="s0SwitchRefresh" type="button">刷新环境</button></div>
+            <div class="card-body">
+              <div id="s0Switch"><div class="sk-line w80"></div><div class="sk-line w60"></div></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><span class="section-index">F</span><h2>派生副本</h2><button class="btn btn-ghost btn-sm" id="s0CopiesRefresh" type="button">刷新副本</button></div>
+            <div class="card-body">
+              <div id="s0Copies"><div class="sk-line w80"></div><div class="sk-line w60"></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="s0-scope">本页派生出的副本可通过一键切换成为当前环境，并在运行配置里开跑。</div>
+      </section>
+
+      <!-- ============ 视图 1：配置 ============ -->
+      <section id="viewSetup" class="hidden" role="tabpanel" aria-labelledby="segSetup">
+        <div class="card">
+          <div class="card-head">
+            <h2>运行配置</h2>
+            <span class="sub">三个必选项；校验通过且与当前进程环境一致才允许启动</span>
+          </div>
+          <div class="card-body">
+
+            <div id="setupAlerts"></div>
+
+            <!-- 01 基线 -->
+            <div class="step-card">
+              <div class="step-no">1</div>
+              <div class="step-main">
+                <div class="step-title">选择基线版本 <span class="chip" id="setupBaselineChip">加载中</span></div>
+                <div class="field-row">
+                  <div class="grow">
+                    <select class="input mono" id="setupBaseline" aria-label="基线版本"></select>
+                  </div>
+                  <button class="btn" id="btnBaselineBrowse">浏览…</button>
+                  <button class="btn" id="btnRefreshBaselines">刷新</button>
+                </div>
+                <div class="field-meta" id="setupBaselineMeta"><span class="muted">加载中…</span></div>
+                <div id="pickerHostBaseline"></div>
+              </div>
+            </div>
+
+            <!-- 02 项目目录 -->
+            <div class="step-card">
+              <div class="step-no">2</div>
+              <div class="step-main">
+                <div class="step-title">选择要修订的项目目录 <span class="chip">环境工程根目录</span></div>
+                <div class="field-row">
+                  <input class="input mono grow" id="setupProject" readonly placeholder="尚未选择项目目录" aria-label="项目目录">
+                  <button class="btn" id="btnProjectBrowse">浏览…</button>
+                  <button class="btn" id="setupCheck">校验</button>
+                </div>
+                <div class="field-meta" id="setupProjectMeta"><span class="muted">未校验</span></div>
+                <div class="chips">
+                  <span class="chip">冻结面：RTL / TB / PKG / TESTLIB</span>
+                  <span class="chip warn">单槽：同环境禁止并发</span>
+                  <span class="chip">校验只读：不创建目录、不写文件</span>
+                </div>
+                <div id="pickerHostProject"></div>
+              </div>
+            </div>
+
+            <!-- 03 选项 -->
+            <div class="step-card">
+              <div class="step-no">3</div>
+              <div class="step-main">
+                <div class="step-title">运行选项</div>
+                <div class="field-row field-wrap">
+                  <label class="field-label" for="setupMode">模式</label>
+                  <select class="input" id="setupMode">
+                    <option value="drill">drill · 用冻结夹具（推荐先跑）</option>
+                    <option value="real">real · 真机编译/全跑</option>
+                  </select>
+                  <label class="field-label" for="setupScenario">场景</label>
+                  <select class="input" id="setupScenario">
+                    <option value="happy">happy</option>
+                    <option value="dead_job">dead_job（死任务夹具）</option>
+                    <option value="cancel">cancel（取消夹具）</option>
+                  </select>
+                </div>
+                <div class="alert warn hidden" id="realWarn">真实运行需要内网仿真插件与数据。请核对实际模型、编译与作业证据；此入口尚未消费新版 S0 准出结果。</div>
+                <details class="adv">
+                  <summary>高级（时间注入）</summary>
+                  <div class="field-row" style="margin-top:8px">
+                    <input class="input mono grow" id="setupNow" placeholder="now（留空 = 服务器时间；ISO 格式）" aria-label="时间注入">
+                  </div>
+                  <div class="foot-note">时间字段是唯一允许的非确定性；注入后整轮运行使用该时间。</div>
+                </details>
+              </div>
+            </div>
+          </div>
+
+          <div class="confirm-bar">
+            <div class="summary">
+              <span>基线 <b id="sumBaseline">—</b></span>
+              <span>环境 <b id="sumEnv">—</b></span>
+              <span>模式 <b id="sumMode">drill</b></span>
+            </div>
+            <div class="spacer"></div>
+            <span class="muted tiny" id="btnStartHint">需先通过校验</span>
+            <button class="btn btn-primary" id="btnStart" disabled>确认并启动</button>
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div class="card">
+            <div class="card-head"><h2>环境与工具</h2><span class="sub">服务健康检查</span></div>
+            <div class="card-body" id="healthBody"><div class="sk-line w80"></div><div class="sk-line w60"></div><div class="sk-line w60"></div></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h2>操作边界</h2><span class="sub">界面只做投影与传输</span></div>
+            <div class="card-body">
+              <div class="kv"><span>环境准备</span><b>在 S0 页面派生副本，原始基线保持只读</b></div>
+              <div class="kv"><span>运行模式</span><b>区分演练替身与真实仿真，不混用结论</b></div>
+              <div class="kv"><span>人工闸门</span><b>依据实际差异和证据逐条复核</b></div>
+              <div class="foot-note">这里启动现有闭环，不会自动切换到 S0 副本，也不代表新版执行已获准。</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ 视图 2：执行中 ============ -->
+      <section id="viewRun" class="hidden" role="tabpanel" aria-labelledby="segRun">
+        <div id="runEmpty" class="card empty-card">
+          <div class="empty">
+            <div class="empty-title">尚未选择运行</div>
+            <div class="muted">从左侧运行记录选择一条，或点「＋ 新建运行」开始闭环。</div>
+          </div>
+        </div>
+
+        <div id="runBody" class="hidden">
+          <div class="run-head" id="runHead"></div>
+          <div id="runAlerts"></div>
+
+          <div class="card">
+            <div class="card-head">
+              <h2>流程执行状态</h2>
+              <span class="sub">摄取 → 修订 → 验证 → 决策</span>
+              <!-- U2-a（SPEC-REV-07 / SPEC-04 §7.3）：传输状态徽标，非业务状态 -->
+              <span class="chip" id="streamState" title="实时=SSE 推送；轮询回退=断线后回到既有轮询（自动重试建流）">—</span>
+            </div>
+            <div class="stages" id="stages"></div>
+          </div>
+
+          <div class="grid2 run-grid">
+            <div>
+              <div class="card">
+                <div class="card-head">
+                  <h2>Agent 工作状态</h2>
+                  <span class="sub">点击角色，查看任务详情与运行记录</span>
+                </div>
+                <div class="card-body">
+                  <div class="agents" id="agents"></div>
+                  <div class="host-row" id="hostRow"></div>
+                  <div class="foot-note">以上卡片均为投影，非权威；判据以服务端 blockers / gates.json 为准。</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="side">
+              <div class="card gate-card hidden" id="gateCard">
+                <div class="card-head"><h2 id="gateCardTitle">闸门</h2><span class="sub" id="gateCardSub"></span></div>
+                <div class="card-body" id="gateCardBody"></div>
+              </div>
+
+              <div class="card">
+                <div class="card-head"><h2>双口径计数</h2><span class="sub">并列同权 · 不换算</span></div>
+                <div class="card-body" id="countsBody"></div>
+              </div>
+
+              <div class="card">
+                <div class="card-head"><h2>阻断项</h2><span class="sub">按 severity 分区 · 前端不过滤</span></div>
+                <div class="card-body" id="blockersBody"></div>
+              </div>
+
+              <div class="card">
+                <div class="card-head"><h2>长任务</h2><span class="sub">job 状态与日志尾部</span></div>
+                <div class="card-body" id="jobBody"></div>
+              </div>
+
+              <details class="card events" id="eventsCard">
+                <summary id="eventsSummary">事件流（折叠 · seq 递增 · 只读）</summary>
+                <!-- U5（SPEC-REV-07）：客户端 kind 过滤;清除过滤即还原全量 -->
+                <div class="ev-filter" id="eventFilter"></div>
+                <div class="ev-list" id="eventList"></div>
+              </details>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ 视图 3：闸门等待 ============ -->
+      <section id="viewGate" class="hidden" role="tabpanel" aria-labelledby="segGate">
+        <div class="run-head" id="gateHead"></div>
+        <div id="gateAlerts"></div>
+
+        <div class="card">
+          <div class="card-head"><h2>流程执行状态</h2><span class="sub">闸门节点高亮 · 当前段自动展开</span></div>
+          <div class="stages" id="stagesGate"></div>
+        </div>
+
+        <div class="grid2 run-grid">
+          <div class="card">
+            <div class="card-head"><h2>闸门材料</h2><span class="sub">核对差异、证据与未决条目</span></div>
+            <!-- A11（WEB_UI_SPEC §5，2026-10-29）：两栏各自独立滚动，便于并排对照；卡片头不滚，
+                 实际溢出时才补 tabindex=0（不溢出不产生 Tab 停靠点）。 -->
+            <div class="card-body gate-pane" id="gateMaterial" role="region" aria-label="闸门材料"></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h2>闸门操作</h2><span class="sub">人工复核与决策</span></div>
+            <div class="card-body gate-pane" id="gatePanel" role="region" aria-label="闸门操作"></div>
+          </div>
+        </div>
+      </section>
+
+      <footer class="workspace-footer"><span><b>FPGA Flow</b> / 仿真工作台</span><span>检查结论与闸门状态以服务端证据为准</span></footer>
+    </main>
+  </div>
+
+  <!-- 目录浏览器（基线与项目共用，单实例；打开时移动到对应步骤下方） -->
+  <div class="dirpicker hidden" id="dirPicker">
+    <div class="dp-head">
+      <button class="btn btn-ghost btn-sm" id="btnDirUp">↑ 上级</button>
+      <span class="dp-crumb mono" id="dirCrumb">—</span>
+      <button class="btn btn-ghost btn-sm" id="btnDirClose">收起</button>
+    </div>
+    <div class="dp-roots" id="dirRoots"></div>
+    <div class="dp-list" id="dirList"></div>
+    <div class="dp-foot">
+      <span class="muted tiny" id="dirHint">只列目录；不读文件内容</span>
+      <div class="spacer"></div>
+      <button class="btn btn-primary btn-sm" id="btnDirChoose">选择此目录</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<dialog id="agentWindow" class="agent-window" aria-labelledby="awTitle">
+  <div class="aw-head">
+    <div class="aw-terminal-mark" aria-hidden="true">&gt;_</div>
+    <div class="grow"><div class="eyebrow">AGENT WORKSPACE / 工作窗口</div><h2 id="awTitle">Agent</h2></div>
+    <span class="chip" id="awStatus" role="status" aria-live="polite">加载中</span>
+    <button class="btn btn-ghost btn-sm" id="awClose" aria-label="关闭 Agent 窗口">关闭 ×</button>
+  </div>
+  <div class="aw-toolbar">
+    <span id="awSelection">读取成果身份…</span>
+    <div class="spacer"></div>
+    <label for="awNode">节点</label><select class="input mono" id="awNode" aria-label="Agent 节点"></select>
+    <label for="awAttempt">尝试</label><select class="input mono" id="awAttempt" aria-label="调用尝试"><option value="">跟随最新</option></select>
+    <button class="btn btn-sm" id="awRefresh">刷新</button>
+    <button class="btn btn-sm" id="awCurrent" hidden>返回当前执行</button>
+    <button class="btn btn-sm" id="awNodeDetails" hidden>节点执行详情</button>
+  </div>
+  <div class="aw-layout">
+    <div class="aw-observe">
+      <!-- S4（SPEC-REV-16 §2/§3）：运行摘要 + 无进展告警。只渲染服务端 `progress`，前端不重算判据。 -->
+      <section class="aw-summary" id="awSummary" aria-labelledby="awSummaryH">
+        <div class="aw-section-head">
+          <h3 id="awSummaryH">运行摘要 <span>服务端投影，只读、可重建</span></h3>
+          <span class="chip" id="awSumAuthority">投影，非权威</span>
+        </div>
+        <div id="awNoProgress" class="alert bad" role="alert" hidden></div>
+        <dl class="aw-sum-grid">
+          <div><dt>状态</dt><dd id="awSumState">读取中…</dd></div>
+          <div><dt>当前动作</dt><dd id="awSumAction">读取中…</dd></div>
+          <div><dt>最后事件</dt><dd id="awSumLastEvent">读取中…</dd></div>
+          <div><dt>最后工具</dt><dd id="awSumLastTool">读取中…</dd></div>
+          <div><dt>最后错误</dt><dd id="awSumLastError">读取中…</dd></div>
+          <div><dt>压缩次数</dt><dd id="awSumCompaction">读取中…</dd></div>
+          <div><dt>无进展</dt><dd id="awSumNoProgress">读取中…</dd></div>
+          <div><dt>执行方式</dt><dd id="awSumExecution">读取中…</dd></div>
+          <div><dt>已运行</dt><dd id="awSumElapsed">读取中…</dd></div>
+          <div class="aw-sum-wide"><dt>身份</dt><dd class="mono" id="awSumIdentity">读取中…</dd></div>
+        </dl>
+        <p class="tiny muted">无进展只告警：不终止、不重发、不改节点状态。阈值与判据只在服务端实现，本视图只显示结论。</p>
+      </section>
+      <h3>任务与成果</h3>
+      <p class="aw-note" id="awTask">读取任务…</p>
+      <p class="aw-note" id="awMode">执行方式未记录</p>
+      <p id="awValidation">系统校验状态未确认</p>
+      <p class="tiny muted" id="awFreshness">尚未成功读取</p>
+      <div id="awResults">正在读取成果…</div>
+      <details class="aw-detail" id="awTechnical"><summary>技术详情 <span>原始记录与诊断</span></summary>
+      <p class="aw-note mono" id="awIdentity">—</p>
+      <p class="tiny muted" id="awModel">—</p>
+      <div class="aw-note" id="awCapabilities">节点级能力事实读取中…</div>
+      <details class="aw-detail"><summary>上下文预算 <span id="awBudgetSummary">—</span></summary><pre id="awBudget">—</pre></details>
+      <details class="aw-detail"><summary>尝试摘要与输入差异</summary><pre id="awAttempts">—</pre></details>
+      <details id="awInputDetails" class="aw-detail"><summary>任务输入 <span>完整调用输入，只读</span></summary><pre id="awInput">—</pre></details>
+      <details class="aw-detail"><summary>提示词与约束 <span>调用时快照</span></summary><pre id="awPrompt">—</pre></details>
+      <details class="aw-detail" id="awOutputDetails"><summary>原始输出与 Host 校验 <span id="awResultStatus">尚未返回</span></summary><pre id="awOutput">等待返回后显示实际结果。</pre></details>
+      <p class="aw-note">这里展示实际输入、执行事件与返回结果，不提供模型隐藏推理或 token 流。</p>
+      </details>
+      <details class="aw-detail"><summary>执行记录 <span>节点与控制记录分组</span></summary><div class="aw-timeline" id="awTimeline">等待读取实际运行记录…</div></details>
+      <!-- S4（SPEC-REV-16 §6.3）：S3 接面 —— accepted/applied/effective 三态分列，WM/EXP 只读。 -->
+      <section class="aw-s3" id="awS3" aria-labelledby="awS3H">
+        <div class="aw-section-head">
+          <h3 id="awS3H">指令回执与生效 <span>服务端归约；回执 ≠ 生效</span></h3>
+          <span class="chip" id="awS3Revision">—</span>
+        </div>
+        <table class="aw-s3-table">
+          <thead><tr>
+            <th scope="col">指令</th>
+            <th scope="col">已接收 accepted</th>
+            <th scope="col">已应用 applied</th>
+            <th scope="col">当前生效 effective</th>
+          </tr></thead>
+          <tbody id="awS3Rows"><tr><td class="aw-s3-empty" colspan="4">读取中…</td></tr></tbody>
+        </table>
+        <p class="aw-note" id="awS3Expiry">到期判定：—</p>
+        <div class="aw-s3-grid">
+          <div><h4>工作记忆 WM <span class="tiny muted">只读，不重算可用性</span></h4><pre id="awS3Wm">—</pre></div>
+          <div><h4>经验选择 EXP <span class="tiny muted">只读，不写回经验</span></h4><pre id="awS3Exp">—</pre></div>
+        </div>
+        <p class="tiny muted" id="awS3Source">来源：—</p>
+      </section>
+      <!-- S8j（SPEC-REV-17 §2）：**不再内嵌**实例页面 —— 反代不透传 WebSocket（REV-16 §9-2）
+           ⇒ 内嵌画面恒为空会话列表（人 2026-10-29 裁决）。区块改为「实例执行结果」：
+           实例状态 + 实时流能力 + 会话事实（服务端只读投影）+ 打开真实用例的入口。 -->
+      <section class="aw-embed" id="awEmbed" aria-labelledby="awEmbedH">
+        <div class="aw-section-head">
+          <h3 id="awEmbedH">实例执行结果 <span>只读投影；实例页面用下方按钮打开</span></h3>
+          <span class="chip" id="awEmbedState">读取中</span>
+        </div>
+        <p class="aw-embed-title" id="awEmbedTitle">正在读取实例可用性…</p>
+        <p class="tiny muted" id="awEmbedReason"></p>
+        <!-- S7c：反代只透传 HTTP（WebSocket 升级不通，REV-16 §9-2）⇒ 能力字段下发时如实说"实时流未接通"。 -->
+        <p class="tiny muted" id="awEmbedStream"></p>
+        <!-- 执行结果：数字一律来自 `/session-copy` 的 `facts`；缺失显示「未知」，0 是真实值。 -->
+        <p class="aw-embed-facts" id="awEmbedFacts">执行结果：读取中…</p>
+        <p class="tiny muted" id="awEmbedCopyNote"></p>
+        <div class="aw-embed-actions">
+          <a class="btn btn-sm" id="awEmbedDirect" href="#" target="_blank" rel="noopener" hidden>打开真实用例（实例窗口）↗</a>
+          <button class="btn btn-sm" id="awSessionCopy" type="button">刷新执行结果</button>
+        </div>
+        <pre class="aw-session-copy" id="awSessionCopyBody" hidden>—</pre>
+      </section>
+    </div>
+    <div class="aw-intervene">
+      <div class="aw-section-head"><h3>人工干预</h3><span class="chip">请求边界</span></div>
+      <p class="aw-note" id="awControlHint">读取当前可用操作…</p>
+      <div id="awControlForm">
+      <label class="s0-label" for="awActor">操作者 <span>流程记录</span></label>
+      <input class="input mono" id="awActor" value="human:" placeholder="human:your-name" autocomplete="off">
+      <label class="s0-label" for="awMessage">补充指令 <span>仅当前任务</span></label>
+      <textarea class="input" id="awMessage" rows="6" maxlength="4000" placeholder="例如：请重点核对新增端口的位宽，保留现有断言与激励时序。"></textarea>
+      <button class="btn btn-primary btn-block" id="awSteer" disabled>补充指令并重跑</button>
+      <div class="aw-action-row"><button class="btn" id="awPause" disabled>暂停请求</button><button class="btn" id="awResume" disabled>恢复请求</button></div>
+      <div class="aw-control-rule">补充指令会取消本地旧请求，再发起新的调用尝试；原始事实、Host 校验与人工闸门继续生效。暂停后恢复也会重发请求。</div>
+      <div class="aw-stop"><button class="btn btn-block" id="awTerminate" disabled>终止当前节点</button><p>终止后本轮按失败收敛。关闭窗口只收起视图，不停止任务。</p></div>
+      <div id="awStopConfirm" class="aw-stop" hidden>
+        <p id="awStopTarget"></p>
+        <button class="btn" id="awStopCancel" type="button">取消终止</button>
+        <button class="btn" id="awStopApply" type="button">确认终止</button>
+      </div>
+      <details class="aw-limit"><summary>取消与恢复的边界</summary><p>应用丢弃旧响应；远端是否停止推理由模型提供方决定。当前暂停仅在服务进程存活时可恢复，重启后历史会话只读。</p></details>
+      </div>
+      <div id="awReceipt" class="aw-receipt" role="status" aria-live="polite"></div>
+      <div id="awError" role="alert"></div>
+    </div>
+  </div>
+</dialog>
+
+<!-- 节点执行详情（SPEC-04 §4.2.1；SPEC-REV-04 R1）：独立弹层，人话优先，原始记录默认收起。 -->
+<dialog id="nodeDetail" class="node-detail" aria-labelledby="ndTitle">
+  <div class="nd-head">
+    <div class="grow">
+      <div class="eyebrow">NODE DETAIL / 节点执行详情</div>
+      <h2 id="ndTitle">节点</h2>
+      <div class="nd-sub mono" id="ndSub">—</div>
+      <div class="nd-meta" id="ndMeta"></div>
+    </div>
+    <span class="chip" id="ndStatus" role="status" aria-live="polite">加载中</span>
+    <button class="btn btn-ghost btn-sm" id="ndClose" type="button" aria-label="关闭节点详情">关闭 ×</button>
+  </div>
+  <div class="nd-toolbar">
+    <span class="mono" id="ndPath">—</span>
+    <span class="spacer"></span>
+    <button class="btn btn-sm" id="ndRefresh" type="button">刷新</button>
+  </div>
+  <div class="nd-body">
+    <div id="ndError" role="alert"></div>
+    <div id="ndLoading" class="muted tiny">读取节点投影…</div>
+    <div id="ndContent" class="hidden">
+      <section class="nd-block nd-block-first" aria-labelledby="ndPurposeH">
+        <h3 id="ndPurposeH">这一步做什么</h3>
+        <div id="ndPurpose"></div>
+        <div id="ndModeNote"></div>
+        <div id="ndAgentJump"></div>
+      </section>
+      <section class="nd-block" aria-labelledby="ndResultH">
+        <h3 id="ndResultH">结果 <span class="tiny muted">一句话结果（服务端 story.headline）；summary 原文在「原始记录」</span></h3>
+        <div id="ndHeadline"></div>
+        <div id="ndNote"></div>
+        <div id="ndReport" class="nd-report-entry"></div>
+      </section>
+      <section class="nd-block hidden" id="ndGateBlock" aria-labelledby="ndGateH">
+        <h3 id="ndGateH">闸门复核 <span class="tiny muted">清单只读；G1 逐条处置写入共享草稿；提交入口只有闸门视图</span></h3>
+        <div id="ndGate"></div>
+      </section>
+      <section class="nd-block" aria-labelledby="ndKeyH">
+        <h3 id="ndKeyH">关键数字 <span class="tiny muted">逐节点精选字段；缺失逐项「未下发」</span></h3>
+        <div class="nd-key" id="ndKey"></div>
+      </section>
+      <section class="nd-block" aria-labelledby="ndStepsH">
+        <h3 id="ndStepsH">过程 <span class="tiny muted">按事件发生顺序；时间取自事件 ts</span></h3>
+        <ol class="nd-steps" id="ndSteps"></ol>
+      </section>
+      <section class="nd-block" aria-labelledby="ndRefsH">
+        <h3 id="ndRefsH">证据 <span class="tiny muted">refs；点击先探测存在性，不打开正文</span></h3>
+        <div id="ndRefs"></div>
+      </section>
+      <section class="nd-block" id="ndFailureBlock" aria-labelledby="ndFailureH">
+        <h3 id="ndFailureH">失败 <span class="tiny muted">node_failed 时显示 error 原文</span></h3>
+        <div id="ndFailure"></div>
+      </section>
+      <section class="nd-block">
+        <details class="nd-raw" id="ndRaw">
+          <summary id="ndRawToggle">原始记录（排查用） <span class="tiny muted">事件流水号 seq · 完整 detail · 未下发字段 · 身份技术字段</span></summary>
+          <div class="nd-raw-note">seq 是同一 run 内的事件流水号，只用于排序和定位（"第几条事件"），不是业务状态；正文不展示 seq。</div>
+          <h4>服务端 summary 原文</h4>
+          <div class="nd-raw-summary mono" id="ndSummaryRaw"></div>
+          <h4>身份技术字段</h4>
+          <dl class="nd-kv" id="ndIdentity"></dl>
+          <h4>事件（按 seq，最近一条在前）</h4>
+          <div class="nd-events" id="ndEvents"></div>
+          <h4>完整 detail</h4>
+          <div id="ndDetailBody"></div>
+          <div id="ndMissing"></div>
+        </details>
+      </section>
+    </div>
+  </div>
+  <div class="nd-foot">投影，非权威；判据以服务端 blockers / gates.json 为准</div>
+  <!-- 浮窗（SPEC-REV-04 §R2 / §4）：节点面板本身是 <dialog>，浮窗用页内 overlay；
+       Esc 只关上层、焦点回到触发按钮；窄屏全屏。 -->
+  <div class="nd-overlay hidden" id="ndDiffOverlay" role="dialog" aria-modal="true" aria-labelledby="ndDiffTitle">
+    <div class="nd-overlay-card" id="ndDiffCard">
+      <div class="nd-overlay-head">
+        <div class="grow">
+          <div class="eyebrow">BEFORE / AFTER 前后对比</div>
+          <h3 id="ndDiffTitle">—</h3>
+          <div class="nd-diff-meta" id="ndDiffMeta"></div>
+        </div>
+        <button class="btn btn-ghost btn-sm nd-overlay-close" id="ndDiffClose" type="button" aria-label="关闭前后对比浮窗">关闭 ×</button>
+      </div>
+      <div class="nd-overlay-body" id="ndDiffBody"></div>
+    </div>
+  </div>
+</dialog>
+<!-- 报告全文只读浮窗（P-28 / 裁决 #8）：独立 <dialog>，N12 面板与 G2 材料共用一次点击入口。
+     DOM id 不变；Esc 只关本浮窗、焦点回触发按钮；节点面板没开时也能独立打开/关闭。 -->
+<dialog id="ndReportOverlay" class="nd-report-dialog" aria-labelledby="ndReportTitle">
+  <div class="nd-overlay-card" id="ndReportCard">
+    <div class="nd-overlay-head">
+      <div class="grow">
+        <div class="eyebrow">REPORT / 报告全文（只读）</div>
+        <h3 id="ndReportTitle">报告</h3>
+        <div class="nd-diff-meta" id="ndReportMeta"></div>
+      </div>
+      <button class="btn btn-ghost btn-sm nd-overlay-close" id="ndReportClose" type="button" aria-label="关闭报告浮窗">关闭 ×</button>
+    </div>
+    <div class="nd-overlay-body">
+      <pre class="nd-report-pre" id="ndReportBody">—</pre>
+      <div class="foot-note" id="ndReportNote"></div>
+    </div>
+  </div>
+</dialog>
+<noscript><div class="banner bad">本界面需要启用 JavaScript。</div></noscript>
+<script src="run-view-state.js"></script>
+<script src="pane-scroll.js"></script>
+<script src="gate-session.js"></script>
+<script src="capabilities.js"></script>
+<script src="context-explain.js"></script>
+<script src="wait-center.js"></script>
+<script src="operator.js"></script>
+<script src="run-stream.js"></script>
+<script src="event-filter.js"></script>
+<script src="session-url.js"></script>
+<script src="job-status.js"></script>
+<script src="s0.js"></script>
+<script src="s4-view.js"></script>
+<script src="agent-results.js"></script>
+<script src="agent-window.js"></script>
+<script src="report-viewer.js"></script>
+<script src="node-detail.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

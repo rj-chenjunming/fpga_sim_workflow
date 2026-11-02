@@ -1,0 +1,173 @@
+[PASS] 1 STATES 与 case_states.schema.json 的 enum 逐值一致 (['未改', '已修订待验', '已验证通过', '已退回'])
+[kb] 已建立用例态台账：/tmp/selftest-case-state-c0d0rtqw/case_states.json（run_id=RUN-19990101-000000，四态字面量固定）
+[kb] 时间字段声明：updated_at（README §3.1.1，--now/KB_NOW 注入）
+[PASS] 2 init rc=0 且台账落盘 (rc=0)
+[PASS] 3 初始 rework_cycles={n6_n8_cycles:0,limit:3} ({'limit': 3, 'n6_n8_cycles': 0})
+[PASS] 4 重复 init 无 --force ⇒ rc=3（台账只增不改） (rc=3)
+[PASS] 5 缺全部卡点证据 ⇒ 已验证通过被拒 rc=3 (rc=3)
+[PASS] 6 被拒后台账未写盘（找不到 tc_a） 
+[kb] tc_a：/tmp/selftest-case-state-c0d0rtqw/case_states.json -> 已验证通过
+[kb]   compile_rc=0 static_check=pass two_counts={'script_egrep': 0, 'uvm_error': 0, 'uvm_summary_present': True}
+[kb] 时间字段声明：updated_at（README §3.1.1）
+[PASS] 7 卡点B/C/D+两口径+观测点齐全 ⇒ 已验证通过 rc=0 (rc=0)
+{"cases":1,"counts":{"已修订待验":0,"已退回":0,"已验证通过":1,"未改":0},"for_promotion":false,"invalid_states":[],"ok":true,"path":"/tmp/selftest-case-state-c0d0rtqw/case_states.json","pending":[],"problems":[],"rework_cycles":{"g2_rework_cycles":null,"limit":3,"n6_n8_cycles":0,"over_limit":false},"run_id":"RUN-19990101-000000"}
+[PASS] 8 check 无待验、返工未到上限 ⇒ rc=0 (rc=0)
+[kb] tc_b：/tmp/selftest-case-state-c0d0rtqw/case_states.json -> 已修订待验
+[kb]   compile_rc=None static_check=None two_counts=None
+[kb] 时间字段声明：updated_at（README §3.1.1）
+[PASS] 9 写入已修订待验 rc=0 (rc=0)
+{"cases":2,"counts":{"已修订待验":1,"已退回":0,"已验证通过":1,"未改":0},"for_promotion":true,"invalid_states":[],"ok":false,"path":"/tmp/selftest-case-state-c0d0rtqw/case_states.json","pending":["tc_b"],"problems":["存在「已修订待验」用例（I2）：tc_b"],"rework_cycles":{"g2_rework_cycles":null,"limit":3,"n6_n8_cycles":0,"over_limit":false},"run_id":"RUN-19990101-000000"}
+[PASS] 10 有待验 ⇒ N16 前置 check rc=3 (rc=3)
+     check --json（待验态）： {"ok": false, "note": "rc=3"}
+[kb] tc_b：/tmp/selftest-case-state-c0d0rtqw/case_states.json -> 已验证通过
+[kb]   compile_rc=0 static_check=pass two_counts={'script_egrep': 0, 'uvm_error': 0, 'uvm_summary_present': True}
+[kb] 时间字段声明：updated_at（README §3.1.1）
+[PASS] 11 tc_b 补齐证据后 已验证通过 rc=0（无待验） (rc=0)
+{"cases":2,"counts":{"已修订待验":0,"已退回":0,"已验证通过":2,"未改":0},"for_promotion":false,"invalid_states":[],"ok":true,"path":"/tmp/selftest-case-state-c0d0rtqw/case_states.json","pending":[],"problems":[],"rework_cycles":{"g2_rework_cycles":null,"limit":3,"n6_n8_cycles":0,"over_limit":false},"run_id":"RUN-19990101-000000"}
+[PASS] 12 无待验 ⇒ check rc=0 (rc=0)
+[kb] 注意：n6_n8_cycles == limit（3）⇒ I7 已到上限，必须升级 N13 人工裁决；check/N16 按 `>= limit` 拒绝晋升
+[kb] tc_a：/tmp/selftest-case-state-c0d0rtqw/case_states.json -> 已验证通过
+[kb]   compile_rc=0 static_check=pass two_counts={'script_egrep': 0, 'uvm_error': 0, 'uvm_summary_present': True}
+[kb] 时间字段声明：updated_at（README §3.1.1）
+[PASS] 13 记录 n6_n8_cycles==limit(3) 允许（升级 N13 的状态要可记录） (rc=0)
+{"cases":2,"counts":{"已修订待验":0,"已退回":0,"已验证通过":2,"未改":0},"for_promotion":true,"invalid_states":[],"ok":false,"path":"/tmp/selftest-case-state-c0d0rtqw/case_states.json","pending":[],"problems":["返工循环 n6_n8_cycles=3 >= limit=3（I7）⇒ 已到上限，必须升级 N13 人工裁决"],"rework_cycles":{"g2_rework_cycles":null,"limit":3,"n6_n8_cycles":3,"over_limit":true},"run_id":"RUN-19990101-000000"}
+[PASS] 14 cycles>=limit ⇒ check rc=3（边界统一 >=，审计 C5） (rc=3)
+[PASS] 15 cycles>limit ⇒ set rc=3 且台账保持 3（不偷偷放宽预算） (rc=3)
+[FAIL] 17 schema 条目属性新增 overrides（array；action=[pass,revoke]；actor_kind=[human]） ([])
+[kb] 已建立用例态台账：/tmp/selftest-case-state-c0d0rtqw/ovr/case_states.json（run_id=RUN-19990101-000000，四态字面量固定）
+[kb] 时间字段声明：updated_at（README §3.1.1，--now/KB_NOW 注入）
+[kb] tc_r1：/tmp/selftest-case-state-c0d0rtqw/ovr/case_states.json -> 已修订待验
+[kb]   compile_rc=None static_check=None two_counts=None
+[kb] 时间字段声明：updated_at（README §3.1.1）
+[kb] tc_r2：/tmp/selftest-case-state-c0d0rtqw/ovr/case_states.json -> 已修订待验
+[kb]   compile_rc=None static_check=None two_counts=None
+[kb] 时间字段声明：updated_at（README §3.1.1）
+[kb] tc_r3：/tmp/selftest-case-state-c0d0rtqw/ovr/case_states.json -> 已修订待验
+[kb]   compile_rc=None static_check=None two_counts=None
+[kb] 时间字段声明：updated_at（README §3.1.1）
+[kb] tc_non10：/tmp/selftest-case-state-c0d0rtqw/ovr/case_states.json -> 已修订待验
+[kb]   compile_rc=None static_check=None two_counts=None
+[kb] 时间字段声明：updated_at（README §3.1.1）
+[kb] tc_ok：/tmp/selftest-case-state-c0d0rtqw/ovr/case_states.json -> 已修订待验
+[kb]   compile_rc=None static_check=None two_counts=None
+[kb] 时间字段声明：updated_at（README §3.1.1）
+[kb] tc_noreason：/tmp/selftest-case-state-c0d0rtqw/ovr/case_states.json -> 已修订待验
+[kb]   compile_rc=None static_check=None two_counts=None
+[kb] 时间字段声明：updated_at（README §3.1.1）
+[kb] tc_weird：/tmp/selftest-case-state-c0d0rtqw/ovr/case_states.json -> 未改
+[kb]   compile_rc=None static_check=None two_counts=None
+[kb] 时间字段声明：updated_at（README §3.1.1）
+[kb] tc_pass：/tmp/selftest-case-state-c0d0rtqw/ovr/case_states.json -> 已验证通过
+[kb]   compile_rc=0 static_check=pass two_counts={'script_egrep': 0, 'uvm_error': 0, 'uvm_summary_present': True}
+[kb] 时间字段声明：updated_at（README §3.1.1）
+[FAIL] 18 §4-1 --actor 'model:gpt-5' 被拒 rc=3 且台账一字节不动 (rc=2 same=True)
+[FAIL] 18 §4-1 --actor 'host:kb' 被拒 rc=3 且台账一字节不动 (rc=2 same=True)
+[FAIL] 18 §4-1 --actor 'rehearsal:drill' 被拒 rc=3 且台账一字节不动 (rc=2 same=True)
+[FAIL] 18 §4-1 --actor 'chenjunming' 被拒 rc=3 且台账一字节不动 (rc=2 same=True)
+[FAIL] 18 §4-1 --actor 'human:' 被拒 rc=3 且台账一字节不动 (rc=2 same=True)
+[FAIL] 18 §4-1 --actor 'human:   ' 被拒 rc=3 且台账一字节不动 (rc=2 same=True)
+[FAIL] 19 §4-2 reason='' 被拒 rc=3 且台账一字节不动 (rc=2 same=True)
+[FAIL] 19 §4-2 reason='   ' 被拒 rc=3 且台账一字节不动 (rc=2 same=True)
+[FAIL] 19 §4-2 reason='\t\n' 被拒 rc=3 且台账一字节不动 (rc=2 same=True)
+[FAIL] 20 §4-3 用例不在台账 ⇒ rc=3 且台账一字节不动 (rc=2)
+[FAIL] 21 §4-4 当前态不是「已修订待验」（pass）⇒ rc=3 且台账不动 (rc=2)
+[FAIL] 22 §4-4 当前态不是「已验证通过」（revoke）⇒ rc=3 且台账不动 (rc=2)
+[FAIL] 23 §4-5 n10_cases.json 缺失 ⇒ rc=3 且台账不动（不许盲签） (rc=2)
+[FAIL] 24 §4-5 用例不在 n10_cases.json ⇒ rc=3 且台账不动 (rc=2)
+[FAIL] 25 §4-5 机器判 passed=true ⇒ rc=3 且台账不动（机器已放过，不许盲签） (rc=2)
+[FAIL] 26 §4-5 机器 reasons 为空 ⇒ rc=3 且台账不动（原因必须可读） (rc=2)
+[FAIL] 27 §4-7 批量任一不满足 ⇒ 整批拒绝 rc=3、台账不动、两例都没写 (rc=2)
+[PASS] 28 同批重复 --case ⇒ rc=2（请求形状错）且台账不动 (rc=2)
+[FAIL] 29 合法覆写 ⇒ rc=0、state 变「已验证通过」、overrides 长度 1 (rc=2 state=已修订待验 len=0)
+[FAIL] 30 record_sha256 = sha256(canonical(record 去掉 record_sha256)) 可复算 (None)
+[FAIL] 31 machine 快照来源唯一 = n10_cases.json（source_path/source_md5/passed/reasons 原样搬运） (src_md5=None)
+[FAIL] 32 记录字段：action/actor/actor_kind/prev_state/decided_at（时间走 --now 单一入口） (action=None prev=None)
+[FAIL] 33 台账 writer / 条目 updated_by 同步 human:<name>；updated_at 走 now_iso() (writer=case_state.py)
+[PASS] 34 含 overrides 的台账仍通过 case_states.schema.json 校验 [FAIL] 用例态台账已存在：/tmp/selftest-case-state-c0d0rtqw/case_states.json
+      ⇒ 台账只增不改；要清空重来请显式 --force
+[FAIL] --state 已验证通过 被拒（I3 跑通门槛是合取，缺一不可）：
+  - 卡点B compile_rc 必须 == 0（实际 None）
+  - 卡点C static_check 必须 == 'pass'（实际 None）
+  - 口径一 script_egrep 缺失
+  - 口径二 uvm_error 缺失
+  - 必须显式 --uvm-summary-present（口径二确有 UVM Report Summary）
+  - run_md5 必须非空（运行对象身份 join，spec §7.6）
+  - 必须同时给 --obs-expected 与 --obs-observed（观测点三向一致）
+      台账**未写盘**，用例态保持原值。
+[FAIL] --rework-cycles 4 > limit 3（I7）=> 返工超上限，必须升级 N13 人工裁决（spec §8）=> 台账**未写盘**
+usage: _selftest_case_state.py [-h] [--now NOW] [--state-file STATE_FILE]
+                               {init,set,show,check} ...
+_selftest_case_state.py: error: argument cmd: invalid choice: 'override' (choose from 'init', 'set', 'show', 'check')
+usage: _selftest_case_state.py [-h] [--now NOW] [--state-file STATE_FILE]
+                               {init,set,show,check} ...
+_selftest_case_state.py: error: argument cmd: invalid choice: 'override' (choose from 'init', 'set', 'show', 'check')
+usage: _selftest_case_state.py [-h] [--now NOW] [--state-file STATE_FILE]
+                               {init,set,show,check} ...
+_selftest_case_state.py: error: argument cmd: invalid choice: 'override' (choose from 'init', 'set', 'show', 'check')
+usage: _selftest_case_state.py [-h] [--now NOW] [--state-file STATE_FILE]
+                               {init,set,show,check} ...
+_selftest_case_state.py: error: argument cmd: invalid choice: 'override' (choose from 'init', 'set', 'show', 'check')
+usage: _selftest_case_state.py [-h] [--now NOW] [--state-file STATE_FILE]
+                               {init,set,show,check} ...
+_selftest_case_state.py: error: argument cmd: invalid choice: 'override' (choose from 'init', 'set', 'show', 'check')
+usage: _selftest_case_state.py [-h] [--now NOW] [--state-file STATE_FILE]
+                               {init,set,show,check} ...
+_selftest_case_state.py: error: argument cmd: invalid choice: 'override' (choose from 'init', 'set', 'show', 'check')
+usage: _selftest_case_state.py [-h] [--now NOW] [--state-file STATE_FILE]
+                               {init,set,show,check} ...
+_selftest_case_state.py: error: argument cmd: invalid choice: 'override' (choose from 'init', 'set', 'show', 'check')
+usage: _selftest_case_state.py [-h] [--now NOW] [--state-file STATE_FILE]
+                               {init,set,show,check} ...
+_selftest_case_state.py: error: argument cmd: invalid choice: 'override' (choose from 'init', 'set', 'show', 'check')
+usage: _selftest_case_state.py [-h] [--now NOW] [--state-file STATE_FILE]
+                               {init,set,show,check} ...
+_selftest_case_state.py: error: argument cmd: invalid choice: 'override' (choose from 'init', 'set', 'show', 'check')
+usage: _selftest_case_state.py [-h] [--now NOW] [--state-file STATE_FILE]
+                               {init,set,show,check} ...
+_selftest_case_state.py: error: argument cmd: invalid choice: 'override' (choose from 'init', 'set', 'show', 'check')
+usage: _selftest_case_state.py [-h] [--now NOW] [--state-file STATE_FILE]
+                               {init,set,show,check} ...
+_selftest_case_state.py: error: argument cmd: invalid choice: 'override' (choose from 'init', 'set', 'show', 'check')
+usage: _selftest_case_state.py [-h] [--now NOW] [--state-file STATE_FILE]
+                               {init,set,show,check} ...
+_selftest_case_state.py: error: argument cmd: invalid choice: 'override' (choose from 'init', 'set', 'show', 'check')
+usage: _selftest_case_state.py [-h] [--now NOW] [--state-file STATE_FILE]
+                               {init,set,show,check} ...
+_selftest_case_state.py: error: argument cmd: invalid choice: 'override' (choose from 'init', 'set', 'show', 'check')
+usage: _selftest_case_state.py [-h] [--now NOW] [--state-file STATE_FILE]
+                               {init,set,show,check} ...
+_selftest_case_state.py: error: argument cmd: invalid choice: 'override' (choose from 'init', 'set', 'show', 'check')
+usage: _selftest_case_state.py [-h] [--now NOW] [--state-file STATE_FILE]
+                               {init,set,show,check} ...
+_selftest_case_state.py: error: argument cmd: invalid choice: 'override' (choose from 'init', 'set', 'show', 'check')
+usage: _selftest_case_state.py [-h] [--now NOW] [--state-file STATE_FILE]
+                               {init,set,show,check} ...
+_selftest_case_state.py: error: argument cmd: invalid choice: 'override' (choose from 'init', 'set', 'show', 'check')
+usage: _selftest_case_state.py [-h] [--now NOW] [--state-file STATE_FILE]
+                               {init,set,show,check} ...
+_selftest_case_state.py: error: argument cmd: invalid choice: 'override' (choose from 'init', 'set', 'show', 'check')
+usage: _selftest_case_state.py [-h] [--now NOW] [--state-file STATE_FILE]
+                               {init,set,show,check} ...
+_selftest_case_state.py: error: argument cmd: invalid choice: 'override' (choose from 'init', 'set', 'show', 'check')
+usage: _selftest_case_state.py [-h] [--now NOW] [--state-file STATE_FILE]
+                               {init,set,show,check} ...
+_selftest_case_state.py: error: argument cmd: invalid choice: 'override' (choose from 'init', 'set', 'show', 'check')
+usage: _selftest_case_state.py [-h] [--now NOW] [--state-file STATE_FILE]
+                               {init,set,show,check} ...
+_selftest_case_state.py: error: argument cmd: invalid choice: 'override' (choose from 'init', 'set', 'show', 'check')
+usage: _selftest_case_state.py [-h] [--now NOW] [--state-file STATE_FILE]
+                               {init,set,show,check} ...
+_selftest_case_state.py: error: argument cmd: invalid choice: 'override' (choose from 'init', 'set', 'show', 'check')
+usage: _selftest_case_state.py [-h] [--now NOW] [--state-file STATE_FILE]
+                               {init,set,show,check} ...
+_selftest_case_state.py: error: argument cmd: invalid choice: 'override' (choose from 'init', 'set', 'show', 'check')
+
+[FAIL] 35 批量合法 ⇒ rc=0、两例各一条记录、状态皆「已验证通过」（一次落盘） (rc=2)
+[FAIL] 36 签后 I2 自动放行：check rc=0；info.waived 列出被签用例（展示用，不加新判据） (waived=None)
+[FAIL] 37 撤销 ⇒ rc=0、追加第 2 条 action=revoke、state 回「已修订待验」、旧记录一字未改 (len=0 state=已修订待验)
+[FAIL] 38 撤销后 I2 恢复：check rc=3、pending 含 tc_r1、waived 只剩 tc_r2/tc_r3 (pending=['tc_non10', 'tc_noreason', 'tc_ok', 'tc_r1', 'tc_r2', 'tc_r3'] waived=None)
+[FAIL] 39 --verify 链完整 ⇒ rc=0 且不写盘（离线复核，不需要 actor/reason/case） (rc=2)
+Traceback (most recent call last):
+  File "kb/tools/_selftest_case_state.py", line 320, in <module>
+    entry_of(bad, "tc_r2")["overrides"][0]["record_sha256"] = "0" * 64
+KeyError: 'overrides'

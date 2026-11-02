@@ -1,0 +1,31 @@
+{
+  "active_path": "/home/work/chenjunming/change-impact-loop/.lead-e2e-state/env-switch/active.json",
+  "app_dir": "/home/work/chenjunming/change-impact-loop/loop",
+  "fallback_env_root": "/home/work/chenjunming/change-impact-loop/workspaces/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES-derived-20261030T084029183436Z",
+  "fallback_workspace": "/home/work/chenjunming/change-impact-loop/workspaces/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES-derived-20261030T084029183436Z/kb",
+  "finished_at": "2026-10-30T16:41:19.760103",
+  "history_path": "/home/work/chenjunming/change-impact-loop/.lead-e2e-state/env-switch/history.jsonl",
+  "host": "127.0.0.1",
+  "kind": "env-switch",
+  "log": "/home/work/chenjunming/change-impact-loop/.lead-e2e-state/env-switch/logs/switch-20261030T164118077582.log",
+  "origin_env_root": "/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES",
+  "pending_path": "/home/work/chenjunming/change-impact-loop/.lead-e2e-state/env-switch/pending.json",
+  "pid": 547,
+  "port": 8198,
+  "record_dir": "/home/work/chenjunming/change-impact-loop/.lead-e2e-state/s0/S0-20261030T084029183436-9a21225eae",
+  "record_id": "S0-20261030T084029183436-9a21225eae",
+  "record_write_error": null,
+  "requested_at": "2026-10-30T16:41:18.077691",
+  "state_root": "/home/work/chenjunming/change-impact-loop/.lead-e2e-state",
+  "status": "active",
+  "supervisor_pid": 546,
+  "supervisor_started_at": "2026-10-30T16:41:18.178483",
+  "supervisor_started_ts": 1793349678.178476,
+  "target_env_root": "/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES",
+  "target_workspace": "/home/work/chenjunming/change-impact-loop/.dev-ws-lead",
+  "timeouts": {
+    "health_s": 60.0,
+    "interval_s": 0.5,
+    "port_s": 20.0
+  }
+}

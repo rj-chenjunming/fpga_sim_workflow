@@ -3,7 +3,8 @@ from __future__ import annotations
 from typing import Any
 
 
-async def run(ctx: RunCtx, data: Any, gate: str, *, GA, GATE_NODE, GATE_STAGE, _counts_for, _cycle, _cycles_view, _ledger_notes, _persist_cycles, _state_facts, contracts, decision_options) -> dict[str, Any]:
+async def run(ctx: RunCtx, data: Any, gate: str, *, _assert_no_impact_gate_allowed, GA, GATE_NODE, GATE_STAGE, _counts_for, _cycle, _cycles_view, _ledger_notes, _persist_cycles, _state_facts, contracts, decision_options) -> dict[str, Any]:
+    _assert_no_impact_gate_allowed(ctx, data, gate)
     node = GATE_NODE[gate]
     cycles = _cycles_view(ctx, data)
     _persist_cycles(ctx, cycles)

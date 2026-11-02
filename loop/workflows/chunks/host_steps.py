@@ -39,6 +39,8 @@ ARTIFACTS = {
     "n16": "n16_promote.json",
     "n3": "n3_digest.md",
     "n10": "n10_reconcile.md",
+    # SPEC-REV-20 §3.2：N10 机器原因产物（逐例判据快照，供覆写前置/面板读取）
+    "n10_cases": "n10_cases.json",
     "n12": "n12_report.md",
 }
 
@@ -140,9 +142,10 @@ def _selected_baseline(data: Any, node: str) -> str:
 
 
 # ---------------------------------------------------------------- N0
-
-
 # 保留既有流程快照的节点源码行号。
+
+
+
 async def n0_baseline(data: Any) -> dict[str, Any]:
     """旧图入口；保持快照身份。"""
     from ..nodes.n0 import run
@@ -624,6 +627,167 @@ def apply_edits(text: str, edits: list[dict[str, Any]], *, case: str) -> tuple[s
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 async def n6_apply(data: Any) -> dict[str, Any]:
     """保留流程快照身份的节点入口。"""
     from ..nodes.n6_apply import run
@@ -834,6 +998,47 @@ async def n6_apply(data: Any) -> dict[str, Any]:
 
 
 # 保留既有流程快照的节点源码行号。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

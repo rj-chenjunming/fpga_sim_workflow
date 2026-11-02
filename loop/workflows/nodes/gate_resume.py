@@ -3,7 +3,8 @@ from __future__ import annotations
 from typing import Any
 
 
-async def run(ctx: RunCtx, data: Any, gate: str, *, BRANCH_EVENTS, GA, GATE_NODE, GatePreconditionFailed, _cycle, _cycles_view, _material_hard_block, _persist_cycles, _planned_entries, append_decision_ledger, authority_record, human_signed_flag, precheck_decision) -> dict[str, Any]:
+async def run(ctx: RunCtx, data: Any, gate: str, *, _assert_no_impact_gate_allowed, BRANCH_EVENTS, GA, GATE_NODE, GatePreconditionFailed, _cycle, _cycles_view, _material_hard_block, _persist_cycles, _planned_entries, append_decision_ledger, authority_record, human_signed_flag, precheck_decision) -> dict[str, Any]:
+    _assert_no_impact_gate_allowed(ctx, data, gate)
     node = GATE_NODE[gate]
     resume = getattr(data, "resume", None)
     value = (resume.value if resume is not None else None) or {}

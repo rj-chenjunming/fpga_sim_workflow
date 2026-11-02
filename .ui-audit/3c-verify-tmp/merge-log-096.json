@@ -1,0 +1,21 @@
+{
+ "merged": [
+  {
+   "selector": ".g",
+   "media": [],
+   "removed_rules": [
+    0
+   ],
+   "kept_at_rule": 2,
+   "moved": [
+    {
+     "prop": "font",
+     "from_rule": 0,
+     "value": "14px/1.5 sans-serif"
+    }
+   ],
+   "dropped": []
+  }
+ ],
+ "skipped": []
+}

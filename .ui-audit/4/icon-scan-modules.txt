@@ -1,0 +1,170 @@
+### loop/web/agent-results.js  命中 11
+  loop/web/agent-results.js:12  ! U+0021  function object(value) { return value && typeof value === "object" && !Array.isArray(value) ? value : null; }
+  loop/web/agent-results.js:19  ! U+0021  return !!(view.live && Number(view.selected_attempt) !== Number(view.live.attempt));
+  loop/web/agent-results.js:25  ! U+0021  var standin = !!(result && result.status === "standin" || payload && payload.standin === true);
+  loop/web/agent-results.js:26  ! U+0021  var validated = !!(result && result.status === "validated" && validation && validation.ok === true && !standin
+  loop/web/agent-results.js:30  ! U+0021  if (data && fields[node] && !fields[node].some(function (field) { return Object.prototype.hasOwnProperty.call(
+  loop/web/agent-results.js:36  ! U+0021  var label = !result ? "系统校验状态未确认" : standin ? "演练替身；不作为真实模型校验结论"
+  loop/web/agent-results.js:41  ! U+0021  if (result && !validated && !standin) section("候选 / 未通过校验", ["此处返回不作为已接受成果。"]);
+  loop/web/agent-results.js:45  ! U+0021  if (!result) {
+  loop/web/agent-results.js:46  ! U+0021  section("当前成果", [!view.request ? "暂无可读取记录，执行状态未确认"
+  loop/web/agent-results.js:50  ! U+0021  } else if (!data) {
+  loop/web/agent-results.js:68  ! U+0021  if (!rows(data.revisions).length) section("候选编辑", ["未记录修订；原始输出仍可查看。"]);
+
+### loop/web/agent-window.js  命中 95
+  loop/web/agent-window.js:23  ! U+0021  if (text !== undefined) node.textContent = String(text);
+  loop/web/agent-window.js:38  ! U+0021  if (!document.hidden && target && $("agentWindow").open) load();
+  loop/web/agent-window.js:42  ! U+0021  if (!pollTimer) return;
+  loop/web/agent-window.js:50  ! U+0021  if (!target) { ensurePoll(); return; }
+  loop/web/agent-window.js:51  ! U+0021  if (!window.RunStream || typeof window.EventSource !== "function") { ensurePoll(); return; }
+  loop/web/agent-window.js:58  ! U+0021  if (name !== "agent_view" || !view) return;
+  loop/web/agent-window.js:59  ! U+0021  if (!target || !$("agentWindow").open || epoch !== token) return;
+  loop/web/agent-window.js:60  ! U+0021  if (String(view.run_id) !== String(runId) || String(view.node) !== String(node)) return;
+  loop/web/agent-window.js:77  ! U+0021  var actions = live && !historical && !busy ? (live.available_actions || []) : [];
+  loop/web/agent-window.js:81  … U+2026  $("awSteer").textContent = busy ? "提交中…" : live && live.state === "paused" ? "发送并恢复" : "补充指令并重跑";
+  loop/web/agent-window.js:82  ! U+0021  $("awActor").disabled = !!busy;
+  loop/web/agent-window.js:83  ! U+0021  $("awMessage").disabled = !!busy;
+  loop/web/agent-window.js:84  ! U+0021  $("awControlForm").hidden = !live || !!historical;
+  loop/web/agent-window.js:85  ! U+0021  $("awCurrent").hidden = !historical;
+
+### loop/web/capabilities.js  命中 4
+  loop/web/capabilities.js:14  ! U+0021  if (!c || typeof c !== "object") return "";
+  loop/web/capabilities.js:19  ! U+0021  if (!present) return "";
+  loop/web/capabilities.js:28  ! U+0021  if (typeof module !== "undefined" && module.exports) module.exports = api;
+  loop/web/capabilities.js:30  ! U+0021  })(typeof globalThis !== "undefined" ? globalThis : this);
+
+### loop/web/context-explain.js  命中 9
+  loop/web/context-explain.js:21  ! U+0021  if (typeof TextEncoder !== "undefined") return new TextEncoder().encode(str).length;
+  loop/web/context-explain.js:48  ! U+0021  var measured = host.measured === true && numberOrNull(host.used_bytes) !== null;
+  loop/web/context-explain.js:55  ! U+0021  if (!Object.prototype.hasOwnProperty.call(breakdown, field)) return;
+  loop/web/context-explain.js:62  ! U+0021  if (limit !== null && limit <= 0) limit = null;
+  loop/web/context-explain.js:69  ! U+0021  usage: measured && limit !== null ? "known" : "unknown",
+  loop/web/context-explain.js:70  ! U+0021  usedPercent: measured && limit !== null ? numberOrNull(host.used_percent) : null,
+  loop/web/context-explain.js:113  ! U+0021  change: !hasBefore ? "added" : (!hasAfter ? "removed" : "changed"),
+  loop/web/context-explain.js:141  ! U+0021  if (typeof module !== "undefined" && module.exports) module.exports = api;
+  loop/web/context-explain.js:143  ! U+0021  })(typeof globalThis !== "undefined" ? globalThis : this);
+
+### loop/web/event-filter.js  命中 6
+  loop/web/event-filter.js:16  ! U+0021  if (!e || !e.kind || seen[e.kind]) continue;
+  loop/web/event-filter.js:24  → U+2192  切换语义：null → 单选；已含 → 移除（移除到空 ⇒ 回到 null=全部）；未含 → 加入。 */
+  loop/web/event-filter.js:29  ! U+0021  var next = has ? active.filter(function (x) { return x !== k; }) : active.concat([k]);
+  loop/web/event-filter.js:35  ! U+0021  if (active === null || active === undefined || !active.length) return list;
+  loop/web/event-filter.js:44  ! U+0021  if (typeof module !== "undefined" && module.exports) module.exports = EventFilter;
+  loop/web/event-filter.js:45  ! U+0021  })(typeof window !== "undefined" ? window : globalThis);
+
+### loop/web/gate-session.js  命中 14
+  loop/web/gate-session.js:35  ! U+0021  if (!draft || draft.key !== key) {
+  loop/web/gate-session.js:45  ! U+0021  if (draft.decision !== null && draft.decision !== undefined && !valid(draft.decision)) {
+  loop/web/gate-session.js:57  ! U+0021  return !!(ledger && key != null && ledger[key]);
+  loop/web/gate-session.js:73  ! U+0021  if (Object.prototype.hasOwnProperty.call(ledger, k) && k !== key) next[k] = ledger[k];
+  loop/web/gate-session.js:79  ! U+0021  if (!a || !b) return false;
+  loop/web/gate-session.js:83  → U+2192  /* 逐条处置 → 整门决策的推导（Web UI §4.4 2026-10-23）。
+  loop/web/gate-session.js:88  ! U+0021  if (!list.length) return null;
+  loop/web/gate-session.js:94  ! U+0021  if (v !== "confirmed" && v !== "ignored" && v !== "disputed") return null;
+  loop/web/gate-session.js:111  ! U+0021  if (!value) { missing.push(id); continue; }
+  loop/web/gate-session.js:116  ! U+0021  if ((value === "ignored" || value === "disputed") && !reason) {
+  loop/web/gate-session.js:136  ! U+0021  if (!derivedDecision) return null;
+  loop/web/gate-session.js:145  ! U+0021  if (!needReason) return null;
+  loop/web/gate-session.js:170  ! U+0021  if (typeof module !== "undefined" && module.exports) module.exports = api;
+  loop/web/gate-session.js:172  ! U+0021  })(typeof globalThis !== "undefined" ? globalThis : this);
+
+### loop/web/job-status.js  命中 4
+  loop/web/job-status.js:22  ! U+0021  if (!last) return { kind: "none" };
+  loop/web/job-status.js:43  ! U+0021  (hint.rc !== null ? " · rc=" + hint.rc : "") +
+  loop/web/job-status.js:48  ! U+0021  if (typeof module !== "undefined" && module.exports) module.exports = api;
+  loop/web/job-status.js:50  ! U+0021  })(typeof globalThis !== "undefined" ? globalThis : this);
+
+### loop/web/node-detail.js  命中 207
+  loop/web/node-detail.js:54  ! U+0021  if (text !== undefined && text !== null) node.textContent = String(text);
+  loop/web/node-detail.js:77  ! U+0021  function plain(v) { return !!v && typeof v === "object" && !Array.isArray(v); }
+  loop/web/node-detail.js:90  ! U+0021  if (!isNaN(fixed.getTime())) return fixed;
+  loop/web/node-detail.js:98  ! U+0021  if (!d) return isMissing(v) || v === "" ? null : String(v);
+  loop/web/node-detail.js:105  ! U+0021  if (!d) return null;
+  loop/web/node-detail.js:112  ! U+0021  if (!a || !b) return null;
+  loop/web/node-detail.js:128  ! U+0021  return !isMissing(source) && /drill|fixture|standin/i.test(String(source));
+  loop/web/node-detail.js:132  ! U+0021  if (!e) return "未知错误";
+  loop/web/node-detail.js:138  ! U+0021  return s.open && !!s.target && s.epoch === token && $("nodeDetail") && $("nodeDetail").open;
+  loop/web/node-detail.js:148  ! U+0021  if (!host) return;
+  loop/web/node-detail.js:150  ! U+0021  if (!message) return;
+  loop/web/node-detail.js:163  ! U+0021  if (loadingEl) loadingEl.classList.toggle("hidden", !loading);
+  loop/web/node-detail.js:166  ! U+0021  if (refresh) refresh.disabled = !!loading;
+  loop/web/node-detail.js:180  ! U+0021  return view && view.story && typeof view.story === "object" && !Array.isArray(view.story) ? view.story : {};
+
+### loop/web/operator.js  命中 4
+  loop/web/operator.js:36  ! U+0021  if (!s || !isValid(v)) return false;
+  loop/web/operator.js:47  ! U+0021  if (!s) return "";
+  loop/web/operator.js:70  ! U+0021  if (typeof module !== "undefined" && module.exports) module.exports = Operator;
+  loop/web/operator.js:71  ! U+0021  })(typeof window !== "undefined" ? window : globalThis);
+
+### loop/web/pane-scroll.js  命中 6
+  loop/web/pane-scroll.js:25  ! U+0021  if (!isFinite(value) || value <= 0) return 0;
+  loop/web/pane-scroll.js:32  ! U+0021  if (!saved || typeof saved !== "object") return 0;
+  loop/web/pane-scroll.js:35  ! U+0021  if (String(saved.identity) !== String(nextIdentity)) return 0;
+  loop/web/pane-scroll.js:48  ! U+0021  if (!isFinite(outer) || !isFinite(inner)) return false;
+  loop/web/pane-scroll.js:53  ! U+0021  if (typeof module !== "undefined" && module.exports) module.exports = api;
+  loop/web/pane-scroll.js:55  ! U+0021  })(typeof globalThis !== "undefined" ? globalThis : this);
+
+### loop/web/report-viewer.js  命中 13
+  loop/web/report-viewer.js:24  ! U+0021  if (!e) return "未知错误";
+  loop/web/report-viewer.js:32  ! U+0021  if (!dialog) return;
+  loop/web/report-viewer.js:75  ! U+0021  if (body && !isMissing(body.bytes)) meta.push(String(body.bytes) + " B");
+  loop/web/report-viewer.js:78  ! U+0021  setText("ndReportBody", body && !isMissing(body.content)
+  loop/web/report-viewer.js:88  ! U+0021  if (!dialog) return;
+  loop/web/report-viewer.js:97  ! U+0021  if (!dialog.open) {
+  loop/web/report-viewer.js:108  … U+2026  setText("ndReportMeta", "读取中…");
+  loop/web/report-viewer.js:109  … U+2026  setText("ndReportBody", "读取中…");
+  loop/web/report-viewer.js:111  ! U+0021  if (!dialog.open) {
+  loop/web/report-viewer.js:115  ! U+0021  if (typeof api !== "function") {
+  loop/web/report-viewer.js:116  ! U+0021  if (seq !== s.seq) return;
+  loop/web/report-viewer.js:123  ! U+0021  if (seq !== s.seq || !s.open) return;
+  loop/web/report-viewer.js:126  ! U+0021  if (seq !== s.seq || !s.open) return;
+
+### loop/web/run-stream.js  命中 3
+  loop/web/run-stream.js:38  ! U+0021  if (retryTimer !== null) {
+  loop/web/run-stream.js:95  ! U+0021  if (typeof module !== "undefined" && module.exports) module.exports = RunStream;
+  loop/web/run-stream.js:96  ! U+0021  })(typeof window !== "undefined" ? window : globalThis);
+
+### loop/web/run-view-state.js  命中 7
+  loop/web/run-view-state.js:38  ! U+0021  if (!pending || !latest) return false;
+  loop/web/run-view-state.js:46  ! U+0021  var hasData = !!input.hasData;
+  loop/web/run-view-state.js:48  ! U+0021  var requesting = !!input.requesting;
+  loop/web/run-view-state.js:58  … U+2026  if (kind === "loading") headStatusText = "加载中…";
+  loop/web/run-view-state.js:77  ! U+0021  showRetry: !!error,
+  loop/web/run-view-state.js:83  ! U+0021  if (typeof module !== "undefined" && module.exports) module.exports = api;
+  loop/web/run-view-state.js:85  ! U+0021  })(typeof globalThis !== "undefined" ? globalThis : this);
+
+### loop/web/s4-view.js  命中 20
+  loop/web/s4-view.js:14  → U+2192  /* 服务端枚举 → 中文标签。未登记的枚举原样显示（不猜语义）。 */
+  loop/web/s4-view.js:65  ! U+0021  return value !== null && value !== undefined && value !== "";
+  loop/web/s4-view.js:70  ! U+0021  if (typeof ts !== "number" || !isFinite(ts)) return "时间未知";
+  loop/web/s4-view.js:79  ! U+0021  if (typeof value !== "number" || !isFinite(value) || value < 0) return "未知";
+  loop/web/s4-view.js:85  ! U+0021  if (typeof value !== "number" || !isFinite(value) || value < 0) return null;
+  loop/web/s4-view.js:90  ! U+0021  if (!event || typeof event !== "object") return UNSET;
+  loop/web/s4-view.js:118  ! U+0021  if (!progress || typeof progress !== "object") return null;
+  loop/web/s4-view.js:169  ! U+0021  if (!np || np.state !== "warn") return { visible: false, text: "" };
+  loop/web/s4-view.js:187  ! U+0021  if (!block || typeof block !== "object") return null;
+  loop/web/s4-view.js:219  ! U+0021  if (!block || typeof block !== "object") return "到期判定：未记录";
+  loop/web/s4-view.js:232  ! U+0021  if (!block || typeof block !== "object") return null;
+  loop/web/s4-view.js:234  ! U+0021  if (!items.length) return ["服务端未下发工作记忆条目（空集）"];
+  loop/web/s4-view.js:240  ! U+0021  if (row.availability && row.availability !== "verified") {
+  loop/web/s4-view.js:252  ! U+0021  if (!block || typeof block !== "object") return null;
+
+### loop/web/session-url.js  命中 3
+  loop/web/session-url.js:25  ! U+0021  if (!s) return out;
+  loop/web/session-url.js:44  ! U+0021  if (typeof module !== "undefined" && module.exports) module.exports = api;
+  loop/web/session-url.js:46  ! U+0021  })(typeof globalThis !== "undefined" ? globalThis : this);
+
+### loop/web/wait-center.js  命中 9
+  loop/web/wait-center.js:31  → U+2192  gate > failed > job_done（waiting_job → waiting_gate 同时满足两条，只取 gate）。 */
+  loop/web/wait-center.js:32  ! U+0021  if (to === "waiting_gate" && from !== "waiting_gate") return "gate";
+  loop/web/wait-center.js:33  ! U+0021  if (to === "failed" && from !== "failed") return "failed";
+  loop/web/wait-center.js:34  ! U+0021  if (from === "waiting_job" && to !== "waiting_job") return "job_done";
+  loop/web/wait-center.js:46  ! U+0021  if (!r || !r.run_id) continue;
+  loop/web/wait-center.js:48  ! U+0021  if (!(rid in prev)) continue;
+  loop/web/wait-center.js:60  ! U+0021  if (!r || !r.run_id) continue;
+  loop/web/wait-center.js:84  ! U+0021  if (typeof module !== "undefined" && module.exports) module.exports = WaitCenter;
+  loop/web/wait-center.js:85  ! U+0021  })(typeof window !== "undefined" ? window : globalThis);
+
+### loop/web/legacy.css  命中 1
+  loop/web/legacy.css:75  ! U+0021  @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+

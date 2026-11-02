@@ -1,0 +1,13 @@
+a076388ada110d479a74be2552c09dd0  ./raw/3C-verify.md
+73430cb2b6b16d74b74a0e30dc3643ad  ./raw/app-after-3c.css
+103ec75124e21c6c97a717d7607fa132  ./raw/app-before-3c.css
+5ecf9917817c798a086d5235f9cd61fc  ./raw/batches.log
+c719d5ba6843edaf61e90a4160b2ee5d  ./raw/browser-gate.txt
+c539a87f2ba21a06ad1a2ad5dc92b5c1  ./raw/cross_ctx_check.py
+c7b2cefb03354a6796717057e9098aaf  ./raw/doc-gate.txt
+fd8f157e4a76b85947435fb76a5ea2d8  ./raw/final-sweep-3c.txt
+88e6e4b9c00d32259a5d76b62e17668b  ./raw/merge-plan.json
+4e4b12eaed291c64233c61e55e08c351  ./raw/red-test-01.txt
+63fa9b17a80ec54e7bf0953aec1af63f  ./raw/red-test-pristine.txt
+e5e7abaab67e8cd2a7a1d5830d9c24b9  ./raw/software-gate.txt
+a859d4d849f80b2b97c1dac07ecf8d38  ./README.md

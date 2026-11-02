@@ -1,0 +1,2186 @@
+................................................................FFFF.FFF [ 36%]
+F......................FFFFFFFFF.......FF.F............................. [ 73%]
+...................................................                      [100%]
+=================================== FAILURES ===================================
+______________ test_endpoint_unknown_node_is_known_false_not_404 _______________
+
+client = <starlette.testclient.TestClient object at 0x7fc21eab3f50>
+
+    def test_endpoint_unknown_node_is_known_false_not_404(client: TestClient) -> None:
+>       rid = _start(client)
+              ^^^^^^^^^^^^^^
+
+tests/test_node_detail_projection.py:315: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_node_detail_projection.py:264: in _start
+    r = client.post("/api/runs", json=body)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:1144: in post
+    return self.request(
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:457: in request
+    return super().request(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:825: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:914: in send
+    response = self._send_handling_auth(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:942: in _send_handling_auth
+    response = self._send_handling_redirects(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:979: in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:1014: in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:354: in handle_request
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:351: in handle_request
+    portal.call(self.app, scope, receive, send)
+.venv/lib64/python3.11/site-packages/anyio/from_thread.py:340: in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib64/python3.11/concurrent/futures/_base.py:456: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+/usr/lib64/python3.11/concurrent/futures/_base.py:401: in __get_result
+    raise self._exception
+.venv/lib64/python3.11/site-packages/anyio/from_thread.py:265: in _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/fastapi/applications.py:1216: in __call__
+    await super().__call__(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/applications.py:96: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/middleware/errors.py:186: in __call__
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/middleware/errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+.venv/lib64/python3.11/site-packages/fastapi/telemetry/_asgi.py:151: in __call__
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/middleware/exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib64/python3.11/site-packages/fastapi/middleware/asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/routing.py:676: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:2791: in app
+    await route.handle(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:1310: in handle
+    await super().handle(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/routing.py:282: in handle
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:165: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:151: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:727: in app
+    raw_response = await run_endpoint_function(
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:360: in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+services/api.py:839: in create_run
+    run_id = await manager.start(baseline=baseline, mode=mode, scenario=scenario,
+workflows/main_flow.py:525: in start
+    run_dir = prepare_run_dir(run_id, mode=mode)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+workflows/context.py:268: in prepare_run_dir
+    run_dir.mkdir(parents=True, exist_ok=True)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/kb/runs/RUN-20261102-114252')
+mode = 511, parents = True, exist_ok = True
+
+    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+        """
+        Create a new directory at this given path.
+        """
+        try:
+>           os.mkdir(self, mode)
+E           OSError: [Errno 30] Read-only file system: '/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/kb/runs/RUN-20261102-114252'
+
+/usr/lib64/python3.11/pathlib.py:1116: OSError
+___________ test_drill_full_chain_every_node_has_summary_and_source ____________
+
+client = <starlette.testclient.TestClient object at 0x7fc217f14810>
+
+    def test_drill_full_chain_every_node_has_summary_and_source(client: TestClient) -> None:
+        """R4 验收核心：**新 run 的每个节点**都要有 `summary` + `source`（不是只有端点）。"""
+>       rid = _drive_full_chain(client)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_node_detail_projection.py:326: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_node_detail_projection.py:290: in _drive_full_chain
+    rid = _start(client)
+          ^^^^^^^^^^^^^^
+tests/test_node_detail_projection.py:264: in _start
+    r = client.post("/api/runs", json=body)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:1144: in post
+    return self.request(
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:457: in request
+    return super().request(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:825: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:914: in send
+    response = self._send_handling_auth(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:942: in _send_handling_auth
+    response = self._send_handling_redirects(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:979: in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:1014: in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:354: in handle_request
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:351: in handle_request
+    portal.call(self.app, scope, receive, send)
+.venv/lib64/python3.11/site-packages/anyio/from_thread.py:340: in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib64/python3.11/concurrent/futures/_base.py:456: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+/usr/lib64/python3.11/concurrent/futures/_base.py:401: in __get_result
+    raise self._exception
+.venv/lib64/python3.11/site-packages/anyio/from_thread.py:265: in _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/fastapi/applications.py:1216: in __call__
+    await super().__call__(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/applications.py:96: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/middleware/errors.py:186: in __call__
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/middleware/errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+.venv/lib64/python3.11/site-packages/fastapi/telemetry/_asgi.py:151: in __call__
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/middleware/exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib64/python3.11/site-packages/fastapi/middleware/asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/routing.py:676: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:2791: in app
+    await route.handle(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:1310: in handle
+    await super().handle(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/routing.py:282: in handle
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:165: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:151: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:727: in app
+    raw_response = await run_endpoint_function(
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:360: in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+services/api.py:839: in create_run
+    run_id = await manager.start(baseline=baseline, mode=mode, scenario=scenario,
+workflows/main_flow.py:525: in start
+    run_dir = prepare_run_dir(run_id, mode=mode)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+workflows/context.py:268: in prepare_run_dir
+    run_dir.mkdir(parents=True, exist_ok=True)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/kb/runs/RUN-20261102-114253')
+mode = 511, parents = True, exist_ok = True
+
+    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+        """
+        Create a new directory at this given path.
+        """
+        try:
+>           os.mkdir(self, mode)
+E           OSError: [Errno 30] Read-only file system: '/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/kb/runs/RUN-20261102-114253'
+
+/usr/lib64/python3.11/pathlib.py:1116: OSError
+____________________ test_halt_node_projection_has_summary _____________________
+
+client = <starlette.testclient.TestClient object at 0x7fc21d29b050>
+
+    def test_halt_node_projection_has_summary(client: TestClient) -> None:
+        """HALT 只有一个 reason 字段的旧形状 → 补 summary 后仍能原样看到决策原文。"""
+>       rid = _start(client)
+              ^^^^^^^^^^^^^^
+
+tests/test_node_detail_projection.py:394: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_node_detail_projection.py:264: in _start
+    r = client.post("/api/runs", json=body)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:1144: in post
+    return self.request(
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:457: in request
+    return super().request(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:825: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:914: in send
+    response = self._send_handling_auth(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:942: in _send_handling_auth
+    response = self._send_handling_redirects(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:979: in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:1014: in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:354: in handle_request
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:351: in handle_request
+    portal.call(self.app, scope, receive, send)
+.venv/lib64/python3.11/site-packages/anyio/from_thread.py:340: in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib64/python3.11/concurrent/futures/_base.py:456: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+/usr/lib64/python3.11/concurrent/futures/_base.py:401: in __get_result
+    raise self._exception
+.venv/lib64/python3.11/site-packages/anyio/from_thread.py:265: in _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/fastapi/applications.py:1216: in __call__
+    await super().__call__(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/applications.py:96: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/middleware/errors.py:186: in __call__
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/middleware/errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+.venv/lib64/python3.11/site-packages/fastapi/telemetry/_asgi.py:151: in __call__
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/middleware/exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib64/python3.11/site-packages/fastapi/middleware/asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/routing.py:676: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:2791: in app
+    await route.handle(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:1310: in handle
+    await super().handle(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/routing.py:282: in handle
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:165: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:151: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:727: in app
+    raw_response = await run_endpoint_function(
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:360: in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+services/api.py:839: in create_run
+    run_id = await manager.start(baseline=baseline, mode=mode, scenario=scenario,
+workflows/main_flow.py:525: in start
+    run_dir = prepare_run_dir(run_id, mode=mode)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+workflows/context.py:268: in prepare_run_dir
+    run_dir.mkdir(parents=True, exist_ok=True)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/kb/runs/RUN-20261102-114253')
+mode = 511, parents = True, exist_ok = True
+
+    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+        """
+        Create a new directory at this given path.
+        """
+        try:
+>           os.mkdir(self, mode)
+E           OSError: [Errno 30] Read-only file system: '/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/kb/runs/RUN-20261102-114253'
+
+/usr/lib64/python3.11/pathlib.py:1116: OSError
+__________ test_g1_material_entries_carry_before_after_hunk_encoding ___________
+
+client = <starlette.testclient.TestClient object at 0x7fc21c76e090>
+
+    def test_g1_material_entries_carry_before_after_hunk_encoding(client: TestClient) -> None:
+>       rid = _start(client)
+              ^^^^^^^^^^^^^^
+
+tests/test_node_detail_projection.py:417: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_node_detail_projection.py:264: in _start
+    r = client.post("/api/runs", json=body)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:1144: in post
+    return self.request(
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:457: in request
+    return super().request(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:825: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:914: in send
+    response = self._send_handling_auth(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:942: in _send_handling_auth
+    response = self._send_handling_redirects(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:979: in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:1014: in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:354: in handle_request
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:351: in handle_request
+    portal.call(self.app, scope, receive, send)
+.venv/lib64/python3.11/site-packages/anyio/from_thread.py:340: in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib64/python3.11/concurrent/futures/_base.py:456: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+/usr/lib64/python3.11/concurrent/futures/_base.py:401: in __get_result
+    raise self._exception
+.venv/lib64/python3.11/site-packages/anyio/from_thread.py:265: in _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/fastapi/applications.py:1216: in __call__
+    await super().__call__(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/applications.py:96: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/middleware/errors.py:186: in __call__
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/middleware/errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+.venv/lib64/python3.11/site-packages/fastapi/telemetry/_asgi.py:151: in __call__
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/middleware/exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib64/python3.11/site-packages/fastapi/middleware/asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/routing.py:676: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:2791: in app
+    await route.handle(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:1310: in handle
+    await super().handle(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/routing.py:282: in handle
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:165: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:151: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:727: in app
+    raw_response = await run_endpoint_function(
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:360: in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+services/api.py:839: in create_run
+    run_id = await manager.start(baseline=baseline, mode=mode, scenario=scenario,
+workflows/main_flow.py:525: in start
+    run_dir = prepare_run_dir(run_id, mode=mode)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+workflows/context.py:268: in prepare_run_dir
+    run_dir.mkdir(parents=True, exist_ok=True)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/kb/runs/RUN-20261102-114253')
+mode = 511, parents = True, exist_ok = True
+
+    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+        """
+        Create a new directory at this given path.
+        """
+        try:
+>           os.mkdir(self, mode)
+E           OSError: [Errno 30] Read-only file system: '/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/kb/runs/RUN-20261102-114253'
+
+/usr/lib64/python3.11/pathlib.py:1116: OSError
+__________________ test_n0_copies_host_trace_into_the_run_dir __________________
+
+client = <starlette.testclient.TestClient object at 0x7fc21c6fe9d0>
+
+    def test_n0_copies_host_trace_into_the_run_dir(client: TestClient) -> None:
+        """drill 的 N0 复制清单必须含 Host 留痕（否则 G1 看不到"改了什么"的来源）。"""
+>       rid = _start(client)
+              ^^^^^^^^^^^^^^
+
+tests/test_node_detail_projection.py:473: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_node_detail_projection.py:264: in _start
+    r = client.post("/api/runs", json=body)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:1144: in post
+    return self.request(
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:457: in request
+    return super().request(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:825: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:914: in send
+    response = self._send_handling_auth(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:942: in _send_handling_auth
+    response = self._send_handling_redirects(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:979: in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:1014: in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:354: in handle_request
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:351: in handle_request
+    portal.call(self.app, scope, receive, send)
+.venv/lib64/python3.11/site-packages/anyio/from_thread.py:340: in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib64/python3.11/concurrent/futures/_base.py:456: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+/usr/lib64/python3.11/concurrent/futures/_base.py:401: in __get_result
+    raise self._exception
+.venv/lib64/python3.11/site-packages/anyio/from_thread.py:265: in _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/fastapi/applications.py:1216: in __call__
+    await super().__call__(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/applications.py:96: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/middleware/errors.py:186: in __call__
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/middleware/errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+.venv/lib64/python3.11/site-packages/fastapi/telemetry/_asgi.py:151: in __call__
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/middleware/exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib64/python3.11/site-packages/fastapi/middleware/asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/routing.py:676: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:2791: in app
+    await route.handle(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:1310: in handle
+    await super().handle(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/routing.py:282: in handle
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:165: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:151: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:727: in app
+    raw_response = await run_endpoint_function(
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:360: in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+services/api.py:839: in create_run
+    run_id = await manager.start(baseline=baseline, mode=mode, scenario=scenario,
+workflows/main_flow.py:525: in start
+    run_dir = prepare_run_dir(run_id, mode=mode)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+workflows/context.py:268: in prepare_run_dir
+    run_dir.mkdir(parents=True, exist_ok=True)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/kb/runs/RUN-20261102-114254')
+mode = 511, parents = True, exist_ok = True
+
+    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+        """
+        Create a new directory at this given path.
+        """
+        try:
+>           os.mkdir(self, mode)
+E           OSError: [Errno 30] Read-only file system: '/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/kb/runs/RUN-20261102-114254'
+
+/usr/lib64/python3.11/pathlib.py:1116: OSError
+_________________________ test_s0_record_id_roundtrip __________________________
+
+client = <starlette.testclient.TestClient object at 0x7fc21c79a850>
+
+    def test_s0_record_id_roundtrip(client: TestClient) -> None:
+>       r = client.post("/api/runs", json={
+            "baseline": "v0", "mode": "drill", "s0_record_id": "S0-20261022-REHEARSAL-01",
+            "now": "2026-10-22T08:00:01",
+        })
+
+tests/test_node_detail_projection.py:484: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib64/python3.11/site-packages/httpx/_client.py:1144: in post
+    return self.request(
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:457: in request
+    return super().request(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:825: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:914: in send
+    response = self._send_handling_auth(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:942: in _send_handling_auth
+    response = self._send_handling_redirects(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:979: in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:1014: in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:354: in handle_request
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:351: in handle_request
+    portal.call(self.app, scope, receive, send)
+.venv/lib64/python3.11/site-packages/anyio/from_thread.py:340: in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib64/python3.11/concurrent/futures/_base.py:456: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+/usr/lib64/python3.11/concurrent/futures/_base.py:401: in __get_result
+    raise self._exception
+.venv/lib64/python3.11/site-packages/anyio/from_thread.py:265: in _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/fastapi/applications.py:1216: in __call__
+    await super().__call__(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/applications.py:96: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/middleware/errors.py:186: in __call__
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/middleware/errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+.venv/lib64/python3.11/site-packages/fastapi/telemetry/_asgi.py:151: in __call__
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/middleware/exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib64/python3.11/site-packages/fastapi/middleware/asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/routing.py:676: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:2791: in app
+    await route.handle(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:1310: in handle
+    await super().handle(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/routing.py:282: in handle
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:165: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:151: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:727: in app
+    raw_response = await run_endpoint_function(
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:360: in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+services/api.py:839: in create_run
+    run_id = await manager.start(baseline=baseline, mode=mode, scenario=scenario,
+workflows/main_flow.py:525: in start
+    run_dir = prepare_run_dir(run_id, mode=mode)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+workflows/context.py:268: in prepare_run_dir
+    run_dir.mkdir(parents=True, exist_ok=True)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/kb/runs/RUN-20261022-080001')
+mode = 511, parents = True, exist_ok = True
+
+    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+        """
+        Create a new directory at this given path.
+        """
+        try:
+>           os.mkdir(self, mode)
+E           OSError: [Errno 30] Read-only file system: '/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/kb/runs/RUN-20261022-080001'
+
+/usr/lib64/python3.11/pathlib.py:1116: OSError
+______________________ test_s0_record_id_defaults_to_null ______________________
+
+client = <starlette.testclient.TestClient object at 0x7fc21d235d50>
+
+    def test_s0_record_id_defaults_to_null(client: TestClient) -> None:
+>       rid = _start(client, now="2026-10-22T08:00:02")
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_node_detail_projection.py:498: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_node_detail_projection.py:264: in _start
+    r = client.post("/api/runs", json=body)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:1144: in post
+    return self.request(
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:457: in request
+    return super().request(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:825: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:914: in send
+    response = self._send_handling_auth(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:942: in _send_handling_auth
+    response = self._send_handling_redirects(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:979: in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:1014: in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:354: in handle_request
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:351: in handle_request
+    portal.call(self.app, scope, receive, send)
+.venv/lib64/python3.11/site-packages/anyio/from_thread.py:340: in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib64/python3.11/concurrent/futures/_base.py:456: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+/usr/lib64/python3.11/concurrent/futures/_base.py:401: in __get_result
+    raise self._exception
+.venv/lib64/python3.11/site-packages/anyio/from_thread.py:265: in _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/fastapi/applications.py:1216: in __call__
+    await super().__call__(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/applications.py:96: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/middleware/errors.py:186: in __call__
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/middleware/errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+.venv/lib64/python3.11/site-packages/fastapi/telemetry/_asgi.py:151: in __call__
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/middleware/exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib64/python3.11/site-packages/fastapi/middleware/asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/routing.py:676: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:2791: in app
+    await route.handle(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:1310: in handle
+    await super().handle(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/routing.py:282: in handle
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:165: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:151: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:727: in app
+    raw_response = await run_endpoint_function(
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:360: in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+services/api.py:839: in create_run
+    run_id = await manager.start(baseline=baseline, mode=mode, scenario=scenario,
+workflows/main_flow.py:525: in start
+    run_dir = prepare_run_dir(run_id, mode=mode)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+workflows/context.py:268: in prepare_run_dir
+    run_dir.mkdir(parents=True, exist_ok=True)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/kb/runs/RUN-20261022-080002')
+mode = 511, parents = True, exist_ok = True
+
+    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+        """
+        Create a new directory at this given path.
+        """
+        try:
+>           os.mkdir(self, mode)
+E           OSError: [Errno 30] Read-only file system: '/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/kb/runs/RUN-20261022-080002'
+
+/usr/lib64/python3.11/pathlib.py:1116: OSError
+______________________ test_s0_record_id_survives_restart ______________________
+
+client = <starlette.testclient.TestClient object at 0x7fc21c40edd0>
+
+    def test_s0_record_id_survives_restart(client: TestClient) -> None:
+        """来源必须落进 run 文档（`view.json`），否则重启后徽标会凭空消失。"""
+>       r = client.post("/api/runs", json={
+            "baseline": "v0", "mode": "drill", "s0_record_id": "S0-PERSIST-01",
+            "now": "2026-10-22T08:00:04",
+        })
+
+tests/test_node_detail_projection.py:504: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib64/python3.11/site-packages/httpx/_client.py:1144: in post
+    return self.request(
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:457: in request
+    return super().request(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:825: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:914: in send
+    response = self._send_handling_auth(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:942: in _send_handling_auth
+    response = self._send_handling_redirects(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:979: in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:1014: in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:354: in handle_request
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:351: in handle_request
+    portal.call(self.app, scope, receive, send)
+.venv/lib64/python3.11/site-packages/anyio/from_thread.py:340: in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib64/python3.11/concurrent/futures/_base.py:456: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+/usr/lib64/python3.11/concurrent/futures/_base.py:401: in __get_result
+    raise self._exception
+.venv/lib64/python3.11/site-packages/anyio/from_thread.py:265: in _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/fastapi/applications.py:1216: in __call__
+    await super().__call__(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/applications.py:96: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/middleware/errors.py:186: in __call__
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/middleware/errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+.venv/lib64/python3.11/site-packages/fastapi/telemetry/_asgi.py:151: in __call__
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/middleware/exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib64/python3.11/site-packages/fastapi/middleware/asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/routing.py:676: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:2791: in app
+    await route.handle(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:1310: in handle
+    await super().handle(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/routing.py:282: in handle
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:165: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:151: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:727: in app
+    raw_response = await run_endpoint_function(
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:360: in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+services/api.py:839: in create_run
+    run_id = await manager.start(baseline=baseline, mode=mode, scenario=scenario,
+workflows/main_flow.py:525: in start
+    run_dir = prepare_run_dir(run_id, mode=mode)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+workflows/context.py:268: in prepare_run_dir
+    run_dir.mkdir(parents=True, exist_ok=True)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/kb/runs/RUN-20261022-080004')
+mode = 511, parents = True, exist_ok = True
+
+    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+        """
+        Create a new directory at this given path.
+        """
+        try:
+>           os.mkdir(self, mode)
+E           OSError: [Errno 30] Read-only file system: '/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/kb/runs/RUN-20261022-080004'
+
+/usr/lib64/python3.11/pathlib.py:1116: OSError
+__________ test_node_detail_carries_run_status_and_waiting_gate_block __________
+
+client = <starlette.testclient.TestClient object at 0x7fc21c2be610>
+
+    def test_node_detail_carries_run_status_and_waiting_gate_block(client: TestClient) -> None:
+        """等待态 N4 面板：run_status + 二级清单 + 硬阻断（P-29 数据面）。"""
+>       rid = _start(client)
+              ^^^^^^^^^^^^^^
+
+tests/test_node_detail_projection.py:823: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_node_detail_projection.py:264: in _start
+    r = client.post("/api/runs", json=body)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:1144: in post
+    return self.request(
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:457: in request
+    return super().request(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:825: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:914: in send
+    response = self._send_handling_auth(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:942: in _send_handling_auth
+    response = self._send_handling_redirects(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:979: in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:1014: in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:354: in handle_request
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:351: in handle_request
+    portal.call(self.app, scope, receive, send)
+.venv/lib64/python3.11/site-packages/anyio/from_thread.py:340: in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib64/python3.11/concurrent/futures/_base.py:456: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+/usr/lib64/python3.11/concurrent/futures/_base.py:401: in __get_result
+    raise self._exception
+.venv/lib64/python3.11/site-packages/anyio/from_thread.py:265: in _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/fastapi/applications.py:1216: in __call__
+    await super().__call__(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/applications.py:96: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/middleware/errors.py:186: in __call__
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/middleware/errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+.venv/lib64/python3.11/site-packages/fastapi/telemetry/_asgi.py:151: in __call__
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/middleware/exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib64/python3.11/site-packages/fastapi/middleware/asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/routing.py:676: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:2791: in app
+    await route.handle(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:1310: in handle
+    await super().handle(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/routing.py:282: in handle
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:165: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:151: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:727: in app
+    raw_response = await run_endpoint_function(
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:360: in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+services/api.py:839: in create_run
+    run_id = await manager.start(baseline=baseline, mode=mode, scenario=scenario,
+workflows/main_flow.py:525: in start
+    run_dir = prepare_run_dir(run_id, mode=mode)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+workflows/context.py:268: in prepare_run_dir
+    run_dir.mkdir(parents=True, exist_ok=True)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/kb/runs/RUN-20261102-114256')
+mode = 511, parents = True, exist_ok = True
+
+    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+        """
+        Create a new directory at this given path.
+        """
+        try:
+>           os.mkdir(self, mode)
+E           OSError: [Errno 30] Read-only file system: '/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/kb/runs/RUN-20261102-114256'
+
+/usr/lib64/python3.11/pathlib.py:1116: OSError
+_______________ test_node_detail_decided_gate_shows_dispositions _______________
+
+client = <starlette.testclient.TestClient object at 0x7fc21d4ae090>
+
+    def test_node_detail_decided_gate_shows_dispositions(client: TestClient) -> None:
+        """已决策态：逐条处置从 `decisions/G1_diff_confirm.json` 回填（Host 落账）。"""
+>       rid = _start(client)
+              ^^^^^^^^^^^^^^
+
+tests/test_node_detail_projection.py:840: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_node_detail_projection.py:264: in _start
+    r = client.post("/api/runs", json=body)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:1144: in post
+    return self.request(
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:457: in request
+    return super().request(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:825: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:914: in send
+    response = self._send_handling_auth(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:942: in _send_handling_auth
+    response = self._send_handling_redirects(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:979: in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:1014: in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:354: in handle_request
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:351: in handle_request
+    portal.call(self.app, scope, receive, send)
+.venv/lib64/python3.11/site-packages/anyio/from_thread.py:340: in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib64/python3.11/concurrent/futures/_base.py:456: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+/usr/lib64/python3.11/concurrent/futures/_base.py:401: in __get_result
+    raise self._exception
+.venv/lib64/python3.11/site-packages/anyio/from_thread.py:265: in _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/fastapi/applications.py:1216: in __call__
+    await super().__call__(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/applications.py:96: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/middleware/errors.py:186: in __call__
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/middleware/errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+.venv/lib64/python3.11/site-packages/fastapi/telemetry/_asgi.py:151: in __call__
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/middleware/exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib64/python3.11/site-packages/fastapi/middleware/asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/routing.py:676: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:2791: in app
+    await route.handle(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:1310: in handle
+    await super().handle(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/routing.py:282: in handle
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:165: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:151: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:727: in app
+    raw_response = await run_endpoint_function(
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:360: in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+services/api.py:839: in create_run
+    run_id = await manager.start(baseline=baseline, mode=mode, scenario=scenario,
+workflows/main_flow.py:525: in start
+    run_dir = prepare_run_dir(run_id, mode=mode)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+workflows/context.py:268: in prepare_run_dir
+    run_dir.mkdir(parents=True, exist_ok=True)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/kb/runs/RUN-20261102-114257')
+mode = 511, parents = True, exist_ok = True
+
+    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+        """
+        Create a new directory at this given path.
+        """
+        try:
+>           os.mkdir(self, mode)
+E           OSError: [Errno 30] Read-only file system: '/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/kb/runs/RUN-20261102-114257'
+
+/usr/lib64/python3.11/pathlib.py:1116: OSError
+________________________ test_node_started_present_flag ________________________
+
+client = <starlette.testclient.TestClient object at 0x7fc21ccb7150>
+
+    def test_node_started_present_flag(client: TestClient) -> None:
+        """P-33：提交型节点补 node_started 后，面板才能诚实说"有开始/结束区间"。"""
+>       rid = _drive_full_chain(client)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_node_detail_projection.py:860: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_node_detail_projection.py:290: in _drive_full_chain
+    rid = _start(client)
+          ^^^^^^^^^^^^^^
+tests/test_node_detail_projection.py:264: in _start
+    r = client.post("/api/runs", json=body)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:1144: in post
+    return self.request(
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:457: in request
+    return super().request(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:825: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:914: in send
+    response = self._send_handling_auth(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:942: in _send_handling_auth
+    response = self._send_handling_redirects(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:979: in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:1014: in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:354: in handle_request
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:351: in handle_request
+    portal.call(self.app, scope, receive, send)
+.venv/lib64/python3.11/site-packages/anyio/from_thread.py:340: in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib64/python3.11/concurrent/futures/_base.py:456: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+/usr/lib64/python3.11/concurrent/futures/_base.py:401: in __get_result
+    raise self._exception
+.venv/lib64/python3.11/site-packages/anyio/from_thread.py:265: in _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/fastapi/applications.py:1216: in __call__
+    await super().__call__(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/applications.py:96: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/middleware/errors.py:186: in __call__
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/middleware/errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+.venv/lib64/python3.11/site-packages/fastapi/telemetry/_asgi.py:151: in __call__
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/middleware/exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib64/python3.11/site-packages/fastapi/middleware/asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/routing.py:676: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:2791: in app
+    await route.handle(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:1310: in handle
+    await super().handle(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/routing.py:282: in handle
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:165: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:151: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:727: in app
+    raw_response = await run_endpoint_function(
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:360: in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+services/api.py:839: in create_run
+    run_id = await manager.start(baseline=baseline, mode=mode, scenario=scenario,
+workflows/main_flow.py:525: in start
+    run_dir = prepare_run_dir(run_id, mode=mode)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+workflows/context.py:268: in prepare_run_dir
+    run_dir.mkdir(parents=True, exist_ok=True)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/kb/runs/RUN-20261102-114257')
+mode = 511, parents = True, exist_ok = True
+
+    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+        """
+        Create a new directory at this given path.
+        """
+        try:
+>           os.mkdir(self, mode)
+E           OSError: [Errno 30] Read-only file system: '/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/kb/runs/RUN-20261102-114257'
+
+/usr/lib64/python3.11/pathlib.py:1116: OSError
+_____________________ test_unreached_node_in_terminal_run ______________________
+
+client = <starlette.testclient.TestClient object at 0x7fc21c402450>
+
+    def test_unreached_node_in_terminal_run(client: TestClient) -> None:
+        """P-30：运行已终态且节点无事件 ⇒ story.not_reached（不得说"等它跑完"）。"""
+>       rid = _start(client)
+              ^^^^^^^^^^^^^^
+
+tests/test_node_detail_projection.py:868: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_node_detail_projection.py:264: in _start
+    r = client.post("/api/runs", json=body)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:1144: in post
+    return self.request(
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:457: in request
+    return super().request(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:825: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:914: in send
+    response = self._send_handling_auth(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:942: in _send_handling_auth
+    response = self._send_handling_redirects(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:979: in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:1014: in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:354: in handle_request
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:351: in handle_request
+    portal.call(self.app, scope, receive, send)
+.venv/lib64/python3.11/site-packages/anyio/from_thread.py:340: in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib64/python3.11/concurrent/futures/_base.py:456: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+/usr/lib64/python3.11/concurrent/futures/_base.py:401: in __get_result
+    raise self._exception
+.venv/lib64/python3.11/site-packages/anyio/from_thread.py:265: in _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/fastapi/applications.py:1216: in __call__
+    await super().__call__(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/applications.py:96: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/middleware/errors.py:186: in __call__
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/middleware/errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+.venv/lib64/python3.11/site-packages/fastapi/telemetry/_asgi.py:151: in __call__
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/middleware/exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib64/python3.11/site-packages/fastapi/middleware/asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/routing.py:676: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:2791: in app
+    await route.handle(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:1310: in handle
+    await super().handle(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/routing.py:282: in handle
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:165: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:151: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:727: in app
+    raw_response = await run_endpoint_function(
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:360: in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+services/api.py:839: in create_run
+    run_id = await manager.start(baseline=baseline, mode=mode, scenario=scenario,
+workflows/main_flow.py:525: in start
+    run_dir = prepare_run_dir(run_id, mode=mode)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+workflows/context.py:268: in prepare_run_dir
+    run_dir.mkdir(parents=True, exist_ok=True)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/kb/runs/RUN-20261102-114258')
+mode = 511, parents = True, exist_ok = True
+
+    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+        """
+        Create a new directory at this given path.
+        """
+        try:
+>           os.mkdir(self, mode)
+E           OSError: [Errno 30] Read-only file system: '/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/kb/runs/RUN-20261102-114258'
+
+/usr/lib64/python3.11/pathlib.py:1116: OSError
+______________ test_report_endpoint_rejects_non_whitelisted_path _______________
+
+client = <starlette.testclient.TestClient object at 0x7fc21c3d72d0>
+
+    def test_report_endpoint_rejects_non_whitelisted_path(client: TestClient) -> None:
+>       rid = _start(client)
+              ^^^^^^^^^^^^^^
+
+tests/test_node_detail_projection.py:892: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_node_detail_projection.py:264: in _start
+    r = client.post("/api/runs", json=body)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:1144: in post
+    return self.request(
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:457: in request
+    return super().request(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:825: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:914: in send
+    response = self._send_handling_auth(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:942: in _send_handling_auth
+    response = self._send_handling_redirects(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:979: in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:1014: in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:354: in handle_request
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:351: in handle_request
+    portal.call(self.app, scope, receive, send)
+.venv/lib64/python3.11/site-packages/anyio/from_thread.py:340: in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib64/python3.11/concurrent/futures/_base.py:456: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+/usr/lib64/python3.11/concurrent/futures/_base.py:401: in __get_result
+    raise self._exception
+.venv/lib64/python3.11/site-packages/anyio/from_thread.py:265: in _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/fastapi/applications.py:1216: in __call__
+    await super().__call__(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/applications.py:96: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/middleware/errors.py:186: in __call__
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/middleware/errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+.venv/lib64/python3.11/site-packages/fastapi/telemetry/_asgi.py:151: in __call__
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/middleware/exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib64/python3.11/site-packages/fastapi/middleware/asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/routing.py:676: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:2791: in app
+    await route.handle(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:1310: in handle
+    await super().handle(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/routing.py:282: in handle
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:165: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:151: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:727: in app
+    raw_response = await run_endpoint_function(
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:360: in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+services/api.py:839: in create_run
+    run_id = await manager.start(baseline=baseline, mode=mode, scenario=scenario,
+workflows/main_flow.py:525: in start
+    run_dir = prepare_run_dir(run_id, mode=mode)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+workflows/context.py:268: in prepare_run_dir
+    run_dir.mkdir(parents=True, exist_ok=True)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/kb/runs/RUN-20261102-114259')
+mode = 511, parents = True, exist_ok = True
+
+    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+        """
+        Create a new directory at this given path.
+        """
+        try:
+>           os.mkdir(self, mode)
+E           OSError: [Errno 30] Read-only file system: '/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/kb/runs/RUN-20261102-114259'
+
+/usr/lib64/python3.11/pathlib.py:1116: OSError
+_____ test_report_endpoint_missing_is_404_and_node_block_says_unavailable ______
+
+client = <starlette.testclient.TestClient object at 0x7fc21ccead90>
+
+    def test_report_endpoint_missing_is_404_and_node_block_says_unavailable(client: TestClient) -> None:
+>       rid = _start(client)
+              ^^^^^^^^^^^^^^
+
+tests/test_node_detail_projection.py:900: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_node_detail_projection.py:264: in _start
+    r = client.post("/api/runs", json=body)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:1144: in post
+    return self.request(
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:457: in request
+    return super().request(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:825: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:914: in send
+    response = self._send_handling_auth(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:942: in _send_handling_auth
+    response = self._send_handling_redirects(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:979: in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:1014: in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:354: in handle_request
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:351: in handle_request
+    portal.call(self.app, scope, receive, send)
+.venv/lib64/python3.11/site-packages/anyio/from_thread.py:340: in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib64/python3.11/concurrent/futures/_base.py:456: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+/usr/lib64/python3.11/concurrent/futures/_base.py:401: in __get_result
+    raise self._exception
+.venv/lib64/python3.11/site-packages/anyio/from_thread.py:265: in _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/fastapi/applications.py:1216: in __call__
+    await super().__call__(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/applications.py:96: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/middleware/errors.py:186: in __call__
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/middleware/errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+.venv/lib64/python3.11/site-packages/fastapi/telemetry/_asgi.py:151: in __call__
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/middleware/exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib64/python3.11/site-packages/fastapi/middleware/asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/routing.py:676: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:2791: in app
+    await route.handle(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:1310: in handle
+    await super().handle(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/routing.py:282: in handle
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:165: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:151: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:727: in app
+    raw_response = await run_endpoint_function(
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:360: in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+services/api.py:839: in create_run
+    run_id = await manager.start(baseline=baseline, mode=mode, scenario=scenario,
+workflows/main_flow.py:525: in start
+    run_dir = prepare_run_dir(run_id, mode=mode)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+workflows/context.py:268: in prepare_run_dir
+    run_dir.mkdir(parents=True, exist_ok=True)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/kb/runs/RUN-20261102-114259')
+mode = 511, parents = True, exist_ok = True
+
+    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+        """
+        Create a new directory at this given path.
+        """
+        try:
+>           os.mkdir(self, mode)
+E           OSError: [Errno 30] Read-only file system: '/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/kb/runs/RUN-20261102-114259'
+
+/usr/lib64/python3.11/pathlib.py:1116: OSError
+_______________ test_report_endpoint_reads_only_this_run_report ________________
+
+client = <starlette.testclient.TestClient object at 0x7fc21c481050>
+
+    def test_report_endpoint_reads_only_this_run_report(client: TestClient) -> None:
+>       rid = _drive_full_chain(client)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_node_detail_projection.py:914: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_node_detail_projection.py:290: in _drive_full_chain
+    rid = _start(client)
+          ^^^^^^^^^^^^^^
+tests/test_node_detail_projection.py:264: in _start
+    r = client.post("/api/runs", json=body)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:1144: in post
+    return self.request(
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:457: in request
+    return super().request(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:825: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:914: in send
+    response = self._send_handling_auth(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:942: in _send_handling_auth
+    response = self._send_handling_redirects(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:979: in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:1014: in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:354: in handle_request
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:351: in handle_request
+    portal.call(self.app, scope, receive, send)
+.venv/lib64/python3.11/site-packages/anyio/from_thread.py:340: in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib64/python3.11/concurrent/futures/_base.py:456: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+/usr/lib64/python3.11/concurrent/futures/_base.py:401: in __get_result
+    raise self._exception
+.venv/lib64/python3.11/site-packages/anyio/from_thread.py:265: in _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/fastapi/applications.py:1216: in __call__
+    await super().__call__(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/applications.py:96: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/middleware/errors.py:186: in __call__
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/middleware/errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+.venv/lib64/python3.11/site-packages/fastapi/telemetry/_asgi.py:151: in __call__
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/middleware/exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib64/python3.11/site-packages/fastapi/middleware/asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/routing.py:676: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:2791: in app
+    await route.handle(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:1310: in handle
+    await super().handle(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/routing.py:282: in handle
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:165: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:151: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:727: in app
+    raw_response = await run_endpoint_function(
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:360: in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+services/api.py:839: in create_run
+    run_id = await manager.start(baseline=baseline, mode=mode, scenario=scenario,
+workflows/main_flow.py:525: in start
+    run_dir = prepare_run_dir(run_id, mode=mode)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+workflows/context.py:268: in prepare_run_dir
+    run_dir.mkdir(parents=True, exist_ok=True)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/kb/runs/RUN-20261102-114300')
+mode = 511, parents = True, exist_ok = True
+
+    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+        """
+        Create a new directory at this given path.
+        """
+        try:
+>           os.mkdir(self, mode)
+E           OSError: [Errno 30] Read-only file system: '/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/kb/runs/RUN-20261102-114300'
+
+/usr/lib64/python3.11/pathlib.py:1116: OSError
+_______________ test_report_endpoint_truncates_oversized_report ________________
+
+client = <starlette.testclient.TestClient object at 0x7fc21d4877d0>
+
+    def test_report_endpoint_truncates_oversized_report(client: TestClient) -> None:
+        from services import api as api_mod
+    
+>       rid = _drive_full_chain(client)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_node_detail_projection.py:932: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_node_detail_projection.py:290: in _drive_full_chain
+    rid = _start(client)
+          ^^^^^^^^^^^^^^
+tests/test_node_detail_projection.py:264: in _start
+    r = client.post("/api/runs", json=body)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:1144: in post
+    return self.request(
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:457: in request
+    return super().request(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:825: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:914: in send
+    response = self._send_handling_auth(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:942: in _send_handling_auth
+    response = self._send_handling_redirects(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:979: in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:1014: in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:354: in handle_request
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:351: in handle_request
+    portal.call(self.app, scope, receive, send)
+.venv/lib64/python3.11/site-packages/anyio/from_thread.py:340: in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib64/python3.11/concurrent/futures/_base.py:456: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+/usr/lib64/python3.11/concurrent/futures/_base.py:401: in __get_result
+    raise self._exception
+.venv/lib64/python3.11/site-packages/anyio/from_thread.py:265: in _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/fastapi/applications.py:1216: in __call__
+    await super().__call__(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/applications.py:96: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/middleware/errors.py:186: in __call__
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/middleware/errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+.venv/lib64/python3.11/site-packages/fastapi/telemetry/_asgi.py:151: in __call__
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/middleware/exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib64/python3.11/site-packages/fastapi/middleware/asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/routing.py:676: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:2791: in app
+    await route.handle(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:1310: in handle
+    await super().handle(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/routing.py:282: in handle
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:165: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:151: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:727: in app
+    raw_response = await run_endpoint_function(
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:360: in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+services/api.py:839: in create_run
+    run_id = await manager.start(baseline=baseline, mode=mode, scenario=scenario,
+workflows/main_flow.py:525: in start
+    run_dir = prepare_run_dir(run_id, mode=mode)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+workflows/context.py:268: in prepare_run_dir
+    run_dir.mkdir(parents=True, exist_ok=True)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/kb/runs/RUN-20261102-114301')
+mode = 511, parents = True, exist_ok = True
+
+    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+        """
+        Create a new directory at this given path.
+        """
+        try:
+>           os.mkdir(self, mode)
+E           OSError: [Errno 30] Read-only file system: '/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/kb/runs/RUN-20261102-114301'
+
+/usr/lib64/python3.11/pathlib.py:1116: OSError
+___________________ test_report_path_refuses_symlink_escape ____________________
+
+client = <starlette.testclient.TestClient object at 0x7fc21c9649d0>
+tmp_path = PosixPath('/tmp/pytest-of-chenjunming/pytest-0/test_report_path_refuses_symli0')
+
+    def test_report_path_refuses_symlink_escape(client: TestClient, tmp_path: Path) -> None:
+        """白名单名 + 符号链接也不得越出 run 目录（只读端点不能变成任意路径探测器）。"""
+>       rid = _drive_full_chain(client)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_node_detail_projection.py:944: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_node_detail_projection.py:290: in _drive_full_chain
+    rid = _start(client)
+          ^^^^^^^^^^^^^^
+tests/test_node_detail_projection.py:264: in _start
+    r = client.post("/api/runs", json=body)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:1144: in post
+    return self.request(
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:457: in request
+    return super().request(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:825: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:914: in send
+    response = self._send_handling_auth(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:942: in _send_handling_auth
+    response = self._send_handling_redirects(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:979: in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:1014: in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:354: in handle_request
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:351: in handle_request
+    portal.call(self.app, scope, receive, send)
+.venv/lib64/python3.11/site-packages/anyio/from_thread.py:340: in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib64/python3.11/concurrent/futures/_base.py:456: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+/usr/lib64/python3.11/concurrent/futures/_base.py:401: in __get_result
+    raise self._exception
+.venv/lib64/python3.11/site-packages/anyio/from_thread.py:265: in _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/fastapi/applications.py:1216: in __call__
+    await super().__call__(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/applications.py:96: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/middleware/errors.py:186: in __call__
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/middleware/errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+.venv/lib64/python3.11/site-packages/fastapi/telemetry/_asgi.py:151: in __call__
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/middleware/exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib64/python3.11/site-packages/fastapi/middleware/asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/routing.py:676: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:2791: in app
+    await route.handle(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:1310: in handle
+    await super().handle(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/routing.py:282: in handle
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:165: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:151: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:727: in app
+    raw_response = await run_endpoint_function(
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:360: in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+services/api.py:839: in create_run
+    run_id = await manager.start(baseline=baseline, mode=mode, scenario=scenario,
+workflows/main_flow.py:525: in start
+    run_dir = prepare_run_dir(run_id, mode=mode)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+workflows/context.py:268: in prepare_run_dir
+    run_dir.mkdir(parents=True, exist_ok=True)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/kb/runs/RUN-20261102-114301')
+mode = 511, parents = True, exist_ok = True
+
+    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+        """
+        Create a new directory at this given path.
+        """
+        try:
+>           os.mkdir(self, mode)
+E           OSError: [Errno 30] Read-only file system: '/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/kb/runs/RUN-20261102-114301'
+
+/usr/lib64/python3.11/pathlib.py:1116: OSError
+______________ test_n13_waiting_projection_carries_readonly_items ______________
+
+client = <starlette.testclient.TestClient object at 0x7fc21c0fde90>
+
+    def test_n13_waiting_projection_carries_readonly_items(client: TestClient) -> None:
+        """G2 等待态：面板拿到只读待确认项（阻断项白话），且仍然没有 disposition/勾选语义。"""
+>       rid = _start(client)
+              ^^^^^^^^^^^^^^
+
+tests/test_node_detail_projection.py:1068: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_node_detail_projection.py:264: in _start
+    r = client.post("/api/runs", json=body)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:1144: in post
+    return self.request(
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:457: in request
+    return super().request(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:825: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:914: in send
+    response = self._send_handling_auth(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:942: in _send_handling_auth
+    response = self._send_handling_redirects(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:979: in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:1014: in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:354: in handle_request
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:351: in handle_request
+    portal.call(self.app, scope, receive, send)
+.venv/lib64/python3.11/site-packages/anyio/from_thread.py:340: in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib64/python3.11/concurrent/futures/_base.py:456: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+/usr/lib64/python3.11/concurrent/futures/_base.py:401: in __get_result
+    raise self._exception
+.venv/lib64/python3.11/site-packages/anyio/from_thread.py:265: in _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/fastapi/applications.py:1216: in __call__
+    await super().__call__(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/applications.py:96: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/middleware/errors.py:186: in __call__
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/middleware/errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+.venv/lib64/python3.11/site-packages/fastapi/telemetry/_asgi.py:151: in __call__
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/middleware/exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib64/python3.11/site-packages/fastapi/middleware/asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/routing.py:676: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:2791: in app
+    await route.handle(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:1310: in handle
+    await super().handle(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/routing.py:282: in handle
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:165: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:151: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:727: in app
+    raw_response = await run_endpoint_function(
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:360: in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+services/api.py:839: in create_run
+    run_id = await manager.start(baseline=baseline, mode=mode, scenario=scenario,
+workflows/main_flow.py:525: in start
+    run_dir = prepare_run_dir(run_id, mode=mode)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+workflows/context.py:268: in prepare_run_dir
+    run_dir.mkdir(parents=True, exist_ok=True)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/kb/runs/RUN-20261102-114302')
+mode = 511, parents = True, exist_ok = True
+
+    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+        """
+        Create a new directory at this given path.
+        """
+        try:
+>           os.mkdir(self, mode)
+E           OSError: [Errno 30] Read-only file system: '/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/kb/runs/RUN-20261102-114302'
+
+/usr/lib64/python3.11/pathlib.py:1116: OSError
+______________ test_n14_decided_projection_lists_regression_cases ______________
+
+client = <starlette.testclient.TestClient object at 0x7fc21d64ea10>
+
+    def test_n14_decided_projection_lists_regression_cases(client: TestClient) -> None:
+        """G3 已决策 + N15_select 已跑 ⇒ 只读清单里能看到回归选集用例。"""
+>       rid = _drive_full_chain(client)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_node_detail_projection.py:1084: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_node_detail_projection.py:290: in _drive_full_chain
+    rid = _start(client)
+          ^^^^^^^^^^^^^^
+tests/test_node_detail_projection.py:264: in _start
+    r = client.post("/api/runs", json=body)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:1144: in post
+    return self.request(
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:457: in request
+    return super().request(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:825: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:914: in send
+    response = self._send_handling_auth(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:942: in _send_handling_auth
+    response = self._send_handling_redirects(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:979: in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:1014: in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:354: in handle_request
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:351: in handle_request
+    portal.call(self.app, scope, receive, send)
+.venv/lib64/python3.11/site-packages/anyio/from_thread.py:340: in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib64/python3.11/concurrent/futures/_base.py:456: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+/usr/lib64/python3.11/concurrent/futures/_base.py:401: in __get_result
+    raise self._exception
+.venv/lib64/python3.11/site-packages/anyio/from_thread.py:265: in _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/fastapi/applications.py:1216: in __call__
+    await super().__call__(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/applications.py:96: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/middleware/errors.py:186: in __call__
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/middleware/errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+.venv/lib64/python3.11/site-packages/fastapi/telemetry/_asgi.py:151: in __call__
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/middleware/exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib64/python3.11/site-packages/fastapi/middleware/asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/routing.py:676: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:2791: in app
+    await route.handle(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:1310: in handle
+    await super().handle(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/routing.py:282: in handle
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:165: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:151: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:727: in app
+    raw_response = await run_endpoint_function(
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:360: in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+services/api.py:839: in create_run
+    run_id = await manager.start(baseline=baseline, mode=mode, scenario=scenario,
+workflows/main_flow.py:525: in start
+    run_dir = prepare_run_dir(run_id, mode=mode)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+workflows/context.py:268: in prepare_run_dir
+    run_dir.mkdir(parents=True, exist_ok=True)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/kb/runs/RUN-20261102-114302')
+mode = 511, parents = True, exist_ok = True
+
+    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+        """
+        Create a new directory at this given path.
+        """
+        try:
+>           os.mkdir(self, mode)
+E           OSError: [Errno 30] Read-only file system: '/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/kb/runs/RUN-20261102-114302'
+
+/usr/lib64/python3.11/pathlib.py:1116: OSError
+_______________ test_new_run_drill_chain_carries_optional_fields _______________
+
+client = <starlette.testclient.TestClient object at 0x7fc217f4b950>
+
+    def test_new_run_drill_chain_carries_optional_fields(client: TestClient) -> None:
+        """新 drill 全链：可选下限字段必须**存在**（显式 null 也算下发）。"""
+>       rid = _drive_full_chain(client)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_node_detail_projection.py:1131: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_node_detail_projection.py:290: in _drive_full_chain
+    rid = _start(client)
+          ^^^^^^^^^^^^^^
+tests/test_node_detail_projection.py:264: in _start
+    r = client.post("/api/runs", json=body)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:1144: in post
+    return self.request(
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:457: in request
+    return super().request(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:825: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:914: in send
+    response = self._send_handling_auth(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:942: in _send_handling_auth
+    response = self._send_handling_redirects(
+.venv/lib64/python3.11/site-packages/httpx/_client.py:979: in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/httpx/_client.py:1014: in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:354: in handle_request
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/testclient.py:351: in handle_request
+    portal.call(self.app, scope, receive, send)
+.venv/lib64/python3.11/site-packages/anyio/from_thread.py:340: in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib64/python3.11/concurrent/futures/_base.py:456: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+/usr/lib64/python3.11/concurrent/futures/_base.py:401: in __get_result
+    raise self._exception
+.venv/lib64/python3.11/site-packages/anyio/from_thread.py:265: in _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/fastapi/applications.py:1216: in __call__
+    await super().__call__(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/applications.py:96: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/middleware/errors.py:186: in __call__
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/middleware/errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+.venv/lib64/python3.11/site-packages/fastapi/telemetry/_asgi.py:151: in __call__
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/middleware/exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib64/python3.11/site-packages/fastapi/middleware/asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/routing.py:676: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:2791: in app
+    await route.handle(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:1310: in handle
+    await super().handle(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/routing.py:282: in handle
+    await self.app(scope, receive, send)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:165: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib64/python3.11/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:151: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:727: in app
+    raw_response = await run_endpoint_function(
+.venv/lib64/python3.11/site-packages/fastapi/routing.py:360: in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+services/api.py:839: in create_run
+    run_id = await manager.start(baseline=baseline, mode=mode, scenario=scenario,
+workflows/main_flow.py:525: in start
+    run_dir = prepare_run_dir(run_id, mode=mode)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+workflows/context.py:268: in prepare_run_dir
+    run_dir.mkdir(parents=True, exist_ok=True)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/kb/runs/RUN-20261102-114303')
+mode = 511, parents = True, exist_ok = True
+
+    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
+        """
+        Create a new directory at this given path.
+        """
+        try:
+>           os.mkdir(self, mode)
+E           OSError: [Errno 30] Read-only file system: '/home/work/chenjunming/FPGA_SIM/SimEnv_TCS9620_64CH_F_RJ_PANGO_DCN_WHITEBOXES/kb/runs/RUN-20261102-114303'
+
+/usr/lib64/python3.11/pathlib.py:1116: OSError
+=============================== warnings summary ===============================
+.venv/lib64/python3.11/site-packages/fastapi/testclient.py:1
+  /home/work/chenjunming/change-impact-loop/loop/.venv/lib64/python3.11/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_node_detail_projection.py::test_endpoint_unknown_node_is_known_false_not_404
+FAILED tests/test_node_detail_projection.py::test_drill_full_chain_every_node_has_summary_and_source
+FAILED tests/test_node_detail_projection.py::test_halt_node_projection_has_summary
+FAILED tests/test_node_detail_projection.py::test_g1_material_entries_carry_before_after_hunk_encoding
+FAILED tests/test_node_detail_projection.py::test_n0_copies_host_trace_into_the_run_dir
+FAILED tests/test_node_detail_projection.py::test_s0_record_id_roundtrip - OS...
+FAILED tests/test_node_detail_projection.py::test_s0_record_id_defaults_to_null
+FAILED tests/test_node_detail_projection.py::test_s0_record_id_survives_restart
+FAILED tests/test_node_detail_projection.py::test_node_detail_carries_run_status_and_waiting_gate_block
+FAILED tests/test_node_detail_projection.py::test_node_detail_decided_gate_shows_dispositions
+FAILED tests/test_node_detail_projection.py::test_node_started_present_flag
+FAILED tests/test_node_detail_projection.py::test_unreached_node_in_terminal_run
+FAILED tests/test_node_detail_projection.py::test_report_endpoint_rejects_non_whitelisted_path
+FAILED tests/test_node_detail_projection.py::test_report_endpoint_missing_is_404_and_node_block_says_unavailable
+FAILED tests/test_node_detail_projection.py::test_report_endpoint_reads_only_this_run_report
+FAILED tests/test_node_detail_projection.py::test_report_endpoint_truncates_oversized_report
+FAILED tests/test_node_detail_projection.py::test_report_path_refuses_symlink_escape
+FAILED tests/test_node_detail_projection.py::test_n13_waiting_projection_carries_readonly_items
+FAILED tests/test_node_detail_projection.py::test_n14_decided_projection_lists_regression_cases
+FAILED tests/test_node_detail_projection.py::test_new_run_drill_chain_carries_optional_fields
+20 failed, 175 passed, 1 warning in 21.27s

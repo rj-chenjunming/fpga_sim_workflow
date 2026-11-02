@@ -1,0 +1,11 @@
+# 3B 令牌化 · 绿（实现后）
+# 命令: cd loop && .venv/bin/python -m pytest tests/test_ui_tokens.py -q
+# 时间: 2026-10-30T15:01:47+08:00
+# web md5（实现后）:
+#   2eee8a67befa10308c56aadb1f71ef2f  web/tokens.css
+#   e0aace636099289edd8398e0e6d3c440  web/app.css
+#   91f647c090ba78631417a1e857539711  web/legacy.css
+#   c0270e2001de8675597dd25bada46168  web/legacy.html
+
+.........                                                                [100%]
+9 passed in 0.66s

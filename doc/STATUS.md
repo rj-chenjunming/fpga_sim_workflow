@@ -6576,33 +6576,673 @@ B2 `test_u1..test_u5`（U1 chip/置灰、U2 原因原文、U3 hint、U4 1280×72
 - 不声称"独立验证"：B1/B2 由两名实现 owner 交付、Lead 复核 diff 并跑门禁；`clean-ws-20261023`
   无 drill 夹具（`runs/` 空）故不作 drill 演示根。
 
+---
 
-## 138 本地 WSL 开发环境准备（2026-10-29）
+## 138 SPEC-10 开发侧 RSI 契约落规格（未实现，2026-10-29）
+
+### 138.1 交付
+
+- 新增 [`doc/spec/RSI_SPEC.md`](spec/RSI_SPEC.md)（**SPEC-10，规格阶段**）：开发侧会话后自我迭代闭环契约——
+  人工按键触发、RunRecord 采集（反馈原文 + 确定性验证事实 + 凭据掩码）、两段复盘（无工具 + dsh 只读实例）、
+  `draft` 经验与人批准、skill 提案（仓内副本 + `base_sha256` + 同步落账 + `stale`）、问题单只落 `.rsi/issues/`、
+  RSI 台账（**不是业务闸门**）、复核三态（模型出证据 / 人签生效无效 / 2 次无效自动撤回）、P0–P2 分期与验收。
+- 索引：`doc/README.md`（§1 目录行、§2 修订记录新增 SPEC 行、SPEC 表 SPEC-10 行）、`README.md` §1 `doc/spec/` 行。
+- 依据：外部设计文档 v1.0（用户提供）+ 20 条人工裁决（规格 §附「决策追溯」）；相对外部文档 3 处**有意偏离**：
+  ① 无可用结束钩子 ⇒ 人工触发取代"终态回调"；② 否决 `reflect_token_budget: 20000`（真实会话大两个数量级）；
+  ③ 经验"自动生效" ⇒ `draft` + 人批（与本仓 [SPEC-06](spec/AGENT_CONTEXT_SPEC.md) M2、`AGENTS.md` §2.2 对齐）。
+
+### 138.2 实测（数字从命令输出复制）
+
+| 项 | 命令 | 实测 |
+|---|---|---|
+| 文档门 | `loop/.venv/bin/python doc/audit/check_doc_links.py` | `exit=0`；`[ENV-MISSING]` 34 条（环境仓资产缺失，按脚本规则不计失败）；本仓 `[MISSING]` 0（`loop/rsi/` 已登记 `KNOWN_MISSING` 并在实现后删除该行） |
+| 文档门单测 | `cd loop && .venv/bin/python -m pytest tests/test_doc_links.py -q` | `65 passed in 2.28s` |
+| 会话日志采样（预算依据） | `zstd -dc <session.v4.jsonl.zstd> \| wc -c`（本机最近三次） | 解压后 `945402` / `2977125` / `15431643` bytes |
+
+### 138.3 未做 / 不声称 / 下一步
+
+- **未写任何实现代码**；未建 `loop/rsi/` 包、未建 `.rsi/`（故 §12「开工前置」现在不生效）。
+- **未修改 `AGENTS.md`**：SPEC-10 §12 给的是"开工前置"契约文字，P0 实施时逐字加入并由人评审。
+- 未产出 P0 计划（本轮按人指令只落 spec）；未做真实会话复盘；未验证模型归因质量；未接入任何模型调用。
+- **不声称收益**：无留出集对照（P2 未实现），P0/P1 只能声称"已生成提案/已入库"。
+- 不声称独立验证：本轮为 Lead 单写 + 自检式修订（锚点、CLI 枚举、死枚举值、数字权威四处），无第二验证者。
+
+
+
+## 139 单一 RTL 文件夹一键派生（2026-10-30）
+
+> 来源：人 2026-10-30 需求「入口处只传入一个完整的 RTL 代码文件夹，不再像现在整个环境，流程也能正常跑通」；
+> 21 条决定经 grill-me 逐条拍板。规格先行：S0 §9 / WEB_UI §13 / 编排 §13 / ENV §8；计划与冻结接口见
+> [`doc/plans/2026-10-30-rtl-folder-one-click.md`](plans/2026-10-30-rtl-folder-one-click.md)。
+> **本轮为 Lead 单写 + 子代理分片实现，无独立验证者**（不声称独立复核）。
+
+### 139.1 交付
+
+| 切片 | 落点 | 内容 |
+|---|---|---|
+| T1 派生引擎 | [`loop/host/derive.py`](../loop/host/derive.py)（新）、[`loop/host/s0.py`](../loop/host/s0.py) | 根判定（`RTL`/`SRC`，其它拒绝）、选择性复制（排除 `kb/runs`/`loop`/`SIMLIB_RUN`/VCS 等 + 软链落账 + `kb/{baselines,index,conflicts,adjudication}` 数据子集）、`plan_rtl_source` 过滤 RTL 源、`manifest_filtered`、整棵/子树替换、错目录告警（不拦截）、`prepare_from_rtl`/`advance`、`env_switch` 只读投影 |
+| T2 切换与 API | [`loop/host/env_switch.py`](../loop/host/env_switch.py)（新）、[`loop/host/switch_supervisor.py`](../loop/host/switch_supervisor.py)（新）、[`loop/services/api.py`](../loop/services/api.py) | 状态机（`origin` 不可变、`pending→active/rollback`、只增 `history.jsonl`）、可注入 supervisor（等端口→起新服务→`/api/health` 校验 `env_root`→失败回退旧根/服务必须活着）、7 个端点、活跃 run 409、pending 死 pid 自动收口、删除守卫（只拒当前根/在飞目标） |
+| T3 界面 | [`loop/web/index.html`](../loop/web/index.html)、[`loop/web/s0.js`](../loop/web/s0.js)、[`loop/web/app.js`](../loop/web/app.js)、[`loop/web/app.css`](../loop/web/app.css) | S0 表单只留「新版 RTL 文件夹」（基线/版本/副本路径收进「高级（可改）」）、六阶段回执、端口待确认、准出自动切换、切换后轮询 `/api/health` 并预填 `s0_record_id`、副本清单/二次确认删除、切回原环境 |
+| T4 集成 | `loop/workflows/main_flow.py`、`loop/services/contracts.py`、`loop/host/s0b.py`、[`loop/spikes/verify_rtl_folder_entry.py`](../loop/spikes/verify_rtl_folder_entry.py)（新）、`loop/tests/**`（新 4 文件） | run 文档 `env_root`/`env_origin_root`（只增）与视图透传；**基线冒烟改走只读软链代理根**（见 139.2）；真实链验证脚本；回归用例 |
+
+### 139.2 本轮修复的既有缺陷（真实链暴露，非本功能引入）
+
+1. **G1 只给闸门级 `ignored` + 理由时，条目理由被写成 `None`**：`normalize_entry_decisions` 的“未逐条提交”
+   分支不复用闸门级理由也不校验 ⇒ `precheck_decision` 放行、`gate.py` 已签署、`_resumed` 二次预检才失败
+   ⇒ HTTP 500 + 孤儿签名 + run 置 failed（闸门从此不可用）。已改为**提交前**继承/校验理由
+   （[`loop/workflows/chunks/gates.py`](../loop/workflows/chunks/gates.py)），新增 `tests/test_gate_entry_decisions.py`。
+2. **S0-b 基线冒烟直接以基线为 `ROOT`**：只读挂载下 `run_guarded.sh` 建锁失败 ⇒ rc=3 且**无编译日志**
+   （冒烟假失败）；可写时会写基线（与 §8.2-2「断言基线零写入」矛盾）。已改为
+   `baseline_compile_root()` 的**只读软链代理根**（自己的可写 `SIMLIB_RUN/`），新增
+   `tests/test_s0b_smoke_roots.py`。
+
+### 139.3 门（数字从命令输出复制）
+
+| 门 | 命令 | 实测 |
+|---|---|---|
+| 单测（软件层） | `cd loop && bash spikes/run_software_checks.sh --ignore=tests/browser` | **`1999 passed, 3 deselected, 1 warning in 252.16s`**（`rc=0`） |
+| 浏览器（界面改动，补充门） | `PLAYWRIGHT_BROWSERS_PATH=… HOME=… TMPDIR=… .venv/bin/python -m pytest -q tests/browser` | **`166 passed in 171.89s`**（`rc=0`） |
+| 端到端 | `cd loop && LOOP_WORKSPACE=$PWD/../.dev-ws bash spikes/accept_v1_run.sh` | 六相 `rc=0`、`=> ALL PASS`（`rc=0`） |
+| kb 自测 + 环境层 | `cd loop && bash spikes/run_env_layer_checks.sh --with-kb-selftests` | `PASS=10 FAIL=0` / `PASS=9 FAIL=0` / `PASS=28 FAIL=0`、`3 passed, 24 deselected in 8.48s`；**原 ENV_ROOT 零写入（`find -newer` 命中 0）** |
+| 真实副本全链 | `cd loop && .venv/bin/python spikes/verify_rtl_folder_entry.py` | **`PASS=32 FAIL=0`（`rc=0`）**：`from-rtl`→六项 checks 全 `passed`→`advance` 冒烟 passed→`ready_for_execution=true`→`activate` 自动切换（`/api/health.env_root==副本`、`switch.status=active`）→派生数据根基线 `valid`→`real` run 跑到 **G1**（N3 live）→签 `G1=ignored`（逐条理由）收口→`switch-back` 回原始根→`DELETE …/copy` 200；原 `ENV_ROOT` `find -newer` 0 |
+| 文档门 | `python3 doc/audit/check_doc_links.py` + `cd loop && .venv/bin/python -m pytest tests/test_doc_links.py -q` | 见 139.5 |
+
+### 139.4 未做 / 不声称
+
+- **零必改用例的 G1 分流未实现**：需新增闸门枚举（`kb_lib.GATE_DECISIONS`，冻结目录）与 N5 后条件分支，
+  已在 [编排规格 §13-4](spec/LOOP_ORCHESTRATION_SPEC.md) 登记为独立变更；本轮保持现状（`N6_apply` 显式失败），
+  **不得**用默认值/夹具冒充该分支。
+- **N9 真机全跑未跑**：真实链证据只到 G1（签 `ignored` ⇒ HALT）；N9 约 19 min/用例，按需另跑。
+- **副本内 drill/演练不支持**：夹具 733 MB 不复制（决定 20），副本只服务真实场景。
+- **切换后页面不 reload**（同端口新进程接管）；若 supervisor 换端口，旧页请求会断——真实链已按同端口验证。
+- 界面“零必改”分流按钮、`/api/env/state` 的多环境并行均未触及；单槽仍是软件实例全局。
+
+### 139.5 证据与文件
+
+- 冻结证据：[`doc/evidence/RTL_FOLDER_ENTRY_20261030/`](evidence/RTL_FOLDER_ENTRY_20261030/README.md)
+  （真实链日志、S0 记录、冒烟读数、切换审计、四道门日志；md5 账本
+  [`doc/evidence/RTL_FOLDER_ENTRY_20261030.md5`](evidence/RTL_FOLDER_ENTRY_20261030.md5)，`md5sum -c` 可复验）。
+- 新增测试：`loop/tests/test_s0_derive.py`、`test_env_switch.py`、`test_s0_from_rtl_api.py`、
+  `test_s0b_smoke_roots.py`、`test_gate_entry_decisions.py`、`tests/browser/test_s0_auto_entry.py`；
+  既有浏览器基线机械更新 4 处（`#s0Advanced` 展开 ×3、`/api/s0/from-rtl` 与「未接入→已接入」断言）。
+- 复现：`cd loop && DEST=$PWD/../.dev-ws-lead bash spikes/provision_dev_workspace.sh --link-fixture --force --quiet &&
+  .venv/bin/python spikes/verify_rtl_folder_entry.py`（单次 bash 调用内起停服务，跨两次重启）。
+
+## 140 UI 视觉优化（批次 1+2 交付，2026-10-30）
+
+来源：[UI 设计审计](audit/AUDIT-20261030-ui-design.md)（P0=0 / P1=4 / P2=16）。本轮只做审计建议里的**批次 1（可读性）+ 批次 2（首屏）**：
+两者都是「A 类」，只改视觉与密度，不改请求形状、轮询、闸门判据与业务授权。计划与执行记录见
+[`doc/plans/2026-10-30-ui-visual-optimization.md`](plans/2026-10-30-ui-visual-optimization.md)。
+实现 owner 为 Lead；独立复核 `ui-delivery-verifier`（只读，报告 `.ui-audit/E-delivery-verify.md`）结论
+「需修 P1×1（仅文档门），无 P0，代码与测试可合入」——本条即其处置；其余 P2 见 §140.4。
+
+### 140.1 契约变更（先于实现，本节的评审记录）
+
+- **§10 新增 A12 / A13**：A12 = 首屏判据（三视口 `#s0Rtl`/`#s0Prepare` 完整入屏；1440×900 闸门 `#gateMaterial` 顶边入屏）；
+  A13 = 可读性判据（信息文本 ≥4.5:1、焦点环 ≥3:1、skip 落点可见焦点、统一动效曲线且无 `transition: width`）。
+- **§14 增补「2026-10-30」**：运营台不设营销 hero；动效只动 `transform`/`opacity`（`spinner` 的 `linear` 为登记例外）；
+  `--font-sans` 只声明本机可用族；加载占位用骨架；「组件层不得新增硬编码 hex」仅登记，存量收敛留给批次 3。
+- 既有 §14 的「主正文 13–14px、说明文字 12px」口径**不变**。
+
+### 140.2 交付
+
+| 项 | 结果 |
+|---|---|
+| 首屏 | 删 `#viewS0 > .s0-hero`（含装饰流程图/眉题/卖点标签）；`.page-head` 去固定 `min-height`、`h1 27→24px`；阶段卡收紧（含 `.phase-index` 16→14px，**补记于 2026-10-30 复核**）；**提交行移到必填项之后**（`#s0Error` 紧随） |
+| 可读性 | `--faint #71827b→#5f6f67`（4.05/3.73→5.31/4.89）；`.page-edition`→`--muted`+11px；`.section-index`/`.phase-index`→`#4d6b4e`；`.s0-checks`→`#55684f`；阻断区→`#7a6234`；`.receipt-label`→`#456761`；placeholder→`--faint`；`.agent-role` 11→12px；头像首字母压暗 |
+| 焦点 | 输入框环 `#c4e2cf→--primary`（**1.39→5.48**）；侧栏环 `--primary→#b9d5aa`（**2.62→9.0**）；`main:focus-visible` 2px 环（原 `main:focus{outline:none}` 拆分） |
+| 动效 | 新增 `--ease-out:cubic-bezier(0.22,1,0.36,1)` 并覆盖全部 transition；颜色/边框 200ms；`.stage-bar i` 由动画 `width` 改 `scaleX(var(--p,0))`；`.pulse` 由 `box-shadow` 改伪元素 `transform/opacity`；`.agent-open` 点击靶 19.5→24px |
+| 结构 | `#viewSeg` 外新增 `<nav aria-label="主导航">`；`index`/`legacy` 加本地 `loop/web/favicon.svg`；`legacy.html` 加 skip-link + `<main id="legacyMain" tabindex="-1">`；S0 4 处「加载中…」改 9 行 `.sk-line` 骨架 |
+| 口径 | 阶段「进行中」、Agent 「工作中」统一为「执行中」（`app.js`） |
+
+### 140.3 验证（数字从命令输出复制）
+
+| 门 | 命令 | 实际输出 |
+|---|---|---|
+| 新用例先红 | `pytest -q tests/browser/test_ui_visual_20261030.py` | 首轮 `10 failed, 1 passed`；闸门用例补受控夹具后 `11 failed` |
+| 新用例后绿 | 同上（复核后由 11 条增至 12 条） | `12 passed in 11.38s` |
+| 浏览器全量（界面改动必跑） | `PLAYWRIGHT_BROWSERS_PATH=… HOME=… TMPDIR=… .venv/bin/python -m pytest -q tests/browser` | **`178 passed in 193.14s`**（0 failed；含 `LOOP_VISUAL_ARTIFACTS` 截图） |
+| 软件层 | `cd loop && bash spikes/run_software_checks.sh --ignore=tests/browser -q` | **`1999 passed, 3 deselected in 257.93s`**，exit 0（浏览器用例是独立门；`--ignore` 避免无浏览器环境时被误报） |
+| 文档 | `python3 doc/audit/check_doc_links.py` | `checked=3114 skipped=44286 historical=857 known_missing=16 env_missing=35 missing=0`，exit 0 |
+| 运行时复测（受控夹具） | `doc/evidence/UI_DESIGN_AUDIT_20261030/measure.py` | 三视口 `#s0Rtl`/`#s0Prepare` `visibleRatio=1`；1440 闸门 `#gateMaterial y=831.4`（`visibleRatio 0.12`）；S0 对比度 fail `3/194`（仅装饰 `/` 与禁用控件）、gate `4/173`、monitor `4/238`；焦点环 5.48/9.0；`<24px` 点击靶 0；背景渐变 0 |
+
+### 140.4 独立复核与处置
+
+| 复核发现 | 处置 |
+|---|---|
+| **P1**：`doc/STATUS.md` 缺本轮区段（证据 README 引用的 §140 悬空） | 本节即补；证据 README 引用现在成立 |
+| **P1（建议）**：A13 判据只覆盖 7/12 条改过的对比度规则 | 用例补 `.phase-index`、`.s0-blockers .eyebrow/h3`、`.rail-foot`，并新增 run 视图探针（`.stage-idx`/`.agent-role`/头像）；补 `scrollY==0`、`transition-property` 长写法、`@keyframes` 只许 transform/opacity 的守卫（11→12 条） |
+| P2「三页 favicon」不实（`mockup.html` 未改） | 计划 G7 与 §3.3.6 改为「index/legacy 两页；mockup 是 §14 静态历史样张不重绘」 |
+| P2 `.pulse` 动 `box-shadow` 与新增动效条冲突且未登记 | 改伪元素 `transform:scale()/opacity`，实现与规则一致（不登记例外） |
+| P2 §9 漏登（D-19 余项、说明文字 12px、前序双 `## 13`） | 计划 §9 补登三条 |
+| P2 首屏用例未断言未滚动 / 对比度探针跳过半透明层 | 已加 `scrollY==0`；半透明合成与长写法绕过登记为已知局限（当前背景链无半透明层） |
+| 口径：证据 README 说「§140」 | 本节提交后成立（不再悬空） |
+
+### 140.5 未做 / 不声称
+
+- **批次 3 未做**：字号表（30 档未吸附）、间距/圆角收敛、令牌化（401 处 hex 未替换，仅在新规格里禁止新增）、F14 两段式合并。
+- **批次 4 未做**：图标 SVG sprite（仍为 Unicode 字形）、GATE-1 ↔ G1 映射（需人裁）、闸门 `--gate-pane-max-h` 常数（需人裁）。
+- **1280×720 闸门材料仍在首屏外**（只压留白到 1440 档达标；进一步需折叠非当前阶段或改常数）。
+- **§14「说明文字不小于 12px」未完全达成**：`.rail-foot` 等仍 10–11px（部分属「标签/图示注释」例外，需逐条判定）。
+- **D-19 其余口径项未改**：状态判据三份、三页产品名、`↗` 一符三义、两处 `window.confirm`、`.chip` 一符多义。
+- **未在真实运行数据/非 Chromium/真机滚动条下复测**；本轮运行时读数全部来自受控夹具。
+- 前序 T3 遗留的 `WEB_UI_SPEC.md` 两个 `## 13`（802/854）**非本轮引入**，未重排。
+
+### 140.6 证据与文件
+
+- 前后对比截图与运行时读数：[`doc/evidence/UI_VISUAL_OPTIMIZATION_20261030/`](evidence/UI_VISUAL_OPTIMIZATION_20261030/README.md)（6 个文件，含 md5）。
+- 文档门实测：`python3 doc/audit/check_doc_links.py` → `missing=0`，exit 0。
+- 改动文件：`loop/web/{app.css,app.js,index.html,tokens.css,legacy.html,legacy.css}`、新增 `loop/web/favicon.svg`；
+  `doc/spec/WEB_UI_SPEC.md`（§10 A12/A13、§14 增补）、`doc/plans/2026-10-30-ui-visual-optimization.md`（新增）；
+  新增用例 `loop/tests/browser/test_ui_visual_20261030.py`。`loop/services/**`、`kb/**`、`loop/host/**` 本轮零改动。
+
+## 141 UI 字号阶梯落地（批次 3A，2026-10-30）
+
+上游：[UI 设计审计](audit/AUDIT-20261030-ui-design.md) A-02/A-03/B-05/B-06/D-06；计划与执行记录
+[`doc/plans/2026-10-30-ui-typography-scale.md`](plans/2026-10-30-ui-typography-scale.md)。
+实现 owner 为 Lead；独立复核见 §141.4。本切片只改字号口径，不改颜色/布局/业务契约。
+
+### 141.1 契约变更（先于实现）
+
+- **§14 新增「字号阶梯（2026-10-30 增补）」**：11 档 `10/11/12/13/14/16/18/20/24/30/36`，
+  其中 10/11 仅限标签与图示注释、12 说明文字、13 紧凑正文、14 正文（保留既有 13–14px 口径）、
+  16 卡片标题/主按钮、18 面板标题、20 弹窗/品牌、24 页面标题、30/36 展示数字。
+- **§10 新增 A14**：组件层每个 `font-size`/`font` 简写 px 值必须属于阶梯，由 `tests/test_ui_typography.py` 静态扫描判定。
+
+### 141.2 交付
+
+| 项 | 结果 |
+|---|---|
+| 组件层不同字号 | `app.css` 25→**10**；`legacy.css` 4→**3**；`legacy.html` 8→**5**（全部在阶梯上） |
+| 吸附声明 | **脚本吸附 124 处**（其中 3 处落在此前 T3 未提交声明上；按 `git diff` 可归属本轮 **121 处**。明细：11.5→12 ×50、12.5→12 ×28、10.5→11 ×10、9→10 ×8、15→16 ×8、17→16 ×4、21→20 ×3、13.5→14 ×3、22→20 ×2、8→10 ×2、7/9.5→10 ×2、19→18、29/31→30、15.5→16 各 1） |
+| 未动 | `mockup.html`（§14 静态历史样张）；`36px` 档位暂无消费者 |
+| 复核后补强 | 主区状态类文字 11→12px（`.status-pill`/`.s0-checks b`/`.s0-flow .flow-status`）；守卫剥离注释、px 大小写不敏感、`font:` 简写与相对单位、规格解析限定 §14 bullet 并校验 A14 |
+
+### 141.3 验证（数字从命令输出复制）
+
+| 门 | 命令 | 实际输出 |
+|---|---|---|
+| 字号守卫先红 | `cd loop && .venv/bin/python -m pytest -q tests/test_ui_typography.py` | 首轮 `2 failed, 1 passed`（含 1 项用例自身解析缺陷，已修正）；修正后 `1 failed`（**16 个阶外 / 25 个不同字号**）；**原始先红日志未落档**，判别性由复核副本注入证明 |
+| 字号守卫后绿 | 同上 | `3 passed in 0.68s`（扫描 **355** 处声明） |
+| 浏览器全量 | `PLAYWRIGHT_BROWSERS_PATH=… HOME=… TMPDIR=… .venv/bin/python -m pytest -q tests/browser` | **`178 passed in 208.71s`**（0 failed；含 A12 首屏与三视口无溢出） |
+| 软件层 | `bash spikes/run_software_checks.sh --ignore=tests/browser -q` | **`2002 passed, 3 deselected in 274.98s`**，exit 0（含新增 3 条） |
+| 文档 | `python3 doc/audit/check_doc_links.py` | `checked=3138 skipped=44539 historical=857 known_missing=16 env_missing=35 missing=0`，exit 0 |
+
+### 141.4 独立复核与处置
+
+`ui-typography-verifier`（只读，报告 `.ui-audit/F-typography-verify.md`）：**可合入，无 P0/P1，P2×6**。
+复核独立复跑：守卫 `3 passed`、浏览器全量 `178 passed`、软件层 `2002 passed, 3 deselected`、文档 `missing=0`；
+映射逐条比对 **0 条错映射**、非字号零误伤、`mockup.html` md5 与 HEAD 一致、`services/host/workflows` 改动均属前序 T3。
+
+| 复核 P2 | 处置 |
+|---|---|
+| P2-1 `.phase-index` 16→14 属 1+2 但未登记 | §140.2 补记 |
+| P2-2 守卫漏判大写 `PX`/`font:` 简写内的 `em`/`%` | 守卫改为大小写不敏感 + 相对单位检查覆盖简写；副本注入实测判红 |
+| P2-3 守卫不剥离注释 | 扫描前剥离 CSS/HTML 注释；副本注入实测注释内旧值不计 |
+| P2-4 规格解析窗口脆弱（跨 §13、`\d{2}`） | 限定 §14 bullet、允许 1–3 位数字、交叉校验 §10 A14 |
+| P2-5 10/11px 承载状态信息（`.s0-flow .flow-status`） | 主区状态类文字统一 12px；§14 补「10/11 仅用于标签/图注/序号/密集侧栏元信息」 |
+| P2-6 数字口径（124 vs 121、356 vs 355、先红不可复现） | 本节与计划/证据按复核口径更正；先红日志未落档如实登记，判别性由注入证明替代 |
+
+### 141.5 证据与文件
+
+- 证据：[`doc/evidence/UI_TYPOGRAPHY_20261030/`](evidence/UI_TYPOGRAPHY_20261030/README.md)（前后截图 + md5 + 门原始输出）。
+- 改动文件：`loop/web/{app.css,legacy.css,legacy.html}`；新增 `loop/tests/test_ui_typography.py`；
+  `doc/spec/WEB_UI_SPEC.md`（§10 A14、§14 字号阶梯）、`doc/plans/2026-10-30-ui-typography-scale.md`（新增）。
+- 文档门实测：`python3 doc/audit/check_doc_links.py` → `missing=0`，exit 0。
+
+## 142 UI 批次 3C：F14 两段式 CSS 合并（2026-10-30）
+
+来源：`doc/agents/开工提示词_UI批次3C与3B.md` §4 + [F14](audit/AUDIT-20261021-post-ui-roadmap.md#L33)
++ [D-04/D-15](audit/AUDIT-20261030-ui-design.md)。计划：[`2026-10-30-ui-css-merge-f14c.md`](plans/2026-10-30-ui-css-merge-f14c.md)。
+**本切片不改规格**（行为保持，无契约变化）；实现 owner 为 Lead；独立复核 `verifier-3c`（只读，报告 `.ui-audit/3C-verify.md`）。
+
+### 142.1 目标与判据
+
+`loop/web/app.css` 里同一简单选择器在同一 @ 上下文内只定义一次；合并保留最终生效值，
+**元素级计算样式零差异**是唯一硬判据。判据（计划 §2）：胜者=「`!important` 优先于源码顺序，同重要性后置胜」；
+搬动声明必须证明窗口内没有「同特异性、同 longhand（**简写按 longhand 展开**）、同重要性、可能命中同一元素」的竞争者；
+「可能命中同一元素」由 **36 个（视口,状态）组合 × 884 选择器的运行时 DOM 共命中证据**裁决，且**未测到的选择器不得豁免**。
+
+### 142.2 交付（数字从命令输出复制）
+
+| 项 | 改前（pristine `103ec751…`） | 改后（`73430cb2…`） |
+|---|---|---|
+| 行数 / 解析规则 / 顶层样式规则 | 1213 / 1160 / 969 | 1008 / 974 / **791** |
+| 规则实例（浏览器 `cssRules`，含 26 条 at-rule 块） | 943 | **817** |
+| 同（选择器, @上下文）被 ≥2 条规则定义 | **193**（顶层 178 / @760 14 / @850 1） | **23**（全部为白名单例外） |
+| 不同选择器文本 | 792 | 792（选择器语义未改） |
+
+- 逗号规则拆分 45 条（顶层 +52 个选择器实例）；合并删 178 条顶层规则 + 8 条 @media 内规则；
+  删除「被完全支配」的死声明 41 条（`!important` 语义不变）；**没有**新增 `!important`、**没有**改任何声明值、
+  **没有**改 `@media` 条件（`@media` 块 26 条两侧不变）。
+- 23 条例外逐条理由写在 `loop/tests/test_ui_css_structure.py::ALLOWED`：① 两段之间夹同特异性覆盖规则
+  （`.btn`/`.card`/`.grid2`/`.input`/`@760 .rail-entry`）；② 同名选择器在窗口内另有别的 @ 上下文规则
+  （`.agents`/`.run-item`/`.toast`/`.phase-card`/`.s0-phases`/`header`/`.shell`/`aside #btnNew`/`.aw-*` 等）。
+
+### 142.3 验证
+
+| 门 | 命令 | 实测 |
+|---|---|---|
+| 结构守卫**先红**（修正解析器后对 pristine） | `pytest -q tests/test_ui_css_structure.py` | 简单选择器实例 1156 / 重复组 **193**（非白名单 190）→ `.ui-audit/3c/red-test-pristine.txt` |
+| 结构守卫**后绿** | 同上（最终树） | **2 passed**（含「白名单必须仍然成立」的陈旧条目检测） |
+| 逐批指纹 | 13 批 × 24（视口,状态）组合 | 每批 `PASS`（0 差异）→ `.ui-audit/3c/batches.log` |
+| **全断点指纹** | `verify_style_equivalence.py --before-web snap-before --after-web web-stage` | **196 组合**：`diff_combinations=190`，但 **190 条差异 100% 是 `ruleset` 项（规则 943→817，合并的预期结果），元素级 0 条**（两条判据是独立分支、无短路；独立复核逐条复算 + 6 组逐元素哈希抽查） |
+| 字号守卫 | `pytest -q tests/test_ui_typography.py` | 3 passed，扫描数 **352** |
+| 浏览器全量 / 软件层 / 文档 | 见 §145 | 0 failed / 2029 passed / `missing=0` |
+
+**如实登记的缺陷与修正**（都由「指纹或独立复核」先报红，不是事后自证）：① 逗号拆分不尊重括号，
+把 `:where(button,a,summary):focus-visible{…}` 拆成非法规则（实测 `a.skip-link` 的 `text-decoration` 变 `underline`）；
+改为顶层逗号切分 + 括号平衡断言，并给验证工具补 focus/hover 态与「样式表规则序列对账」。② 胜者判定把「前置 `!important`」判错
+（实测 `#s0AllowedRoots` 的 `font-size` 12px 被判成 10px）；改为「`!important` 优先于源码顺序」。③ 证据豁免短路了后续候选
+（`.card` 被 `.gate-card` 挡住却被放行）。④ **独立复核发现的 P0**：同选择器跨 @ 上下文时证据键退化成 1 元素集合、
+`pair ∉ co` 恒成立 ⇒ 放行；pre-fix staging 造成 **23 处 / 11 个选择器**的断点内生效值翻转
+（`.agents` ≤1100 变 2 列、`.run-list` ≤760 `flex:none→1` 等）。修法：同 sanitize 选择器 + 不同 `(media,at)` ⇒ **直接受阻**；
+受阻 9→24，最终落盘残留 23 组。复核员独立枚举 21 组（`21 ⊂ 24`）与其一一对应，`cross_ctx_check.py` 在最终产物上 PASS。
+
+### 142.4 独立复核与处置
+
+`verifier-3c`（只读，`.ui-audit/3C-verify.md`，423 行）：**可合入；P0 = 0 未修（1 个已修并复验）/ P1 = 1 / P2 = 6**。
+他独立复跑：重复组 193→**23** 且与 `ALLOWED` 集合完全相等；72 组合指纹 69 条差异 100% 为 `ruleset`、元素级 0；
+字号扫描 352；`943→817` 的结构账目（917+52−178=791，+26 at-rule）逐数字一致。
+
+| 复核发现 | 处置 |
+|---|---|
+| **P0**：同选择器跨 @ 上下文 fail-open（23 处翻转） | 已修（见 §142.3 ④），复核员独立复验通过 |
+| **P1（方法）**：证据层对「36 组合里零命中」的选择器是**真空真**（788 个选择器中 264 个零命中；最终产物靠这条放行的对 4058+255） | **未修工具**，改为如实登记局限：本轮用「196 组合元素级指纹 + 独立复核 `cross_ctx_check.py` + 跨上下文硬受阻」三重兜底，但**不声称**「未测选择器一定安全」；后续若要收紧，须把 `selector_counts==0` 视作未测并重跑合并 |
+| **P2**：文档门 `missing=8`（`.ui-audit/` 3 条 + `.chrome-tmp` 下文档门自身单测夹具 5 条） | 已处置：`check_doc_links.py` 增加对 `.ui-audit/`、`.chrome-tmp*`、`.chrome-home*`、`.pw-browsers/`、`.playwright-*` 的跳过（它们是未入库临时/运行时目录，不是本仓文档）；其单测 65 passed，门恢复 `missing=0` |
+| **P2**：`merge_plan.py` 证据缺失时会在 `pair in co` 处 `TypeError`，而 `run_batches.sh` 把「没有合并计数」读成「收工」 | 已登记为工具限制（本轮所有批次都传了证据文件、未触发）；脚本已加「指纹非判定则重试一次」；后续使用前应先确认证据文件存在 |
+| **P2**：本会话命令在独立 PID 命名空间，`ps -ef` 看不到别人的 Chromium ⇒ 「开跑前 chrome=0」无法可靠执行 | 已登记：实际以「对方明确说停手」+ 产物文件停止增长为准，属环境限制、不声称严格串行 |
+| 其余 P2（证据文件行号/口径） | 已在证据 README 与本节的复跑命令中纠正 |
+
+### 142.5 未做 / 不声称
+
+- **不声称「视觉完全不变」**：hover/active/focus 只有计算样式与断点扫描覆盖，**无逐态截图**；`:active`、触摸、
+  `prefers-reduced-motion` 未纳入指纹。
+- **23 条例外未合并**：属「合并任一方向都改某断点/某元素组合生效值」的真冲突，不是遗漏。
+- **P1 未修**：零命中选择器的证据真空真（见 §142.4），本轮靠三重兜底、不声称全态安全。
+- 不改 `legacy.css`/`legacy.html`（3C 范围只 `app.css`）；不改 `@media` 条件；不动 `tokens.css`。
+
+### 142.6 证据与文件
+
+- 证据：[`doc/evidence/UI_CSS_MERGE_20261030/`](evidence/UI_CSS_MERGE_20261030/README.md)（改前/改后 app.css + 全断点指纹原文 + 逐批日志 + 门原始输出 + md5 清单）。
+- 改动文件：`loop/web/app.css`；新增 `loop/tests/test_ui_css_structure.py`；
+  `doc/plans/2026-10-30-ui-css-merge-f14c.md`（新增）。
+
+## 143 UI 批次 4：图标 sprite / GATE-1 文案中性化 / 闸门窗格上限（2026-10-30）
+
+来源：`doc/agents/开工提示词_UI批次3C与3B.md` §6/§11 + [D-13/D-16/D-18](audit/AUDIT-20261030-ui-design.md)。
+**人裁（2026-10-30）：「批次 4 三项全做」，含放宽闸门 `--gate-pane-max-h`。** 计划：[`2026-10-30-ui-batch4.md`](plans/2026-10-30-ui-batch4.md)。
+实现 owner：`batch4-owner`（`index.html`/`app.js`/`s0.js`/`node-detail.js` + 新测试）+ Lead（`app.css`、规格、STATUS）。
+
+### 143.1 契约变更（先于实现）
+
+- **§14 新增「闸门两栏上限放宽（2026-10-30 增补）」**：`--gate-pane-max-h` 由
+  `clamp(300px, calc(100dvh - 340px), 720px)` 改为 `clamp(300px, calc(100dvh - 300px), 860px)`；
+  依据：① 实测 gate 视图 chrome ≈300.6px；② 1080 视口旧上限 720 会把按推导应为 740 的窗格再截 20px；
+  ③ 低视口仍由 `100dvh - 300` 决定。**§10 A11 口径不变**（仍是「上限」、内容不足不滚、两栏同一把尺）。
+  **它不放宽首屏**：`#gateMaterial` 的 y 由上方块高决定，1280×720 下仍在首屏外（实测缺口 108.3px）。
+- `GATE-1` 文案中性化**不改身份**：不改 `kb_lib.GATE_DECISIONS`、不改判据、不映射 G1。
+
+### 143.2 交付
+
+| 项 | 结果 |
+|---|---|
+| A 图标 sprite | `index.html` 内联 `#iconSprite`（**18 个** `<symbol viewBox="0 0 16 16">`，无 `xmlns`）+ `#iconTpl`；三个 JS 各 5 行 `iconNode()`（克隆模板，**不用 `createElementNS`**）；**替换 41 处**（index 15 / app 14 / s0 7 / node-detail 5）；`app.css` 新增 `.icon`/`.icon-30`/`.empty .icon-30`，删 `.empty:before`、`.aw-detail summary:before`、`.aw-detail[open] summary:before` 与 3 条失效 `font-size` |
+| B GATE-1 中性化 | 3 处（`index.html`×2 + `s0.js`×1，HTML/JS 逐字一致）；`grep -rn GATE-1 loop/web` = **0**；kb/判据/后端零改动 |
+| C 窗格上限 | 规格先改 → `app.css` token 改 → 测试常量 `340→300`、`720→860` |
+| 偏差（已认可） | ① `node-detail` 实为 5 处（设计盘点记 3，另 2 处同型动作按钮不补会一窗两个按钮一个 SVG 一个字形）；② sprite 18 个 symbol 而非 22（4 个 legacy-only 按 YAGNI 不入，`test_ui_icons.py` fail-closed） |
+
+### 143.3 验证（数字从命令输出复制）
+
+| 门 | 实测 |
+|---|---|
+| B 新用例先红→后绿 | `4 failed, 2 passed` → **6 passed** |
+| A 新用例先红→后绿 | `6 failed, 4 passed` → **10 passed** |
+| C 常量先红→后绿 | `3 failed, 5 passed` → **8 passed**（`test_gate_panes.py`） |
+| 浏览器相关用例（实现者跑） | `24 passed in 23.55s`（`test_web_layout.py` + `test_ui_visual_20261030.py`） |
+| 运行时读数（`measure-4b.json`） | `#gateMaterial` y = **828.3 / 832.3 / 811.9**（与基线逐位一致）；窗格高 = **420 / 600 / 780**（放宽后推导值）；`.icon` = 16×16 / `fill:none` / `stroke-width:1.5px` / `stroke:currentColor`；空态 `icons=1`、58×58、`.empty:before` 计算 `content="none"`；三视口 `.seg button` 44、`.rail-entry` 64、**无水平溢出** |
+| 字号守卫 | 扫描数 **352**（≥300） |
+| 截图 | 12 张（`.ui-audit/4b/shots/` → 证据 `shots/`）：三视图 × 三视口 + agent 窗口 + 空态 + 节点详情 |
+
+### 143.4 未做 / 不声称
+
+- **1280×720 闸门材料仍在首屏外**：放宽 `--gate-pane-max-h` 只增加窗格高度、**不移动 y**；真正解决需折叠
+  「非当前阶段」的流程卡（结构变更）⇒ **未做**，仍登记为人裁项。
+- **`legacy.html` 12 处图标不迁移**（旧界面存档；`⚠/⛔` 仍依赖 emoji 字体）⇒ 4 个 legacy-only symbol 未入 sprite。
+- **GATE-1 ↔ G1 身份映射仍待裁**（本批只中性化文案）。
+- 窄屏（≤1100）与非 Chromium 的图标渲染未逐项验证；`●` 未入 sprite。
+
+### 143.5 证据与文件
+
+- 证据：[`doc/evidence/UI_BATCH4_20261030/`](evidence/UI_BATCH4_20261030/README.md)（12 张截图 + 3 组先红后绿原始输出 + 运行时读数 + md5）。
+- 改动文件：`loop/web/{index.html,app.js,s0.js,node-detail.js,app.css}`；新增 `loop/tests/{test_ui_icons.py,test_ui_gate_copy.py}`；
+  `loop/tests/browser/test_gate_panes.py`（2 个常量）；`doc/spec/WEB_UI_SPEC.md` §14；`doc/plans/2026-10-30-ui-batch4.md`（新增）。
+
+## 144 UI 批次 3B：配色令牌化（2026-10-30）
+
+来源：`doc/agents/开工提示词_UI批次3C与3B.md` §5 + [D-04](audit/AUDIT-20261030-ui-design.md)（配色令牌形同虚设）。
+计划：[`2026-10-30-ui-color-tokens-3b.md`](plans/2026-10-30-ui-color-tokens-3b.md)。实现 owner：`token-owner`（`loop/web/{tokens.css,app.css,legacy.css,legacy.html}` + 新测试）；
+只读设计/吸收表：`token-prep`（`.ui-audit/3b/`）；Lead 落 `.avatar` 对比度修正与 STATUS。
+
+### 144.1 人裁与偏差登记
+
+| 事项 | 裁决 | 实际 |
+|---|---|---|
+| 调色板是否接受 §5.2（≤12 RGB 合并） | **接受** | 按「每条字面量到其令牌 ΔRGB ≤12」执行 |
+| 令牌预算 | 「提到 46–50 个，保 ≤12」 | **69 个颜色令牌 + 5 非颜色 = 74 变量**。**偏差必须登记**：几何上不可兼得——213 个不同实色值里既有 24 个冻结令牌在 Δ≤12 下只覆盖 104 个；余下 109 个按「同族 + 半径 12」最少需 29 个新语义 + 7 alpha + 6 avatar + 3 内联专用。压缩曲线（实测）：**65→3 条例外(max 73)、60→11、55→26、50→45**。人裁**硬意图是「保 ≤12」**，令牌数是估计值 ⇒ 取 69 |
+| 内联样式 | 只处理仍生效的 3 条 | `legacy.html` 的 `.chain-arrow`/`.toast-item.err`/`.toast-item.ok` → 专用令牌（Δ0，`inline_only`，不参与吸收 CSS 字面量）；155 条死声明不动 |
+
+### 144.2 交付
+
+| 项 | 结果 |
+|---|---|
+| 替换 | `app.css` **323** + `legacy.css` **59** + `legacy.html` **3** = **385** 处（只改颜色字面量，行数无 reflow） |
+| 字面量 | 组件层 **382 → 0**（`tokens.css` 为唯一色源） |
+| 令牌 | **69 个颜色令牌**（既有 24 值未动 + 新增 45）+ 5 非颜色 = **74 变量**；全部被引用、无死令牌；`var(--x)` 未定义 = 0 |
+| 色差 | 实色 **355/355 Δ≤12（max 12）**；alpha **27/27 合成后 Δ≤12（max 10）**；`unmapped=0`（382/382 逐条落位） |
+| **对比度修正（Lead）** | 冻结 map 把 `.avatar`/`.a2` 背景映射到 `--rail-text`（Δ9/Δ10，合规）后，实测 `.avatar.a2` 前景对比 **4.64→4.41 < A13 的 4.5** ⇒ 改映射到同族绿底 `--primary-weak`（Δ7/2，仍 ≤12），对比恢复 ≈**4.85**；复测失败数回到基线 |
+
+### 144.3 验证（数字从命令输出复制）
+
+| 门 | 实测 |
+|---|---|
+| 新守卫先红→后绿 | `3 failed / 6 passed`（报「382 处字面量」「活规则 3 处」「令牌 24≠69」）→ **9 passed** |
+| 静态 5 套件 | **30 passed**（tokens 9 / 结构 2 / 字号 3 / 图标 10 / gate_copy 6） |
+| 替换忠实性（不复用替换算法，以冻结 map 为 oracle） | 抹平色值载体后声明文本逐字相等；382/382 逐位置对齐；map 按 file/line/property 逐行命中 |
+| 守卫变异性 | 回填 hex/rgba/hsl 会红；`#banners` 这类 ID 选择器、注释旧值、`transparent` 不误报 |
+| **A13 可读性不回退** | 对比度 fail：s0 **3/194 → 3/187**、gate **4/173 → 4/162**、monitor **4/238 → 4/227**（失败项仍只有装饰 `/` ×2 与禁用控件）；焦点环 s0 21/22、gate 17/18；`<24px` 点击靶 0；渐变 0 |
+| 浏览器全量 / 软件层 / 文档 | 见 §145 |
+
+### 144.4 未做 / 不声称
+
+- **2 个非令牌自定义属性**：`--p`（`app.js` 运行时 `setProperty`）、`--gate-pane-max-h`（组件局部声明，`test_gate_panes.py` 直接读）
+  未搬进 `tokens.css`；守卫对它们走白名单并校验真实写入点 ⇒ **不声称**「每个 var 都定义在 tokens.css」这条字面口径。
+- **155 条 `legacy.html` 死声明**未清退（按裁决不动），其内仍有旧色值。
+- 未做逐态截图人工目检（前后截图由批次 4 的 `UI_BATCH4_20261030` + measure 读数覆盖）；未在非 Chromium、真机滚动条、暗色主题下验证。
+- 冻结的 `.ui-audit/3b/selfcheck_final.py` 是**实现前**锚定物，实现后重跑 1 项预期 FAIL（map↔CSS 行锚），**不是**验收门；门是 `loop/tests/test_ui_tokens.py`。
+
+### 144.5 证据与文件
+
+- 证据：[`doc/evidence/UI_COLOR_TOKENS_20261030/`](evidence/UI_COLOR_TOKENS_20261030/README.md)（tokens-final + map + 吸收表 + 自检输出 + 前后 measure + md5）。
+- 改动文件：`loop/web/{tokens.css,app.css,legacy.css,legacy.html}`；新增 `loop/tests/test_ui_tokens.py`；
+  `doc/plans/2026-10-30-ui-color-tokens-3b.md`（新增）。
+
+## 145 本轮收口门与工具修正（2026-10-30）
+
+本轮（3C + 批次 4 + 3B）在**最终工作树**上跑的五道门（数字从命令输出复制；原始输出见各证据目录 `raw/`）：
+
+| 门 | 命令 | 实测 |
+|---|---|---|
+| 浏览器全量（界面改动必跑） | `cd loop && PLAYWRIGHT_BROWSERS_PATH=<repo>/.pw-browsers HOME=<repo>/.chrome-home TMPDIR=<repo>/.chrome-tmp .venv/bin/python -m pytest -q tests/browser` | **`178 passed in 199.18s`**，exit 0 |
+| 软件层 | `cd loop && bash spikes/run_software_checks.sh --ignore=tests/browser -q` | **`2029 passed, 3 deselected in 280.71s`**，exit 0（基线 2002 + 本轮新增 27：3C 结构守卫 2 / 3B 令牌守卫 9 / 4A 图标 10 / 4B 文案 6） |
+| 字号守卫 | `cd loop && .venv/bin/python -m pytest -q tests/test_ui_typography.py` | `3 passed`，扫描数 **352** |
+| 文档 | `python3 doc/audit/check_doc_links.py` | **`checked=3189 skipped=45194 historical=857 known_missing=16 env_missing=35 missing=0`**，exit 0 |
+| 运行时读数 | `loop/.venv/bin/python .ui-audit/measure.py`（受控夹具） | 对比度 fail：s0 **3/187**、gate **4/162**、monitor **4/227**（与开工基线 3/194、4/173、4/238 同一批失败项：装饰 `/` ×2 + 禁用控件）；焦点环 s0 21/22、gate 17/18；`<24px` 点击靶 0；背景渐变 0；1440 闸门 `#gateMaterial y=832.3`（与基线逐位一致）；三视口窗格高 **420/600/780** |
+
+**开工基线（同一轮、改动前实测，用于对照）**：浏览器 `178 passed in 205.88s`、软件层 `2002 passed, 3 deselected in 285.88s`、
+字号 `3 passed`、文档 `checked=3166 … missing=0`、运行时读数同上（对比度 3/194、4/173、4/238）。
+
+### 145.1 工具修正（`doc/audit/check_doc_links.py`）
+
+文档门一度报 `missing=8`，成因**不是文档断链**：① `.ui-audit/`（本轮未入库临时区：审计/复核分析件、指纹工具、截图）里
+有 3 条按「`路径:行/行`」写法引用的行号；② `.chrome-tmp/` 下有 **5 条是文档门自己单测生成的假仓库夹具**被自己扫到（自我污染）。
+处置：检查器增加对 `.ui-audit/`、`.chrome-tmp*`、`.chrome-home*`、`.pw-browsers/`、`.playwright-*` 的跳过
+（这些是**运行时/临时目录，不是本仓文档**，与既有的 `.dev-ws`/`.env-copy`/`loop/state` 同类）；检查器单测
+`loop/tests/test_doc_links.py` **65 passed**，门恢复 `missing=0`。**未**放宽任何真实文档路径。
+
+### 145.2 如实登记的过程事故（不掩盖）
+
+1. **门脚本把浏览器环境变量导出给整个脚本**：第一次软件层门跑出 `1 failed`（`test_dsh_selfcheck.py::test_attest_wrap_real_bwrap_masks_host_home_and_env`），
+   原因是脚本把 `HOME=<repo>/.chrome-home`、`TMPDIR=<repo>/.chrome-tmp` 导给了软件层门，而那条用例检查 bwrap 是否遮蔽宿主 HOME。
+   去掉导出后重跑 = `2029 passed`，exit 0。**不是代码缺陷**，是门脚本写法错误。
+2. **单租户浏览器**：本轮有多次「指纹与截图/用例同时抢 Chromium」导致超时（曾表现为指纹输出 `- waiting 500ms` 被当成红）。
+   处置：改为显式串行（对齐「谁在跑」再开跑），并给批脚本加「指纹未返回判定则重试一次」。此限制不声称完全消除
+   （复核员报告 §6.4：命令跑在独立 PID 命名空间，`ps` 看不到别人的 Chromium）。
+3. **3B 落地时的中间态**：`.icon` 规则未落地时页面图标是浏览器默认渲染（黑色实心、无尺寸）——实现者主动预警，
+   先落 `.icon` 再交付；证据目录里保留 `prelim-*.png` 说明当时状态。
+
+### 145.3 本轮文件盘点（未提交；人裁未要求 commit）
+
+- 新增测试：`loop/tests/test_ui_css_structure.py`、`test_ui_tokens.py`、`test_ui_icons.py`、`test_ui_gate_copy.py`。
+- 新增计划：`doc/plans/2026-10-30-ui-css-merge-f14c.md`、`-ui-batch4.md`、`-ui-color-tokens-3b.md`。
+- 新增证据：`doc/evidence/UI_CSS_MERGE_20261030/`、`UI_BATCH4_20261030/`、`UI_COLOR_TOKENS_20261030/`（均含 README + md5 清单）。
+- 改动规格：`doc/spec/WEB_UI_SPEC.md` §14（闸门两栏上限放宽增补）。
+- 改动工具：`doc/audit/check_doc_links.py`（临时/运行时目录跳过）。
+- 改动实现：`loop/web/{app.css,tokens.css,legacy.css,legacy.html,index.html,app.js,s0.js,node-detail.js}`；
+  `loop/tests/browser/test_gate_panes.py`（2 个常量）。
+- **未 commit、未 push**（人裁未要求）；`loop/services/**`、`loop/host/**`、`loop/workflows/**`、`kb/**` 本轮零改动。
+
+## 146 单输入二选一：环境项目入口（2026-10-30）
+
+人 2026-10-30 对 §139 的入口提出修正并逐条拍板：① 「基线工程目录」改名 **环境项目目录**（与运行期对比基线
+`kb/baselines/<id>` 区分）；② 「新版 RTL 文件夹」与「环境项目目录」**二选一**、RTL 不再唯一必填；
+③ 只给环境项目时 **RTL 用该项目自带的、不替换**；④ 界面单选，API 仍兼容两者同时给。
+
+### 146.1 契约与实现
+
+- 规格：[S0 §9.9](../doc/spec/S0_ENVIRONMENT_SPEC.md)（新增；§9.1 表下加决定注记、§9.5-4 加准出例外）、
+  [WEB_UI §15](../doc/spec/WEB_UI_SPEC.md)（原误编为与 2026-10-19 §13 重号，本轮更正为 §15 并登记）。
+- 计划：[2026-10-30-entry-two-modes.md](../doc/plans/2026-10-30-entry-two-modes.md)。
+- Host：`loop/host/s0.py::prepare_from_rtl` 按「哪个字段为空」判定模式（**不猜路径内容**）：
+  只 `rtl_source` ⇒ `rtl_folder`（不变）；只 `baseline` ⇒ `entry="env_folder"`（选择性复制、**不替换 RTL**，
+  `rtl` 检查 `skipped` + 固定理由 `ENV_ENTRY_NO_REPLACE`，`rtl_source/rtl_prefix/rtl_plan/folder_warning` 为 `null`，
+  版本缺省 `ENV@<basename>+<UTC>`）；两者都给 ⇒ `rtl_folder`（兼容）；都空 ⇒ 400。
+  `_verify` 在 `rtl_source=null` 时跳过该项（不把 null 当漂移）；报告阻断项/「无阻断」结论与准出同判据
+  （`_rtl_skipped_allowed` 单点判定）；报告头按模式措辞。
+- 准出：`loop/host/s0b.py::ready_for_execution` 唯一例外 = `entry="env_folder"` 且 `rtl="skipped"`，
+  其余五项必须全 `passed`；未知 `entry`、缺 check、其它非 `passed` 一律 `false`。
+- API：`/api/s0/from-rtl` 委派不变；`/api/s0/copies` 与 `DELETE …/copy` 同时接受 `rtl_folder`/`env_folder`。
+- Web：单选 `#s0Mode`（默认 rtl）+ 二选一输入 `#s0Rtl`／`#s0EnvDir`（另一格 `hidden+disabled+required=false`）；
+  submit 只发当前模式键 + 高级非空键；`skipped` 按服务端原文渲染（env_folder 的 `rtl` 显示「未替换（环境项目入口）」，
+  其它 `skipped` 显示「不当作通过」）；高级区移除重复的 `#s0Baseline`（其语义就是 env 模式的 `#s0EnvDir`）。
+- 真实链脚本 `loop/spikes/verify_rtl_folder_entry.py` 新增 `--entry {rtl,env}`。
+
+### 146.2 四道门 + 浏览器门（数字从命令输出复制）
+
+| 门 | 命令 | 结果 |
+|---|---|---|
+| 单测 | `cd loop && bash spikes/run_software_checks.sh --ignore=tests/browser` | **`2039 passed, 3 deselected, 1 warning in 254.85s`**，rc=0 |
+| 浏览器（补充门） | `cd loop && PLAYWRIGHT_BROWSERS_PATH=… HOME=… TMPDIR=… .venv/bin/python -m pytest -q tests/browser` | **`180 passed in 186.42s`**，rc=0 |
+| 端到端 | `cd loop && LOOP_PORT=8197 LOOP_WORKSPACE=… bash spikes/accept_v1_run.sh` | 六相全 rc=0 + **`=> ALL PASS`**，rc=0 |
+| 环境层 + kb | `cd loop && bash spikes/run_env_layer_checks.sh --with-kb-selftests` | `PASS=10 / PASS=9 / PASS=28`、`FAIL=0`；`3 passed, 24 deselected in 9.24s`；原 `ENV_ROOT` 零写入，rc=0 |
+| 文档 | `python3 doc/audit/check_doc_links.py`；`pytest -q tests/test_doc_links.py` | `checked=3263 … missing=0`，rc=0；`65 passed in 2.55s` |
+| 真实链（env 模式） | `cd loop && .venv/bin/python spikes/verify_rtl_folder_entry.py --entry env --port 8198` | **`PASS=33 FAIL=0`**，rc=0 |
+
+真实链证明：`entry=env_folder` 派生（`rtl=skipped`、其余五项 passed）→ 冒烟 → 准出 →
+自动切换（`health.env_root`=副本、`env/state.origin`=原根、`switch.status=active`）→ 副本数据根基线 `valid` →
+real run 跑到 G1（`RUN` 文档 `env_root`=副本）→ 逐条 `ignored` 收口 → 原 `ENV_ROOT` `find -newer` 命中 0 →
+切回原根 → 副本可删。证据（只增不改 + md5 账本）：
+[`doc/evidence/ENTRY_TWO_MODES_20261030/`](evidence/ENTRY_TWO_MODES_20261030/README.md)、
+[`ENTRY_TWO_MODES_20261030.md5`](evidence/ENTRY_TWO_MODES_20261030.md5)。
+
+### 146.3 执行方式更正（必须知道的坑）
+
+- `pytest -q` 直接跑（无 `LOOP_WORKSPACE`）时，`WORKSPACE_ROOT` 落到只读 `ENV_ROOT/kb` ⇒ 70 failed + 177 errors
+  全部是 `OSError: Read-only file system`（环境缺件，不是代码缺陷）；软件层门必须用
+  `spikes/run_software_checks.sh`（影子可写数据根）。
+- 若给全量 `pytest`（含 `tests/browser`）加 `HOME=…` 覆盖，`tests/test_dsh_selfcheck.py::test_attest_wrap_real_bwrap_masks_host_home_and_env`
+  会失败（它断言探针位于宿主真实 home 之下）⇒ 软件层与浏览器门分开跑，不要共用同一 `HOME` 覆盖。
+- 端到端改用 `LOOP_PORT=8197`：8099 被同工作区另一路会话的服务占用（不干预他人进程）；第一次尝试因
+  「8099 已有服务响应」被脚本按设计拒绝（rc=2）。
+- 真实链第一次运行（`chain-env-attempt1.log`）唯一 FAIL 是**验证脚本断言文本**写成 `"未替换"`，产品理由实为
+  「未提供新版 RTL……不做替换」；改脚本后 `PASS=33 FAIL=0`，产品代码未因此改动。
+
+### 146.4 未做 / 不声称
+
+- `rtl_folder` 入口真实链本轮未重跑（语义未变，由软件层/浏览器层覆盖；历史真实链证据见 §139）；
+- N9 真机全跑仍未跑（真实链到 G1）；`kb/runs` 历史不随副本复制（§9.3）；
+- 零必改用例的 G1 分流仍未接入（[编排 §13-4](spec/LOOP_ORCHESTRATION_SPEC.md)）。
+- 未 commit（人未要求）；本轮改动同时带同一工作区另一路 UI 视觉重构的未提交改动，各自未混淆。
+
+## 147 N5 必改=0 的 G1 分流闸门 `G1_no_impact`（2026-10-30）
+
+人 2026-10-30 要求接入 `LOOP §13-4` 登记的缺口，并五项拍板：① 新增闸门 id `G1_no_impact`；
+② 触发用**宽口径**（只看 `must_change_count == 0`）；③ `full_regression` 跳过 N6–N8、直接 N9 全量跑；
+④ `no_impact_end` = HALT + finished + 不晋升；⑤ 只有 `no_impact_end` 强制理由。
+
+### 147.1 契约与实现
+
+- 业务契约：[CHANGE_IMPACT_LOOP_SPEC.md](../doc/spec/CHANGE_IMPACT_LOOP_SPEC.md) §12（新增；I6 增补说明
+  「三条主线闸门 + 1 条 G1 分流支线」）；机制契约：[LOOP_ORCHESTRATION_SPEC.md](../doc/spec/LOOP_ORCHESTRATION_SPEC.md) §14
+  （原 §13-4 的未决登记已改为「已实现，见 §14」）；界面契约：[WEB_UI_SPEC.md](../doc/spec/WEB_UI_SPEC.md) §16。
+- 计划：[2026-10-30-zero-must-change-gate.md](../doc/plans/2026-10-30-zero-must-change-gate.md)。
+- **冻结目录单独变更**（AGENTS §3「改语义需单独变更并留证」）：`kb/tools/kb_lib.py`
+  （`GATE_IDS_V1` + `GATE_IDS` **末尾追加** `G1_no_impact`、`GATE_KIND`、`GATE_DECISIONS`、
+  `gate_init` 写 `version=2`、新增 `GATE_BRANCH_ONLY`/`gate_applicable()`、`gate_summary` 按 version 与适用性判定）、
+  `kb/schema/gate_state.schema.json`（version 允许 `1/2`、新增门属性与 `gate_id` 枚举）、
+  `kb/tools/gate.py`（文档、`DEFAULT_EXPECT`、`load_state` 按 version 决定必需门、`cmd_show` 按记录实际门展示）。
+  留证：[`KB_GATE_NO_IMPACT_20261030/`](evidence/KB_GATE_NO_IMPACT_20261030/README.md)（diff + CLI 实测 + kb 自测）。
+- 编排：`host_steps.n5_impact` 完成后按 `must_change_count == 0` 发 `N5_ZERO_MUST_CHANGE` / `N5_HAS_MUST_CHANGE`
+  （只发一个）；`main_flow` 拓扑加 `N5_ZERO_MUST_CHANGE → gate_no_impact(N5b)`、
+  `G1_NO_IMPACT_END → halt`、`G1_NO_IMPACT_FULL_REGRESSION → n9_submit`；
+  `gates.py` 加 `BRANCH_EVENTS`/`GATE_NODE`/`GATE_LABEL_CN`/`gate_artifacts` 与
+  `_assert_no_impact_gate_allowed`（纵深防御：`must_change_count != 0` 不得进/签该门）；
+  `long_jobs.n9_submit`：`full_regression` 目标集 = `kb/index/cases.json` 全量（与 G3=`full_now` 同口径），
+  逐例校验文件 md5 == 索引 md5，`target_set="baseline_frozen_full"`；索引缺失/为空/缺 md5/md5 不符 ⇒ 显式失败。
+- 权威与投影：`host/gate_authority.py`（`DEFAULT_EXPECT`、中文标签、按 `kb_lib.gate_applicable` 过滤未出现的分流门）；
+  `services/contracts.py`（`GATE_STAGE["G1_no_impact"]="n5_gate1b"`、`no_impact_end` 进 `REASON_REQUIRED_DECISIONS`）。
+- 界面：`app.js` 的 `GATE_META`/`NODE_META` 加第 4 门与 `N5b`；按钮文字与 `requires_reason` 仍全取自
+  `run_view.gate_options`（不手抄）；新增 `tests/browser/test_gate_no_impact.py`（3 条）。
+
+### 147.2 门禁（数字从命令输出复制）
+
+| 门 | 命令 | 结果 |
+|---|---|---|
+| 软件层 | `cd loop && bash spikes/run_software_checks.sh --ignore=tests/browser` | **`2054 passed, 3 deselected, 1 warning in 257.34s`**，rc=0 |
+| 浏览器（补充门） | `cd loop && PLAYWRIGHT_BROWSERS_PATH=… HOME=… TMPDIR=… .venv/bin/python -m pytest -q tests/browser` | **`183 passed in 186.20s`**，rc=0 |
+| 端到端 | `cd loop && LOOP_PORT=8197 LOOP_WORKSPACE=… bash spikes/accept_v1_run.sh` | 六相全 rc=0 + **`=> ALL PASS`** |
+| 环境层 + kb 自测 | `cd loop && bash spikes/run_env_layer_checks.sh --with-kb-selftests` | `PASS=10 / 9 / 28`、`FAIL=0`；`3 passed, 24 deselected in 9.78s`；原 `ENV_ROOT` 零写入，rc=0 |
+| 文档 | `python3 doc/audit/check_doc_links.py`；`pytest -q tests/test_doc_links.py` | `checked=3303 … missing=0`，rc=0；`tests/test_doc_links.py` 全绿 |
+| 分支/守卫/目标集/拓扑 | `cd loop && bash spikes/run_software_checks.sh tests/test_no_impact_gate.py -q` | **`15 passed`**（含 drill 两分支实测） |
+
+证据：[`NO_IMPACT_GATE_20261030/`](evidence/NO_IMPACT_GATE_20261030/README.md)（分支/drill/四门日志）、
+[`KB_GATE_NO_IMPACT_20261030/`](evidence/KB_GATE_NO_IMPACT_20261030/README.md)（冻结目录变更留证）；
+md5 账本：`NO_IMPACT_GATE_20261030.md5`、`KB_GATE_NO_IMPACT_20261030.md5`。
+
+### 147.3 复核中修掉的连带问题
+
+1. `gate.py cmd_show` / `kb_lib.gate_summary` 原按 `GATE_IDS` 硬列 ⇒ 读旧 `version=1` 记录会 `KeyError`；
+   已改为按记录实际门/version 判定（旧记录仍可审计回放，v2 缺门判 rc=4）。
+2. 「未出现的分流门」原先会让 `all_signed` 永远为 false、并被界面当"还有一道门没签"；
+   现由 `kb_lib.gate_applicable` **唯一判据**在 `gate_summary` 与 `host.gate_authority` 两侧共用；
+   `contracts._gates_authority` 不再写第二份过滤规则（红线 8）。
+3. `spikes/accept_v1.py` 的 A42 断言按旧"三道闸门"口径写死；已按 LOOP §14 的分流门适用性更新
+   （断言"已出现的闸门"而非硬编码三门），端到端恢复 `=> ALL PASS`。
+
+### 147.4 未做 / 不声称
+
+- **real 全量回归未跑**：`full_regression` 的 real 目标集构造与 fail-closed 只经单测证明
+  （索引缺失/为空/md5 不符均显式失败）；≈19 min/用例 × 全量成本超本轮，不得宣称 real 全跑通过。
+- drill 的作业完成→恢复存在既有竞态（`resume_dispatch_failed … changed phase`），与本分支无关；
+  分支测试按**事件流**断言，不把竞态写成"通过"。
+- `loop/web/legacy.html` 是旧界面存档（静态清单仍列三道主线门），本轮不改存档。
+- 未 commit（人未要求）；同一工作区另有 UI 视觉重构那一路的未提交改动，互不混淆。
+
+## 148 用例判据人签覆写 CASE-OVERRIDE（2026-11-02）
+
+> 契约：[SPEC-REV-20](spec/SPEC-REV-20-20261102.md)；计划：[2026-11-02-case-override](plans/2026-11-02-case-override.md)；
+> 证据：[`CASE_OVERRIDE_20261102/`](evidence/CASE_OVERRIDE_20261102/README.md) + md5 账本
+> `CASE_OVERRIDE_20261102.md5`。触发：人 2026-11-02「失败判断放开一点：机器列原因，人来判断是否接受，
+> 符合预期就手动改为 pass」；三项裁决：语义 = B（状态真变 `已验证通过`）、落地 = 方案 1（`case_state` 原生覆写）、
+> 三个默认（等待态可签/终态只读、批量全有或全无、撤销仅未终态）。
+
+### 148.1 做了什么
+
+- **kb（冻结目录，4 件，单独变更 + 留证）**：`case_state.py` 新增 `override` 子命令（`--case` 可重复 /
+  `human:<name>` / 必填 reason / `--revoke` / `--verify`），只追加 `overrides[]`（`record_sha256` 锚）、
+  一次读改写一次落盘、拒绝矩阵全在写盘前；`check_ledger` info 增 `waived`（展示用，I2/I7 判据未变）；
+  `case_states.schema.json` 增 `overrides`；自测断言 16 → **55**；`kb/README.md` 子命令清单 +1 行。
+- **Host**：N10 落盘 `<run_dir>/n10_cases.json`（**只搬运**既有 `n9_result` 判据 + 权威 `run.log` 的
+  md5/bytes；写失败记 warning 不拖垮 N10），读侧唯一实现 `n10_semantics.load_cases`（旧 run 显式 `missing`）；
+  `progress.ALLOWED_KINDS` +`case_override`。
+- **服务层**：`services/case_override.py`（仅 `waiting_gate` 可签/撤销；调 kb CLI，rc2→400 / rc3→403 逐条 §4-x /
+  rc4→409 / 未预期→500；**不写台账**）、`api.py` 新端点 `POST /api/runs/{run_id}/cases/override`、
+  `contracts.py` 增 `case_waivers`/`case_failures`/`case_override`（§6.1 逐动作 `actions.pass|revoke`，
+  端点前置复用同一函数）、`case_states_view` 增 `waived/waiver` 并同屏机器原判。
+- **界面**：G2/N13 逐用例表（机器原因原文 + 证据 path/md5 + 认定通过/撤销 + 二次确认必填理由 + 「人签例外」文案）；
+  「人签豁免」徽标（逐例表/报告入口横幅/看板/N16 面板，含 actor+日期）；可签性**只消费**服务端
+  `case_override`（缺投影 ⇒ 禁用并明说、零请求）。
+
+### 148.2 门禁（数字从命令输出复制）
+
+| 门 | 命令 | 结果 |
+|---|---|---|
+| 软件层单测 | `cd loop && bash spikes/run_software_checks.sh -q --ignore=tests/browser` | **`2104 passed, 3 deselected, 1 warning in 273.16s`**，rc=0 |
+| kb 自测 | `cd loop && bash spikes/run_env_layer_checks.sh --with-kb-selftests` | **`PASS=10 / 9 / 28`、`FAIL=0`**；`3 passed, 24 deselected in 7.23s`；原 ENV_ROOT 零写入，rc=0 |
+| 端到端 | `cd loop && LOOP_WORKSPACE=<repo>/.dev-ws LOOP_PORT=8098 bash spikes/accept_v1_run.sh` | phase 1/2/3/4/4b/5 全 rc=0 ⇒ **`=> ALL PASS`**，rc=0 |
+| 浏览器（界面有改动 ⇒ 补充门必跑） | `cd loop && PLAYWRIGHT_BROWSERS_PATH=… HOME=… TMPDIR=… .venv/bin/python -m pytest -q tests/browser` | **`199 passed in 200.18s`**，rc=0 |
+| 文档 | `python3 doc/audit/check_doc_links.py`；`pytest -q tests/test_doc_links.py` | **`missing=0`**，rc=0（`checked/skipped` 是随正文变化的诊断值：收口时实测 `checked=3418`）；`tests/test_doc_links.py` **`65 passed`** |
+| 冻结目录专项 | `python3 kb/tools/_selftest_case_state.py`（派生可写根） | **`汇总：PASS=55 FAIL=0`**（S1 连跑两次一致；本轮新增断言先红后绿） |
+| 各片目标测试 | `pytest -q tests/test_n10_cases.py tests/test_case_override_api.py tests/test_case_states_waivers.py tests/browser/test_case_override.py` | S2 `11 passed`、S3 `39 passed`、S4 `16 passed`（各自先红后绿） |
+
+### 148.3 收口过程中修掉的连带问题
+
+1. **`revoke` 边界**（规格 §3.1/§4 行 4 已补）：原实现只要求当前态 `已验证通过`，可把"机器途径通过"的用例
+   降级成待验 ⇒ 现要求"最近一条覆写记录 `action=pass`"，否则 rc=3 且台账不动。
+2. **逐动作投影**（规格 §6.1 已补）：原投影只按 `pass` 算可用性，撤销入口无法按服务端判据启用 ⇒ 改为
+   `actions.pass/revoke` 各自 `{available, blocked_reason}`，与写端点前置共用同一函数（红线 8）。
+3. **事件白名单**：`case_override` 未注册时 progress 直接 ValueError ⇒ 白名单 +1 行（`/api/health.event_kinds`
+   随之下发，前端不手抄）。
+4. **并发编辑的瞬时失败**：S3 全量跑期间 web-owner 正在改 `index.html` 脚本顺序，`test_capability_format` /
+   `test_gate_session` 各失败一次；串行复跑 **`2 passed`**（不是代码缺陷，但如实登记，不作为"通过"依据）。
+
+### 148.4 未做 / 不声称
+
+- **21 h 真实全跑未跑**：覆写链路只经单测 + drill e2e + 既有真实轮只读快照验证；不折算、不宣称 real 通过。
+- 覆写**不改变**机器判据与两套口径聚合数（`n12_report.md` 仍可为 `not_passed`，G2 `accept` 仍须理由）、
+  不动 I4（72 条冲突仍归 `adjudicate_conflicts.py`）、不动 I7。
+- e2e 用 `LOOP_PORT=8098`：8099 被跨沙箱残留监听占用（`ss` 可见、`ps` 不可见，无法安全清理）；
+  驱动器自带就绪探测与重启断言全过，不视为降级但如实登记。
+- **会话前工作树已有 43 个未提交改动**（mtime 10-29/10-30）；本轮改动范围以
+  `evidence/CASE_OVERRIDE_20261102/raw/s5-our-hunks.diff`（按关键字抽取的 hunk）+ §148.1 文件为准，
+  不把既有未提交改动算作本轮成果。
+- 未 commit（人未要求）。
+
+### 148.5 独立复核（终验，2026-11-02）
+
+独立验证者（不修任何被测文件，只读 + 只跑命令）判定 **5 PASS / 1 FAIL**，FAIL 全在**证据-文档层**，
+**无行为缺陷**；报告与原始输出见 [`evidence/CASE_OVERRIDE_20261102/raw/verify/REPORT.md`](evidence/CASE_OVERRIDE_20261102/raw/verify/REPORT.md)。
+
+| # | 项 | 判定 | 关键证据（验证者自跑） |
+|---|---|---|---|
+| 1 | 冻结目录自测 | PASS | rc=0，`PASS=55 FAIL=0` |
+| 2 | 本轮目标单测 | PASS | 字面命令 2 条失败均为只读 ENV_ROOT 缺件；影子根 `59 passed`；浏览器新用例独立复跑 `16 passed` |
+| 3 | 红线实验（O-1/O-2/O-3/revoke 边界/I2） | PASS | model/host/裸名/空 reason/n10 缺例/`passed=true`/reasons 空/批量 全 rc=3 且台账 md5 前后不变；机器通过的 revoke rc=3；合法覆写留 `machine.passed=false+reasons`，`n12_report.md`/`gates.json` md5 不变；`--verify` rc=0（篡改 n10 ⇒ rc=4） |
+| 4 | 红线 8（唯一判据） | PASS | 服务层零写台账、零第二套 I2；`case_override_view` 被写端点/闸门/run_view 三处复用；`app.js` 只消费投影、缺投影明说禁用 |
+| 5 | 证据与数字一致 | **FAIL → 已更正** | 4 处：D1 文档门 `skipped` 诊断值（且**定稿**实测 `checked=3418`，与验证者当时值不同——该两字段随正文变化，不入判据）；D2 hunk 覆盖件数；D3「17 条 CLI 冒烟」实为 13/8 步两版；D4 `raw/s1` 10 个日志未归档。均已按“只增不改”处置：D1 改活文档、D2–D4 记入 [`CORRECTION-20261102.md`](evidence/CASE_OVERRIDE_20261102/CORRECTION-20261102.md) 并把缺失日志补归档（`raw/s1` 补后 17 件，与索引 1:1） |
+| 6 | 文档门 | PASS | `check_doc_links` rc=0 `missing=0`；`test_doc_links` `65 passed` |
+
+- 四道门数字与 `raw/s5/` 逐字相符；md5 账本 38/38 校验通过（补归档后重新生成，见更正件）。
+- **验证者不声称**：未跑 21 h 真实轮；未重跑全量 `2104` / e2e / 浏览器 `199`。本轮全量门的执行者是 Lead，
+  独立复核是对关键判据的**抽样复跑 + 红线实验 + 证据对账**，两者不互相替代。
+
+
+## 149 本地 WSL 开发环境准备（2026-10-29）
 
 - 在 Windows 新建项目专用 WSL2 发行版 `fpga-dev`（Ubuntu 24.04），未改变 Docker 发行版；镜像的 SHA-256 与 Ubuntu 提供的清单一致。重启该发行版后默认用户为 `fpga`，Python 为 3.11.18，项目依赖按 `loop/requirements.txt` 安装。系统 apt 索引更新中断，基础工具未声称完成系统更新。
 - Linux 隔离测试副本 `/home/fpga/work/fpga-sim` 来自本机工作区的一次复制，并不自动同步；虚拟环境 `/home/fpga/fpga-venv`，测试副本的 `loop/.venv` 指向该环境。Windows 原仓及数据未由测试脚本清理。WSL 磁盘及下载文件位于本仓 `.local-wsl/`，仅供本机使用。
 - 本轮 `tests/test_evidence.py tests/test_gate_ledger.py tests/test_sv_ports.py`：`23 passed, 4 skipped in 1.78s`；跳过为归档演练轮夹具不存在。补充组合筛选：`3 failed, 27 passed, 4 skipped, 33 deselected in 1.05s`。单独 N7 筛选：`1 failed, 3 passed, 36 deselected in 0.52s`；失败的 `test_n7_real_runs_guarded_compile_only_per_case_and_releases_slot` 因默认 `ENV_ROOT` 路径不存在而报 `FileNotFoundError`，不记为通过，也不据此判定代码缺陷。
 - 未运行完整四门、真实 UVS、模型或内网验收；历史夹具、真实环境与许可证尚未配置。本轮由同一执行者操作和验证，不声称独立复核。当前 Linux 副本不会自动获得 Windows 仓后续修改。
 
-## 139 节点模块化 N7 首切片（2026-10-29，进行中）
+## 150 节点模块化 N7 首切片（2026-10-29，进行中）
 
 - 依据本轮用户要求，先修订环境插件规格及实施计划，再在 Host 保留 N7 的准入、哈希、台账和失败权威，将编译命令参数与日志定位提取到 `loop/host/compile_adapter.py`。其余节点尚未按三层方案重构；规格变更尚需显式评审。
 - Linux 隔离合成数据根：原 `tests/test_fix_real_chain.py` 输出 `2 failed, 38 passed in 8.51s`，失败两项缺历史 drill 夹具；重构前 N7 特征测试 `4 passed, 36 deselected in 0.54s`。新增适配器契约测试先运行，因模块不存在产生 `1 error in 0.09s`；实现后专项 `6 passed, 36 deselected in 0.75s`，保留路径字符串修正后复测 `6 passed, 36 deselected in 0.77s`。更广节点回归排除两项缺夹具测试后 `40 passed, 2 deselected in 6.77s`；该轮在路径字符串修正前，修正后已复测专项。
 - 文档检查在 Windows 上退出 1，输出 `checked=2291 skipped=27801 historical=857 known_missing=12 env_missing=360 missing=195`；环境/数据根缺失且涉及既有文档，未排查或声称零断链。完整单测、kb 自测、端到端及真实环境验收未运行；缺历史夹具/真实环境。无独立验证，本轮不能视作四门完成。
 
-## 140 节点模块化 N9/N15 环境调用切片（2026-10-29，进行中）
+## 151 节点模块化 N9/N15 环境调用切片（2026-10-29，进行中）
 
 - Host 保留 N9/N15 的目标校验、单槽、作业提交、停放恢复、身份核验和台账权威；抽取串行 full 命令生成与运行日志定位到 `loop/host/run_adapter.py`。drill 回放也沿用既有日志命名定位。拓扑、载荷、种子与业务判据未有意变更；真实环境与旧快照跨版本恢复尚未验证。SPEC-03 已增边界，契约仍待显式评审。
 - Linux 合成数据根中，重构前 N9/N15 特征测试 `7 passed, 33 deselected in 0.76s`；新测试先因适配器模块不存在而 `1 error in 0.09s`；实现后专项 `9 passed, 33 deselected in 0.87s`。节点、适配器、单槽与作业器回归 `49 passed, 2 deselected in 8.69s`，两项为历史 drill 夹具缺失而排除。快照洁净与终止状态专项 `2 passed, 30 deselected in 0.58s`。
 - 未运行完整单测、kb 自测或端到端；真实 UVS、历史夹具和完整恢复验收均缺。测试由实现者执行，不称独立复核或四门完成。N0–N6、N8、N10–N14、N16 的模块重构仍待推进。
 
-## 141 节点模块化运行能力注入（2026-10-29，进行中）
+## 152 节点模块化运行能力注入（2026-10-29，进行中）
 
 - N7/N9/N15 从直接引用具体环境实现改为经 `RunCtx.simulation` 调用；默认 `GuardedSimulation` 复用原命令与日志逻辑，准入、台账、作业及证据判据仍由 Host 拥有。可控替身用于测试，尚无面向用户的环境选择器；恢复仍构造默认实现，定制适配器的版本固定和跨重启恢复未实现，不可宣称新环境已接通。
 - Linux 隔离合成数据根：N9 注入新增用例重构前 `1 failed, 40 deselected in 0.83s`；初版测试因错误假设输入未经规范化 `1 failed, 49 passed, 2 deselected in 9.03s`，修正测试断言后，N7/N9/N15 注入及受影响节点/适配器/单槽/作业器回归 `52 passed, 2 deselected in 8.93s`（两项缺历史 drill 夹具）。模型/上下文相关测试 `195 passed, 13 skipped, 1 warning in 115.51s`；测试文件标记的跳过原因是 Linux 无 Node.js，警告为 Starlette TestClient 弃用提示。
 - 本轮未完成所有节点的模块化、规格显式评审、独立验证、完整四门、历史夹具、真实 UVS 及跨版本恢复；此前文档门缺失仍待排查。禁止声称总体完成或完全可插拔。
 
-## 142 全节点模块拆分与本机验证（2026-10-29，待完整验收）
+## 153 全节点模块拆分与本机验证（2026-10-29，待完整验收）
 
 - 按原 N0–N16 顺序将 Host、模型、人工闸门、长任务与 HALT 的执行实现拆入 `loop/workflows/nodes/`；N6 及 N9/N15 保留各自的内部阶段，G1/G2/G3 共用唯一门处理。原 TriggerFlow 入口模块/名称/行号保留；主流程继续唯一持有拓扑。共享模型请求、Host 校验、kb 业务判据与台账未重写。环境适配提取 N1 暂存布局、N6 用例来源与 SystemVerilog 事实、N7 编译、N9/N15 命令与日志定位；目前只有现有环境，动态选择与定制适配器跨重启恢复未实现。
 - 基线同一路径流程指纹起初因节点源码行号变化而不一致；保留旧入口行号后，基线与重构版均为 `sha256:3a2073563e2860e6f5fd468ebfd1f0daaf37d6dd0c8ef3368eaf5ce274941784`。该值与测试绝对路径相关。原版完整流程空闲快照由新版载入；受控单闸门图的 G1 等待快照可载入并恢复；受控 N9 等待快照可载入，模拟取消按预期失败且模拟槽释放。受控测试采用替身，不代表真实历史轮/真实作业恢复。原版 G1 受控测试与新版分别 `1 passed`；N9 取消测试首次因测试脚本未捕获预期异常而退出，修正测试后通过。
@@ -6612,35 +7252,45 @@ B2 `test_u1..test_u5`（U1 chip/置灰、U2 原因原文、U3 hint、U4 1280×72
 - 兼容测试材料见 `doc/evidence/NODE_MODULE_COMPAT_20261029/`；外部 md5 清单 `doc/evidence/NODE_MODULE_COMPAT_20261029.md5`：`compat_gate.py` 57ef39088371c34484459fdca6e6411b，`compat_job.py` 53bb97109b1f53ed9290bacac1bbe6a3，`README.md` 7f7e3dec3d5536da6e0c467013ad31c9。Windows 文件只读属性均为 true，WSL `chmod 444` 后 `stat` 显示 555（挂载权限映射），不能声称磁盘模式为 444。
 - 规格仍须显式评审；同一执行者实现与测试，不构成独立复核。缺历史夹具、真实环境/许可证、实际历史等待快照与独立验证；四门未全通过，整体不可称完整验收。
 
-## 143 原版与重构版缺件测试对照（2026-10-29）
+## 154 原版与重构版缺件测试对照（2026-10-29）
 
 - 用户说明暂时无法提供真实 FPGA 环境和许可证，夹具数据将另行提供；真实仿真验收保留待补，不据此停掉与环境无关的验证。
 - 在彼此隔离的空合成数据根，以相同参数运行 `tests/test_api.py tests/test_api_ui_contract.py --maxfail=10`：基线 `10 failed, 4 passed, 1 warning in 1.14s`；重构版 `10 failed, 4 passed, 1 warning in 0.70s`，失败测试 ID 相同。失败包括历史 drill 夹具、基线/环境目录等前置缺失。这是有限的缺件条件对照，不证明全部软件测试无回归，也不把这些失败记为通过。
 - 无真实工程和许可证时继续进行受控验证；取得用户提供的夹具后先确认来源、内容与 md5，再在独立可写数据根执行相应门禁。不得改写归档或把模拟数据冒充真实环境。
 
-## 144 远端主线与本地节点模块化整合（2026-10-29，验证未完成）
+## 155 远端主线与本地节点模块化整合（2026-10-29，验证未完成）
 
-- 本地 main 从 `4bb01d3` 快进至远端 `46b4d7c`；原未提交改动以 Git stash 保留。远端与本地同时修改 N6：将 S6 候选通道及导入校验接入拆分节点，沿用环境能力定位源文件，保留旧节点入口位置。原本地 STATUS §106–§111 重编号为 §138–§143，远端章节完整保留。
+- 本地 main 从 `4bb01d3` 快进至远端 `46b4d7c`；原未提交改动以 Git stash 保留。远端与本地同时修改 N6：将 S6 候选通道及导入校验接入拆分节点，沿用环境能力定位源文件，保留旧节点入口位置。原本地 STATUS §106–§111 重编号为 §149–§154，远端章节完整保留。
 - 隔离 WSL 副本专项：初次 `5 failed, 95 passed`（提前停止）；修复依赖接线后 `2 failed, 118 passed`，两项依赖本机缺失的旧 `RUN-20261015-120626` 夹具。扩大回归 `5 failed, 428 passed, 2 skipped, 2 deselected, 1 warning`，提前停止，五项均因默认 drill 夹具不全。
 - 从远端独立夹具分支导出到隔离目录，drill 与 demo 的 md5 校验分别 `35` 和 `103` 个 OK；夹具分支未合入主线。使用 drill 夹具的流程测试 `3 failed, 3 passed` 后提前停止，失败于 N8 无法定位全部变更；同一条件下远端原版对应测试 `1 failed`，报同一错误，仍不能推断全范围无回归。真实环境、旧夹具、独立复核和四门尚未完成。
 - 本次由实现者执行验证，不构成独立复核；未推送。
 - 去除依赖上述缺件的流程文件及两项旧夹具用例后，受影响回归 `482 passed, 2 skipped, 2 deselected, 1 warning in 13.05s`；跳过项未按通过计。
 
-## 145 本地四门尝试与 N8 缺件定位（2026-10-29）
+## 156 本地四门尝试与 N8 缺件定位（2026-10-29）
 
 - 合并版隔离 WSL 副本，空可写数据根，已校验的 `drill-real-20261024`，`pytest -q --maxfail=20`：`17 failed, 1179 passed, 48 skipped, 1 warning, 3 errors in 50.89s`；达到上限提前停止，非全量通过。测试包装命令退出码捕获有 shell 引号错误，故此处仅引用 pytest 汇总，不将包装退出码解释为 pytest 退出码。失败涉及旧 run 夹具、基线/冲突数据、环境文件以及配置的 DSH node 不存在；部分原始 shell 脚本在 Windows 复制后为 CRLF，该轮未转换。各失败未逐一归因，不能笼统断言全部是环境问题。
 - N8 失败直接条件：测试使用的合成 ENV_ROOT 中 `TESTLIB/tc_cpu_i2c_03.sv` 不存在，drill 夹具沙箱件存在且为 21612 bytes；N8 对大文件要求比较源件取得变更区间。此为该次测试的可复现缺件，不是对真实环境文件状态的判断。
 - 在派生合成 ENV_ROOT 副本运行环境入口：gate 自测 `PASS=9 FAIL=1`（旧 gates 夹具缺失），N5 自测 `PASS=6 FAIL=1`（旧沙箱夹具缺失），冲突自测 `PASS=28 FAIL=0`；环境层 `1 failed, 24 deselected, 2 errors`，缺 `uvs.setup` 和环境侧 `doc/AGENTS.md`。入口报告原合成 ENV_ROOT 零写入；真实环境未执行。
 - 在隔离副本和独立空数据根执行 `accept_v1_run.sh`（副本 shell 换行转换为 LF），六个 phase 均 `rc=1`；首阶段缺冲突数据，后续未完整收敛，不能算端到端通过。服务端口在完成后未监听。
-- 相同合成根文档检查：上游 `checked=2730 ... missing=123`，合并版 `checked=2740 ... missing=119`，两者均存在缺失，文档门未通过；数目不同不能证明新增引用均正确。受影响专项回归见 §144。
+- 相同合成根文档检查：上游 `checked=2730 ... missing=123`，合并版 `checked=2740 ... missing=119`，两者均存在缺失，文档门未通过；数目不同不能证明新增引用均正确。受影响专项回归见 §155。
 - 实施者本人执行，无独立复核；真实 FPGA、许可证、完整历史资产和四门均待验收。完整单测日志位于隔离 WSL 副本 `/home/fpga/work/validation-20261029/unit.log`，不当作冻结归档。
 
-## 146 节点合并与内网待验收交接（2026-10-29）
+## 157 节点合并与内网待验收交接（2026-10-29）
 
 - 新增 [本地补测与内网验收计划](plans/2026-10-29-node-merge-intranet-validation.md)，区分主线提交与未提交节点改动，整理交付前核验、夹具身份、四门、节点与恢复、真实内网、独立复核和证据交接。本文是待执行计划，不代表新增验收通过。
-- 文档中链接及测试文件路径以本次本机核对为准；尚未运行完整文档门，实际测试与限制仍见 §144–§145。
+- 文档中链接及测试文件路径以本次本机核对为准；尚未运行完整文档门，实际测试与限制仍见 §155–§156。
 
-## 147 节点整合分支交付准备（2026-10-29）
+## 158 节点整合分支交付准备（2026-10-29）
 
-- 按用户要求将节点重构、DSH 合并接线和验收交接整理到独立分支；不声称四门、真实环境或独立复核已完成，实测与限制见 §144–§145。
-- 暂存恢复后发现兼容证据换行转换导致内容 md5 不符；从本机原始 Linux 副本恢复，逐项哈希与 §142 原账本一致，并设置 Git 属性保护证据字节。保留原 stash。
+- 按用户要求将节点重构、DSH 合并接线和验收交接整理到独立分支；不声称四门、真实环境或独立复核已完成，实测与限制见 §155–§156。
+- 暂存恢复后发现兼容证据换行转换导致内容 md5 不符；从本机原始 Linux 副本恢复，逐项哈希与 §153 原账本一致，并设置 Git 属性保护证据字节。保留原 stash。
+
+## 159 最新主线与节点模块化整合（2026-11-02，待验收）
+
+- 将远端 `f710079` 合入独立节点重构分支，处理 N5 零必改分流、G1_no_impact 进入/恢复前置、N9 全量目标、N10 机器原因产物及既有 DSH N6 候选接线；人工覆写继续使用主线 kb 唯一判据。旧本地状态 §138–§147 迁至 §149–§158，远端同号章节保留。规格/计划与限制见 [整合计划](plans/2026-11-02-node-modularity-main-integration.md)。
+- 特征基线：隔离的 f710079 原版相关测试 `2 failed, 57 passed, 1 warning in 5.27s`，两项缺默认历史 drill 夹具；首次因缺 ENV_ROOT 采集失败后配置隔离根重跑。整合版新主线入口身份断言先 `1 failed in 0.68s`，对齐 f710079 后受影响回归 `565 passed, 2 skipped, 4 deselected, 1 warning in 16.44s`；四项排除依赖旧夹具。测试由实现者执行，不构成独立复核。
+- 同一路径的主线空闲快照首次在整合版载入因流程指纹不符显式拒绝；对齐 f710079 入口位置后，两版指纹均为 `sha256:a2fe0ad91517ed908a4089f5fbe76ba0b6e5b120494b588f79ceecf0502a8a8d`，原版空闲快照载入成功。受控替身图中主线 G1 等待快照由整合版载入并恢复，N9 等待快照由整合版载入并在模拟取消后观测到槽释放；日志错误为模拟取消时预期失败。不代表真实历史运行、G1_no_impact 等待或更早拓扑兼容；旧拓扑迁移仍未实现。
+- 合成环境副本 kb 自测：gate `PASS=9 FAIL=1`、N5 `PASS=6 FAIL=1`（缺旧夹具），冲突 `PASS=28 FAIL=0`；环境层 `1 failed, 24 deselected, 2 errors`，缺 `uvs.setup` 和环境 `doc/AGENTS.md`；入口报告原合成环境零写入。真实环境未验证。
+- 隔离数据根 drill 端到端 phase `1/2/3/4/4b/5` 均 `rc=1`，未通过；本机文档检查 `checked=3225 skipped=42244 historical=857 known_missing=16 env_missing=410 missing=240`，`exit=1`，不声称零断链。以上 shell 包装如以末尾 `tail` 退出，其退出码不是被包裹测试退出码；此处按入口自身输出记录。
+- 独立复核、真实 UVS/许可证、DSH live、真实历史快照及完整四门尚未完成；定制环境选择和跨重启恢复仍未实现。
+- 软件层完整入口（不含浏览器，设置 `--maxfail=20`）在隔离数据根达到上限停止：`13 failed, 1222 passed, 27 skipped, 1 warning, 7 errors in 54.98s`；采集副本缺历史数据与部分环境材料，各失败尚未逐一归因，不称完整单测通过。首次采集因复制副本缺文档脚本报错，补齐后重跑；此前一次非最终入口位置版本的结果不作为最终结果。日志为本机 `/home/fpga/work/validation-20261102/software-final.log`，非冻结归档。

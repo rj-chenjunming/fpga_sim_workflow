@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""gate.py —— 三道人工闸门的持久化状态机（spec I6 / §1 / §8）
+"""gate.py —— 人工闸门的持久化状态机（spec I6 / §1 / §8）
 
 闸门（`kb_lib.GATE_IDS`）
     G1_diff_confirm          N4  差异确认   confirmed / ignored / disputed / pending
     G2_report_accept         N13 评估       accept / rework / pending
     G3_regression_decision   N14 回归决策   full_now / subset_only / milestone_only / defer / pending
+    G1_no_impact             N5b 零必改分流 no_impact_end / full_regression / pending
+                             （2026-10-30 增补：G1 的**分流支线**，仅在 N5 必改=0 时出现；
+                              不是第四道主线闸门，契约见 CHANGE_IMPACT_LOOP_SPEC §12 /
+                              LOOP_ORCHESTRATION_SPEC §14）
 
 铁律（本脚本存在的唯一理由）
     `human_signed=true` **只在** `--actor-kind human` **且** 给了 `--actor <人名>` 时为真，
@@ -60,6 +64,7 @@ DEFAULT_EXPECT = {
     "G1_diff_confirm": "confirmed",
     "G2_report_accept": "accept",
     "G3_regression_decision": None,   # 已决策即可：full_now/subset_only/milestone_only/defer
+    "G1_no_impact": None,             # 已决策即可：no_impact_end / full_regression
 }
 REWORK_TARGETS = ("N4", "N6")   # spec §8：N13 返工只可回指 N4（范围判错）或 N6（用例改错）
 ACTOR_KINDS = ("human", "model", "rehearsal", "host")
@@ -92,9 +97,16 @@ def load_state(run_id):
         sys.stderr.write("[FAIL] gates.json 的 run_id=%r 与 --run %r 不一致（身份错位）\n"
                          % (st.get("run_id"), run_id))
         raise SystemExit(RC_BROKEN)
-    for g in K.GATE_IDS:
+    # 2026-10-30：`version=2` 含 G1_no_impact；旧 `version=1` 记录只有三道主线闸门
+    # ⇒ 按 version 决定必需集合，历史 gates.json 仍可读、不会被判"状态不完整"。
+    try:
+        version = int(st.get("version") or 1)
+    except (TypeError, ValueError):
+        version = 1
+    need = K.GATE_IDS if version >= 2 else K.GATE_IDS_V1
+    for g in need:
         if g not in st.get("gates", {}):
-            sys.stderr.write("[FAIL] gates.json 缺闸门 %s（状态不完整）\n" % g)
+            sys.stderr.write("[FAIL] gates.json 缺闸门 %s（状态不完整；version=%s）\n" % (g, version))
             raise SystemExit(RC_BROKEN)
     return st
 
@@ -147,7 +159,9 @@ def cmd_init(args):
 
 def cmd_show(args):
     st = load_state(args.run)
-    ids = [args.gate] if args.gate else list(K.GATE_IDS)
+    # 2026-10-30：旧 `version=1` 记录只有三道主线闸门 ⇒ 默认按**记录里实际存在的门**展示，
+    # 不能按 `K.GATE_IDS` 硬列（否则读历史 gates.json 会 KeyError）。
+    ids = [args.gate] if args.gate else list(st.get("gates") or {})
     if args.gate and args.gate not in K.GATE_IDS:
         sys.stderr.write("[FAIL] 未知闸门 %r（合法：%s）\n" % (args.gate, ", ".join(K.GATE_IDS)))
         return RC_REJECT

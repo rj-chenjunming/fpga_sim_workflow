@@ -267,6 +267,10 @@ def _target_cases(data: Any) -> list[dict[str, Any]]:
     return out
 
 
+
+
+
+
 def _md5_file(path: Path) -> str:
     import hashlib
 
@@ -460,10 +464,62 @@ def _n9_detail(*, cases: dict[str, Any] | None,
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 async def n9_submit(data: Any) -> dict[str, Any]:
     """保留流程快照身份的节点入口。"""
     from ..nodes.n9_submit import run
-    return await run(data, _REAL_CASE=_REAL_CASE, _SEED=_SEED, _acquire_slot=_acquire_slot, _drill_case_spec=_drill_case_spec, _slot_job_id=_slot_job_id, _submit_drill_replay=_submit_drill_replay, _target_cases=_target_cases, _verify_targets=_verify_targets, ctx_of=ctx_of)
+    return await run(data, _baseline_full_targets=_baseline_full_targets, _no_impact_full_regression=_no_impact_full_regression, _REAL_CASE=_REAL_CASE, _SEED=_SEED, _acquire_slot=_acquire_slot, _drill_case_spec=_drill_case_spec, _slot_job_id=_slot_job_id, _submit_drill_replay=_submit_drill_replay, _target_cases=_target_cases, _verify_targets=_verify_targets, ctx_of=ctx_of)
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1008,3 +1064,47 @@ async def n15_case(data: Any) -> dict[str, Any]:
            "note": "N15 已改为 n15_run 单作业串行；本节点不再执行、不再发临时进度。"}
     ctx.event("warning", node="N15", status="deprecated_node", detail=out)
     return out
+
+
+def _baseline_full_targets() -> list[dict[str, Any]]:
+    """全量回归目标集（LOOP §14.3）：`kb/index/cases.json` 的全部用例 + 当前环境根下的文件。
+
+    - 用例名 / 文件 / md5 **全部取自索引**（与 G3=`full_now` 的 `_full_regression_cases()` 同一口径，
+      红线 8：不新增第二套"全量"定义）；
+    - 提交前逐例校验：文件存在、md5 == 索引 md5（本支无修订，**审的对象就是跑的对象**）；
+    - 索引缺失 / 为空 / 缺 md5 / md5 不符 ⇒ 显式失败（不得回退到一个默认用例）。
+    """
+    path = P.KB_DIR / "index" / "cases.json"
+    try:
+        doc = json.loads(path.read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError) as exc:
+        raise RuntimeError(
+            f"全量回归集不可用：{path} 不可读/不可解析（{exc}）⇒ 不得回退默认用例"
+        ) from exc
+    rows = [c for c in (doc.get("cases") or []) if isinstance(c, dict) and c.get("case")]
+    if not rows:
+        raise RuntimeError(f"全量回归集为空：{path} 没有 cases ⇒ 不得回退默认用例")
+    out: list[dict[str, Any]] = []
+    for item in rows:
+        case = str(item["case"])
+        rel = str(item.get("file") or f"TESTLIB/{case}.sv")
+        target = Path(P.ENV_ROOT) / rel
+        if not target.is_file():
+            raise FileNotFoundError(f"全量回归用例文件缺失：{target}（case={case}）")
+        want = str(item.get("md5") or "")
+        if not want:
+            raise RuntimeError(f"索引缺 md5：{case} ⇒ 无法做『审的对象 == 跑的对象』校验")
+        now = _md5_file(target)
+        if now != want:
+            raise RuntimeError(
+                f"{case} 文件 md5 与索引不一致（{now} != {want}）⇒ 全量回归目标集不可信"
+            )
+        out.append({"case": case, "sandbox_path": str(target), "md5": want, "file": rel})
+    return out
+
+
+def _no_impact_full_regression(data: Any) -> bool:
+    """本轮是否选了 G1 分流支线的 `full_regression`（LOOP §14.3）。"""
+    decisions = data.get_state("gate_decisions") or {}
+    item = decisions.get("G1_no_impact") or {}
+    return item.get("decision") == "full_regression"

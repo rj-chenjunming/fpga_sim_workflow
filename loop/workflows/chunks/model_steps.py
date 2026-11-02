@@ -73,7 +73,7 @@ from .n6_facts import _api_semantics_for, build_n6_targets  # noqa: E402,F401
 from .n10_semantics import (  # noqa: E402,F401
     PENDING_CLASSES, _case_pass_fields, _cases_table, _classification_summary,
     _diffs_for_classification, _per_case_fail_buckets,
-    _persist_pending, _reconcile_markdown,
+    _persist_cases, _persist_pending, _reconcile_markdown,
 )
 from .n11_guard import _host_identity  # noqa: E402,F401
 
@@ -630,6 +630,10 @@ def _n3_detail(out: dict[str, Any], *, offered_segments_empty: bool) -> dict[str
     }
 
 
+
+
+
+
 async def n3_digest(data: Any) -> dict[str, Any]:
     """保留流程快照身份的节点入口。"""
     from ..nodes.n3 import run
@@ -744,6 +748,139 @@ def _observation_points(data_out: dict[str, Any] | None) -> list[dict[str, Any]]
          "expected_value": point.get("expected_value")}
         for point in raw if isinstance(point, dict)
     ]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 async def n6_author(data: Any) -> dict[str, Any]:
@@ -1070,6 +1207,19 @@ def _author_handoff(ctx, data, node):
         raise ValueError('author handoff rejected') from exc
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 async def n8_check(data: Any) -> dict[str, Any]:
     """保留流程快照身份的节点入口。"""
     from ..nodes.n8 import run
@@ -1238,7 +1388,7 @@ async def n8_check(data: Any) -> dict[str, Any]:
 async def n10_reconcile(data: Any) -> dict[str, Any]:
     """保留流程快照身份的节点入口。"""
     from ..nodes.n10 import run
-    return await run(data, MP=MP, PENDING_CLASSES=PENDING_CLASSES, _artifact=_artifact, _case_pass_fields=_case_pass_fields, _cases_table=_cases_table, _classification_summary=_classification_summary, _diffs_for_classification=_diffs_for_classification, _per_case_fail_buckets=_per_case_fail_buckets, _persist_pending=_persist_pending, _reconcile_markdown=_reconcile_markdown, _set_case_state=_set_case_state, _write_text=_write_text, counts_text=counts_text, ctx_of=ctx_of, ledger=ledger, run_model_node=run_model_node)
+    return await run(data, MP=MP, PENDING_CLASSES=PENDING_CLASSES, _artifact=_artifact, _case_pass_fields=_case_pass_fields, _cases_table=_cases_table, _classification_summary=_classification_summary, _diffs_for_classification=_diffs_for_classification, _per_case_fail_buckets=_per_case_fail_buckets, _persist_cases=_persist_cases, _persist_pending=_persist_pending, _reconcile_markdown=_reconcile_markdown, _set_case_state=_set_case_state, _write_text=_write_text, counts_text=counts_text, ctx_of=ctx_of, ledger=ledger, run_model_node=run_model_node)
 
 
 
@@ -1493,6 +1643,10 @@ def _identity_table(host_identity: dict[str, Any]) -> list[dict[str, Any]]:
             "consistent": item.get("consistent"),
         })
     return rows
+
+
+
+
 
 
 async def n11_review(data: Any) -> dict[str, Any]:

@@ -232,3 +232,151 @@ Host `loop/host/s0.py` 是派生及核验的唯一写者；API 传输、UI 投�
 - 优先级 **P1**：不阻塞当前真实 run（执行入口尚未消费 S0 判据）。
 - D4 落地前，S0 记录只作为证据；落地后任何 `real` 启动都必须带合法 `s0_record_id` 且判据为真，否则拒绝。
 - 本登记只增不改：接入轮完成后回填 D1–D5 的落点与验收数字，不删除本文。
+
+## 9 单一 RTL 文件夹入口（一键派生与自动切换，2026-10-30）
+
+> 来源：人 2026-10-30 需求原文「入口处只传入一个完整的 RTL 代码文件夹，不再像现在整个环境，流程也能正常跑通」。
+> 本节**只增不改**；对 §2「完整复制」与 §6.1「不偷偷切换进程 `ENV_ROOT`」是**显式收窄/补充**，
+> 不改变既有记录、闸门与 N0–N16 语义。
+
+### 9.1 入口与默认值
+
+`POST /api/s0/from-rtl`（界面：环境准备页「派生并校验 →」）只要求一个路径：
+
+| 字段 | 必填 | 缺省 |
+|---|---|---|
+| `rtl_source` | 是 | ——（目录名必须为 `RTL` 或 `SRC`，见 9.2） |
+| `baseline` | 否 | **原始环境根**（当前进程 `ENV_ROOT`；已切换过则取持久化的 `origin_env_root`） |
+| `baseline_version` | 否 | `RTL@<folder-basename>+<UTC 时间戳>`（仍是操作者声明，不伪装已验证 commit） |
+| `work_env` | 否 | `<TOOL_ROOT>/workspaces/<origin-env-name>-derived-<UTC 时间戳>/`（父目录已存在、目标必须不存在） |
+| `smoke_case` | 否 | `sort(TESTLIB/*.sv)[0]` 的 basename；**记录里显式落账**，禁止从日志猜 |
+
+> **2026-10-30 决定（见 §9.9）：入口改为单输入二选一** —— 只给 `rtl_source`（新版 RTL 文件夹，
+> 环境资产取原始环境根）、或只给 `baseline`（**环境项目目录**，整套工程，RTL 用自带的不替换）；
+> 两者都给仍兼容（= 环境项目 + 新版 RTL，行为同 §9.3/§9.4）；都为空的请求一律 400。
+> 因此 `rtl_source` **不再是唯一必填**；「baseline」一词在本节的界面文案统一叫「环境项目目录」，
+> **不要**与运行期的对比基线（`kb/baselines/<id>`，见 §3.1）混为一谈。
+
+### 9.2 RTL 根判定（不猜）
+
+按目录名判定：`RTL` ⇒ 映射到 `RTL/`（整棵替换）；`SRC` ⇒ 映射到 `RTL/SRC/`（只替换该子树）；
+其它名字 ⇒ 400 并列出合法取值。**不接受**按内容/基线相似度猜测路径。
+
+### 9.3 选择性复制（收窄 §2 的“完整复制”）
+
+复制源 = `baseline`；跳过规则**显式落账**，不静默：
+
+- 排除整目录：`kb/runs`、`loop`、`SIMLIB_RUN`、`.git`、`COV`、`WAVE`、`LOG`、`RUNS`、`__pycache__`；
+- 符号链接：不复制、不跟随，记 `{rel, reason:"symlink", target}`（防指回基线）；
+- 随副本复制的数据子集：**只** `kb/{baselines,index,conflicts,adjudication}`（副本自包含：
+  派生环境的 `WORKSPACE_ROOT = <work>/kb`）；`kb/` 下其余条目（`kb/tools`、`kb/schema`、
+  `kb/runs`、`kb/README.md`、`kb/FIXTURE_IDENTITY.md`…）不复制并落账——`kb/tools`/`kb/schema`
+  的权威在软件根，副本里不得出现第二套冻结副本。
+
+`copy` 检查判据：**副本实际复制集合**逐文件 md5 == 基线同一集合。被跳过项**不进判据**，
+但必须出现在 `copy_plan.skipped` / `copy_plan.excluded_roots` 且理由可核（否则等于静默忽略）。
+
+### 9.4 RTL 替换与检查语义
+
+- `RTL` 根：删除副本 `RTL/` 后整棵放入；`rtl` 检查 = `manifest(work/RTL) == manifest_filtered(rtl_source)`。
+  两者**同一口径**：RTL 源里的 VCS/缓存目录（`.git`/`.svn`/`.hg`/`__pycache__`）不复制并落账
+  （记录 `rtl_plan.skipped`）；源里的符号链接仍按 §2 **拒绝**（不跳过）。
+- `SRC` 根：只删除副本 `RTL/SRC` 后放入；`rtl` 检查 = `manifest(work/RTL/SRC) == manifest_filtered(rtl_source)`
+  **且**副本 `RTL/` 其余部分与基线同名部分逐文件一致（防顺手改 vendor）。
+- 错目录**只告警不拦截**：记录 `folder_warning = {same, added, removed, ratio}`；界面高亮，允许继续。
+- 摄入范围**不变**：N1 仍只摄入 `RTL/SRC/imports` + `RTL/RTL_COMMON`（红线 8：旧基线口径可比）；
+  两者缺一 ⇒ N1 显式失败，不在 S0 里伪造。
+
+### 9.5 自动续跑与准出
+
+1. `copy → rtl → non_rtl → ports` 由 `from-rtl` 一次完成；
+2. `ports` 有差异 ⇒ 停在“待确认”：沿用 S0-b 的提议/逐 hunk 确认/否决与落盘语义（§8.2-1 不变）；
+   处置后 `POST /api/s0/{id}/advance`；
+3. `advance` 在 `ports=passed` 时**自动**跑一次三库冒烟（`smoke_case`），落 `smoke` 结论；
+4. 六项全 `passed` 且无漂移 ⇒ `ready_for_execution=true`，界面自动进入 9.6。
+   （§9.9-4 例外：**环境项目入口**下 `rtl` 记 `skipped`，其准出判据为“除 `rtl` 外五项全 `passed` 且无漂移”。）
+
+### 9.6 自动切换（“服务必须活着”）
+
+- 存在非终态 run（`running`/`waiting_gate`）⇒ **拒绝**切换，理由可读；
+- 切换 = 写 `pending` → 起独立 `host/switch_supervisor.py` → 旧进程优雅退出；supervisor 负责：
+  等端口释放 → 以 `LOOP_ENV_ROOT=<work>`、`LOOP_WORKSPACE=<work>/kb`、同一 `LOOP_STATE_ROOT`/端口起新服务 →
+  轮询 `/api/health` 并校验 `env_root == target` → 成功落 `active`；失败则杀新进程并用**原环境根**
+  重起旧服务，落 `rollback` + `reason`（不改记录为 passed、不冒充成功）；
+- 切换记录 `env-switch.json` 落在 S0 记录目录（`/api/s0/{id}` 只读投影）；
+- `origin_env_root` 一旦记录不再改变：后续派生始终以它为基线源（副本不再当基线，防套娃）；
+- 「切回原环境」= 以当前根为目标反向执行同一流程，并保留副本（副本是数据根与证据）。
+
+### 9.7 失败语义
+
+任一步失败 ⇒ `status=failed` + `error` 原文；副本与记录保留；环境根不变；重试必须新副本路径（§2 不变）。
+`uvlan` 不可用 ⇒ `smoke=waiting`（不冒充 passed），切换不发生。
+
+### 9.8 验收
+
+- 单测：根判定、选择复制与跳过清单、SRC 根只核子树、错目录告警、`pending→active/rollback` 状态机、
+  活跃 run 拒绝、切回；
+- real 链：真实副本上派生 + 冒烟 + 切换，`/api/health` 显示新根，原 `ENV_ROOT` 零写入（`baseline` 检查项）。
+
+### 9.9 单输入二选一：环境项目入口（2026-10-30 决定）
+
+> 来源：人 2026-10-30 两次确认——① 「这个不应该叫『基线工程目录』，而且『新版 RTL 文件夹』和它应该是 2 选 1
+> 的关系，我选择一个就行了，不一定 RTL 就是必填的吧？」；② 三问拍板：只给环境项目时 **RTL 用该项目自带的、不替换**；
+> 字段名用 **环境项目目录**；界面单选、API 仍兼容两者同时给。
+> 本节只增不改 §9.1–§9.8 的既有语义；对 §9.1「`rtl_source` 必填」与 §9.5-4「六项全 passed」是**显式收窄**。
+
+#### 9.9-1 输入与模式判定（不猜）
+
+同一个端点 `POST /api/s0/from-rtl`，字段名不变，**判定只看字段是否为空**：
+
+| 请求 | `entry` | 语义 |
+|---|---|---|
+| 只有 `rtl_source` | `rtl_folder` | 现行 §9.3/§9.4：环境资产 = 原始环境根，RTL 整体替换 |
+| 只有 `baseline` | `env_folder` | **环境项目入口**：`baseline` 是整套工程目录；选择性复制成副本；**不替换 RTL** |
+| 两者都给 | `rtl_folder` | 环境项目 + 新版 RTL（§9.3/§9.4 不变）；界面不展示此组合，供自动化/既有调用 |
+| 两者都空 | —— | 400：必须提供「环境项目目录」或「新版 RTL 文件夹」之一 |
+
+- `baseline` 校验与 §9.1 相同（须为独立实体目录、路径不含软链、在允许根内、含 RTL、TB、PKG、TESTLIB 四类目录与 `docs/`（兼容 `doc/`）、
+  有运行入口与 TB 顶层）；`rtl_source` 校验与 §9.2 相同（目录名 `RTL`/`SRC`）。
+- 界面文案：`baseline` 这一格叫「**环境项目目录**」（副标题：整套工程（RTL、TB、PKG、TESTLIB 四类目录 + 文档 + `kb/`））。
+
+#### 9.9-2 `env_folder` 记录与检查语义
+
+- 记录：`entry="env_folder"`、`rtl_source=null`、`rtl_prefix=null`、`rtl_plan=null`、`folder_warning=null`；
+  `baseline` 的缺省版本 = `ENV@<basename>+<UTC 时间戳>`；其余字段（`copy_plan`、`smoke_case`、`origin_env_root`、`auto`）不变。
+- 六项：`copy`（§9.3 判据，含 RTL 全部文件）、`non_rtl`、`ports`（§8.2 派生，本模式应为零差异）、
+  `smoke`（§9.5-3）、`baseline`（零写入见证）语义不变；
+  **`rtl` 记 `skipped`**，理由固定为：
+  `环境项目入口：未提供新版 RTL，副本 RTL 与源环境逐文件一致（copy 判据已覆盖），不做替换`。
+- 禁止用 `skipped` 掩盖任何失败：`rtl_folder` 入口下 `rtl` 出现 `skipped` 一律视为异常（不准出）。
+
+#### 9.9-3 阶段回执
+
+`rtl` 为 `skipped` 时，阶段回执与报告显示「未替换（环境项目入口）」；既不显示为通过，也不显示为阻断。
+
+#### 9.9-4 准出判据（fail-closed）
+
+`ready_for_execution` 唯一判据（`s0b.ready_for_execution`）：
+
+```
+status == "prepared" && not error
+&& copy/non_rtl/ports/smoke/baseline 五项全 == "passed"
+&& (rtl == "passed"  或  (entry == "env_folder" && rtl == "skipped"))
+```
+
+未知 `entry`、缺任一 check ⇒ `false`；除上述唯一例外外任何非 `passed` ⇒ `false`。
+
+#### 9.9-5 报告与不变量
+
+- 报告的「阻断项」与「无阻断」结论必须与 9.9-4 同一判据（`skipped` 不算阻断）；报告头措辞按模式区分。
+- `_verify` 在 `rtl_source` 为 `null` 时**跳过**该项比对（不把 null 当漂移），`baseline`/`work_env` 见证照旧。
+- 活跃 run 拒绝、缺失数据根拒绝、切换/切回/删除副本、prefill 运行配置、原 `ENV_ROOT` 零写入等不变量全部不变。
+
+#### 9.9-6 验收
+
+- 单测：模式判定（只 rtl / 只 baseline / 同时给 / 都空）、`env_folder` 的 `rtl=skipped` 与记录字段、
+  `ready_for_execution` 的四种组合（env+skipped=true、rtl_folder+skipped=false、缺 check=false、五项非 passed=false）、
+  `_verify` 在 `rtl_source=null` 时不报漂移、报告阻断项口径；
+- API：只给 `baseline` ⇒ 200 且 `entry="env_folder"`；都空 ⇒ 400；两者都给 ⇒ 与 §9.3/§9.4 一致；
+- 界面：单选切换、只填一格即可提交、`rtl` 阶段显示「未替换（环境项目入口）」；
+- real 链：环境项目入口派生 → 六项（`rtl=skipped`）→ 准出 → 切换 → `/api/health` 新根；原 `ENV_ROOT` 零写入；切回。

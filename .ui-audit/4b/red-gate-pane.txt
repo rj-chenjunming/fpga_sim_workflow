@@ -1,0 +1,98 @@
+FFF.....                                                                 [100%]
+=================================== FAILURES ===================================
+___ test_panes_are_independent_scroll_containers_with_viewport_cap[1280-720] ___
+
+ui = (<Page url='http://127.0.0.1:41717/#run=A&view=gate'>, {'views': {'A': {'run_id': 'A', 'status': 'waiting_gate', 'mode...tus': 'waiting_gate', 'mode': 'drill', 'baseline': 'B-baseline', ...}}, 'hold': None, 'pending': [], 'posts': [], ...})
+width = 1280, height = 720
+
+    @pytest.mark.parametrize('width,height', ACCEPTANCE_VIEWPORTS)
+    def test_panes_are_independent_scroll_containers_with_viewport_cap(ui, width, height):
+        """B1：双栏下两栏都是局部滚动容器，高度受同一上限约束，卡片头不参与滚动。"""
+        page, api = ui
+        page.set_viewport_size({'width': width, 'height': height})
+        open_long_gate(page, api)
+        assert page.locator('.gate-pane').count() == 2
+        for selector in ('#gateMaterial', '#gatePanel'):
+            m = metrics(page, selector)
+            assert m['overflowY'] == 'auto', (selector, m)
+            assert m['overflowX'] == 'auto', (selector, m)
+            # 横向溢出留在本栏内，不撑出页面水平滚动；滚到栏底不把整页顶走
+            assert m['overscrollY'] == 'contain', (selector, m)
+            # 上限是**一个** token（§5 第 2 条 / A11）：token 必须存在且解析值等于推导值
+            assert m['capToken'], (selector, m)
+            assert 'clamp' in m['capToken'], (selector, m)
+>           assert m['maxHeight'] == f'{pane_max_h(height)}px', (selector, m)
+E           AssertionError: ('#gateMaterial', {'overflowY': 'auto', 'overflowX': 'auto', 'maxHeight': '380px', 'gutter': 'stable', ...})
+E           assert '380px' == '420px'
+E             
+E             - 420px
+E             + 380px
+
+tests/browser/test_gate_panes.py:128: AssertionError
+___ test_panes_are_independent_scroll_containers_with_viewport_cap[1440-900] ___
+
+ui = (<Page url='http://127.0.0.1:41717/#run=A&view=gate'>, {'views': {'A': {'run_id': 'A', 'status': 'waiting_gate', 'mode...tus': 'waiting_gate', 'mode': 'drill', 'baseline': 'B-baseline', ...}}, 'hold': None, 'pending': [], 'posts': [], ...})
+width = 1440, height = 900
+
+    @pytest.mark.parametrize('width,height', ACCEPTANCE_VIEWPORTS)
+    def test_panes_are_independent_scroll_containers_with_viewport_cap(ui, width, height):
+        """B1：双栏下两栏都是局部滚动容器，高度受同一上限约束，卡片头不参与滚动。"""
+        page, api = ui
+        page.set_viewport_size({'width': width, 'height': height})
+        open_long_gate(page, api)
+        assert page.locator('.gate-pane').count() == 2
+        for selector in ('#gateMaterial', '#gatePanel'):
+            m = metrics(page, selector)
+            assert m['overflowY'] == 'auto', (selector, m)
+            assert m['overflowX'] == 'auto', (selector, m)
+            # 横向溢出留在本栏内，不撑出页面水平滚动；滚到栏底不把整页顶走
+            assert m['overscrollY'] == 'contain', (selector, m)
+            # 上限是**一个** token（§5 第 2 条 / A11）：token 必须存在且解析值等于推导值
+            assert m['capToken'], (selector, m)
+            assert 'clamp' in m['capToken'], (selector, m)
+>           assert m['maxHeight'] == f'{pane_max_h(height)}px', (selector, m)
+E           AssertionError: ('#gateMaterial', {'overflowY': 'auto', 'overflowX': 'auto', 'maxHeight': '560px', 'gutter': 'stable', ...})
+E           assert '560px' == '600px'
+E             
+E             - 600px
+E             ?  -
+E             + 560px
+E             ? +
+
+tests/browser/test_gate_panes.py:128: AssertionError
+__ test_panes_are_independent_scroll_containers_with_viewport_cap[1920-1080] ___
+
+ui = (<Page url='http://127.0.0.1:41717/#run=A&view=gate'>, {'views': {'A': {'run_id': 'A', 'status': 'waiting_gate', 'mode...tus': 'waiting_gate', 'mode': 'drill', 'baseline': 'B-baseline', ...}}, 'hold': None, 'pending': [], 'posts': [], ...})
+width = 1920, height = 1080
+
+    @pytest.mark.parametrize('width,height', ACCEPTANCE_VIEWPORTS)
+    def test_panes_are_independent_scroll_containers_with_viewport_cap(ui, width, height):
+        """B1：双栏下两栏都是局部滚动容器，高度受同一上限约束，卡片头不参与滚动。"""
+        page, api = ui
+        page.set_viewport_size({'width': width, 'height': height})
+        open_long_gate(page, api)
+        assert page.locator('.gate-pane').count() == 2
+        for selector in ('#gateMaterial', '#gatePanel'):
+            m = metrics(page, selector)
+            assert m['overflowY'] == 'auto', (selector, m)
+            assert m['overflowX'] == 'auto', (selector, m)
+            # 横向溢出留在本栏内，不撑出页面水平滚动；滚到栏底不把整页顶走
+            assert m['overscrollY'] == 'contain', (selector, m)
+            # 上限是**一个** token（§5 第 2 条 / A11）：token 必须存在且解析值等于推导值
+            assert m['capToken'], (selector, m)
+            assert 'clamp' in m['capToken'], (selector, m)
+>           assert m['maxHeight'] == f'{pane_max_h(height)}px', (selector, m)
+E           AssertionError: ('#gateMaterial', {'overflowY': 'auto', 'overflowX': 'auto', 'maxHeight': '720px', 'gutter': 'stable', ...})
+E           assert '720px' == '780px'
+E             
+E             - 780px
+E             ?  ^
+E             + 720px
+E             ?  ^
+
+tests/browser/test_gate_panes.py:128: AssertionError
+=========================== short test summary info ============================
+FAILED tests/browser/test_gate_panes.py::test_panes_are_independent_scroll_containers_with_viewport_cap[1280-720]
+FAILED tests/browser/test_gate_panes.py::test_panes_are_independent_scroll_containers_with_viewport_cap[1440-900]
+FAILED tests/browser/test_gate_panes.py::test_panes_are_independent_scroll_containers_with_viewport_cap[1920-1080]
+3 failed, 5 passed in 9.38s

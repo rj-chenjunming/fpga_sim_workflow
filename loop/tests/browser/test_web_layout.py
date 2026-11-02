@@ -89,8 +89,11 @@ def test_workspace_views_and_agent_controls_fit_browser(ui, width):
     page, api = ui
     page.set_viewport_size({'width': width, 'height': 1000})
     populate(api)
-    for field, value in [('s0Baseline', '/simulation/TCS9620/baseline-v1.2'),
-                         ('s0Version', 'v1.2-stable'), ('s0Rtl', '/projects/TCS9620/rtl'),
+    # T3（WEB_UI_SPEC §15）：基线/版本/副本路径收进折叠的「高级」区；先展开再填，
+    # 其余字段 id 与断言不变。
+    page.locator('#s0Advanced').evaluate('el => { el.open = true }')
+    # T4（S0 §9.9 / WEB_UI §15）：界面二选一，rtl 模式不再有「基线工程目录」高级键。
+    for field, value in [('s0Version', 'v1.2-stable'), ('s0Rtl', '/projects/TCS9620/rtl'),
                          ('s0Work', '/simulation/TCS9620/work-v1.3')]:
         page.locator('#' + field).fill(value)
     assert_fits(page, '#viewS0 .input, #viewS0 .btn, #viewSeg button')

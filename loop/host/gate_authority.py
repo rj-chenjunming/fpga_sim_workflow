@@ -96,6 +96,7 @@ DEFAULT_EXPECT = {
     "G1_diff_confirm": "confirmed",
     "G2_report_accept": "accept",
     "G3_regression_decision": None,  # 任意已决策
+    "G1_no_impact": None,            # 任意已决策：no_impact_end / full_regression
 }
 
 
@@ -111,6 +112,9 @@ def human_readable(gate: str, decision: str) -> str:
         "subset_only": "仅受影响子集回归",
         "milestone_only": "仅里程碑",
         "defer": "暂缓",
+        # 2026-10-30：N5 必改=0 的 G1 分流支线（LOOP §14）
+        "no_impact_end": "本变无影响用例，结束（须给理由）",
+        "full_regression": "转全量回归",
         "pending": "待决策",
     }.get(decision, decision)
 
@@ -143,9 +147,14 @@ def authority_view(run_id: str) -> dict[str, Any]:
     except Exception as exc:  # pragma: no cover
         anchor_ok, anchor_detail = False, f"锚复算失败：{type(exc).__name__}: {exc}"
 
+    # 2026-10-30：分流支线门（`G1_no_impact`）未出现 ⇒ 不投影、也不计入"全签"。
+    # 判据唯一实现在权威 `kb_lib.gate_applicable`（本层不复制一份）。
+    applicable = getattr(kb, "gate_applicable", None)
     gates: dict[str, Any] = {}
     for gid in gate_ids():
         item = (st.get("gates") or {}).get(gid) or {}
+        if callable(applicable) and not applicable(gid, item):
+            continue
         hist = item.get("history") or []
         gates[gid] = {
             "decision": item.get("decision"),

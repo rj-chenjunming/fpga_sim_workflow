@@ -1,0 +1,3 @@
+按位置逐条核对：app.css 323 条、legacy.css 59 条，合计 382
+map-final 行数：382（app.css 323 / legacy.css 59）
+PASS：骨架恒等（未动非颜色内容）+ 每个字面量位置都换成了映射指定的令牌 + map 382 行逐行命中

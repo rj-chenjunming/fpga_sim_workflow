@@ -17,6 +17,10 @@
 
 本地节点重构验收交接：[已测范围、不能验收项及内网执行条件](plans/2026-11-02-local-acceptance-and-blockers.md)，实测以 STATUS §161 为准。
 
+主线框架梳理：[架构、节点交接与优化建议（2026-11-02）](audit/AUDIT-20261102-architecture-optimization.md)；基于 `4c572e2` 的静态分析，建议未实施。
+
+对应实施文档：[架构优化计划（2026-11-03）](plans/2026-11-03-architecture-optimization-plan.md)，含 O1–O8 工作包、写权、依赖、验收与回退条件；已文档化，尚未实施。
+
 ## 1 目录导航
 
 | 目录/文件 | 是什么 | 入口 / 主要文件 |
